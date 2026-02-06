@@ -886,8 +886,8 @@ function select(type, id, {autoTab=null, forceSelect=false}={}) {
   renderFocusedDetail();
   updateHash();
 
-  // Sync with graph view if it's currently active
-  if (state.viewMode === 'graph') {
+  // Sync with graph view if it's currently active AND not already syncing
+  if (state.viewMode === 'graph' && !isSyncing) {
     console.log('Select called with:', type, id, 'viewMode:', state.viewMode);
     syncColumnToGraphView(type, id);
   }
@@ -2868,22 +2868,22 @@ function syncGraphToColumnView(node) {
 
     console.log('syncGraphToColumnView - mapping type:', type, 'id:', id);
 
-    // Update column view selection
+    // Update column view selection with appropriate tab
     if (type === 'group') {
       console.log('Calling select for challengeGroup:', id);
-      select('challengeGroup', id, {forceSelect: true});
+      select('challengeGroup', id, {forceSelect: true, autoTab: 'challenges'});
     } else if (type === 'challenge') {
       console.log('Calling select for subChallenge:', id);
-      select('subChallenge', id, {forceSelect: true});
+      select('subChallenge', id, {forceSelect: true, autoTab: 'challenges'});
     } else if (type === 'initiative') {
       console.log('Calling select for initiative:', id);
-      select('initiative', id, {forceSelect: true});
+      select('initiative', id, {forceSelect: true, autoTab: 'initiatives'});
     } else if (type === 'system') {
       console.log('Calling select for system:', id);
-      select('system', id, {forceSelect: true});
+      select('system', id, {forceSelect: true, autoTab: 'systems'});
     } else if (type === 'kpi') {
       console.log('Calling select for kpi:', id);
-      select('kpi', id, {forceSelect: true});
+      select('kpi', id, {forceSelect: true, autoTab: 'kpis'});
     } else {
       console.warn('Unknown node type in syncGraphToColumnView:', type);
     }
