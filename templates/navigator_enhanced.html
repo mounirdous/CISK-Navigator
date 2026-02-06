@@ -825,14 +825,18 @@ function clearSelection(){
 }
 
 function select(type, id, {autoTab=null, forceSelect=false}={}) {
+  console.log('select() called - type:', type, 'id:', id, 'forceSelect:', forceSelect, 'current state.selected:', state.selected ? `${state.selected.type} ${state.selected.id}` : 'none');
+
   if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
 
   // Toggle off if already selected (unless forceSelect is true)
   if (!forceSelect && state.selected && state.selected.type===type && state.selected.id===id) {
+    console.log('Same item already selected - toggling off');
     clearSelection();
     return;
   }
 
+  console.log('Setting state.selected to:', type, id);
   state.selected = {type, id};
   state.preview = null;
   if (autoTab) setTab(autoTab);
@@ -1817,6 +1821,9 @@ function setViewMode(mode) {
     btnColumn.classList.add('primary');
     btnGraph.classList.remove('primary');
 
+    console.log('Switching to column view - graph.selectedNode:', graph.selectedNode ? graph.selectedNode.id : 'none');
+    console.log('Current state.selected:', state.selected ? `${state.selected.type} ${state.selected.id}` : 'none');
+
     // Sync graph selection to column when switching to column view
     if (graph.selectedNode && !isSyncing) {
       const node = graph.selectedNode;
@@ -1824,7 +1831,7 @@ function setViewMode(mode) {
       if (type === 'group') type = 'challengeGroup';
       if (type === 'challenge') type = 'subChallenge';
 
-      console.log('Switching to column view - syncing node:', type, node.entityId);
+      console.log('Switching to column view - syncing node type:', type, 'id:', node.entityId);
       isSyncing = true;
       try {
         // Use forceSelect to prevent toggling off if already selected
@@ -1833,6 +1840,8 @@ function setViewMode(mode) {
         isSyncing = false;
         console.log('Column view sync complete - isSyncing reset to FALSE');
       }
+    } else {
+      console.log('No graph node to sync OR isSyncing is true');
     }
   }
 }
@@ -2828,17 +2837,26 @@ function syncGraphToColumnView(node) {
     let type = node.type;
     let id = node.entityId;
 
+    console.log('syncGraphToColumnView - mapping type:', type, 'id:', id);
+
     // Update column view selection
     if (type === 'group') {
-      select('challengeGroup', id, {});
+      console.log('Calling select for challengeGroup:', id);
+      select('challengeGroup', id, {forceSelect: true});
     } else if (type === 'challenge') {
-      select('subChallenge', id, {});
+      console.log('Calling select for subChallenge:', id);
+      select('subChallenge', id, {forceSelect: true});
     } else if (type === 'initiative') {
-      select('initiative', id, {});
+      console.log('Calling select for initiative:', id);
+      select('initiative', id, {forceSelect: true});
     } else if (type === 'system') {
-      select('system', id, {});
+      console.log('Calling select for system:', id);
+      select('system', id, {forceSelect: true});
     } else if (type === 'kpi') {
-      select('kpi', id, {});
+      console.log('Calling select for kpi:', id);
+      select('kpi', id, {forceSelect: true});
+    } else {
+      console.warn('Unknown node type in syncGraphToColumnView:', type);
     }
   } finally {
     isSyncing = false;
