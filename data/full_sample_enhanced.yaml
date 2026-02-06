@@ -1,6 +1,6 @@
 meta:
   title: 'Navigate the case live: click any item to jump across'
-  version: '2.1.14'
+  version: '2.1.15'
   generated: '2026-02-06'
 challenge_groups:
 - id: C1

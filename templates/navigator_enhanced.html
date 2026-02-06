@@ -1817,8 +1817,15 @@ function setViewMode(mode) {
     btnColumn.classList.remove('primary');
     btnGraph.classList.add('primary');
 
+    console.log('=== SWITCHING TO GRAPH VIEW ===');
+    console.log('state.selected:', state.selected);
+    console.log('state.preview:', state.preview);
+    console.log('graph.canvas exists:', !!graph.canvas);
+    console.log('graph.selectedNode:', graph.selectedNode ? graph.selectedNode.id : 'none');
+
     // Initialize graph if not already done
     if (!graph.canvas) {
+      console.log('First time - rendering graph');
       renderGraph();
     }
 
@@ -1829,9 +1836,11 @@ function setViewMode(mode) {
     if (itemToSync) {
       console.log('Switching to graph view with item:', itemToSync.type, itemToSync.id);
       setTimeout(() => {
+        console.log('About to call syncColumnToGraphView with:', itemToSync.type, itemToSync.id);
         syncColumnToGraphView(itemToSync.type, itemToSync.id);
       }, 10);
     } else {
+      console.log('No item to sync - rendering full graph');
       // No selection, just render the full graph
       renderGraph();
     }
