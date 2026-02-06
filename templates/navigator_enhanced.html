@@ -824,10 +824,11 @@ function clearSelection(){
   updateHash();
 }
 
-function select(type, id, {autoTab=null}={}) {
+function select(type, id, {autoTab=null, forceSelect=false}={}) {
   if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
 
-  if (state.selected && state.selected.type===type && state.selected.id===id) {
+  // Toggle off if already selected (unless forceSelect is true)
+  if (!forceSelect && state.selected && state.selected.type===type && state.selected.id===id) {
     clearSelection();
     return;
   }
@@ -1826,7 +1827,8 @@ function setViewMode(mode) {
       console.log('Switching to column view - syncing node:', type, node.entityId);
       isSyncing = true;
       try {
-        select(type, node.entityId, {});
+        // Use forceSelect to prevent toggling off if already selected
+        select(type, node.entityId, {forceSelect: true});
       } finally {
         isSyncing = false;
         console.log('Column view sync complete - isSyncing reset to FALSE');
