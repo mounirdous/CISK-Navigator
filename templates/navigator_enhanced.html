@@ -448,7 +448,7 @@
         <div class="row" style="justify-content:space-between;">
           <div>
             <div class="h1">🕸️ Graph View - CISK Flow Visualization</div>
-            <div class="h2">Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs</div>
+            <div class="h2" id="graphSubtitle">Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs</div>
           </div>
           <div class="row" style="gap:8px;">
             <button class="btn small" id="graphBackBtn" onclick="graphGoBack()" style="display:none;">← Back</button>
@@ -1402,6 +1402,23 @@ function setInitSeason(season) {
   renderSystemList();
   renderKpiList();
   renderFocusedDetail();
+
+  // Update graph view if it's active
+  if (state.viewMode === 'graph' && graph.canvas) {
+    // Clear selection when season changes
+    graph.selectedNode = null;
+    graph.filteredNodes = null;
+    graph.filteredLinks = null;
+    graph.history = [];
+
+    // Rebuild and redraw graph
+    const { nodes, links } = buildGraphData();
+    graph.nodes = nodes;
+    graph.links = links;
+    layoutGraph();
+    drawGraph();
+    updateGraphUI();
+  }
 }
 
 function renderInitiativeList() {
@@ -1851,9 +1868,16 @@ function buildGraphData() {
     }
   });
 
-  // Create nodes for initiatives
+  // Create nodes for initiatives (with season filtering)
   const initiativeNodes = {};
-  DATA.initiatives.forEach(init => {
+  let filteredInitiatives = DATA.initiatives;
+
+  // Apply season filter
+  if (state.initSeason !== "ALL") {
+    filteredInitiatives = DATA.initiatives.filter(i => i.season === state.initSeason);
+  }
+
+  filteredInitiatives.forEach(init => {
     const node = {
       id: `initiative-${init.id}`,
       entityId: init.id,
@@ -1953,6 +1977,52 @@ function buildGraphData() {
       });
     }
   });
+
+  // If season filter is active, only include nodes that are connected
+  if (state.initSeason !== "ALL") {
+    const connectedNodeIds = new Set();
+
+    // Add all initiative nodes
+    Object.values(initiativeNodes).forEach(node => {
+      connectedNodeIds.add(node.id);
+    });
+
+    // Add connected challenges and groups
+    links.forEach(link => {
+      if (link.type === 'challenge-initiative') {
+        connectedNodeIds.add(link.source.id);
+        // Add parent group
+        const challengeNode = link.source;
+        links.forEach(groupLink => {
+          if (groupLink.type === 'group-challenge' && groupLink.target.id === challengeNode.id) {
+            connectedNodeIds.add(groupLink.source.id);
+          }
+        });
+      }
+    });
+
+    // Add connected systems
+    links.forEach(link => {
+      if (link.type === 'initiative-system') {
+        connectedNodeIds.add(link.target.id);
+      }
+    });
+
+    // Add connected KPIs
+    links.forEach(link => {
+      if (link.type === 'system-kpi' && connectedNodeIds.has(link.source.id)) {
+        connectedNodeIds.add(link.target.id);
+      }
+    });
+
+    // Filter nodes to only include connected ones
+    const filteredNodes = nodes.filter(node => connectedNodeIds.has(node.id));
+    const filteredLinks = links.filter(link =>
+      connectedNodeIds.has(link.source.id) && connectedNodeIds.has(link.target.id)
+    );
+
+    return { nodes: filteredNodes, links: filteredLinks };
+  }
 
   return { nodes, links };
 }
@@ -2559,6 +2629,7 @@ function updateGraphUI() {
   // Update back button visibility and selection info
   const backBtn = byId('graphBackBtn');
   const selectionInfo = byId('graphSelectionInfo');
+  const subtitle = byId('graphSubtitle');
 
   if (backBtn) {
     if (graph.history.length > 0 || graph.selectedNode) {
@@ -2576,6 +2647,16 @@ function updateGraphUI() {
       selectionInfo.style.display = 'block';
     } else {
       selectionInfo.style.display = 'none';
+    }
+  }
+
+  // Update subtitle to show season filter
+  if (subtitle) {
+    const baseText = "Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs";
+    if (state.initSeason !== "ALL") {
+      subtitle.textContent = `${baseText} • Filtered by ${state.initSeason}`;
+    } else {
+      subtitle.textContent = baseText;
     }
   }
 }
