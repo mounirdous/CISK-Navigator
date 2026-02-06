@@ -2333,8 +2333,10 @@ function setupGraphInteractions() {
   let isDragging = false;
   let dragStart = { x: 0, y: 0 };
   let clickStart = { x: 0, y: 0, time: 0 };
+  let nodeClickHandled = false; // Flag to prevent double handling
 
   canvas.addEventListener('mousedown', (e) => {
+    nodeClickHandled = false; // Reset on each mousedown
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
     const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
@@ -2390,9 +2392,10 @@ function setupGraphInteractions() {
       const node = findNodeAt(x, y);
 
       if (node) {
+        nodeClickHandled = true; // Mark that we're handling a node click
         selectGraphNode(node);
-      } else {
-        // Clicked empty space - clear selection
+      } else if (!nodeClickHandled) {
+        // Clicked empty space - clear selection (only if not already handled)
         clearGraphSelection();
       }
     }
@@ -2441,14 +2444,27 @@ function findNodeAt(x, y) {
 }
 
 function selectGraphNode(node) {
+  console.log('=== selectGraphNode called ===');
+  console.log('node:', node);
+  console.log('node.id:', node.id);
+  console.log('node.type:', node.type);
+  console.log('node.entityId:', node.entityId);
+  console.log('graph.selectedNode:', graph.selectedNode);
+
+  // Set flag to prevent clearGraphSelection from running immediately after
+  graph.nodeSelectionInProgress = true;
+
   if (graph.selectedNode && graph.selectedNode.id === node.id) {
     // Clicking same node - deselect
+    console.log('Same node clicked - calling clearGraphSelection');
+    graph.nodeSelectionInProgress = false;
     clearGraphSelection();
     return;
   }
 
   // Save current state to history before changing
   if (graph.selectedNode || graph.filteredNodes) {
+    console.log('Saving history');
     graph.history.push({
       selectedNode: graph.selectedNode,
       filteredNodes: graph.filteredNodes ? new Set(graph.filteredNodes) : null,
@@ -2456,238 +2472,38 @@ function selectGraphNode(node) {
     });
   }
 
-  graph.selectedNode = node;
+  // Map graph node type to column view type
+  let type = node.type;
+  let id = node.entityId;
 
-  // Build set of related nodes
-  const relatedNodes = new Set();
-  const relatedLinks = new Set();
+  if (type === 'group') type = 'challengeGroup';
+  else if (type === 'challenge') type = 'subChallenge';
 
-  relatedNodes.add(node.id);
+  console.log('selectGraphNode - calling syncColumnToGraphView with type:', type, 'id:', id);
 
-  // Find all nodes connected to this node
-  graph.links.forEach(link => {
-    if (link.source.id === node.id) {
-      relatedNodes.add(link.target.id);
-      relatedLinks.add(link);
-    } else if (link.target.id === node.id) {
-      relatedNodes.add(link.source.id);
-      relatedLinks.add(link);
-    }
-  });
+  // Use the exact same filtering logic as when clicking in column view
+  // This ensures consistent behavior between column and graph view clicks
+  syncColumnToGraphView(type, id);
 
-  // For challenge groups, include all sub-challenges and their downstream
-  if (node.type === 'group') {
-    // Find all sub-challenges in this group
-    const subChallenges = new Set();
-    graph.links.forEach(link => {
-      if (link.source.id === node.id && link.type === 'group-challenge') {
-        subChallenges.add(link.target.id);
-      }
-    });
+  console.log('=== selectGraphNode done ===');
 
-    // Find initiatives linked to these sub-challenges
-    const initiativeNodes = new Set();
-    graph.links.forEach(link => {
-      if (subChallenges.has(link.source.id) && link.type === 'challenge-initiative') {
-        initiativeNodes.add(link.target.id);
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find systems linked to those initiatives
-    const systemNodes = new Set();
-    graph.links.forEach(link => {
-      if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
-        systemNodes.add(link.target.id);
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find KPIs linked to those systems
-    graph.links.forEach(link => {
-      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-  }
-
-  // For sub-challenges, include parent group and everything downstream
-  if (node.type === 'challenge') {
-    // Add parent group
-    graph.links.forEach(link => {
-      if (link.target.id === node.id && link.type === 'group-challenge') {
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find initiatives linked to this challenge
-    const initiativeNodes = new Set();
-    graph.links.forEach(link => {
-      if (link.source.id === node.id && link.type === 'challenge-initiative') {
-        initiativeNodes.add(link.target.id);
-      }
-    });
-
-    // Find systems linked to those initiatives
-    const systemNodes = new Set();
-    graph.links.forEach(link => {
-      if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
-        systemNodes.add(link.target.id);
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find KPIs linked to those systems
-    graph.links.forEach(link => {
-      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-  }
-
-  // For initiatives, include full chain: challenges → groups AND systems → KPIs
-  if (node.type === 'initiative') {
-    // Find challenges this initiative addresses (upstream)
-    const challengeNodes = new Set();
-    graph.links.forEach(link => {
-      if (link.target.id === node.id && link.type === 'challenge-initiative') {
-        challengeNodes.add(link.source.id);
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find groups from those challenges
-    graph.links.forEach(link => {
-      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find systems using this initiative (downstream)
-    const systemNodes = new Set();
-    graph.links.forEach(link => {
-      if (link.source.id === node.id && link.type === 'initiative-system') {
-        systemNodes.add(link.target.id);
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find KPIs linked to those systems
-    graph.links.forEach(link => {
-      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-  }
-
-  // For systems, include full chain: initiatives → challenges → groups AND KPIs
-  if (node.type === 'system') {
-    // Find initiatives using this system (upstream)
-    const initiativeNodes = new Set();
-    graph.links.forEach(link => {
-      if (link.target.id === node.id && link.type === 'initiative-system') {
-        initiativeNodes.add(link.source.id);
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find challenges from those initiatives
-    const challengeNodes = new Set();
-    graph.links.forEach(link => {
-      if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
-        challengeNodes.add(link.source.id);
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find groups from those challenges
-    graph.links.forEach(link => {
-      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find KPIs measuring this system (downstream)
-    graph.links.forEach(link => {
-      if (link.source.id === node.id && link.type === 'system-kpi') {
-        relatedNodes.add(link.target.id);
-        relatedLinks.add(link);
-      }
-    });
-  }
-
-  // For KPIs, trace back through the full chain to groups
-  if (node.type === 'kpi') {
-    // Find systems measuring this KPI (upstream)
-    const systemNodes = new Set();
-    graph.links.forEach(link => {
-      if (link.target.id === node.id && link.type === 'system-kpi') {
-        systemNodes.add(link.source.id);
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find initiatives using those systems
-    const initiativeNodes = new Set();
-    graph.links.forEach(link => {
-      if (systemNodes.has(link.target.id) && link.type === 'initiative-system') {
-        initiativeNodes.add(link.source.id);
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find challenges from those initiatives
-    const challengeNodes = new Set();
-    graph.links.forEach(link => {
-      if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
-        challengeNodes.add(link.source.id);
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-
-    // Find groups from those challenges
-    graph.links.forEach(link => {
-      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
-        relatedNodes.add(link.source.id);
-        relatedLinks.add(link);
-      }
-    });
-  }
-
-  graph.filteredNodes = relatedNodes;
-  graph.filteredLinks = relatedLinks;
-
-  layoutGraph();
-  drawGraph();
-  updateGraphUI();
-
-  // Sync with column view - clicking in graph should update column selection
-  console.log('Graph node selected - syncing to column view');
-  syncGraphToColumnView(node);
-
-  // Automatically fit to view after selecting a node
+  // Clear the flag after a short delay to allow any pending events to complete
   setTimeout(() => {
-    graphFitToView();
-  }, 50);
+    graph.nodeSelectionInProgress = false;
+  }, 100);
 }
 
 function clearGraphSelection() {
+  console.log('=== clearGraphSelection called ===');
+  console.log('graph.nodeSelectionInProgress:', graph.nodeSelectionInProgress);
+  console.trace('Stack trace:');
+
+  // Don't clear if a node selection is currently in progress
+  if (graph.nodeSelectionInProgress) {
+    console.log('Ignoring clearGraphSelection - node selection in progress');
+    return;
+  }
+
   // Don't add to history when clearing
   graph.selectedNode = null;
   graph.filteredNodes = null;
@@ -2910,13 +2726,19 @@ function syncColumnToGraphView(type, id) {
 
   try {
     console.log('syncColumnToGraphView called with:', type, id);
+    console.log('typeof type:', typeof type);
+    console.log('type.length:', type.length);
+    console.log('type === "initiative":', type === 'initiative');
 
     // Map column view type to graph node type
     let nodeType = type;
+    console.log('After assignment, nodeType:', nodeType);
     if (type === 'challengeGroup') nodeType = 'group';
+    console.log('After challengeGroup check, nodeType:', nodeType);
     if (type === 'subChallenge') nodeType = 'challenge';
+    console.log('After subChallenge check, nodeType:', nodeType);
 
-    console.log('Mapped to nodeType:', nodeType);
+    console.log('Final mapped nodeType:', nodeType);
 
     // Rebuild graph data temporarily ignoring season filter to ensure node exists
     // (Column view selections should always be visible in graph)
@@ -2962,6 +2784,8 @@ function syncColumnToGraphView(type, id) {
         graph.links.forEach(link => {
           if (link.source.id === node.id && link.type === 'group-challenge') {
             subChallenges.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
           }
         });
 
@@ -3001,6 +2825,8 @@ function syncColumnToGraphView(type, id) {
         graph.links.forEach(link => {
           if (link.source.id === node.id && link.type === 'challenge-initiative') {
             initiativeNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
           }
         });
 
