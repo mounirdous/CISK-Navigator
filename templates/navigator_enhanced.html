@@ -1821,29 +1821,10 @@ function setViewMode(mode) {
     btnColumn.classList.add('primary');
     btnGraph.classList.remove('primary');
 
-    console.log('Switching to column view - graph.selectedNode:', graph.selectedNode ? graph.selectedNode.id : 'none');
+    console.log('Switching to column view - keeping column state unchanged');
     console.log('Current state.selected:', state.selected ? `${state.selected.type} ${state.selected.id}` : 'none');
 
-    // Sync graph selection to column when switching to column view
-    if (graph.selectedNode && !isSyncing) {
-      const node = graph.selectedNode;
-      let type = node.type;
-      if (type === 'group') type = 'challengeGroup';
-      if (type === 'challenge') type = 'subChallenge';
-
-      console.log('Switching to column view - syncing node type:', type, 'id:', node.entityId);
-      isSyncing = true;
-      try {
-        // Use forceSelect to prevent toggling off if already selected
-        // Don't use autoTab - keep the user on their current tab
-        select(type, node.entityId, {forceSelect: true});
-      } finally {
-        isSyncing = false;
-        console.log('Column view sync complete - isSyncing reset to FALSE');
-      }
-    } else {
-      console.log('No graph node to sync OR isSyncing is true');
-    }
+    // DON'T sync from graph back to column - keep column view exactly as user left it
   }
 }
 
@@ -2649,8 +2630,8 @@ function selectGraphNode(node) {
   drawGraph();
   updateGraphUI();
 
-  // Sync with column view selection
-  syncGraphToColumnView(node);
+  // DON'T sync with column view - keep views independent
+  console.log('Graph node selected - column view unchanged');
 
   // Automatically fit to view after selecting a node
   setTimeout(() => {
@@ -2668,10 +2649,8 @@ function clearGraphSelection() {
   drawGraph();
   updateGraphUI();
 
-  // Clear column view selection too
-  if (!isSyncing) {
-    clearSelection();
-  }
+  // DON'T clear column view selection - keep column and graph views independent
+  console.log('Graph selection cleared - column view selection preserved');
 }
 
 function graphGoBack() {
@@ -2691,12 +2670,8 @@ function graphGoBack() {
   drawGraph();
   updateGraphUI();
 
-  // Sync with column view
-  if (graph.selectedNode) {
-    syncGraphToColumnView(graph.selectedNode);
-  } else if (!isSyncing) {
-    clearSelection();
-  }
+  // DON'T sync with column view - keep views independent
+  console.log('Graph back navigation - column view unchanged');
 
   // Automatically fit to view after going back
   setTimeout(() => {
