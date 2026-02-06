@@ -1835,7 +1835,14 @@ function setViewMode(mode) {
       isSyncing = true;
       try {
         // Use forceSelect to prevent toggling off if already selected
-        select(type, node.entityId, {forceSelect: true});
+        // Also use autoTab to switch to the correct tab so the item is visible
+        const autoTab = type === 'challengeGroup' || type === 'subChallenge' ? 'challenges' :
+                        type === 'initiative' ? 'initiatives' :
+                        type === 'system' ? 'systems' :
+                        type === 'kpi' ? 'kpis' : null;
+
+        console.log('Syncing to column with autoTab:', autoTab);
+        select(type, node.entityId, {forceSelect: true, autoTab: autoTab});
       } finally {
         isSyncing = false;
         console.log('Column view sync complete - isSyncing reset to FALSE');
