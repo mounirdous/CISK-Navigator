@@ -12,6 +12,9 @@ from typing import Dict, List
 
 app = Flask(__name__)
 
+# App version - displayed in generated HTML files
+APP_VERSION = "2.1.16"
+
 
 def load_yaml_data(file_path: str) -> Dict:
     """Load and parse the YAML input file"""
@@ -231,13 +234,12 @@ def index():
         js_data = auto_detect_format(yaml_data)
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        version = yaml_data.get("meta", {}).get("version", "2.0")
 
         return render_template(
             'navigator_enhanced.html',
             data=js_data,
             title=title,
-            version=version
+            version=APP_VERSION
         )
     except Exception as e:
         return f"Error loading data: {str(e)}", 500
@@ -265,13 +267,12 @@ def upload():
         js_data = auto_detect_format(yaml_data)
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        version = yaml_data.get("meta", {}).get("version", "2.0")
 
         return render_template(
             'navigator_enhanced.html',
             data=js_data,
             title=title,
-            version=version
+            version=APP_VERSION
         )
     except Exception as e:
         return jsonify({"error": f"Error parsing file: {str(e)}"}), 500
@@ -309,13 +310,12 @@ def generate_standalone():
         js_data = auto_detect_format(yaml_data)
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        version = yaml_data.get("meta", {}).get("version", "2.0")
 
         html_content = render_template(
             'navigator_enhanced.html',
             data=js_data,
             title=title,
-            version=version
+            version=APP_VERSION
         )
 
         response = make_response(html_content)
