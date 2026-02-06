@@ -13,7 +13,7 @@ from typing import Dict, List
 app = Flask(__name__)
 
 # App version - displayed in generated HTML files
-APP_VERSION = "2.1.17"
+APP_VERSION = "2.1.18"
 
 
 def load_yaml_data(file_path: str) -> Dict:
@@ -268,11 +268,21 @@ def upload():
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
 
+        # Calculate statistics from uploaded data
+        stats = {
+            'groups': len(js_data.get('challengeGroups', [])),
+            'challenges': len(js_data.get('subChallenges', [])),
+            'initiatives': len(js_data.get('initiatives', [])),
+            'systems': len(js_data.get('systems', [])),
+            'kpis': len(js_data.get('kpis', []))
+        }
+
         return render_template(
             'navigator_enhanced.html',
             data=js_data,
             title=title,
-            version=APP_VERSION
+            version=APP_VERSION,
+            upload_stats=stats
         )
     except Exception as e:
         return jsonify({"error": f"Error parsing file: {str(e)}"}), 500
