@@ -249,7 +249,7 @@ def index():
 def upload():
     """Show upload form or process uploaded YAML file"""
     if request.method == 'GET':
-        return render_template('upload.html')
+        return render_template('upload.html', version=APP_VERSION)
 
     if 'file' not in request.files:
         return jsonify({"error": "No file provided"}), 400
