@@ -1823,9 +1823,14 @@ function setViewMode(mode) {
       if (type === 'group') type = 'challengeGroup';
       if (type === 'challenge') type = 'subChallenge';
 
+      console.log('Switching to column view - syncing node:', type, node.entityId);
       isSyncing = true;
-      select(type, node.entityId, {});
-      isSyncing = false;
+      try {
+        select(type, node.entityId, {});
+      } finally {
+        isSyncing = false;
+        console.log('Column view sync complete - isSyncing reset to FALSE');
+      }
     }
   }
 }
@@ -2839,11 +2844,20 @@ function syncGraphToColumnView(node) {
 }
 
 function syncColumnToGraphView(type, id) {
-  if (isSyncing || !graph.canvas) {
-    console.log('syncColumnToGraphView skipped - isSyncing:', isSyncing, 'canvas:', !!graph.canvas);
+  console.log('syncColumnToGraphView - isSyncing before:', isSyncing, 'canvas:', !!graph.canvas);
+
+  if (isSyncing) {
+    console.warn('Sync blocked by isSyncing flag - forcing reset');
+    isSyncing = false; // Force reset if stuck
+  }
+
+  if (!graph.canvas) {
+    console.log('syncColumnToGraphView skipped - no canvas');
     return;
   }
+
   isSyncing = true;
+  console.log('syncColumnToGraphView - isSyncing set to TRUE');
 
   try {
     console.log('syncColumnToGraphView called with:', type, id);
@@ -3071,6 +3085,7 @@ function syncColumnToGraphView(type, id) {
       console.log('Node not found in graph:', nodeType, id);
     }
   } finally {
+    console.log('syncColumnToGraphView - resetting isSyncing to FALSE');
     isSyncing = false;
   }
 }
