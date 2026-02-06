@@ -845,6 +845,7 @@ function select(type, id, {autoTab=null}={}) {
 
   // Sync with graph view if it's currently active
   if (state.viewMode === 'graph') {
+    console.log('Select called with:', type, id, 'viewMode:', state.viewMode);
     syncColumnToGraphView(type, id);
   }
 }
@@ -2633,6 +2634,11 @@ function selectGraphNode(node) {
 
   // Sync with column view selection
   syncGraphToColumnView(node);
+
+  // Automatically fit to view after selecting a node
+  setTimeout(() => {
+    graphFitToView();
+  }, 50);
 }
 
 function clearGraphSelection() {
@@ -2674,6 +2680,11 @@ function graphGoBack() {
   } else if (!isSyncing) {
     clearSelection();
   }
+
+  // Automatically fit to view after going back
+  setTimeout(() => {
+    graphFitToView();
+  }, 50);
 }
 
 function updateGraphUI() {
@@ -3042,6 +3053,13 @@ function syncColumnToGraphView(type, id) {
       layoutGraph();
       drawGraph();
       updateGraphUI();
+
+      // Automatically fit to view after syncing
+      setTimeout(() => {
+        graphFitToView();
+      }, 50);
+    } else {
+      console.log('Node not found in graph:', nodeType, id);
     }
   } finally {
     isSyncing = false;
