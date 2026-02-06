@@ -2677,8 +2677,9 @@ function selectGraphNode(node) {
   drawGraph();
   updateGraphUI();
 
-  // DON'T sync with column view - keep views independent
-  console.log('Graph node selected - column view unchanged');
+  // Sync with column view - clicking in graph should update column selection
+  console.log('Graph node selected - syncing to column view');
+  syncGraphToColumnView(node);
 
   // Automatically fit to view after selecting a node
   setTimeout(() => {
@@ -2717,8 +2718,13 @@ function graphGoBack() {
   drawGraph();
   updateGraphUI();
 
-  // DON'T sync with column view - keep views independent
-  console.log('Graph back navigation - column view unchanged');
+  // Sync with column view if there's a selected node after going back
+  if (graph.selectedNode) {
+    console.log('Graph back navigation - syncing to column view');
+    syncGraphToColumnView(graph.selectedNode);
+  } else {
+    console.log('Graph back navigation - no node selected');
+  }
 
   // Automatically fit to view after going back
   setTimeout(() => {
