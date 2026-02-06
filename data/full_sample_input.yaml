@@ -1,0 +1,734 @@
+# CISK Navigator - Complete Sample Data
+# Based on the original MCase navigator
+
+meta:
+  title: "Navigate the case live: click any item to jump across"
+  version: "1.7"
+  generated: "2026-02-06"
+
+# ==========================================
+# CHALLENGE GROUPS (6 main categories)
+# ==========================================
+challenge_groups:
+  - id: C1
+    number: 1
+    title: "Digital Transformation"
+
+  - id: C2
+    number: 2
+    title: "Digital Architecture & Principles"
+
+  - id: C3
+    number: 3
+    title: "ERP Consolidation Strategy"
+
+  - id: C4
+    number: 4
+    title: "Operating Model & Governance"
+
+  - id: C5
+    number: 5
+    title: "Security & Compliance"
+
+  - id: C6
+    number: 6
+    title: "Risk & Mitigation"
+
+# ==========================================
+# SUB-CHALLENGES (36 specific problems)
+# ==========================================
+sub_challenges:
+  # C1 - Digital Transformation
+  - id: C1.SC1
+    group_id: C1
+    text: "Lead-time too long/variable across Order→Engineering→Supply→Build"
+
+  - id: C1.SC2
+    group_id: C1
+    text: "On-time delivery gaps; late surprises drive expediting & firefighting"
+
+  - id: C1.SC3
+    group_id: C1
+    text: "Inventory/WIP buffers due to limited visibility & planning discipline"
+
+  - id: C1.SC4
+    group_id: C1
+    text: "Cost transparency gaps (standard cost, variances, margin leakage)"
+
+  - id: C1.SC5
+    group_id: C1
+    text: "Digital services not yet packaged/scaled (remote support, predictive)"
+
+  - id: C1.SC6
+    group_id: C1
+    text: "Customer experience fragmented (3 CRMs); limited pipeline & service visibility; inconsistent customer master"
+
+  # C2 - Digital Architecture & Principles
+  - id: C2.SC1
+    group_id: C2
+    text: "Fragmented landscape (multiple ERP/CRM instances; local solutions)"
+
+  - id: C2.SC2
+    group_id: C2
+    text: "Point‑to‑point integrations create fragility and high change cost"
+
+  - id: C2.SC3
+    group_id: C2
+    text: "No single trusted data layer for plant-to-board decisions"
+
+  - id: C2.SC4
+    group_id: C2
+    text: "OT/IT + IIoT constraints: segmented shop‑floor, sensor connectivity, uptime, safety, vendor access"
+
+  - id: C2.SC5
+    group_id: C2
+    text: "Cloud + connectivity heterogeneity (incl. Wi‑Fi/5G); resilience & DR not uniform"
+
+  - id: C2.SC6
+    group_id: C2
+    text: "Digital services scale needs secure connectivity + reusable patterns"
+
+  # C3 - ERP Consolidation Strategy
+  - id: C3.SC1
+    group_id: C3
+    text: "Multiple ERP cores (3 SAP instances) + local CN system + process variants → duplication & friction"
+
+  - id: C3.SC2
+    group_id: C3
+    text: "Master data inconsistent (materials, BOMs, routings, supplier/customer) across divisions"
+
+  - id: C3.SC3
+    group_id: C3
+    text: "Excel workarounds for planning, costing, reporting → slow decisions and errors"
+
+  - id: C3.SC4
+    group_id: C3
+    text: "Limited end‑to‑end traceability across PLM ↔ shop‑floor ↔ quality ↔ service"
+
+  - id: C3.SC5
+    group_id: C3
+    text: "Cost transparency gaps (cost-to-serve, inventory accuracy, margin leakage)"
+
+  - id: C3.SC6
+    group_id: C3
+    text: "SAP program already in motion (partner likely selected) → need a health-check, not a restart"
+
+  # C4 - Operating Model & Governance
+  - id: C4.SC1
+    group_id: C4
+    text: "IT perceived as reactive; unclear ownership → slow delivery and 'firefighting'"
+
+  - id: C4.SC2
+    group_id: C4
+    text: "Decentralised divisions; low trust in group standards → resistance to harmonisation"
+
+  - id: C4.SC3
+    group_id: C4
+    text: "Portfolio noise: no single intake/waterline → too many priorities at once"
+
+  - id: C4.SC4
+    group_id: C4
+    text: "Change capacity constraints; training/adoption often under-funded"
+
+  - id: C4.SC5
+    group_id: C4
+    text: "High cost-to-serve + licence/tool sprawl; sourcing/nearshoring not fully optimised"
+
+  - id: C4.SC6
+    group_id: C4
+    text: "Business/IT misalignment: requirements and outcomes not co‑owned end‑to‑end"
+
+  # C5 - Security & Compliance
+  - id: C5.SC1
+    group_id: C5
+    text: "Expanded attack surface (cloud, remote access, supplier connections, IoT)"
+
+  - id: C5.SC2
+    group_id: C5
+    text: "OT constraints + legacy devices → segmentation and patching are hard"
+
+  - id: C5.SC3
+    group_id: C5
+    text: "Identity & privileged access sprawl; inconsistent access governance"
+
+  - id: C5.SC4
+    group_id: C5
+    text: "Limited detection/response maturity (logging, SOC, incident routines)"
+
+  - id: C5.SC5
+    group_id: C5
+    text: "Audit/compliance pressure (customers, GDPR/ISO, evidence needed at any time)"
+
+  - id: C5.SC6
+    group_id: C5
+    text: "Third‑party risk (partners, integrators) + SAP programme security gates"
+
+  # C6 - Risk & Mitigation
+  - id: C6.SC1
+    group_id: C6
+    text: "If divisions resist standardisation, benefits won't land (Excel/workarounds persist)"
+
+  - id: C6.SC2
+    group_id: C6
+    text: "If data quality is weak, planning and inventory KPIs won't move"
+
+  - id: C6.SC3
+    group_id: C6
+    text: "If we disrupt plants during cutovers, trust is lost and programme stalls"
+
+  - id: C6.SC4
+    group_id: C6
+    text: "If scope/customisation grows, costs and timelines explode (clean core violated)"
+
+  - id: C6.SC5
+    group_id: C6
+    text: "If vendors/partners under‑deliver, knowledge and control erode"
+
+  - id: C6.SC6
+    group_id: C6
+    text: "If security/OT constraints are ignored, risk increases during transformation"
+
+# ==========================================
+# INITIATIVES (41 solutions across seasons)
+# ==========================================
+initiatives:
+  # C1 - Digital Transformation
+  - id: C1.I1
+    group_id: C1
+    season: S1
+    text: "Value streams & standard E2E processes (P2P, ETO, Service) + CRM blueprint (3→1)"
+
+  - id: C1.I2
+    group_id: C1
+    season: S1
+    text: "Planning discipline & control‑tower routines (S&OP/MRP, exception mgmt)"
+
+  - id: C1.I3
+    group_id: C1
+    season: S2
+    text: "Shop‑floor visibility on critical lines (WIP, bottlenecks, digital WI)"
+
+  - id: C1.I4
+    group_id: C1
+    season: S2
+    text: "Closed‑loop quality & traceability (NC/CAPA, root‑cause analytics)"
+
+  - id: C1.I5
+    group_id: C1
+    season: S2
+    text: "Productise digital services (offers, pricing, portal; adoption KPIs)"
+
+  - id: C1.I6
+    group_id: C1
+    season: S3
+    text: "Board targets achieved: CRM consolidated, services scaled, ROAI analytics/AI"
+
+  # C2 - Digital Architecture & Principles
+  - id: C2.I1
+    group_id: C2
+    season: S1
+    text: "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"
+
+  - id: C2.I2
+    group_id: C2
+    season: S1
+    text: "Integration standards + platform selection (API/events, iPaaS)"
+
+  - id: C2.I3
+    group_id: C2
+    season: S1
+    text: "Data governance + KPI semantic layer v1 (plant‑to‑board)"
+
+  - id: C2.I4
+    group_id: C2
+    season: S2
+    text: "Implement iPaaS/API; retire top point‑to‑point interfaces"
+
+  - id: C2.I5
+    group_id: C2
+    season: S2
+    text: "Enterprise data platform + historian/time‑series (ERP/CRM/MES/PLM priority domains)"
+
+  - id: C2.I6
+    group_id: C2
+    season: S2
+    text: "Standard infra + OT connectivity baseline (hybrid cloud, LAN/Wi‑Fi/5G, shop‑floor zones, DR)"
+
+  - id: C2.I7
+    group_id: C2
+    season: S3
+    text: "End‑to‑end digital thread + cross‑site KPI model (PLM↔ERP↔MES↔service)"
+
+  # C3 - ERP Consolidation Strategy
+  - id: C3.I1
+    group_id: C3
+    season: S1
+    text: "One S/4HANA template; clean core; explicit exceptions (incl. CN path)"
+
+  - id: C3.I2
+    group_id: C3
+    season: S1
+    text: "Master data ownership + quality rules (harmonised)"
+
+  - id: C3.I3
+    group_id: C3
+    season: S1
+    text: "Standard core processes (O2C, P2P, Plan‑to‑Produce, ETO)"
+
+  - id: C3.I4
+    group_id: C3
+    season: S2
+    text: "S/4 pilot live + Finance value gate; first rollout waves launched"
+
+  - id: C3.I5
+    group_id: C3
+    season: S1
+    text: "Plant‑to‑board KPI layer (cost, inventory, delivery, quality)"
+
+  - id: C3.I6
+    group_id: C3
+    season: S3
+    text: "Complete waves + retire legacy; standard processes embedded"
+
+  # C4 - Operating Model & Governance
+  - id: C4.I1
+    group_id: C4
+    season: S1
+    text: "Co‑owned Business/IT operating model (service + product/value partner)"
+
+  - id: C4.I2
+    group_id: C4
+    season: S1
+    text: "Decision rights + portfolio waterline (priorities/funding/outcome owner; stop/pivot)"
+
+  - id: C4.I3
+    group_id: C4
+    season: S1
+    text: "Finance‑auditable value governance (benefits tracker + quarterly value gates)"
+
+  - id: C4.I4
+    group_id: C4
+    season: S1
+    text: "Culture shift + adoption model (service → product/value; measurable uptake)"
+
+  - id: C4.I5
+    group_id: C4
+    season: S2
+    text: "Right sourcing (outsource commodity ops; retain Competency Center)"
+
+  - id: C4.I6
+    group_id: C4
+    season: S3
+    text: "Continuous improvement cadence (process mining / automation where justified)"
+
+  # C5 - Security & Compliance
+  - id: C5.I1
+    group_id: C5
+    season: S1
+    text: "Risk‑based security roadmap (crown jewels, threats, prioritised controls)"
+
+  - id: C5.I2
+    group_id: C5
+    season: S1
+    text: "Identity baseline incl. MFA + least privilege + JML + PAM"
+
+  - id: C5.I3
+    group_id: C5
+    season: S1
+    text: "OT security baseline (segmentation, secure remote access, vuln routine)"
+
+  - id: C5.I4
+    group_id: C5
+    season: S2
+    text: "Detection & response (central logging → SIEM/SOC; playbooks)"
+
+  - id: C5.I5
+    group_id: C5
+    season: S3
+    text: "Resilience & audit readiness embedded (DR tests; OT patch/vuln cadence)"
+
+  - id: C5.I6
+    group_id: C5
+    season: S1
+    text: "Security culture + vendor risk + audit drills"
+
+  # C6 - Risk & Mitigation
+  - id: C6.I1
+    group_id: C6
+    season: S1
+    text: "Standard vs local boundaries + exception governance"
+
+  - id: C6.I2
+    group_id: C6
+    season: S1
+    text: "Wave readiness gates + cutover/rollback playbook (plant-safe)"
+
+  - id: C6.I3
+    group_id: C6
+    season: S1
+    text: "Benefits tracker + no‑double‑count rules; value gates (blueprint→pilot→scale)"
+
+  - id: C6.I4
+    group_id: C6
+    season: S2
+    text: "Change system (super-users, training, incentives; adoption KPIs; Excel kill‑plan)"
+
+  - id: C6.I5
+    group_id: C6
+    season: S2
+    text: "Vendor governance (SLAs, demos, health‑check, exit plan)"
+
+  - id: C6.I6
+    group_id: C6
+    season: S3
+    text: "Sustain value/risk control: tech‑debt retirement; benefits realised vs plan"
+
+# ==========================================
+# SYSTEMS (24 technical enablers)
+# ==========================================
+systems:
+  # C1 - Digital Transformation
+  - id: C1.S1
+    group_id: C1
+    text: "Core ERP (SAP S/4HANA as system of record)"
+
+  - id: C1.S2
+    group_id: C1
+    text: "Planning cockpit (MRP exceptions / APS where needed)"
+
+  - id: C1.S3
+    group_id: C1
+    text: "MES / Quality execution (critical lines; traceability)"
+
+  - id: C1.S4
+    group_id: C1
+    text: "PLM + Engineering change control (ECR/ECO) integrated"
+
+  - id: C1.S5
+    group_id: C1
+    text: "Enterprise data platform + KPI layer (BI, analytics, AI-ready)"
+
+  - id: C1.S6
+    group_id: C1
+    text: "CRM core (Salesforce 3→1) + customer portal + secure remote connectivity / IoT data capture"
+
+  # C2 - Digital Architecture & Principles (detailed format)
+  - id: C2.S1
+    group_id: C2
+    type: system
+    title: "Experience layer (CRM + customer portal + service)"
+    bullets:
+      - "CRM / sales workflows"
+      - "Customer portal"
+      - "Service experience"
+
+  - id: C2.S2
+    group_id: C2
+    type: system
+    title: "Business core (standard backbone)"
+    bullets:
+      - "Core ERP (SAP S/4HANA)"
+      - "PLM (engineering change)"
+      - "MES / Quality (shop‑floor execution)"
+
+  - id: C2.S3
+    group_id: C2
+    type: system
+    title: "Corporate applications (Finance / HR / etc.)"
+    bullets:
+      - "Finance"
+      - "HR"
+      - "Other corporate apps"
+
+  - id: C2.S4
+    group_id: C2
+    type: system
+    title: "Integration & event backbone"
+    bullets:
+      - "API / integration platform (iPaaS)"
+      - "Events / pub‑sub"
+      - "OT / edge gateways (shop‑floor connectivity)"
+
+  - id: C2.S5
+    group_id: C2
+    type: system
+    title: "Data & analytics platform"
+    bullets:
+      - "Enterprise data platform"
+      - "Historian / time‑series for OT"
+      - "KPI semantic layer"
+      - "BI / dashboards"
+
+  - id: C2.S6
+    group_id: C2
+    type: system
+    title: "Infrastructure foundation"
+    bullets:
+      - "Hybrid cloud"
+      - "Network (LAN / Wi‑Fi / 5G)"
+      - "OT zones / segmentation foundations"
+      - "Disaster recovery"
+
+  - id: C2.S7
+    group_id: C2
+    type: system
+    title: "Security & identity (applies to all layers)"
+    bullets:
+      - "Identity (MFA / access)"
+      - "Central logging / SIEM"
+      - "Zone model + monitoring"
+      - "Audit evidence"
+
+  # C3 - ERP Consolidation Strategy
+  - id: C3.S1
+    group_id: C3
+    text: "SAP S/4HANA as digital core + 'clean core' guardrails (standard first)"
+
+  - id: C3.S2
+    group_id: C3
+    text: "Master data governance & tooling (workflows, validation, ownership/RACI)"
+
+  - id: C3.S3
+    group_id: C3
+    text: "Integration platform (iPaaS/API/events) + retire point‑to‑point interfaces"
+
+  - id: C3.S4
+    group_id: C3
+    text: "MES/QMS integration on critical lines to unlock traceability & COPQ reduction"
+
+  - id: C3.S5
+    group_id: C3
+    text: "Delivery factory: testing, cutover runbooks, rehearsals, training & hypercare"
+
+  - id: C3.S6
+    group_id: C3
+    text: "Partner model + retained Competency Center (architecture, data, security, vendor governance)"
+
+  # C4 - Operating Model & Governance
+  - id: C4.S1
+    group_id: C4
+    text: "Executive governance: ExCo steering + quarterly value gates + decision log"
+
+  - id: C4.S2
+    group_id: C4
+    text: "Digital investment framework: categories, scoring, waterline, benefits tracking"
+
+  - id: C4.S3
+    group_id: C4
+    text: "Product & process ownership (ERP / Data / Security / Service) + RACI"
+
+  - id: C4.S4
+    group_id: C4
+    text: "Service operations system: ITSM + service catalogue + SLA dashboards; 'runner/repeater/stranger' support tiers"
+
+  - id: C4.S5
+    group_id: C4
+    text: "Vendor & partner governance: managed services towers, SLAs, KPI dashboards, escalation paths"
+
+  - id: C4.S6
+    group_id: C4
+    text: "People & change system: change champions, training academy, incentives, role upgrades (PO, data owners)"
+
+  # C5 - Security & Compliance
+  - id: C5.S1
+    group_id: C5
+    text: "MFA / Identity platform (SSO, conditional access)"
+
+  - id: C5.S2
+    group_id: C5
+    text: "PAM (privileged vault, session recording)"
+
+  - id: C5.S3
+    group_id: C5
+    text: "Endpoint protection (EDR) + device hygiene / patch tooling"
+
+  - id: C5.S4
+    group_id: C5
+    text: "Central logging + SIEM/SOAR + SOC (managed where useful)"
+
+  - id: C5.S5
+    group_id: C5
+    text: "Network segmentation (IT/OT zones), firewalls, secure remote access"
+
+  - id: C5.S6
+    group_id: C5
+    text: "Resilience: backup/DR, immutable backups, recovery testing"
+
+  # C6 - Risk & Mitigation
+  - id: C6.S1
+    group_id: C6
+    text: "Programme control tower: PMO + risk register + decision log"
+
+  - id: C6.S2
+    group_id: C6
+    text: "Wave readiness scorecard + go/no‑go forum"
+
+  - id: C6.S3
+    group_id: C6
+    text: "Cutover runbooks, rehearsal environment, rollback criteria, hypercare model"
+
+  - id: C6.S4
+    group_id: C6
+    text: "Benefits tracker (cash/EBIT/revenue/run-cost) + evidence pack"
+
+  - id: C6.S5
+    group_id: C6
+    text: "Data governance system (owners, quality rules, stewardship tooling)"
+
+  - id: C6.S6
+    group_id: C6
+    text: "Partner performance dashboard + escalation paths (internal Competency Center)"
+
+# ==========================================
+# KPIs (36 measurable outcomes)
+# ==========================================
+kpis:
+  # C1 - Digital Transformation
+  - id: C1.K1
+    group_id: C1
+    text: "Lead time −15–20% (end‑to‑end, incl. engineering + supply)"
+
+  - id: C1.K2
+    group_id: C1
+    text: "On-time delivery +5–8 percentage points (definition agreed)"
+
+  - id: C1.K3
+    group_id: C1
+    text: "Inventory turns +10–15% + WIP aging reduced"
+
+  - id: C1.K4
+    group_id: C1
+    text: "Cost of poor quality (COPQ) −10% (scrap + rework + warranty)"
+
+  - id: C1.K5
+    group_id: C1
+    text: "Digital services revenue enabled +CHF 3–8m/year by Year 3"
+
+  - id: C1.K6
+    group_id: C1
+    text: "Net value KPI: benefits vs (investment + run‑cost Δ), Finance-signed quarterly"
+
+  # C2 - Digital Architecture & Principles
+  - id: C2.K1
+    group_id: C2
+    text: "Core simplification: ERP instances (3→1); CRM instances (3→1)"
+
+  - id: C2.K2
+    group_id: C2
+    text: "Integration health: % interfaces via iPaaS/API (incl. OT); # point‑to‑point retired"
+
+  - id: C2.K3
+    group_id: C2
+    text: "Data quality: master data accuracy/completeness; 'single version of truth' adoption"
+
+  - id: C2.K4
+    group_id: C2
+    text: "Platform resilience: availability; RTO/RPO achieved for critical IT+OT services"
+
+  - id: C2.K5
+    group_id: C2
+    text: "Security coverage: MFA/PAM/logging coverage; OT segmentation & secure remote access compliance"
+
+  - id: C2.K6
+    group_id: C2
+    text: "Delivery speed: time to onboard a new site/line/machine; change failure rate"
+
+  # C3 - ERP Consolidation Strategy
+  - id: C3.K1
+    group_id: C3
+    text: "Consolidation: ERP cores → 1; legacy systems retired per wave plan"
+
+  - id: C3.K2
+    group_id: C3
+    text: "Finance efficiency: close cycle time ↓; manual reconciliations ↓; auditability ↑"
+
+  - id: C3.K3
+    group_id: C3
+    text: "Operational control: inventory accuracy ↑; inventory turns +10–15%; WIP aging ↓"
+
+  - id: C3.K4
+    group_id: C3
+    text: "Cost transparency: standard cost coverage ↑; variance drill-down cycle ↓"
+
+  - id: C3.K5
+    group_id: C3
+    text: "Service to the business: fewer workarounds; process compliance/adoption ↑"
+
+  - id: C3.K6
+    group_id: C3
+    text: "Cost control: programme burn rate vs budget; run-cost per user/ticket ↓"
+
+  # C4 - Operating Model & Governance
+  - id: C4.K1
+    group_id: C4
+    text: "Stakeholder trust: IT NPS / satisfaction ↑; fewer escalations"
+
+  - id: C4.K2
+    group_id: C4
+    text: "Delivery performance: % initiatives delivered on time/on value; cycle time idea→release ↓"
+
+  - id: C4.K3
+    group_id: C4
+    text: "Adoption: active usage, process compliance, training completion; Excel workarounds ↓"
+
+  - id: C4.K4
+    group_id: C4
+    text: "Run-cost optimisation: licences rationalised; cost per ticket ↓; run-cost Δ tracked"
+
+  - id: C4.K5
+    group_id: C4
+    text: "Governance effectiveness: decision cycle time ↓; fewer uncontrolled exceptions"
+
+  - id: C4.K6
+    group_id: C4
+    text: "Talent & culture: engagement ↑; critical roles filled; attrition ↓; capability coverage ↑"
+
+  # C5 - Security & Compliance
+  - id: C5.K1
+    group_id: C5
+    text: "MFA coverage (%) + % privileged accounts under PAM"
+
+  - id: C5.K2
+    group_id: C5
+    text: "Vulnerability aging: % critical patched within SLA; OT compensating controls"
+
+  - id: C5.K3
+    group_id: C5
+    text: "MTTD and MTTR for security incidents (target ↓)"
+
+  - id: C5.K4
+    group_id: C5
+    text: "Phishing resilience: click rate ↓; training completion ↑"
+
+  - id: C5.K5
+    group_id: C5
+    text: "Audit readiness: # major findings = 0; time to produce evidence ↓"
+
+  - id: C5.K6
+    group_id: C5
+    text: "Resilience: backup restore success rate; RTO/RPO met in tests"
+
+  # C6 - Risk & Mitigation
+  - id: C6.K1
+    group_id: C6
+    text: "Wave readiness score (% green) before go‑live; # waves delayed for readiness (ok)"
+
+  - id: C6.K2
+    group_id: C6
+    text: "Adoption: training completion; active users; process compliance rate"
+
+  - id: C6.K3
+    group_id: C6
+    text: "Data quality score (master + transactional); inventory accuracy"
+
+  - id: C6.K4
+    group_id: C6
+    text: "Delivery health: schedule variance, milestone hit rate, change failure rate"
+
+  - id: C6.K5
+    group_id: C6
+    text: "Cost control: burn rate vs budget; run‑cost delta tracked"
+
+  - id: C6.K6
+    group_id: C6
+    text: "Operational stability: incident rate during/after releases; downtime minutes"

@@ -1,0 +1,2628 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>{{ title }} (v{{ version }})</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #101a30;
+    --panel2: #0f1730;
+    --text: #e8eefc;
+    --muted: #a9b5d6;
+    --border: rgba(255,255,255,0.10);
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+    /* CISK */
+    --c-challenge: #f0d24f;
+    --c-challenge-bg: rgba(240,210,79,.14);
+    --c-initiative: #8fd0ff;
+    --c-initiative-bg: rgba(143,208,255,.14);
+    --c-system: #1d4ed8;
+    --c-system-bg: rgba(29,78,216,.12);
+    --c-kpi: #22c55e;
+    --c-kpi-bg: rgba(34,197,94,.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background:
+      radial-gradient(1200px 800px at 20% 0%, rgba(106,166,255,.14), transparent 55%),
+      radial-gradient(900px 700px at 90% 10%, rgba(34,197,94,.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+  }
+  .wrap { max-width: 1250px; margin: 0 auto; padding: 0 16px; }
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: linear-gradient(to bottom, rgba(11,18,32,.95), rgba(11,18,32,.70));
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar { display:flex; align-items:center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+  .title {
+    font-weight: 800;
+    letter-spacing: .2px;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+  .tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+  .seasonbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 0 12px 0;}
+  .seasonlabel{font-size:12px;color:var(--muted);margin-right:4px;}
+  .tabbtn {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    color: var(--muted);
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tabbtn.active {
+    color: var(--text);
+    border-color: rgba(143,208,255,.45);
+    background: rgba(143,208,255,.10);
+  }
+  main { padding: 16px 0 28px; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Enhanced: 4-column grid */
+  .grid4 { display:grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 1400px) { .grid4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 900px) { .grid4 { grid-template-columns: 1fr; } }
+
+  /* Enhanced: Priority stars */
+  .priority {
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    margin-left: 6px;
+  }
+  .priority-1 { color: #f59e0b; } /* ⭐⭐⭐ High */
+  .priority-2 { color: #eab308; } /* ⭐⭐ Medium */
+  .priority-3 { color: #84cc16; } /* ⭐ Low */
+
+  /* Enhanced: Impact badges */
+  .impact {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-left: 6px;
+  }
+  .impact-H { background: #ef4444; color: white; } /* High */
+  .impact-M { background: #f59e0b; color: white; } /* Medium */
+  .impact-L { background: #10b981; color: white; } /* Low */
+
+  /* Enhanced: Weight indicators */
+  .weight {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    color: white;
+    margin-left: 4px;
+  }
+  .weight-bar {
+    display: inline-block;
+    height: 4px;
+    background: rgba(59, 130, 246, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 50px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .weight-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    transition: width 0.3s ease;
+  }
+
+  /* Enhanced: Link indicators */
+  .link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px;
+    margin: 4px 0;
+    background: rgba(0,0,0,0.12);
+    border-radius: 8px;
+    border-left: 3px solid var(--c-initiative);
+  }
+  .link-item:hover {
+    background: rgba(0,0,0,0.20);
+  }
+  .link-info {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .panel {
+    background: rgba(16,26,48,.88);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .panel .hd {
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.10);
+  }
+  .h1 { font-size: 13px; font-weight: 800; letter-spacing: .2px; }
+  .h2 { margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.25; }
+  .panel .bd { padding: 12px; }
+
+  .search {
+    display:flex; gap: 10px; align-items:center;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.10);
+  }
+  .search input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--muted); }
+
+  .chip {
+    display:inline-flex; align-items:center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.03);
+  }
+  .chip.group {
+    background: var(--c-challenge-bg);
+    border-color: rgba(240,210,79,.55);
+    color: rgba(255, 242, 190, 0.98);
+    font-weight: 800;
+  }
+  .chip.season {
+    background: rgba(143,208,255,.10);
+    border-color: rgba(143,208,255,.45);
+    color: #dbe9ff;
+    font-weight: 800;
+  }
+
+  .tree details { border-left: 4px solid var(--c-challenge); padding-left: 10px; }
+  .tree details + details { margin-top: 8px; }
+  .tree summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    padding: 6px 6px;
+    border-radius: 10px;
+    display:flex; align-items:center; justify-content: space-between;
+  }
+  .tree summary:hover { background: rgba(255,255,255,0.03); }
+  .tree summary.active { background: rgba(240,210,79,.10); border: 1px solid rgba(240,210,79,.25); }
+  .tree summary::-webkit-details-marker { display:none; }
+  .sub { margin: 8px 0 10px 0; display:flex; flex-direction: column; gap: 6px; }
+  .subitem {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.08);
+  }
+  .subitem:hover { border-color: rgba(240,210,79,.35); }
+  .subitem.active { border-color: rgba(240,210,79,.65); background: rgba(240,210,79,.10); }
+
+  .list { display:flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.08);
+  }
+  .item:hover { border-color: rgba(143,208,255,.35); }
+  .item.active { border-color: rgba(143,208,255,.65); background: rgba(143,208,255,.08); }
+  .item .t { font-weight: 750; font-size: 12.5px; }
+  .item .m { margin-top: 4px; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+  .row { display:flex; align-items:center; gap: 8px; }
+
+  .btn {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn.small { padding: 6px 8px; font-size: 11px; border-radius: 10px; }
+  .btn.ghost { background: transparent; }
+  .btn.primary {
+    border-color: rgba(143,208,255,.45);
+    background: rgba(143,208,255,.10);
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(0,0,0,0.12);
+  }
+  .card h2 {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+    letter-spacing: .2px;
+  }
+  .card h3 {
+    margin: 14px 0 8px 0;
+    font-size: 12px;
+    letter-spacing: .2px;
+    color: rgba(255,255,255,0.92);
+  }
+  .hr { height: 1px; background: var(--border); margin: 12px 0; }
+
+  .pillwrap { display:flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.03);
+  }
+  .pill:hover { filter: brightness(1.05); }
+  .pill.chall { border-color: rgba(240,210,79,.55); background: rgba(240,210,79,.10); }
+  .pill.init { border-color: rgba(143,208,255,.55); background: rgba(143,208,255,.10); }
+  .pill.sys { border-color: rgba(29,78,216,.55); background: rgba(29,78,216,.12); }
+  .pill.kpi { border-color: rgba(34,197,94,.55); background: rgba(34,197,94,.12); }
+
+  .badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width: 34px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    border: 1px solid var(--border);
+  }
+  .badge.ch { background: rgba(240,210,79,.16); border-color: rgba(240,210,79,.55); color: rgba(255,242,190,.98); }
+  .badge.in { background: rgba(143,208,255,.14); border-color: rgba(143,208,255,.55); color: #dbe9ff; }
+  .badge.sy { background: rgba(29,78,216,.14); border-color: rgba(29,78,216,.55); color: rgba(210,225,255,.98); }
+  .badge.kp { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.55); color: rgba(200,255,220,.98); }
+
+  .footer { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+
+  /* Workbench */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 1100px) { .kanban { grid-template-columns: 1fr; } }
+  .col {
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 10px;
+    background: rgba(0,0,0,0.10);
+    min-height: 220px;
+  }
+  .col h3 { margin: 0 0 8px 0; font-size: 12px; letter-spacing: .4px; color: var(--muted); text-transform: uppercase; }
+  .wcard { border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.14); margin-bottom: 8px; }
+  .wcard .t { font-size: 12.5px; font-weight: 750; }
+  .wcard .m { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+  .wcard .actions { margin-top: 8px; display:flex; gap: 6px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">{{ title }} (v{{ version }})</div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <div class="seasonbar">
+      <span class="seasonlabel">Season:</span>
+      <button class="btn small ghost" data-season="ALL" onclick="setInitSeason('ALL')">All</button>
+      <button class="btn small" data-season="S1" onclick="setInitSeason('S1')">S1</button>
+      <button class="btn small" data-season="S2" onclick="setInitSeason('S2')">S2</button>
+      <button class="btn small" data-season="S3" onclick="setInitSeason('S3')">S3</button>
+      <span class="muted" style="margin:0 6px">|</span>
+      <button class="btn small ghost" onclick="clearSelection()">Show all</button>
+      <span class="muted" style="margin:0 6px">|</span>
+      <span class="seasonlabel">View:</span>
+      <button class="btn small primary" id="btnColumnView" onclick="setViewMode('column')">📋 Column</button>
+      <button class="btn small" id="btnGraphView" onclick="setViewMode('graph')">🕸️ Graph</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap" id="columnView">
+    <div id="tab-challenges" class="tab">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd">
+            <div class="h1">Challenges tree</div>
+            <div class="h2">Click a challenge group (summary) or a sub‑challenge.</div>
+          </div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchChallenges" placeholder="Search challenges…" /></div>
+            <div class="tree" id="challengeTree" style="margin-top:12px"></div>
+            <div class="footer">Tip: sub‑challenge view uses a best‑match mapping; parent challenge shows ALL items.</div>
+          </div>
+        </div>
+        <div class="panel" id="challengeDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select something on the left.</div></div>
+          <div class="bd" id="challengeDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-initiatives" class="tab" style="display:none">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><div class="h1">Initiatives</div><div class="h2">Search.</div></div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchInitiatives" placeholder="Search initiatives…" /></div>
+            <div class="list" id="initiativeList"></div>
+          </div>
+        </div>
+        <div class="panel" id="initiativeDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select an initiative.</div></div>
+          <div class="bd" id="initiativeDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-systems" class="tab" style="display:none">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><div class="h1">Systems / enablers</div><div class="h2">Search, then click for linked initiatives + KPIs.</div></div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchSystems" placeholder="Search systems…" /></div>
+            <div class="list" id="systemList"></div>
+          </div>
+        </div>
+        <div class="panel" id="systemDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select a system.</div></div>
+          <div class="bd" id="systemDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-kpis" class="tab" style="display:none">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><div class="h1">KPIs</div><div class="h2">Search, then click for linked systems + initiatives.</div></div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchKpis" placeholder="Search KPIs…" /></div>
+            <div class="list" id="kpiList"></div>
+          </div>
+        </div>
+        <div class="panel" id="kpiDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select a KPI.</div></div>
+          <div class="bd" id="kpiDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-workbench" class="tab" style="display:none">
+      <div class="panel">
+        <div class="hd"><div class="h1">Workbench (pin / re‑order)</div><div class="h2">Pin items to build your own live Q&A navigation.</div></div>
+        <div class="bd">
+          <div class="row">
+            <button class="btn" onclick="clearWorkbench()">Clear</button>
+            <button class="btn" onclick="saveWorkbench()">Save</button>
+            <button class="btn" onclick="loadWorkbench()">Load</button>
+            <span class="chip">Tip: on iPad, use ↑↓ if drag is awkward</span>
+          </div>
+          <div class="kanban" style="margin-top:12px" id="kanban"></div>
+          <div class="footer">Pinned state is stored locally in your browser (safe to refresh).</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Graph View -->
+  <div class="wrap" id="graphView" style="display:none;">
+    <div class="panel" style="min-height:900px;">
+      <div class="hd">
+        <div class="row" style="justify-content:space-between;">
+          <div>
+            <div class="h1">🕸️ Graph View - CISK Flow Visualization</div>
+            <div class="h2">Vertical flow: Groups → Challenges → Initiatives → Systems → KPIs</div>
+          </div>
+          <div class="row" style="gap:8px;">
+            <button class="btn small" id="graphBackBtn" onclick="graphGoBack()" style="display:none;">← Back</button>
+            <button class="btn small" onclick="graphZoomIn()">🔍+</button>
+            <button class="btn small" onclick="graphZoomOut()">🔍−</button>
+            <button class="btn small" onclick="graphReset()">↻ Reset</button>
+          </div>
+        </div>
+        <div id="graphSelectionInfo" style="display:none;margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:8px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Selected:</div>
+          <div style="font-size:12px;"></div>
+        </div>
+      </div>
+      <div class="bd" style="padding:0;">
+        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;"></canvas>
+      </div>
+      <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
+        <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#fbbf24;border-radius:4px;"></span> Groups</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#f0d24f;border-radius:4px;"></span> Sub-Challenges</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#8fd0ff;border-radius:4px;"></span> Initiatives</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1d4ed8;border-radius:4px;"></span> Systems</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:4px;"></span> KPIs</div>
+          <span class="muted">|</span>
+          <div class="muted">Click any node to filter • Click empty space or ← Back to restore</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// Data injected from Flask
+const DATA = {{ data | tojson | safe }};
+
+const TABS = [
+  {id:"challenges", label:"Challenges"},
+  {id:"initiatives", label:"Initiatives"},
+  {id:"systems", label:"Systems"},
+  {id:"kpis", label:"KPIs"},
+  {id:"workbench", label:"Workbench"},
+];
+
+let state = {
+  tab: "challenges",
+  selected: null,
+  preview: null,
+  initSeason: "ALL",
+  workbench: { Challenges: [], Initiatives: [], Systems: [], KPIs: [] },
+  viewMode: "column"  // "column" or "graph"
+};
+
+function byId(id) { return document.getElementById(id); }
+function esc(s) {
+  return (s ?? "").toString().replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+
+const groupById = Object.fromEntries(DATA.challengeGroups.map(g=>[g.id,g]));
+const subById = Object.fromEntries(DATA.subChallenges.map(sc=>[sc.id,sc]));
+const initById = Object.fromEntries(DATA.initiatives.map(i=>[i.id,i]));
+const sysById = Object.fromEntries(DATA.systems.map(s=>[s.id,s]));
+const kpiById = Object.fromEntries(DATA.kpis.map(k=>[k.id,k]));
+
+function groupTitle(id) {
+  const g = groupById[id];
+  return g ? g.title : id;
+}
+
+function labelOf(type, obj) {
+  if (!obj) return "";
+  if (type==="challengeGroup") return obj.title || obj.id;
+  if (type==="subChallenge") return obj.text || obj.id;
+  if (type==="initiative") return obj.text || obj.raw || obj.id;
+  if (type==="system") return obj.title || obj.text || obj.id;
+  if (type==="kpi") return obj.text || obj.id;
+  return obj.title || obj.text || obj.id || "";
+}
+
+/* --- Enhanced: Visual indicators --- */
+function renderPriority(priority) {
+  if (!priority) return "";
+  const stars = { 1: '⭐⭐⭐', 2: '⭐⭐', 3: '⭐' };
+  return `<span class="priority priority-${priority}" title="Priority ${priority}">${stars[priority] || ''}</span>`;
+}
+
+function renderImpact(impact) {
+  if (!impact) return "";
+  const labels = { H: 'High', M: 'Medium', L: 'Low' };
+  return `<span class="impact impact-${impact}" title="${labels[impact]} Impact">${impact}</span>`;
+}
+
+function renderWeight(weight) {
+  if (!weight) return "";
+  return `<span class="weight" title="Weight: ${weight}/10">${weight}</span>`;
+}
+
+function renderWeightBar(weight) {
+  if (!weight) return "";
+  const percent = (weight / 10) * 100;
+  return `<span class="weight-bar"><span class="weight-bar-fill" style="width:${percent}%"></span></span>`;
+}
+
+/* --- lightweight "best match" mapping --- */
+function normWord(w){
+  return w.toLowerCase().replace(/[^a-z0-9]+/g,"").trim();
+}
+function tokensFrom(text){
+  const raw = (text||"").toLowerCase();
+  const words = raw.split(/\s+/).map(normWord).filter(Boolean);
+  const stop = new Set(["the","and","or","to","of","a","in","for","with","on","as","is","are","be","by","from","via","into","at","this","that","it","we","our","their","not","yet"]);
+  return new Set(words.filter(w=>w.length>2 && !stop.has(w)));
+}
+const KEY_W = {
+  "sap":6, "s4hana":6, "s4":6, "erp":6, "crm":6, "mes":6, "plm":6,
+  "inventory":5, "wip":5, "leadtime":5, "delivery":5, "otd":5, "quality":5, "copq":5,
+  "data":4, "masterdata":5, "mrp":5, "sop":5, "planning":5, "controltower":5, "exception":4,
+  "traceability":5, "ecr":4, "eco":4, "engineering":4,
+  "portal":4, "service":4, "remote":4, "predictive":4,
+  "security":6, "mfa":6, "pam":6, "siem":6, "soc":5, "segmentation":5, "otit":6, "iot":6, "iiot":6, "edge":5, "5g":5,
+  "cost":4, "margin":4, "variance":4, "licenses":4, "licence":4, "outsourcing":4, "managed":4, "sla":4,
+  "governance":4, "adoption":4, "training":4, "change":4, "culture":4,
+  "rto":5, "rpo":5, "backup":4, "dr":4
+};
+
+function extractTags(text){
+  const t = (text||"").toLowerCase();
+  const tags = new Set();
+  const add = (x)=>tags.add(x);
+
+  if (/lead[-\s]?time|cycle\s*time/.test(t)) add("leadtime");
+  if (/on[-\s]?time|delivery|otd/.test(t)) add("otd");
+  if (/inventory|wip|stock/.test(t)) add("inventory");
+  if (/quality|copq|scrap|rework|trace/.test(t)) add("quality");
+  if (/cost|margin|variance|transparency/.test(t)) add("cost");
+  if (/crm|customer|portal|quote|pipeline/.test(t)) add("crm");
+  if (/sap|s\/4|s4hana|erp/.test(t)) add("erp");
+  if (/mes|shop[-\s]?floor|execution/.test(t)) add("mes");
+  if (/plm|ecr|eco|engineering\s*change|bom|routing/.test(t)) add("plm");
+  if (/data|master\s*data|single\s*version|truth/.test(t)) add("data");
+  if (/integration|api|ipaas|interface|event/.test(t)) add("integration");
+  if (/ot|iiot|iot|edge|sensor|5g|wifi/.test(t)) add("ot");
+  if (/security|mfa|pam|siem|soc|segmentation|audit|gdpr|iso/.test(t)) add("security");
+  if (/governance|decision|steer|pmo/.test(t)) add("governance");
+  if (/adoption|training|change|culture|champion/.test(t)) add("adoption");
+  if (/outsourc|managed\s*service|vendor|sla/.test(t)) add("sourcing");
+  if (/backup|dr|rto|rpo|resilien/.test(t)) add("resilience");
+  return tags;
+}
+
+function enrich(type, obj){
+  const label = labelOf(type, obj);
+  const text = label + " " + (obj.groupId ? groupTitle(obj.groupId) : "");
+  obj._label = label;
+  obj._tokens = tokensFrom(text);
+  obj._tags = extractTags(text);
+  return obj;
+}
+
+DATA.challengeGroups.forEach(g=>enrich("challengeGroup", g));
+DATA.subChallenges.forEach(sc=>enrich("subChallenge", sc));
+DATA.initiatives.forEach(i=>enrich("initiative", i));
+DATA.systems.forEach(s=>enrich("system", s));
+DATA.kpis.forEach(k=>enrich("kpi", k));
+
+function intersectCount(aSet,bSet){
+  let s=0;
+  aSet.forEach(tok=>{ if(bSet.has(tok)) s += (KEY_W[tok] || 1); });
+  return s;
+}
+function relScore(aItem,bItem){
+  const tagOverlap = intersectCount(aItem._tags,bItem._tags);
+  const tokScore = intersectCount(aItem._tokens,bItem._tokens);
+  return tagOverlap*25 + tokScore;
+}
+function rankRelated(src, candidates, n){
+  const scored = candidates.map(c=>({c, s: relScore(src,c)})).sort((x,y)=>y.s-x.s);
+  const hasSignal = scored.length && scored[0].s>0;
+  const filtered = hasSignal ? scored.filter(x=>x.s>0) : scored;
+  const out = filtered.slice(0,n).map(x=>x.c);
+  return out.length ? out : candidates.slice(0,n);
+}
+
+function setTab(tabId) {
+  state.tab = tabId;
+  for (const t of TABS) {
+    const el = byId("tab-"+t.id);
+    el.style.display = (t.id === tabId) ? "" : "none";
+  }
+  for (const btn of document.querySelectorAll(".tabbtn")) {
+    btn.classList.toggle("active", btn.dataset.tab === tabId);
+  }
+  updateHash();
+  renderFocusedDetail();
+}
+
+function renderTabs() {
+  const host = byId("tabs");
+  host.innerHTML = "";
+  for (const t of TABS) {
+    const b = document.createElement("button");
+    b.className = "tabbtn" + (t.id===state.tab ? " active" : "");
+    b.textContent = t.label;
+    b.dataset.tab = t.id;
+    b.onclick = () => setTab(t.id);
+    host.appendChild(b);
+  }
+}
+
+function updateHash(){
+  const sel = (state.selected && inferTab(state.selected.type)===state.tab) ? `${state.selected.type}:${state.selected.id}` : "";
+  history.replaceState(null, "", "#" + state.tab + (sel ? ("/"+sel) : ""));
+}
+
+function inferTab(type){
+  if(type==="challengeGroup" || type==="subChallenge" || type==="challenge") return "challenges";
+  if(type==="initiative") return "initiatives";
+  if(type==="system") return "systems";
+  if(type==="kpi") return "kpis";
+  return "challenges";
+}
+
+function detailBodyIdForTab(tab){
+  if(tab==="challenges") return "challengeDetailBody";
+  if(tab==="initiatives") return "initiativeDetailBody";
+  if(tab==="systems") return "systemDetailBody";
+  if(tab==="kpis") return "kpiDetailBody";
+  return null;
+}
+
+function renderByType(type,id){
+  if(type==="challengeGroup") return renderChallengeGroupDetail(id);
+  if(type==="subChallenge") return renderSubChallengeDetail(id);
+  if(type==="initiative") return renderInitiativeDetail(id);
+  if(type==="system") return renderSystemDetail(id);
+  if(type==="kpi") return renderKpiDetail(id);
+  return `<div class="card"><div class="muted">Nothing selected.</div></div>`;
+}
+
+function renderGlobalDetailForTab(tab){
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : `<span class="chip mono">All seasons</span>`;
+  if(tab==="challenges"){
+    const groups = DATA.challengeGroups.slice().sort((a,b)=>a.number-b.number);
+    const subsCount = DATA.subChallenges.length;
+
+    const allInits = [];
+    const sysAllow = systemsTouchedBySeason();
+    const kAllow = kpisTouchedBySeason();
+    const allSys = [];
+    const allK = [];
+
+    for(const g of groups){
+      seasonFilteredInits(g.id).forEach(i=>allInits.push(i));
+      const sysAll = findSystems(g.id);
+      const kAll = findKpis(g.id);
+      sysAll.filter(s=>!sysAllow || sysAllow.has(s.id)).forEach(s=>allSys.push(s));
+      kAll.filter(k=>!kAllow || kAllow.has(k.id)).forEach(k=>allK.push(k));
+    }
+    const dedup = (arr)=>Array.from(new Map(arr.map(x=>[x.id,x])).values());
+    const inits = dedup(allInits);
+    const sys = dedup(allSys);
+    const ks = dedup(allK);
+
+    const maxPills = 28;
+    const initsShown = inits.slice(0,maxPills);
+    const sysShown = sys.slice(0,maxPills);
+    const ksShown = ks.slice(0,maxPills);
+
+    return `
+      <div class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div class="row"><h2 style="margin:0">Case map (all challenges)</h2>${seasonChip}</div>
+          <button class="btn small" onclick="clearSelection()">Show all</button>
+        </div>
+        <div class="muted">Nothing selected — full map view. Click any item to jump across.</div>
+
+        <div class="hr"></div>
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <span class="chip mono">${groups.length} challenges</span>
+          <span class="chip mono">${subsCount} sub‑challenges</span>
+          <span class="chip mono">${inits.length} initiatives</span>
+          <span class="chip mono">${sys.length} systems</span>
+          <span class="chip mono">${ks.length} KPIs</span>
+        </div>
+
+        <div class="hr"></div>
+        <h3>Challenges</h3>
+        <div class="pillwrap">
+          ${groups.map(g=>`<span class="pill chall" onclick="jumpGroup('${g.id}')"><span class="badge mini ch mono">${esc(g.id)}</span> ${esc(g.title)}</span>`).join("")}
+        </div>
+
+        <div class="hr"></div>
+        <h3>Initiatives (top ${Math.min(maxPills,inits.length)})</h3>
+        ${pillList(initsShown, "init", "jumpInit")}
+        ${inits.length>maxPills ? `<div class="muted" style="font-size:11.5px;margin-top:6px">Showing ${maxPills} of ${inits.length}. Use search on the left for full list.</div>` : ``}
+
+        <div class="hr"></div>
+        <h3>Systems touched (top ${Math.min(maxPills,sys.length)})</h3>
+        ${pillList(sysShown, "sys", "jumpSys")}
+
+        <div class="hr"></div>
+        <h3>KPIs (top ${Math.min(maxPills,ks.length)})</h3>
+        ${pillList(ksShown, "kpi", "jumpKpi")}
+      </div>
+    `;
+  }
+
+  const label = (tab==="initiatives") ? "initiative" : (tab==="systems") ? "system" : (tab==="kpis") ? "KPI" : "item";
+  return `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div class="row"><h2 style="margin:0">Nothing selected</h2>${seasonChip}</div>
+        <button class="btn small" onclick="clearSelection()">Show all</button>
+      </div>
+      <div class="muted">Use search + the left list to select a ${label}. (Season filter applies globally.)</div>
+    </div>
+  `;
+}
+
+function renderFocusedDetail(){
+  const bodyId = detailBodyIdForTab(state.tab);
+  if(!bodyId) return;
+  const host = byId(bodyId);
+  if(!host) return;
+
+  const focus = state.preview || (state.selected && inferTab(state.selected.type)===state.tab ? state.selected : null);
+  let inner = "";
+
+  if(!focus){
+    inner = renderGlobalDetailForTab(state.tab);
+  } else {
+    inner = renderByType(focus.type, focus.id);
+    if(state.preview){
+      inner = `
+        <div class="card" style="border-style:dashed;margin-bottom:10px">
+          <div class="row" style="justify-content:space-between;">
+            <div class="row"><span class="chip mono">Preview</span><span class="muted">Right‑pane click — left selection unchanged.</span></div>
+            <div class="row" style="gap:8px">
+              <button class="btn small primary" onclick="openPreview()">Open</button>
+              <button class="btn small" onclick="clearPreview()">Back</button>
+            </div>
+          </div>
+        </div>
+      ` + inner;
+    }
+  }
+
+  host.innerHTML = inner;
+}
+
+function clearPreview(){ state.preview = null; renderFocusedDetail(); }
+function openPreview(){
+  if(!state.preview) return;
+  const p = state.preview;
+  select(p.type, p.id, {autoTab: inferTab(p.type)});
+}
+function preview(type,id){
+  if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
+  if(state.preview && state.preview.type===type && state.preview.id===id){
+    state.preview = null;
+  } else {
+    state.preview = {type,id};
+  }
+  renderFocusedDetail();
+}
+
+function clearSelection(){
+  state.selected = null;
+  state.preview = null;
+  document.querySelectorAll("[data-key].active").forEach(el=>el.classList.remove("active"));
+  renderFocusedDetail();
+  updateHash();
+}
+
+function select(type, id, {autoTab=null}={}) {
+  if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
+
+  if (state.selected && state.selected.type===type && state.selected.id===id) {
+    clearSelection();
+    return;
+  }
+
+  state.selected = {type, id};
+  state.preview = null;
+  if (autoTab) setTab(autoTab);
+
+  document.querySelectorAll("[data-key].active").forEach(el=>el.classList.remove("active"));
+  const el = document.querySelector(`[data-key="${type}:${id}"]`);
+  if (el) el.classList.add("active");
+
+  renderFocusedDetail();
+  updateHash();
+}
+
+function findSubs(groupId) {
+  return DATA.subChallenges.filter(sc => sc.groupId === groupId);
+}
+
+function findInits(challengeId) {
+  // Check if this is a challenge group (e.g., "C1") or sub-challenge (e.g., "C1.SC1")
+  const isGroup = !challengeId.includes(".SC");
+
+  if (isGroup) {
+    // For challenge group: find initiatives linked to ANY of its sub-challenges
+    const subs = findSubs(challengeId);
+    const subIds = subs.map(sc => sc.id);
+
+    const enhanced = DATA.initiatives.filter(i =>
+      i.challenges && i.challenges.some(link => subIds.includes(link.challengeId))
+    );
+    if (enhanced.length > 0) return enhanced;
+
+    // Legacy format: use groupId
+    return DATA.initiatives.filter(i => i.groupId === challengeId || i.legacyGroupId === challengeId);
+  } else {
+    // For sub-challenge: find initiatives linked to this specific sub-challenge
+    const enhanced = DATA.initiatives.filter(i =>
+      i.challenges && i.challenges.some(link => link.challengeId === challengeId)
+    );
+    if (enhanced.length > 0) return enhanced;
+
+    // Legacy format: use groupId (extract group from sub-challenge ID)
+    const groupId = challengeId.split(".")[0];
+    return DATA.initiatives.filter(i => i.groupId === groupId || i.legacyGroupId === groupId);
+  }
+}
+
+function findSystemsForInitiatives(initiativeIds) {
+  // Enhanced format: find systems that link to these initiatives
+  return DATA.systems.filter(s =>
+    s.initiatives && s.initiatives.some(link => initiativeIds.includes(link.initiativeId))
+  );
+}
+
+function findSystems(challengeOrGroupId) {
+  // Enhanced format: find systems through initiatives
+  const inits = findInits(challengeOrGroupId);
+  if (inits.length > 0) {
+    const initIds = inits.map(i => i.id);
+    return findSystemsForInitiatives(initIds);
+  }
+
+  // Legacy format: use groupId
+  return DATA.systems.filter(s => s.groupId === challengeOrGroupId || s.legacyGroupId === challengeOrGroupId);
+}
+
+function findKpisForSystems(systemIds) {
+  // Enhanced format: find KPIs that link to these systems
+  return DATA.kpis.filter(k =>
+    k.systems && k.systems.some(link => systemIds.includes(link.systemId))
+  );
+}
+
+function findKpis(challengeOrGroupId) {
+  // Enhanced format: find KPIs through systems
+  const systems = findSystems(challengeOrGroupId);
+  if (systems.length > 0) {
+    const sysIds = systems.map(s => s.id);
+    return findKpisForSystems(sysIds);
+  }
+
+  // Legacy format: use groupId
+  return DATA.kpis.filter(k => k.groupId === challengeOrGroupId || k.legacyGroupId === challengeOrGroupId);
+}
+
+function seasonFilteredInits(groupId) {
+  const all = findInits(groupId);
+  if (state.initSeason==="ALL") return all;
+  return all.filter(i=>i.season===state.initSeason);
+}
+function unionRelated(fromItems, candidates, topN) {
+  const m = new Map();
+  for (const it of (fromItems||[])) {
+    const rel = rankRelated(it, candidates, topN);
+    for (const c of rel) m.set(c.id, c);
+  }
+  return Array.from(m.values());
+}
+function systemsTouchedBySeason() {
+  if (state.initSeason==="ALL") return null;
+  const allow = new Set();
+  for (const g of DATA.challengeGroups) {
+    const inits = seasonFilteredInits(g.id);
+    if (!inits.length) continue;
+    const sysAll = findSystems(g.id);
+    unionRelated(inits, sysAll, 3).forEach(s=>allow.add(s.id));
+  }
+  return allow;
+}
+function kpisTouchedBySeason() {
+  if (state.initSeason==="ALL") return null;
+  const allow = new Set();
+  for (const g of DATA.challengeGroups) {
+    const inits = seasonFilteredInits(g.id);
+    if (!inits.length) continue;
+    const kAll = findKpis(g.id);
+    unionRelated(inits, kAll, 3).forEach(k=>allow.add(k.id));
+  }
+  return allow;
+}
+
+function pillList(items, kind, onClickFn) {
+  if (!items.length) return `<span class="muted">None</span>`;
+  return `<div class="pillwrap">` + items.map(it => {
+    const label = esc(labelOf(kind, it));
+    return `<span class="pill ${kind}" onclick="${onClickFn}('${it.id}')">${label}</span>`;
+  }).join("") + `</div>`;
+}
+
+function jumpGroup(id) { preview("challengeGroup", id); }
+function jumpSub(id) { preview("subChallenge", id); }
+function jumpInit(id) { preview("initiative", id); }
+function jumpSys(id) { preview("system", id); }
+function jumpKpi(id) { preview("kpi", id); }
+
+function renderChallengeGroupDetail(groupId) {
+  const g = groupById[groupId];
+  if(!g) return `<div class="card"><div class="muted">Select a challenge.</div></div>`;
+  const subs = findSubs(groupId);
+
+  const initsPool = findInits(groupId);
+  const sysAll = findSystems(groupId);
+  const kpisAll = findKpis(groupId);
+
+  const inits = (state.initSeason==="ALL") ? initsPool : initsPool.filter(i=>i.season===state.initSeason);
+  let sys = sysAll;
+  let kpis = kpisAll;
+
+  if (state.initSeason!=="ALL") {
+    const sysCand = unionRelated(inits, sysAll, 3);
+    const kCand = unionRelated(inits, kpisAll, 3);
+    if (sysCand.length) sys = sysCand;
+    if (kCand.length) kpis = kCand;
+  }
+
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><h2 style="margin:0">${esc(g.title)}</h2>${seasonChip}</div>
+        <button class="btn small" onclick="pin('Challenges','challengeGroup','${g.id}')">Pin</button>
+      </div>
+      <div class="muted">Parent challenge overview — click any sub‑challenge to zoom in.</div>
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges (${subs.length})</h3>
+      <div class="pillwrap">
+        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+      </div>
+
+      <div class="hr"></div>
+      <h3>Initiatives (${inits.length})</h3>
+      ${pillList(inits, "init", "jumpInit")}
+
+      <div class="hr"></div>
+      <h3>Systems (${sys.length})</h3>
+      ${pillList(sys, "sys", "jumpSys")}
+
+      <div class="hr"></div>
+      <h3>KPIs (${kpis.length})</h3>
+      ${pillList(kpis, "kpi", "jumpKpi")}
+    </div>
+  `;
+}
+
+function renderSubChallengeDetail(subId) {
+  const sc = subById[subId];
+  if(!sc) return `<div class="card"><div class="muted">Select a sub‑challenge.</div></div>`;
+  const g = groupById[sc.groupId];
+
+  const initsPool = findInits(sc.groupId);
+  const initsAll = seasonFilteredInits(sc.groupId);
+  const sysAll = findSystems(sc.groupId);
+  const kAll = findKpis(sc.groupId);
+
+  const inits = rankRelated(sc, initsAll, 5);
+
+  let sys = rankRelated(sc, sysAll, 5);
+  let ks = rankRelated(sc, kAll, 5);
+
+  if (state.initSeason!=="ALL") {
+    const sysCand = unionRelated(inits, sysAll, 3);
+    const kCand = unionRelated(inits, kAll, 3);
+    if (sysCand.length) sys = rankRelated(sc, sysCand, 5);
+    if (kCand.length) ks = rankRelated(sc, kCand, 5);
+  }
+
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+
+  const poolNote = (state.initSeason==="ALL") ? `${inits.length} of ${initsPool.length}` : `${inits.length} of ${initsAll.length} (${esc(state.initSeason)})`;
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><span class="muted">Sub‑challenge</span>${seasonChip}</div>
+        <button class="btn small" onclick="pin('Challenges','subChallenge','${sc.id}')">Pin</button>
+      </div>
+
+      <h2>${esc(sc.text)}</h2>
+
+      <div class="hr"></div>
+      <h3>Most relevant initiatives</h3>
+      ${pillList(inits, "init", "jumpInit")}
+      <div class="muted" style="font-size:11.5px;margin-top:6px">(${poolNote})</div>
+
+      <div class="hr"></div>
+      <h3>Enabling systems</h3>
+      ${pillList(sys, "sys", "jumpSys")}
+
+      <div class="hr"></div>
+      <h3>How we measure it</h3>
+      ${pillList(ks, "kpi", "jumpKpi")}
+
+      <div class="hr"></div>
+      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id} overview</button>
+    </div>
+  `;
+}
+
+function renderInitiativeDetail(initId) {
+  const it = initById[initId];
+  if(!it) return `<div class="card"><div class="muted">Select an initiative.</div></div>`;
+
+  // Enhanced format: get linked challenges
+  let subs = [];
+  let challengeGroupId = null;
+  if (it.challenges && it.challenges.length > 0) {
+    // Enhanced format
+    subs = it.challenges.map(link => subById[link.challengeId]).filter(Boolean);
+    if (subs.length > 0 && subs[0].groupId) {
+      challengeGroupId = subs[0].groupId;
+    }
+  } else if (it.groupId || it.legacyGroupId) {
+    // Legacy format
+    challengeGroupId = it.groupId || it.legacyGroupId;
+    const subsAll = findSubs(challengeGroupId);
+    subs = rankRelated(it, subsAll, 5);
+  }
+
+  // Get systems linked to this initiative
+  let sys = [];
+  if (it.challenges && it.challenges.length > 0) {
+    // Enhanced format: find systems that link to this initiative
+    sys = DATA.systems.filter(s =>
+      s.initiatives && s.initiatives.some(link => link.initiativeId === it.id)
+    );
+  } else if (challengeGroupId) {
+    // Legacy format
+    const sysAll = findSystems(challengeGroupId);
+    sys = rankRelated(it, sysAll, 6);
+  }
+
+  // Get KPIs linked to those systems
+  let ks = [];
+  if (sys.length > 0) {
+    const sysIds = sys.map(s => s.id);
+    ks = DATA.kpis.filter(k =>
+      k.systems && k.systems.some(link => sysIds.includes(link.systemId))
+    );
+    if (ks.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const kAll = findKpis(challengeGroupId);
+      ks = rankRelated(it, kAll, 6);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const kAll = findKpis(challengeGroupId);
+    ks = rankRelated(it, kAll, 6);
+  }
+
+  const g = challengeGroupId ? groupById[challengeGroupId] : null;
+  const groupBadge = g ? `<span class="badge in mono">${esc(g.id)}</span>` : "";
+  const season = it.season ? `<span class="chip season mono">${esc(it.season)}</span>` : "";
+  const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row">${groupBadge}${season}</div>
+        <button class="btn small" onclick="pin('Initiatives','initiative','${it.id}')">Pin</button>
+      </div>
+      <h2>${esc(it.raw || it.text)}</h2>
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges it addresses (${subs.length})</h3>
+      <div class="pillwrap">
+        ${subs.length > 0 ? subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("") : '<span class="muted">None found</span>'}
+      </div>
+
+      <div class="hr"></div>
+      <h3>Systems we use / build (${sys.length})</h3>
+      ${sys.length > 0 ? pillList(sys, "sys", "jumpSys") : '<span class="muted">None found</span>'}
+
+      <div class="hr"></div>
+      <h3>KPIs this should move (${ks.length})</h3>
+      ${ks.length > 0 ? pillList(ks, "kpi", "jumpKpi") : '<span class="muted">None found</span>'}
+
+      ${backButton ? `<div class="hr"></div>${backButton}` : ""}
+    </div>
+  `;
+}
+
+function renderSystemDetail(sysId) {
+  const s = sysById[sysId];
+  if(!s) return `<div class="card"><div class="muted">Select a system.</div></div>`;
+
+  // Enhanced format: get linked initiatives
+  let inits = [];
+  let challengeGroupId = null;
+  if (s.initiatives && s.initiatives.length > 0) {
+    // Enhanced format
+    inits = s.initiatives.map(link => initById[link.initiativeId]).filter(Boolean);
+    // Apply season filter
+    if (state.initSeason !== "ALL") {
+      inits = inits.filter(i => i.season === state.initSeason);
+    }
+    // Get group from first initiative's challenges
+    if (inits.length > 0 && inits[0].challenges && inits[0].challenges.length > 0) {
+      const firstChallenge = subById[inits[0].challenges[0].challengeId];
+      if (firstChallenge) challengeGroupId = firstChallenge.groupId;
+    }
+  } else if (s.groupId || s.legacyGroupId) {
+    // Legacy format
+    challengeGroupId = s.groupId || s.legacyGroupId;
+    const initsAll = seasonFilteredInits(challengeGroupId);
+    inits = rankRelated(s, initsAll, 6);
+  }
+
+  // Get sub-challenges from initiatives
+  let subs = [];
+  if (inits.length > 0) {
+    const subSet = new Set();
+    inits.forEach(i => {
+      if (i.challenges && i.challenges.length > 0) {
+        i.challenges.forEach(link => {
+          const sc = subById[link.challengeId];
+          if (sc) subSet.add(sc);
+        });
+      }
+    });
+    subs = Array.from(subSet);
+    if (subs.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const subsAll = findSubs(challengeGroupId);
+      subs = rankRelated(s, subsAll, 5);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const subsAll = findSubs(challengeGroupId);
+    subs = rankRelated(s, subsAll, 5);
+  }
+
+  // Get KPIs linked to this system
+  let ks = [];
+  if (s.initiatives && s.initiatives.length > 0) {
+    // Enhanced format: find KPIs that link to this system
+    ks = DATA.kpis.filter(k =>
+      k.systems && k.systems.some(link => link.systemId === s.id)
+    );
+  } else if (challengeGroupId) {
+    // Legacy format
+    const kAll = findKpis(challengeGroupId);
+    ks = rankRelated(s, kAll, 6);
+  }
+
+  const g = challengeGroupId ? groupById[challengeGroupId] : null;
+  const groupBadge = g ? `<span class="badge sy mono">${esc(g.id)}</span>` : "";
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
+  const bullets = (s.bullets && s.bullets.length) ? `<ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>` : "";
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row">${groupBadge}<span class="muted">System</span>${seasonChip}</div>
+        <button class="btn small" onclick="pin('Systems','system','${s.id}')">Pin</button>
+      </div>
+      <h2>${esc(labelOf("system", s))}</h2>
+      ${bullets}
+
+      <div class="hr"></div>
+      <h3>Initiatives enabled (${inits.length})</h3>
+      ${inits.length > 0 ? pillList(inits, "init", "jumpInit") : '<span class="muted">None found</span>'}
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges where it matters (${subs.length})</h3>
+      <div class="pillwrap">
+        ${subs.length > 0 ? subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("") : '<span class="muted">None found</span>'}
+      </div>
+
+      <div class="hr"></div>
+      <h3>KPIs we expect to move (${ks.length})</h3>
+      ${ks.length > 0 ? pillList(ks, "kpi", "jumpKpi") : '<span class="muted">None found</span>'}
+
+      ${backButton ? `<div class="hr"></div>${backButton}` : ""}
+    </div>
+  `;
+}
+
+function renderKpiDetail(kpiId) {
+  const k = kpiById[kpiId];
+  if(!k) return `<div class="card"><div class="muted">Select a KPI.</div></div>`;
+
+  // Enhanced format: get linked systems
+  let sys = [];
+  let challengeGroupId = null;
+  if (k.systems && k.systems.length > 0) {
+    // Enhanced format
+    sys = k.systems.map(link => sysById[link.systemId]).filter(Boolean);
+  } else if (k.groupId || k.legacyGroupId) {
+    // Legacy format
+    challengeGroupId = k.groupId || k.legacyGroupId;
+    const sysAll = findSystems(challengeGroupId);
+    sys = rankRelated(k, sysAll, 6);
+  }
+
+  // Get initiatives from systems
+  let inits = [];
+  if (sys.length > 0) {
+    const initSet = new Set();
+    sys.forEach(s => {
+      if (s.initiatives && s.initiatives.length > 0) {
+        s.initiatives.forEach(link => {
+          const init = initById[link.initiativeId];
+          if (init) initSet.add(init);
+        });
+      }
+    });
+    inits = Array.from(initSet);
+    // Apply season filter
+    if (state.initSeason !== "ALL") {
+      inits = inits.filter(i => i.season === state.initSeason);
+    }
+    // Get group from first initiative
+    if (inits.length > 0 && inits[0].challenges && inits[0].challenges.length > 0) {
+      const firstChallenge = subById[inits[0].challenges[0].challengeId];
+      if (firstChallenge) challengeGroupId = firstChallenge.groupId;
+    }
+    if (inits.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const initsAll = seasonFilteredInits(challengeGroupId);
+      inits = rankRelated(k, initsAll, 6);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const initsAll = seasonFilteredInits(challengeGroupId);
+    inits = rankRelated(k, initsAll, 6);
+  }
+
+  // Get sub-challenges from initiatives
+  let subs = [];
+  if (inits.length > 0) {
+    const subSet = new Set();
+    inits.forEach(i => {
+      if (i.challenges && i.challenges.length > 0) {
+        i.challenges.forEach(link => {
+          const sc = subById[link.challengeId];
+          if (sc) subSet.add(sc);
+        });
+      }
+    });
+    subs = Array.from(subSet);
+    if (subs.length === 0 && challengeGroupId) {
+      // Legacy fallback
+      const subsAll = findSubs(challengeGroupId);
+      subs = rankRelated(k, subsAll, 5);
+    }
+  } else if (challengeGroupId) {
+    // Legacy format
+    const subsAll = findSubs(challengeGroupId);
+    subs = rankRelated(k, subsAll, 5);
+  }
+
+  const g = challengeGroupId ? groupById[challengeGroupId] : null;
+  const groupBadge = g ? `<span class="badge kp mono">${esc(g.id)}</span>` : "";
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row">${groupBadge}<span class="muted">KPI</span>${seasonChip}</div>
+        <button class="btn small" onclick="pin('KPIs','kpi','${k.id}')">Pin</button>
+      </div>
+      <h2>${esc(k.text)}</h2>
+
+      <div class="hr"></div>
+      <h3>Systems that influence this KPI (${sys.length})</h3>
+      ${sys.length > 0 ? pillList(sys, "sys", "jumpSys") : '<span class="muted">None found</span>'}
+
+      <div class="hr"></div>
+      <h3>Initiatives that drive it (${inits.length})</h3>
+      ${inits.length > 0 ? pillList(inits, "init", "jumpInit") : '<span class="muted">None found</span>'}
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges behind the KPI (${subs.length})</h3>
+      <div class="pillwrap">
+        ${subs.length > 0 ? subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("") : '<span class="muted">None found</span>'}
+      </div>
+
+      ${backButton ? `<div class="hr"></div>${backButton}` : ""}
+    </div>
+  `;
+}
+
+function renderChallengeTree() {
+  const host = byId("challengeTree");
+  host.innerHTML = "";
+  const q = (byId("searchChallenges").value || "").toLowerCase().trim();
+
+  for (const g of DATA.challengeGroups.slice().sort((a,b)=>a.number-b.number)) {
+    const subs = findSubs(g.id);
+    const matchesGroup = (g.title || "").toLowerCase().includes(q) || g.id.toLowerCase().includes(q);
+    const matchesSubs = subs.filter(sc => (sc.text||"").toLowerCase().includes(q));
+    if (q && !matchesGroup && matchesSubs.length===0) continue;
+
+    const d = document.createElement("details");
+    d.open = false;
+    if (q && (matchesGroup || matchesSubs.length)) d.open = true;
+
+    const s = document.createElement("summary");
+    s.setAttribute("data-key", `challengeGroup:${g.id}`);
+    s.innerHTML = `<span class="row" style="gap:8px"><span class="chip group mono">${esc(g.id)}</span><span>${esc(g.title)}</span>${renderPriority(g.priority)}</span><span class="chip mono">${subs.length} sub</span>`;
+    s.addEventListener("click", ()=>{ select("challengeGroup", g.id, {autoTab:"challenges"}); });
+    d.appendChild(s);
+
+    const subDiv = document.createElement("div");
+    subDiv.className = "sub";
+    const showSubs = q ? matchesSubs : subs;
+    for (const sc of showSubs) {
+      const div = document.createElement("div");
+      div.className = "subitem";
+      div.setAttribute("data-key", `subChallenge:${sc.id}`);
+      div.innerHTML = `${esc(sc.text)}${renderPriority(sc.priority)}`;
+      div.onclick = () => select("subChallenge", sc.id, {autoTab:"challenges"});
+      subDiv.appendChild(div);
+    }
+    d.appendChild(subDiv);
+
+    host.appendChild(d);
+  }
+}
+
+function setInitSeason(season) {
+  state.initSeason = season;
+  document.querySelectorAll('[data-season]').forEach(b=>{
+    b.classList.toggle('primary', b.dataset.season===season);
+  });
+  renderInitiativeList();
+  renderSystemList();
+  renderKpiList();
+  renderFocusedDetail();
+}
+
+function renderInitiativeList() {
+  const host = byId("initiativeList");
+  if (!host) return;
+
+  const searchInput = byId("searchInitiatives");
+  const q = searchInput ? (searchInput.value || "").toLowerCase().trim() : "";
+  host.innerHTML = "";
+
+  let items = DATA.initiatives ? DATA.initiatives.slice() : [];
+
+  // Season filter
+  if (state.initSeason !== "ALL") {
+    items = items.filter(i => i.season === state.initSeason);
+  }
+
+  // Search filter
+  if (q) {
+    items = items.filter(i => {
+      const text = (i.raw || i.text || "").toLowerCase();
+      if (text.includes(q)) return true;
+
+      // Check linked challenges
+      if (i.challenges && Array.isArray(i.challenges)) {
+        return i.challenges.some(link => {
+          const sc = subById[link.challengeId];
+          return sc && (sc.text.toLowerCase().includes(q) || sc.id.toLowerCase().includes(q));
+        });
+      }
+
+      // Legacy format
+      if (i.groupId || i.legacyGroupId) {
+        const gid = i.groupId || i.legacyGroupId;
+        return groupTitle(gid).toLowerCase().includes(q);
+      }
+      return false;
+    });
+  }
+
+  // Sort
+  items.sort((a,b)=> {
+    const sa = a.season || "S9";
+    const sb = b.season || "S9";
+    if (sa !== sb) return sa.localeCompare(sb);
+
+    const aKey = (a.challenges && a.challenges.length > 0) ? a.challenges[0].challengeId : (a.groupId || a.legacyGroupId || a.id);
+    const bKey = (b.challenges && b.challenges.length > 0) ? b.challenges[0].challengeId : (b.groupId || b.legacyGroupId || b.id);
+    return aKey.localeCompare(bKey);
+  });
+
+  // Render items
+  for (const i of items) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.setAttribute("data-key", `initiative:${i.id}`);
+    div.onclick = () => select("initiative", i.id, {autoTab:"initiatives"});
+
+    // Build badges
+    let badges = "";
+    if (i.challenges && i.challenges.length > 0) {
+      badges = i.challenges.slice(0, 3).map(link => {
+        const impact = link.impact ? ` <span class="impact impact-${link.impact}">${link.impact}</span>` : "";
+        const weight = link.weight ? ` <span class="weight">${link.weight}</span>` : "";
+        return `<span class="chip group mono">${esc(link.challengeId)}${impact}${weight}</span>`;
+      }).join(" ");
+      if (i.challenges.length > 3) badges += ` <span class="chip">+${i.challenges.length - 3}</span>`;
+    } else if (i.groupId || i.legacyGroupId) {
+      badges = `<span class="chip group mono">${esc(i.groupId || i.legacyGroupId)}</span>`;
+    }
+
+    const description = i.challenges && i.challenges.length > 0
+      ? `${i.challenges.length} challenge(s)`
+      : (i.groupId ? esc(groupTitle(i.groupId)) : "");
+
+    div.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <div class="t">${esc(i.raw || i.text)}</div>
+        <div class="row" style="gap:4px;flex-wrap:wrap;">
+          ${i.season ? `<span class="chip season mono">${esc(i.season)}</span>` : ""}
+          ${badges}
+        </div>
+      </div>
+      ${description ? `<div class="m">${description}</div>` : ""}
+    `;
+    host.appendChild(div);
+  }
+}
+
+function renderSystemList() {
+  const host = byId("systemList");
+  if (!host) return;
+
+  const searchInput = byId("searchSystems");
+  const q = searchInput ? (searchInput.value || "").toLowerCase().trim() : "";
+  host.innerHTML = "";
+
+  let items = DATA.systems ? DATA.systems.slice() : [];
+
+  // Search filter
+  if (q) {
+    items = items.filter(s => {
+      const text = labelOf("system", s).toLowerCase();
+      if (text.includes(q)) return true;
+
+      // Check linked initiatives
+      if (s.initiatives && Array.isArray(s.initiatives)) {
+        return s.initiatives.some(link => {
+          const init = initById[link.initiativeId];
+          return init && ((init.text || "").toLowerCase().includes(q) || init.id.toLowerCase().includes(q));
+        });
+      }
+
+      // Legacy format
+      if (s.groupId || s.legacyGroupId) {
+        const gid = s.groupId || s.legacyGroupId;
+        return groupTitle(gid).toLowerCase().includes(q);
+      }
+      return false;
+    });
+  }
+
+  // Season filter
+  if (state.initSeason !== "ALL") {
+    const allow = systemsTouchedBySeason();
+    if (allow) items = items.filter(s => allow.has(s.id));
+  }
+
+  // Sort
+  items.sort((a,b)=> {
+    const aKey = (a.initiatives && a.initiatives.length > 0) ? a.initiatives[0].initiativeId : (a.groupId || a.legacyGroupId || a.id);
+    const bKey = (b.initiatives && b.initiatives.length > 0) ? b.initiatives[0].initiativeId : (b.groupId || b.legacyGroupId || b.id);
+    return aKey.localeCompare(bKey);
+  });
+
+  // Render items
+  for (const s of items) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.setAttribute("data-key", `system:${s.id}`);
+    div.onclick = () => select("system", s.id, {autoTab:"systems"});
+
+    // Build badges
+    let badges = "";
+    if (s.initiatives && s.initiatives.length > 0) {
+      badges = s.initiatives.slice(0, 3).map(link => {
+        const weight = link.weight ? ` <span class="weight">${link.weight}</span>` : "";
+        return `<span class="chip group mono">${esc(link.initiativeId)}${weight}</span>`;
+      }).join(" ");
+      if (s.initiatives.length > 3) badges += ` <span class="chip">+${s.initiatives.length - 3}</span>`;
+    } else if (s.groupId || s.legacyGroupId) {
+      badges = `<span class="chip group mono">${esc(s.groupId || s.legacyGroupId)}</span>`;
+    }
+
+    const description = s.initiatives && s.initiatives.length > 0
+      ? `${s.initiatives.length} initiative(s)`
+      : (s.groupId ? esc(groupTitle(s.groupId)) : "");
+
+    div.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <div class="t">${esc(labelOf("system", s))}</div>
+        <div class="row" style="gap:4px;flex-wrap:wrap;">${badges}</div>
+      </div>
+      ${description ? `<div class="m">${description}</div>` : ""}
+    `;
+    host.appendChild(div);
+  }
+}
+
+function renderKpiList() {
+  const host = byId("kpiList");
+  if (!host) return;
+
+  const searchInput = byId("searchKpis");
+  const q = searchInput ? (searchInput.value || "").toLowerCase().trim() : "";
+  host.innerHTML = "";
+
+  let items = DATA.kpis ? DATA.kpis.slice() : [];
+
+  // Search filter
+  if (q) {
+    items = items.filter(k => {
+      const text = (k.text || "").toLowerCase();
+      if (text.includes(q)) return true;
+
+      // Check linked systems
+      if (k.systems && Array.isArray(k.systems)) {
+        return k.systems.some(link => {
+          const sys = sysById[link.systemId];
+          return sys && (labelOf("system", sys).toLowerCase().includes(q) || sys.id.toLowerCase().includes(q));
+        });
+      }
+
+      // Legacy format
+      if (k.groupId || k.legacyGroupId) {
+        const gid = k.groupId || k.legacyGroupId;
+        return groupTitle(gid).toLowerCase().includes(q);
+      }
+      return false;
+    });
+  }
+
+  // Season filter
+  if (state.initSeason !== "ALL") {
+    const allow = kpisTouchedBySeason();
+    if (allow) items = items.filter(k => allow.has(k.id));
+  }
+
+  // Sort
+  items.sort((a,b)=> {
+    const aKey = (a.systems && a.systems.length > 0) ? a.systems[0].systemId : (a.groupId || a.legacyGroupId || a.id);
+    const bKey = (b.systems && b.systems.length > 0) ? b.systems[0].systemId : (b.groupId || b.legacyGroupId || b.id);
+    return aKey.localeCompare(bKey);
+  });
+
+  // Render items
+  for (const k of items) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.setAttribute("data-key", `kpi:${k.id}`);
+    div.onclick = () => select("kpi", k.id, {autoTab:"kpis"});
+
+    // Build badges
+    let badges = "";
+    if (k.systems && k.systems.length > 0) {
+      badges = k.systems.slice(0, 3).map(link => {
+        const weight = link.weight ? ` <span class="weight">${link.weight}</span>` : "";
+        return `<span class="chip group mono">${esc(link.systemId)}${weight}</span>`;
+      }).join(" ");
+      if (k.systems.length > 3) badges += ` <span class="chip">+${k.systems.length - 3}</span>`;
+    } else if (k.groupId || k.legacyGroupId) {
+      badges = `<span class="chip group mono">${esc(k.groupId || k.legacyGroupId)}</span>`;
+    }
+
+    const description = k.systems && k.systems.length > 0
+      ? `${k.systems.length} system(s)`
+      : (k.groupId ? esc(groupTitle(k.groupId)) : "");
+
+    div.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <div class="t">${esc(k.text)}</div>
+        <div class="row" style="gap:4px;flex-wrap:wrap;">${badges}</div>
+      </div>
+      ${description ? `<div class="m">${description}</div>` : ""}
+    `;
+    host.appendChild(div);
+  }
+}
+
+/* --- Workbench --- */
+function pin(colName, type, id) {
+  let obj=null;
+  if(type==="challengeGroup") obj = groupById[id];
+  if(type==="subChallenge") obj = subById[id];
+  if(type==="initiative") obj = initById[id];
+  if(type==="system") obj = sysById[id];
+  if(type==="kpi") obj = kpiById[id];
+  if(!obj) return;
+
+  const label = (type==="subChallenge") ? obj.text : labelOf(type,obj);
+  state.workbench[colName].push({type, id, label});
+  renderWorkbench();
+}
+
+function moveCard(col, idx, dir) {
+  const arr = state.workbench[col];
+  const j = idx + dir;
+  if (j < 0 || j >= arr.length) return;
+  const tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
+  renderWorkbench();
+}
+function removeCard(col, idx) {
+  state.workbench[col].splice(idx,1);
+  renderWorkbench();
+}
+
+function renderWorkbench() {
+  const host = byId("kanban");
+  host.innerHTML = "";
+  const cols = ["Challenges","Initiatives","Systems","KPIs"];
+  for (const c of cols) {
+    const div = document.createElement("div");
+    div.className = "col";
+    div.innerHTML = `<h3>${c}</h3>`;
+    for (let i=0;i<state.workbench[c].length;i++) {
+      const card = state.workbench[c][i];
+      const el = document.createElement("div");
+      el.className = "wcard";
+      el.draggable = true;
+      el.ondragstart = (ev)=>{ ev.dataTransfer.setData("text/plain", JSON.stringify({col:c, idx:i})); };
+      el.innerHTML = `
+        <div class="t">${esc(card.label)}</div>
+        <div class="m mono">${esc(card.type)}:${esc(card.id)}</div>
+        <div class="actions">
+          <button class="btn small primary" onclick="select('${card.type}','${card.id}',{autoTab: inferTab('${card.type}')})">Open</button>
+          <button class="btn small" onclick="moveCard('${c}',${i},-1)">↑</button>
+          <button class="btn small" onclick="moveCard('${c}',${i},1)">↓</button>
+          <button class="btn small" onclick="removeCard('${c}',${i})">Remove</button>
+        </div>
+      `;
+      div.appendChild(el);
+    }
+    div.ondragover = (ev)=>{ ev.preventDefault(); };
+    div.ondrop = (ev)=>{
+      ev.preventDefault();
+      try {
+        const src = JSON.parse(ev.dataTransfer.getData("text/plain"));
+        const card = state.workbench[src.col][src.idx];
+        state.workbench[src.col].splice(src.idx,1);
+        state.workbench[c].push(card);
+        renderWorkbench();
+      } catch(e) {}
+    };
+    host.appendChild(div);
+  }
+}
+
+function saveWorkbench() {
+  localStorage.setItem("mNavigatorWorkbench", JSON.stringify(state.workbench));
+  alert("Workbench saved in this browser.");
+}
+function loadWorkbench() {
+  const raw = localStorage.getItem("mNavigatorWorkbench");
+  if (!raw) return alert("No saved workbench found.");
+  try { state.workbench = JSON.parse(raw); renderWorkbench(); } catch(e) { alert("Could not load saved state."); }
+}
+function clearWorkbench() {
+  state.workbench = {Challenges:[],Initiatives:[],Systems:[],KPIs:[]};
+  renderWorkbench();
+}
+
+function initFromHash() {
+  const h = (location.hash || "").replace(/^#/, "");
+  if (!h) return;
+  const parts = h.split("/");
+  const tab = parts[0];
+  if (TABS.some(t=>t.id===tab)) setTab(tab);
+  if (parts[1]) {
+    const [type, id] = parts[1].split(":");
+    if (type && id) select(type, id, {autoTab: inferTab(type)});
+  }
+}
+
+function wireSearch() {
+  byId("searchChallenges").addEventListener("input", renderChallengeTree);
+  byId("searchInitiatives").addEventListener("input", renderInitiativeList);
+  byId("searchSystems").addEventListener("input", renderSystemList);
+  byId("searchKpis").addEventListener("input", renderKpiList);
+}
+
+/* ========================================
+   VIEW MODE TOGGLE
+   ======================================== */
+function setViewMode(mode) {
+  state.viewMode = mode;
+  const columnView = byId('columnView');
+  const graphView = byId('graphView');
+  const btnColumn = byId('btnColumnView');
+  const btnGraph = byId('btnGraphView');
+
+  if (mode === 'graph') {
+    columnView.style.display = 'none';
+    graphView.style.display = 'block';
+    btnColumn.classList.remove('primary');
+    btnGraph.classList.add('primary');
+    renderGraph();
+  } else {
+    columnView.style.display = 'block';
+    graphView.style.display = 'none';
+    btnColumn.classList.add('primary');
+    btnGraph.classList.remove('primary');
+  }
+}
+
+/* ========================================
+   GRAPH VIEW - Canvas-based Visualization
+   ======================================== */
+let graph = {
+  canvas: null,
+  ctx: null,
+  nodes: [],
+  links: [],
+  zoom: 1,
+  panX: 0,
+  panY: 0,
+  dragging: null,
+  hovering: null,
+  selectedNode: null,  // Currently selected node for filtering
+  filteredNodes: null, // Set of visible node IDs when filtered
+  filteredLinks: null, // Set of visible links when filtered
+  history: []          // Navigation history stack for back button
+};
+
+function buildGraphData() {
+  const nodes = [];
+  const links = [];
+
+  // Create nodes for challenge groups
+  const challengeGroupNodes = {};
+  DATA.challengeGroups.forEach(g => {
+    const node = {
+      id: `group-${g.id}`,
+      entityId: g.id,
+      type: 'group',
+      label: `${g.id}: ${g.title}`,
+      fullLabel: g.title,
+      priority: g.priority || 2,
+      x: 0,
+      y: 0,
+      width: 200,
+      height: 50,
+      color: '#fbbf24' // Brighter yellow for groups
+    };
+    nodes.push(node);
+    challengeGroupNodes[g.id] = node;
+  });
+
+  // Create nodes for sub-challenges
+  const challengeNodes = {};
+  DATA.subChallenges.forEach(sc => {
+    const node = {
+      id: `challenge-${sc.id}`,
+      entityId: sc.id,
+      type: 'challenge',
+      label: `${sc.id.split('.')[1]}: ${sc.text.substring(0, 30)}${sc.text.length > 30 ? '...' : ''}`,
+      fullLabel: sc.text,
+      priority: sc.priority || 2,
+      groupId: sc.groupId,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#f0d24f'
+    };
+    nodes.push(node);
+    challengeNodes[sc.id] = node;
+
+    // Create link from group to sub-challenge
+    const groupNode = challengeGroupNodes[sc.groupId];
+    if (groupNode) {
+      links.push({
+        source: groupNode,
+        target: node,
+        weight: 10,
+        type: 'group-challenge'
+      });
+    }
+  });
+
+  // Create nodes for initiatives
+  const initiativeNodes = {};
+  DATA.initiatives.forEach(init => {
+    const node = {
+      id: `initiative-${init.id}`,
+      entityId: init.id,
+      type: 'initiative',
+      label: `${init.id}: ${init.text.substring(0, 30)}${init.text.length > 30 ? '...' : ''}`,
+      fullLabel: init.text,
+      season: init.season,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#8fd0ff'
+    };
+    nodes.push(node);
+    initiativeNodes[init.id] = node;
+
+    // Create links from challenges to initiatives (top to bottom)
+    if (init.challenges && init.challenges.length > 0) {
+      init.challenges.forEach(link => {
+        const challengeNode = challengeNodes[link.challengeId];
+        if (challengeNode) {
+          links.push({
+            source: challengeNode,
+            target: node,
+            weight: link.weight || 5,
+            impact: link.impact || 'M',
+            type: 'challenge-initiative'
+          });
+        }
+      });
+    }
+  });
+
+  // Create nodes for systems
+  const systemNodes = {};
+  DATA.systems.forEach(sys => {
+    const label = sys.title || sys.text || sys.id;
+    const node = {
+      id: `system-${sys.id}`,
+      entityId: sys.id,
+      type: 'system',
+      label: `${sys.id}: ${label.substring(0, 30)}${label.length > 30 ? '...' : ''}`,
+      fullLabel: label,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#1d4ed8'
+    };
+    nodes.push(node);
+    systemNodes[sys.id] = node;
+
+    // Create links from initiatives to systems (top to bottom)
+    if (sys.initiatives && sys.initiatives.length > 0) {
+      sys.initiatives.forEach(link => {
+        const initiativeNode = initiativeNodes[link.initiativeId];
+        if (initiativeNode) {
+          links.push({
+            source: initiativeNode,
+            target: node,
+            weight: link.weight || 5,
+            type: 'initiative-system'
+          });
+        }
+      });
+    }
+  });
+
+  // Create nodes for KPIs
+  DATA.kpis.forEach(kpi => {
+    const node = {
+      id: `kpi-${kpi.id}`,
+      entityId: kpi.id,
+      type: 'kpi',
+      label: `${kpi.id}: ${kpi.text.substring(0, 30)}${kpi.text.length > 30 ? '...' : ''}`,
+      fullLabel: kpi.text,
+      x: 0,
+      y: 0,
+      width: 180,
+      height: 50,
+      color: '#22c55e'
+    };
+    nodes.push(node);
+
+    // Create links from systems to KPIs (top to bottom)
+    if (kpi.systems && kpi.systems.length > 0) {
+      kpi.systems.forEach(link => {
+        const systemNode = systemNodes[link.systemId];
+        if (systemNode) {
+          links.push({
+            source: systemNode,
+            target: node,
+            weight: link.weight || 5,
+            type: 'system-kpi'
+          });
+        }
+      });
+    }
+  });
+
+  return { nodes, links };
+}
+
+function renderGraph() {
+  const canvas = byId('graphCanvas');
+  if (!canvas) return;
+
+  graph.canvas = canvas;
+  graph.ctx = canvas.getContext('2d');
+
+  // Set actual canvas size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  graph.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  // Build graph data
+  const { nodes, links } = buildGraphData();
+  graph.nodes = nodes;
+  graph.links = links;
+
+  // Initial layout - spread vertically per column
+  layoutGraph();
+
+  // Draw
+  drawGraph();
+
+  // Setup interactions
+  setupGraphInteractions();
+
+  // Update UI
+  updateGraphUI();
+}
+
+function layoutGraph() {
+  // Vertical layout: rows from top to bottom
+  // Groups at top, then challenges, then initiatives, then systems, then KPIs
+  const rows = {
+    group: { y: 60, nodes: [] },
+    challenge: { y: 150, nodes: [] },
+    initiative: { y: 270, nodes: [] },
+    system: { y: 390, nodes: [] },
+    kpi: { y: 510, nodes: [] }
+  };
+
+  // Filter nodes if there's a selection
+  let visibleNodes = graph.nodes;
+  if (graph.selectedNode && graph.filteredNodes) {
+    visibleNodes = graph.nodes.filter(n => graph.filteredNodes.has(n.id));
+  }
+
+  visibleNodes.forEach(node => {
+    rows[node.type].nodes.push(node);
+  });
+
+  // Position nodes in rows with horizontal spacing
+  Object.values(rows).forEach(row => {
+    const horizontalSpacing = 220;
+    const rowNodes = row.nodes;
+    const totalWidth = rowNodes.length * horizontalSpacing;
+    const startX = Math.max(100, (1200 - totalWidth) / 2); // Center or start at 100
+
+    rowNodes.forEach((node, i) => {
+      node.x = startX + i * horizontalSpacing;
+      node.y = row.y;
+    });
+  });
+}
+
+function drawGraph() {
+  const ctx = graph.ctx;
+  const canvas = graph.canvas;
+
+  // Clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Apply transformations
+  ctx.save();
+  ctx.translate(graph.panX, graph.panY);
+  ctx.scale(graph.zoom, graph.zoom);
+
+  // Draw links first
+  graph.links.forEach(link => {
+    drawLink(link);
+  });
+
+  // Draw nodes
+  graph.nodes.forEach(node => {
+    drawNode(node);
+  });
+
+  ctx.restore();
+}
+
+function drawLink(link) {
+  // Skip if this link is filtered out
+  if (graph.filteredLinks && !graph.filteredLinks.has(link)) {
+    return;
+  }
+
+  const ctx = graph.ctx;
+  const weight = link.weight || 5;
+  const thickness = 1 + (weight / 10) * 4; // 1 to 5px
+
+  // Draw line from bottom of source to top of target (vertical flow)
+  const sourceX = link.source.x;
+  const sourceY = link.source.y + link.source.height / 2;
+  const targetX = link.target.x;
+  const targetY = link.target.y - link.target.height / 2;
+
+  // Bezier curve for smoother vertical flow
+  const midY = (sourceY + targetY) / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(sourceX, sourceY);
+  ctx.bezierCurveTo(sourceX, midY, targetX, midY, targetX, targetY);
+
+  // Color based on link type
+  if (link.type === 'group-challenge') {
+    ctx.strokeStyle = `rgba(251, 191, 36, ${0.4 + weight / 25})`; // Brighter yellow for group links
+  } else if (link.type === 'challenge-initiative') {
+    ctx.strokeStyle = `rgba(240, 210, 79, ${0.4 + weight / 25})`;
+  } else if (link.type === 'initiative-system') {
+    ctx.strokeStyle = `rgba(143, 208, 255, ${0.4 + weight / 25})`;
+  } else {
+    ctx.strokeStyle = `rgba(34, 197, 94, ${0.4 + weight / 25})`;
+  }
+
+  ctx.lineWidth = thickness;
+  ctx.stroke();
+}
+
+function drawNode(node) {
+  // Skip if this node is filtered out
+  if (graph.filteredNodes && !graph.filteredNodes.has(node.id)) {
+    return;
+  }
+
+  const ctx = graph.ctx;
+  const w = node.width;
+  const h = node.height;
+  const x = node.x - w / 2;
+  const y = node.y - h / 2;
+  const radius = 12;
+
+  // Determine if selected
+  const isSelected = graph.selectedNode && graph.selectedNode.id === node.id;
+  const isHovered = graph.hovering === node;
+
+  // Draw rounded rectangle
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+
+  // Fill with color
+  ctx.fillStyle = node.color;
+  ctx.fill();
+
+  // Border
+  if (isSelected) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+  } else if (isHovered) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else if (node.priority === 1) {
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  } else {
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw label text inside
+  ctx.fillStyle = '#1a1a1a';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  // Wrap text if needed
+  const maxWidth = w - 10;
+  const lines = wrapText(ctx, node.label, maxWidth);
+  const lineHeight = 12;
+  const totalHeight = lines.length * lineHeight;
+  const startY = node.y - totalHeight / 2 + lineHeight / 2;
+
+  lines.forEach((line, i) => {
+    ctx.fillText(line, node.x, startY + i * lineHeight);
+  });
+}
+
+function wrapText(ctx, text, maxWidth) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+
+  for (let i = 1; i < words.length; i++) {
+    const testLine = currentLine + ' ' + words[i];
+    const metrics = ctx.measureText(testLine);
+    if (metrics.width > maxWidth) {
+      lines.push(currentLine);
+      currentLine = words[i];
+    } else {
+      currentLine = testLine;
+    }
+  }
+  lines.push(currentLine);
+  return lines.slice(0, 3); // Max 3 lines
+}
+
+function setupGraphInteractions() {
+  const canvas = graph.canvas;
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+  let clickStart = { x: 0, y: 0, time: 0 };
+
+  canvas.addEventListener('mousedown', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
+    const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
+
+    clickStart = { x: e.clientX, y: e.clientY, time: Date.now() };
+
+    // Check if clicking on a node
+    const node = findNodeAt(x, y);
+    if (node) {
+      graph.dragging = node;
+    } else {
+      isDragging = true;
+      dragStart = { x: e.clientX - graph.panX, y: e.clientY - graph.panY };
+      canvas.style.cursor = 'grabbing';
+    }
+  });
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
+    const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
+
+    if (graph.dragging) {
+      graph.dragging.x = x;
+      graph.dragging.y = y;
+      drawGraph();
+    } else if (isDragging) {
+      graph.panX = e.clientX - dragStart.x;
+      graph.panY = e.clientY - dragStart.y;
+      drawGraph();
+    } else {
+      // Hover detection
+      const node = findNodeAt(x, y);
+      if (node !== graph.hovering) {
+        graph.hovering = node;
+        canvas.style.cursor = node ? 'pointer' : 'grab';
+        drawGraph();
+      }
+    }
+  });
+
+  canvas.addEventListener('mouseup', (e) => {
+    const timeDiff = Date.now() - clickStart.time;
+    const distMoved = Math.sqrt(
+      Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+    );
+
+    // If it's a quick click without much movement, treat as node selection
+    if (timeDiff < 300 && distMoved < 5) {
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left - graph.panX) / graph.zoom;
+      const y = (e.clientY - rect.top - graph.panY) / graph.zoom;
+      const node = findNodeAt(x, y);
+
+      if (node) {
+        selectGraphNode(node);
+      } else {
+        // Clicked empty space - clear selection
+        clearGraphSelection();
+      }
+    }
+
+    graph.dragging = null;
+    isDragging = false;
+    canvas.style.cursor = 'grab';
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    graph.dragging = null;
+    isDragging = false;
+    graph.hovering = null;
+    canvas.style.cursor = 'grab';
+    drawGraph();
+  });
+
+  // Zoom with wheel
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    graph.zoom *= delta;
+    graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+    drawGraph();
+  });
+}
+
+function findNodeAt(x, y) {
+  // Check rectangles instead of circles
+  for (let node of graph.nodes) {
+    // Skip if filtered out
+    if (graph.filteredNodes && !graph.filteredNodes.has(node.id)) {
+      continue;
+    }
+
+    const left = node.x - node.width / 2;
+    const right = node.x + node.width / 2;
+    const top = node.y - node.height / 2;
+    const bottom = node.y + node.height / 2;
+
+    if (x >= left && x <= right && y >= top && y <= bottom) {
+      return node;
+    }
+  }
+  return null;
+}
+
+function selectGraphNode(node) {
+  if (graph.selectedNode && graph.selectedNode.id === node.id) {
+    // Clicking same node - deselect
+    clearGraphSelection();
+    return;
+  }
+
+  // Save current state to history before changing
+  if (graph.selectedNode || graph.filteredNodes) {
+    graph.history.push({
+      selectedNode: graph.selectedNode,
+      filteredNodes: graph.filteredNodes ? new Set(graph.filteredNodes) : null,
+      filteredLinks: graph.filteredLinks ? new Set(graph.filteredLinks) : null
+    });
+  }
+
+  graph.selectedNode = node;
+
+  // Build set of related nodes
+  const relatedNodes = new Set();
+  const relatedLinks = new Set();
+
+  relatedNodes.add(node.id);
+
+  // Find all nodes connected to this node
+  graph.links.forEach(link => {
+    if (link.source.id === node.id) {
+      relatedNodes.add(link.target.id);
+      relatedLinks.add(link);
+    } else if (link.target.id === node.id) {
+      relatedNodes.add(link.source.id);
+      relatedLinks.add(link);
+    }
+  });
+
+  // For challenge groups, include all sub-challenges and their downstream
+  if (node.type === 'group') {
+    // Find all sub-challenges in this group
+    const subChallenges = new Set();
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'group-challenge') {
+        subChallenges.add(link.target.id);
+      }
+    });
+
+    // Find initiatives linked to these sub-challenges
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (subChallenges.has(link.source.id) && link.type === 'challenge-initiative') {
+        initiativeNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find systems linked to those initiatives
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+        systemNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs linked to those systems
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For sub-challenges, include parent group and everything downstream
+  if (node.type === 'challenge') {
+    // Add parent group
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find initiatives linked to this challenge
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'challenge-initiative') {
+        initiativeNodes.add(link.target.id);
+      }
+    });
+
+    // Find systems linked to those initiatives
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+        systemNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs linked to those systems
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For initiatives, include full chain: challenges → groups AND systems → KPIs
+  if (node.type === 'initiative') {
+    // Find challenges this initiative addresses (upstream)
+    const challengeNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'challenge-initiative') {
+        challengeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find groups from those challenges
+    graph.links.forEach(link => {
+      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find systems using this initiative (downstream)
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'initiative-system') {
+        systemNodes.add(link.target.id);
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs linked to those systems
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For systems, include full chain: initiatives → challenges → groups AND KPIs
+  if (node.type === 'system') {
+    // Find initiatives using this system (upstream)
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'initiative-system') {
+        initiativeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find challenges from those initiatives
+    const challengeNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+        challengeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find groups from those challenges
+    graph.links.forEach(link => {
+      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find KPIs measuring this system (downstream)
+    graph.links.forEach(link => {
+      if (link.source.id === node.id && link.type === 'system-kpi') {
+        relatedNodes.add(link.target.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  // For KPIs, trace back through the full chain to groups
+  if (node.type === 'kpi') {
+    // Find systems measuring this KPI (upstream)
+    const systemNodes = new Set();
+    graph.links.forEach(link => {
+      if (link.target.id === node.id && link.type === 'system-kpi') {
+        systemNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find initiatives using those systems
+    const initiativeNodes = new Set();
+    graph.links.forEach(link => {
+      if (systemNodes.has(link.target.id) && link.type === 'initiative-system') {
+        initiativeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find challenges from those initiatives
+    const challengeNodes = new Set();
+    graph.links.forEach(link => {
+      if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+        challengeNodes.add(link.source.id);
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+
+    // Find groups from those challenges
+    graph.links.forEach(link => {
+      if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+        relatedNodes.add(link.source.id);
+        relatedLinks.add(link);
+      }
+    });
+  }
+
+  graph.filteredNodes = relatedNodes;
+  graph.filteredLinks = relatedLinks;
+
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+function clearGraphSelection() {
+  // Don't add to history when clearing
+  graph.selectedNode = null;
+  graph.filteredNodes = null;
+  graph.filteredLinks = null;
+  graph.history = []; // Clear history when going back to full view
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+function graphGoBack() {
+  if (graph.history.length === 0) {
+    // No history - go to full view
+    clearGraphSelection();
+    return;
+  }
+
+  // Pop the last state from history
+  const previousState = graph.history.pop();
+  graph.selectedNode = previousState.selectedNode;
+  graph.filteredNodes = previousState.filteredNodes;
+  graph.filteredLinks = previousState.filteredLinks;
+
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+function updateGraphUI() {
+  // Update back button visibility and selection info
+  const backBtn = byId('graphBackBtn');
+  const selectionInfo = byId('graphSelectionInfo');
+
+  if (backBtn) {
+    if (graph.history.length > 0 || graph.selectedNode) {
+      backBtn.style.display = 'inline-block';
+      backBtn.disabled = graph.history.length === 0 && !graph.selectedNode;
+    } else {
+      backBtn.style.display = 'none';
+    }
+  }
+
+  if (selectionInfo) {
+    if (graph.selectedNode) {
+      const label = graph.selectedNode.fullLabel || graph.selectedNode.label;
+      selectionInfo.innerHTML = `<span class="chip mono">${esc(graph.selectedNode.entityId)}</span> ${esc(label)}`;
+      selectionInfo.style.display = 'block';
+    } else {
+      selectionInfo.style.display = 'none';
+    }
+  }
+}
+
+function graphZoomIn() {
+  graph.zoom *= 1.2;
+  graph.zoom = Math.min(3, graph.zoom);
+  drawGraph();
+}
+
+function graphZoomOut() {
+  graph.zoom *= 0.8;
+  graph.zoom = Math.max(0.3, graph.zoom);
+  drawGraph();
+}
+
+function graphReset() {
+  graph.zoom = 1;
+  graph.panX = 0;
+  graph.panY = 0;
+  graph.selectedNode = null;
+  graph.filteredNodes = null;
+  graph.filteredLinks = null;
+  graph.history = [];
+  layoutGraph();
+  drawGraph();
+  updateGraphUI();
+}
+
+/* ========================================
+   BOOTSTRAP
+   ======================================== */
+function bootstrap() {
+  renderTabs();
+  wireSearch();
+  renderChallengeTree();
+  renderInitiativeList();
+  renderSystemList();
+  renderKpiList();
+  renderWorkbench();
+  setInitSeason(state.initSeason);
+
+  initFromHash();
+  renderFocusedDetail();
+}
+
+bootstrap();
+</script>
+</body>
+</html>

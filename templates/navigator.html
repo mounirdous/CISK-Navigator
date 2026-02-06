@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>{{ title }} (v{{ version }})</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #101a30;
+    --panel2: #0f1730;
+    --text: #e8eefc;
+    --muted: #a9b5d6;
+    --border: rgba(255,255,255,0.10);
+    --shadow: 0 10px 30px rgba(0,0,0,0.35);
+    --radius: 14px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+
+    /* CISK */
+    --c-challenge: #f0d24f;
+    --c-challenge-bg: rgba(240,210,79,.14);
+    --c-initiative: #8fd0ff;
+    --c-initiative-bg: rgba(143,208,255,.14);
+    --c-system: #1d4ed8;
+    --c-system-bg: rgba(29,78,216,.12);
+    --c-kpi: #22c55e;
+    --c-kpi-bg: rgba(34,197,94,.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    background:
+      radial-gradient(1200px 800px at 20% 0%, rgba(106,166,255,.14), transparent 55%),
+      radial-gradient(900px 700px at 90% 10%, rgba(34,197,94,.10), transparent 60%),
+      var(--bg);
+    color: var(--text);
+  }
+  .wrap { max-width: 1250px; margin: 0 auto; padding: 0 16px; }
+  header {
+    position: sticky; top: 0; z-index: 20;
+    background: linear-gradient(to bottom, rgba(11,18,32,.95), rgba(11,18,32,.70));
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar { display:flex; align-items:center; justify-content: space-between; gap: 12px; padding: 14px 0; }
+  .title {
+    font-weight: 800;
+    letter-spacing: .2px;
+    font-size: 15px;
+    line-height: 1.2;
+  }
+  .tabs { display:flex; gap: 8px; flex-wrap: wrap; }
+  .seasonbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0 0 12px 0;}
+  .seasonlabel{font-size:12px;color:var(--muted);margin-right:4px;}
+  .tabbtn {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    color: var(--muted);
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tabbtn.active {
+    color: var(--text);
+    border-color: rgba(143,208,255,.45);
+    background: rgba(143,208,255,.10);
+  }
+  main { padding: 16px 0 28px; }
+  .grid2 { display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: rgba(16,26,48,.88);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .panel .hd {
+    padding: 12px 12px 10px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,0.10);
+  }
+  .h1 { font-size: 13px; font-weight: 800; letter-spacing: .2px; }
+  .h2 { margin-top: 4px; font-size: 12px; color: var(--muted); line-height: 1.25; }
+  .panel .bd { padding: 12px; }
+
+  .search {
+    display:flex; gap: 10px; align-items:center;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.10);
+  }
+  .search input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    font-size: 13px;
+    outline: none;
+  }
+
+  .mono { font-family: var(--mono); }
+  .muted { color: var(--muted); }
+
+  .chip {
+    display:inline-flex; align-items:center;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 11px;
+    color: var(--muted);
+    background: rgba(255,255,255,0.03);
+  }
+  .chip.group {
+    background: var(--c-challenge-bg);
+    border-color: rgba(240,210,79,.55);
+    color: rgba(255, 242, 190, 0.98);
+    font-weight: 800;
+  }
+  .chip.season {
+    background: rgba(143,208,255,.10);
+    border-color: rgba(143,208,255,.45);
+    color: #dbe9ff;
+    font-weight: 800;
+  }
+
+  .tree details { border-left: 4px solid var(--c-challenge); padding-left: 10px; }
+  .tree details + details { margin-top: 8px; }
+  .tree summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    padding: 6px 6px;
+    border-radius: 10px;
+    display:flex; align-items:center; justify-content: space-between;
+  }
+  .tree summary:hover { background: rgba(255,255,255,0.03); }
+  .tree summary.active { background: rgba(240,210,79,.10); border: 1px solid rgba(240,210,79,.25); }
+  .tree summary::-webkit-details-marker { display:none; }
+  .sub { margin: 8px 0 10px 0; display:flex; flex-direction: column; gap: 6px; }
+  .subitem {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 12.5px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.08);
+  }
+  .subitem:hover { border-color: rgba(240,210,79,.35); }
+  .subitem.active { border-color: rgba(240,210,79,.65); background: rgba(240,210,79,.10); }
+
+  .list { display:flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .item {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+    background: rgba(0,0,0,0.08);
+  }
+  .item:hover { border-color: rgba(143,208,255,.35); }
+  .item.active { border-color: rgba(143,208,255,.65); background: rgba(143,208,255,.08); }
+  .item .t { font-weight: 750; font-size: 12.5px; }
+  .item .m { margin-top: 4px; font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+  .row { display:flex; align-items:center; gap: 8px; }
+
+  .btn {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .btn.small { padding: 6px 8px; font-size: 11px; border-radius: 10px; }
+  .btn.ghost { background: transparent; }
+  .btn.primary {
+    border-color: rgba(143,208,255,.45);
+    background: rgba(143,208,255,.10);
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px;
+    background: rgba(0,0,0,0.12);
+  }
+  .card h2 {
+    margin: 0 0 6px 0;
+    font-size: 15px;
+    letter-spacing: .2px;
+  }
+  .card h3 {
+    margin: 14px 0 8px 0;
+    font-size: 12px;
+    letter-spacing: .2px;
+    color: rgba(255,255,255,0.92);
+  }
+  .hr { height: 1px; background: var(--border); margin: 12px 0; }
+
+  .pillwrap { display:flex; flex-wrap: wrap; gap: 8px; }
+  .pill {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.03);
+  }
+  .pill:hover { filter: brightness(1.05); }
+  .pill.chall { border-color: rgba(240,210,79,.55); background: rgba(240,210,79,.10); }
+  .pill.init { border-color: rgba(143,208,255,.55); background: rgba(143,208,255,.10); }
+  .pill.sys { border-color: rgba(29,78,216,.55); background: rgba(29,78,216,.12); }
+  .pill.kpi { border-color: rgba(34,197,94,.55); background: rgba(34,197,94,.12); }
+
+  .badge {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width: 34px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    border: 1px solid var(--border);
+  }
+  .badge.ch { background: rgba(240,210,79,.16); border-color: rgba(240,210,79,.55); color: rgba(255,242,190,.98); }
+  .badge.in { background: rgba(143,208,255,.14); border-color: rgba(143,208,255,.55); color: #dbe9ff; }
+  .badge.sy { background: rgba(29,78,216,.14); border-color: rgba(29,78,216,.55); color: rgba(210,225,255,.98); }
+  .badge.kp { background: rgba(34,197,94,.14); border-color: rgba(34,197,94,.55); color: rgba(200,255,220,.98); }
+
+  .footer { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+
+  /* Workbench */
+  .kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 1100px) { .kanban { grid-template-columns: 1fr; } }
+  .col {
+    border: 1px dashed rgba(255,255,255,0.18);
+    border-radius: 14px;
+    padding: 10px;
+    background: rgba(0,0,0,0.10);
+    min-height: 220px;
+  }
+  .col h3 { margin: 0 0 8px 0; font-size: 12px; letter-spacing: .4px; color: var(--muted); text-transform: uppercase; }
+  .wcard { border: 1px solid var(--border); border-radius: 12px; padding: 10px; background: rgba(0,0,0,0.14); margin-bottom: 8px; }
+  .wcard .t { font-size: 12.5px; font-weight: 750; }
+  .wcard .m { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.35; }
+  .wcard .actions { margin-top: 8px; display:flex; gap: 6px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">{{ title }} (v{{ version }})</div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+    <div class="seasonbar">
+      <span class="seasonlabel">Season:</span>
+      <button class="btn small ghost" data-season="ALL" onclick="setInitSeason('ALL')">All</button>
+      <button class="btn small" data-season="S1" onclick="setInitSeason('S1')">S1</button>
+      <button class="btn small" data-season="S2" onclick="setInitSeason('S2')">S2</button>
+      <button class="btn small" data-season="S3" onclick="setInitSeason('S3')">S3</button>
+      <span class="muted" style="margin:0 6px">|</span>
+      <button class="btn small ghost" onclick="clearSelection()">Show all</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div id="tab-challenges" class="tab">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd">
+            <div class="h1">Challenges tree</div>
+            <div class="h2">Click a challenge group (summary) or a sub‑challenge.</div>
+          </div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchChallenges" placeholder="Search challenges…" /></div>
+            <div class="tree" id="challengeTree" style="margin-top:12px"></div>
+            <div class="footer">Tip: sub‑challenge view uses a best‑match mapping; parent challenge shows ALL items.</div>
+          </div>
+        </div>
+        <div class="panel" id="challengeDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select something on the left.</div></div>
+          <div class="bd" id="challengeDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-initiatives" class="tab" style="display:none">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><div class="h1">Initiatives</div><div class="h2">Search.</div></div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchInitiatives" placeholder="Search initiatives…" /></div>
+            <div class="list" id="initiativeList"></div>
+          </div>
+        </div>
+        <div class="panel" id="initiativeDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select an initiative.</div></div>
+          <div class="bd" id="initiativeDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-systems" class="tab" style="display:none">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><div class="h1">Systems / enablers</div><div class="h2">Search, then click for linked initiatives + KPIs.</div></div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchSystems" placeholder="Search systems…" /></div>
+            <div class="list" id="systemList"></div>
+          </div>
+        </div>
+        <div class="panel" id="systemDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select a system.</div></div>
+          <div class="bd" id="systemDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-kpis" class="tab" style="display:none">
+      <div class="grid2">
+        <div class="panel">
+          <div class="hd"><div class="h1">KPIs</div><div class="h2">Search, then click for linked systems + initiatives.</div></div>
+          <div class="bd">
+            <div class="search"><span class="chip mono">/</span><input id="searchKpis" placeholder="Search KPIs…" /></div>
+            <div class="list" id="kpiList"></div>
+          </div>
+        </div>
+        <div class="panel" id="kpiDetail">
+          <div class="hd"><div class="h1">Details</div><div class="h2">Select a KPI.</div></div>
+          <div class="bd" id="kpiDetailBody"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-workbench" class="tab" style="display:none">
+      <div class="panel">
+        <div class="hd"><div class="h1">Workbench (pin / re‑order)</div><div class="h2">Pin items to build your own live Q&A navigation.</div></div>
+        <div class="bd">
+          <div class="row">
+            <button class="btn" onclick="clearWorkbench()">Clear</button>
+            <button class="btn" onclick="saveWorkbench()">Save</button>
+            <button class="btn" onclick="loadWorkbench()">Load</button>
+            <span class="chip">Tip: on iPad, use ↑↓ if drag is awkward</span>
+          </div>
+          <div class="kanban" style="margin-top:12px" id="kanban"></div>
+          <div class="footer">Pinned state is stored locally in your browser (safe to refresh).</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+// Data injected from Flask
+const DATA = {{ data | tojson | safe }};
+
+const TABS = [
+  {id:"challenges", label:"Challenges"},
+  {id:"initiatives", label:"Initiatives"},
+  {id:"systems", label:"Systems"},
+  {id:"kpis", label:"KPIs"},
+  {id:"workbench", label:"Workbench"},
+];
+
+let state = {
+  tab: "challenges",
+  selected: null,
+  preview: null,
+  initSeason: "ALL",
+  workbench: { Challenges: [], Initiatives: [], Systems: [], KPIs: [] }
+};
+
+function byId(id) { return document.getElementById(id); }
+function esc(s) {
+  return (s ?? "").toString().replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+}
+
+const groupById = Object.fromEntries(DATA.challengeGroups.map(g=>[g.id,g]));
+const subById = Object.fromEntries(DATA.subChallenges.map(sc=>[sc.id,sc]));
+const initById = Object.fromEntries(DATA.initiatives.map(i=>[i.id,i]));
+const sysById = Object.fromEntries(DATA.systems.map(s=>[s.id,s]));
+const kpiById = Object.fromEntries(DATA.kpis.map(k=>[k.id,k]));
+
+function groupTitle(id) {
+  const g = groupById[id];
+  return g ? g.title : id;
+}
+
+function labelOf(type, obj) {
+  if (!obj) return "";
+  if (type==="challengeGroup") return obj.title || obj.id;
+  if (type==="subChallenge") return obj.text || obj.id;
+  if (type==="initiative") return obj.text || obj.raw || obj.id;
+  if (type==="system") return obj.title || obj.text || obj.id;
+  if (type==="kpi") return obj.text || obj.id;
+  return obj.title || obj.text || obj.id || "";
+}
+
+/* --- lightweight "best match" mapping --- */
+function normWord(w){
+  return w.toLowerCase().replace(/[^a-z0-9]+/g,"").trim();
+}
+function tokensFrom(text){
+  const raw = (text||"").toLowerCase();
+  const words = raw.split(/\s+/).map(normWord).filter(Boolean);
+  const stop = new Set(["the","and","or","to","of","a","in","for","with","on","as","is","are","be","by","from","via","into","at","this","that","it","we","our","their","not","yet"]);
+  return new Set(words.filter(w=>w.length>2 && !stop.has(w)));
+}
+const KEY_W = {
+  "sap":6, "s4hana":6, "s4":6, "erp":6, "crm":6, "mes":6, "plm":6,
+  "inventory":5, "wip":5, "leadtime":5, "delivery":5, "otd":5, "quality":5, "copq":5,
+  "data":4, "masterdata":5, "mrp":5, "sop":5, "planning":5, "controltower":5, "exception":4,
+  "traceability":5, "ecr":4, "eco":4, "engineering":4,
+  "portal":4, "service":4, "remote":4, "predictive":4,
+  "security":6, "mfa":6, "pam":6, "siem":6, "soc":5, "segmentation":5, "otit":6, "iot":6, "iiot":6, "edge":5, "5g":5,
+  "cost":4, "margin":4, "variance":4, "licenses":4, "licence":4, "outsourcing":4, "managed":4, "sla":4,
+  "governance":4, "adoption":4, "training":4, "change":4, "culture":4,
+  "rto":5, "rpo":5, "backup":4, "dr":4
+};
+
+function extractTags(text){
+  const t = (text||"").toLowerCase();
+  const tags = new Set();
+  const add = (x)=>tags.add(x);
+
+  if (/lead[-\s]?time|cycle\s*time/.test(t)) add("leadtime");
+  if (/on[-\s]?time|delivery|otd/.test(t)) add("otd");
+  if (/inventory|wip|stock/.test(t)) add("inventory");
+  if (/quality|copq|scrap|rework|trace/.test(t)) add("quality");
+  if (/cost|margin|variance|transparency/.test(t)) add("cost");
+  if (/crm|customer|portal|quote|pipeline/.test(t)) add("crm");
+  if (/sap|s\/4|s4hana|erp/.test(t)) add("erp");
+  if (/mes|shop[-\s]?floor|execution/.test(t)) add("mes");
+  if (/plm|ecr|eco|engineering\s*change|bom|routing/.test(t)) add("plm");
+  if (/data|master\s*data|single\s*version|truth/.test(t)) add("data");
+  if (/integration|api|ipaas|interface|event/.test(t)) add("integration");
+  if (/ot|iiot|iot|edge|sensor|5g|wifi/.test(t)) add("ot");
+  if (/security|mfa|pam|siem|soc|segmentation|audit|gdpr|iso/.test(t)) add("security");
+  if (/governance|decision|steer|pmo/.test(t)) add("governance");
+  if (/adoption|training|change|culture|champion/.test(t)) add("adoption");
+  if (/outsourc|managed\s*service|vendor|sla/.test(t)) add("sourcing");
+  if (/backup|dr|rto|rpo|resilien/.test(t)) add("resilience");
+  return tags;
+}
+
+function enrich(type, obj){
+  const label = labelOf(type, obj);
+  const text = label + " " + (obj.groupId ? groupTitle(obj.groupId) : "");
+  obj._label = label;
+  obj._tokens = tokensFrom(text);
+  obj._tags = extractTags(text);
+  return obj;
+}
+
+DATA.challengeGroups.forEach(g=>enrich("challengeGroup", g));
+DATA.subChallenges.forEach(sc=>enrich("subChallenge", sc));
+DATA.initiatives.forEach(i=>enrich("initiative", i));
+DATA.systems.forEach(s=>enrich("system", s));
+DATA.kpis.forEach(k=>enrich("kpi", k));
+
+function intersectCount(aSet,bSet){
+  let s=0;
+  aSet.forEach(tok=>{ if(bSet.has(tok)) s += (KEY_W[tok] || 1); });
+  return s;
+}
+function relScore(aItem,bItem){
+  const tagOverlap = intersectCount(aItem._tags,bItem._tags);
+  const tokScore = intersectCount(aItem._tokens,bItem._tokens);
+  return tagOverlap*25 + tokScore;
+}
+function rankRelated(src, candidates, n){
+  const scored = candidates.map(c=>({c, s: relScore(src,c)})).sort((x,y)=>y.s-x.s);
+  const hasSignal = scored.length && scored[0].s>0;
+  const filtered = hasSignal ? scored.filter(x=>x.s>0) : scored;
+  const out = filtered.slice(0,n).map(x=>x.c);
+  return out.length ? out : candidates.slice(0,n);
+}
+
+function setTab(tabId) {
+  state.tab = tabId;
+  for (const t of TABS) {
+    const el = byId("tab-"+t.id);
+    el.style.display = (t.id === tabId) ? "" : "none";
+  }
+  for (const btn of document.querySelectorAll(".tabbtn")) {
+    btn.classList.toggle("active", btn.dataset.tab === tabId);
+  }
+  updateHash();
+  renderFocusedDetail();
+}
+
+function renderTabs() {
+  const host = byId("tabs");
+  host.innerHTML = "";
+  for (const t of TABS) {
+    const b = document.createElement("button");
+    b.className = "tabbtn" + (t.id===state.tab ? " active" : "");
+    b.textContent = t.label;
+    b.dataset.tab = t.id;
+    b.onclick = () => setTab(t.id);
+    host.appendChild(b);
+  }
+}
+
+function updateHash(){
+  const sel = (state.selected && inferTab(state.selected.type)===state.tab) ? `${state.selected.type}:${state.selected.id}` : "";
+  history.replaceState(null, "", "#" + state.tab + (sel ? ("/"+sel) : ""));
+}
+
+function inferTab(type){
+  if(type==="challengeGroup" || type==="subChallenge" || type==="challenge") return "challenges";
+  if(type==="initiative") return "initiatives";
+  if(type==="system") return "systems";
+  if(type==="kpi") return "kpis";
+  return "challenges";
+}
+
+function detailBodyIdForTab(tab){
+  if(tab==="challenges") return "challengeDetailBody";
+  if(tab==="initiatives") return "initiativeDetailBody";
+  if(tab==="systems") return "systemDetailBody";
+  if(tab==="kpis") return "kpiDetailBody";
+  return null;
+}
+
+function renderByType(type,id){
+  if(type==="challengeGroup") return renderChallengeGroupDetail(id);
+  if(type==="subChallenge") return renderSubChallengeDetail(id);
+  if(type==="initiative") return renderInitiativeDetail(id);
+  if(type==="system") return renderSystemDetail(id);
+  if(type==="kpi") return renderKpiDetail(id);
+  return `<div class="card"><div class="muted">Nothing selected.</div></div>`;
+}
+
+function renderGlobalDetailForTab(tab){
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : `<span class="chip mono">All seasons</span>`;
+  if(tab==="challenges"){
+    const groups = DATA.challengeGroups.slice().sort((a,b)=>a.number-b.number);
+    const subsCount = DATA.subChallenges.length;
+
+    const allInits = [];
+    const sysAllow = systemsTouchedBySeason();
+    const kAllow = kpisTouchedBySeason();
+    const allSys = [];
+    const allK = [];
+
+    for(const g of groups){
+      seasonFilteredInits(g.id).forEach(i=>allInits.push(i));
+      const sysAll = findSystems(g.id);
+      const kAll = findKpis(g.id);
+      sysAll.filter(s=>!sysAllow || sysAllow.has(s.id)).forEach(s=>allSys.push(s));
+      kAll.filter(k=>!kAllow || kAllow.has(k.id)).forEach(k=>allK.push(k));
+    }
+    const dedup = (arr)=>Array.from(new Map(arr.map(x=>[x.id,x])).values());
+    const inits = dedup(allInits);
+    const sys = dedup(allSys);
+    const ks = dedup(allK);
+
+    const maxPills = 28;
+    const initsShown = inits.slice(0,maxPills);
+    const sysShown = sys.slice(0,maxPills);
+    const ksShown = ks.slice(0,maxPills);
+
+    return `
+      <div class="card">
+        <div class="row" style="justify-content:space-between;">
+          <div class="row"><h2 style="margin:0">Case map (all challenges)</h2>${seasonChip}</div>
+          <button class="btn small" onclick="clearSelection()">Show all</button>
+        </div>
+        <div class="muted">Nothing selected — full map view. Click any item to jump across.</div>
+
+        <div class="hr"></div>
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <span class="chip mono">${groups.length} challenges</span>
+          <span class="chip mono">${subsCount} sub‑challenges</span>
+          <span class="chip mono">${inits.length} initiatives</span>
+          <span class="chip mono">${sys.length} systems</span>
+          <span class="chip mono">${ks.length} KPIs</span>
+        </div>
+
+        <div class="hr"></div>
+        <h3>Challenges</h3>
+        <div class="pillwrap">
+          ${groups.map(g=>`<span class="pill chall" onclick="jumpGroup('${g.id}')"><span class="badge mini ch mono">${esc(g.id)}</span> ${esc(g.title)}</span>`).join("")}
+        </div>
+
+        <div class="hr"></div>
+        <h3>Initiatives (top ${Math.min(maxPills,inits.length)})</h3>
+        ${pillList(initsShown, "init", "jumpInit")}
+        ${inits.length>maxPills ? `<div class="muted" style="font-size:11.5px;margin-top:6px">Showing ${maxPills} of ${inits.length}. Use search on the left for full list.</div>` : ``}
+
+        <div class="hr"></div>
+        <h3>Systems touched (top ${Math.min(maxPills,sys.length)})</h3>
+        ${pillList(sysShown, "sys", "jumpSys")}
+
+        <div class="hr"></div>
+        <h3>KPIs (top ${Math.min(maxPills,ks.length)})</h3>
+        ${pillList(ksShown, "kpi", "jumpKpi")}
+      </div>
+    `;
+  }
+
+  const label = (tab==="initiatives") ? "initiative" : (tab==="systems") ? "system" : (tab==="kpis") ? "KPI" : "item";
+  return `
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div class="row"><h2 style="margin:0">Nothing selected</h2>${seasonChip}</div>
+        <button class="btn small" onclick="clearSelection()">Show all</button>
+      </div>
+      <div class="muted">Use search + the left list to select a ${label}. (Season filter applies globally.)</div>
+    </div>
+  `;
+}
+
+function renderFocusedDetail(){
+  const bodyId = detailBodyIdForTab(state.tab);
+  if(!bodyId) return;
+  const host = byId(bodyId);
+  if(!host) return;
+
+  const focus = state.preview || (state.selected && inferTab(state.selected.type)===state.tab ? state.selected : null);
+  let inner = "";
+
+  if(!focus){
+    inner = renderGlobalDetailForTab(state.tab);
+  } else {
+    inner = renderByType(focus.type, focus.id);
+    if(state.preview){
+      inner = `
+        <div class="card" style="border-style:dashed;margin-bottom:10px">
+          <div class="row" style="justify-content:space-between;">
+            <div class="row"><span class="chip mono">Preview</span><span class="muted">Right‑pane click — left selection unchanged.</span></div>
+            <div class="row" style="gap:8px">
+              <button class="btn small primary" onclick="openPreview()">Open</button>
+              <button class="btn small" onclick="clearPreview()">Back</button>
+            </div>
+          </div>
+        </div>
+      ` + inner;
+    }
+  }
+
+  host.innerHTML = inner;
+}
+
+function clearPreview(){ state.preview = null; renderFocusedDetail(); }
+function openPreview(){
+  if(!state.preview) return;
+  const p = state.preview;
+  select(p.type, p.id, {autoTab: inferTab(p.type)});
+}
+function preview(type,id){
+  if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
+  if(state.preview && state.preview.type===type && state.preview.id===id){
+    state.preview = null;
+  } else {
+    state.preview = {type,id};
+  }
+  renderFocusedDetail();
+}
+
+function clearSelection(){
+  state.selected = null;
+  state.preview = null;
+  document.querySelectorAll("[data-key].active").forEach(el=>el.classList.remove("active"));
+  renderFocusedDetail();
+  updateHash();
+}
+
+function select(type, id, {autoTab=null}={}) {
+  if (type==="challenge") type = id.includes(".SC") ? "subChallenge" : "challengeGroup";
+
+  if (state.selected && state.selected.type===type && state.selected.id===id) {
+    clearSelection();
+    return;
+  }
+
+  state.selected = {type, id};
+  state.preview = null;
+  if (autoTab) setTab(autoTab);
+
+  document.querySelectorAll("[data-key].active").forEach(el=>el.classList.remove("active"));
+  const el = document.querySelector(`[data-key="${type}:${id}"]`);
+  if (el) el.classList.add("active");
+
+  renderFocusedDetail();
+  updateHash();
+}
+
+function findSubs(groupId) { return DATA.subChallenges.filter(sc=>sc.groupId===groupId); }
+function findInits(groupId) { return DATA.initiatives.filter(i=>i.groupId===groupId); }
+function findSystems(groupId) { return DATA.systems.filter(s=>s.groupId===groupId); }
+function findKpis(groupId) { return DATA.kpis.filter(k=>k.groupId===groupId); }
+
+function seasonFilteredInits(groupId) {
+  const all = findInits(groupId);
+  if (state.initSeason==="ALL") return all;
+  return all.filter(i=>i.season===state.initSeason);
+}
+function unionRelated(fromItems, candidates, topN) {
+  const m = new Map();
+  for (const it of (fromItems||[])) {
+    const rel = rankRelated(it, candidates, topN);
+    for (const c of rel) m.set(c.id, c);
+  }
+  return Array.from(m.values());
+}
+function systemsTouchedBySeason() {
+  if (state.initSeason==="ALL") return null;
+  const allow = new Set();
+  for (const g of DATA.challengeGroups) {
+    const inits = seasonFilteredInits(g.id);
+    if (!inits.length) continue;
+    const sysAll = findSystems(g.id);
+    unionRelated(inits, sysAll, 3).forEach(s=>allow.add(s.id));
+  }
+  return allow;
+}
+function kpisTouchedBySeason() {
+  if (state.initSeason==="ALL") return null;
+  const allow = new Set();
+  for (const g of DATA.challengeGroups) {
+    const inits = seasonFilteredInits(g.id);
+    if (!inits.length) continue;
+    const kAll = findKpis(g.id);
+    unionRelated(inits, kAll, 3).forEach(k=>allow.add(k.id));
+  }
+  return allow;
+}
+
+function pillList(items, kind, onClickFn) {
+  if (!items.length) return `<span class="muted">None</span>`;
+  return `<div class="pillwrap">` + items.map(it => {
+    const label = esc(labelOf(kind, it));
+    return `<span class="pill ${kind}" onclick="${onClickFn}('${it.id}')">${label}</span>`;
+  }).join("") + `</div>`;
+}
+
+function jumpGroup(id) { preview("challengeGroup", id); }
+function jumpSub(id) { preview("subChallenge", id); }
+function jumpInit(id) { preview("initiative", id); }
+function jumpSys(id) { preview("system", id); }
+function jumpKpi(id) { preview("kpi", id); }
+
+function renderChallengeGroupDetail(groupId) {
+  const g = groupById[groupId];
+  if(!g) return `<div class="card"><div class="muted">Select a challenge.</div></div>`;
+  const subs = findSubs(groupId);
+
+  const initsPool = findInits(groupId);
+  const sysAll = findSystems(groupId);
+  const kpisAll = findKpis(groupId);
+
+  const inits = (state.initSeason==="ALL") ? initsPool : initsPool.filter(i=>i.season===state.initSeason);
+  let sys = sysAll;
+  let kpis = kpisAll;
+
+  if (state.initSeason!=="ALL") {
+    const sysCand = unionRelated(inits, sysAll, 3);
+    const kCand = unionRelated(inits, kpisAll, 3);
+    if (sysCand.length) sys = sysCand;
+    if (kCand.length) kpis = kCand;
+  }
+
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><h2 style="margin:0">${esc(g.title)}</h2>${seasonChip}</div>
+        <button class="btn small" onclick="pin('Challenges','challengeGroup','${g.id}')">Pin</button>
+      </div>
+      <div class="muted">Parent challenge overview — click any sub‑challenge to zoom in.</div>
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges (${subs.length})</h3>
+      <div class="pillwrap">
+        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+      </div>
+
+      <div class="hr"></div>
+      <h3>Initiatives (${inits.length})</h3>
+      ${pillList(inits, "init", "jumpInit")}
+
+      <div class="hr"></div>
+      <h3>Systems (${sys.length})</h3>
+      ${pillList(sys, "sys", "jumpSys")}
+
+      <div class="hr"></div>
+      <h3>KPIs (${kpis.length})</h3>
+      ${pillList(kpis, "kpi", "jumpKpi")}
+    </div>
+  `;
+}
+
+function renderSubChallengeDetail(subId) {
+  const sc = subById[subId];
+  if(!sc) return `<div class="card"><div class="muted">Select a sub‑challenge.</div></div>`;
+  const g = groupById[sc.groupId];
+
+  const initsPool = findInits(sc.groupId);
+  const initsAll = seasonFilteredInits(sc.groupId);
+  const sysAll = findSystems(sc.groupId);
+  const kAll = findKpis(sc.groupId);
+
+  const inits = rankRelated(sc, initsAll, 5);
+
+  let sys = rankRelated(sc, sysAll, 5);
+  let ks = rankRelated(sc, kAll, 5);
+
+  if (state.initSeason!=="ALL") {
+    const sysCand = unionRelated(inits, sysAll, 3);
+    const kCand = unionRelated(inits, kAll, 3);
+    if (sysCand.length) sys = rankRelated(sc, sysCand, 5);
+    if (kCand.length) ks = rankRelated(sc, kCand, 5);
+  }
+
+  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+
+  const poolNote = (state.initSeason==="ALL") ? `${inits.length} of ${initsPool.length}` : `${inits.length} of ${initsAll.length} (${esc(state.initSeason)})`;
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge ch mono">${esc(g.id)}</span><span class="muted">Sub‑challenge</span>${seasonChip}</div>
+        <button class="btn small" onclick="pin('Challenges','subChallenge','${sc.id}')">Pin</button>
+      </div>
+
+      <h2>${esc(sc.text)}</h2>
+
+      <div class="hr"></div>
+      <h3>Most relevant initiatives</h3>
+      ${pillList(inits, "init", "jumpInit")}
+      <div class="muted" style="font-size:11.5px;margin-top:6px">(${poolNote})</div>
+
+      <div class="hr"></div>
+      <h3>Enabling systems</h3>
+      ${pillList(sys, "sys", "jumpSys")}
+
+      <div class="hr"></div>
+      <h3>How we measure it</h3>
+      ${pillList(ks, "kpi", "jumpKpi")}
+
+      <div class="hr"></div>
+      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id} overview</button>
+    </div>
+  `;
+}
+
+function renderInitiativeDetail(initId) {
+  const it = initById[initId];
+  if(!it) return `<div class="card"><div class="muted">Select an initiative.</div></div>`;
+  const g = groupById[it.groupId];
+  const subsAll = findSubs(it.groupId);
+  const sysAll = findSystems(it.groupId);
+  const kAll = findKpis(it.groupId);
+
+  const subs = rankRelated(it, subsAll, 5);
+  const sys = rankRelated(it, sysAll, 6);
+  const ks = rankRelated(it, kAll, 6);
+
+  const season = it.season ? `<span class="chip season mono">${esc(it.season)}</span>` : "";
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge in mono">${esc(g.id)}</span>${season}</div>
+        <button class="btn small" onclick="pin('Initiatives','initiative','${it.id}')">Pin</button>
+      </div>
+      <h2>${esc(it.raw || it.text)}</h2>
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges it addresses</h3>
+      <div class="pillwrap">
+        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+      </div>
+
+      <div class="hr"></div>
+      <h3>Systems we use / build</h3>
+      ${pillList(sys, "sys", "jumpSys")}
+
+      <div class="hr"></div>
+      <h3>KPIs this should move</h3>
+      ${pillList(ks, "kpi", "jumpKpi")}
+
+      <div class="hr"></div>
+      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>
+    </div>
+  `;
+}
+
+function renderSystemDetail(sysId) {
+  const s = sysById[sysId];
+  if(!s) return `<div class="card"><div class="muted">Select a system.</div></div>`;
+  const g = groupById[s.groupId];
+
+  const initsAll = seasonFilteredInits(s.groupId);
+  const subsAll = findSubs(s.groupId);
+  const kAll = findKpis(s.groupId);
+
+  const inits = rankRelated(s, initsAll, 6);
+  const subs = rankRelated(s, subsAll, 5);
+  const ks = rankRelated(s, kAll, 6);
+
+  const bullets = (s.bullets && s.bullets.length) ? `<ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>` : "";
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge sy mono">${esc(g.id)}</span><span class="muted">System</span>${(state.initSeason!=="ALL")?`<span class="chip season mono">${esc(state.initSeason)}</span>`:""}</div>
+        <button class="btn small" onclick="pin('Systems','system','${s.id}')">Pin</button>
+      </div>
+      <h2>${esc(labelOf("system", s))}</h2>
+      ${bullets}
+
+      <div class="hr"></div>
+      <h3>Initiatives enabled</h3>
+      ${pillList(inits, "init", "jumpInit")}
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges where it matters</h3>
+      <div class="pillwrap">
+        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+      </div>
+
+      <div class="hr"></div>
+      <h3>KPIs we expect to move</h3>
+      ${pillList(ks, "kpi", "jumpKpi")}
+
+      <div class="hr"></div>
+      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>
+    </div>
+  `;
+}
+
+function renderKpiDetail(kpiId) {
+  const k = kpiById[kpiId];
+  if(!k) return `<div class="card"><div class="muted">Select a KPI.</div></div>`;
+  const g = groupById[k.groupId];
+
+  const sysAll = findSystems(k.groupId);
+  const initsAll = seasonFilteredInits(k.groupId);
+  const subsAll = findSubs(k.groupId);
+
+  const sys = rankRelated(k, sysAll, 6);
+  const inits = rankRelated(k, initsAll, 6);
+  const subs = rankRelated(k, subsAll, 5);
+
+  return `
+    <div class="card">
+      <div class="row" style="justify-content: space-between;">
+        <div class="row"><span class="badge kp mono">${esc(g.id)}</span><span class="muted">KPI</span>${(state.initSeason!=="ALL")?`<span class="chip season mono">${esc(state.initSeason)}</span>`:""}</div>
+        <button class="btn small" onclick="pin('KPIs','kpi','${k.id}')">Pin</button>
+      </div>
+      <h2>${esc(k.text)}</h2>
+
+      <div class="hr"></div>
+      <h3>Systems that influence this KPI</h3>
+      ${pillList(sys, "sys", "jumpSys")}
+
+      <div class="hr"></div>
+      <h3>Initiatives that drive it</h3>
+      ${pillList(inits, "init", "jumpInit")}
+
+      <div class="hr"></div>
+      <h3>Sub‑challenges behind the KPI</h3>
+      <div class="pillwrap">
+        ${subs.map(sc=>`<span class="pill chall" onclick="jumpSub('${sc.id}')">${esc(sc.text)}</span>`).join("")}
+      </div>
+
+      <div class="hr"></div>
+      <button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>
+    </div>
+  `;
+}
+
+function renderChallengeTree() {
+  const host = byId("challengeTree");
+  host.innerHTML = "";
+  const q = (byId("searchChallenges").value || "").toLowerCase().trim();
+
+  for (const g of DATA.challengeGroups.slice().sort((a,b)=>a.number-b.number)) {
+    const subs = findSubs(g.id);
+    const matchesGroup = (g.title || "").toLowerCase().includes(q) || g.id.toLowerCase().includes(q);
+    const matchesSubs = subs.filter(sc => (sc.text||"").toLowerCase().includes(q));
+    if (q && !matchesGroup && matchesSubs.length===0) continue;
+
+    const d = document.createElement("details");
+    d.open = false;
+    if (q && (matchesGroup || matchesSubs.length)) d.open = true;
+
+    const s = document.createElement("summary");
+    s.setAttribute("data-key", `challengeGroup:${g.id}`);
+    s.innerHTML = `<span class="row" style="gap:8px"><span class="chip group mono">${esc(g.id)}</span><span>${esc(g.title)}</span></span><span class="chip mono">${subs.length} sub</span>`;
+    s.addEventListener("click", ()=>{ select("challengeGroup", g.id, {autoTab:"challenges"}); });
+    d.appendChild(s);
+
+    const subDiv = document.createElement("div");
+    subDiv.className = "sub";
+    const showSubs = q ? matchesSubs : subs;
+    for (const sc of showSubs) {
+      const div = document.createElement("div");
+      div.className = "subitem";
+      div.setAttribute("data-key", `subChallenge:${sc.id}`);
+      div.innerHTML = `${esc(sc.text)}`;
+      div.onclick = () => select("subChallenge", sc.id, {autoTab:"challenges"});
+      subDiv.appendChild(div);
+    }
+    d.appendChild(subDiv);
+
+    host.appendChild(d);
+  }
+}
+
+function setInitSeason(season) {
+  state.initSeason = season;
+  document.querySelectorAll('[data-season]').forEach(b=>{
+    b.classList.toggle('primary', b.dataset.season===season);
+  });
+  renderInitiativeList();
+  renderSystemList();
+  renderKpiList();
+  renderFocusedDetail();
+}
+
+function renderInitiativeList() {
+  const host = byId("initiativeList");
+  const q = (byId("searchInitiatives").value || "").toLowerCase().trim();
+  host.innerHTML = "";
+
+  let items = DATA.initiatives.slice();
+  if (state.initSeason !== "ALL") items = items.filter(i=>i.season===state.initSeason);
+  if (q) items = items.filter(i => (labelOf("initiative", i)).toLowerCase().includes(q) || groupTitle(i.groupId).toLowerCase().includes(q));
+
+  items.sort((a,b)=> {
+    const sa=a.season||"S9", sb=b.season||"S9";
+    if (sa!==sb) return sa.localeCompare(sb);
+    return a.groupId.localeCompare(b.groupId);
+  });
+
+  for (const i of items) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.setAttribute("data-key", `initiative:${i.id}`);
+    div.onclick = () => select("initiative", i.id, {autoTab:"initiatives"});
+    div.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <div class="t">${esc(i.raw || i.text)}</div>
+        <div class="row">
+          ${i.season ? `<span class="chip season mono">${esc(i.season)}</span>` : ""}
+          <span class="chip group mono">${esc(i.groupId)}</span>
+        </div>
+      </div>
+      <div class="m">${esc(groupTitle(i.groupId))}</div>
+    `;
+    host.appendChild(div);
+  }
+}
+
+function renderSystemList() {
+  const host = byId("systemList");
+  const q = (byId("searchSystems").value || "").toLowerCase().trim();
+  host.innerHTML = "";
+
+  let items = DATA.systems.slice();
+  if (q) items = items.filter(s => (labelOf("system", s)).toLowerCase().includes(q) || groupTitle(s.groupId).toLowerCase().includes(q));
+
+  if (state.initSeason!=="ALL") {
+    const allow = systemsTouchedBySeason();
+    if (allow) items = items.filter(s => allow.has(s.id));
+  }
+
+  items.sort((a,b)=>a.groupId.localeCompare(b.groupId));
+
+  for (const s of items) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.setAttribute("data-key", `system:${s.id}`);
+    div.onclick = () => select("system", s.id, {autoTab:"systems"});
+    div.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <div class="t">${esc(labelOf("system", s))}</div>
+        <div class="row"><span class="chip group mono">${esc(s.groupId)}</span></div>
+      </div>
+      <div class="m">${esc(groupTitle(s.groupId))}</div>
+    `;
+    host.appendChild(div);
+  }
+}
+
+function renderKpiList() {
+  const host = byId("kpiList");
+  const q = (byId("searchKpis").value || "").toLowerCase().trim();
+  host.innerHTML = "";
+
+  let items = DATA.kpis.slice();
+  if (q) items = items.filter(k => (k.text||"").toLowerCase().includes(q) || groupTitle(k.groupId).toLowerCase().includes(q));
+
+  if (state.initSeason!=="ALL") {
+    const allow = kpisTouchedBySeason();
+    if (allow) items = items.filter(k => allow.has(k.id));
+  }
+  items.sort((a,b)=>a.groupId.localeCompare(b.groupId));
+
+  for (const k of items) {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.setAttribute("data-key", `kpi:${k.id}`);
+    div.onclick = () => select("kpi", k.id, {autoTab:"kpis"});
+    div.innerHTML = `
+      <div class="row" style="justify-content: space-between;">
+        <div class="t">${esc(k.text)}</div>
+        <div class="row"><span class="chip group mono">${esc(k.groupId)}</span></div>
+      </div>
+      <div class="m">${esc(groupTitle(k.groupId))}</div>
+    `;
+    host.appendChild(div);
+  }
+}
+
+/* --- Workbench --- */
+function pin(colName, type, id) {
+  let obj=null;
+  if(type==="challengeGroup") obj = groupById[id];
+  if(type==="subChallenge") obj = subById[id];
+  if(type==="initiative") obj = initById[id];
+  if(type==="system") obj = sysById[id];
+  if(type==="kpi") obj = kpiById[id];
+  if(!obj) return;
+
+  const label = (type==="subChallenge") ? obj.text : labelOf(type,obj);
+  state.workbench[colName].push({type, id, label});
+  renderWorkbench();
+}
+
+function moveCard(col, idx, dir) {
+  const arr = state.workbench[col];
+  const j = idx + dir;
+  if (j < 0 || j >= arr.length) return;
+  const tmp = arr[idx]; arr[idx] = arr[j]; arr[j] = tmp;
+  renderWorkbench();
+}
+function removeCard(col, idx) {
+  state.workbench[col].splice(idx,1);
+  renderWorkbench();
+}
+
+function renderWorkbench() {
+  const host = byId("kanban");
+  host.innerHTML = "";
+  const cols = ["Challenges","Initiatives","Systems","KPIs"];
+  for (const c of cols) {
+    const div = document.createElement("div");
+    div.className = "col";
+    div.innerHTML = `<h3>${c}</h3>`;
+    for (let i=0;i<state.workbench[c].length;i++) {
+      const card = state.workbench[c][i];
+      const el = document.createElement("div");
+      el.className = "wcard";
+      el.draggable = true;
+      el.ondragstart = (ev)=>{ ev.dataTransfer.setData("text/plain", JSON.stringify({col:c, idx:i})); };
+      el.innerHTML = `
+        <div class="t">${esc(card.label)}</div>
+        <div class="m mono">${esc(card.type)}:${esc(card.id)}</div>
+        <div class="actions">
+          <button class="btn small primary" onclick="select('${card.type}','${card.id}',{autoTab: inferTab('${card.type}')})">Open</button>
+          <button class="btn small" onclick="moveCard('${c}',${i},-1)">↑</button>
+          <button class="btn small" onclick="moveCard('${c}',${i},1)">↓</button>
+          <button class="btn small" onclick="removeCard('${c}',${i})">Remove</button>
+        </div>
+      `;
+      div.appendChild(el);
+    }
+    div.ondragover = (ev)=>{ ev.preventDefault(); };
+    div.ondrop = (ev)=>{
+      ev.preventDefault();
+      try {
+        const src = JSON.parse(ev.dataTransfer.getData("text/plain"));
+        const card = state.workbench[src.col][src.idx];
+        state.workbench[src.col].splice(src.idx,1);
+        state.workbench[c].push(card);
+        renderWorkbench();
+      } catch(e) {}
+    };
+    host.appendChild(div);
+  }
+}
+
+function saveWorkbench() {
+  localStorage.setItem("mNavigatorWorkbench", JSON.stringify(state.workbench));
+  alert("Workbench saved in this browser.");
+}
+function loadWorkbench() {
+  const raw = localStorage.getItem("mNavigatorWorkbench");
+  if (!raw) return alert("No saved workbench found.");
+  try { state.workbench = JSON.parse(raw); renderWorkbench(); } catch(e) { alert("Could not load saved state."); }
+}
+function clearWorkbench() {
+  state.workbench = {Challenges:[],Initiatives:[],Systems:[],KPIs:[]};
+  renderWorkbench();
+}
+
+function initFromHash() {
+  const h = (location.hash || "").replace(/^#/, "");
+  if (!h) return;
+  const parts = h.split("/");
+  const tab = parts[0];
+  if (TABS.some(t=>t.id===tab)) setTab(tab);
+  if (parts[1]) {
+    const [type, id] = parts[1].split(":");
+    if (type && id) select(type, id, {autoTab: inferTab(type)});
+  }
+}
+
+function wireSearch() {
+  byId("searchChallenges").addEventListener("input", renderChallengeTree);
+  byId("searchInitiatives").addEventListener("input", renderInitiativeList);
+  byId("searchSystems").addEventListener("input", renderSystemList);
+  byId("searchKpis").addEventListener("input", renderKpiList);
+}
+
+function bootstrap() {
+  renderTabs();
+  wireSearch();
+  renderChallengeTree();
+  renderInitiativeList();
+  renderSystemList();
+  renderKpiList();
+  renderWorkbench();
+  setInitSeason(state.initSeason);
+
+  initFromHash();
+  renderFocusedDetail();
+}
+
+bootstrap();
+</script>
+</body>
+</html>

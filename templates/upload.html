@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CISK Navigator - Upload</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    background: linear-gradient(135deg, #0b1220 0%, #1a2744 100%);
+    color: #e8eefc;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    max-width: 600px;
+    width: 100%;
+    background: rgba(16,26,48,0.88);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+  }
+  h1 {
+    margin: 0 0 8px 0;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+  }
+  .subtitle {
+    margin: 0 0 24px 0;
+    font-size: 14px;
+    color: #a9b5d6;
+    line-height: 1.5;
+  }
+  .form-group {
+    margin-bottom: 20px;
+  }
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #e8eefc;
+  }
+  .file-input-wrapper {
+    position: relative;
+    border: 2px dashed rgba(143,208,255,0.45);
+    border-radius: 12px;
+    padding: 40px 20px;
+    text-align: center;
+    background: rgba(0,0,0,0.15);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .file-input-wrapper:hover {
+    border-color: rgba(143,208,255,0.65);
+    background: rgba(143,208,255,0.05);
+  }
+  .file-input-wrapper input[type="file"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .file-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+  .file-text {
+    font-size: 14px;
+    color: #a9b5d6;
+  }
+  .file-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #7a8aa5;
+  }
+  .selected-file {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(143,208,255,0.10);
+    border: 1px solid rgba(143,208,255,0.35);
+    border-radius: 8px;
+    font-size: 13px;
+    color: #8fd0ff;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    border: 1px solid rgba(143,208,255,0.45);
+    background: rgba(143,208,255,0.15);
+    color: #e8eefc;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .btn:hover {
+    background: rgba(143,208,255,0.25);
+    border-color: rgba(143,208,255,0.65);
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.15);
+    margin-top: 12px;
+  }
+  .btn-secondary:hover {
+    background: rgba(255,255,255,0.08);
+  }
+  .divider {
+    display: flex;
+    align-items: center;
+    margin: 28px 0;
+    color: #7a8aa5;
+    font-size: 12px;
+  }
+  .divider::before,
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.10);
+  }
+  .divider::before { margin-right: 12px; }
+  .divider::after { margin-left: 12px; }
+  .example {
+    background: rgba(0,0,0,0.20);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 20px;
+  }
+  .example h3 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #a9b5d6;
+  }
+  .example pre {
+    margin: 0;
+    font-family: ui-monospace, monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #8fd0ff;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>CISK Navigator</h1>
+  <p class="subtitle">Upload a YAML file to generate your interactive navigator for Challenges, Initiatives, Systems, and KPIs.</p>
+
+  <form action="/upload" method="post" enctype="multipart/form-data" id="uploadForm">
+    <div class="form-group">
+      <label>Select YAML File</label>
+      <div class="file-input-wrapper" id="fileInputWrapper">
+        <input type="file" name="file" accept=".yaml,.yml" id="fileInput" required>
+        <div class="file-icon">📄</div>
+        <div class="file-text">Click to browse or drag & drop</div>
+        <div class="file-hint">Supports .yaml and .yml files</div>
+      </div>
+      <div id="selectedFile" class="selected-file" style="display:none;"></div>
+    </div>
+
+    <button type="submit" class="btn" id="submitBtn" disabled>View Navigator</button>
+    <button type="button" class="btn btn-secondary" id="downloadBtn" onclick="downloadHTML()" disabled>Download HTML File</button>
+    <button type="button" class="btn btn-secondary" onclick="window.location.href='/'">View Sample Navigator</button>
+  </form>
+
+  <div class="divider">YAML Format Example</div>
+
+  <div class="example">
+    <h3>Sample YAML Structure</h3>
+    <pre>meta:
+  title: "My Navigator"
+  version: "1.0"
+
+challenge_groups:
+  - id: C1
+    number: 1
+    title: "Digital Transformation"
+    slide: 5
+
+sub_challenges:
+  - id: C1.SC1
+    group_id: C1
+    text: "Challenge description"
+
+initiatives:
+  - id: C1.I1
+    group_id: C1
+    season: S1
+    text: "Initiative description"
+
+systems:
+  - id: C1.S1
+    group_id: C1
+    text: "System name"
+
+kpis:
+  - id: C1.K1
+    group_id: C1
+    text: "KPI description"</pre>
+  </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const selectedFile = document.getElementById('selectedFile');
+const submitBtn = document.getElementById('submitBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
+fileInput.addEventListener('change', function(e) {
+  if (this.files && this.files[0]) {
+    selectedFile.textContent = `Selected: ${this.files[0].name} (${formatBytes(this.files[0].size)})`;
+    selectedFile.style.display = 'block';
+    submitBtn.disabled = false;
+    downloadBtn.disabled = false;
+  } else {
+    selectedFile.style.display = 'none';
+    submitBtn.disabled = true;
+    downloadBtn.disabled = true;
+  }
+});
+
+function downloadHTML() {
+  const fileInput = document.getElementById('fileInput');
+  if (!fileInput.files || !fileInput.files[0]) {
+    alert('Please select a file first');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('file', fileInput.files[0]);
+
+  // Show loading state
+  downloadBtn.textContent = 'Generating...';
+  downloadBtn.disabled = true;
+
+  fetch('/generate', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error('Failed to generate HTML');
+    }
+    return response.blob();
+  })
+  .then(blob => {
+    // Create download link
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cisk_navigator_${new Date().toISOString().slice(0,10)}.html`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    // Reset button
+    downloadBtn.textContent = 'Download HTML File';
+    downloadBtn.disabled = false;
+
+    alert('HTML file downloaded successfully! You can now open it in any browser.');
+  })
+  .catch(error => {
+    alert('Error generating HTML: ' + error.message);
+    downloadBtn.textContent = 'Download HTML File';
+    downloadBtn.disabled = false;
+  });
+}
+
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+// Drag and drop
+const wrapper = document.getElementById('fileInputWrapper');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+  wrapper.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+['dragenter', 'dragover'].forEach(eventName => {
+  wrapper.addEventListener(eventName, highlight, false);
+});
+
+['dragleave', 'drop'].forEach(eventName => {
+  wrapper.addEventListener(eventName, unhighlight, false);
+});
+
+function highlight() {
+  wrapper.style.borderColor = 'rgba(143,208,255,0.85)';
+  wrapper.style.background = 'rgba(143,208,255,0.10)';
+}
+
+function unhighlight() {
+  wrapper.style.borderColor = 'rgba(143,208,255,0.45)';
+  wrapper.style.background = 'rgba(0,0,0,0.15)';
+}
+
+wrapper.addEventListener('drop', handleDrop, false);
+
+function handleDrop(e) {
+  const dt = e.dataTransfer;
+  const files = dt.files;
+  fileInput.files = files;
+  fileInput.dispatchEvent(new Event('change'));
+}
+</script>
+</body>
+</html>

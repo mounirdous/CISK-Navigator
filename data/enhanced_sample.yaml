@@ -1,0 +1,253 @@
+# CISK Navigator - Enhanced Sample with Multi-Links and Weights
+# New features: priorities (stars), weights (1-10), impacts (L/M/H), multi-linking
+
+meta:
+  title: "CISK Navigator - Enhanced Version"
+  version: "2.0"
+  generated: "2026-02-06"
+
+# ==========================================
+# CHALLENGE GROUPS (with priority stars)
+# ==========================================
+challenge_groups:
+  - id: C1
+    number: 1
+    title: "Digital Transformation"
+    priority: 1  # 1 = ⭐⭐⭐ (highest), 2 = ⭐⭐, 3 = ⭐
+
+  - id: C2
+    number: 2
+    title: "Digital Architecture & Principles"
+    priority: 1
+
+  - id: C3
+    number: 3
+    title: "ERP Consolidation Strategy"
+    priority: 1
+
+  - id: C4
+    number: 4
+    title: "Operating Model & Governance"
+    priority: 2
+
+  - id: C5
+    number: 5
+    title: "Security & Compliance"
+    priority: 1
+
+  - id: C6
+    number: 6
+    title: "Risk & Mitigation"
+    priority: 2
+
+# ==========================================
+# SUB-CHALLENGES (with priority)
+# ==========================================
+sub_challenges:
+  - id: C1.SC1
+    group_id: C1
+    text: "Lead-time too long/variable across Order→Engineering→Supply→Build"
+    priority: 1  # ⭐⭐⭐
+
+  - id: C1.SC2
+    group_id: C1
+    text: "On-time delivery gaps; late surprises drive expediting & firefighting"
+    priority: 1
+
+  - id: C1.SC3
+    group_id: C1
+    text: "Inventory/WIP buffers due to limited visibility & planning discipline"
+    priority: 2
+
+  - id: C1.SC4
+    group_id: C1
+    text: "Cost transparency gaps (standard cost, variances, margin leakage)"
+    priority: 2
+
+  - id: C2.SC1
+    group_id: C2
+    text: "Fragmented landscape (multiple ERP/CRM instances; local solutions)"
+    priority: 1
+
+  - id: C2.SC2
+    group_id: C2
+    text: "Point‑to‑point integrations create fragility and high change cost"
+    priority: 2
+
+  - id: C3.SC1
+    group_id: C3
+    text: "Multiple ERP cores (3 SAP instances) + local CN system + process variants"
+    priority: 1
+
+  - id: C3.SC2
+    group_id: C3
+    text: "Master data inconsistent (materials, BOMs, routings, supplier/customer)"
+    priority: 1
+
+# ==========================================
+# INITIATIVES (with multi-challenge links, weights, and impacts)
+# ==========================================
+initiatives:
+  - id: I1
+    season: S1
+    text: "Value streams & standard E2E processes (P2P, ETO, Service) + CRM blueprint"
+    challenges:  # Multiple challenges with weight and impact
+      - challenge_id: C1.SC1
+        weight: 10      # Link strength 1-10
+        impact: H       # Impact: L (Low), M (Medium), H (High)
+      - challenge_id: C1.SC2
+        weight: 8
+        impact: M
+      - challenge_id: C1.SC4
+        weight: 6
+        impact: H
+
+  - id: I2
+    season: S1
+    text: "Planning discipline & control‑tower routines (S&OP/MRP, exception mgmt)"
+    challenges:
+      - challenge_id: C1.SC1
+        weight: 9
+        impact: H
+      - challenge_id: C1.SC3
+        weight: 10
+        impact: H
+
+  - id: I3
+    season: S1
+    text: "Confirm target architecture + principles (clean core, digital thread, secure-by-design)"
+    challenges:
+      - challenge_id: C2.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC2
+        weight: 8
+        impact: H
+
+  - id: I4
+    season: S1
+    text: "One S/4HANA template; clean core; explicit exceptions"
+    challenges:
+      - challenge_id: C3.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C3.SC2
+        weight: 7
+        impact: M
+
+  - id: I5
+    season: S2
+    text: "Shop‑floor visibility on critical lines (WIP, bottlenecks, digital WI)"
+    challenges:
+      - challenge_id: C1.SC1
+        weight: 8
+        impact: M
+      - challenge_id: C1.SC3
+        weight: 9
+        impact: H
+
+  - id: I6
+    season: S2
+    text: "Implement iPaaS/API; retire top point‑to‑point interfaces"
+    challenges:
+      - challenge_id: C2.SC2
+        weight: 10
+        impact: H
+
+# ==========================================
+# SYSTEMS (with multi-initiative links and weights)
+# ==========================================
+systems:
+  - id: S1
+    text: "Core ERP (SAP S/4HANA as system of record)"
+    initiatives:  # Multiple initiatives with weights
+      - initiative_id: I1
+        weight: 10
+      - initiative_id: I2
+        weight: 9
+      - initiative_id: I4
+        weight: 10
+
+  - id: S2
+    text: "Planning cockpit (MRP exceptions / APS where needed)"
+    initiatives:
+      - initiative_id: I2
+        weight: 10
+      - initiative_id: I5
+        weight: 7
+
+  - id: S3
+    text: "MES / Quality execution (critical lines; traceability)"
+    initiatives:
+      - initiative_id: I5
+        weight: 10
+
+  - id: S4
+    text: "Integration platform (iPaaS/API/events)"
+    initiatives:
+      - initiative_id: I3
+        weight: 9
+      - initiative_id: I6
+        weight: 10
+
+  - id: S5
+    text: "Enterprise data platform + KPI layer (BI, analytics, AI-ready)"
+    initiatives:
+      - initiative_id: I1
+        weight: 7
+      - initiative_id: I2
+        weight: 8
+      - initiative_id: I3
+        weight: 6
+
+# ==========================================
+# KPIs (with multi-system links and weights)
+# ==========================================
+kpis:
+  - id: K1
+    text: "Lead time −15–20% (end‑to‑end, incl. engineering + supply)"
+    systems:  # Multiple systems with weights
+      - system_id: S1
+        weight: 9
+      - system_id: S2
+        weight: 10
+      - system_id: S3
+        weight: 8
+
+  - id: K2
+    text: "On-time delivery +5–8 percentage points (definition agreed)"
+    systems:
+      - system_id: S1
+        weight: 8
+      - system_id: S2
+        weight: 9
+
+  - id: K3
+    text: "Inventory turns +10–15% + WIP aging reduced"
+    systems:
+      - system_id: S1
+        weight: 9
+      - system_id: S2
+        weight: 10
+      - system_id: S3
+        weight: 7
+
+  - id: K4
+    text: "Core simplification: ERP instances (3→1); CRM instances (3→1)"
+    systems:
+      - system_id: S1
+        weight: 10
+
+  - id: K5
+    text: "Integration health: % interfaces via iPaaS/API (incl. OT); # point‑to‑point retired"
+    systems:
+      - system_id: S4
+        weight: 10
+
+  - id: K6
+    text: "Data quality: master data accuracy/completeness; 'single version of truth' adoption"
+    systems:
+      - system_id: S1
+        weight: 8
+      - system_id: S5
+        weight: 10

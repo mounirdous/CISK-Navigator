@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Data Test</title>
+</head>
+<body>
+<h1>CISK Navigator Data Test</h1>
+<div id="output"></div>
+<script>
+fetch('/api/data')
+  .then(r => r.json())
+  .then(data => {
+    document.getElementById('output').innerHTML = `
+      <pre>${JSON.stringify(data, null, 2)}</pre>
+      <hr>
+      <h2>Counts</h2>
+      <p>Challenge Groups: ${data.challengeGroups.length}</p>
+      <p>Sub-Challenges: ${data.subChallenges.length}</p>
+      <p>Initiatives: ${data.initiatives.length}</p>
+      <p>Systems: ${data.systems.length}</p>
+      <p>KPIs: ${data.kpis.length}</p>
+      <hr>
+      <h2>Sample Initiative</h2>
+      <pre>${JSON.stringify(data.initiatives[0], null, 2)}</pre>
+      <h2>Sample System</h2>
+      <pre>${JSON.stringify(data.systems[0], null, 2)}</pre>
+      <h2>Sample KPI</h2>
+      <pre>${JSON.stringify(data.kpis[0], null, 2)}</pre>
+    `;
+  })
+  .catch(e => {
+    document.getElementById('output').innerHTML = `<p style="color:red">Error: ${e}</p>`;
+  });
+</script>
+</body>
+</html>
