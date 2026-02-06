@@ -1795,10 +1795,13 @@ function setViewMode(mode) {
       renderGraph();
     }
 
-    // Sync column selection to graph when switching to graph view
-    if (state.selected) {
+    // Check for either selection or preview
+    const itemToSync = state.selected || state.preview;
+
+    // Sync column selection/preview to graph when switching to graph view
+    if (itemToSync) {
       setTimeout(() => {
-        syncColumnToGraphView(state.selected.type, state.selected.id);
+        syncColumnToGraphView(itemToSync.type, itemToSync.id);
       }, 10);
     } else {
       // No selection, just render the full graph
