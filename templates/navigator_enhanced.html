@@ -2762,7 +2762,16 @@ function syncColumnToGraphView(type, id) {
     if (type === 'challengeGroup') nodeType = 'group';
     if (type === 'subChallenge') nodeType = 'challenge';
 
-    // Find the corresponding node in the graph
+    // Rebuild graph data temporarily ignoring season filter to ensure node exists
+    // (Column view selections should always be visible in graph)
+    const savedSeason = state.initSeason;
+    state.initSeason = "ALL";
+    const { nodes, links } = buildGraphData();
+    graph.nodes = nodes;
+    graph.links = links;
+    state.initSeason = savedSeason;
+
+    // Now find the node
     const nodeId = `${nodeType}-${id}`;
     const node = graph.nodes.find(n => n.id === nodeId);
 
