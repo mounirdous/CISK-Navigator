@@ -841,6 +841,9 @@ function select(type, id, {autoTab=null}={}) {
 
   renderFocusedDetail();
   updateHash();
+
+  // Sync with graph view if it's active
+  syncColumnToGraphView(type, id);
 }
 
 function findSubs(groupId) {
@@ -2594,6 +2597,9 @@ function selectGraphNode(node) {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+
+  // Sync with column view selection
+  syncGraphToColumnView(node);
 }
 
 function clearGraphSelection() {
@@ -2605,6 +2611,11 @@ function clearGraphSelection() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+
+  // Clear column view selection too
+  if (!isSyncing) {
+    clearSelection();
+  }
 }
 
 function graphGoBack() {
@@ -2684,6 +2695,247 @@ function graphReset() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+}
+
+// Flag to prevent infinite sync loops
+let isSyncing = false;
+
+function syncGraphToColumnView(node) {
+  if (isSyncing) return;
+  isSyncing = true;
+
+  try {
+    // Map graph node type to column view type and extract entity ID
+    let type = node.type;
+    let id = node.entityId;
+
+    // Update column view selection
+    if (type === 'group') {
+      select('challengeGroup', id, {});
+    } else if (type === 'challenge') {
+      select('subChallenge', id, {});
+    } else if (type === 'initiative') {
+      select('initiative', id, {});
+    } else if (type === 'system') {
+      select('system', id, {});
+    } else if (type === 'kpi') {
+      select('kpi', id, {});
+    }
+  } finally {
+    isSyncing = false;
+  }
+}
+
+function syncColumnToGraphView(type, id) {
+  if (isSyncing || state.viewMode !== 'graph' || !graph.canvas) return;
+  isSyncing = true;
+
+  try {
+    // Map column view type to graph node type
+    let nodeType = type;
+    if (type === 'challengeGroup') nodeType = 'group';
+    if (type === 'subChallenge') nodeType = 'challenge';
+
+    // Find the corresponding node in the graph
+    const nodeId = `${nodeType}-${id}`;
+    const node = graph.nodes.find(n => n.id === nodeId);
+
+    if (node) {
+      // Clear previous history to avoid confusion
+      graph.history = [];
+
+      // Select the node in the graph
+      graph.selectedNode = node;
+
+      // Build set of related nodes (same logic as selectGraphNode but without history)
+      const relatedNodes = new Set();
+      const relatedLinks = new Set();
+      relatedNodes.add(node.id);
+
+      // Find all nodes connected to this node
+      graph.links.forEach(link => {
+        if (link.source.id === node.id) {
+          relatedNodes.add(link.target.id);
+          relatedLinks.add(link);
+        } else if (link.target.id === node.id) {
+          relatedNodes.add(link.source.id);
+          relatedLinks.add(link);
+        }
+      });
+
+      // Apply full chain tracing logic based on node type
+      if (node.type === 'group') {
+        const subChallenges = new Set();
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'group-challenge') {
+            subChallenges.add(link.target.id);
+          }
+        });
+
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (subChallenges.has(link.source.id) && link.type === 'challenge-initiative') {
+            initiativeNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+            systemNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'challenge') {
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'challenge-initiative') {
+            initiativeNodes.add(link.target.id);
+          }
+        });
+
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.source.id) && link.type === 'initiative-system') {
+            systemNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'initiative') {
+        const challengeNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'challenge-initiative') {
+            challengeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'initiative-system') {
+            systemNodes.add(link.target.id);
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.source.id) && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'system') {
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'initiative-system') {
+            initiativeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const challengeNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+            challengeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (link.source.id === node.id && link.type === 'system-kpi') {
+            relatedNodes.add(link.target.id);
+            relatedLinks.add(link);
+          }
+        });
+      } else if (node.type === 'kpi') {
+        const systemNodes = new Set();
+        graph.links.forEach(link => {
+          if (link.target.id === node.id && link.type === 'system-kpi') {
+            systemNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const initiativeNodes = new Set();
+        graph.links.forEach(link => {
+          if (systemNodes.has(link.target.id) && link.type === 'initiative-system') {
+            initiativeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        const challengeNodes = new Set();
+        graph.links.forEach(link => {
+          if (initiativeNodes.has(link.target.id) && link.type === 'challenge-initiative') {
+            challengeNodes.add(link.source.id);
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+
+        graph.links.forEach(link => {
+          if (challengeNodes.has(link.target.id) && link.type === 'group-challenge') {
+            relatedNodes.add(link.source.id);
+            relatedLinks.add(link);
+          }
+        });
+      }
+
+      graph.filteredNodes = relatedNodes;
+      graph.filteredLinks = relatedLinks;
+
+      layoutGraph();
+      drawGraph();
+      updateGraphUI();
+    }
+  } finally {
+    isSyncing = false;
+  }
 }
 
 /* ========================================
