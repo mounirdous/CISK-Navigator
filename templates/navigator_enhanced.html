@@ -1800,6 +1800,7 @@ function setViewMode(mode) {
 
     // Sync column selection/preview to graph when switching to graph view
     if (itemToSync) {
+      console.log('Switching to graph view with item:', itemToSync.type, itemToSync.id);
       setTimeout(() => {
         syncColumnToGraphView(itemToSync.type, itemToSync.id);
       }, 10);
