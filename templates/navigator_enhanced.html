@@ -1829,8 +1829,8 @@ function setViewMode(mode) {
       renderGraph();
     }
 
-    // Check for either selection or preview
-    const itemToSync = state.selected || state.preview;
+    // Check for either selection or preview (preview takes priority as it's most recent)
+    const itemToSync = state.preview || state.selected;
 
     // Sync column selection/preview to graph when switching to graph view
     if (itemToSync) {
