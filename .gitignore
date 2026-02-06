@@ -32,4 +32,5 @@ nohup.out
 # Documentation (keep these for reference but not needed for deployment)
 *.md
 !README.md
+!ARCHITECTURE.md
 START_HERE_README.txt
