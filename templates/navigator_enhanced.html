@@ -842,8 +842,10 @@ function select(type, id, {autoTab=null}={}) {
   renderFocusedDetail();
   updateHash();
 
-  // Sync with graph view if it's active
-  syncColumnToGraphView(type, id);
+  // Sync with graph view if it's currently active
+  if (state.viewMode === 'graph') {
+    syncColumnToGraphView(type, id);
+  }
 }
 
 function findSubs(groupId) {
@@ -1788,11 +1790,28 @@ function setViewMode(mode) {
     btnColumn.classList.remove('primary');
     btnGraph.classList.add('primary');
     renderGraph();
+
+    // Sync column selection to graph when switching to graph view
+    if (state.selected && graph.canvas) {
+      syncColumnToGraphView(state.selected.type, state.selected.id);
+    }
   } else {
     columnView.style.display = 'block';
     graphView.style.display = 'none';
     btnColumn.classList.add('primary');
     btnGraph.classList.remove('primary');
+
+    // Sync graph selection to column when switching to column view
+    if (graph.selectedNode && !isSyncing) {
+      const node = graph.selectedNode;
+      let type = node.type;
+      if (type === 'group') type = 'challengeGroup';
+      if (type === 'challenge') type = 'subChallenge';
+
+      isSyncing = true;
+      select(type, node.entityId, {});
+      isSyncing = false;
+    }
   }
 }
 
@@ -2634,6 +2653,13 @@ function graphGoBack() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+
+  // Sync with column view
+  if (graph.selectedNode) {
+    syncGraphToColumnView(graph.selectedNode);
+  } else if (!isSyncing) {
+    clearSelection();
+  }
 }
 
 function updateGraphUI() {
@@ -2727,7 +2753,7 @@ function syncGraphToColumnView(node) {
 }
 
 function syncColumnToGraphView(type, id) {
-  if (isSyncing || state.viewMode !== 'graph' || !graph.canvas) return;
+  if (isSyncing || !graph.canvas) return;
   isSyncing = true;
 
   try {
