@@ -3,9 +3,14 @@
 ## Overview
 CISK Navigator is a Flask-based web application for visualizing relationships between Challenges, Initiatives, Systems, and KPIs. It provides two interactive views: a column-based view and a graph-based network visualization.
 
-**Current Version:** 2.2
+**Current Version:** 2.3.1
+**Local Development:** http://localhost:5002
 **Deployment:** https://cisk-navigator.onrender.com/
 **GitHub:** https://github.com/mounirdous/CISK-Navigator
+
+## Recent Updates (v2.3.x)
+- **v2.3.1** (2026-02-07): Upload page documentation improvements, optional YAML version field
+- **v2.3.0** (2026-02-07): Dual version display (app version + data version), customizable YAML title
 
 ---
 
@@ -33,11 +38,14 @@ CISK-Navigator/
 1. **`/` (GET)** - Main application
    - Loads `full_sample_enhanced.yaml`
    - Auto-detects format (enhanced vs legacy)
+   - Extracts `title` and `version` from YAML meta section
+   - Passes both `data_version` (from YAML) and `app_version` (APP_VERSION constant)
    - Renders `navigator_enhanced.html` with data
 
-2. **`/upload` (GET/POST)** - File upload interface
-   - GET: Shows upload form (`upload.html`)
+2. **`/upload` (GET/POST)` - File upload interface
+   - GET: Shows upload form (`upload.html`) with APP_VERSION
    - POST: Accepts YAML file, parses it, renders navigator with uploaded data
+   - Extracts title and version from uploaded YAML
    - Returns statistics about uploaded data
 
 3. **`/api/data` (GET)** - JSON API endpoint
@@ -46,8 +54,24 @@ CISK-Navigator/
 
 4. **`/generate` (POST)** - Standalone HTML generator
    - Accepts YAML file
-   - Generates complete standalone HTML file with embedded data
+   - Extracts title and version from YAML meta section
+   - Generates complete standalone HTML file with embedded data and both versions
    - Returns as downloadable file
+
+### Version Management
+
+- **APP_VERSION**: Defined in `app.py` (currently "2.3.1")
+  - Generator application version
+  - Displayed as "App v2.3.1" in generated HTML
+
+- **YAML meta.version**: Optional field in YAML files
+  - Data structure/schema version
+  - Defaults to "1.0" if not provided
+  - Displayed as "Data v1.0" in generated HTML
+
+- **YAML meta.title**: Required field
+  - Displayed as the main title in generated HTML
+  - Replaces hardcoded application title
 
 ### Data Format Conversion
 

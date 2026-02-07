@@ -512,7 +512,7 @@
           <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1d4ed8;border-radius:4px;"></span> Systems</div>
           <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:4px;"></span> KPIs</div>
           <span class="muted">|</span>
-          <div class="muted">Click any node to filter • Click empty space or ← Back to restore</div>
+          <div class="muted">Click any node to filter • Use ← Back to restore</div>
         </div>
       </div>
     </div>
@@ -2394,10 +2394,8 @@ function setupGraphInteractions() {
       if (node) {
         nodeClickHandled = true; // Mark that we're handling a node click
         selectGraphNode(node);
-      } else if (!nodeClickHandled) {
-        // Clicked empty space - clear selection (only if not already handled)
-        clearGraphSelection();
       }
+      // Note: Clicking empty space no longer clears selection
     }
 
     graph.dragging = null;
@@ -2454,13 +2452,9 @@ function selectGraphNode(node) {
   // Set flag to prevent clearGraphSelection from running immediately after
   graph.nodeSelectionInProgress = true;
 
-  if (graph.selectedNode && graph.selectedNode.id === node.id) {
-    // Clicking same node - deselect
-    console.log('Same node clicked - calling clearGraphSelection');
-    graph.nodeSelectionInProgress = false;
-    clearGraphSelection();
-    return;
-  }
+  // Note: We don't deselect when clicking the same node anymore
+  // This allows navigation like: Initiative A → System B → Initiative A
+  // Users can use the Back button to clear selection
 
   // Save current state to history before changing
   if (graph.selectedNode || graph.filteredNodes) {

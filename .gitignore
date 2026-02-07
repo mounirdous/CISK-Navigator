@@ -34,3 +34,9 @@ nohup.out
 !README.md
 !ARCHITECTURE.md
 START_HERE_README.txt
+
+# Local development notes (not for GitHub)
+.dev-notes
+
+# Generated HTML files (output artifacts)
+cisk_navigator_*.html

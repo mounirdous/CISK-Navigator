@@ -1,8 +1,15 @@
 # CISK Navigator - Development Workflow Instructions
 
+## Quick Reference
+- **Current App Version**: 2.3.1
+- **Local Server Port**: 5002
+- **Project Path**: /Users/mounir.dous/projects/CISK-Navigator
+- **Main Data File**: data/full_sample_enhanced.yaml
+- **GitHub Repo**: https://github.com/mounirdous/CISK-Navigator
+
 ## Version Management
-- **App Version**: Located in `app.py` as `APP_VERSION` constant (currently 2.2.9)
-- **YAML Data Version**: Specified in each YAML file's `meta.version` field
+- **App Version**: Located in `app.py` as `APP_VERSION` constant (currently 2.3.1)
+- **YAML Data Version**: Specified in each YAML file's `meta.version` field (optional, defaults to "1.0")
 
 ## For Every Change:
 1. **Increment the appropriate version** (x.y.z+1):
@@ -20,24 +27,31 @@
    cd /Users/mounir.dous/projects/CISK-Navigator
    python app.py
    ```
-   - Server runs on http://localhost:5001
+   - Server runs on **http://localhost:5002** (port 5002)
    - Verify changes work correctly
    - Test with sample YAML files in the data/ directory
 
-4. **DO NOT commit to GitHub unless explicitly requested by user**
+4. **Generate standalone HTML for testing**:
+   ```bash
+   python -c "from app import load_yaml_data, auto_detect_format, APP_VERSION; from jinja2 import Template; from datetime import datetime; yaml_data = load_yaml_data('data/full_sample_enhanced.yaml'); js_data = auto_detect_format(yaml_data); title = yaml_data.get('meta', {}).get('title', 'CISK Navigator'); data_version = yaml_data.get('meta', {}).get('version', '1.0'); template = Template(open('templates/navigator_enhanced.html').read()); html = template.render(data=js_data, title=title, data_version=data_version, app_version=APP_VERSION); open(f'cisk_navigator_{datetime.now().strftime(\"%Y%m%d_%H%M%S\")}.html', 'w').write(html); print('Generated!')"
+   ```
+
+5. **DO NOT commit to GitHub unless explicitly requested by user**
 
 ## Testing Checklist:
-- [ ] App starts without errors
+- [ ] App starts without errors on port 5002
 - [ ] YAML files load correctly (both enhanced and legacy formats)
 - [ ] Generated HTML displays properly
 - [ ] Interactive features work (navigation, search, filters, priority sorting)
 - [ ] Both app version and YAML data version display correctly
 - [ ] Multi-link relationships work (challenges, initiatives, systems, KPIs)
 - [ ] Weights and impacts display properly
+- [ ] Upload page shows correct version and documentation
 
-## Current Versions:
-- **App Version**: 2.2.9 (CISK Navigator Generator application)
-- **YAML Data Version**: Defined per data file (e.g., "2.1.19" in full_sample_enhanced.yaml)
+## Version History:
+- **2.3.1** (2026-02-07): Upload page documentation improvements, YAML version optional
+- **2.3.0** (2026-02-07): Separate YAML title and dual version display (data + app)
+- **2.2.9** (Previous): Graph view fixes
 
 ## Key Features:
 - Enhanced format with multi-links
@@ -46,9 +60,28 @@
 - System → multiple initiatives (with weight)
 - KPI → multiple systems (with weight)
 - Auto-detection of enhanced vs legacy YAML format
+- Dual version display: App version + YAML data version
+- Customizable YAML title displayed in generated pages
+
+## YAML Format Notes:
+```yaml
+meta:
+  title: "Your Title"        # Required - displayed in generated HTML
+  version: "1.0"             # Optional - defaults to "1.0" if not provided
+  generated: "2026-02-07"    # Optional - metadata only
+```
+
+## Important Files:
+- `app.py` - Main Flask application, contains APP_VERSION
+- `templates/navigator_enhanced.html` - Main HTML template
+- `templates/upload.html` - Upload interface
+- `data/full_sample_enhanced.yaml` - Default data file
+- `.claude-workflow` - This file (for Claude Code context)
+- `.dev-notes` - Local-only development notes (not in Git)
 
 ## Notes:
 - The app version is for the generator software itself
 - The YAML version is for the data structure/schema version
-- Both versions should be displayed in the generated HTML
+- Both versions are displayed in the generated HTML
 - Always test with both enhanced and legacy YAML formats
+- Server runs on port 5002 (not 5001!)

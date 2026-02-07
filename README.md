@@ -2,7 +2,7 @@
 
 Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
 
-![Version](https://img.shields.io/badge/version-2.0-blue)
+![Version](https://img.shields.io/badge/version-2.3.1-blue)
 ![Python](https://img.shields.io/badge/python-3.11-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -51,8 +51,8 @@ open http://localhost:5002
 
 ```yaml
 meta:
-  title: "Your Navigator Title"
-  version: "2.0"
+  title: "Your Navigator Title"    # Required - displayed in generated HTML
+  version: "1.0"                    # Optional - defaults to "1.0"
 
 challenge_groups:
   - id: C1
@@ -163,4 +163,9 @@ Built for strategic business planning and technology roadmap visualization.
 
 ---
 
-**Version 2.0** - Enhanced with multi-links, priorities, weights, and interactive graph view
+**Version 2.3.1** - Enhanced with multi-links, priorities, weights, interactive graph view, and dual version display
+
+### Recent Updates
+- **v2.3.1** (Feb 2026): Upload page documentation, optional YAML version field
+- **v2.3.0** (Feb 2026): Dual version display (app + data), customizable YAML title
+- **v2.2.x**: Graph view enhancements and bug fixes
