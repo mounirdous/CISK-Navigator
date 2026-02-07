@@ -4,6 +4,10 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>{{ title }} - Data v{{ data_version }} - CISK Navigator v{{ app_version }}</title>
+{% if tracking_code %}
+<!-- Analytics Tracking -->
+{{ tracking_code|safe }}
+{% endif %}
 <style>
   :root {
     --bg: #0b1220;

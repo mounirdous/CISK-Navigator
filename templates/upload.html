@@ -193,6 +193,15 @@
   title: "My Navigator"         # Required: Page title
   version: "1.0"                 # Optional: Data version (defaults to "1.0")
   generated: "2026-02-07"        # Optional: Generation date
+  tracking_code: |               # Optional: Analytics tracking (Google Analytics, etc.)
+    &lt;!-- Google Analytics --&gt;
+    &lt;script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"&gt;&lt;/script&gt;
+    &lt;script&gt;
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    &lt;/script&gt;
 
 challenge_groups:
   - id: C1

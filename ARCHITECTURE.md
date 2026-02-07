@@ -3,12 +3,14 @@
 ## Overview
 CISK Navigator is a Flask-based web application for visualizing relationships between Challenges, Initiatives, Systems, and KPIs. It provides two interactive views: a column-based view and a graph-based network visualization.
 
-**Current Version:** 2.3.1
+**Current Version:** 2.4.0
 **Local Development:** http://localhost:5002
 **Deployment:** https://cisk-navigator.onrender.com/
 **GitHub:** https://github.com/mounirdous/CISK-Navigator
 
-## Recent Updates (v2.3.x)
+## Recent Updates (v2.4.x)
+- **v2.4.0** (2026-02-07): Analytics tracking support via YAML meta.tracking_code field
+- **v2.3.3** (2026-02-07): Fixed graph navigation bug (A→B→A scenario)
 - **v2.3.1** (2026-02-07): Upload page documentation improvements, optional YAML version field
 - **v2.3.0** (2026-02-07): Dual version display (app version + data version), customizable YAML title
 
@@ -72,6 +74,12 @@ CISK-Navigator/
 - **YAML meta.title**: Required field
   - Displayed as the main title in generated HTML
   - Replaces hardcoded application title
+
+- **YAML meta.tracking_code**: Optional field (v2.4.0+)
+  - Allows injection of analytics tracking scripts
+  - Supports Google Analytics, Plausible, Fathom, Matomo, custom tracking
+  - Injected into HTML <head> section
+  - See `TRACKING_EXAMPLES.md` for examples
 
 ### Data Format Conversion
 

@@ -13,7 +13,7 @@ from typing import Dict, List
 app = Flask(__name__)
 
 # App version - displayed in generated HTML files
-APP_VERSION = "2.3.3"
+APP_VERSION = "2.4.0"
 
 
 def load_yaml_data(file_path: str) -> Dict:
@@ -235,13 +235,15 @@ def index():
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
         data_version = yaml_data.get("meta", {}).get("version", "1.0")
+        tracking_code = yaml_data.get("meta", {}).get("tracking_code", None)
 
         return render_template(
             'navigator_enhanced.html',
             data=js_data,
             title=title,
             data_version=data_version,
-            app_version=APP_VERSION
+            app_version=APP_VERSION,
+            tracking_code=tracking_code
         )
     except Exception as e:
         return f"Error loading data: {str(e)}", 500
@@ -270,6 +272,7 @@ def upload():
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
         data_version = yaml_data.get("meta", {}).get("version", "1.0")
+        tracking_code = yaml_data.get("meta", {}).get("tracking_code", None)
 
         # Calculate statistics from uploaded data
         stats = {
@@ -286,6 +289,7 @@ def upload():
             title=title,
             data_version=data_version,
             app_version=APP_VERSION,
+            tracking_code=tracking_code,
             upload_stats=stats
         )
     except Exception as e:
@@ -325,13 +329,15 @@ def generate_standalone():
 
         title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
         data_version = yaml_data.get("meta", {}).get("version", "1.0")
+        tracking_code = yaml_data.get("meta", {}).get("tracking_code", None)
 
         html_content = render_template(
             'navigator_enhanced.html',
             data=js_data,
             title=title,
             data_version=data_version,
-            app_version=APP_VERSION
+            app_version=APP_VERSION,
+            tracking_code=tracking_code
         )
 
         response = make_response(html_content)

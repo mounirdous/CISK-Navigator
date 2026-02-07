@@ -2,7 +2,7 @@
 
 Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
 
-![Version](https://img.shields.io/badge/version-2.3.1-blue)
+![Version](https://img.shields.io/badge/version-2.4.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -15,6 +15,7 @@ Interactive visualization tool for exploring relationships between **Challenges*
 - **📊 Two Views**: Column view and interactive graph view
 - **🔄 Season Filtering**: Filter by S1, S2, S3
 - **📤 Upload & Download**: Upload YAML, download standalone HTML
+- **📊 Analytics Support**: Add Google Analytics or any tracking code to generated HTML
 
 ## 🚀 Quick Start
 
@@ -163,9 +164,10 @@ Built for strategic business planning and technology roadmap visualization.
 
 ---
 
-**Version 2.3.1** - Enhanced with multi-links, priorities, weights, interactive graph view, and dual version display
+**Version 2.4.0** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, and analytics tracking
 
 ### Recent Updates
+- **v2.4.0** (Feb 2026): Analytics tracking support (Google Analytics, Plausible, etc.)
+- **v2.3.3** (Feb 2026): Fixed graph navigation A→B→A scenario
 - **v2.3.1** (Feb 2026): Upload page documentation, optional YAML version field
 - **v2.3.0** (Feb 2026): Dual version display (app + data), customizable YAML title
-- **v2.2.x**: Graph view enhancements and bug fixes

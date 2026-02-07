@@ -33,6 +33,7 @@ nohup.out
 *.md
 !README.md
 !ARCHITECTURE.md
+!TRACKING_EXAMPLES.md
 START_HERE_README.txt
 
 # Local development notes (not for GitHub)

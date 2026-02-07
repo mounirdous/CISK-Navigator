@@ -1,14 +1,14 @@
 # CISK Navigator - Development Workflow Instructions
 
 ## Quick Reference
-- **Current App Version**: 2.3.1
+- **Current App Version**: 2.4.0
 - **Local Server Port**: 5002
 - **Project Path**: /Users/mounir.dous/projects/CISK-Navigator
 - **Main Data File**: data/full_sample_enhanced.yaml
 - **GitHub Repo**: https://github.com/mounirdous/CISK-Navigator
 
 ## Version Management
-- **App Version**: Located in `app.py` as `APP_VERSION` constant (currently 2.3.1)
+- **App Version**: Located in `app.py` as `APP_VERSION` constant (currently 2.4.0)
 - **YAML Data Version**: Specified in each YAML file's `meta.version` field (optional, defaults to "1.0")
 
 ## For Every Change:
@@ -49,6 +49,8 @@
 - [ ] Upload page shows correct version and documentation
 
 ## Version History:
+- **2.4.0** (2026-02-07): Analytics tracking support (Google Analytics, etc.)
+- **2.3.3** (2026-02-07): Graph navigation fixes (A→B→A scenario)
 - **2.3.1** (2026-02-07): Upload page documentation improvements, YAML version optional
 - **2.3.0** (2026-02-07): Separate YAML title and dual version display (data + app)
 - **2.2.9** (Previous): Graph view fixes
@@ -69,7 +71,18 @@ meta:
   title: "Your Title"        # Required - displayed in generated HTML
   version: "1.0"             # Optional - defaults to "1.0" if not provided
   generated: "2026-02-07"    # Optional - metadata only
+  tracking_code: |           # Optional - analytics tracking code (Google Analytics, etc.)
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
 ```
+
+See `TRACKING_EXAMPLES.md` for more analytics providers.
 
 ## Important Files:
 - `app.py` - Main Flask application, contains APP_VERSION
