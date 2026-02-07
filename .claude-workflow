@@ -1,0 +1,54 @@
+# CISK Navigator - Development Workflow Instructions
+
+## Version Management
+- **App Version**: Located in `app.py` as `APP_VERSION` constant (currently 2.2.9)
+- **YAML Data Version**: Specified in each YAML file's `meta.version` field
+
+## For Every Change:
+1. **Increment the appropriate version** (x.y.z+1):
+   - **Patch** (x.y.z+1): Bug fixes, small tweaks, minor improvements
+   - **Minor** (x.y+1.0): New features, enhancements, significant changes
+   - **Major** (x+1.0.0): Breaking changes, major refactors, API changes
+
+2. **Update version in `app.py`**:
+   ```python
+   APP_VERSION = "x.y.z"
+   ```
+
+3. **Test on local server**:
+   ```bash
+   cd /Users/mounir.dous/projects/CISK-Navigator
+   python app.py
+   ```
+   - Server runs on http://localhost:5001
+   - Verify changes work correctly
+   - Test with sample YAML files in the data/ directory
+
+4. **DO NOT commit to GitHub unless explicitly requested by user**
+
+## Testing Checklist:
+- [ ] App starts without errors
+- [ ] YAML files load correctly (both enhanced and legacy formats)
+- [ ] Generated HTML displays properly
+- [ ] Interactive features work (navigation, search, filters, priority sorting)
+- [ ] Both app version and YAML data version display correctly
+- [ ] Multi-link relationships work (challenges, initiatives, systems, KPIs)
+- [ ] Weights and impacts display properly
+
+## Current Versions:
+- **App Version**: 2.2.9 (CISK Navigator Generator application)
+- **YAML Data Version**: Defined per data file (e.g., "2.1.19" in full_sample_enhanced.yaml)
+
+## Key Features:
+- Enhanced format with multi-links
+- Challenge/sub-challenge priorities (1=High, 2=Medium, 3=Low)
+- Initiative → multiple challenges (with weight & impact)
+- System → multiple initiatives (with weight)
+- KPI → multiple systems (with weight)
+- Auto-detection of enhanced vs legacy YAML format
+
+## Notes:
+- The app version is for the generator software itself
+- The YAML version is for the data structure/schema version
+- Both versions should be displayed in the generated HTML
+- Always test with both enhanced and legacy YAML formats

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>{{ title }} (v{{ version }})</title>
+<title>{{ title }} - Data v{{ data_version }} - CISK Navigator v{{ app_version }}</title>
 <style>
   :root {
     --bg: #0b1220;
@@ -354,7 +354,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">{{ title }} (v{{ version }})</div>
+      <div class="title">{{ title }} <span style="opacity: 0.6; font-size: 0.9em;">(Data v{{ data_version }} • App v{{ app_version }})</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
