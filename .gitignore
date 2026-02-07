@@ -41,3 +41,6 @@ START_HERE_README.txt
 
 # Generated HTML files (output artifacts)
 cisk_navigator_*.html
+
+# Personal YAML files with tracking codes (not for GitHub)
+data/MCase_*.yaml
