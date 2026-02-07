@@ -21,15 +21,41 @@
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
-    /* CISK */
+    /* CISK Colors */
     --c-challenge: #f0d24f;
     --c-challenge-bg: rgba(240,210,79,.14);
+    --c-challenge-border: rgba(240,210,79,.55);
+    --c-challenge-light: rgba(240,210,79,.10);
+
     --c-initiative: #8fd0ff;
     --c-initiative-bg: rgba(143,208,255,.14);
+    --c-initiative-border: rgba(143,208,255,.55);
+    --c-initiative-light: rgba(143,208,255,.10);
+
     --c-system: #1d4ed8;
     --c-system-bg: rgba(29,78,216,.12);
+    --c-system-border: rgba(29,78,216,.55);
+
     --c-kpi: #22c55e;
     --c-kpi-bg: rgba(34,197,94,.12);
+    --c-kpi-border: rgba(34,197,94,.55);
+
+    /* Priority Colors */
+    --priority-high: #f59e0b;
+    --priority-medium: #eab308;
+    --priority-low: #84cc16;
+
+    /* Impact Colors */
+    --impact-high: #ef4444;
+    --impact-medium: #f59e0b;
+    --impact-low: #10b981;
+
+    /* Weight/Badge Colors */
+    --weight-bg: #3b82f6;
+    --weight-border: #1d4ed8;
+
+    /* Graph Node Colors */
+    --graph-group: #fbbf24;
   }
   * { box-sizing: border-box; }
   body {
@@ -550,6 +576,13 @@ function esc(s) {
   return (s ?? "").toString().replace(/[&<>"']/g, (m) => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
 }
 
+function renderSeasonChip(showAll = false) {
+  if (state.initSeason !== "ALL") {
+    return `<span class="chip season mono">${esc(state.initSeason)}</span>`;
+  }
+  return showAll ? `<span class="chip mono">All seasons</span>` : "";
+}
+
 const groupById = Object.fromEntries(DATA.challengeGroups.map(g=>[g.id,g]));
 const subById = Object.fromEntries(DATA.subChallenges.map(sc=>[sc.id,sc]));
 const initById = Object.fromEntries(DATA.initiatives.map(i=>[i.id,i]));
@@ -732,7 +765,7 @@ function renderByType(type,id){
 }
 
 function renderGlobalDetailForTab(tab){
-  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : `<span class="chip mono">All seasons</span>`;
+  const seasonChip = renderSeasonChip(true);
   if(tab==="challenges"){
     const groups = DATA.challengeGroups.slice().sort((a,b)=>a.number-b.number);
     const subsCount = DATA.subChallenges.length;
@@ -755,10 +788,9 @@ function renderGlobalDetailForTab(tab){
     const sys = dedup(allSys);
     const ks = dedup(allK);
 
-    const maxPills = 28;
-    const initsShown = inits.slice(0,maxPills);
-    const sysShown = sys.slice(0,maxPills);
-    const ksShown = ks.slice(0,maxPills);
+    const initsShown = inits;
+    const sysShown = sys;
+    const ksShown = ks;
 
     return `
       <div class="card">
@@ -784,16 +816,15 @@ function renderGlobalDetailForTab(tab){
         </div>
 
         <div class="hr"></div>
-        <h3>Initiatives (top ${Math.min(maxPills,inits.length)})</h3>
+        <h3>Initiatives (${inits.length})</h3>
         ${pillList(initsShown, "init", "jumpInit")}
-        ${inits.length>maxPills ? `<div class="muted" style="font-size:11.5px;margin-top:6px">Showing ${maxPills} of ${inits.length}. Use search on the left for full list.</div>` : ``}
 
         <div class="hr"></div>
-        <h3>Systems touched (top ${Math.min(maxPills,sys.length)})</h3>
+        <h3>Systems touched (${sys.length})</h3>
         ${pillList(sysShown, "sys", "jumpSys")}
 
         <div class="hr"></div>
-        <h3>KPIs (top ${Math.min(maxPills,ks.length)})</h3>
+        <h3>KPIs (${ks.length})</h3>
         ${pillList(ksShown, "kpi", "jumpKpi")}
       </div>
     `;
@@ -1038,7 +1069,7 @@ function renderChallengeGroupDetail(groupId) {
     if (kCand.length) kpis = kCand;
   }
 
-  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const seasonChip = renderSeasonChip();
 
   return `
     <div class="card">
@@ -1091,7 +1122,7 @@ function renderSubChallengeDetail(subId) {
     if (kCand.length) ks = rankRelated(sc, kCand, 5);
   }
 
-  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const seasonChip = renderSeasonChip();
 
   const poolNote = (state.initSeason==="ALL") ? `${inits.length} of ${initsPool.length}` : `${inits.length} of ${initsAll.length} (${esc(state.initSeason)})`;
 
@@ -1271,7 +1302,7 @@ function renderSystemDetail(sysId) {
 
   const g = challengeGroupId ? groupById[challengeGroupId] : null;
   const groupBadge = g ? `<span class="badge sy mono">${esc(g.id)}</span>` : "";
-  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const seasonChip = renderSeasonChip();
   const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
   const bullets = (s.bullets && s.bullets.length) ? `<ul>${s.bullets.map(b=>`<li>${esc(b)}</li>`).join("")}</ul>` : "";
 
@@ -1379,7 +1410,7 @@ function renderKpiDetail(kpiId) {
 
   const g = challengeGroupId ? groupById[challengeGroupId] : null;
   const groupBadge = g ? `<span class="badge kp mono">${esc(g.id)}</span>` : "";
-  const seasonChip = (state.initSeason!=="ALL") ? `<span class="chip season mono">${esc(state.initSeason)}</span>` : "";
+  const seasonChip = renderSeasonChip();
   const backButton = g ? `<button class="btn small" onclick="jumpGroup('${g.id}')">Back to ${g.id}</button>` : "";
 
   return `

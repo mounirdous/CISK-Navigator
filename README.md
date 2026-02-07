@@ -116,7 +116,7 @@ kpis:
 
 ## 🌐 Deploy Your Own
 
-See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for deploying to:
+See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide to:
 - Railway.app (recommended, free tier)
 - Render.com (free tier)
 - Vercel/Netlify (free)
@@ -137,8 +137,8 @@ Quick deploy to Railway:
 
 ## 📖 Documentation
 
-- [Deployment Guide](DEPLOYMENT_GUIDE.md) - Deploy to cloud platforms
-- [Quick Deploy](DEPLOY_NOW.md) - 5-minute deployment guide
+- [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide for all platforms
+- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and code structure
 - Sample data: `data/full_sample_enhanced.yaml`
 
 ## 💡 Use Cases

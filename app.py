@@ -23,6 +23,52 @@ def load_yaml_data(file_path: str) -> Dict:
     return data
 
 
+def extract_metadata(yaml_data: Dict) -> Dict:
+    """Extract metadata fields from YAML data"""
+    meta = yaml_data.get("meta", {})
+    return {
+        "title": meta.get("title", "CISK Navigator Enhanced"),
+        "data_version": meta.get("version", "1.0"),
+        "tracking_code": meta.get("tracking_code", None)
+    }
+
+
+def _create_base_structure(source_title: str) -> Dict:
+    """Create base JavaScript data structure with metadata"""
+    return {
+        "meta": {
+            "generated": datetime.now().isoformat(),
+            "sourceDeck": source_title
+        },
+        "challengeGroups": [],
+        "subChallenges": [],
+        "initiatives": [],
+        "systems": [],
+        "kpis": []
+    }
+
+
+def _convert_challenges(yaml_data: Dict, js_data: Dict, default_priority: int):
+    """Convert challenge groups and sub-challenges with given default priority"""
+    # Convert challenge groups
+    for group in yaml_data.get("challenge_groups", []):
+        js_data["challengeGroups"].append({
+            "id": group["id"],
+            "number": group["number"],
+            "title": group["title"],
+            "priority": group.get("priority", default_priority)
+        })
+
+    # Convert sub-challenges
+    for sub in yaml_data.get("sub_challenges", []):
+        js_data["subChallenges"].append({
+            "id": sub["id"],
+            "groupId": sub["group_id"],
+            "text": sub["text"],
+            "priority": sub.get("priority", default_priority)
+        })
+
+
 def convert_enhanced_format(yaml_data: Dict) -> Dict:
     """
     Convert enhanced YAML format with multi-links to JavaScript format
@@ -33,35 +79,11 @@ def convert_enhanced_format(yaml_data: Dict) -> Dict:
     - System -> multiple initiatives (with weight)
     - KPI -> multiple systems (with weight)
     """
-    js_data = {
-        "meta": {
-            "generated": yaml_data.get("meta", {}).get("generated", datetime.now().isoformat()),
-            "sourceDeck": yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        },
-        "challengeGroups": [],
-        "subChallenges": [],
-        "initiatives": [],
-        "systems": [],
-        "kpis": []
-    }
+    source_title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
+    js_data = _create_base_structure(source_title)
 
-    # Convert challenge groups (with priority)
-    for group in yaml_data.get("challenge_groups", []):
-        js_data["challengeGroups"].append({
-            "id": group["id"],
-            "number": group["number"],
-            "title": group["title"],
-            "priority": group.get("priority", 3)  # Default to lowest priority
-        })
-
-    # Convert sub-challenges (with priority)
-    for sub in yaml_data.get("sub_challenges", []):
-        js_data["subChallenges"].append({
-            "id": sub["id"],
-            "groupId": sub["group_id"],
-            "text": sub["text"],
-            "priority": sub.get("priority", 3)
-        })
+    # Convert challenge groups and sub-challenges
+    _convert_challenges(yaml_data, js_data, default_priority=3)
 
     # Convert initiatives (with challenge links, weights, and impacts)
     for init in yaml_data.get("initiatives", []):
@@ -132,35 +154,11 @@ def convert_legacy_format(yaml_data: Dict) -> Dict:
     Convert legacy YAML format (with groupId) to enhanced format
     For backward compatibility
     """
-    js_data = {
-        "meta": {
-            "generated": yaml_data.get("meta", {}).get("generated", datetime.now().isoformat()),
-            "sourceDeck": yaml_data.get("meta", {}).get("title", "CISK Navigator")
-        },
-        "challengeGroups": [],
-        "subChallenges": [],
-        "initiatives": [],
-        "systems": [],
-        "kpis": []
-    }
+    source_title = yaml_data.get("meta", {}).get("title", "CISK Navigator")
+    js_data = _create_base_structure(source_title)
 
-    # Convert challenge groups
-    for group in yaml_data.get("challenge_groups", []):
-        js_data["challengeGroups"].append({
-            "id": group["id"],
-            "number": group["number"],
-            "title": group["title"],
-            "priority": group.get("priority", 2)
-        })
-
-    # Convert sub-challenges
-    for sub in yaml_data.get("sub_challenges", []):
-        js_data["subChallenges"].append({
-            "id": sub["id"],
-            "groupId": sub["group_id"],
-            "text": sub["text"],
-            "priority": sub.get("priority", 2)
-        })
+    # Convert challenge groups and sub-challenges
+    _convert_challenges(yaml_data, js_data, default_priority=2)
 
     # Convert initiatives (legacy format - use groupId to infer challenge)
     for init in yaml_data.get("initiatives", []):
@@ -232,18 +230,13 @@ def index():
     try:
         yaml_data = load_yaml_data(str(data_file))
         js_data = auto_detect_format(yaml_data)
-
-        title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        data_version = yaml_data.get("meta", {}).get("version", "1.0")
-        tracking_code = yaml_data.get("meta", {}).get("tracking_code", None)
+        metadata = extract_metadata(yaml_data)
 
         return render_template(
             'navigator_enhanced.html',
             data=js_data,
-            title=title,
-            data_version=data_version,
             app_version=APP_VERSION,
-            tracking_code=tracking_code
+            **metadata
         )
     except Exception as e:
         return f"Error loading data: {str(e)}", 500
@@ -269,10 +262,7 @@ def upload():
         yaml_content = file.read().decode('utf-8')
         yaml_data = yaml.safe_load(yaml_content)
         js_data = auto_detect_format(yaml_data)
-
-        title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        data_version = yaml_data.get("meta", {}).get("version", "1.0")
-        tracking_code = yaml_data.get("meta", {}).get("tracking_code", None)
+        metadata = extract_metadata(yaml_data)
 
         # Calculate statistics from uploaded data
         stats = {
@@ -286,11 +276,9 @@ def upload():
         return render_template(
             'navigator_enhanced.html',
             data=js_data,
-            title=title,
-            data_version=data_version,
             app_version=APP_VERSION,
-            tracking_code=tracking_code,
-            upload_stats=stats
+            upload_stats=stats,
+            **metadata
         )
     except Exception as e:
         return jsonify({"error": f"Error parsing file: {str(e)}"}), 500
@@ -326,18 +314,13 @@ def generate_standalone():
         yaml_content = file.read().decode('utf-8')
         yaml_data = yaml.safe_load(yaml_content)
         js_data = auto_detect_format(yaml_data)
-
-        title = yaml_data.get("meta", {}).get("title", "CISK Navigator Enhanced")
-        data_version = yaml_data.get("meta", {}).get("version", "1.0")
-        tracking_code = yaml_data.get("meta", {}).get("tracking_code", None)
+        metadata = extract_metadata(yaml_data)
 
         html_content = render_template(
             'navigator_enhanced.html',
             data=js_data,
-            title=title,
-            data_version=data_version,
             app_version=APP_VERSION,
-            tracking_code=tracking_code
+            **metadata
         )
 
         response = make_response(html_content)
