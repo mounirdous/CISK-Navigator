@@ -2588,14 +2588,25 @@ function setupGraphInteractions() {
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  // Wheel zoom disabled - use buttons instead
-  // canvas.addEventListener('wheel', (e) => {
-  //   e.preventDefault();
-  //   const delta = e.deltaY > 0 ? 0.9 : 1.1;
-  //   graph.zoom *= delta;
-  //   graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
-  //   drawGraph();
-  // });
+  // Mouse wheel zoom for desktop
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const oldZoom = graph.zoom;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    graph.zoom *= delta;
+    graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+
+    // Zoom towards mouse cursor position
+    const zoomChange = graph.zoom / oldZoom;
+    graph.panX = mouseX - (mouseX - graph.panX) * zoomChange;
+    graph.panY = mouseY - (mouseY - graph.panY) * zoomChange;
+
+    drawGraph();
+  }, { passive: false });
 }
 
 function findNodeAt(x, y) {
