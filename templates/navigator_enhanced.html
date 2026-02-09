@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
 <title>{{ title }} - Data v{{ data_version }} - CISK Navigator v{{ app_version }}</title>
 {% if tracking_code %}
 <!-- Analytics Tracking -->
@@ -532,7 +532,7 @@
         </div>
       </div>
       <div class="bd" style="padding:0;">
-        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;"></canvas>
+        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
       </div>
       <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
         <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
@@ -2458,6 +2458,135 @@ function setupGraphInteractions() {
     canvas.style.cursor = 'grab';
     drawGraph();
   });
+
+  // Touch support for mobile devices
+  let touches = [];
+  let lastTouchDistance = 0;
+  let touchStart = { x: 0, y: 0, time: 0 };
+
+  canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Prevent page zoom
+    touches = Array.from(e.touches);
+
+    if (touches.length === 1) {
+      // Single touch - prepare for pan or node selection
+      const touch = touches[0];
+      const rect = canvas.getBoundingClientRect();
+      touchStart = {
+        x: touch.clientX,
+        y: touch.clientY,
+        time: Date.now()
+      };
+
+      const x = (touch.clientX - rect.left - graph.panX) / graph.zoom;
+      const y = (touch.clientY - rect.top - graph.panY) / graph.zoom;
+
+      // Check if touching a node
+      const node = findNodeAt(x, y);
+      if (node) {
+        graph.dragging = node;
+      } else {
+        isDragging = true;
+        dragStart = { x: touch.clientX - graph.panX, y: touch.clientY - graph.panY };
+      }
+    } else if (touches.length === 2) {
+      // Two fingers - pinch to zoom
+      isDragging = false;
+      graph.dragging = null;
+      lastTouchDistance = getTouchDistance(touches[0], touches[1]);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault(); // Prevent page zoom
+    touches = Array.from(e.touches);
+
+    if (touches.length === 1 && (graph.dragging || isDragging)) {
+      // Single touch - pan or drag node
+      const touch = touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const x = (touch.clientX - rect.left - graph.panX) / graph.zoom;
+      const y = (touch.clientY - rect.top - graph.panY) / graph.zoom;
+
+      if (graph.dragging) {
+        graph.dragging.x = x;
+        graph.dragging.y = y;
+      } else if (isDragging) {
+        graph.panX = touch.clientX - dragStart.x;
+        graph.panY = touch.clientY - dragStart.y;
+      }
+      drawGraph();
+    } else if (touches.length === 2) {
+      // Two fingers - pinch to zoom
+      const currentDistance = getTouchDistance(touches[0], touches[1]);
+
+      if (lastTouchDistance > 0) {
+        const scaleFactor = currentDistance / lastTouchDistance;
+        const oldZoom = graph.zoom;
+        graph.zoom *= scaleFactor;
+        graph.zoom = Math.max(0.3, Math.min(3, graph.zoom));
+
+        // Zoom towards the center of the two touch points
+        const rect = canvas.getBoundingClientRect();
+        const centerX = (touches[0].clientX + touches[1].clientX) / 2 - rect.left;
+        const centerY = (touches[0].clientY + touches[1].clientY) / 2 - rect.top;
+
+        // Adjust pan to keep zoom centered
+        const zoomChange = graph.zoom / oldZoom;
+        graph.panX = centerX - (centerX - graph.panX) * zoomChange;
+        graph.panY = centerY - (centerY - graph.panY) * zoomChange;
+
+        drawGraph();
+      }
+
+      lastTouchDistance = currentDistance;
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', (e) => {
+    e.preventDefault(); // Prevent page zoom
+
+    const timeDiff = Date.now() - touchStart.time;
+
+    // If it was a quick tap without much movement, treat as node selection
+    if (touches.length === 1 && timeDiff < 300) {
+      const touch = touches[0];
+      const distMoved = Math.sqrt(
+        Math.pow(touch.clientX - touchStart.x, 2) +
+        Math.pow(touch.clientY - touchStart.y, 2)
+      );
+
+      if (distMoved < 10) {
+        const rect = canvas.getBoundingClientRect();
+        const x = (touch.clientX - rect.left - graph.panX) / graph.zoom;
+        const y = (touch.clientY - rect.top - graph.panY) / graph.zoom;
+        const node = findNodeAt(x, y);
+
+        if (node) {
+          selectGraphNode(node);
+        }
+      }
+    }
+
+    touches = Array.from(e.touches);
+    if (touches.length === 0) {
+      graph.dragging = null;
+      isDragging = false;
+      lastTouchDistance = 0;
+    } else if (touches.length === 1) {
+      // Went from 2 fingers to 1 - reset for panning
+      lastTouchDistance = 0;
+      const touch = touches[0];
+      dragStart = { x: touch.clientX - graph.panX, y: touch.clientY - graph.panY };
+    }
+  }, { passive: false });
+
+  // Helper function to calculate distance between two touches
+  function getTouchDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
 
   // Wheel zoom disabled - use buttons instead
   // canvas.addEventListener('wheel', (e) => {

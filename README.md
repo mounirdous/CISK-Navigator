@@ -2,7 +2,7 @@
 
 Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
 
-![Version](https://img.shields.io/badge/version-2.5.0-blue)
+![Version](https://img.shields.io/badge/version-2.5.1-blue)
 ![Python](https://img.shields.io/badge/python-3.11-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -14,6 +14,7 @@ Interactive visualization tool for exploring relationships between **Challenges*
 - **💥 Impact Indicators**: High/Medium/Low impact badges
 - **🎨 Custom Colors**: Configure colors for challenges, initiatives, systems, and KPIs in YAML
 - **📊 Two Views**: Column view and interactive graph view
+- **📱 Mobile Touch Support**: Pinch-to-zoom, pan, and tap on mobile devices (iPhone, Android)
 - **🔄 Season Filtering**: Filter by S1, S2, S3
 - **📤 Upload & Download**: Upload YAML, download standalone HTML
 - **📊 Analytics Support**: Add Google Analytics or any tracking code to generated HTML
@@ -115,10 +116,11 @@ kpis:
 
 ### Graph View
 - Vertical flow (Groups → Challenges → Initiatives → Systems → KPIs)
-- Click nodes to filter
+- Click/tap nodes to filter
 - Back button navigation
 - Full chain tracing
-- Drag, pan, zoom
+- Desktop: Drag, pan, zoom buttons
+- Mobile: Pinch-to-zoom, pan with one finger, tap to select
 
 ## 🌐 Deploy Your Own
 
@@ -170,9 +172,10 @@ Built for strategic business planning and technology roadmap visualization.
 
 ---
 
-**Version 2.5.0** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, analytics tracking, and customizable colors
+**Version 2.5.1** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, analytics tracking, customizable colors, and mobile touch support
 
 ### Recent Updates
+- **v2.5.1** (Feb 2026): Mobile touch support - pinch-to-zoom and pan gestures on iPhone/Android
 - **v2.5.0** (Feb 2026): Customizable colors for challenges, initiatives, systems, and KPIs via YAML configuration
 - **v2.4.0** (Feb 2026): Analytics tracking support (Google Analytics, Plausible, etc.)
 - **v2.3.3** (Feb 2026): Fixed graph navigation A→B→A scenario
