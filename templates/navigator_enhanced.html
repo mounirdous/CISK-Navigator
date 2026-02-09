@@ -1020,15 +1020,19 @@ function select(type, id, {autoTab=null, forceSelect=false}={}) {
 
   // Clear graph and flow selections so new column selection will propagate
   // when user switches to those views
-  if (graph.canvas) {
-    graph.selectedNode = null;
-    graph.filteredNodes = null;
-    graph.filteredLinks = null;
-  }
-  if (flow.canvas) {
-    flow.selectedNode = null;
-    flow.filteredNodes = null;
-    flow.filteredLinks = null;
+  // BUT: Don't clear if isSyncing is true - that means we're syncing FROM graph/flow
+  // to column view, and the filters are already correctly set
+  if (!isSyncing) {
+    if (graph.canvas) {
+      graph.selectedNode = null;
+      graph.filteredNodes = null;
+      graph.filteredLinks = null;
+    }
+    if (flow.canvas) {
+      flow.selectedNode = null;
+      flow.filteredNodes = null;
+      flow.filteredLinks = null;
+    }
   }
 
   // Sync with graph view if it's currently active AND not already syncing
@@ -3430,11 +3434,15 @@ function syncColumnToGraphView(type, id) {
       relatedNodes.forEach(nodeId => {
         if (nodesWithLinks.has(nodeId)) {
           cleanedNodes.add(nodeId);
+        } else {
+          console.log('CLEANUP: Removing orphaned node:', nodeId);
         }
       });
 
       console.log('Before cleanup: relatedNodes =', relatedNodes.size, ', relatedLinks =', relatedLinks.size);
       console.log('After cleanup: cleanedNodes =', cleanedNodes.size);
+      console.log('Nodes in cleanedNodes:', Array.from(cleanedNodes));
+      console.log('Links in relatedLinks:', relatedLinks.size, 'links');
 
       graph.filteredNodes = cleanedNodes;
       graph.filteredLinks = relatedLinks;
