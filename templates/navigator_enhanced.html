@@ -535,7 +535,7 @@
         </div>
       </div>
       <div class="bd" style="padding:0;position:relative;">
-        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <canvas id="graphCanvas" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
         <div id="graphTooltip" style="
           position:absolute;
           display:none;
@@ -580,6 +580,7 @@
           <div class="row" style="gap:8px;">
             <button class="btn small" onclick="flowZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="flowZoomOut()">🔍− Zoom Out</button>
+            <button class="btn small" onclick="flowFitToView()">⊡ Fit to View</button>
             <button class="btn small" onclick="flowFontSizeIncrease()">A+ Text Larger</button>
             <button class="btn small" onclick="flowFontSizeDecrease()">A− Text Smaller</button>
             <button class="btn small" onclick="flowReset()">↻ Reset</button>
@@ -587,7 +588,7 @@
         </div>
       </div>
       <div class="bd" style="padding:0;position:relative;">
-        <canvas id="flowCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <canvas id="flowCanvas" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
         <div id="flowTooltip" style="
           position:absolute;
           display:none;
@@ -2084,9 +2085,13 @@ function setViewMode(mode) {
     // 4. No selection - show full graph
 
     if (graph.selectedNode) {
-      // Graph already has a selection, just redraw it
+      // Graph already has a selection, redraw and fit to view
       console.log('Graph already has selection, keeping it:', graph.selectedNode.id);
       drawGraph();
+      // Auto-fit to view to ensure selection is visible
+      setTimeout(() => {
+        graphFitToView();
+      }, 10);
     } else if (flow.canvas && flow.selectedNode) {
       // Sync from flow view selection
       console.log('Graph view: Syncing from flow selection:', flow.selectedNode.id);
@@ -3803,6 +3808,12 @@ function initFlowView() {
   flow.canvas = canvas;
   flow.ctx = canvas.getContext('2d');
 
+  // Set actual canvas size to match display size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  flow.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
   // Cache colors once at initialization
   flow.colors = {
     group: getComputedStyle(document.documentElement).getPropertyValue('--graph-group').trim(),
@@ -4506,6 +4517,67 @@ function flowReset() {
   layoutFlowDiagram();
   drawFlowDiagram();
   updateFlowUI();
+}
+
+function flowFitToView() {
+  // Get visible nodes (filtered or all)
+  const visibleNodes = flow.nodes.filter(node => {
+    if (flow.filteredNodes) {
+      return flow.filteredNodes.has(node.id);
+    }
+    return true;
+  });
+
+  if (visibleNodes.length === 0) return;
+
+  // Calculate bounding box of visible nodes
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+
+  visibleNodes.forEach(node => {
+    const left = node.x;
+    const right = node.x;
+    const top = node.y;
+    const bottom = node.y + node.height;
+
+    minX = Math.min(minX, left);
+    maxX = Math.max(maxX, right);
+    minY = Math.min(minY, top);
+    maxY = Math.max(maxY, bottom);
+  });
+
+  // Add padding
+  const padding = 100;
+  minX -= padding;
+  maxX += padding;
+  minY -= padding;
+  maxY += padding;
+
+  // Calculate content size
+  const contentWidth = maxX - minX;
+  const contentHeight = maxY - minY;
+
+  // Get canvas size (in logical pixels, not device pixels)
+  const canvas = flow.canvas;
+  const rect = canvas.getBoundingClientRect();
+  const canvasWidth = rect.width;
+  const canvasHeight = rect.height;
+
+  // Calculate zoom to fit
+  const zoomX = canvasWidth / contentWidth;
+  const zoomY = canvasHeight / contentHeight;
+  const newZoom = Math.min(zoomX, zoomY, 3); // Cap at max zoom of 3
+
+  // Calculate center of content
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  // Calculate pan to center the content
+  flow.zoom = newZoom;
+  flow.panX = canvasWidth / 2 - centerX * newZoom;
+  flow.panY = canvasHeight / 2 - centerY * newZoom;
+
+  drawFlowDiagram();
 }
 
 function updateFlowUI() {

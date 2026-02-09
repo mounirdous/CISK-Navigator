@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Getting Rich: Your Wealth Building Roadmap - Data v1.0 - CISK Navigator v2.7.9</title>
+<title>Getting Rich: Your Wealth Building Roadmap - Data v1.0 - CISK Navigator v2.7.10</title>
 
 <style>
   :root {
@@ -381,7 +381,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Getting Rich: Your Wealth Building Roadmap <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.9)</span></div>
+      <div class="title">Getting Rich: Your Wealth Building Roadmap <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.10)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -516,7 +516,7 @@
         </div>
       </div>
       <div class="bd" style="padding:0;position:relative;">
-        <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <canvas id="graphCanvas" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
         <div id="graphTooltip" style="
           position:absolute;
           display:none;
@@ -561,6 +561,7 @@
           <div class="row" style="gap:8px;">
             <button class="btn small" onclick="flowZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="flowZoomOut()">🔍− Zoom Out</button>
+            <button class="btn small" onclick="flowFitToView()">⊡ Fit to View</button>
             <button class="btn small" onclick="flowFontSizeIncrease()">A+ Text Larger</button>
             <button class="btn small" onclick="flowFontSizeDecrease()">A− Text Smaller</button>
             <button class="btn small" onclick="flowReset()">↻ Reset</button>
@@ -568,7 +569,7 @@
         </div>
       </div>
       <div class="bd" style="padding:0;position:relative;">
-        <canvas id="flowCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <canvas id="flowCanvas" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
         <div id="flowTooltip" style="
           position:absolute;
           display:none;
@@ -604,7 +605,7 @@
 
 <script>
 // Data injected from Flask
-const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Income Growth"}, {"id": "C2", "number": 2, "priority": 1, "title": "Expense Management"}, {"id": "C3", "number": 3, "priority": 2, "title": "Investment \u0026 Assets"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Negotiate 15% salary raise or find higher paying job", "season": "S1", "text": "Negotiate 15% salary raise or find higher paying job"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 5}], "id": "C1.I2", "raw": "Start freelance consulting on weekends ($1K/month target)", "season": "S1", "text": "Start freelance consulting on weekends ($1K/month target)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}, {"challengeId": "C1.SC1", "impact": "M", "weight": 7}], "id": "C1.I3", "raw": "Take online courses to learn cloud/AI skills (certification)", "season": "S2", "text": "Take online courses to learn cloud/AI skills (certification)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC2", "impact": "M", "weight": 6}], "id": "C2.I1", "raw": "Cut unnecessary subscriptions and meal prep at home", "season": "S1", "text": "Cut unnecessary subscriptions and meal prep at home"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "H", "weight": 10}, {"challengeId": "C2.SC2", "impact": "H", "weight": 8}], "id": "C2.I2", "raw": "Pay off credit cards using debt avalanche method", "season": "S1", "text": "Pay off credit cards using debt avalanche method"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 10}], "id": "C2.I3", "raw": "Build $5K emergency fund (save $500/month for 10 months)", "season": "S1", "text": "Build $5K emergency fund (save $500/month for 10 months)"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}], "id": "C3.I1", "raw": "Open brokerage account and invest $500/month in index funds", "season": "S2", "text": "Open brokerage account and invest $500/month in index funds"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}], "id": "C3.I2", "raw": "Increase 401K contribution to get full employer match", "season": "S1", "text": "Increase 401K contribution to get full employer match"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 9}], "text": "Increase annual income by $20K (from $60K to $80K)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S2", "weight": 10}], "text": "Generate $12K from side hustle in year 1"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Reduce monthly spending by $300"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S2", "weight": 10}, {"systemId": "C2.S1", "weight": 7}], "text": "Pay off all credit card debt in 18 months"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Build emergency fund to $5,000"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}, {"systemId": "C2.S1", "weight": 6}], "text": "Invest $6,000 in index funds year 1"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S1", "weight": 10}, {"systemId": "C2.S2", "weight": 7}], "text": "Reach $50K net worth in 3 years"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Max out 401K employer match ($3K free money/year)"}], "meta": {"generated": "2026-02-09T16:17:20.265507", "sourceDeck": "Getting Rich: Your Wealth Building Roadmap"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Salary hasn\u0027t increased in 3 years - stuck at same level"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "No side income streams - relying on single job"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Skills becoming outdated - need to learn new technologies"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Spending $500/month on eating out and subscriptions"}, {"groupId": "C2", "id": "C2.SC2", "priority": 1, "text": "Living paycheck to paycheck - no emergency fund"}, {"groupId": "C2", "id": "C2.SC3", "priority": 1, "text": "High interest debt from credit cards ($10K at 18% APR)"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Zero investment portfolio - money sitting in checking account"}, {"groupId": "C3", "id": "C3.SC2", "priority": 2, "text": "Not maxing out 401K employer match - leaving free money on table"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I3", "weight": 8}], "text": "Career Development System", "title": "LinkedIn networking + job board alerts + resume optimization"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 10}], "text": "Side Hustle Infrastructure", "title": "Upwork profile + personal website + client CRM"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}, {"initiativeId": "C2.I3", "weight": 9}], "text": "Budget Tracking System", "title": "YNAB app + monthly expense review + spending alerts"}, {"id": "C2.S2", "initiatives": [{"initiativeId": "C2.I2", "weight": 10}], "text": "Debt Payoff System", "title": "Debt snowball calculator + auto-payments + progress tracking"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C3.I2", "weight": 7}], "text": "Investment Platform", "title": "Vanguard/Fidelity account + auto-invest setup + portfolio tracker"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I1", "weight": 8}], "text": "Financial Education", "title": "r/personalfinance + investment books + podcast subscriptions"}]};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Income Growth"}, {"id": "C2", "number": 2, "priority": 1, "title": "Expense Management"}, {"id": "C3", "number": 3, "priority": 2, "title": "Investment \u0026 Assets"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Negotiate 15% salary raise or find higher paying job", "season": "S1", "text": "Negotiate 15% salary raise or find higher paying job"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 5}], "id": "C1.I2", "raw": "Start freelance consulting on weekends ($1K/month target)", "season": "S1", "text": "Start freelance consulting on weekends ($1K/month target)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}, {"challengeId": "C1.SC1", "impact": "M", "weight": 7}], "id": "C1.I3", "raw": "Take online courses to learn cloud/AI skills (certification)", "season": "S2", "text": "Take online courses to learn cloud/AI skills (certification)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC2", "impact": "M", "weight": 6}], "id": "C2.I1", "raw": "Cut unnecessary subscriptions and meal prep at home", "season": "S1", "text": "Cut unnecessary subscriptions and meal prep at home"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "H", "weight": 10}, {"challengeId": "C2.SC2", "impact": "H", "weight": 8}], "id": "C2.I2", "raw": "Pay off credit cards using debt avalanche method", "season": "S1", "text": "Pay off credit cards using debt avalanche method"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 10}], "id": "C2.I3", "raw": "Build $5K emergency fund (save $500/month for 10 months)", "season": "S1", "text": "Build $5K emergency fund (save $500/month for 10 months)"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}], "id": "C3.I1", "raw": "Open brokerage account and invest $500/month in index funds", "season": "S2", "text": "Open brokerage account and invest $500/month in index funds"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}], "id": "C3.I2", "raw": "Increase 401K contribution to get full employer match", "season": "S1", "text": "Increase 401K contribution to get full employer match"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 9}], "text": "Increase annual income by $20K (from $60K to $80K)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S2", "weight": 10}], "text": "Generate $12K from side hustle in year 1"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Reduce monthly spending by $300"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S2", "weight": 10}, {"systemId": "C2.S1", "weight": 7}], "text": "Pay off all credit card debt in 18 months"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Build emergency fund to $5,000"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}, {"systemId": "C2.S1", "weight": 6}], "text": "Invest $6,000 in index funds year 1"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S1", "weight": 10}, {"systemId": "C2.S2", "weight": 7}], "text": "Reach $50K net worth in 3 years"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Max out 401K employer match ($3K free money/year)"}], "meta": {"generated": "2026-02-09T16:23:47.845711", "sourceDeck": "Getting Rich: Your Wealth Building Roadmap"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Salary hasn\u0027t increased in 3 years - stuck at same level"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "No side income streams - relying on single job"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Skills becoming outdated - need to learn new technologies"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Spending $500/month on eating out and subscriptions"}, {"groupId": "C2", "id": "C2.SC2", "priority": 1, "text": "Living paycheck to paycheck - no emergency fund"}, {"groupId": "C2", "id": "C2.SC3", "priority": 1, "text": "High interest debt from credit cards ($10K at 18% APR)"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Zero investment portfolio - money sitting in checking account"}, {"groupId": "C3", "id": "C3.SC2", "priority": 2, "text": "Not maxing out 401K employer match - leaving free money on table"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I3", "weight": 8}], "text": "Career Development System", "title": "LinkedIn networking + job board alerts + resume optimization"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 10}], "text": "Side Hustle Infrastructure", "title": "Upwork profile + personal website + client CRM"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}, {"initiativeId": "C2.I3", "weight": 9}], "text": "Budget Tracking System", "title": "YNAB app + monthly expense review + spending alerts"}, {"id": "C2.S2", "initiatives": [{"initiativeId": "C2.I2", "weight": 10}], "text": "Debt Payoff System", "title": "Debt snowball calculator + auto-payments + progress tracking"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C3.I2", "weight": 7}], "text": "Investment Platform", "title": "Vanguard/Fidelity account + auto-invest setup + portfolio tracker"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I1", "weight": 8}], "text": "Financial Education", "title": "r/personalfinance + investment books + podcast subscriptions"}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},
@@ -2065,9 +2066,13 @@ function setViewMode(mode) {
     // 4. No selection - show full graph
 
     if (graph.selectedNode) {
-      // Graph already has a selection, just redraw it
+      // Graph already has a selection, redraw and fit to view
       console.log('Graph already has selection, keeping it:', graph.selectedNode.id);
       drawGraph();
+      // Auto-fit to view to ensure selection is visible
+      setTimeout(() => {
+        graphFitToView();
+      }, 10);
     } else if (flow.canvas && flow.selectedNode) {
       // Sync from flow view selection
       console.log('Graph view: Syncing from flow selection:', flow.selectedNode.id);
@@ -3784,6 +3789,12 @@ function initFlowView() {
   flow.canvas = canvas;
   flow.ctx = canvas.getContext('2d');
 
+  // Set actual canvas size to match display size
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  flow.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
   // Cache colors once at initialization
   flow.colors = {
     group: getComputedStyle(document.documentElement).getPropertyValue('--graph-group').trim(),
@@ -4487,6 +4498,67 @@ function flowReset() {
   layoutFlowDiagram();
   drawFlowDiagram();
   updateFlowUI();
+}
+
+function flowFitToView() {
+  // Get visible nodes (filtered or all)
+  const visibleNodes = flow.nodes.filter(node => {
+    if (flow.filteredNodes) {
+      return flow.filteredNodes.has(node.id);
+    }
+    return true;
+  });
+
+  if (visibleNodes.length === 0) return;
+
+  // Calculate bounding box of visible nodes
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+
+  visibleNodes.forEach(node => {
+    const left = node.x;
+    const right = node.x;
+    const top = node.y;
+    const bottom = node.y + node.height;
+
+    minX = Math.min(minX, left);
+    maxX = Math.max(maxX, right);
+    minY = Math.min(minY, top);
+    maxY = Math.max(maxY, bottom);
+  });
+
+  // Add padding
+  const padding = 100;
+  minX -= padding;
+  maxX += padding;
+  minY -= padding;
+  maxY += padding;
+
+  // Calculate content size
+  const contentWidth = maxX - minX;
+  const contentHeight = maxY - minY;
+
+  // Get canvas size (in logical pixels, not device pixels)
+  const canvas = flow.canvas;
+  const rect = canvas.getBoundingClientRect();
+  const canvasWidth = rect.width;
+  const canvasHeight = rect.height;
+
+  // Calculate zoom to fit
+  const zoomX = canvasWidth / contentWidth;
+  const zoomY = canvasHeight / contentHeight;
+  const newZoom = Math.min(zoomX, zoomY, 3); // Cap at max zoom of 3
+
+  // Calculate center of content
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+
+  // Calculate pan to center the content
+  flow.zoom = newZoom;
+  flow.panX = canvasWidth / 2 - centerX * newZoom;
+  flow.panY = canvasHeight / 2 - centerY * newZoom;
+
+  drawFlowDiagram();
 }
 
 function updateFlowUI() {

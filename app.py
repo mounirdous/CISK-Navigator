@@ -13,7 +13,7 @@ from typing import Dict, List
 app = Flask(__name__)
 
 # App version - displayed in generated HTML files
-APP_VERSION = "2.7.9"
+APP_VERSION = "2.7.10"
 
 
 def load_yaml_data(file_path: str) -> Dict:
