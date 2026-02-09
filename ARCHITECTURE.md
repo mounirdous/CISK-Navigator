@@ -3,12 +3,13 @@
 ## Overview
 CISK Navigator is a Flask-based web application for visualizing relationships between Challenges, Initiatives, Systems, and KPIs. It provides three interactive views: Column view (traditional hierarchical layout), Graph view (force-directed network visualization), and Flow view (Sankey diagram showing relationship strength).
 
-**Current Version:** 2.7.5
+**Current Version:** 2.7.6
 **Local Development:** http://localhost:5002
 **Deployment:** https://cisk-navigator.onrender.com/
 **GitHub:** https://github.com/mounirdous/CISK-Navigator
 
 ## Recent Updates (v2.7.x)
+- **v2.7.6** (2026-02-09): Fixed orphaned nodes in Graph view - nodes without visible links no longer appear
 - **v2.7.5** (2026-02-09): Graph and Flow view selections sync back to Column view - full bidirectional sync
 - **v2.7.4** (2026-02-09): Flow view uses gradient colors - flows transition from source color to target color
 - **v2.7.3** (2026-02-09): Flow view shows selected node with visual highlight and selection indicator
@@ -598,6 +599,35 @@ UI re-renders
 4. Document complex algorithms with comments
 5. Use semantic HTML5 elements
 6. Maintain consistent indentation (2 spaces)
+
+---
+
+## Development Workflow
+
+### Making Code Changes
+
+When making changes to the navigator (especially to `templates/navigator_enhanced.html`):
+
+1. **Make your code changes**
+2. **Test locally** at http://localhost:5002
+3. **Regenerate example HTML files** (IMPORTANT!)
+   ```bash
+   python generate_examples.py
+   ```
+   This ensures all 4 example HTML files in `examples/html/` are updated with your latest changes.
+
+4. **Test the examples**
+   - Open `examples/html/getting_fit.html` in your browser
+   - Verify your changes work in the standalone HTML
+
+5. **Commit and push**
+   ```bash
+   git add .
+   git commit -m "Your commit message"
+   git push
+   ```
+
+**⚠️ CRITICAL:** Never commit code changes without regenerating the example HTML files! Users download these files and expect them to have the latest features and bug fixes.
 
 ---
 

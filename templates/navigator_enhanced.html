@@ -3417,7 +3417,26 @@ function syncColumnToGraphView(type, id) {
         });
       }
 
-      graph.filteredNodes = relatedNodes;
+      // CLEANUP: Remove nodes that don't have any visible links
+      // This prevents orphaned nodes from appearing without connections
+      const nodesWithLinks = new Set();
+      relatedLinks.forEach(link => {
+        nodesWithLinks.add(link.source.id);
+        nodesWithLinks.add(link.target.id);
+      });
+
+      // Only keep nodes that have at least one visible link
+      const cleanedNodes = new Set();
+      relatedNodes.forEach(nodeId => {
+        if (nodesWithLinks.has(nodeId)) {
+          cleanedNodes.add(nodeId);
+        }
+      });
+
+      console.log('Before cleanup: relatedNodes =', relatedNodes.size, ', relatedLinks =', relatedLinks.size);
+      console.log('After cleanup: cleanedNodes =', cleanedNodes.size);
+
+      graph.filteredNodes = cleanedNodes;
       graph.filteredLinks = relatedLinks;
 
       layoutGraph();

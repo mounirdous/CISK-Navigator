@@ -2,7 +2,7 @@
 
 Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
 
-![Version](https://img.shields.io/badge/version-2.7.5-blue)
+![Version](https://img.shields.io/badge/version-2.7.6-blue)
 ![Python](https://img.shields.io/badge/python-3.11-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -204,9 +204,10 @@ Built for strategic business planning and technology roadmap visualization.
 
 ---
 
-**Version 2.7.5** - Enhanced with multi-links, priorities, weights, interactive graph view, Flow view (Sankey diagram), dual version display, analytics tracking, customizable colors, full mobile/desktop zoom support, and tooltips
+**Version 2.7.6** - Enhanced with multi-links, priorities, weights, interactive graph view, Flow view (Sankey diagram), dual version display, analytics tracking, customizable colors, full mobile/desktop zoom support, and tooltips
 
 ### Recent Updates
+- **v2.7.6** (Feb 2026): Fixed orphaned nodes in Graph view - nodes without visible links no longer appear
 - **v2.7.5** (Feb 2026): Graph and Flow view selections now sync back to Column view - full bidirectional sync
 - **v2.7.4** (Feb 2026): Flow view uses gradient colors - flows transition from source color to target color
 - **v2.7.3** (Feb 2026): Flow view shows selected node with visual highlight and selection indicator at top
