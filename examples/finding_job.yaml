@@ -1,0 +1,244 @@
+meta:
+  title: 'Finding Your Dream Job: Career Search Navigator'
+  version: '1.0'
+  colors:
+    challenge: '#dc2626'      # Red - job search challenges
+    initiative: '#2563eb'     # Blue - action initiatives
+    system: '#16a34a'         # Green - support systems
+    kpi: '#ca8a04'            # Yellow - success metrics
+
+challenge_groups:
+  - id: C1
+    number: 1
+    title: Job Market Positioning
+    priority: 1
+  - id: C2
+    number: 2
+    title: Application Process
+    priority: 1
+  - id: C3
+    number: 3
+    title: Interview Performance
+    priority: 2
+
+sub_challenges:
+  - id: C1.SC1
+    group_id: C1
+    text: Resume outdated - hasn't been updated in 2 years
+    priority: 1
+  - id: C1.SC2
+    group_id: C1
+    text: LinkedIn profile incomplete - no summary, few connections
+    priority: 1
+  - id: C1.SC3
+    group_id: C1
+    text: No portfolio or GitHub presence to showcase work
+    priority: 2
+  - id: C1.SC4
+    group_id: C1
+    text: Unclear career direction - applying to random positions
+    priority: 1
+  - id: C2.SC1
+    group_id: C2
+    text: Applying to 50+ jobs but getting zero responses
+    priority: 1
+  - id: C2.SC2
+    group_id: C2
+    text: Generic cover letters - not tailoring to each company
+    priority: 1
+  - id: C2.SC3
+    group_id: C2
+    text: No networking - only using online applications
+    priority: 2
+  - id: C3.SC1
+    group_id: C3
+    text: Nervous in interviews - stumbling on behavioral questions
+    priority: 1
+  - id: C3.SC2
+    group_id: C3
+    text: Not following up after interviews - losing momentum
+    priority: 2
+
+initiatives:
+  - id: C1.I1
+    season: S1
+    text: Hire resume writer or use AI tools for professional rewrite
+    challenges:
+      - challenge_id: C1.SC1
+        weight: 10
+        impact: H
+  - id: C1.I2
+    season: S1
+    text: Optimize LinkedIn - professional photo, compelling summary, 500+ connections
+    challenges:
+      - challenge_id: C1.SC2
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC3
+        weight: 7
+        impact: M
+  - id: C1.I3
+    season: S1
+    text: Build portfolio website with 3 best projects
+    challenges:
+      - challenge_id: C1.SC3
+        weight: 10
+        impact: H
+  - id: C1.I4
+    season: S1
+    text: Define target role - research companies, job descriptions, required skills
+    challenges:
+      - challenge_id: C1.SC4
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC1
+        weight: 8
+        impact: M
+  - id: C2.I1
+    season: S1
+    text: Quality over quantity - apply to 10 perfect-fit jobs per week with customized applications
+    challenges:
+      - challenge_id: C2.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC2
+        weight: 9
+        impact: H
+  - id: C2.I2
+    season: S1
+    text: Research-based cover letters - mention specific company projects/values
+    challenges:
+      - challenge_id: C2.SC2
+        weight: 10
+        impact: H
+  - id: C2.I3
+    season: S2
+    text: Attend 2 networking events per month + 5 coffee chats with industry people
+    challenges:
+      - challenge_id: C2.SC3
+        weight: 10
+        impact: H
+      - challenge_id: C1.SC2
+        weight: 6
+        impact: M
+  - id: C3.I1
+    season: S2
+    text: Practice STAR method for behavioral questions (3 sessions with career coach)
+    challenges:
+      - challenge_id: C3.SC1
+        weight: 10
+        impact: H
+  - id: C3.I2
+    season: S2
+    text: Mock interviews - 2 per week with friends or Pramp
+    challenges:
+      - challenge_id: C3.SC1
+        weight: 10
+        impact: H
+  - id: C3.I3
+    season: S2
+    text: Create follow-up system - thank you emails within 24 hours + weekly check-ins
+    challenges:
+      - challenge_id: C3.SC2
+        weight: 10
+        impact: H
+
+systems:
+  - id: C1.S1
+    text: Personal Brand Platform
+    title: LinkedIn Premium + portfolio website + GitHub showcase
+    initiatives:
+      - initiative_id: C1.I2
+        weight: 10
+      - initiative_id: C1.I3
+        weight: 9
+  - id: C1.S2
+    text: Career Strategy
+    title: Career coach + job search spreadsheet + target company list
+    initiatives:
+      - initiative_id: C1.I4
+        weight: 10
+      - initiative_id: C2.I1
+        weight: 8
+  - id: C2.S1
+    text: Application Tracking System
+    title: Notion database + application tracker + deadline reminders
+    initiatives:
+      - initiative_id: C2.I1
+        weight: 10
+      - initiative_id: C2.I2
+        weight: 9
+  - id: C2.S2
+    text: Networking System
+    title: Eventbrite + LinkedIn outreach templates + coffee chat tracker
+    initiatives:
+      - initiative_id: C2.I3
+        weight: 10
+      - initiative_id: C1.I2
+        weight: 7
+  - id: C3.S1
+    text: Interview Preparation
+    title: STAR stories bank + Glassdoor research + Pramp account
+    initiatives:
+      - initiative_id: C3.I1
+        weight: 10
+      - initiative_id: C3.I2
+        weight: 10
+  - id: C3.S2
+    text: Follow-up System
+    title: Email templates + CRM tracker + calendar reminders
+    initiatives:
+      - initiative_id: C3.I3
+        weight: 10
+
+kpis:
+  - id: C1.K1
+    text: Get resume past ATS - 20% application response rate
+    systems:
+      - system_id: C1.S1
+        weight: 9
+      - system_id: C2.S1
+        weight: 10
+  - id: C1.K2
+    text: Reach 500+ LinkedIn connections with 50 in target industry
+    systems:
+      - system_id: C1.S1
+        weight: 10
+  - id: C1.K3
+    text: Build portfolio with 3 impressive case studies
+    systems:
+      - system_id: C1.S1
+        weight: 10
+  - id: C2.K1
+    text: Submit 80 quality applications in 8 weeks (10/week)
+    systems:
+      - system_id: C2.S1
+        weight: 10
+      - system_id: C1.S2
+        weight: 7
+  - id: C2.K2
+    text: Get 5 informational interviews with employees at target companies
+    systems:
+      - system_id: C2.S2
+        weight: 10
+  - id: C3.K1
+    text: Secure 10 first-round interviews
+    systems:
+      - system_id: C1.S1
+        weight: 8
+      - system_id: C2.S1
+        weight: 10
+  - id: C3.K2
+    text: Convert 50% of first-round to second-round interviews
+    systems:
+      - system_id: C3.S1
+        weight: 10
+  - id: C3.K3
+    text: Land 3 job offers within 3 months
+    systems:
+      - system_id: C3.S1
+        weight: 9
+      - system_id: C3.S2
+        weight: 8
+      - system_id: C1.S2
+        weight: 10

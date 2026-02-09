@@ -13,7 +13,7 @@ from typing import Dict, List
 app = Flask(__name__)
 
 # App version - displayed in generated HTML files
-APP_VERSION = "2.5.3"
+APP_VERSION = "2.7.5"
 
 
 def load_yaml_data(file_path: str) -> Dict:
@@ -343,6 +343,24 @@ def generate_standalone():
         return response
     except Exception as e:
         return jsonify({"error": f"Error generating file: {str(e)}"}), 500
+
+
+@app.route('/examples/<path:filename>')
+def serve_example(filename):
+    """Serve example YAML and HTML files"""
+    from flask import send_from_directory
+    examples_dir = Path(__file__).parent / "examples"
+
+    # Handle html subdirectory
+    if filename.startswith('html/'):
+        file_path = examples_dir / filename
+        if file_path.exists():
+            return send_from_directory(examples_dir / "html", filename.replace('html/', ''))
+    else:
+        if (examples_dir / filename).exists():
+            return send_from_directory(examples_dir, filename)
+
+    return "File not found", 404
 
 
 if __name__ == '__main__':

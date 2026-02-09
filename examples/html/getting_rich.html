@@ -3,11 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>{{ title }} - Data v{{ data_version }} - CISK Navigator v{{ app_version }}</title>
-{% if tracking_code %}
-<!-- Analytics Tracking -->
-{{ tracking_code|safe }}
-{% endif %}
+<title>Getting Rich: Your Wealth Building Roadmap - Data v1.0 - CISK Navigator v2.7.5</title>
+
 <style>
   :root {
     --bg: #0b1220;
@@ -22,23 +19,23 @@
     --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
     /* CISK Colors - Configurable via YAML */
-    --c-challenge: {{ colors.challenge }};
-    --c-challenge-bg: {{ colors.challenge }}23;
-    --c-challenge-border: {{ colors.challenge }}8C;
-    --c-challenge-light: {{ colors.challenge }}1A;
+    --c-challenge: #f59e0b;
+    --c-challenge-bg: #f59e0b23;
+    --c-challenge-border: #f59e0b8C;
+    --c-challenge-light: #f59e0b1A;
 
-    --c-initiative: {{ colors.initiative }};
-    --c-initiative-bg: {{ colors.initiative }}23;
-    --c-initiative-border: {{ colors.initiative }}8C;
-    --c-initiative-light: {{ colors.initiative }}1A;
+    --c-initiative: #059669;
+    --c-initiative-bg: #05966923;
+    --c-initiative-border: #0596698C;
+    --c-initiative-light: #0596691A;
 
-    --c-system: {{ colors.system }};
-    --c-system-bg: {{ colors.system }}1F;
-    --c-system-border: {{ colors.system }}8C;
+    --c-system: #1e40af;
+    --c-system-bg: #1e40af1F;
+    --c-system-border: #1e40af8C;
 
-    --c-kpi: {{ colors.kpi }};
-    --c-kpi-bg: {{ colors.kpi }}1F;
-    --c-kpi-border: {{ colors.kpi }}8C;
+    --c-kpi: #7c3aed;
+    --c-kpi-bg: #7c3aed1F;
+    --c-kpi-border: #7c3aed8C;
 
     /* Priority Colors */
     --priority-high: #f59e0b;
@@ -384,7 +381,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">{{ title }} <span style="opacity: 0.6; font-size: 0.9em;">(Data v{{ data_version }} • App v{{ app_version }})</span></div>
+      <div class="title">Getting Rich: Your Wealth Building Roadmap <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.5)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -404,23 +401,7 @@
   </div>
 </header>
 
-{% if upload_stats %}
-<div style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 12px; padding: 12px 16px; margin: 12px auto; max-width: 1250px;">
-  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-    <span style="font-weight: 700; color: var(--c-kpi);">✓ Upload Successful!</span>
-    <span style="color: var(--muted); font-size: 12px;">Detected:</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.groups }}</strong> Groups</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.challenges }}</strong> Challenges</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.initiatives }}</strong> Initiatives</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.systems }}</strong> Systems</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.kpis }}</strong> KPIs</span>
-  </div>
-</div>
-{% endif %}
+
 
 <main>
   <div class="wrap" id="columnView">
@@ -619,7 +600,7 @@
 
 <script>
 // Data injected from Flask
-const DATA = {{ data | tojson | safe }};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Income Growth"}, {"id": "C2", "number": 2, "priority": 1, "title": "Expense Management"}, {"id": "C3", "number": 3, "priority": 2, "title": "Investment \u0026 Assets"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Negotiate 15% salary raise or find higher paying job", "season": "S1", "text": "Negotiate 15% salary raise or find higher paying job"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 5}], "id": "C1.I2", "raw": "Start freelance consulting on weekends ($1K/month target)", "season": "S1", "text": "Start freelance consulting on weekends ($1K/month target)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}, {"challengeId": "C1.SC1", "impact": "M", "weight": 7}], "id": "C1.I3", "raw": "Take online courses to learn cloud/AI skills (certification)", "season": "S2", "text": "Take online courses to learn cloud/AI skills (certification)"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "M", "weight": 10}, {"challengeId": "C2.SC2", "impact": "M", "weight": 6}], "id": "C2.I1", "raw": "Cut unnecessary subscriptions and meal prep at home", "season": "S1", "text": "Cut unnecessary subscriptions and meal prep at home"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "H", "weight": 10}, {"challengeId": "C2.SC2", "impact": "H", "weight": 8}], "id": "C2.I2", "raw": "Pay off credit cards using debt avalanche method", "season": "S1", "text": "Pay off credit cards using debt avalanche method"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 10}], "id": "C2.I3", "raw": "Build $5K emergency fund (save $500/month for 10 months)", "season": "S1", "text": "Build $5K emergency fund (save $500/month for 10 months)"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}], "id": "C3.I1", "raw": "Open brokerage account and invest $500/month in index funds", "season": "S2", "text": "Open brokerage account and invest $500/month in index funds"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}], "id": "C3.I2", "raw": "Increase 401K contribution to get full employer match", "season": "S1", "text": "Increase 401K contribution to get full employer match"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 9}], "text": "Increase annual income by $20K (from $60K to $80K)"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S2", "weight": 10}], "text": "Generate $12K from side hustle in year 1"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Reduce monthly spending by $300"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S2", "weight": 10}, {"systemId": "C2.S1", "weight": 7}], "text": "Pay off all credit card debt in 18 months"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Build emergency fund to $5,000"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}, {"systemId": "C2.S1", "weight": 6}], "text": "Invest $6,000 in index funds year 1"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S1", "weight": 10}, {"systemId": "C2.S2", "weight": 7}], "text": "Reach $50K net worth in 3 years"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Max out 401K employer match ($3K free money/year)"}], "meta": {"generated": "2026-02-09T14:28:04.009841", "sourceDeck": "Getting Rich: Your Wealth Building Roadmap"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Salary hasn\u0027t increased in 3 years - stuck at same level"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "No side income streams - relying on single job"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Skills becoming outdated - need to learn new technologies"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Spending $500/month on eating out and subscriptions"}, {"groupId": "C2", "id": "C2.SC2", "priority": 1, "text": "Living paycheck to paycheck - no emergency fund"}, {"groupId": "C2", "id": "C2.SC3", "priority": 1, "text": "High interest debt from credit cards ($10K at 18% APR)"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Zero investment portfolio - money sitting in checking account"}, {"groupId": "C3", "id": "C3.SC2", "priority": 2, "text": "Not maxing out 401K employer match - leaving free money on table"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I3", "weight": 8}], "text": "Career Development System", "title": "LinkedIn networking + job board alerts + resume optimization"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I2", "weight": 10}], "text": "Side Hustle Infrastructure", "title": "Upwork profile + personal website + client CRM"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}, {"initiativeId": "C2.I3", "weight": 9}], "text": "Budget Tracking System", "title": "YNAB app + monthly expense review + spending alerts"}, {"id": "C2.S2", "initiatives": [{"initiativeId": "C2.I2", "weight": 10}], "text": "Debt Payoff System", "title": "Debt snowball calculator + auto-payments + progress tracking"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C3.I2", "weight": 7}], "text": "Investment Platform", "title": "Vanguard/Fidelity account + auto-invest setup + portfolio tracker"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I1", "weight": 8}], "text": "Financial Education", "title": "r/personalfinance + investment books + podcast subscriptions"}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},

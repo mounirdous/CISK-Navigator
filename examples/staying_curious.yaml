@@ -1,0 +1,225 @@
+meta:
+  title: 'Staying Curious: Your Lifelong Learning Journey'
+  version: '1.0'
+  colors:
+    challenge: '#ec4899'      # Pink - learning challenges
+    initiative: '#8b5cf6'     # Purple - learning initiatives
+    system: '#14b8a6'         # Teal - learning systems
+    kpi: '#f59e0b'            # Amber - learning metrics
+
+challenge_groups:
+  - id: C1
+    number: 1
+    title: Knowledge Acquisition
+    priority: 1
+  - id: C2
+    number: 2
+    title: Skill Development
+    priority: 1
+  - id: C3
+    number: 3
+    title: Community & Sharing
+    priority: 2
+
+sub_challenges:
+  - id: C1.SC1
+    group_id: C1
+    text: Haven't read a book in 6 months - always scrolling social media
+    priority: 1
+  - id: C1.SC2
+    group_id: C1
+    text: No structured learning plan - jumping between random topics
+    priority: 1
+  - id: C1.SC3
+    group_id: C1
+    text: Information overload - saving articles but never reading them
+    priority: 2
+  - id: C2.SC1
+    group_id: C2
+    text: Want to code but procrastinating on starting projects
+    priority: 1
+  - id: C2.SC2
+    group_id: C2
+    text: Creative skills rusty - haven't drawn or made music in years
+    priority: 2
+  - id: C2.SC3
+    group_id: C2
+    text: Language learning apps installed but never used
+    priority: 2
+  - id: C3.SC1
+    group_id: C3
+    text: Learning in isolation - no discussion or accountability partners
+    priority: 1
+  - id: C3.SC2
+    group_id: C3
+    text: Knowledge stays in head - not documenting or teaching others
+    priority: 2
+
+initiatives:
+  - id: C1.I1
+    season: S1
+    text: Read 2 books per month - fiction and non-fiction alternating
+    challenges:
+      - challenge_id: C1.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C1.SC3
+        weight: 5
+        impact: M
+  - id: C1.I2
+    season: S1
+    text: Create quarterly learning curriculum (pick 1-2 deep topics)
+    challenges:
+      - challenge_id: C1.SC2
+        weight: 10
+        impact: H
+      - challenge_id: C1.SC3
+        weight: 7
+        impact: M
+  - id: C1.I3
+    season: S2
+    text: Weekly digest - process saved articles on Sundays
+    challenges:
+      - challenge_id: C1.SC3
+        weight: 10
+        impact: H
+  - id: C2.I1
+    season: S1
+    text: 100 Days of Code - commit code daily on GitHub
+    challenges:
+      - challenge_id: C2.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C3.SC2
+        weight: 6
+        impact: M
+  - id: C2.I2
+    season: S2
+    text: Daily creative practice - 30 min sketching or music
+    challenges:
+      - challenge_id: C2.SC2
+        weight: 10
+        impact: H
+  - id: C2.I3
+    season: S2
+    text: Duolingo streak - 15 min Spanish practice every morning
+    challenges:
+      - challenge_id: C2.SC3
+        weight: 10
+        impact: H
+  - id: C3.I1
+    season: S1
+    text: Join online learning community (Discord/forum for main topic)
+    challenges:
+      - challenge_id: C3.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC1
+        weight: 5
+        impact: L
+  - id: C3.I2
+    season: S2
+    text: Start learning blog - publish monthly "Today I Learned" posts
+    challenges:
+      - challenge_id: C3.SC2
+        weight: 10
+        impact: H
+      - challenge_id: C1.SC2
+        weight: 6
+        impact: M
+
+systems:
+  - id: C1.S1
+    text: Reading System
+    title: Kindle + Goodreads tracking + book club membership
+    initiatives:
+      - initiative_id: C1.I1
+        weight: 10
+      - initiative_id: C1.I2
+        weight: 7
+  - id: C1.S2
+    text: Content Curation
+    title: Pocket app + weekly review + tagging system
+    initiatives:
+      - initiative_id: C1.I3
+        weight: 10
+      - initiative_id: C1.I2
+        weight: 8
+  - id: C2.S1
+    text: Coding Practice
+    title: GitHub + LeetCode + freeCodeCamp curriculum
+    initiatives:
+      - initiative_id: C2.I1
+        weight: 10
+  - id: C2.S2
+    text: Creative Tools
+    title: Procreate + GarageBand + daily practice timer
+    initiatives:
+      - initiative_id: C2.I2
+        weight: 10
+  - id: C2.S3
+    text: Language Learning
+    title: Duolingo + Anki flashcards + Spanish podcast
+    initiatives:
+      - initiative_id: C2.I3
+        weight: 10
+  - id: C3.S1
+    text: Community Engagement
+    title: Discord server + Reddit communities + virtual meetups
+    initiatives:
+      - initiative_id: C3.I1
+        weight: 10
+      - initiative_id: C3.I2
+        weight: 6
+  - id: C3.S2
+    text: Knowledge Sharing
+    title: Blog (Ghost/Medium) + Twitter threads + teaching notes
+    initiatives:
+      - initiative_id: C3.I2
+        weight: 10
+
+kpis:
+  - id: C1.K1
+    text: Read 24 books in one year
+    systems:
+      - system_id: C1.S1
+        weight: 10
+  - id: C1.K2
+    text: Complete 4 deep learning projects (one per quarter)
+    systems:
+      - system_id: C1.S2
+        weight: 10
+      - system_id: C2.S1
+        weight: 8
+  - id: C2.K1
+    text: Build and deploy 3 web apps from scratch
+    systems:
+      - system_id: C2.S1
+        weight: 10
+  - id: C2.K2
+    text: Finish 100 drawings/sketches
+    systems:
+      - system_id: C2.S2
+        weight: 10
+  - id: C2.K3
+    text: Achieve 365-day Duolingo streak
+    systems:
+      - system_id: C2.S3
+        weight: 10
+  - id: C3.K1
+    text: Make 100 meaningful community contributions
+    systems:
+      - system_id: C3.S1
+        weight: 10
+  - id: C3.K2
+    text: Publish 12 blog posts teaching what I learned
+    systems:
+      - system_id: C3.S2
+        weight: 10
+  - id: C3.K3
+    text: Help 10 people learn something new
+    systems:
+      - system_id: C3.S1
+        weight: 8
+      - system_id: C3.S2
+        weight: 10

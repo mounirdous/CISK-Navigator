@@ -1,0 +1,207 @@
+meta:
+  title: 'Getting Fit: Your Personal Health Transformation Navigator'
+  version: '1.0'
+  colors:
+    challenge: '#10b981'      # Green - health challenges
+    initiative: '#f97316'     # Orange - action initiatives
+    system: '#ef4444'         # Red - support systems
+    kpi: '#3b82f6'            # Blue - metrics
+
+challenge_groups:
+  - id: C1
+    number: 1
+    title: Physical Fitness
+    priority: 1
+  - id: C2
+    number: 2
+    title: Nutrition & Diet
+    priority: 1
+  - id: C3
+    number: 3
+    title: Mental Wellness
+    priority: 2
+
+sub_challenges:
+  - id: C1.SC1
+    group_id: C1
+    text: Low cardiovascular endurance - get tired climbing stairs
+    priority: 1
+  - id: C1.SC2
+    group_id: C1
+    text: Weak core strength - back pain from sitting all day
+    priority: 1
+  - id: C1.SC3
+    group_id: C1
+    text: Poor flexibility - can't touch toes without stretching
+    priority: 2
+  - id: C2.SC1
+    group_id: C2
+    text: Too much processed food and sugar in diet
+    priority: 1
+  - id: C2.SC2
+    group_id: C2
+    text: Irregular meal times and poor hydration
+    priority: 2
+  - id: C3.SC1
+    group_id: C3
+    text: High stress levels from work and life
+    priority: 1
+  - id: C3.SC2
+    group_id: C3
+    text: Poor sleep quality - only 5-6 hours per night
+    priority: 1
+
+initiatives:
+  - id: C1.I1
+    season: S1
+    text: Start running 3x per week (Couch to 5K program)
+    challenges:
+      - challenge_id: C1.SC1
+        weight: 10
+        impact: H
+  - id: C1.I2
+    season: S1
+    text: Join gym and do strength training 2x per week
+    challenges:
+      - challenge_id: C1.SC2
+        weight: 9
+        impact: H
+      - challenge_id: C1.SC1
+        weight: 5
+        impact: M
+  - id: C1.I3
+    season: S2
+    text: Take yoga classes for flexibility and balance
+    challenges:
+      - challenge_id: C1.SC3
+        weight: 10
+        impact: H
+      - challenge_id: C3.SC1
+        weight: 6
+        impact: M
+  - id: C2.I1
+    season: S1
+    text: Meal prep healthy lunches every Sunday
+    challenges:
+      - challenge_id: C2.SC1
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC2
+        weight: 7
+        impact: M
+  - id: C2.I2
+    season: S1
+    text: Drink 8 glasses of water daily (use tracking app)
+    challenges:
+      - challenge_id: C2.SC2
+        weight: 8
+        impact: M
+  - id: C3.I1
+    season: S2
+    text: Daily 10-minute meditation practice
+    challenges:
+      - challenge_id: C3.SC1
+        weight: 9
+        impact: H
+  - id: C3.I2
+    season: S1
+    text: Set bedtime routine - no screens after 10pm
+    challenges:
+      - challenge_id: C3.SC2
+        weight: 10
+        impact: H
+      - challenge_id: C3.SC1
+        weight: 5
+        impact: L
+
+systems:
+  - id: C1.S1
+    text: Fitness Tracking System
+    title: Apple Watch + Strava app for workout logging
+    initiatives:
+      - initiative_id: C1.I1
+        weight: 9
+      - initiative_id: C1.I2
+        weight: 8
+  - id: C1.S2
+    text: Workout Accountability
+    title: Join running club + gym buddy system
+    initiatives:
+      - initiative_id: C1.I1
+        weight: 10
+      - initiative_id: C1.I2
+        weight: 9
+      - initiative_id: C1.I3
+        weight: 7
+  - id: C2.S1
+    text: Meal Planning System
+    title: MyFitnessPal app + weekly grocery list
+    initiatives:
+      - initiative_id: C2.I1
+        weight: 10
+      - initiative_id: C2.I2
+        weight: 6
+  - id: C3.S1
+    text: Sleep Optimization
+    title: Sleep tracking + blackout curtains + white noise
+    initiatives:
+      - initiative_id: C3.I2
+        weight: 10
+  - id: C3.S2
+    text: Mindfulness Practice
+    title: Headspace app + meditation timer
+    initiatives:
+      - initiative_id: C3.I1
+        weight: 10
+      - initiative_id: C1.I3
+        weight: 5
+
+kpis:
+  - id: C1.K1
+    text: Run 5K in under 30 minutes
+    systems:
+      - system_id: C1.S1
+        weight: 10
+      - system_id: C1.S2
+        weight: 8
+  - id: C1.K2
+    text: Bench press body weight
+    systems:
+      - system_id: C1.S1
+        weight: 9
+      - system_id: C1.S2
+        weight: 10
+  - id: C1.K3
+    text: Touch toes without bending knees
+    systems:
+      - system_id: C1.S2
+        weight: 8
+  - id: C2.K1
+    text: Lose 10 pounds in 3 months
+    systems:
+      - system_id: C2.S1
+        weight: 10
+      - system_id: C1.S1
+        weight: 7
+  - id: C2.K2
+    text: Eat 5+ servings of vegetables daily
+    systems:
+      - system_id: C2.S1
+        weight: 10
+  - id: C3.K1
+    text: Sleep 7-8 hours per night consistently
+    systems:
+      - system_id: C3.S1
+        weight: 10
+  - id: C3.K2
+    text: Meditate 100 days in a row
+    systems:
+      - system_id: C3.S2
+        weight: 10
+  - id: C3.K3
+    text: Reduce stress level from 8/10 to 4/10
+    systems:
+      - system_id: C3.S2
+        weight: 9
+      - system_id: C3.S1
+        weight: 6

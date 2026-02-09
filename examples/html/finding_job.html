@@ -3,11 +3,8 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>{{ title }} - Data v{{ data_version }} - CISK Navigator v{{ app_version }}</title>
-{% if tracking_code %}
-<!-- Analytics Tracking -->
-{{ tracking_code|safe }}
-{% endif %}
+<title>Finding Your Dream Job: Career Search Navigator - Data v1.0 - CISK Navigator v2.7.5</title>
+
 <style>
   :root {
     --bg: #0b1220;
@@ -22,23 +19,23 @@
     --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
     /* CISK Colors - Configurable via YAML */
-    --c-challenge: {{ colors.challenge }};
-    --c-challenge-bg: {{ colors.challenge }}23;
-    --c-challenge-border: {{ colors.challenge }}8C;
-    --c-challenge-light: {{ colors.challenge }}1A;
+    --c-challenge: #dc2626;
+    --c-challenge-bg: #dc262623;
+    --c-challenge-border: #dc26268C;
+    --c-challenge-light: #dc26261A;
 
-    --c-initiative: {{ colors.initiative }};
-    --c-initiative-bg: {{ colors.initiative }}23;
-    --c-initiative-border: {{ colors.initiative }}8C;
-    --c-initiative-light: {{ colors.initiative }}1A;
+    --c-initiative: #2563eb;
+    --c-initiative-bg: #2563eb23;
+    --c-initiative-border: #2563eb8C;
+    --c-initiative-light: #2563eb1A;
 
-    --c-system: {{ colors.system }};
-    --c-system-bg: {{ colors.system }}1F;
-    --c-system-border: {{ colors.system }}8C;
+    --c-system: #16a34a;
+    --c-system-bg: #16a34a1F;
+    --c-system-border: #16a34a8C;
 
-    --c-kpi: {{ colors.kpi }};
-    --c-kpi-bg: {{ colors.kpi }}1F;
-    --c-kpi-border: {{ colors.kpi }}8C;
+    --c-kpi: #ca8a04;
+    --c-kpi-bg: #ca8a041F;
+    --c-kpi-border: #ca8a048C;
 
     /* Priority Colors */
     --priority-high: #f59e0b;
@@ -384,7 +381,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">{{ title }} <span style="opacity: 0.6; font-size: 0.9em;">(Data v{{ data_version }} • App v{{ app_version }})</span></div>
+      <div class="title">Finding Your Dream Job: Career Search Navigator <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.5)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -404,23 +401,7 @@
   </div>
 </header>
 
-{% if upload_stats %}
-<div style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 12px; padding: 12px 16px; margin: 12px auto; max-width: 1250px;">
-  <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-    <span style="font-weight: 700; color: var(--c-kpi);">✓ Upload Successful!</span>
-    <span style="color: var(--muted); font-size: 12px;">Detected:</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.groups }}</strong> Groups</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.challenges }}</strong> Challenges</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.initiatives }}</strong> Initiatives</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.systems }}</strong> Systems</span>
-    <span style="color: var(--muted);">•</span>
-    <span style="font-size: 12px;"><strong>{{ upload_stats.kpis }}</strong> KPIs</span>
-  </div>
-</div>
-{% endif %}
+
 
 <main>
   <div class="wrap" id="columnView">
@@ -619,7 +600,7 @@
 
 <script>
 // Data injected from Flask
-const DATA = {{ data | tojson | safe }};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Job Market Positioning"}, {"id": "C2", "number": 2, "priority": 1, "title": "Application Process"}, {"id": "C3", "number": 3, "priority": 2, "title": "Interview Performance"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Hire resume writer or use AI tools for professional rewrite", "season": "S1", "text": "Hire resume writer or use AI tools for professional rewrite"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 10}, {"challengeId": "C2.SC3", "impact": "M", "weight": 7}], "id": "C1.I2", "raw": "Optimize LinkedIn - professional photo, compelling summary, 500+ connections", "season": "S1", "text": "Optimize LinkedIn - professional photo, compelling summary, 500+ connections"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Build portfolio website with 3 best projects", "season": "S1", "text": "Build portfolio website with 3 best projects"}, {"challenges": [{"challengeId": "C1.SC4", "impact": "H", "weight": 10}, {"challengeId": "C2.SC1", "impact": "M", "weight": 8}], "id": "C1.I4", "raw": "Define target role - research companies, job descriptions, required skills", "season": "S1", "text": "Define target role - research companies, job descriptions, required skills"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 10}, {"challengeId": "C2.SC2", "impact": "H", "weight": 9}], "id": "C2.I1", "raw": "Quality over quantity - apply to 10 perfect-fit jobs per week with customized applications", "season": "S1", "text": "Quality over quantity - apply to 10 perfect-fit jobs per week with customized applications"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 10}], "id": "C2.I2", "raw": "Research-based cover letters - mention specific company projects/values", "season": "S1", "text": "Research-based cover letters - mention specific company projects/values"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "H", "weight": 10}, {"challengeId": "C1.SC2", "impact": "M", "weight": 6}], "id": "C2.I3", "raw": "Attend 2 networking events per month + 5 coffee chats with industry people", "season": "S2", "text": "Attend 2 networking events per month + 5 coffee chats with industry people"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}], "id": "C3.I1", "raw": "Practice STAR method for behavioral questions (3 sessions with career coach)", "season": "S2", "text": "Practice STAR method for behavioral questions (3 sessions with career coach)"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}], "id": "C3.I2", "raw": "Mock interviews - 2 per week with friends or Pramp", "season": "S2", "text": "Mock interviews - 2 per week with friends or Pramp"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}], "id": "C3.I3", "raw": "Create follow-up system - thank you emails within 24 hours + weekly check-ins", "season": "S2", "text": "Create follow-up system - thank you emails within 24 hours + weekly check-ins"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 9}, {"systemId": "C2.S1", "weight": 10}], "text": "Get resume past ATS - 20% application response rate"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 10}], "text": "Reach 500+ LinkedIn connections with 50 in target industry"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S1", "weight": 10}], "text": "Build portfolio with 3 impressive case studies"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 7}], "text": "Submit 80 quality applications in 8 weeks (10/week)"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S2", "weight": 10}], "text": "Get 5 informational interviews with employees at target companies"}, {"id": "C3.K1", "systems": [{"systemId": "C1.S1", "weight": 8}, {"systemId": "C2.S1", "weight": 10}], "text": "Secure 10 first-round interviews"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Convert 50% of first-round to second-round interviews"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S1", "weight": 9}, {"systemId": "C3.S2", "weight": 8}, {"systemId": "C1.S2", "weight": 10}], "text": "Land 3 job offers within 3 months"}], "meta": {"generated": "2026-02-09T14:28:04.027282", "sourceDeck": "Finding Your Dream Job: Career Search Navigator"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Resume outdated - hasn\u0027t been updated in 2 years"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "LinkedIn profile incomplete - no summary, few connections"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "No portfolio or GitHub presence to showcase work"}, {"groupId": "C1", "id": "C1.SC4", "priority": 1, "text": "Unclear career direction - applying to random positions"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Applying to 50+ jobs but getting zero responses"}, {"groupId": "C2", "id": "C2.SC2", "priority": 1, "text": "Generic cover letters - not tailoring to each company"}, {"groupId": "C2", "id": "C2.SC3", "priority": 2, "text": "No networking - only using online applications"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Nervous in interviews - stumbling on behavioral questions"}, {"groupId": "C3", "id": "C3.SC2", "priority": 2, "text": "Not following up after interviews - losing momentum"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I2", "weight": 10}, {"initiativeId": "C1.I3", "weight": 9}], "text": "Personal Brand Platform", "title": "LinkedIn Premium + portfolio website + GitHub showcase"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I4", "weight": 10}, {"initiativeId": "C2.I1", "weight": 8}], "text": "Career Strategy", "title": "Career coach + job search spreadsheet + target company list"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}, {"initiativeId": "C2.I2", "weight": 9}], "text": "Application Tracking System", "title": "Notion database + application tracker + deadline reminders"}, {"id": "C2.S2", "initiatives": [{"initiativeId": "C2.I3", "weight": 10}, {"initiativeId": "C1.I2", "weight": 7}], "text": "Networking System", "title": "Eventbrite + LinkedIn outreach templates + coffee chat tracker"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C3.I2", "weight": 10}], "text": "Interview Preparation", "title": "STAR stories bank + Glassdoor research + Pramp account"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I3", "weight": 10}], "text": "Follow-up System", "title": "Email templates + CRM tracker + calendar reminders"}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},

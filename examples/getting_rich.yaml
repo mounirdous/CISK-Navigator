@@ -1,0 +1,220 @@
+meta:
+  title: 'Getting Rich: Your Wealth Building Roadmap'
+  version: '1.0'
+  colors:
+    challenge: '#f59e0b'      # Amber/Gold - financial challenges
+    initiative: '#059669'     # Emerald green - money-making initiatives
+    system: '#1e40af'         # Dark blue - financial systems
+    kpi: '#7c3aed'            # Purple - wealth metrics
+
+challenge_groups:
+  - id: C1
+    number: 1
+    title: Income Growth
+    priority: 1
+  - id: C2
+    number: 2
+    title: Expense Management
+    priority: 1
+  - id: C3
+    number: 3
+    title: Investment & Assets
+    priority: 2
+
+sub_challenges:
+  - id: C1.SC1
+    group_id: C1
+    text: Salary hasn't increased in 3 years - stuck at same level
+    priority: 1
+  - id: C1.SC2
+    group_id: C1
+    text: No side income streams - relying on single job
+    priority: 1
+  - id: C1.SC3
+    group_id: C1
+    text: Skills becoming outdated - need to learn new technologies
+    priority: 2
+  - id: C2.SC1
+    group_id: C2
+    text: Spending $500/month on eating out and subscriptions
+    priority: 1
+  - id: C2.SC2
+    group_id: C2
+    text: Living paycheck to paycheck - no emergency fund
+    priority: 1
+  - id: C2.SC3
+    group_id: C2
+    text: High interest debt from credit cards ($10K at 18% APR)
+    priority: 1
+  - id: C3.SC1
+    group_id: C3
+    text: Zero investment portfolio - money sitting in checking account
+    priority: 1
+  - id: C3.SC2
+    group_id: C3
+    text: Not maxing out 401K employer match - leaving free money on table
+    priority: 2
+
+initiatives:
+  - id: C1.I1
+    season: S1
+    text: Negotiate 15% salary raise or find higher paying job
+    challenges:
+      - challenge_id: C1.SC1
+        weight: 10
+        impact: H
+  - id: C1.I2
+    season: S1
+    text: Start freelance consulting on weekends ($1K/month target)
+    challenges:
+      - challenge_id: C1.SC2
+        weight: 10
+        impact: H
+      - challenge_id: C1.SC3
+        weight: 5
+        impact: M
+  - id: C1.I3
+    season: S2
+    text: Take online courses to learn cloud/AI skills (certification)
+    challenges:
+      - challenge_id: C1.SC3
+        weight: 10
+        impact: H
+      - challenge_id: C1.SC1
+        weight: 7
+        impact: M
+  - id: C2.I1
+    season: S1
+    text: Cut unnecessary subscriptions and meal prep at home
+    challenges:
+      - challenge_id: C2.SC1
+        weight: 10
+        impact: M
+      - challenge_id: C2.SC2
+        weight: 6
+        impact: M
+  - id: C2.I2
+    season: S1
+    text: Pay off credit cards using debt avalanche method
+    challenges:
+      - challenge_id: C2.SC3
+        weight: 10
+        impact: H
+      - challenge_id: C2.SC2
+        weight: 8
+        impact: H
+  - id: C2.I3
+    season: S1
+    text: Build $5K emergency fund (save $500/month for 10 months)
+    challenges:
+      - challenge_id: C2.SC2
+        weight: 10
+        impact: H
+  - id: C3.I1
+    season: S2
+    text: Open brokerage account and invest $500/month in index funds
+    challenges:
+      - challenge_id: C3.SC1
+        weight: 10
+        impact: H
+  - id: C3.I2
+    season: S1
+    text: Increase 401K contribution to get full employer match
+    challenges:
+      - challenge_id: C3.SC2
+        weight: 10
+        impact: H
+
+systems:
+  - id: C1.S1
+    text: Career Development System
+    title: LinkedIn networking + job board alerts + resume optimization
+    initiatives:
+      - initiative_id: C1.I1
+        weight: 10
+      - initiative_id: C1.I3
+        weight: 8
+  - id: C1.S2
+    text: Side Hustle Infrastructure
+    title: Upwork profile + personal website + client CRM
+    initiatives:
+      - initiative_id: C1.I2
+        weight: 10
+  - id: C2.S1
+    text: Budget Tracking System
+    title: YNAB app + monthly expense review + spending alerts
+    initiatives:
+      - initiative_id: C2.I1
+        weight: 10
+      - initiative_id: C2.I3
+        weight: 9
+  - id: C2.S2
+    text: Debt Payoff System
+    title: Debt snowball calculator + auto-payments + progress tracking
+    initiatives:
+      - initiative_id: C2.I2
+        weight: 10
+  - id: C3.S1
+    text: Investment Platform
+    title: Vanguard/Fidelity account + auto-invest setup + portfolio tracker
+    initiatives:
+      - initiative_id: C3.I1
+        weight: 10
+      - initiative_id: C3.I2
+        weight: 7
+  - id: C3.S2
+    text: Financial Education
+    title: r/personalfinance + investment books + podcast subscriptions
+    initiatives:
+      - initiative_id: C3.I1
+        weight: 8
+
+kpis:
+  - id: C1.K1
+    text: Increase annual income by $20K (from $60K to $80K)
+    systems:
+      - system_id: C1.S1
+        weight: 10
+      - system_id: C1.S2
+        weight: 9
+  - id: C1.K2
+    text: Generate $12K from side hustle in year 1
+    systems:
+      - system_id: C1.S2
+        weight: 10
+  - id: C2.K1
+    text: Reduce monthly spending by $300
+    systems:
+      - system_id: C2.S1
+        weight: 10
+  - id: C2.K2
+    text: Pay off all credit card debt in 18 months
+    systems:
+      - system_id: C2.S2
+        weight: 10
+      - system_id: C2.S1
+        weight: 7
+  - id: C2.K3
+    text: Build emergency fund to $5,000
+    systems:
+      - system_id: C2.S1
+        weight: 10
+  - id: C3.K1
+    text: Invest $6,000 in index funds year 1
+    systems:
+      - system_id: C3.S1
+        weight: 10
+      - system_id: C2.S1
+        weight: 6
+  - id: C3.K2
+    text: Reach $50K net worth in 3 years
+    systems:
+      - system_id: C3.S1
+        weight: 10
+      - system_id: C2.S2
+        weight: 7
+  - id: C3.K3
+    text: Max out 401K employer match ($3K free money/year)
+    systems:
+      - system_id: C3.S1
+        weight: 10
