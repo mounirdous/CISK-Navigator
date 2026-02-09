@@ -531,8 +531,24 @@
           <div style="font-size:12px;"></div>
         </div>
       </div>
-      <div class="bd" style="padding:0;">
+      <div class="bd" style="padding:0;position:relative;">
         <canvas id="graphCanvas" width="1200" height="900" style="width:100%;height:900px;cursor:grab;touch-action:none;"></canvas>
+        <div id="graphTooltip" style="
+          position:absolute;
+          display:none;
+          background:rgba(16,26,48,0.95);
+          border:1px solid rgba(255,255,255,0.2);
+          border-radius:8px;
+          padding:8px 12px;
+          color:var(--text);
+          font-size:12px;
+          line-height:1.4;
+          pointer-events:none;
+          z-index:100;
+          max-width:300px;
+          box-shadow:0 4px 12px rgba(0,0,0,0.4);
+          backdrop-filter:blur(8px);
+        "></div>
       </div>
       <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
         <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
@@ -2376,6 +2392,42 @@ function wrapText(ctx, text, maxWidth) {
   return lines.slice(0, 3); // Max 3 lines
 }
 
+function updateTooltip(node, mouseX, mouseY) {
+  const tooltip = document.getElementById('graphTooltip');
+
+  if (!node || !node.fullLabel) {
+    // Hide tooltip
+    tooltip.style.display = 'none';
+    return;
+  }
+
+  // Show tooltip with full label
+  tooltip.textContent = node.fullLabel;
+  tooltip.style.display = 'block';
+
+  // Position tooltip near cursor
+  const offsetX = 15;
+  const offsetY = 15;
+  const canvas = document.getElementById('graphCanvas');
+  const canvasRect = canvas.getBoundingClientRect();
+
+  // Calculate position relative to canvas container
+  let tooltipX = mouseX - canvasRect.left + offsetX;
+  let tooltipY = mouseY - canvasRect.top + offsetY;
+
+  // Keep tooltip within canvas bounds
+  const tooltipRect = tooltip.getBoundingClientRect();
+  if (tooltipX + tooltipRect.width > canvasRect.width) {
+    tooltipX = mouseX - canvasRect.left - tooltipRect.width - offsetX;
+  }
+  if (tooltipY + tooltipRect.height > canvasRect.height) {
+    tooltipY = mouseY - canvasRect.top - tooltipRect.height - offsetY;
+  }
+
+  tooltip.style.left = tooltipX + 'px';
+  tooltip.style.top = tooltipY + 'px';
+}
+
 function setupGraphInteractions() {
   const canvas = graph.canvas;
   let isDragging = false;
@@ -2410,10 +2462,12 @@ function setupGraphInteractions() {
     if (graph.dragging) {
       graph.dragging.x = x;
       graph.dragging.y = y;
+      updateTooltip(null); // Hide tooltip when dragging
       drawGraph();
     } else if (isDragging) {
       graph.panX = e.clientX - dragStart.x;
       graph.panY = e.clientY - dragStart.y;
+      updateTooltip(null); // Hide tooltip when panning
       drawGraph();
     } else {
       // Hover detection
@@ -2423,6 +2477,8 @@ function setupGraphInteractions() {
         canvas.style.cursor = node ? 'pointer' : 'grab';
         drawGraph();
       }
+      // Update tooltip position and content
+      updateTooltip(node, e.clientX, e.clientY);
     }
   });
 
@@ -2456,6 +2512,7 @@ function setupGraphInteractions() {
     isDragging = false;
     graph.hovering = null;
     canvas.style.cursor = 'grab';
+    updateTooltip(null); // Hide tooltip when mouse leaves canvas
     drawGraph();
   });
 

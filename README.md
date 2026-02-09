@@ -2,7 +2,7 @@
 
 Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
 
-![Version](https://img.shields.io/badge/version-2.5.2-blue)
+![Version](https://img.shields.io/badge/version-2.5.3-blue)
 ![Python](https://img.shields.io/badge/python-3.11-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -172,9 +172,10 @@ Built for strategic business planning and technology roadmap visualization.
 
 ---
 
-**Version 2.5.2** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, analytics tracking, customizable colors, and full mobile/desktop zoom support
+**Version 2.5.3** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, analytics tracking, customizable colors, full mobile/desktop zoom support, and tooltips
 
 ### Recent Updates
+- **v2.5.3** (Feb 2026): Tooltip on hover to display full node names in graph view
 - **v2.5.2** (Feb 2026): Enable mouse wheel zoom on desktop (scroll to zoom towards cursor)
 - **v2.5.1** (Feb 2026): Mobile touch support - pinch-to-zoom and pan gestures on iPhone/Android
 - **v2.5.0** (Feb 2026): Customizable colors for challenges, initiatives, systems, and KPIs via YAML configuration
