@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Staying Curious: Your Lifelong Learning Journey - Data v1.0 - CISK Navigator v2.7.8</title>
+<title>Staying Curious: Your Lifelong Learning Journey - Data v1.0 - CISK Navigator v2.7.9</title>
 
 <style>
   :root {
@@ -381,7 +381,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Staying Curious: Your Lifelong Learning Journey <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.8)</span></div>
+      <div class="title">Staying Curious: Your Lifelong Learning Journey <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.9)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -505,6 +505,8 @@
             <button class="btn small" onclick="graphZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="graphZoomOut()">🔍− Zoom Out</button>
             <button class="btn small" onclick="graphFitToView()">⊡ Fit to View</button>
+            <button class="btn small" onclick="graphFontSizeIncrease()">A+ Text Larger</button>
+            <button class="btn small" onclick="graphFontSizeDecrease()">A− Text Smaller</button>
             <button class="btn small" onclick="graphReset()">↻ Reset</button>
           </div>
         </div>
@@ -559,6 +561,8 @@
           <div class="row" style="gap:8px;">
             <button class="btn small" onclick="flowZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="flowZoomOut()">🔍− Zoom Out</button>
+            <button class="btn small" onclick="flowFontSizeIncrease()">A+ Text Larger</button>
+            <button class="btn small" onclick="flowFontSizeDecrease()">A− Text Smaller</button>
             <button class="btn small" onclick="flowReset()">↻ Reset</button>
           </div>
         </div>
@@ -600,7 +604,7 @@
 
 <script>
 // Data injected from Flask
-const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Knowledge Acquisition"}, {"id": "C2", "number": 2, "priority": 1, "title": "Skill Development"}, {"id": "C3", "number": 3, "priority": 2, "title": "Community \u0026 Sharing"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 5}], "id": "C1.I1", "raw": "Read 2 books per month - fiction and non-fiction alternating", "season": "S1", "text": "Read 2 books per month - fiction and non-fiction alternating"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 7}], "id": "C1.I2", "raw": "Create quarterly learning curriculum (pick 1-2 deep topics)", "season": "S1", "text": "Create quarterly learning curriculum (pick 1-2 deep topics)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Weekly digest - process saved articles on Sundays", "season": "S2", "text": "Weekly digest - process saved articles on Sundays"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 10}, {"challengeId": "C3.SC2", "impact": "M", "weight": 6}], "id": "C2.I1", "raw": "100 Days of Code - commit code daily on GitHub", "season": "S1", "text": "100 Days of Code - commit code daily on GitHub"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 10}], "id": "C2.I2", "raw": "Daily creative practice - 30 min sketching or music", "season": "S2", "text": "Daily creative practice - 30 min sketching or music"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "H", "weight": 10}], "id": "C2.I3", "raw": "Duolingo streak - 15 min Spanish practice every morning", "season": "S2", "text": "Duolingo streak - 15 min Spanish practice every morning"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}, {"challengeId": "C2.SC1", "impact": "L", "weight": 5}], "id": "C3.I1", "raw": "Join online learning community (Discord/forum for main topic)", "season": "S1", "text": "Join online learning community (Discord/forum for main topic)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC2", "impact": "M", "weight": 6}], "id": "C3.I2", "raw": "Start learning blog - publish monthly \"Today I Learned\" posts", "season": "S2", "text": "Start learning blog - publish monthly \"Today I Learned\" posts"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}], "text": "Read 24 books in one year"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S2", "weight": 10}, {"systemId": "C2.S1", "weight": 8}], "text": "Complete 4 deep learning projects (one per quarter)"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Build and deploy 3 web apps from scratch"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S2", "weight": 10}], "text": "Finish 100 drawings/sketches"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S3", "weight": 10}], "text": "Achieve 365-day Duolingo streak"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Make 100 meaningful community contributions"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S2", "weight": 10}], "text": "Publish 12 blog posts teaching what I learned"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S1", "weight": 8}, {"systemId": "C3.S2", "weight": 10}], "text": "Help 10 people learn something new"}], "meta": {"generated": "2026-02-09T15:58:18.483696", "sourceDeck": "Staying Curious: Your Lifelong Learning Journey"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Haven\u0027t read a book in 6 months - always scrolling social media"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "No structured learning plan - jumping between random topics"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Information overload - saving articles but never reading them"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Want to code but procrastinating on starting projects"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Creative skills rusty - haven\u0027t drawn or made music in years"}, {"groupId": "C2", "id": "C2.SC3", "priority": 2, "text": "Language learning apps installed but never used"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Learning in isolation - no discussion or accountability partners"}, {"groupId": "C3", "id": "C3.SC2", "priority": 2, "text": "Knowledge stays in head - not documenting or teaching others"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I2", "weight": 7}], "text": "Reading System", "title": "Kindle + Goodreads tracking + book club membership"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I3", "weight": 10}, {"initiativeId": "C1.I2", "weight": 8}], "text": "Content Curation", "title": "Pocket app + weekly review + tagging system"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}], "text": "Coding Practice", "title": "GitHub + LeetCode + freeCodeCamp curriculum"}, {"id": "C2.S2", "initiatives": [{"initiativeId": "C2.I2", "weight": 10}], "text": "Creative Tools", "title": "Procreate + GarageBand + daily practice timer"}, {"id": "C2.S3", "initiatives": [{"initiativeId": "C2.I3", "weight": 10}], "text": "Language Learning", "title": "Duolingo + Anki flashcards + Spanish podcast"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C3.I2", "weight": 6}], "text": "Community Engagement", "title": "Discord server + Reddit communities + virtual meetups"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I2", "weight": 10}], "text": "Knowledge Sharing", "title": "Blog (Ghost/Medium) + Twitter threads + teaching notes"}]};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Knowledge Acquisition"}, {"id": "C2", "number": 2, "priority": 1, "title": "Skill Development"}, {"id": "C3", "number": 3, "priority": 2, "title": "Community \u0026 Sharing"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 5}], "id": "C1.I1", "raw": "Read 2 books per month - fiction and non-fiction alternating", "season": "S1", "text": "Read 2 books per month - fiction and non-fiction alternating"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC3", "impact": "M", "weight": 7}], "id": "C1.I2", "raw": "Create quarterly learning curriculum (pick 1-2 deep topics)", "season": "S1", "text": "Create quarterly learning curriculum (pick 1-2 deep topics)"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}], "id": "C1.I3", "raw": "Weekly digest - process saved articles on Sundays", "season": "S2", "text": "Weekly digest - process saved articles on Sundays"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 10}, {"challengeId": "C3.SC2", "impact": "M", "weight": 6}], "id": "C2.I1", "raw": "100 Days of Code - commit code daily on GitHub", "season": "S1", "text": "100 Days of Code - commit code daily on GitHub"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "H", "weight": 10}], "id": "C2.I2", "raw": "Daily creative practice - 30 min sketching or music", "season": "S2", "text": "Daily creative practice - 30 min sketching or music"}, {"challenges": [{"challengeId": "C2.SC3", "impact": "H", "weight": 10}], "id": "C2.I3", "raw": "Duolingo streak - 15 min Spanish practice every morning", "season": "S2", "text": "Duolingo streak - 15 min Spanish practice every morning"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 10}, {"challengeId": "C2.SC1", "impact": "L", "weight": 5}], "id": "C3.I1", "raw": "Join online learning community (Discord/forum for main topic)", "season": "S1", "text": "Join online learning community (Discord/forum for main topic)"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}, {"challengeId": "C1.SC2", "impact": "M", "weight": 6}], "id": "C3.I2", "raw": "Start learning blog - publish monthly \"Today I Learned\" posts", "season": "S2", "text": "Start learning blog - publish monthly \"Today I Learned\" posts"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}], "text": "Read 24 books in one year"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S2", "weight": 10}, {"systemId": "C2.S1", "weight": 8}], "text": "Complete 4 deep learning projects (one per quarter)"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Build and deploy 3 web apps from scratch"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S2", "weight": 10}], "text": "Finish 100 drawings/sketches"}, {"id": "C2.K3", "systems": [{"systemId": "C2.S3", "weight": 10}], "text": "Achieve 365-day Duolingo streak"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Make 100 meaningful community contributions"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S2", "weight": 10}], "text": "Publish 12 blog posts teaching what I learned"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S1", "weight": 8}, {"systemId": "C3.S2", "weight": 10}], "text": "Help 10 people learn something new"}], "meta": {"generated": "2026-02-09T16:17:20.519258", "sourceDeck": "Staying Curious: Your Lifelong Learning Journey"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Haven\u0027t read a book in 6 months - always scrolling social media"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "No structured learning plan - jumping between random topics"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Information overload - saving articles but never reading them"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Want to code but procrastinating on starting projects"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Creative skills rusty - haven\u0027t drawn or made music in years"}, {"groupId": "C2", "id": "C2.SC3", "priority": 2, "text": "Language learning apps installed but never used"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "Learning in isolation - no discussion or accountability partners"}, {"groupId": "C3", "id": "C3.SC2", "priority": 2, "text": "Knowledge stays in head - not documenting or teaching others"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I2", "weight": 7}], "text": "Reading System", "title": "Kindle + Goodreads tracking + book club membership"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I3", "weight": 10}, {"initiativeId": "C1.I2", "weight": 8}], "text": "Content Curation", "title": "Pocket app + weekly review + tagging system"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}], "text": "Coding Practice", "title": "GitHub + LeetCode + freeCodeCamp curriculum"}, {"id": "C2.S2", "initiatives": [{"initiativeId": "C2.I2", "weight": 10}], "text": "Creative Tools", "title": "Procreate + GarageBand + daily practice timer"}, {"id": "C2.S3", "initiatives": [{"initiativeId": "C2.I3", "weight": 10}], "text": "Language Learning", "title": "Duolingo + Anki flashcards + Spanish podcast"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C3.I2", "weight": 6}], "text": "Community Engagement", "title": "Discord server + Reddit communities + virtual meetups"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I2", "weight": 10}], "text": "Knowledge Sharing", "title": "Blog (Ghost/Medium) + Twitter threads + teaching notes"}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},
@@ -1022,8 +1026,8 @@ function select(type, id, {autoTab=null, forceSelect=false}={}) {
     syncColumnToGraphView(type, id);
   }
 
-  // Sync with flow view if it's currently active
-  if (state.viewMode === 'flow') {
+  // Sync with flow view if it's currently active AND not already syncing
+  if (state.viewMode === 'flow' && !isSyncing) {
     console.log('Select called - syncing to flow view:', type, id);
     setTimeout(() => {
       syncColumnToFlowView(type, id);
@@ -1998,18 +2002,11 @@ function setViewMode(mode) {
     }
 
     // Priority order for syncing to flow view:
-    // 1. Flow view already has selection (preserve it when returning)
-    // 2. Graph view selection (if user was in graph and clicked something)
-    // 3. Column view selection (if user selected something in column view)
-    // 4. No selection - show full flow
+    // 1. Graph view selection (if user was in graph and clicked something)
+    // 2. Column view selection (if user selected something in column view)
+    // 3. No selection - show full flow
 
-    if (flow.selectedNode) {
-      // Flow view already has a selection, keep it
-      console.log('Flow view: Preserving existing selection:', flow.selectedNode.id);
-      layoutFlowDiagram();
-      drawFlowDiagram();
-      updateFlowUI();
-    } else if (graph.canvas && graph.selectedNode) {
+    if (graph.canvas && graph.selectedNode) {
       // Sync from graph view selection
       console.log('Flow view: Syncing from graph selection:', graph.selectedNode.entityId);
       setTimeout(() => {
@@ -2154,7 +2151,8 @@ let graph = {
   selectedNode: null,  // Currently selected node for filtering
   filteredNodes: null, // Set of visible node IDs when filtered
   filteredLinks: null, // Set of visible links when filtered
-  history: []          // Navigation history stack for back button
+  history: [],         // Navigation history stack for back button
+  fontSize: 1.0        // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
 };
 
 // Get colors from CSS variables
@@ -2569,14 +2567,17 @@ function drawNode(node) {
 
   // Draw label text inside
   ctx.fillStyle = '#1a1a1a';
-  ctx.font = 'bold 10px sans-serif';
+  const baseFontSize = 10;
+  const fontSize = Math.round(baseFontSize * graph.fontSize);
+  ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
   // Wrap text if needed
   const maxWidth = w - 10;
   const lines = wrapText(ctx, node.label, maxWidth);
-  const lineHeight = 12;
+  const baseLineHeight = 12;
+  const lineHeight = baseLineHeight * graph.fontSize;
   const totalHeight = lines.length * lineHeight;
   const startY = node.y - totalHeight / 2 + lineHeight / 2;
 
@@ -3053,10 +3054,23 @@ function graphZoomOut() {
   drawGraph();
 }
 
+function graphFontSizeIncrease() {
+  graph.fontSize *= 1.2;
+  graph.fontSize = Math.min(2.5, graph.fontSize);
+  drawGraph();
+}
+
+function graphFontSizeDecrease() {
+  graph.fontSize *= 0.8;
+  graph.fontSize = Math.max(0.6, graph.fontSize);
+  drawGraph();
+}
+
 function graphReset() {
   graph.zoom = 1;
   graph.panX = 0;
   graph.panY = 0;
+  graph.fontSize = 1.0;
   graph.selectedNode = null;
   graph.filteredNodes = null;
   graph.filteredLinks = null;
@@ -3759,7 +3773,8 @@ const flow = {
   selectedNode: null,
   filteredNodes: null,
   filteredLinks: null,
-  colors: {} // Cache for colors
+  colors: {},    // Cache for colors
+  fontSize: 1.0  // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
 };
 
 function initFlowView() {
@@ -4124,7 +4139,10 @@ function drawFlowDiagram() {
     }
 
     // Draw label with background when hovered or selected
-    ctx.font = (isSelected || isHovered) ? 'bold 11px sans-serif' : '10px sans-serif';
+    const baseFontSize = (isSelected || isHovered) ? 11 : 10;
+    const fontSize = Math.round(baseFontSize * flow.fontSize);
+    const fontWeight = (isSelected || isHovered) ? 'bold' : 'normal';
+    ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
     ctx.textAlign = node.column < 3 ? 'right' : 'left';
     const textX = node.column < 3 ? node.x - 15 : node.x + 15;
     const textY = node.y + node.height / 2 + 4;
@@ -4446,10 +4464,23 @@ function flowZoomOut() {
   drawFlowDiagram();
 }
 
+function flowFontSizeIncrease() {
+  flow.fontSize *= 1.2;
+  flow.fontSize = Math.min(2.5, flow.fontSize);
+  drawFlowDiagram();
+}
+
+function flowFontSizeDecrease() {
+  flow.fontSize *= 0.8;
+  flow.fontSize = Math.max(0.6, flow.fontSize);
+  drawFlowDiagram();
+}
+
 function flowReset() {
   flow.zoom = 1;
   flow.panX = 0;
   flow.panY = 0;
+  flow.fontSize = 1.0;
   flow.selectedNode = null;
   flow.filteredNodes = null;
   flow.filteredLinks = null;
@@ -4525,8 +4556,8 @@ function selectFlowNode(nodeId) {
   drawFlowDiagram();
   updateFlowUI();
 
-  // Sync to Graph view if it's initialized
-  if (graph.canvas) {
+  // Sync to Graph view if it's initialized AND not already syncing
+  if (graph.canvas && !isSyncing) {
     console.log('Syncing flow selection to graph view');
     syncFlowToGraphView();
   }
