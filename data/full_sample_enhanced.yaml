@@ -2,6 +2,11 @@ meta:
   title: 'Navigate the case live: click any item to jump across'
   version: '1.0'
   generated: '2026-02-06'
+  colors:
+    challenge: '#f0d24f'
+    initiative: '#8fd0ff'
+    system: '#1d4ed8'
+    kpi: '#22c55e'
 challenge_groups:
 - id: C1
   number: 1

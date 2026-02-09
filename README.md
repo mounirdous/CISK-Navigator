@@ -2,7 +2,7 @@
 
 Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
 
-![Version](https://img.shields.io/badge/version-2.4.0-blue)
+![Version](https://img.shields.io/badge/version-2.5.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11-green)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
@@ -12,6 +12,7 @@ Interactive visualization tool for exploring relationships between **Challenges*
 - **⭐ Priority Levels**: Visual priority indicators (⭐⭐⭐, ⭐⭐, ⭐)
 - **🎚️ Weighted Relationships**: All links have weights (1-10)
 - **💥 Impact Indicators**: High/Medium/Low impact badges
+- **🎨 Custom Colors**: Configure colors for challenges, initiatives, systems, and KPIs in YAML
 - **📊 Two Views**: Column view and interactive graph view
 - **🔄 Season Filtering**: Filter by S1, S2, S3
 - **📤 Upload & Download**: Upload YAML, download standalone HTML
@@ -54,6 +55,11 @@ open http://localhost:5002
 meta:
   title: "Your Navigator Title"    # Required - displayed in generated HTML
   version: "1.0"                    # Optional - defaults to "1.0"
+  colors:                           # Optional - customize visualization colors
+    challenge: '#f0d24f'            # Default: yellow
+    initiative: '#8fd0ff'           # Default: light blue
+    system: '#1d4ed8'               # Default: blue
+    kpi: '#22c55e'                  # Default: green
 
 challenge_groups:
   - id: C1
@@ -164,9 +170,10 @@ Built for strategic business planning and technology roadmap visualization.
 
 ---
 
-**Version 2.4.0** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, and analytics tracking
+**Version 2.5.0** - Enhanced with multi-links, priorities, weights, interactive graph view, dual version display, analytics tracking, and customizable colors
 
 ### Recent Updates
+- **v2.5.0** (Feb 2026): Customizable colors for challenges, initiatives, systems, and KPIs via YAML configuration
 - **v2.4.0** (Feb 2026): Analytics tracking support (Google Analytics, Plausible, etc.)
 - **v2.3.3** (Feb 2026): Fixed graph navigation A→B→A scenario
 - **v2.3.1** (Feb 2026): Upload page documentation, optional YAML version field

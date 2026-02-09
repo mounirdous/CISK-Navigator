@@ -1,0 +1,47 @@
+meta:
+  title: 'CISK Navigator - Custom Colors Example'
+  version: '1.0'
+  colors:
+    # You can customize the colors for each entity type
+    # Use hex color codes (e.g., #ff5733)
+    challenge: '#ff6b6b'      # Red
+    initiative: '#4ecdc4'     # Teal
+    system: '#45b7d1'         # Sky blue
+    kpi: '#96ceb4'            # Mint green
+
+challenge_groups:
+- id: C1
+  number: 1
+  title: Digital Transformation
+  priority: 1
+
+sub_challenges:
+- id: C1.SC1
+  group_id: C1
+  text: Lead-time too long/variable across Order→Engineering→Supply→Build
+  priority: 1
+
+initiatives:
+- id: C1.I1
+  season: S1
+  text: Value streams & standard E2E processes
+  raw: Value streams & standard E2E processes
+  challenges:
+  - challenge_id: C1.SC1
+    weight: 10
+    impact: H
+
+systems:
+- id: C1.S1
+  text: Core ERP (SAP S/4HANA as system of record)
+  title: ''
+  initiatives:
+  - initiative_id: C1.I1
+    weight: 10
+
+kpis:
+- id: C1.K1
+  text: Lead time −15–20% (end‑to‑end, incl. engineering + supply)
+  systems:
+  - system_id: C1.S1
+    weight: 9

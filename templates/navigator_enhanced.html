@@ -21,24 +21,24 @@
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 
-    /* CISK Colors */
-    --c-challenge: #f0d24f;
-    --c-challenge-bg: rgba(240,210,79,.14);
-    --c-challenge-border: rgba(240,210,79,.55);
-    --c-challenge-light: rgba(240,210,79,.10);
+    /* CISK Colors - Configurable via YAML */
+    --c-challenge: {{ colors.challenge }};
+    --c-challenge-bg: {{ colors.challenge }}23;
+    --c-challenge-border: {{ colors.challenge }}8C;
+    --c-challenge-light: {{ colors.challenge }}1A;
 
-    --c-initiative: #8fd0ff;
-    --c-initiative-bg: rgba(143,208,255,.14);
-    --c-initiative-border: rgba(143,208,255,.55);
-    --c-initiative-light: rgba(143,208,255,.10);
+    --c-initiative: {{ colors.initiative }};
+    --c-initiative-bg: {{ colors.initiative }}23;
+    --c-initiative-border: {{ colors.initiative }}8C;
+    --c-initiative-light: {{ colors.initiative }}1A;
 
-    --c-system: #1d4ed8;
-    --c-system-bg: rgba(29,78,216,.12);
-    --c-system-border: rgba(29,78,216,.55);
+    --c-system: {{ colors.system }};
+    --c-system-bg: {{ colors.system }}1F;
+    --c-system-border: {{ colors.system }}8C;
 
-    --c-kpi: #22c55e;
-    --c-kpi-bg: rgba(34,197,94,.12);
-    --c-kpi-border: rgba(34,197,94,.55);
+    --c-kpi: {{ colors.kpi }};
+    --c-kpi-bg: {{ colors.kpi }}1F;
+    --c-kpi-border: {{ colors.kpi }}8C;
 
     /* Priority Colors */
     --priority-high: #f59e0b;
@@ -406,7 +406,7 @@
 {% if upload_stats %}
 <div style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 12px; padding: 12px 16px; margin: 12px auto; max-width: 1250px;">
   <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-    <span style="font-weight: 700; color: #22c55e;">✓ Upload Successful!</span>
+    <span style="font-weight: 700; color: var(--c-kpi);">✓ Upload Successful!</span>
     <span style="color: var(--muted); font-size: 12px;">Detected:</span>
     <span style="font-size: 12px;"><strong>{{ upload_stats.groups }}</strong> Groups</span>
     <span style="color: var(--muted);">•</span>
@@ -536,11 +536,11 @@
       </div>
       <div class="hd" style="border-top:1px solid var(--border);border-bottom:none;">
         <div class="row" style="gap:16px;font-size:11px;flex-wrap:wrap;">
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#fbbf24;border-radius:4px;"></span> Groups</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#f0d24f;border-radius:4px;"></span> Sub-Challenges</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#8fd0ff;border-radius:4px;"></span> Initiatives</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#1d4ed8;border-radius:4px;"></span> Systems</div>
-          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;border-radius:4px;"></span> KPIs</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--graph-group);border-radius:4px;"></span> Groups</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-challenge);border-radius:4px;"></span> Sub-Challenges</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-initiative);border-radius:4px;"></span> Initiatives</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-system);border-radius:4px;"></span> Systems</div>
+          <div class="row" style="gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:var(--c-kpi);border-radius:4px;"></span> KPIs</div>
           <span class="muted">|</span>
           <div class="muted">Click any node to filter • Use ← Back to restore</div>
         </div>
@@ -1929,6 +1929,19 @@ let graph = {
   history: []          // Navigation history stack for back button
 };
 
+// Get colors from CSS variables
+function getColor(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+const COLORS = {
+  group: getColor('--graph-group'),
+  challenge: getColor('--c-challenge'),
+  initiative: getColor('--c-initiative'),
+  system: getColor('--c-system'),
+  kpi: getColor('--c-kpi')
+};
+
 function buildGraphData() {
   const nodes = [];
   const links = [];
@@ -1947,7 +1960,7 @@ function buildGraphData() {
       y: 0,
       width: 200,
       height: 50,
-      color: '#fbbf24' // Brighter yellow for groups
+      color: COLORS.group
     };
     nodes.push(node);
     challengeGroupNodes[g.id] = node;
@@ -1968,7 +1981,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#f0d24f'
+      color: COLORS.challenge
     };
     nodes.push(node);
     challengeNodes[sc.id] = node;
@@ -2006,7 +2019,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#8fd0ff'
+      color: COLORS.initiative
     };
     nodes.push(node);
     initiativeNodes[init.id] = node;
@@ -2042,7 +2055,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#1d4ed8'
+      color: COLORS.system
     };
     nodes.push(node);
     systemNodes[sys.id] = node;
@@ -2075,7 +2088,7 @@ function buildGraphData() {
       y: 0,
       width: 180,
       height: 50,
-      color: '#22c55e'
+      color: COLORS.kpi
     };
     nodes.push(node);
 

@@ -13,7 +13,7 @@ from typing import Dict, List
 app = Flask(__name__)
 
 # App version - displayed in generated HTML files
-APP_VERSION = "2.4.0"
+APP_VERSION = "2.5.0"
 
 
 def load_yaml_data(file_path: str) -> Dict:
@@ -26,10 +26,23 @@ def load_yaml_data(file_path: str) -> Dict:
 def extract_metadata(yaml_data: Dict) -> Dict:
     """Extract metadata fields from YAML data"""
     meta = yaml_data.get("meta", {})
+
+    # Default colors matching current design
+    default_colors = {
+        "challenge": "#f0d24f",
+        "initiative": "#8fd0ff",
+        "system": "#1d4ed8",
+        "kpi": "#22c55e"
+    }
+
+    # Merge user colors with defaults
+    colors = {**default_colors, **meta.get("colors", {})}
+
     return {
         "title": meta.get("title", "CISK Navigator Enhanced"),
         "data_version": meta.get("version", "1.0"),
-        "tracking_code": meta.get("tracking_code", None)
+        "tracking_code": meta.get("tracking_code", None),
+        "colors": colors
     }
 
 
