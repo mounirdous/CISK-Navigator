@@ -2060,11 +2060,20 @@ function setViewMode(mode) {
     }
 
     // Priority order for syncing to flow view:
-    // 1. Graph view selection (if user was in graph and clicked something)
-    // 2. Column view selection (if user selected something in column view)
-    // 3. No selection - show full flow
+    // 1. Flow view already has selection (preserve it when returning)
+    // 2. Graph view selection (if user was in graph and clicked something)
+    // 3. Column view selection (if user selected something in column view)
+    // 4. No selection - show full flow
 
-    if (graph.canvas && graph.selectedNode) {
+    if (flow.selectedNode) {
+      // Flow already has a selection, redraw and fit to view
+      console.log('Flow already has selection, keeping it:', flow.selectedNode.id);
+      drawFlowDiagram();
+      // Auto-fit to view to ensure selection is visible
+      setTimeout(() => {
+        flowFitToView();
+      }, 10);
+    } else if (graph.canvas && graph.selectedNode) {
       // Sync from graph view selection
       console.log('Flow view: Syncing from graph selection:', graph.selectedNode.entityId);
       setTimeout(() => {
@@ -2073,9 +2082,9 @@ function setViewMode(mode) {
         } else {
           console.error('Flow canvas not ready after init!');
         }
-      }, 50); // Increased timeout to ensure flow is ready
+      }, 50);
     } else {
-      // Sync from column view selection
+      // Check for column selection or preview
       const itemToSync = state.preview || state.selected;
       if (itemToSync) {
         console.log('Flow view: Syncing from column selection:', itemToSync.type, itemToSync.id);
