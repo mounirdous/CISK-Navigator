@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<title>Getting Fit: Your Personal Health Transformation Navigator - Data v1.0 - CISK Navigator v2.7.10</title>
+<title>Getting Fit: Your Personal Health Transformation Navigator - Data v1.0 - CISK Navigator v2.8.0</title>
 
 <style>
   :root {
@@ -290,6 +290,26 @@
     background: rgba(143,208,255,.10);
   }
 
+  /* Checkbox control for toggling link weights */
+  .checkbox-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+  }
+  .checkbox-control input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: var(--c-initiative);
+  }
+  .checkbox-control:hover {
+    color: var(--c-initiative);
+  }
+
   .card {
     border: 1px solid var(--border);
     border-radius: 14px;
@@ -381,7 +401,7 @@
 <header>
   <div class="wrap">
     <div class="topbar">
-      <div class="title">Getting Fit: Your Personal Health Transformation Navigator <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.7.10)</span></div>
+      <div class="title">Getting Fit: Your Personal Health Transformation Navigator <span style="opacity: 0.6; font-size: 0.9em;">(Data v1.0 • App v2.8.0)</span></div>
       <div class="tabs" id="tabs"></div>
     </div>
     <div class="seasonbar">
@@ -502,6 +522,10 @@
           </div>
           <div class="row graph-controls" style="gap:8px;">
             <button class="btn small" id="graphBackBtn" onclick="graphGoBack()" style="display:none;">← Back</button>
+            <label class="checkbox-control">
+              <input type="checkbox" id="graphShowWeights" onchange="toggleGraphWeights(this.checked)">
+              <span>Show Link Weights</span>
+            </label>
             <button class="btn small" onclick="graphZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="graphZoomOut()">🔍− Zoom Out</button>
             <button class="btn small" onclick="graphFitToView()">⊡ Fit to View</button>
@@ -559,6 +583,10 @@
             <div id="flowSelectionInfo" style="display:none;margin-top:8px;padding:6px 12px;background:rgba(255,255,255,0.1);border-radius:6px;font-size:12px;"></div>
           </div>
           <div class="row" style="gap:8px;">
+            <label class="checkbox-control">
+              <input type="checkbox" id="flowShowWeights" onchange="toggleFlowWeights(this.checked)">
+              <span>Show Link Weights</span>
+            </label>
             <button class="btn small" onclick="flowZoomIn()">🔍+ Zoom In</button>
             <button class="btn small" onclick="flowZoomOut()">🔍− Zoom Out</button>
             <button class="btn small" onclick="flowFitToView()">⊡ Fit to View</button>
@@ -605,7 +633,7 @@
 
 <script>
 // Data injected from Flask
-const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Physical Fitness"}, {"id": "C2", "number": 2, "priority": 1, "title": "Nutrition \u0026 Diet"}, {"id": "C3", "number": 3, "priority": 2, "title": "Mental Wellness"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Start running 3x per week (Couch to 5K program)", "season": "S1", "text": "Start running 3x per week (Couch to 5K program)"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 9}, {"challengeId": "C1.SC1", "impact": "M", "weight": 5}], "id": "C1.I2", "raw": "Join gym and do strength training 2x per week", "season": "S1", "text": "Join gym and do strength training 2x per week"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}, {"challengeId": "C3.SC1", "impact": "M", "weight": 6}], "id": "C1.I3", "raw": "Take yoga classes for flexibility and balance", "season": "S2", "text": "Take yoga classes for flexibility and balance"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 10}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I1", "raw": "Meal prep healthy lunches every Sunday", "season": "S1", "text": "Meal prep healthy lunches every Sunday"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "M", "weight": 8}], "id": "C2.I2", "raw": "Drink 8 glasses of water daily (use tracking app)", "season": "S1", "text": "Drink 8 glasses of water daily (use tracking app)"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I1", "raw": "Daily 10-minute meditation practice", "season": "S2", "text": "Daily 10-minute meditation practice"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}, {"challengeId": "C3.SC1", "impact": "L", "weight": 5}], "id": "C3.I2", "raw": "Set bedtime routine - no screens after 10pm", "season": "S1", "text": "Set bedtime routine - no screens after 10pm"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 8}], "text": "Run 5K in under 30 minutes"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 9}, {"systemId": "C1.S2", "weight": 10}], "text": "Bench press body weight"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Touch toes without bending knees"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}, {"systemId": "C1.S1", "weight": 7}], "text": "Lose 10 pounds in 3 months"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Eat 5+ servings of vegetables daily"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Sleep 7-8 hours per night consistently"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S2", "weight": 10}], "text": "Meditate 100 days in a row"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S1", "weight": 6}], "text": "Reduce stress level from 8/10 to 4/10"}], "meta": {"generated": "2026-02-09T16:23:47.826693", "sourceDeck": "Getting Fit: Your Personal Health Transformation Navigator"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Low cardiovascular endurance - get tired climbing stairs"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "Weak core strength - back pain from sitting all day"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Poor flexibility - can\u0027t touch toes without stretching"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Too much processed food and sugar in diet"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Irregular meal times and poor hydration"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "High stress levels from work and life"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Poor sleep quality - only 5-6 hours per night"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I2", "weight": 8}], "text": "Fitness Tracking System", "title": "Apple Watch + Strava app for workout logging"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I2", "weight": 9}, {"initiativeId": "C1.I3", "weight": 7}], "text": "Workout Accountability", "title": "Join running club + gym buddy system"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}, {"initiativeId": "C2.I2", "weight": 6}], "text": "Meal Planning System", "title": "MyFitnessPal app + weekly grocery list"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I2", "weight": 10}], "text": "Sleep Optimization", "title": "Sleep tracking + blackout curtains + white noise"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C1.I3", "weight": 5}], "text": "Mindfulness Practice", "title": "Headspace app + meditation timer"}]};
+const DATA = {"challengeGroups": [{"id": "C1", "number": 1, "priority": 1, "title": "Physical Fitness"}, {"id": "C2", "number": 2, "priority": 1, "title": "Nutrition \u0026 Diet"}, {"id": "C3", "number": 3, "priority": 2, "title": "Mental Wellness"}], "initiatives": [{"challenges": [{"challengeId": "C1.SC1", "impact": "H", "weight": 10}], "id": "C1.I1", "raw": "Start running 3x per week (Couch to 5K program)", "season": "S1", "text": "Start running 3x per week (Couch to 5K program)"}, {"challenges": [{"challengeId": "C1.SC2", "impact": "H", "weight": 9}, {"challengeId": "C1.SC1", "impact": "M", "weight": 5}], "id": "C1.I2", "raw": "Join gym and do strength training 2x per week", "season": "S1", "text": "Join gym and do strength training 2x per week"}, {"challenges": [{"challengeId": "C1.SC3", "impact": "H", "weight": 10}, {"challengeId": "C3.SC1", "impact": "M", "weight": 6}], "id": "C1.I3", "raw": "Take yoga classes for flexibility and balance", "season": "S2", "text": "Take yoga classes for flexibility and balance"}, {"challenges": [{"challengeId": "C2.SC1", "impact": "H", "weight": 10}, {"challengeId": "C2.SC2", "impact": "M", "weight": 7}], "id": "C2.I1", "raw": "Meal prep healthy lunches every Sunday", "season": "S1", "text": "Meal prep healthy lunches every Sunday"}, {"challenges": [{"challengeId": "C2.SC2", "impact": "M", "weight": 8}], "id": "C2.I2", "raw": "Drink 8 glasses of water daily (use tracking app)", "season": "S1", "text": "Drink 8 glasses of water daily (use tracking app)"}, {"challenges": [{"challengeId": "C3.SC1", "impact": "H", "weight": 9}], "id": "C3.I1", "raw": "Daily 10-minute meditation practice", "season": "S2", "text": "Daily 10-minute meditation practice"}, {"challenges": [{"challengeId": "C3.SC2", "impact": "H", "weight": 10}, {"challengeId": "C3.SC1", "impact": "L", "weight": 5}], "id": "C3.I2", "raw": "Set bedtime routine - no screens after 10pm", "season": "S1", "text": "Set bedtime routine - no screens after 10pm"}], "kpis": [{"id": "C1.K1", "systems": [{"systemId": "C1.S1", "weight": 10}, {"systemId": "C1.S2", "weight": 8}], "text": "Run 5K in under 30 minutes"}, {"id": "C1.K2", "systems": [{"systemId": "C1.S1", "weight": 9}, {"systemId": "C1.S2", "weight": 10}], "text": "Bench press body weight"}, {"id": "C1.K3", "systems": [{"systemId": "C1.S2", "weight": 8}], "text": "Touch toes without bending knees"}, {"id": "C2.K1", "systems": [{"systemId": "C2.S1", "weight": 10}, {"systemId": "C1.S1", "weight": 7}], "text": "Lose 10 pounds in 3 months"}, {"id": "C2.K2", "systems": [{"systemId": "C2.S1", "weight": 10}], "text": "Eat 5+ servings of vegetables daily"}, {"id": "C3.K1", "systems": [{"systemId": "C3.S1", "weight": 10}], "text": "Sleep 7-8 hours per night consistently"}, {"id": "C3.K2", "systems": [{"systemId": "C3.S2", "weight": 10}], "text": "Meditate 100 days in a row"}, {"id": "C3.K3", "systems": [{"systemId": "C3.S2", "weight": 9}, {"systemId": "C3.S1", "weight": 6}], "text": "Reduce stress level from 8/10 to 4/10"}], "meta": {"generated": "2026-02-10T07:40:06.213000", "sourceDeck": "Getting Fit: Your Personal Health Transformation Navigator"}, "subChallenges": [{"groupId": "C1", "id": "C1.SC1", "priority": 1, "text": "Low cardiovascular endurance - get tired climbing stairs"}, {"groupId": "C1", "id": "C1.SC2", "priority": 1, "text": "Weak core strength - back pain from sitting all day"}, {"groupId": "C1", "id": "C1.SC3", "priority": 2, "text": "Poor flexibility - can\u0027t touch toes without stretching"}, {"groupId": "C2", "id": "C2.SC1", "priority": 1, "text": "Too much processed food and sugar in diet"}, {"groupId": "C2", "id": "C2.SC2", "priority": 2, "text": "Irregular meal times and poor hydration"}, {"groupId": "C3", "id": "C3.SC1", "priority": 1, "text": "High stress levels from work and life"}, {"groupId": "C3", "id": "C3.SC2", "priority": 1, "text": "Poor sleep quality - only 5-6 hours per night"}], "systems": [{"id": "C1.S1", "initiatives": [{"initiativeId": "C1.I1", "weight": 9}, {"initiativeId": "C1.I2", "weight": 8}], "text": "Fitness Tracking System", "title": "Apple Watch + Strava app for workout logging"}, {"id": "C1.S2", "initiatives": [{"initiativeId": "C1.I1", "weight": 10}, {"initiativeId": "C1.I2", "weight": 9}, {"initiativeId": "C1.I3", "weight": 7}], "text": "Workout Accountability", "title": "Join running club + gym buddy system"}, {"id": "C2.S1", "initiatives": [{"initiativeId": "C2.I1", "weight": 10}, {"initiativeId": "C2.I2", "weight": 6}], "text": "Meal Planning System", "title": "MyFitnessPal app + weekly grocery list"}, {"id": "C3.S1", "initiatives": [{"initiativeId": "C3.I2", "weight": 10}], "text": "Sleep Optimization", "title": "Sleep tracking + blackout curtains + white noise"}, {"id": "C3.S2", "initiatives": [{"initiativeId": "C3.I1", "weight": 10}, {"initiativeId": "C1.I3", "weight": 5}], "text": "Mindfulness Practice", "title": "Headspace app + meditation timer"}]};
 
 const TABS = [
   {id:"challenges", label:"Challenges"},
@@ -2157,7 +2185,8 @@ let graph = {
   filteredNodes: null, // Set of visible node IDs when filtered
   filteredLinks: null, // Set of visible links when filtered
   history: [],         // Navigation history stack for back button
-  fontSize: 1.0        // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
+  fontSize: 1.0,       // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
+  showWeights: false   // Whether to show link weights (disabled by default)
 };
 
 // Get colors from CSS variables
@@ -2487,7 +2516,7 @@ function drawLink(link) {
 
   const ctx = graph.ctx;
   const weight = link.weight || 5;
-  const thickness = weight; // Direct weight-to-thickness: 1-10px
+  const thickness = graph.showWeights ? weight : 1; // Use weight or 1px based on toggle
 
   // Draw line from bottom of source to top of target (vertical flow)
   const sourceX = link.source.x;
@@ -3083,6 +3112,11 @@ function graphReset() {
   layoutGraph();
   drawGraph();
   updateGraphUI();
+}
+
+function toggleGraphWeights(enabled) {
+  graph.showWeights = enabled;
+  drawGraph();
 }
 
 function graphFitToView() {
@@ -3779,7 +3813,8 @@ const flow = {
   filteredNodes: null,
   filteredLinks: null,
   colors: {},    // Cache for colors
-  fontSize: 1.0  // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
+  fontSize: 1.0, // Font size multiplier (0.8, 1.0, 1.2, 1.5, 2.0)
+  showWeights: false // Whether to show link weights (disabled by default)
 };
 
 function initFlowView() {
@@ -4057,11 +4092,16 @@ function drawFlowDiagram() {
 
     const isHovered = flow.hovering && (flow.hovering.source === link.source && flow.hovering.target === link.target);
 
-    // Calculate link thickness based on value
-    const maxWeight = 10;
-    const minThickness = 2;
-    const maxThickness = 30;
-    const thickness = minThickness + (link.value / maxWeight) * (maxThickness - minThickness);
+    // Calculate link thickness based on value and showWeights toggle
+    let thickness;
+    if (flow.showWeights) {
+      const maxWeight = 10;
+      const minThickness = 2;
+      const maxThickness = 30;
+      thickness = minThickness + (link.value / maxWeight) * (maxThickness - minThickness);
+    } else {
+      thickness = 1; // Fixed 1px thickness when weights are hidden
+    }
 
     // Get colors for source and target nodes (use cached colors)
     let sourceColor, targetColor;
@@ -4498,6 +4538,11 @@ function flowReset() {
   layoutFlowDiagram();
   drawFlowDiagram();
   updateFlowUI();
+}
+
+function toggleFlowWeights(enabled) {
+  flow.showWeights = enabled;
+  drawFlowDiagram();
 }
 
 function flowFitToView() {
