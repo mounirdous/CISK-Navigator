@@ -2478,9 +2478,9 @@ function layoutGraph() {
     kpi: { y: 510, nodes: [] }
   };
 
-  // Filter nodes if there's a selection
+  // Filter nodes if there's a filter set (match drawNode behavior)
   let visibleNodes = graph.nodes;
-  if (graph.selectedNode && graph.filteredNodes) {
+  if (graph.filteredNodes) {
     visibleNodes = graph.nodes.filter(n => graph.filteredNodes.has(n.id));
   }
 
@@ -2531,6 +2531,11 @@ function drawLink(link) {
   // Skip if this link is filtered out
   if (graph.filteredLinks && !graph.filteredLinks.has(link)) {
     return;
+  }
+
+  // Debug: Track if we're drawing links when filters are active
+  if (graph.filteredLinks && graph.filteredLinks.size > 0 && graph.filteredLinks.size < graph.links.length) {
+    // This link passed the filter check
   }
 
   const ctx = graph.ctx;
