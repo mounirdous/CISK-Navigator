@@ -28,11 +28,69 @@
     <!-- Rollup Config Tab -->
     <div class="tab-pane fade" id="rollup" role="tabpanel">
         <div class="alert alert-info">
-            <strong>Configure Rollup from Initiatives to this Challenge</strong><br>
-            Choose which value types roll up from Initiatives to this Challenge.
+            <strong>Configure Rollup from Initiatives to this Challenge (and then to Space)</strong><br>
+            Choose which value types roll up from Initiatives to <strong>{{ challenge.name }}</strong>, and then to its Space "<strong>{{ challenge.space.name }}</strong>".
         </div>
-        <p class="text-muted">This feature is coming soon! Configure rollup rules for each value type.</p>
-        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Back</a>
+
+        <div class="card mb-3">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    Rollup Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('organization_admin.configure_challenge_rollup', challenge_id=challenge.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                    <p class="text-muted mb-3">
+                        Configure how Initiative values aggregate to this Challenge and then to the parent Space.
+                    </p>
+
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Value Type</th>
+                                <th>Default Formula</th>
+                                <th>Enable Rollup</th>
+                                <th>Formula Override</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vt in value_types %}
+                                {% set existing_rules = challenge.rollup_rules if challenge.rollup_rules else [] %}
+                                {% set rule = existing_rules | selectattr('value_type_id', 'equalto', vt.id) | first %}
+                            <tr>
+                                <td><strong>{{ vt.name }}</strong></td>
+                                <td><span class="badge bg-secondary">{{ vt.default_aggregation_formula }}</span></td>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox"
+                                               id="enabled_{{ vt.id }}" name="enabled_{{ vt.id }}"
+                                               {{ 'checked' if (rule and rule.rollup_enabled) or not rule else '' }}>
+                                    </div>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm" name="formula_{{ vt.id }}">
+                                        <option value="default" {{ 'selected' if not rule or rule.formula_override == 'default' else '' }}>
+                                            Use Default ({{ vt.default_aggregation_formula }})
+                                        </option>
+                                        <option value="sum" {{ 'selected' if rule and rule.formula_override == 'sum' else '' }}>Sum</option>
+                                        <option value="min" {{ 'selected' if rule and rule.formula_override == 'min' else '' }}>Minimum</option>
+                                        <option value="max" {{ 'selected' if rule and rule.formula_override == 'max' else '' }}>Maximum</option>
+                                        <option value="avg" {{ 'selected' if rule and rule.formula_override == 'avg' else '' }}>Average</option>
+                                    </select>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    <button type="submit" class="btn btn-primary">Save Rollup Config</button>
+                </form>
+            </div>
+        </div>
+
+        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Back to Spaces</a>
     </div>
 </div>
 {% endblock %}

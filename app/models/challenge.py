@@ -29,6 +29,12 @@ class Challenge(db.Model):
     initiative_links = db.relationship('ChallengeInitiativeLink',
                                        back_populates='challenge',
                                        cascade='all, delete-orphan')
+    rollup_rules = db.relationship('RollupRule',
+                                   foreign_keys='RollupRule.source_id',
+                                   primaryjoin='and_(RollupRule.source_id==Challenge.id, '
+                                               'RollupRule.source_type=="challenge")',
+                                   cascade='all, delete-orphan',
+                                   viewonly=True)
 
     def get_rollup_value(self, value_type_id):
         """Get rolled-up value from initiatives for this challenge"""

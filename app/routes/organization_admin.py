@@ -187,7 +187,54 @@ def edit_challenge(challenge_id):
         flash(f'Challenge {challenge.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))
 
-    return render_template('organization_admin/edit_challenge.html', form=form, challenge=challenge)
+    # Get value types for rollup configuration tab
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    return render_template('organization_admin/edit_challenge.html',
+                          form=form,
+                          challenge=challenge,
+                          value_types=value_types)
+
+
+@bp.route('/challenges/<int:challenge_id>/rollup-config', methods=['POST'])
+@login_required
+@organization_required
+def configure_challenge_rollup(challenge_id):
+    """Configure rollup rules for a challenge (from Initiatives to Challenge to Space)"""
+    org_id = session.get('organization_id')
+    challenge = Challenge.query.filter_by(id=challenge_id, organization_id=org_id).first_or_404()
+
+    # Get all value types
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    # Process form data for each value type
+    for vt in value_types:
+        enabled = request.form.get(f'enabled_{vt.id}') == 'on'
+        formula = request.form.get(f'formula_{vt.id}', 'default')
+
+        # Find or create rule
+        rule = RollupRule.query.filter_by(
+            source_type='challenge',
+            source_id=challenge_id,
+            value_type_id=vt.id
+        ).first()
+
+        if rule:
+            rule.rollup_enabled = enabled
+            rule.formula_override = formula
+        else:
+            rule = RollupRule(
+                source_type='challenge',
+                source_id=challenge_id,
+                value_type_id=vt.id,
+                rollup_enabled=enabled,
+                formula_override=formula
+            )
+            db.session.add(rule)
+
+    db.session.commit()
+    flash(f'Rollup configuration saved for {challenge.name}', 'success')
+    return redirect(url_for('organization_admin.edit_challenge', challenge_id=challenge_id))
 
 
 # Initiative Management
@@ -244,7 +291,59 @@ def edit_initiative(initiative_id):
         flash(f'Initiative {initiative.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))
 
-    return render_template('organization_admin/edit_initiative.html', form=form, initiative=initiative)
+    # Get value types for rollup configuration tab
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    return render_template('organization_admin/edit_initiative.html',
+                          form=form,
+                          initiative=initiative,
+                          value_types=value_types)
+
+
+@bp.route('/challenge-initiative-links/<int:link_id>/rollup-config', methods=['POST'])
+@login_required
+@organization_required
+def configure_initiative_rollup(link_id):
+    """Configure rollup rules for an initiative (from Systems to Initiative)"""
+    org_id = session.get('organization_id')
+    link = ChallengeInitiativeLink.query.get_or_404(link_id)
+
+    # Verify ownership
+    if link.initiative.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.spaces'))
+
+    # Get all value types
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    # Process form data for each value type
+    for vt in value_types:
+        enabled = request.form.get(f'enabled_{vt.id}') == 'on'
+        formula = request.form.get(f'formula_{vt.id}', 'default')
+
+        # Find or create rule
+        rule = RollupRule.query.filter_by(
+            source_type='challenge_initiative',
+            source_id=link_id,
+            value_type_id=vt.id
+        ).first()
+
+        if rule:
+            rule.rollup_enabled = enabled
+            rule.formula_override = formula
+        else:
+            rule = RollupRule(
+                source_type='challenge_initiative',
+                source_id=link_id,
+                value_type_id=vt.id,
+                rollup_enabled=enabled,
+                formula_override=formula
+            )
+            db.session.add(rule)
+
+    db.session.commit()
+    flash(f'Rollup configuration saved for {link.initiative.name}', 'success')
+    return redirect(url_for('organization_admin.edit_initiative', initiative_id=link.initiative_id))
 
 
 # System Management
@@ -301,7 +400,59 @@ def edit_system(system_id):
         flash(f'System {system.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))
 
-    return render_template('organization_admin/edit_system.html', form=form, system=system)
+    # Get value types for rollup configuration tab
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    return render_template('organization_admin/edit_system.html',
+                          form=form,
+                          system=system,
+                          value_types=value_types)
+
+
+@bp.route('/initiative-system-links/<int:link_id>/rollup-config', methods=['POST'])
+@login_required
+@organization_required
+def configure_system_rollup(link_id):
+    """Configure rollup rules for a system (from KPIs to System)"""
+    org_id = session.get('organization_id')
+    link = InitiativeSystemLink.query.get_or_404(link_id)
+
+    # Verify ownership
+    if link.initiative.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.spaces'))
+
+    # Get all value types
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    # Process form data for each value type
+    for vt in value_types:
+        enabled = request.form.get(f'enabled_{vt.id}') == 'on'
+        formula = request.form.get(f'formula_{vt.id}', 'default')
+
+        # Find or create rule
+        rule = RollupRule.query.filter_by(
+            source_type='initiative_system',
+            source_id=link_id,
+            value_type_id=vt.id
+        ).first()
+
+        if rule:
+            rule.rollup_enabled = enabled
+            rule.formula_override = formula
+        else:
+            rule = RollupRule(
+                source_type='initiative_system',
+                source_id=link_id,
+                value_type_id=vt.id,
+                rollup_enabled=enabled,
+                formula_override=formula
+            )
+            db.session.add(rule)
+
+    db.session.commit()
+    flash(f'Rollup configuration saved for {link.system.name}', 'success')
+    return redirect(url_for('organization_admin.edit_system', system_id=link.system_id))
 
 
 # KPI Management

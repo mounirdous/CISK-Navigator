@@ -163,11 +163,12 @@ class AggregationService:
             rollup_rule = RollupRule.query.filter_by(
                 source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
                 source_id=link.id,
-                value_type_id=value_type_id,
-                rollup_enabled=True
+                value_type_id=value_type_id
             ).first()
 
-            if not rollup_rule:
+            # If no rule exists, default to enabled (backward compatibility)
+            # If rule exists but disabled, skip
+            if rollup_rule and not rollup_rule.rollup_enabled:
                 continue
 
             total_systems += 1
@@ -230,11 +231,12 @@ class AggregationService:
             rollup_rule = RollupRule.query.filter_by(
                 source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
                 source_id=link.id,
-                value_type_id=value_type_id,
-                rollup_enabled=True
+                value_type_id=value_type_id
             ).first()
 
-            if not rollup_rule:
+            # If no rule exists, default to enabled (backward compatibility)
+            # If rule exists but disabled, skip
+            if rollup_rule and not rollup_rule.rollup_enabled:
                 continue
 
             total_initiatives += 1
@@ -297,11 +299,12 @@ class AggregationService:
             rollup_rule = RollupRule.query.filter_by(
                 source_type=RollupRule.SOURCE_CHALLENGE,
                 source_id=challenge.id,
-                value_type_id=value_type_id,
-                rollup_enabled=True
+                value_type_id=value_type_id
             ).first()
 
-            if not rollup_rule:
+            # If no rule exists, default to enabled (backward compatibility)
+            # If rule exists but disabled, skip
+            if rollup_rule and not rollup_rule.rollup_enabled:
                 continue
 
             total_challenges += 1
