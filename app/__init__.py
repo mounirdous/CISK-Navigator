@@ -63,6 +63,25 @@ def create_app(config_name=None):
         response.headers['Expires'] = '-1'
         return response
 
+    # Register Jinja2 filters
+    @app.template_filter('format_value')
+    def format_value_filter(value, value_type):
+        """Format a numeric value according to its value type's decimal places"""
+        if value is None:
+            return ''
+
+        # For qualitative types, return as-is
+        if value_type.kind != 'numeric':
+            return value
+
+        # For numeric types, format according to decimal_places
+        if value_type.numeric_format == 'integer':
+            return f'{int(value)}'
+        else:
+            # Decimal format
+            decimal_places = value_type.decimal_places if value_type.decimal_places is not None else 2
+            return f'{float(value):.{decimal_places}f}'
+
     # Create tables and bootstrap admin
     with app.app_context():
         db.create_all()

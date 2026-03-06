@@ -29,6 +29,8 @@ class ValueTypeCreateForm(FlaskForm):
 
 class ValueTypeEditForm(FlaskForm):
     name = StringField('Name', validators=[DataRequired(), Length(max=200)])
+    decimal_places = IntegerField('Decimal Places', validators=[Optional()])
+    unit_label = StringField('Unit Label (e.g., €, tCO2e)', validators=[Optional(), Length(max=50)])
     is_active = BooleanField('Active')
     display_order = IntegerField('Display Order')
     submit = SubmitField('Save Changes')

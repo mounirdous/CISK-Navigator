@@ -588,9 +588,12 @@ def edit_value_type(vt_id):
 
     if form.validate_on_submit():
         value_type.name = form.name.data
+        if value_type.kind == 'numeric' and form.decimal_places.data is not None:
+            value_type.decimal_places = form.decimal_places.data
+        if form.unit_label.data is not None:
+            value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data
-        db.session.commit()
         flash(f'Value Type {value_type.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.value_types'))
 

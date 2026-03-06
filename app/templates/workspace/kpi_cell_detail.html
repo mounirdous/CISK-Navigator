@@ -74,7 +74,7 @@
             <td>{{ contrib.contributor_name }}</td>
             <td>
                 {% if contrib.numeric_value is not none %}
-                    {{ contrib.numeric_value }}
+                    {{ contrib.numeric_value|format_value(value_type) }}
                     {% if value_type.unit_label %}
                         {{ value_type.unit_label }}
                     {% endif %}

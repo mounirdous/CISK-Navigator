@@ -39,6 +39,20 @@
         {{ form.name(class="form-control") }}
     </div>
 
+    {% if value_type.kind == 'numeric' %}
+    <div class="mb-3">
+        {{ form.decimal_places.label }}
+        {{ form.decimal_places(class="form-control") }}
+        <small class="form-text text-muted">Number of decimal places to display</small>
+    </div>
+    {% endif %}
+
+    <div class="mb-3">
+        {{ form.unit_label.label }}
+        {{ form.unit_label(class="form-control") }}
+        <small class="form-text text-muted">Display unit (e.g., CHF, €, kg, tCO2e)</small>
+    </div>
+
     <div class="mb-3">
         {{ form.display_order.label }}
         {{ form.display_order(class="form-control") }}

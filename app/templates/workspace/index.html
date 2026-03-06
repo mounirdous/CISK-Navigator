@@ -57,7 +57,7 @@
                         <td class="text-center" style="background-color: #d6e9f7; font-weight: bold;">
                             {% if rollup %}
                                 {% if vt.kind == 'numeric' %}
-                                    {{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
+                                    {{ rollup.value|format_value(vt) }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
                                 {% elif vt.kind == 'risk' %}
                                     {% if rollup.value == 1 %}!{% elif rollup.value == 2 %}!!{% elif rollup.value == 3 %}!!!{% endif %}
                                 {% elif vt.kind == 'positive_impact' %}
@@ -85,7 +85,7 @@
                         <td class="text-center" style="background-color: #f0f4f8;">
                             {% if rollup %}
                                 {% if vt.kind == 'numeric' %}
-                                    <strong>{{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    <strong>{{ rollup.value|format_value(vt) }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                 {% elif vt.kind == 'risk' %}
                                     {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
                                 {% elif vt.kind == 'positive_impact' %}
@@ -114,7 +114,7 @@
                         <td class="text-center" style="background-color: #eff6f9;">
                             {% if rollup %}
                                 {% if vt.kind == 'numeric' %}
-                                    <strong>{{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    <strong>{{ rollup.value|format_value(vt) }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                 {% elif vt.kind == 'risk' %}
                                     {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
                                 {% elif vt.kind == 'positive_impact' %}
@@ -144,7 +144,7 @@
                             {% if rollup %}
                                 <div>
                                     {% if vt.kind == 'numeric' %}
-                                        <strong>{{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        <strong>{{ rollup.value|format_value(vt) }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                     {% elif vt.kind == 'risk' %}
                                         {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
                                     {% elif vt.kind == 'positive_impact' %}
@@ -178,7 +178,7 @@
                             {% elif consensus.value is not none %}
                                 <div>
                                     {% if vt.kind == 'numeric' %}
-                                        <strong>{{ consensus.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        <strong>{{ consensus.value|format_value(vt) }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                     {% elif vt.kind == 'risk' %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>!!</strong>{% endif %}
