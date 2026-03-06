@@ -46,9 +46,6 @@ class ValueType(db.Model):
     decimal_places = db.Column(db.Integer, nullable=True, default=2)
     unit_label = db.Column(db.String(50), nullable=True, comment='€, tCO2e, licenses, people, etc.')
     default_aggregation_formula = db.Column(db.String(20), nullable=False, default=FORMULA_SUM)
-    color_positive = db.Column(db.String(7), nullable=True, default='#28a745', comment='Color for positive values (numeric only)')
-    color_zero = db.Column(db.String(7), nullable=True, default='#6c757d', comment='Color for zero/null values (numeric only)')
-    color_negative = db.Column(db.String(7), nullable=True, default='#dc3545', comment='Color for negative values (numeric only)')
     display_order = db.Column(db.Integer, default=0, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -78,22 +75,6 @@ class ValueType(db.Model):
         elif self.kind == self.KIND_NEGATIVE_IMPACT:
             return '▼' * level
         return str(level)
-
-    def get_value_color(self, value):
-        """Get color for a numeric value based on its sign"""
-        if not self.is_numeric() or value is None:
-            return None
-
-        try:
-            numeric_value = float(value)
-            if numeric_value > 0:
-                return self.color_positive or '#28a745'
-            elif numeric_value < 0:
-                return self.color_negative or '#dc3545'
-            else:
-                return self.color_zero or '#6c757d'
-        except (ValueError, TypeError):
-            return None
 
     def __repr__(self):
         return f'<ValueType {self.name}>'
@@ -127,6 +108,22 @@ class KPIValueTypeConfig(db.Model):
         """Get consensus calculation for this KPI cell"""
         from app.services import ConsensusService
         return ConsensusService.get_cell_value(self)
+
+    def get_value_color(self, value):
+        """Get color for a numeric value based on its sign"""
+        if not self.value_type.is_numeric() or value is None:
+            return None
+
+        try:
+            numeric_value = float(value)
+            if numeric_value > 0:
+                return self.color_positive or '#28a745'
+            elif numeric_value < 0:
+                return self.color_negative or '#dc3545'
+            else:
+                return self.color_zero or '#6c757d'
+        except (ValueError, TypeError):
+            return None
 
     def __repr__(self):
         return f'<KPIValueTypeConfig kpi_id={self.kpi_id} value_type_id={self.value_type_id}>'

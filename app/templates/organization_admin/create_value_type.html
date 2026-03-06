@@ -9,35 +9,6 @@
     <div class="mb-3 numeric-only">{{ form.numeric_format.label }}{{ form.numeric_format(class="form-select") }}<small class="form-text text-muted"> For numeric types only</small></div>
     <div class="mb-3 numeric-only">{{ form.decimal_places.label }}{{ form.decimal_places(class="form-control") }}</div>
     <div class="mb-3 numeric-only">{{ form.unit_label.label }}{{ form.unit_label(class="form-control") }}</div>
-
-    <div class="mb-3 numeric-only">
-        <label class="form-label fw-bold">Display Colors (for numeric values)</label>
-        <div class="row g-3">
-            <div class="col-md-4">
-                {{ form.color_positive.label(class="form-label") }}
-                <div class="input-group">
-                    {{ form.color_positive(class="form-control form-control-color", type="color") }}
-                    <span class="input-group-text">Positive</span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                {{ form.color_zero.label(class="form-label") }}
-                <div class="input-group">
-                    {{ form.color_zero(class="form-control form-control-color", type="color") }}
-                    <span class="input-group-text">Zero/Null</span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                {{ form.color_negative.label(class="form-label") }}
-                <div class="input-group">
-                    {{ form.color_negative(class="form-control form-control-color", type="color") }}
-                    <span class="input-group-text">Negative</span>
-                </div>
-            </div>
-        </div>
-        <small class="form-text text-muted">Choose colors to highlight positive, negative, or zero values in the workspace</small>
-    </div>
-
     <div class="mb-3">{{ form.default_aggregation_formula.label }}{{ form.default_aggregation_formula(class="form-select") }}</div>
     <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
     <div class="mb-3">{{ form.is_active(class="form-check-input") }} {{ form.is_active.label(class="form-check-label") }}</div>

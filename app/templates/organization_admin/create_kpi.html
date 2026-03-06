@@ -9,11 +9,65 @@
     <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
     <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
     <div class="mb-3">
-        {{ form.value_type_ids.label }}
-        {{ form.value_type_ids(class="form-select", multiple=True, size=5) }}
-        <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple value types</small>
+        <label class="form-label fw-bold">Select Value Types and Configure Colors</label>
+        <small class="form-text text-muted d-block mb-2">Select value types and set colors for positive, zero, and negative values</small>
+
+        {% for choice_value, choice_label in form.value_type_ids.choices %}
+        {% set vt = value_types|selectattr('id', 'equalto', choice_value)|first %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <div class="form-check mb-3">
+                    <input class="form-check-input value-type-checkbox" type="checkbox"
+                           name="value_type_ids" value="{{ choice_value }}" id="vt_{{ choice_value }}">
+                    <label class="form-check-label fw-bold" for="vt_{{ choice_value }}">
+                        {{ choice_label }}
+                        <span class="badge bg-info ms-2">{{ vt.kind }}</span>
+                    </label>
+                </div>
+
+                {% if vt.kind == 'numeric' %}
+                <div class="color-config" id="colors_{{ choice_value }}" style="display: none;">
+                    <label class="form-label">Color Configuration</label>
+                    <div class="row g-2">
+                        <div class="col-md-4">
+                            <label class="form-label small">Positive Values</label>
+                            <input type="color" class="form-control form-control-color"
+                                   name="color_positive_{{ choice_value }}" value="#28a745">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Zero/Null Values</label>
+                            <input type="color" class="form-control form-control-color"
+                                   name="color_zero_{{ choice_value }}" value="#6c757d">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small">Negative Values</label>
+                            <input type="color" class="form-control form-control-color"
+                                   name="color_negative_{{ choice_value }}" value="#dc3545">
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Choose how to highlight positive, negative, and zero values for this KPI</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
     </div>
     {{ form.submit(class="btn btn-primary") }}
     <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle color config visibility when checkbox is clicked
+    document.querySelectorAll('.value-type-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const vtId = this.value;
+            const colorConfig = document.getElementById('colors_' + vtId);
+            if (colorConfig) {
+                colorConfig.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

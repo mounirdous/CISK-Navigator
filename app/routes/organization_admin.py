@@ -507,12 +507,23 @@ def create_kpi(link_id):
         db.session.add(kpi)
         db.session.flush()  # Get the ID
 
-        # Link selected value types
-        for vt_id in form.value_type_ids.data:
+        # Link selected value types with colors
+        selected_vt_ids = request.form.getlist('value_type_ids')
+        for vt_id in selected_vt_ids:
+            vt_id_int = int(vt_id)
+            
+            # Get color values from form
+            color_positive = request.form.get(f'color_positive_{vt_id}', '#28a745')
+            color_zero = request.form.get(f'color_zero_{vt_id}', '#6c757d')
+            color_negative = request.form.get(f'color_negative_{vt_id}', '#dc3545')
+            
             config = KPIValueTypeConfig(
                 kpi_id=kpi.id,
-                value_type_id=vt_id,
-                display_order=0
+                value_type_id=vt_id_int,
+                display_order=0,
+                color_positive=color_positive,
+                color_zero=color_zero,
+                color_negative=color_negative
             )
             db.session.add(config)
 
@@ -524,8 +535,8 @@ def create_kpi(link_id):
                           form=form,
                           link=link,
                           initiative=link.initiative,
-                          system=link.system)
-
+                          system=link.system,
+                          value_types=value_types)
 
 @bp.route('/kpis/<int:kpi_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -541,11 +552,25 @@ def edit_kpi(kpi_id):
         return redirect(url_for('organization_admin.spaces'))
 
     form = KPIEditForm(obj=kpi)
-
     if form.validate_on_submit():
         kpi.name = form.name.data
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data
+        
+        # Update colors for each value type config
+        for config in kpi.value_type_configs:
+            if config.value_type.kind == 'numeric':
+                color_positive = request.form.get(f'color_positive_{config.id}')
+                color_zero = request.form.get(f'color_zero_{config.id}')
+                color_negative = request.form.get(f'color_negative_{config.id}')
+
+                if color_positive:
+                    config.color_positive = color_positive
+                if color_zero:
+                    config.color_zero = color_zero
+                if color_negative:
+                    config.color_negative = color_negative
+
         db.session.commit()
         flash(f'KPI {kpi.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))
@@ -581,9 +606,6 @@ def create_value_type():
             decimal_places=form.decimal_places.data if form.kind.data == 'numeric' else None,
             unit_label=form.unit_label.data,
             default_aggregation_formula=form.default_aggregation_formula.data,
-            color_positive=form.color_positive.data if form.kind.data == 'numeric' else None,
-            color_zero=form.color_zero.data if form.kind.data == 'numeric' else None,
-            color_negative=form.color_negative.data if form.kind.data == 'numeric' else None,
             display_order=form.display_order.data,
             is_active=form.is_active.data
         )
@@ -615,16 +637,9 @@ def edit_value_type(vt_id):
             value_type.decimal_places = form.decimal_places.data
         if form.unit_label.data is not None:
             value_type.unit_label = form.unit_label.data
-        if value_type.kind == 'numeric':
-            if form.color_positive.data:
-                value_type.color_positive = form.color_positive.data
-            if form.color_zero.data:
-                value_type.color_zero = form.color_zero.data
-            if form.color_negative.data:
-                value_type.color_negative = form.color_negative.data
-            value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data
+        db.session.commit()
         flash(f'Value Type {value_type.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.value_types'))
 

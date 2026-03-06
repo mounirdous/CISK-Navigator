@@ -10,14 +10,24 @@ basedir = Path(__file__).parent.parent
 class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f'sqlite:///{basedir / "cisk.db"}'
+
+    # Database URI - handle Render's postgres:// and use psycopg3
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        # Render provides postgres://, SQLAlchemy needs postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        # Use psycopg3 driver (modern, compatible with Python 3.14)
+        if database_url.startswith('postgresql://') and '+' not in database_url:
+            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    SQLALCHEMY_DATABASE_URI = database_url or f'sqlite:///{basedir / "cisk.db"}'
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # Enable SQLite foreign keys
+    # Database engine options
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'connect_args': {'check_same_thread': False},
         'pool_pre_ping': True,
+        'pool_recycle': 300,
     }
 
     # WTF Forms

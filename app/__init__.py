@@ -82,6 +82,22 @@ def create_app(config_name=None):
             decimal_places = value_type.decimal_places if value_type.decimal_places is not None else 2
             return f'{float(value):.{decimal_places}f}'
 
+    @app.template_filter('default_value_color')
+    def default_value_color_filter(value):
+        """Get default color for a numeric value based on its sign (for rollups)"""
+        if value is None:
+            return None
+        try:
+            numeric_value = float(value)
+            if numeric_value > 0:
+                return '#28a745'  # green
+            elif numeric_value < 0:
+                return '#dc3545'  # red
+            else:
+                return '#6c757d'  # gray
+        except (ValueError, TypeError):
+            return None
+
     # Create tables and bootstrap admin
     with app.app_context():
         db.create_all()
