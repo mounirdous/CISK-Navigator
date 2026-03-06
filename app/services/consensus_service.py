@@ -49,10 +49,10 @@ class ConsensusService:
             contrib = contributions[0]
             value = contrib.numeric_value if contrib.numeric_value is not None else contrib.qualitative_level
             return {
-                'status': ConsensusService.STATUS_PENDING,
+                'status': ConsensusService.STATUS_STRONG,
                 'value': value,
                 'count': 1,
-                'is_rollup_eligible': False
+                'is_rollup_eligible': True  # Single contribution is valid!
             }
 
         # Extract values from contributions

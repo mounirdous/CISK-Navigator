@@ -2,11 +2,36 @@
 {% block title %}Edit Initiative{% endblock %}
 {% block content %}
 <h2>Edit Initiative: {{ initiative.name }}</h2>
-<form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
-    {{ form.submit(class="btn btn-primary") }}
-    <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
-</form>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button">Details</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="rollup-tab" data-bs-toggle="tab" data-bs-target="#rollup" type="button">⚙️ Rollup Config</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Details Tab -->
+    <div class="tab-pane fade show active" id="details" role="tabpanel">
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
+            <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+    <!-- Rollup Config Tab -->
+    <div class="tab-pane fade" id="rollup" role="tabpanel">
+        <div class="alert alert-info">
+            <strong>Configure Rollup from Systems to this Initiative</strong><br>
+            Choose which value types roll up from Systems to this Initiative.
+        </div>
+        <p class="text-muted">This feature is coming soon! Configure rollup rules for each value type.</p>
+        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Back</a>
+    </div>
+</div>
 {% endblock %}

@@ -431,7 +431,6 @@ Located in `app/services/consensus_service.py`.
 ```python
 class ConsensusService:
     STATUS_NO_DATA = 'no_data'
-    STATUS_PENDING = 'pending'
     STATUS_STRONG = 'strong'
     STATUS_WEAK = 'weak'
     STATUS_NO_CONSENSUS = 'no_consensus'
@@ -451,6 +450,10 @@ class ConsensusService:
 ```
 
 **Key Rule**: Only `STATUS_STRONG` with `is_rollup_eligible=True` participates in roll-ups.
+
+**Strong Consensus** means:
+- Single contribution (one person's input is valid), OR
+- Multiple contributions with unanimous agreement
 
 ### AggregationService
 

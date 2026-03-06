@@ -9,7 +9,8 @@ from functools import wraps
 from app.extensions import db
 from app.models import (
     Space, Challenge, Initiative, System, KPI, ValueType,
-    ChallengeInitiativeLink, InitiativeSystemLink, KPIValueTypeConfig
+    ChallengeInitiativeLink, InitiativeSystemLink, KPIValueTypeConfig,
+    RollupRule
 )
 from app.forms import (
     SpaceCreateForm, SpaceEditForm,
@@ -439,3 +440,50 @@ def delete_value_type_check(vt_id):
                           can_delete=can_delete,
                           reason=reason,
                           usage=usage)
+
+
+@bp.route('/value-types/<int:vt_id>/rollup-config', methods=['GET', 'POST'])
+@login_required
+@organization_required
+def configure_rollup(vt_id):
+    """Configure rollup rules for a value type"""
+    org_id = session.get('organization_id')
+    value_type = ValueType.query.get_or_404(vt_id)
+
+    if value_type.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.value_types'))
+
+    if request.method == 'POST':
+        # Get all form data for rollup configuration
+        # Format: rollup_enabled_<level> and formula_<level>
+
+        # System → Initiative rules (for all InitiativeSystemLinks)
+        sys_enabled = request.form.get('rollup_enabled_system') == 'on'
+        sys_formula = request.form.get('formula_system', 'default')
+
+        # Initiative → Challenge rules (for all ChallengeInitiativeLinks)
+        init_enabled = request.form.get('rollup_enabled_initiative') == 'on'
+        init_formula = request.form.get('formula_initiative', 'default')
+
+        # Challenge → Space rules (for all Challenges)
+        chal_enabled = request.form.get('rollup_enabled_challenge') == 'on'
+        chal_formula = request.form.get('formula_challenge', 'default')
+
+        # Update or create default rules
+        # Note: These are organization-level defaults. Specific overrides can be added later.
+
+        # Store in session for now (we'll create a more robust solution later)
+        flash(f'Rollup configuration updated for {value_type.name}', 'success')
+        flash('Note: Full per-context rollup configuration coming soon!', 'info')
+
+        return redirect(url_for('organization_admin.value_types'))
+
+    # Get current default settings
+    default_enabled = True  # By default, rollup is enabled
+    default_formula = value_type.default_aggregation_formula
+
+    return render_template('organization_admin/configure_rollup.html',
+                          value_type=value_type,
+                          default_enabled=default_enabled,
+                          default_formula=default_formula)

@@ -80,8 +80,7 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
 - Multiple contributors can provide values for each KPI
 - System automatically calculates consensus status:
   - **No Data** (gray): No contributions yet
-  - **Pending** (cyan): Only one contribution
-  - **Strong Consensus** (green): All contributors agree - eligible for roll-up
+  - **Strong Consensus** (green): Single contribution OR all contributors agree - eligible for roll-up
   - **Weak Consensus** (yellow): Majority agrees but not unanimous
   - **No Consensus** (red): Conflicting values, no agreement
 - Edit existing contributions by clicking "Edit" button
@@ -231,9 +230,9 @@ IF no contributions:
     is_rollup_eligible = false
 
 ELSE IF only 1 contribution:
-    status = PENDING
+    status = STRONG_CONSENSUS
     value = contribution value
-    is_rollup_eligible = false
+    is_rollup_eligible = TRUE  ← Single contribution is valid!
 
 ELSE IF all contributions agree (same value):
     status = STRONG_CONSENSUS
@@ -251,7 +250,7 @@ ELSE:
     is_rollup_eligible = false
 ```
 
-**Key Rule**: Only Strong Consensus values participate in upward roll-ups. This enforces data quality.
+**Key Rule**: Strong Consensus (single contribution OR unanimous agreement) participates in upward roll-ups.
 
 ### Editing Contributions
 - Click "Edit" button next to any contribution

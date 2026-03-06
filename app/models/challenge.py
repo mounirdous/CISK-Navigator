@@ -30,5 +30,14 @@ class Challenge(db.Model):
                                        back_populates='challenge',
                                        cascade='all, delete-orphan')
 
+    def get_rollup_value(self, value_type_id):
+        """Get rolled-up value from initiatives for this challenge"""
+        from app.services import AggregationService
+        try:
+            result = AggregationService.get_initiative_to_challenge_rollup(self.id, value_type_id)
+            return result
+        except Exception:
+            return None
+
     def __repr__(self):
         return f'<Challenge {self.name}>'

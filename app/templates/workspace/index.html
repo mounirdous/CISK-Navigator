@@ -8,7 +8,15 @@
 <div class="alert alert-info">
     <strong>Tree/Grid Navigation</strong><br>
     This is the main workspace where you navigate through the organization structure.<br>
-    Spaces are shown below. Click to expand and see Challenges → Initiatives → Systems → KPIs.
+    <ul class="mb-0 mt-2">
+        <li><strong>KPI level</strong> (yellow): Enter contributions, consensus calculated automatically</li>
+        <li><strong>System level</strong> (light blue): Rolled-up from KPIs</li>
+        <li><strong>Initiative level</strong> (gray): Rolled-up from Systems</li>
+        <li><strong>Challenge level</strong> (light gray): Rolled-up from Initiatives</li>
+        <li><strong>Space level</strong> (blue): Rolled-up from Challenges</li>
+        <li><strong>✓</strong> = Complete data | <strong>⚠</strong> = Partial data (some children missing strong consensus)</li>
+    </ul>
+    Configure rollup rules per entity: Edit any System/Initiative/Challenge → <strong>⚙️ Rollup Config</strong> tab
 </div>
 
 <div class="mb-3">
@@ -45,9 +53,23 @@
                         {% endif %}
                     </td>
                     {% for vt in value_types %}
-                    <td class="text-center text-muted">
-                        <small>Click to expand</small>
-                    </td>
+                        {% set rollup = space.get_rollup_value(vt.id) %}
+                        <td class="text-center" style="background-color: #d6e9f7; font-weight: bold;">
+                            {% if rollup %}
+                                {% if vt.kind == 'numeric' %}
+                                    {{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
+                                {% elif vt.kind == 'risk' %}
+                                    {% if rollup.value == 1 %}!{% elif rollup.value == 2 %}!!{% elif rollup.value == 3 %}!!!{% endif %}
+                                {% elif vt.kind == 'positive_impact' %}
+                                    {% if rollup.value == 1 %}★{% elif rollup.value == 2 %}★★{% elif rollup.value == 3 %}★★★{% endif %}
+                                {% elif vt.kind == 'negative_impact' %}
+                                    {% if rollup.value == 1 %}▼{% elif rollup.value == 2 %}▼▼{% elif rollup.value == 3 %}▼▼▼{% endif %}
+                                {% endif %}
+                                <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
+                            {% else %}
+                                <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
                     {% endfor %}
                 </tr>
 
@@ -59,9 +81,23 @@
                         → {{ challenge.name }}
                     </td>
                     {% for vt in value_types %}
-                    <td class="text-center text-muted">
-                        <small>—</small>
-                    </td>
+                        {% set rollup = challenge.get_rollup_value(vt.id) %}
+                        <td class="text-center" style="background-color: #f0f4f8;">
+                            {% if rollup %}
+                                {% if vt.kind == 'numeric' %}
+                                    <strong>{{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                {% elif vt.kind == 'risk' %}
+                                    {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
+                                {% elif vt.kind == 'positive_impact' %}
+                                    {% if rollup.value == 1 %}<strong>★</strong>{% elif rollup.value == 2 %}<strong>★★</strong>{% elif rollup.value == 3 %}<strong>★★★</strong>{% endif %}
+                                {% elif vt.kind == 'negative_impact' %}
+                                    {% if rollup.value == 1 %}<strong>▼</strong>{% elif rollup.value == 2 %}<strong>▼▼</strong>{% elif rollup.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                {% endif %}
+                                <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
+                            {% else %}
+                                <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
                     {% endfor %}
                 </tr>
 
@@ -74,9 +110,23 @@
                         ⮕ {{ initiative.name }}
                     </td>
                     {% for vt in value_types %}
-                    <td class="text-center text-muted">
-                        <small>—</small>
-                    </td>
+                        {% set rollup = initiative.get_rollup_value(vt.id) %}
+                        <td class="text-center" style="background-color: #eff6f9;">
+                            {% if rollup %}
+                                {% if vt.kind == 'numeric' %}
+                                    <strong>{{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                {% elif vt.kind == 'risk' %}
+                                    {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
+                                {% elif vt.kind == 'positive_impact' %}
+                                    {% if rollup.value == 1 %}<strong>★</strong>{% elif rollup.value == 2 %}<strong>★★</strong>{% elif rollup.value == 3 %}<strong>★★★</strong>{% endif %}
+                                {% elif vt.kind == 'negative_impact' %}
+                                    {% if rollup.value == 1 %}<strong>▼</strong>{% elif rollup.value == 2 %}<strong>▼▼</strong>{% elif rollup.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                {% endif %}
+                                <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
+                            {% else %}
+                                <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
                     {% endfor %}
                 </tr>
 
@@ -89,9 +139,25 @@
                         ⇨ {{ system.name }}
                     </td>
                     {% for vt in value_types %}
-                    <td class="text-center text-muted">
-                        <small>—</small>
-                    </td>
+                        {% set rollup = sys_link.get_rollup_value(vt.id) %}
+                        <td class="text-center" style="background-color: #e8f4f8;">
+                            {% if rollup %}
+                                <div>
+                                    {% if vt.kind == 'numeric' %}
+                                        <strong>{{ rollup.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    {% elif vt.kind == 'risk' %}
+                                        {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
+                                    {% elif vt.kind == 'positive_impact' %}
+                                        {% if rollup.value == 1 %}<strong>★</strong>{% elif rollup.value == 2 %}<strong>★★</strong>{% elif rollup.value == 3 %}<strong>★★★</strong>{% endif %}
+                                    {% elif vt.kind == 'negative_impact' %}
+                                        {% if rollup.value == 1 %}<strong>▼</strong>{% elif rollup.value == 2 %}<strong>▼▼</strong>{% elif rollup.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ '✓' if rollup.is_complete else '⚠' }} Rollup</small>
+                            {% else %}
+                                <small class="text-muted">—</small>
+                            {% endif %}
+                        </td>
                     {% endfor %}
                 </tr>
 

@@ -31,6 +31,15 @@ class Initiative(db.Model):
                                    back_populates='initiative',
                                    cascade='all, delete-orphan')
 
+    def get_rollup_value(self, value_type_id):
+        """Get rolled-up value from systems for this initiative"""
+        from app.services import AggregationService
+        try:
+            result = AggregationService.get_system_to_initiative_rollup(self.id, value_type_id)
+            return result
+        except Exception:
+            return None
+
     def __repr__(self):
         return f'<Initiative {self.name}>'
 

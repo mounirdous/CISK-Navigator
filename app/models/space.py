@@ -27,5 +27,14 @@ class Space(db.Model):
     organization = db.relationship('Organization', back_populates='spaces')
     challenges = db.relationship('Challenge', back_populates='space', cascade='all, delete-orphan')
 
+    def get_rollup_value(self, value_type_id):
+        """Get rolled-up value from challenges for this space"""
+        from app.services import AggregationService
+        try:
+            result = AggregationService.get_challenge_to_space_rollup(self.id, value_type_id)
+            return result
+        except Exception:
+            return None
+
     def __repr__(self):
         return f'<Space {self.name}>'

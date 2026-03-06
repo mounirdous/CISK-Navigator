@@ -64,5 +64,14 @@ class InitiativeSystemLink(db.Model):
                                    cascade='all, delete-orphan',
                                    viewonly=True)
 
+    def get_rollup_value(self, value_type_id):
+        """Get rolled-up value from KPIs for this system-initiative link"""
+        from app.services import AggregationService
+        try:
+            result = AggregationService.get_kpi_to_system_rollup(self, value_type_id)
+            return result
+        except Exception:
+            return None
+
     def __repr__(self):
         return f'<InitiativeSystemLink initiative_id={self.initiative_id} system_id={self.system_id}>'
