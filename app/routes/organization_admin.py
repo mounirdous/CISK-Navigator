@@ -572,6 +572,30 @@ def create_value_type():
     return render_template('organization_admin/create_value_type.html', form=form)
 
 
+@bp.route('/value-types/<int:vt_id>/edit', methods=['GET', 'POST'])
+@login_required
+@organization_required
+def edit_value_type(vt_id):
+    """Edit a value type"""
+    org_id = session.get('organization_id')
+    value_type = ValueType.query.get_or_404(vt_id)
+
+    if value_type.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.value_types'))
+
+    form = ValueTypeEditForm(obj=value_type)
+
+    if form.validate_on_submit():
+        value_type.name = form.name.data
+        value_type.is_active = form.is_active.data
+        value_type.display_order = form.display_order.data
+        db.session.commit()
+        flash(f'Value Type {value_type.name} updated successfully', 'success')
+        return redirect(url_for('organization_admin.value_types'))
+
+    return render_template('organization_admin/edit_value_type.html', form=form, value_type=value_type)
+
 @bp.route('/value-types/<int:vt_id>/delete-check')
 @login_required
 @organization_required

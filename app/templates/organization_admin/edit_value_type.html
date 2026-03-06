@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Edit Value Type{% endblock %}
+{% block content %}
+<h2>Edit Value Type: {{ value_type.name }}</h2>
+
+<div class="alert alert-info">
+    <strong>Note:</strong> You can only edit the name, display order, and active status.
+    The kind, format, and aggregation formula cannot be changed after creation to maintain data integrity.
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Current Configuration</h5>
+        <dl class="row">
+            <dt class="col-sm-3">Kind:</dt>
+            <dd class="col-sm-9"><span class="badge bg-info">{{ value_type.kind }}</span></dd>
+
+            {% if value_type.kind == 'numeric' %}
+            <dt class="col-sm-3">Format:</dt>
+            <dd class="col-sm-9">{{ value_type.numeric_format }} ({{ value_type.decimal_places }} decimal places)</dd>
+            {% endif %}
+
+            {% if value_type.unit_label %}
+            <dt class="col-sm-3">Unit:</dt>
+            <dd class="col-sm-9">{{ value_type.unit_label }}</dd>
+            {% endif %}
+
+            <dt class="col-sm-3">Default Formula:</dt>
+            <dd class="col-sm-9"><span class="badge bg-secondary">{{ value_type.default_aggregation_formula }}</span></dd>
+        </dl>
+    </div>
+</div>
+
+<form method="POST" class="mt-4">
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.name.label }}
+        {{ form.name(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        {{ form.display_order.label }}
+        {{ form.display_order(class="form-control") }}
+    </div>
+
+    <div class="mb-3">
+        <div class="form-check">
+            {{ form.is_active(class="form-check-input") }}
+            {{ form.is_active.label(class="form-check-label") }}
+        </div>
+    </div>
+
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

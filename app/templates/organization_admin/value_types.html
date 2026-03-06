@@ -25,6 +25,7 @@
                 {% endif %}
             </td>
             <td>
+                <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                 <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}" class="btn btn-sm btn-outline-danger">Delete...</a>
             </td>
         </tr>
