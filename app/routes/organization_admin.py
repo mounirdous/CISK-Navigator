@@ -561,6 +561,9 @@ def create_value_type():
             decimal_places=form.decimal_places.data if form.kind.data == 'numeric' else None,
             unit_label=form.unit_label.data,
             default_aggregation_formula=form.default_aggregation_formula.data,
+            color_positive=form.color_positive.data if form.kind.data == 'numeric' else None,
+            color_zero=form.color_zero.data if form.kind.data == 'numeric' else None,
+            color_negative=form.color_negative.data if form.kind.data == 'numeric' else None,
             display_order=form.display_order.data,
             is_active=form.is_active.data
         )
@@ -591,6 +594,14 @@ def edit_value_type(vt_id):
         if value_type.kind == 'numeric' and form.decimal_places.data is not None:
             value_type.decimal_places = form.decimal_places.data
         if form.unit_label.data is not None:
+            value_type.unit_label = form.unit_label.data
+        if value_type.kind == 'numeric':
+            if form.color_positive.data:
+                value_type.color_positive = form.color_positive.data
+            if form.color_zero.data:
+                value_type.color_zero = form.color_zero.data
+            if form.color_negative.data:
+                value_type.color_negative = form.color_negative.data
             value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data

@@ -74,7 +74,7 @@
             <td>{{ contrib.contributor_name }}</td>
             <td>
                 {% if contrib.numeric_value is not none %}
-                    {{ contrib.numeric_value|format_value(value_type) }}
+                    <span style="color: {{ value_type.get_value_color(contrib.numeric_value) }};">{{ contrib.numeric_value|format_value(value_type) }}</span>
                     {% if value_type.unit_label %}
                         {{ value_type.unit_label }}
                     {% endif %}
