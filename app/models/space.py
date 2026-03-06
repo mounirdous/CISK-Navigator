@@ -36,5 +36,16 @@ class Space(db.Model):
         except Exception:
             return None
 
+    def get_color_config(self, value_type_id):
+        """Get a representative KPIValueTypeConfig for coloring rollups"""
+        for challenge in self.challenges:
+            for init_link in challenge.initiative_links:
+                for sys_link in init_link.initiative.system_links:
+                    for kpi in sys_link.kpis:
+                        for config in kpi.value_type_configs:
+                            if config.value_type_id == value_type_id:
+                                return config
+        return None
+
     def __repr__(self):
         return f'<Space {self.name}>'
