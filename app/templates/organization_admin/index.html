@@ -13,8 +13,8 @@
                 <ul class="list-unstyled">
                     <li><a href="{{ url_for('organization_admin.spaces') }}">Spaces ({{ stats.spaces }})</a></li>
                     <li><a href="{{ url_for('organization_admin.challenges') }}">Challenges ({{ stats.challenges }})</a></li>
-                    <li><a href="#">Initiatives ({{ stats.initiatives }})</a></li>
-                    <li><a href="#">Systems ({{ stats.systems }})</a></li>
+                    <li><a href="{{ url_for('organization_admin.initiatives') }}">Initiatives ({{ stats.initiatives }})</a></li>
+                    <li><a href="{{ url_for('organization_admin.systems') }}">Systems ({{ stats.systems }})</a></li>
                 </ul>
             </div>
         </div>

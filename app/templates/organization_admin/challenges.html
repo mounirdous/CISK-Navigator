@@ -16,7 +16,9 @@
             <td>{{ challenge.name }}</td>
             <td>{{ challenge.space.name }}</td>
             <td>{{ challenge.description[:50] if challenge.description else '-' }}</td>
-            <td><a href="#" class="btn btn-sm btn-outline-primary">Edit</a></td>
+            <td>
+                <a href="{{ url_for('organization_admin.edit_challenge', challenge_id=challenge.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            </td>
         </tr>
         {% endfor %}
     </tbody>

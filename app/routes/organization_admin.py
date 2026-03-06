@@ -143,6 +143,26 @@ def challenges():
     return render_template('organization_admin/challenges.html', challenges=challenges)
 
 
+@bp.route('/initiatives')
+@login_required
+@organization_required
+def initiatives():
+    """List all initiatives"""
+    org_id = session.get('organization_id')
+    initiatives = Initiative.query.filter_by(organization_id=org_id).all()
+    return render_template('organization_admin/initiatives.html', initiatives=initiatives)
+
+
+@bp.route('/systems')
+@login_required
+@organization_required
+def systems():
+    """List all systems"""
+    org_id = session.get('organization_id')
+    systems = System.query.filter_by(organization_id=org_id).all()
+    return render_template('organization_admin/systems.html', systems=systems)
+
+
 @bp.route('/spaces/<int:space_id>/challenges/create', methods=['GET', 'POST'])
 @login_required
 @organization_required

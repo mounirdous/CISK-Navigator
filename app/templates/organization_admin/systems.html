@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Systems{% endblock %}
+{% block content %}
+<h2>Systems</h2>
+<div class="mb-3">
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
+</div>
+
+{% if systems %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Linked Initiatives</th>
+            <th>KPIs</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for system in systems %}
+        <tr>
+            <td><strong>{{ system.name }}</strong></td>
+            <td>{{ system.description[:80] if system.description else '-' }}</td>
+            <td>
+                {% if system.initiative_links %}
+                    {{ system.initiative_links|length }} initiative(s)
+                {% else %}
+                    <span class="text-muted">None</span>
+                {% endif %}
+            </td>
+            <td>
+                {% set total_kpis = 0 %}
+                {% for link in system.initiative_links %}
+                    {% set total_kpis = total_kpis + link.kpis|length %}
+                {% endfor %}
+                {% if total_kpis > 0 %}
+                    {{ total_kpis }} KPI(s)
+                {% else %}
+                    <span class="text-muted">None</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('organization_admin.edit_system', system_id=system.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">
+    No systems found. Create systems from the Spaces view by clicking "+ System" on an initiative.
+</div>
+{% endif %}
+{% endblock %}

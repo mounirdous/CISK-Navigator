@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Initiatives{% endblock %}
+{% block content %}
+<h2>Initiatives</h2>
+<div class="mb-3">
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
+</div>
+
+{% if initiatives %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Linked Challenges</th>
+            <th>Linked Systems</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for initiative in initiatives %}
+        <tr>
+            <td><strong>{{ initiative.name }}</strong></td>
+            <td>{{ initiative.description[:80] if initiative.description else '-' }}</td>
+            <td>
+                {% if initiative.challenge_links %}
+                    {{ initiative.challenge_links|length }} challenge(s)
+                {% else %}
+                    <span class="text-muted">None</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if initiative.system_links %}
+                    {{ initiative.system_links|length }} system(s)
+                {% else %}
+                    <span class="text-muted">None</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert alert-info">
+    No initiatives found. Create initiatives from the Spaces view by clicking "+ Initiative" on a challenge.
+</div>
+{% endif %}
+{% endblock %}
