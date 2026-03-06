@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Delete Organization - Preview{% endblock %}
+{% block content %}
+<h2>Delete Organization: {{ org.name }}</h2>
+
+<div class="alert alert-danger">
+    <h4>⚠️ Warning: This action cannot be undone!</h4>
+    <p>Deleting this organization will permanently delete all associated data.</p>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5>Deletion Impact</h5></div>
+    <div class="card-body">
+        <ul>
+            <li><strong>{{ impact.spaces }}</strong> spaces</li>
+            <li><strong>{{ impact.challenges }}</strong> challenges</li>
+            <li><strong>{{ impact.initiatives }}</strong> initiatives</li>
+            <li><strong>{{ impact.systems }}</strong> systems</li>
+            <li><strong>{{ impact.value_types }}</strong> value types</li>
+            <li>All associated KPIs, contributions, and roll-up rules</li>
+        </ul>
+    </div>
+</div>
+
+<div class="mt-4">
+    <form method="POST" action="{{ url_for('global_admin.delete_organization', org_id=org.id) }}">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you absolutely sure? Type the organization name to confirm.')">
+            Confirm Deletion
+        </button>
+        <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

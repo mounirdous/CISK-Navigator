@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Spaces{% endblock %}
+{% block content %}
+<h2>Spaces</h2>
+<div class="mb-3">
+    <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-primary">Create Space</a>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr><th>Name</th><th>Description</th><th>Order</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for space in spaces %}
+        <tr>
+            <td><strong>{{ space.name }}</strong></td>
+            <td>{{ space.description[:80] if space.description else '-' }}</td>
+            <td>{{ space.display_order }}</td>
+            <td>
+                <a href="{{ url_for('organization_admin.edit_space', space_id=space.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('organization_admin.create_challenge', space_id=space.id) }}" class="btn btn-sm btn-success">+ Challenge</a>
+                <form method="POST" action="{{ url_for('organization_admin.delete_space', space_id=space.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete space {{ space.name }}?')">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% if space.challenges %}
+            {% for challenge in space.challenges %}
+            <tr class="table-light">
+                <td style="padding-left: 2rem;">→ {{ challenge.name }}</td>
+                <td>{{ challenge.description[:80] if challenge.description else '-' }}</td>
+                <td>{{ challenge.display_order }}</td>
+                <td>
+                    <a href="{{ url_for('organization_admin.edit_challenge', challenge_id=challenge.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <a href="{{ url_for('organization_admin.create_initiative', challenge_id=challenge.id) }}" class="btn btn-sm btn-success">+ Initiative</a>
+                </td>
+            </tr>
+            {% for link in challenge.initiative_links %}
+                {% set initiative = link.initiative %}
+                <tr class="table-secondary">
+                    <td style="padding-left: 4rem;">⮕ {{ initiative.name }}</td>
+                    <td>{{ initiative.description[:80] if initiative.description else '-' }}</td>
+                    <td>-</td>
+                    <td>
+                        <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <a href="{{ url_for('organization_admin.create_system', initiative_id=initiative.id) }}" class="btn btn-sm btn-success">+ System</a>
+                    </td>
+                </tr>
+                {% for sys_link in initiative.system_links %}
+                    {% set system = sys_link.system %}
+                    <tr class="table-info">
+                        <td style="padding-left: 6rem;">⇨ {{ system.name }}</td>
+                        <td>{{ system.description[:80] if system.description else '-' }}</td>
+                        <td>-</td>
+                        <td>
+                            <a href="{{ url_for('organization_admin.edit_system', system_id=system.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            <a href="{{ url_for('organization_admin.create_kpi', link_id=sys_link.id) }}" class="btn btn-sm btn-success">+ KPI</a>
+                        </td>
+                    </tr>
+                    {% for kpi in sys_link.kpis %}
+                        <tr class="table-warning">
+                            <td style="padding-left: 8rem;">⟹ {{ kpi.name }}</td>
+                            <td>{{ kpi.description[:80] if kpi.description else '-' }}</td>
+                            <td>{{ kpi.display_order }}</td>
+                            <td>
+                                <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endfor %}
+            {% endfor %}
+            {% endfor %}
+        {% endif %}
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

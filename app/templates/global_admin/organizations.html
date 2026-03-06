@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Organizations - Global Administration{% endblock %}
+
+{% block content %}
+<h2>Organization Management</h2>
+
+<div class="mb-3">
+    <a href="{{ url_for('global_admin.create_organization') }}" class="btn btn-primary">Create New Organization</a>
+    <a href="{{ url_for('global_admin.index') }}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Users</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for org in organizations %}
+        <tr>
+            <td>{{ org.name }}</td>
+            <td>{{ org.description[:50] if org.description else '-' }}</td>
+            <td>
+                {% if org.is_active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+            <td>{{ org.user_memberships|length }} user(s)</td>
+            <td>
+                <a href="{{ url_for('global_admin.edit_organization', org_id=org.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('global_admin.delete_organization_preview', org_id=org.id) }}" class="btn btn-sm btn-outline-warning">Delete...</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

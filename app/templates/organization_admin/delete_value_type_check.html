@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Delete Value Type - Check{% endblock %}
+{% block content %}
+<h2>Delete Value Type: {{ value_type.name }}</h2>
+
+{% if can_delete %}
+    <div class="alert alert-success">
+        <h4>✓ This value type can be deleted</h4>
+        <p>It is not currently in use.</p>
+    </div>
+    <form method="POST" action="#">
+        <button type="submit" class="btn btn-danger">Confirm Deletion</button>
+        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% else %}
+    <div class="alert alert-danger">
+        <h4>✗ This value type cannot be deleted</h4>
+        <p><strong>Reason:</strong> {{ reason }}</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h5>Usage Details</h5></div>
+        <div class="card-body">
+            {% if usage.usage.kpi_configs %}
+                <h6>Used in {{ usage.usage.kpi_configs|length }} KPI(s):</h6>
+                <ul>
+                    {% for config in usage.usage.kpi_configs %}
+                    <li>
+                        <strong>{{ config.kpi_name }}</strong> (System: {{ config.system_name }}, Initiative: {{ config.initiative_name }})
+                        <br>{{ config.contributions_count }} contribution(s)
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if usage.usage.rollup_rules_count > 0 %}
+                <p>Referenced by <strong>{{ usage.usage.rollup_rules_count }}</strong> roll-up rule(s)</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <p><strong>Suggestion:</strong> Deactivate this value type instead of deleting it, or remove it from all KPIs first.</p>
+        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Back to Value Types</a>
+    </div>
+{% endif %}
+{% endblock %}

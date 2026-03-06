@@ -34,7 +34,17 @@ nohup.out
 !README.md
 !ARCHITECTURE.md
 !DEPLOYMENT.md
+!DEPLOYMENT_NEW_APP.md
+!NEW_APP_SUMMARY.md
+!README_NEW_APP.md
+!app/SPECIFICATIONS.md
+!app/ARCHITECTURE.md
 START_HERE_README.txt
+
+# Database files (local only)
+*.db
+*.sqlite
+*.sqlite3
 
 # Local development notes (not for GitHub)
 .dev-notes

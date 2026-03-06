@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Global Administration{% endblock %}
+
+{% block content %}
+<h2>Global Administration</h2>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Users</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Manage user accounts and permissions.</p>
+                <p><strong>{{ user_count }}</strong> users in system</p>
+                <a href="{{ url_for('global_admin.users') }}" class="btn btn-primary">Manage Users</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Organizations</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Manage organizations and their data.</p>
+                <p><strong>{{ org_count }}</strong> organizations</p>
+                <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-primary">Manage Organizations</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

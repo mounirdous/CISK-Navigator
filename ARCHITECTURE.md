@@ -1,742 +1,738 @@
-# CISK Navigator - Architecture Documentation
+# CISK Navigator - Technical Architecture
+
+This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Technology Stack](#technology-stack)
+3. [Application Structure](#application-structure)
+4. [Data Model](#data-model)
+5. [Business Logic](#business-logic)
+6. [Authentication & Authorization](#authentication--authorization)
+7. [Consensus Model](#consensus-model)
+8. [Roll-up Aggregation](#roll-up-aggregation)
+9. [Deletion Rules](#deletion-rules)
+10. [Code Organization](#code-organization)
 
 ## Overview
-CISK Navigator is a Flask-based web application for visualizing relationships between Challenges, Initiatives, Systems, and KPIs. It provides three interactive views: Column view (traditional hierarchical layout), Graph view (force-directed network visualization), and Flow view (Sankey diagram showing relationship strength).
 
-**Current Version:** 2.7.6
-**Local Development:** http://localhost:5002
-**Deployment:** https://cisk-navigator.onrender.com/
-**GitHub:** https://github.com/mounirdous/CISK-Navigator
+CISK Navigator is a Flask monolith application using SQLite as the database. It follows the application factory pattern and uses Flask Blueprints for modular route organization.
 
-## Recent Updates (v2.7.x)
-- **v2.7.6** (2026-02-09): Fixed orphaned nodes in Graph view - nodes without visible links no longer appear
-- **v2.7.5** (2026-02-09): Graph and Flow view selections sync back to Column view - full bidirectional sync
-- **v2.7.4** (2026-02-09): Flow view uses gradient colors - flows transition from source color to target color
-- **v2.7.3** (2026-02-09): Flow view shows selected node with visual highlight and selection indicator
-- **v2.7.2** (2026-02-09): Column view selections properly sync to Graph and Flow views
-- **v2.7.1** (2026-02-09): Flow view selections sync to Graph view, filters persist when switching views
-- **v2.7.0** (2026-02-09): Flow view redesigned with colored dots instead of boxes
-- **v2.6.x** (2026-02-09): Flow View (Sankey diagram) implementation, season filtering, selection sync
-- **v2.5.x** (2026-02-07): Color customization, mobile touch support, mouse wheel zoom, tooltips
-- **v2.4.0** (2026-02-07): Analytics tracking support via YAML meta.tracking_code field
+The application is designed to be:
+- **Local-first**: Runs entirely on a local machine without external dependencies
+- **Simple to deploy**: Single SQLite file, no separate database server
+- **Migration-ready**: Structured to allow future migration to PostgreSQL
+- **Well-tested**: Comprehensive test coverage with pytest
 
----
+## Technology Stack
 
-## Project Structure
+### Core Framework
+- **Python 3.11+**: Modern Python with type hints support
+- **Flask 3.0**: Lightweight WSGI web framework
+- **SQLite**: Embedded relational database
+
+### Flask Extensions
+- **Flask-SQLAlchemy 3.1**: ORM for database interactions
+- **Flask-Migrate 4.0**: Database migration management via Alembic
+- **Flask-Login 0.6**: User session management
+- **Flask-WTF 1.2**: Form handling and CSRF protection
+- **Werkzeug 3.0**: Password hashing and utilities
+
+### Frontend
+- **Bootstrap 5**: Responsive UI framework
+- **Vanilla JavaScript**: Minimal JavaScript for interactivity
+
+### Testing
+- **pytest 7.4**: Testing framework
+- **pytest-flask 1.3**: Flask-specific test fixtures
+
+## Application Structure
+
+### Directory Layout
 
 ```
-CISK-Navigator/
-├── app.py                          # Flask application (backend)
-├── data/
-│   └── full_sample_enhanced.yaml   # Sample data file
-├── templates/
-│   ├── navigator_enhanced.html     # Main interactive UI
-│   └── upload.html                 # File upload interface
-├── static/                         # Static assets (if any)
-├── requirements.txt                # Python dependencies
-└── render.yaml                     # Render deployment config
+app/
+├── __init__.py              # Application factory
+├── config.py                # Configuration classes
+├── extensions.py            # Flask extension instances
+├── run.py                   # Application entry point
+│
+├── models/                  # Database models (SQLAlchemy)
+│   ├── __init__.py
+│   ├── user.py             # User and authentication
+│   ├── organization.py     # Organization and memberships
+│   ├── space.py            # Space model
+│   ├── challenge.py        # Challenge model
+│   ├── initiative.py       # Initiative and ChallengeInitiativeLink
+│   ├── system.py           # System and InitiativeSystemLink
+│   ├── kpi.py              # KPI model
+│   ├── value_type.py       # ValueType and KPIValueTypeConfig
+│   ├── contribution.py     # Contribution model
+│   └── rollup_rule.py      # RollupRule model
+│
+├── forms/                   # WTForms for validation
+│   ├── __init__.py
+│   ├── auth_forms.py       # Login, password change
+│   ├── user_forms.py       # User management
+│   ├── organization_forms.py
+│   ├── space_forms.py
+│   ├── challenge_forms.py
+│   ├── initiative_forms.py
+│   ├── system_forms.py
+│   ├── kpi_forms.py
+│   ├── value_type_forms.py
+│   └── contribution_forms.py
+│
+├── routes/                  # Flask Blueprints
+│   ├── __init__.py
+│   ├── auth.py             # Authentication routes
+│   ├── global_admin.py     # Global administration
+│   ├── organization_admin.py # Organization administration
+│   └── workspace.py        # Main workspace and data entry
+│
+├── services/                # Business logic services
+│   ├── __init__.py
+│   ├── consensus_service.py        # Consensus calculation
+│   ├── aggregation_service.py      # Roll-up aggregation
+│   ├── deletion_impact_service.py  # Deletion impact analysis
+│   └── value_type_usage_service.py # Value type usage checking
+│
+├── templates/               # Jinja2 templates
+│   ├── base.html           # Base layout
+│   ├── auth/               # Authentication templates
+│   ├── global_admin/       # Global admin templates
+│   ├── organization_admin/ # Org admin templates
+│   └── workspace/          # Workspace templates
+│
+└── static/                  # Static assets
+    ├── css/
+    └── js/
 ```
 
----
+### Application Factory Pattern
 
-## Backend Architecture (app.py)
+The application uses the factory pattern for flexible configuration:
 
-### Flask Routes
+```python
+# app/__init__.py
+def create_app(config_name=None):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
 
-1. **`/` (GET)** - Main application
-   - Loads `full_sample_enhanced.yaml`
-   - Auto-detects format (enhanced vs legacy)
-   - Extracts `title` and `version` from YAML meta section
-   - Passes both `data_version` (from YAML) and `app_version` (APP_VERSION constant)
-   - Renders `navigator_enhanced.html` with data
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
 
-2. **`/upload` (GET/POST)` - File upload interface
-   - GET: Shows upload form (`upload.html`) with APP_VERSION
-   - POST: Accepts YAML file, parses it, renders navigator with uploaded data
-   - Extracts title and version from uploaded YAML
-   - Returns statistics about uploaded data
+    # Register blueprints
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(global_admin.bp)
+    app.register_blueprint(organization_admin.bp)
+    app.register_blueprint(workspace.bp)
 
-3. **`/api/data` (GET)** - JSON API endpoint
-   - Returns current data as JSON
-   - Used for debugging/external integrations
+    # Bootstrap admin
+    with app.app_context():
+        db.create_all()
+        _bootstrap_admin()
 
-4. **`/generate` (POST)** - Standalone HTML generator
-   - Accepts YAML file
-   - Extracts title and version from YAML meta section
-   - Generates complete standalone HTML file with embedded data and both versions
-   - Returns as downloadable file
-
-### Version Management
-
-- **APP_VERSION**: Defined in `app.py` (currently "2.3.1")
-  - Generator application version
-  - Displayed as "App v2.3.1" in generated HTML
-
-- **YAML meta.version**: Optional field in YAML files
-  - Data structure/schema version
-  - Defaults to "1.0" if not provided
-  - Displayed as "Data v1.0" in generated HTML
-
-- **YAML meta.title**: Required field
-  - Displayed as the main title in generated HTML
-  - Replaces hardcoded application title
-
-- **YAML meta.tracking_code**: Optional field (v2.4.0+)
-  - Allows injection of analytics tracking scripts
-  - Supports Google Analytics, Plausible, Fathom, Matomo, custom tracking
-  - Injected into HTML <head> section
-  - See `TRACKING_EXAMPLES.md` for examples
-
-### Data Format Conversion
-
-#### Enhanced Format (Current)
-Supports multi-links with weights and impacts:
-- **Challenge Groups**: `id`, `number`, `title`, `priority` (1-3)
-- **Sub-Challenges**: `id`, `group_id`, `text`, `priority` (1-3)
-- **Initiatives**: `id`, `season`, `text`, `challenges[]` with `challenge_id`, `weight` (1-10), `impact` (L/M/H)
-- **Systems**: `id`, `text`, `title`, `initiatives[]` with `initiative_id`, `weight` (1-10)
-- **KPIs**: `id`, `text`, `systems[]` with `system_id`, `weight` (1-10)
-
-#### Legacy Format (Backward Compatible)
-Uses `group_id` for simple 1:1 relationships. Automatically converted to enhanced format.
-
-### Key Functions
-
-- **`load_yaml_data(file_path)`** - Loads and parses YAML
-- **`convert_enhanced_format(yaml_data)`** - Converts enhanced YAML to JS format
-- **`convert_legacy_format(yaml_data)`** - Converts legacy YAML to JS format
-- **`auto_detect_format(yaml_data)`** - Auto-detects format based on structure
-
----
-
-## Frontend Architecture (navigator_enhanced.html)
-
-### Color Customization (v2.5.0+)
-
-Users can customize colors via YAML `meta.colors` section:
-```yaml
-meta:
-  colors:
-    challenge: '#f0d24f'    # Yellow (default)
-    initiative: '#8fd0ff'   # Light blue (default)
-    system: '#1d4ed8'       # Dark blue (default)
-    kpi: '#22c55e'          # Green (default)
+    return app
 ```
 
-Colors are injected as CSS variables and used across all views.
+This allows creating different app instances for development, production, and testing.
 
-### Global State Management
+## Data Model
 
-```javascript
-const state = {
-  tab: 'challenges',           // Current tab: challenges/initiatives/systems/kpis
-  selected: null,              // {type, id} - Currently selected item
-  preview: null,               // {type, id} - Right-click preview
-  initSeason: 'ALL',           // Filter: 'ALL', 'S1', 'S2', 'S3'
-  viewMode: 'column'           // 'column', 'graph', or 'flow'
-};
+### Core Principles
 
-const graph = {
-  canvas: null, ctx: null,
-  nodes: [], links: [],
-  selectedNode: null,          // Currently selected node in graph
-  filteredNodes: null,         // Set of visible node IDs when filtered
-  filteredLinks: null,         // Set of visible links when filtered
-  zoom: 1, panX: 0, panY: 0,
-  history: []                  // Navigation history for back button
-};
+1. **Immutable IDs**: Every entity has an immutable technical ID. Names can change.
+2. **Many-to-Many Relationships**: Initiatives and Systems are reusable across multiple parents.
+3. **Context-Specific Data**: KPIs belong to Initiative-System contexts, not master Systems.
+4. **Organization Isolation**: All business data is scoped to organizations.
 
-const flow = {
-  canvas: null, ctx: null,
-  nodes: [], links: [],
-  selectedNode: null,          // Currently selected node in flow
-  filteredNodes: null,         // Set of visible node IDs when filtered
-  filteredLinks: null,         // Set of visible links when filtered
-  zoom: 1, panX: 0, panY: 0,
-  colors: {}                   // Cached colors for performance
-};
-```
-
-### View Modes
-
-#### 1. Column View
-Traditional hierarchical layout with left panel (list) and right panel (details).
-
-**Tabs:**
-- Challenges (Challenge Groups + Sub-Challenges)
-- Initiatives
-- Systems
-- KPIs
-
-**Key Functions:**
-- `setTab(tab)` - Switch between tabs
-- `select(type, id, {autoTab, forceSelect})` - Select an item
-- `preview(type, id)` - Right-click preview
-- `clearSelection()` - Clear selection
-- `renderFocusedDetail()` - Render right panel details
-
-#### 2. Graph View
-Force-directed network visualization using HTML5 Canvas with interactive filtering and tooltips.
-
-**Node Types (Customizable Colors):**
-- Group (Challenge Group) - Yellow/custom
-- Challenge (Sub-Challenge) - Yellow/custom
-- Initiative - Light Blue/custom
-- System - Dark Blue/custom
-- KPI - Green/custom
-
-**Link Types:**
-- Group → Challenge (weight-based thickness)
-- Challenge → Initiative (weight-based thickness, shows impact H/M/L)
-- Initiative → System (weight-based thickness)
-- System → KPI (weight-based thickness)
-
-**Features:**
-- Click node to filter to related chain
-- Hover for tooltips showing full names
-- Mouse wheel zoom (desktop)
-- Pinch-to-zoom (mobile)
-- Drag to pan
-- Back button with history
-- Fit to view button
-- Selection persists across view switches
-
-**Key Graph Functions:**
-- `renderGraph()` - Initialize and render full graph
-- `buildGraphData()` - Converts DATA to graph nodes/links with season filtering
-- `layoutGraph()` - Force-directed layout algorithm
-- `drawGraph()` - Render nodes and links with current zoom/pan
-- `selectGraphNode(node)` - Filter graph and sync to other views
-- `clearGraphSelection()` - Show full graph
-- `graphGoBack()` - Navigate back through selection history
-- `graphFitToView()` - Auto-zoom to fit content
-- `updateGraphUI()` - Update back button and selection indicator
-
-**Interaction Modes:**
-- **Desktop**: Mouse wheel zoom, drag to pan, click to select
-- **Mobile**: Pinch-to-zoom, single-finger pan, tap to select
-
-#### 3. Flow View (Sankey Diagram) - v2.6.0+
-Sankey diagram visualization showing relationship strength through flow thickness and gradient colors.
-
-**Structure:**
-- 5 columns: Challenge Groups → Sub-Challenges → Initiatives → Systems → KPIs
-- Nodes: Small colored dots (5-8px radius)
-- Links: Bezier curves with gradient colors and weight-based thickness
-
-**Visual Design:**
-- **Dots**: Color-coded by type, larger when selected (8px), glow effect on selection
-- **Flows**: Linear gradient from source color to target color (e.g., yellow challenge → blue initiative)
-- **Labels**: Text positioned left of columns 0-2, right of columns 3-4
-- **Selection**: White border + glow ring around dot, bold white text, selection info at top
-
-**Features:**
-- Click any node (dot or text) to filter to complete chain
-- Hover for tooltips showing full text
-- All nodes clickable with expanded hitbox including text
-- Gradient flows show source → target color transition
-- Season filtering applies to flow
-- Selection syncs with Graph and Column views
-- Zoom in/out/reset controls
-
-**Key Flow Functions:**
-- `initFlowView()` - Initialize canvas, cache colors, build data
-- `buildFlowData()` - Create flow nodes and links with season filtering
-- `layoutFlowDiagram()` - Position nodes in 5 columns with reasonable heights (30-150px)
-- `drawFlowDiagram()` - Render gradient flows and colored dots
-- `selectFlowNode(nodeId)` - Filter flow and sync to other views
-- `updateFlowUI()` - Update selection indicator at top
-- `setupFlowInteractions()` - Click, hover, tooltip handlers
-
-**Gradient Flow Colors:**
-- Each link uses linear gradient from source node color to target node color
-- 80% opacity when normal, 100% when hovered
-- Makes flow origin and destination visually clear
-
-### View Synchronization (Full Bidirectional) - v2.7.5
-
-**Problem:** Maintain a single global selection across three views while preventing circular sync loops.
-
-**Solution:** `isSyncing` flag + bidirectional sync functions
-
-**Synchronization Matrix:**
-```
-         TO: Column | Graph | Flow
-FROM:
-Column       ✓        ✓       ✓
-Graph        ✓        ✓       ✓
-Flow         ✓        ✓       ✓
-```
-
-**Key Functions:**
-
-```javascript
-let isSyncing = false; // Prevents circular loops
-
-// Column → Graph/Flow
-function select(type, id, {autoTab, forceSelect}) {
-  state.selected = {type, id};
-
-  // Clear graph/flow selections so new column selection propagates
-  if (graph.canvas) {
-    graph.selectedNode = null;
-    graph.filteredNodes = null;
-    graph.filteredLinks = null;
-  }
-  if (flow.canvas) {
-    flow.selectedNode = null;
-    flow.filteredNodes = null;
-    flow.filteredLinks = null;
-  }
-
-  // Sync to active view immediately
-  if (state.viewMode === 'graph' && !isSyncing) {
-    syncColumnToGraphView(type, id);
-  }
-  if (state.viewMode === 'flow') {
-    syncColumnToFlowView(type, id);
-  }
-}
-
-// Graph → Column
-function syncGraphToColumnView(node) {
-  if (isSyncing) return;
-  isSyncing = true;
-  try {
-    const type = mapGraphTypeToColumnType(node.type);
-    select(type, node.entityId, {forceSelect: true, autoTab: getTabForType(type)});
-  } finally {
-    isSyncing = false;
-  }
-}
-
-// Graph → Flow
-function syncGraphToFlowView() {
-  if (!graph.selectedNode || !flow.canvas) return;
-  selectFlowNode(graph.selectedNode.entityId);
-}
-
-// Flow → Graph
-function syncFlowToGraphView() {
-  if (!flow.selectedNode || !graph.canvas) return;
-  const graphNodeId = mapFlowIdToGraphId(flow.selectedNode.id, flow.selectedNode.type);
-  const graphNode = graph.nodes.find(n => n.id === graphNodeId);
-  if (graphNode) selectGraphNode(graphNode);
-}
-
-// Flow → Column
-// Handled in selectFlowNode() by calling select() with isSyncing guard
-```
-
-**Synchronization on View Switch:**
-
-When switching views, priority order:
-1. **To Graph**: Graph selection > Flow selection > Column selection > Show all
-2. **To Flow**: Flow selection > Graph selection > Column selection > Show all
-3. **To Column**: Sync from Graph/Flow if their selection differs from Column
-
-**Key Points:**
-1. Single source of truth: The view selection states (state.selected, graph.selectedNode, flow.selectedNode)
-2. When user selects in any view, it clears the other views' selections
-3. When switching views, existing selections are preserved unless a different view has a selection
-4. `isSyncing` flag prevents infinite loops when syncing back to column view
-5. All three views stay synchronized at all times
-
-### Event Handling
-
-**Column View:**
-- Left click: `select(type, id)` - Selects item and syncs to Graph/Flow
-- Right click: `preview(type, id)` - Shows preview (also syncs)
-
-**Graph View:**
-- Click node: `selectGraphNode(node)` - Filters graph and syncs to Column/Flow
-- Click background: `clearGraphSelection()` - Shows full graph
-- Drag: Pan canvas
-- Mouse wheel (desktop): Zoom towards cursor
-- Pinch (mobile): Zoom with two fingers
-- Pan (mobile): Drag with one finger
-- Hover: Show tooltip with full node name
-- Back button: Navigate through selection history
-
-**Flow View:**
-- Click node (dot or text): `selectFlowNode(nodeId)` - Filters flow and syncs to Column/Graph
-- Click background: Reset filter to show full flow
-- Hover: Show tooltip with full label, highlight dot and text
-- Zoom buttons: Zoom in/out/reset
-- Expanded clickable area includes text labels (150px)
-
-**Mobile Touch Support (v2.5.1+):**
-- Viewport meta tag: `user-scalable=no, maximum-scale=1` to prevent page zoom
-- Touch events: `touchstart`, `touchmove`, `touchend` with `{ passive: false }`
-- Canvas style: `touch-action: none` to prevent default gestures
-- Pinch-to-zoom calculates distance between two touches
-- Single-finger pan when not zooming
-
----
-
-## Data Flow
+### Entity Relationship Diagram
 
 ```
-YAML File
-    ↓
-Flask Backend (app.py)
-    ↓
-Auto-detect format
-    ↓
-Convert to JS format
-    ↓
-Jinja2 Template (navigator_enhanced.html)
-    ↓
-Embedded as DATA variable
-    ↓
-JavaScript renders UI
-    ↓
-User interaction updates state
-    ↓
-UI re-renders
+Organization (1) ──────┬─────── (N) Space
+                       ├─────── (N) Challenge
+                       ├─────── (N) Initiative
+                       ├─────── (N) System
+                       ├─────── (N) ValueType
+                       └─────── (N) UserOrganizationMembership ──── (1) User
+
+Space (1) ────────── (N) Challenge
+
+Challenge (1) ────── (N) ChallengeInitiativeLink ────── (1) Initiative
+                                │
+                                └── (N) RollupRule
+
+Initiative (1) ───── (N) InitiativeSystemLink ────────── (1) System
+                                │
+                                ├── (N) KPI
+                                └── (N) RollupRule
+
+KPI (1) ──────────── (N) KPIValueTypeConfig ────────── (1) ValueType
+                                │
+                                └── (N) Contribution
+
+Challenge (1) ────── (N) RollupRule (for Challenge → Space)
 ```
 
----
+### Key Models Explained
 
-## Key Technical Decisions
+#### User
+```python
+class User:
+    id: int                    # Immutable ID
+    login: str                 # Unique login
+    email: str
+    display_name: str
+    password_hash: str         # Hashed, never plaintext
+    is_active: bool
+    is_global_admin: bool
+    must_change_password: bool # Forced password change
+```
 
-### 1. Why Three View Modes?
-- **Column view**: Best for detailed reading and traditional navigation
-- **Graph view**: Best for understanding network structure and connections
-- **Flow view**: Best for seeing relationship strength and flow patterns
-- Each view serves different analysis needs
+#### Organization
+```python
+class Organization:
+    id: int
+    name: str                  # Unique
+    description: str
+    is_active: bool
+```
 
-### 2. Why Force-Directed Layout (Graph View)?
-- Automatically arranges nodes based on relationships
-- Visually shows clusters and patterns
-- More intuitive than hierarchical tree for multi-links
+Organizations are isolated roots. Deleting an organization cascades to all its data.
 
-### 3. Why Sankey Diagram (Flow View)?
-- Weight-based flow thickness shows relationship strength at a glance
-- Linear columns make it easy to trace left-to-right flow
-- Gradient colors show source → target transitions visually
+#### Space
+```python
+class Space:
+    id: int
+    organization_id: int       # FK to Organization
+    name: str
+    description: str
+    space_label: str           # Optional: "Season", "Site", etc.
+    display_order: int
+```
 
-### 4. Why HTML5 Canvas vs SVG?
-- Better performance for large graphs (100+ nodes)
-- Smooth animations and interactions
-- Custom rendering control (gradients, transforms)
-- Native support for touch events
+Spaces are flexible groupings like seasons, sites, customers, or suppliers.
 
-### 5. Why Embed Data in HTML?
-- Single-file distribution (standalone HTML)
-- No external API calls required
-- Works offline
-- Easy to share and archive
+#### Challenge
+```python
+class Challenge:
+    id: int
+    organization_id: int
+    space_id: int              # FK to Space
+    name: str
+    description: str
+    display_order: int
+```
 
-### 6. Why Priority System?
-- 1 = High priority (⭐⭐⭐)
-- 2 = Medium priority (⭐⭐)
-- 3 = Low priority (⭐)
-- Helps users focus on critical items
+Challenges belong to one space.
 
-### 7. Why Weight-Based Link Thickness?
-- Visual indication of relationship strength
-- Weight 1-10 maps to line thickness
-- Helps identify key dependencies
+#### Initiative
+```python
+class Initiative:
+    id: int
+    organization_id: int
+    name: str
+    description: str
+```
 
-### 8. Why Gradient Colors in Flow View?
-- Shows origin and destination of each flow
-- Makes it easy to trace flows visually
-- Eliminates ambiguity about flow direction
-- More intuitive than single-color flows
+Initiatives are **reusable** across multiple challenges via `ChallengeInitiativeLink`.
 
-### 9. Why Customizable Colors?
-- Different organizations have brand colors
-- Some users prefer specific color schemes
-- Maintains consistency across views
-- Colors stored in YAML for version control
+#### ChallengeInitiativeLink
+```python
+class ChallengeInitiativeLink:
+    id: int
+    challenge_id: int          # FK to Challenge
+    initiative_id: int         # FK to Initiative
+    display_order: int
 
-### 10. Why Bidirectional Sync?
-- Single source of truth across all views
-- Users can work in their preferred view
-- Selections persist when switching views
-- Reduces cognitive load - one selection, visible everywhere
+    # Unique constraint: (challenge_id, initiative_id)
+```
 
----
+This is the **many-to-many link** between Challenges and Initiatives. Roll-up rules for Initiative → Challenge are attached here.
 
-## Version History
+#### System
+```python
+class System:
+    id: int
+    organization_id: int
+    name: str
+    description: str
+```
 
-### v2.7.5 (Current - 2026-02-09)
-- Full bidirectional synchronization: Graph/Flow → Column
-- Selections in any view update all other views
+Systems are **reusable** across multiple initiatives via `InitiativeSystemLink`.
 
-### v2.7.4 (2026-02-09)
-- Flow view gradient colors: flows transition from source color to target color
-- More intuitive flow visualization
+#### InitiativeSystemLink
+```python
+class InitiativeSystemLink:
+    id: int
+    initiative_id: int         # FK to Initiative
+    system_id: int             # FK to System
+    display_order: int
 
-### v2.7.3 (2026-02-09)
-- Flow view selection indicator with visual highlight
-- Selected dot: larger size, white border, glow effect
-- Selection info displayed at top of Flow view
+    # Unique constraint: (initiative_id, system_id)
+```
 
-### v2.7.2 (2026-02-09)
-- Column view selections properly sync to Graph and Flow
-- Fixed: selecting in column now updates graph/flow filters
+This is the **many-to-many link** between Initiatives and Systems. **KPIs belong here**, not to the master System.
 
-### v2.7.1 (2026-02-09)
-- Flow view selections sync to Graph view
-- Filters persist when switching between views
+#### KPI
+```python
+class KPI:
+    id: int
+    initiative_system_link_id: int  # FK to InitiativeSystemLink
+    name: str
+    description: str
+    display_order: int
+```
 
-### v2.7.0 (2026-02-09)
-- Flow view redesigned: colored dots instead of large boxes
-- Clickable text labels with expanded hitbox
-- Hover highlights and tooltips
+**Critical**: KPIs are context-specific. The same system in different initiatives can have completely different KPIs.
 
-### v2.6.9 (2026-02-09)
-- Flow view nodes maintain reasonable size (30-150px) when filtered
+#### ValueType
+```python
+class ValueType:
+    id: int
+    organization_id: int
+    name: str
+    kind: str                  # 'numeric', 'risk', 'positive_impact', 'negative_impact'
+    numeric_format: str        # 'integer' or 'decimal'
+    decimal_places: int
+    unit_label: str            # '€', 'tCO2e', 'licenses', etc.
+    default_aggregation_formula: str  # 'sum', 'min', 'max', 'avg'
+    display_order: int
+    is_active: bool
+```
 
-### v2.6.8 (2026-02-09)
-- "Show All" button resets filters in all views
-- Season filtering applies to Flow view
+Value types are organization-specific and define what kind of values can be tracked.
 
-### v2.6.6-v2.6.7 (2026-02-09)
-- Flow view filtered layout uses full canvas space
-- All node types clickable in Flow view
+#### KPIValueTypeConfig
+```python
+class KPIValueTypeConfig:
+    id: int
+    kpi_id: int                # FK to KPI
+    value_type_id: int         # FK to ValueType
+    display_order: int
+    color_negative: str        # Sign-based colors (KPI-specific)
+    color_zero: str
+    color_positive: str
+```
 
-### v2.6.5 (2026-02-09)
-- Fixed challenge group links in Flow view (groupId vs group_id)
+One KPI can have multiple value types. Sign-based colors are configured per KPI-value-type pair.
 
-### v2.6.0-v2.6.4 (2026-02-09)
-- **Flow View (Sankey Diagram)** - Major feature
-- 5 columns: Groups → Challenges → Initiatives → Systems → KPIs
-- Weight-based flow thickness
-- Clickable nodes with filtering
-- Synchronized with Graph and Column views
+#### Contribution
+```python
+class Contribution:
+    id: int
+    kpi_value_type_config_id: int  # FK to KPIValueTypeConfig
+    contributor_name: str          # Free text, no user account required
+    numeric_value: Decimal         # For numeric types
+    qualitative_level: int         # 1, 2, or 3 for qualitative types
+    comment: str
+```
 
-### v2.5.3 (2026-02-07)
-- Tooltips on hover for truncated node names in Graph view
+Contributors provide opinions. One contributor per cell (updates replace previous entry).
 
-### v2.5.2 (2026-02-07)
-- Mouse wheel zoom on desktop (scroll to zoom towards cursor)
+#### RollupRule
+```python
+class RollupRule:
+    id: int
+    source_type: str           # 'initiative_system', 'challenge_initiative', 'challenge'
+    source_id: int             # ID of the link or challenge
+    value_type_id: int         # FK to ValueType
+    rollup_enabled: bool       # Default: False
+    formula_override: str      # 'default', 'sum', 'min', 'max', 'avg'
+```
 
-### v2.5.1 (2026-02-07)
-- Mobile touch support: pinch-to-zoom and pan on iPhone/Android
-- Prevents page zoom, enables canvas-only gestures
+Roll-up rules are **context-specific**:
+- System → Initiative: attached to `InitiativeSystemLink`
+- Initiative → Challenge: attached to `ChallengeInitiativeLink`
+- Challenge → Space: attached to `Challenge`
 
-### v2.5.0 (2026-02-07)
-- **Customizable colors** via YAML meta.colors section
-- Applies to all views (Column, Graph, Flow)
+## Business Logic
 
-### v2.4.0 (2026-02-07)
-- Analytics tracking support via YAML meta.tracking_code
+### Consensus Service
 
-### v2.3.x (2026-02-07)
-- Dual version display (app + data)
-- Customizable YAML title
-- Fixed graph navigation bugs
+Located in `app/services/consensus_service.py`.
 
-### v2.2
-- Fixed graph-to-column synchronization
-- Added `isSyncing` flag
+#### Consensus Statuses
 
-### v2.1
-- Graph link thickness matches weight
-- "Fit to View" button
+1. **No Data**: No contributions exist
+2. **Pending Confirmation**: Only one contribution
+3. **Strong Consensus**: 2+ contributions, all same value (eligible for roll-up)
+4. **Weak Consensus**: 2+ contributions, majority exists but not unanimous
+5. **No Consensus**: 2+ contributions, no reliable agreement
 
----
+#### Roll-up Eligibility
 
-## Deployment
+**Only Strong Consensus values participate in upward roll-ups.**
 
-**Platform:** Render.com
-**Type:** Web Service
-**Build Command:** `pip install -r requirements.txt`
-**Start Command:** `gunicorn app:app`
-**Auto-Deploy:** Enabled (deploys on git push to main)
+This is intentional and enforces data quality.
 
-**Environment:**
-- Python 3.11
-- Flask
-- PyYAML
-- Gunicorn
+```python
+def calculate_consensus(contributions):
+    if not contributions:
+        return {'status': 'no_data', 'is_rollup_eligible': False}
 
----
+    if len(contributions) == 1:
+        return {'status': 'pending', 'is_rollup_eligible': False}
 
-## Common Issues & Solutions
+    # Check if all values are the same
+    if all values are same:
+        return {'status': 'strong', 'is_rollup_eligible': True}
 
-### Issue: Circular sync loop
-**Symptom:** Selection doesn't update, console shows "Sync blocked by isSyncing flag"
-**Solution:** Check that `isSyncing` flag is properly reset in finally block
+    # Check for majority
+    if majority exists:
+        return {'status': 'weak', 'is_rollup_eligible': False}
 
-### Issue: Graph doesn't fit viewport
-**Symptom:** Nodes outside visible area
-**Solution:** Click "Fit to View" or double-click background
+    return {'status': 'no_consensus', 'is_rollup_eligible': False}
+```
 
-### Issue: Deployment fails on Render
-**Symptom:** Build succeeds but service doesn't start
-**Solution:** Check Python version in render.yaml matches requirements.txt
+### Aggregation Service
 
-### Issue: Wrong tab shown when clicking graph node
-**Symptom:** Selection set but wrong tab visible
-**Solution:** Ensure `autoTab` parameter passed to `select()` in `syncGraphToColumnView()`
+Located in `app/services/aggregation_service.py`.
 
----
+#### Roll-up Flow
 
-## Future Enhancement Ideas
+```
+KPI (leaf data)
+    ↓ (Value Type default formula)
+System (first rolled-up summary)
+    ↓ (Configurable via InitiativeSystemLink RollupRule)
+Initiative
+    ↓ (Configurable via ChallengeInitiativeLink RollupRule)
+Challenge
+    ↓ (Configurable via Challenge RollupRule)
+Space
+```
 
-1. **Search/Filter** - ~~Add search bar to filter by text~~ ✅ Implemented
-2. **Export** - Export graph/flow as PNG/SVG
-3. **Edit Mode** - Allow in-app editing of connections
-4. **Undo/Redo** - History for selections and filters (partially implemented with graph back button)
-5. **Multi-select** - Select multiple nodes
-6. **Custom Colors** - ~~User-defined color schemes~~ ✅ Implemented (v2.5.0)
-7. **Analytics** - Show statistics (most connected nodes, etc.)
-8. **Collaboration** - Share specific views via URL parameters
-9. **Animation** - Animated transitions when filtering/selecting
-10. **Diff View** - Compare two versions of data side-by-side
+#### Aggregation Formulas
 
----
+- **sum**: Add all values (not available for qualitative in V1)
+- **min**: Minimum value
+- **max**: Maximum value
+- **avg**: Average (for qualitative, stores raw average, can round for display)
 
-## Code Style Guidelines
+#### Partial Data Handling
 
-1. Use camelCase for JavaScript variables/functions
-2. Use snake_case for Python variables/functions
-3. Keep functions small and focused
-4. Document complex algorithms with comments
-5. Use semantic HTML5 elements
-6. Maintain consistent indentation (2 spaces)
+If some child rows lack strong consensus:
+- Ignore those rows
+- Compute parent if at least one valid child exists
+- Mark parent cell as "computed from partial data"
 
----
+```python
+def get_kpi_to_system_rollup(initiative_system_link, value_type_id):
+    kpis = initiative_system_link.kpis
+    eligible_values = []
 
-## Development Workflow
+    for kpi in kpis:
+        config = get_config(kpi, value_type_id)
+        consensus = ConsensusService.get_cell_value(config)
 
-### Making Code Changes
+        if consensus['is_rollup_eligible']:  # Strong consensus only
+            eligible_values.append(consensus['value'])
 
-When making changes to the navigator (especially to `templates/navigator_enhanced.html`):
+    if not eligible_values:
+        return None
 
-1. **Make your code changes**
-2. **Test locally** at http://localhost:5002
-3. **Regenerate example HTML files** (IMPORTANT!)
-   ```bash
-   python generate_examples.py
+    aggregated = aggregate(eligible_values, value_type.default_formula)
+
+    return {
+        'value': aggregated,
+        'is_complete': len(eligible_values) == total_kpis
+    }
+```
+
+### Deletion Impact Service
+
+Located in `app/services/deletion_impact_service.py`.
+
+#### Challenge Deletion Logic
+
+When deleting a Challenge:
+
+1. Delete the Challenge record
+2. Delete all `ChallengeInitiativeLink` records
+3. For each Initiative:
+   - Check if it has other Challenge links
+   - If no other links, delete the Initiative (orphan cleanup)
+   - When deleting an Initiative, delete its `InitiativeSystemLink` records
+4. For each System:
+   - Check if it has other Initiative links
+   - If no other links, delete the System (orphan cleanup)
+5. Delete KPIs belonging to removed `InitiativeSystemLink` records
+6. Delete KPI configs and contributions cascading from KPIs
+
+**Shared Initiatives and Systems are preserved if they're still used elsewhere.**
+
+#### Impact Preview
+
+Before deletion, the service provides a comprehensive impact report:
+
+```python
+def analyze_challenge_deletion(challenge_id):
+    return {
+        'challenges': 1,
+        'challenge_initiative_links': 3,
+        'orphaned_initiatives': 1,
+        'preserved_initiatives': 2,
+        'initiative_system_links': 4,
+        'orphaned_systems': 2,
+        'preserved_systems': 1,
+        'kpis': 11,
+        'contributions': 36,
+        'rollup_rules': 8
+    }
+```
+
+This is displayed to the user before confirming deletion.
+
+### Value Type Usage Service
+
+Located in `app/services/value_type_usage_service.py`.
+
+#### Usage Checking
+
+A Value Type cannot be deleted if it's used in:
+- Any `KPIValueTypeConfig`
+- Any `Contribution`
+- Any `RollupRule`
+
+```python
+def check_usage(value_type_id):
+    kpi_configs = KPIValueTypeConfig.query.filter_by(value_type_id=value_type_id).all()
+    contributions_count = sum(len(config.contributions) for config in kpi_configs)
+    rollup_rules_count = RollupRule.query.filter_by(value_type_id=value_type_id).count()
+
+    is_used = (len(kpi_configs) > 0 or contributions_count > 0 or rollup_rules_count > 0)
+
+    return {'is_used': is_used, 'usage': detailed_usage_info}
+```
+
+If deletion is attempted on an in-use Value Type, the UI shows where it's used.
+
+## Authentication & Authorization
+
+### Two Administration Scopes
+
+1. **Global Administration**: Manages users and organizations
+2. **Organization Administration**: Manages business content within one organization
+
+### Login Flow
+
+```
+User enters:
+- Login
+- Password
+- Organization (dropdown)
+
+Special option: "Global Administration" (0)
+
+Validation:
+1. User exists?
+2. Password correct?
+3. User active?
+4. If Global Administration selected: is user a global admin?
+5. If organization selected: does user have access?
+
+On success:
+- Set session['organization_id']
+- Set session['organization_name']
+- Redirect to workspace or global admin area
+
+If must_change_password:
+- Force password change before proceeding
+```
+
+### Bootstrap Admin
+
+On first startup, if no global admin exists:
+
+```python
+def _bootstrap_admin():
+    if User.query.filter_by(is_global_admin=True).first():
+        return  # Admin already exists
+
+    admin = User(
+        login='cisk',
+        email='admin@cisk.local',
+        is_global_admin=True,
+        must_change_password=True
+    )
+    admin.set_password('Zurich20')  # Hashed immediately
+    db.session.add(admin)
+    db.session.commit()
+```
+
+### Protection Rules
+
+- Last active global admin cannot be deleted
+- Users can only access organizations they're assigned to
+- Regular users cannot access Global Administration
+- Organization context is enforced via decorators
+
+```python
+def organization_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if session.get('organization_id') is None:
+            flash('Please log in to an organization')
+            return redirect(url_for('auth.login'))
+        return f(*args, **kwargs)
+    return decorated_function
+```
+
+## Code Organization
+
+### Models (app/models/)
+
+Each model file contains:
+- SQLAlchemy model definition
+- Relationships
+- Helper methods
+- Docstrings explaining the model's role
+
+Models use:
+- `db.Column` for fields
+- `db.ForeignKey` for relationships
+- `db.relationship` for ORM navigation
+- `db.UniqueConstraint` for composite uniqueness
+
+### Forms (app/forms/)
+
+WTForms provide:
+- Field definitions
+- Validators
+- CSRF protection
+- Error messages
+
+Forms are used in both GET (display) and POST (validation) requests.
+
+### Routes (app/routes/)
+
+Blueprints organize routes by functional area:
+
+- **auth.py**: Login, logout, password change
+- **global_admin.py**: User and organization management
+- **organization_admin.py**: Business content management
+- **workspace.py**: Main tree/grid view and data entry
+
+Each route:
+1. Checks authentication/authorization
+2. Loads data
+3. Handles form submission
+4. Renders template or redirects
+
+### Services (app/services/)
+
+Business logic is isolated in service classes:
+
+- **ConsensusService**: Pure calculation, no database access needed
+- **AggregationService**: Queries database, performs aggregation
+- **DeletionImpactService**: Analyzes deletion impact
+- **ValueTypeUsageService**: Checks value type usage
+
+Services are stateless and can be tested independently.
+
+### Templates (app/templates/)
+
+Jinja2 templates follow Bootstrap 5 conventions:
+- `base.html`: Master layout with navbar
+- Nested templates extend base
+- Flash messages displayed automatically
+- Forms rendered with WTF macros
+
+### Static Assets (app/static/)
+
+- `css/style.css`: Custom styles (consensus badges, roll-up styling)
+- `js/`: Minimal JavaScript for tree expand/collapse (future)
+
+## Testing Strategy
+
+### Test Organization
+
+```
+tests/
+├── conftest.py              # Fixtures
+├── test_auth.py             # Authentication tests
+├── test_consensus.py        # Consensus calculation tests
+├── test_aggregation.py      # Roll-up aggregation tests
+├── test_deletion.py         # Deletion impact tests
+└── test_value_type.py       # Value type usage tests
+```
+
+### Key Fixtures
+
+```python
+@pytest.fixture
+def app():
+    """Test app with in-memory database"""
+    app = create_app('testing')
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.drop_all()
+
+@pytest.fixture
+def global_admin(app):
+    """Create a global admin user"""
+    admin = User(login='testadmin', is_global_admin=True)
+    admin.set_password('TestPass123')
+    db.session.add(admin)
+    db.session.commit()
+    return admin
+```
+
+### Test Coverage
+
+Required test coverage:
+- Bootstrap admin creation
+- Login validation (valid, invalid, inactive, unassigned org)
+- Global admin-only access
+- Consensus calculation (all statuses)
+- Roll-up aggregation (all levels, formulas)
+- Deletion impact (challenge, space, initiative, system)
+- Value type usage blocking
+
+## Future Migration Path
+
+### Moving to PostgreSQL
+
+The application is structured to make PostgreSQL migration straightforward:
+
+1. **Change database URL** in config:
+   ```python
+   SQLALCHEMY_DATABASE_URI = 'postgresql://user:pass@localhost/cisk'
    ```
-   This ensures all 4 example HTML files in `examples/html/` are updated with your latest changes.
 
-4. **Test the examples**
-   - Open `examples/html/getting_fit.html` in your browser
-   - Verify your changes work in the standalone HTML
+2. **Remove SQLite-specific code**:
+   - Foreign key pragma setting (PostgreSQL has them by default)
+   - Connection string `check_same_thread=False`
 
-5. **Commit and push**
+3. **Test migrations**:
    ```bash
-   git add .
-   git commit -m "Your commit message"
-   git push
+   flask db migrate -m "Initial PostgreSQL migration"
+   flask db upgrade
    ```
 
-**⚠️ CRITICAL:** Never commit code changes without regenerating the example HTML files! Users download these files and expect them to have the latest features and bug fixes.
+4. **Add connection pooling** if needed for high concurrency
+
+All business logic remains unchanged.
+
+## Conclusion
+
+CISK Navigator is a well-architected Flask application following best practices:
+
+- **Clean separation of concerns**: Models, forms, routes, services, templates
+- **Comprehensive business logic**: Consensus, aggregation, deletion rules
+- **Secure by design**: Password hashing, CSRF protection, session management
+- **Well-documented**: In-code docstrings and external documentation
+- **Test coverage**: Pytest tests for critical functionality
+- **Migration-ready**: Structured for future PostgreSQL migration
+
+The architecture supports the complex requirements while remaining maintainable and extensible.
 
 ---
 
-## Testing Checklist
-
-**Basic Functionality:**
-- [ ] Load sample data in browser
-- [ ] Upload custom YAML file
-- [ ] Switch between all tabs (Challenges/Initiatives/Systems/KPIs)
-- [ ] Switch between all views (Column/Graph/Flow)
-
-**Column View:**
-- [ ] Click items in column view
-- [ ] Search functionality works
-- [ ] Preview (right-click) works
-
-**Graph View:**
-- [ ] Click nodes in graph view to filter
-- [ ] Test "Fit to View" button
-- [ ] Test zoom and pan (mouse wheel on desktop)
-- [ ] Test Back button navigation
-- [ ] Hover shows tooltips
-
-**Flow View:**
-- [ ] Click nodes (dots and text) to filter
-- [ ] Hover shows tooltips
-- [ ] Gradient colors visible in flows
-- [ ] Zoom in/out/reset buttons work
-- [ ] Selected node shows highlight (white border + glow)
-
-**View Synchronization:**
-- [ ] Column → Graph sync: Select in column, switch to graph, verify selection
-- [ ] Column → Flow sync: Select in column, switch to flow, verify selection
-- [ ] Graph → Column sync: Click in graph, switch to column, verify highlighted in sidebar
-- [ ] Graph → Flow sync: Click in graph, switch to flow, verify selection
-- [ ] Flow → Column sync: Click in flow, switch to column, verify highlighted in sidebar
-- [ ] Flow → Graph sync: Click in flow, switch to graph, verify selection
-
-**Filtering:**
-- [ ] Season filter (S1/S2/S3/ALL) works in all views
-- [ ] "Show All" button resets all views
-- [ ] Filtered views show only related nodes/items
-
-**Mobile Testing (iPhone/Android):**
-- [ ] Pinch-to-zoom works in Graph view
-- [ ] Pinch-to-zoom works in Flow view
-- [ ] Single-finger pan works
-- [ ] Page zoom is prevented (only canvas zooms)
-- [ ] Tap to select works
-- [ ] Responsive layout works
-
-**Desktop Testing:**
-- [ ] Mouse wheel zoom works
-- [ ] Drag to pan works
-- [ ] Hover tooltips work
-- [ ] Click to select works
-
-**Download & Distribution:**
-- [ ] Download standalone HTML
-- [ ] Verify standalone HTML works offline
-- [ ] Verify both app and data versions displayed
-
-**Custom Colors:**
-- [ ] Upload YAML with custom colors
-- [ ] Verify colors apply to Column view
-- [ ] Verify colors apply to Graph view nodes/links
-- [ ] Verify colors apply to Flow view dots/flows
-
----
-
-## Debugging Tips
-
-**Console Logging:**
-- Look for "select() called" to trace selections
-- Look for "syncGraphToColumnView" / "syncColumnToGraphView" to trace sync
-- Look for "isSyncing" messages to debug sync loops
-
-**Common Debug Commands:**
-```javascript
-// In browser console
-console.log(state);           // Check current state
-console.log(DATA);            // Check loaded data
-console.log(graph.nodes);     // Check graph nodes
-console.log(graph.selectedNode); // Check graph selection
-console.log(isSyncing);       // Check sync flag
-```
-
----
-
-## Contact & Support
-
-For issues, feature requests, or questions:
-- GitHub Issues: https://github.com/mounirdous/CISK-Navigator/issues
-- Version updates tracked in git commits
-
----
-
-## Shared Filtering Logic
-
-The `computeRelatedEntities(entityType, entityId, allLinks)` function is shared between Graph and Flow views to ensure consistent filtering behavior. It traces the full chain of relationships:
-
-- **Challenge Group**: Downstream to challenges → initiatives → systems → KPIs
-- **Challenge**: Upstream to group, downstream to initiatives → systems → KPIs
-- **Initiative**: Upstream to challenges + groups, downstream to systems → KPIs
-- **System**: Upstream to initiatives → challenges → groups, downstream to KPIs
-- **KPI**: Upstream through full chain to groups
-
-This ensures that when you select any node, you see the complete connected chain in all views.
-
----
-
-*Last updated: 2026-02-09 (v2.7.5)*
+For implementation questions or clarification, refer to inline code comments and docstrings throughout the codebase.

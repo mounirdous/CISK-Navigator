@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Users - Global Administration{% endblock %}
+
+{% block content %}
+<h2>User Management</h2>
+
+<div class="mb-3">
+    <a href="{{ url_for('global_admin.create_user') }}" class="btn btn-primary">Create New User</a>
+    <a href="{{ url_for('global_admin.index') }}" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+
+<table class="table table-striped table-hover">
+    <thead>
+        <tr>
+            <th>Login</th>
+            <th>Display Name</th>
+            <th>Email</th>
+            <th>Status</th>
+            <th>Global Admin</th>
+            <th>Organizations</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.login }}</td>
+            <td>{{ user.display_name or '-' }}</td>
+            <td>{{ user.email or '-' }}</td>
+            <td>
+                {% if user.is_active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if user.is_global_admin %}
+                    <span class="badge bg-danger">Global Admin</span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if user.organization_memberships %}
+                    {{ user.organization_memberships|length }} org(s)
+                {% else %}
+                    <span class="text-muted">None</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('global_admin.edit_user', user_id=user.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <form method="POST" action="{{ url_for('global_admin.delete_user', user_id=user.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete user {{ user.login }}?')">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

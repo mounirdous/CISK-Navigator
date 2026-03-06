@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}KPI Cell Detail{% endblock %}
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item">{{ breadcrumb.organization }}</li>
+        <li class="breadcrumb-item">{{ breadcrumb.space }}</li>
+        <li class="breadcrumb-item">{{ breadcrumb.challenge }}</li>
+        <li class="breadcrumb-item">{{ breadcrumb.initiative }}</li>
+        <li class="breadcrumb-item">{{ breadcrumb.system }}</li>
+        <li class="breadcrumb-item active">{{ breadcrumb.kpi }} - {{ breadcrumb.value_type }}</li>
+    </ol>
+</nav>
+
+<h2>{{ kpi.name }}</h2>
+<p class="text-muted">{{ kpi.description }}</p>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5>Value Type</h5></div>
+            <div class="card-body">
+                <p><strong>{{ value_type.name }}</strong></p>
+                <p>Kind: {{ value_type.kind }}</p>
+                {% if value_type.unit_label %}
+                    <p>Unit: {{ value_type.unit_label }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header"><h5>Consensus Status</h5></div>
+            <div class="card-body">
+                <p>
+                    <span class="badge consensus-{{ consensus.status }}">{{ consensus.status|upper }}</span>
+                </p>
+                {% if consensus.value is not none %}
+                    <p><strong>Value:</strong>
+                        {% if value_type.kind == 'numeric' %}
+                            {{ consensus.value }}{% if value_type.unit_label %} {{ value_type.unit_label }}{% endif %}
+                        {% elif value_type.kind == 'risk' %}
+                            {% if consensus.value == 1 %}! (Low){% endif %}
+                            {% if consensus.value == 2 %}!! (Medium){% endif %}
+                            {% if consensus.value == 3 %}!!! (High){% endif %}
+                        {% elif value_type.kind == 'positive_impact' %}
+                            {% if consensus.value == 1 %}★ (Low){% endif %}
+                            {% if consensus.value == 2 %}★★ (Medium){% endif %}
+                            {% if consensus.value == 3 %}★★★ (High){% endif %}
+                        {% elif value_type.kind == 'negative_impact' %}
+                            {% if consensus.value == 1 %}▼ (Low){% endif %}
+                            {% if consensus.value == 2 %}▼▼ (Medium){% endif %}
+                            {% if consensus.value == 3 %}▼▼▼ (High){% endif %}
+                        {% else %}
+                            {{ consensus.value }}
+                        {% endif %}
+                    </p>
+                {% endif %}
+                <p><strong>Contributions:</strong> {{ consensus.count }}</p>
+                <p><strong>Roll-up Eligible:</strong> {{ 'Yes' if consensus.is_rollup_eligible else 'No' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4>Contributions</h4>
+<table class="table table-striped">
+    <thead>
+        <tr><th>Contributor</th><th>Value</th><th>Comment</th><th>Date</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for contrib in contributions %}
+        <tr>
+            <td>{{ contrib.contributor_name }}</td>
+            <td>
+                {% if contrib.numeric_value is not none %}
+                    {{ contrib.numeric_value }}
+                    {% if value_type.unit_label %}
+                        {{ value_type.unit_label }}
+                    {% endif %}
+                {% else %}
+                    {% if value_type.kind == 'risk' %}
+                        {% if contrib.qualitative_level == 1 %}! (Low){% endif %}
+                        {% if contrib.qualitative_level == 2 %}!! (Medium){% endif %}
+                        {% if contrib.qualitative_level == 3 %}!!! (High){% endif %}
+                    {% elif value_type.kind == 'positive_impact' %}
+                        {% if contrib.qualitative_level == 1 %}★ (Low){% endif %}
+                        {% if contrib.qualitative_level == 2 %}★★ (Medium){% endif %}
+                        {% if contrib.qualitative_level == 3 %}★★★ (High){% endif %}
+                    {% elif value_type.kind == 'negative_impact' %}
+                        {% if contrib.qualitative_level == 1 %}▼ (Low){% endif %}
+                        {% if contrib.qualitative_level == 2 %}▼▼ (Medium){% endif %}
+                        {% if contrib.qualitative_level == 3 %}▼▼▼ (High){% endif %}
+                    {% else %}
+                        Level {{ contrib.qualitative_level }}
+                    {% endif %}
+                {% endif %}
+            </td>
+            <td>{{ contrib.comment or '-' }}</td>
+            <td>{{ contrib.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary edit-contrib"
+                        data-name="{{ contrib.contributor_name }}"
+                        data-value="{{ contrib.numeric_value if contrib.numeric_value is not none else contrib.qualitative_level }}"
+                        data-comment="{{ contrib.comment or '' }}"
+                        data-is-numeric="{{ '1' if contrib.numeric_value is not none else '0' }}">
+                    Edit
+                </button>
+                <button class="btn btn-sm btn-outline-danger delete-contrib"
+                        data-contrib-id="{{ contrib.id }}"
+                        data-name="{{ contrib.contributor_name }}">
+                    Delete
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h4>Add/Update Contribution</h4>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.contributor_name.label }}{{ form.contributor_name(class="form-control", id="contributor_name") }}</div>
+    {% if value_type.is_numeric() %}
+        <div class="mb-3">{{ form.numeric_value.label }}{{ form.numeric_value(class="form-control", id="numeric_value") }}</div>
+    {% else %}
+        <div class="mb-3">{{ form.qualitative_level.label }}{{ form.qualitative_level(class="form-select", id="qualitative_level") }}</div>
+    {% endif %}
+    <div class="mb-3">{{ form.comment.label }}{{ form.comment(class="form-control", rows=3, id="comment") }}</div>
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">Back to Workspace</a>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Edit contribution buttons
+    document.querySelectorAll('.edit-contrib').forEach(button => {
+        button.addEventListener('click', function() {
+            const name = this.dataset.name;
+            const value = this.dataset.value;
+            const comment = this.dataset.comment;
+            const isNumeric = this.dataset.isNumeric === '1';
+
+            // Pre-populate form
+            document.getElementById('contributor_name').value = name;
+
+            if (isNumeric) {
+                const numericField = document.getElementById('numeric_value');
+                if (numericField) {
+                    numericField.value = value;
+                }
+            } else {
+                const qualField = document.getElementById('qualitative_level');
+                if (qualField) {
+                    qualField.value = value;
+                }
+            }
+
+            const commentField = document.getElementById('comment');
+            if (commentField) {
+                commentField.value = comment;
+            }
+
+            // Scroll to form
+            document.querySelector('form').scrollIntoView({ behavior: 'smooth' });
+        });
+    });
+
+    // Delete contribution buttons
+    document.querySelectorAll('.delete-contrib').forEach(button => {
+        button.addEventListener('click', function() {
+            const contribId = this.dataset.contribId;
+            const name = this.dataset.name;
+
+            if (confirm(`Are you sure you want to delete the contribution from "${name}"?\n\nThis action cannot be undone.`)) {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{{ url_for("workspace.delete_contribution", kpi_id=kpi.id, vt_id=value_type.id) }}';
+
+                const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+
+                const contribInput = document.createElement('input');
+                contribInput.type = 'hidden';
+                contribInput.name = 'contribution_id';
+                contribInput.value = contribId;
+                form.appendChild(contribInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

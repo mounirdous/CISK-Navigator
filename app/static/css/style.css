@@ -1,0 +1,33 @@
+/* CISK Navigator Custom Styles */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.tree-indent-1 { padding-left: 2rem; }
+.tree-indent-2 { padding-left: 4rem; }
+.tree-indent-3 { padding-left: 6rem; }
+.tree-indent-4 { padding-left: 8rem; }
+
+.consensus-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.consensus-strong { background-color: #198754 !important; color: white !important; }
+.consensus-weak { background-color: #ffc107 !important; color: black !important; }
+.consensus-pending { background-color: #0dcaf0 !important; color: black !important; }
+.consensus-no_consensus { background-color: #dc3545 !important; color: white !important; }
+.consensus-no-data { background-color: #6c757d !important; color: white !important; }
+
+.kpi-cell:hover {
+    background-color: #fff3cd !important;
+    transition: background-color 0.2s;
+}
+
+.rollup-complete { font-weight: bold; }
+.rollup-partial { font-style: italic; opacity: 0.8; }
+
+.value-positive { color: #198754; }
+.value-negative { color: #dc3545; }
+.value-zero { color: #6c757d; }

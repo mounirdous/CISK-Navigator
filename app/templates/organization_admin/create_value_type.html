@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Create Value Type{% endblock %}
+{% block content %}
+<h2>Create New Value Type</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
+    <div class="mb-3">{{ form.kind.label }}{{ form.kind(class="form-select", id="kind-select") }}</div>
+    <div class="mb-3 numeric-only">{{ form.numeric_format.label }}{{ form.numeric_format(class="form-select") }}<small class="form-text text-muted"> For numeric types only</small></div>
+    <div class="mb-3 numeric-only">{{ form.decimal_places.label }}{{ form.decimal_places(class="form-control") }}</div>
+    <div class="mb-3 numeric-only">{{ form.unit_label.label }}{{ form.unit_label(class="form-control") }}</div>
+    <div class="mb-3">{{ form.default_aggregation_formula.label }}{{ form.default_aggregation_formula(class="form-select") }}</div>
+    <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
+    <div class="mb-3">{{ form.is_active(class="form-check-input") }} {{ form.is_active.label(class="form-check-label") }}</div>
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Cancel</a>
+</form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const kindSelect = document.getElementById('kind-select');
+    const numericFields = document.querySelectorAll('.numeric-only');
+
+    function toggleNumericFields() {
+        const isNumeric = kindSelect.value === 'numeric';
+        numericFields.forEach(field => {
+            field.style.display = isNumeric ? 'block' : 'none';
+        });
+    }
+
+    kindSelect.addEventListener('change', toggleNumericFields);
+    toggleNumericFields(); // Initialize on page load
+});
+</script>
+{% endblock %}

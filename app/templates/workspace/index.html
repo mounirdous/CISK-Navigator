@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}Workspace - {{ org_name }}{% endblock %}
+
+{% block content %}
+<h2>Workspace: {{ org_name }}</h2>
+
+<div class="alert alert-info">
+    <strong>Tree/Grid Navigation</strong><br>
+    This is the main workspace where you navigate through the organization structure.<br>
+    Spaces are shown below. Click to expand and see Challenges → Initiatives → Systems → KPIs.
+</div>
+
+<div class="mb-3">
+    <button id="expand-all" class="btn btn-outline-primary btn-sm">Expand All</button>
+    <button id="collapse-all" class="btn btn-outline-secondary btn-sm">Collapse All</button>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary ms-3">Administration</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-hover" id="workspace-tree">
+        <thead class="table-light">
+            <tr>
+                <th style="min-width: 400px;">Structure</th>
+                {% for vt in value_types %}
+                <th class="text-center" style="min-width: 120px;">
+                    {{ vt.name }}
+                    {% if vt.unit_label %}
+                    <br><small class="text-muted">({{ vt.unit_label }})</small>
+                    {% endif %}
+                </th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if spaces %}
+                {% for space in spaces %}
+                <!-- SPACE ROW -->
+                <tr data-level="space" data-id="{{ space.id }}" class="table-primary">
+                    <td>
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        <strong>{{ space.name }}</strong>
+                        {% if space.space_label %}
+                            <span class="badge bg-info ms-2">{{ space.space_label }}</span>
+                        {% endif %}
+                    </td>
+                    {% for vt in value_types %}
+                    <td class="text-center text-muted">
+                        <small>Click to expand</small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {% for challenge in space.challenges %}
+                <!-- CHALLENGE ROW -->
+                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: none;">
+                    <td style="padding-left: 2rem;">
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        → {{ challenge.name }}
+                    </td>
+                    {% for vt in value_types %}
+                    <td class="text-center text-muted">
+                        <small>—</small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {% for link in challenge.initiative_links %}
+                    {% set initiative = link.initiative %}
+                <!-- INITIATIVE ROW -->
+                <tr data-level="initiative" data-id="{{ initiative.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary" style="display: none;">
+                    <td style="padding-left: 4rem;">
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        ⮕ {{ initiative.name }}
+                    </td>
+                    {% for vt in value_types %}
+                    <td class="text-center text-muted">
+                        <small>—</small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {% for sys_link in initiative.system_links %}
+                    {% set system = sys_link.system %}
+                <!-- SYSTEM ROW -->
+                <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info" style="display: none;">
+                    <td style="padding-left: 6rem;">
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        ⇨ {{ system.name }}
+                    </td>
+                    {% for vt in value_types %}
+                    <td class="text-center text-muted">
+                        <small>—</small>
+                    </td>
+                    {% endfor %}
+                </tr>
+
+                {% for kpi in sys_link.kpis %}
+                <!-- KPI ROW -->
+                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning" style="display: none;">
+                    <td style="padding-left: 8rem;">
+                        ⟹ {{ kpi.name }}
+                    </td>
+                    {% for vt in value_types %}
+                        {% set config = kpi.value_type_configs | selectattr('value_type_id', 'equalto', vt.id) | first %}
+                        {% if config %}
+                            {% set consensus = config.get_consensus_value() %}
+                        <td class="text-center kpi-cell" style="cursor: pointer;"
+                            onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'">
+                            {% if consensus.status == 'no_data' %}
+                                <span class="badge bg-secondary">Click to enter</span>
+                            {% elif consensus.value is not none %}
+                                <div>
+                                    {% if vt.kind == 'numeric' %}
+                                        <strong>{{ consensus.value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    {% elif vt.kind == 'risk' %}
+                                        {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
+                                        {% if consensus.value == 2 %}<strong>!!</strong>{% endif %}
+                                        {% if consensus.value == 3 %}<strong>!!!</strong>{% endif %}
+                                    {% elif vt.kind == 'positive_impact' %}
+                                        {% if consensus.value == 1 %}<strong>★</strong>{% endif %}
+                                        {% if consensus.value == 2 %}<strong>★★</strong>{% endif %}
+                                        {% if consensus.value == 3 %}<strong>★★★</strong>{% endif %}
+                                    {% elif vt.kind == 'negative_impact' %}
+                                        {% if consensus.value == 1 %}<strong>▼</strong>{% endif %}
+                                        {% if consensus.value == 2 %}<strong>▼▼</strong>{% endif %}
+                                        {% if consensus.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                    {% else %}
+                                        <strong>{{ consensus.value }}</strong>
+                                    {% endif %}
+                                </div>
+                                <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
+                            {% else %}
+                                <div>
+                                    <small class="text-muted">{{ consensus.count }} conflicting values</small>
+                                </div>
+                                <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
+                            {% endif %}
+                        </td>
+                        {% else %}
+                        <td class="text-center text-muted">
+                            <small>N/A</small>
+                        </td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+                {% endfor %}
+                {% endfor %}
+                {% endfor %}
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="{{ value_types|length + 1 }}" class="text-center text-muted">
+                        No spaces defined yet. Go to Administration to create spaces.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle expand/collapse
+    document.querySelectorAll('.expand-icon').forEach(icon => {
+        icon.addEventListener('click', function(e) {
+            e.stopPropagation();
+
+            const row = this.closest('tr');
+            const level = row.dataset.level;
+            const id = row.dataset.id;
+            const isExpanded = this.textContent === '▼';
+
+            if (isExpanded) {
+                // Collapse
+                this.textContent = '▶';
+                collapseChildren(level, id);
+            } else {
+                // Expand
+                this.textContent = '▼';
+                expandChildren(level, id);
+            }
+        });
+    });
+
+    function expandChildren(parentLevel, parentId) {
+        const rows = document.querySelectorAll(`tr[data-parent-type="${parentLevel}"][data-parent-id="${parentId}"]`);
+        rows.forEach(row => {
+            row.style.display = '';
+        });
+    }
+
+    function collapseChildren(parentLevel, parentId) {
+        const rows = document.querySelectorAll(`tr[data-parent-type="${parentLevel}"][data-parent-id="${parentId}"]`);
+        rows.forEach(row => {
+            row.style.display = 'none';
+            // Also collapse nested children
+            const icon = row.querySelector('.expand-icon');
+            if (icon && icon.textContent === '▼') {
+                icon.textContent = '▶';
+                const childLevel = row.dataset.level;
+                const childId = row.dataset.id;
+                collapseChildren(childLevel, childId);
+            }
+        });
+    }
+
+    // Expand All button
+    document.getElementById('expand-all').addEventListener('click', function() {
+        document.querySelectorAll('.expand-icon').forEach(icon => {
+            icon.textContent = '▼';
+        });
+        document.querySelectorAll('tr[data-parent-type]').forEach(row => {
+            row.style.display = '';
+        });
+    });
+
+    // Collapse All button
+    document.getElementById('collapse-all').addEventListener('click', function() {
+        document.querySelectorAll('.expand-icon').forEach(icon => {
+            icon.textContent = '▶';
+        });
+        document.querySelectorAll('tr[data-parent-type]').forEach(row => {
+            row.style.display = 'none';
+        });
+    });
+
+    // Expand all by default on page load
+    document.getElementById('expand-all').click();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+services:
+  # OLD App - Visualization Tool
+  - type: web
+    name: cisk-navigator-viz
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # NEW App - Data Collection & Management
+  - type: web
+    name: cisk-navigator-app
+    env: python
+    buildCommand: pip install -r requirements.new.txt
+    startCommand: gunicorn run:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_CONFIG
+        value: production

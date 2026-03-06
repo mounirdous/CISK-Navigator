@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Administration - {{ org_name }}{% endblock %}
+
+{% block content %}
+<h2>Administration: {{ org_name }}</h2>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h6>Business Structure</h6></div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('organization_admin.spaces') }}">Spaces ({{ stats.spaces }})</a></li>
+                    <li><a href="{{ url_for('organization_admin.challenges') }}">Challenges ({{ stats.challenges }})</a></li>
+                    <li><a href="#">Initiatives ({{ stats.initiatives }})</a></li>
+                    <li><a href="#">Systems ({{ stats.systems }})</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h6>Value Types</h6></div>
+            <div class="card-body">
+                <p>{{ stats.value_types }} active value types</p>
+                <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-sm btn-primary">Manage Value Types</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header"><h6>Roll-up Configuration</h6></div>
+            <div class="card-body">
+                <p>Configure how values roll up through the hierarchy.</p>
+                <a href="#" class="btn btn-sm btn-primary">Configure Roll-ups</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">Back to Workspace</a>
+</div>
+{% endblock %}

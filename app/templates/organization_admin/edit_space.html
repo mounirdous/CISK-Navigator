@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Edit Space{% endblock %}
+{% block content %}
+<h2>Edit Space: {{ space.name }}</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
+    <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
+    <div class="mb-3">{{ form.space_label.label }}{{ form.space_label(class="form-control") }}<small class="form-text">e.g., Season, Site, Customer</small></div>
+    <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

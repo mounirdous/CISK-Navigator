@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Value Types{% endblock %}
+{% block content %}
+<h2>Value Types</h2>
+<div class="mb-3">
+    <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary">Create Value Type</a>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
+</div>
+<table class="table table-striped">
+    <thead>
+        <tr><th>Name</th><th>Kind</th><th>Unit</th><th>Formula</th><th>Status</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+        {% for vt in value_types %}
+        <tr>
+            <td>{{ vt.name }}</td>
+            <td><span class="badge bg-info">{{ vt.kind }}</span></td>
+            <td>{{ vt.unit_label or '-' }}</td>
+            <td>{{ vt.default_aggregation_formula }}</td>
+            <td>
+                {% if vt.is_active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="#" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}" class="btn btn-sm btn-outline-danger">Delete...</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

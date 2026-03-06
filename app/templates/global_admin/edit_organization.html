@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Edit Organization{% endblock %}
+{% block content %}
+<h2>Edit Organization: {{ org.name }}</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
+    <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
+    <div class="mb-3">{{ form.is_active(class="form-check-input") }} {{ form.is_active.label(class="form-check-label") }}</div>
+    {{ form.submit(class="btn btn-primary") }}
+    <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}
