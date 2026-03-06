@@ -42,7 +42,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('organization_admin.configure_system_rollup', link_id=link.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}"/>
 
                         <p class="text-muted mb-3">
                             Configure how KPI values aggregate to this System in this specific Initiative context.

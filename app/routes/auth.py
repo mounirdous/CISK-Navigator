@@ -114,6 +114,23 @@ def login():
             flash('Your account is inactive', 'danger')
             return redirect(url_for('auth.login'))
 
+        # Check if user has only one org - auto-login if so
+        user_orgs = user.get_organizations()
+        active_orgs = [org for org in user_orgs if org.is_active]
+
+        # Auto-login if user has exactly one org and is not a global admin
+        if len(active_orgs) == 1 and not user.is_global_admin:
+            organization = active_orgs[0]
+            login_user(user)
+            session['organization_id'] = organization.id
+            session['organization_name'] = organization.name
+
+            if user.must_change_password:
+                flash('You must change your password', 'warning')
+                return redirect(url_for('auth.change_password'))
+
+            return redirect(url_for('workspace.index'))
+
         # Store user ID temporarily for step 2
         session['_temp_user_id'] = user.id
         return redirect(url_for('auth.login'))

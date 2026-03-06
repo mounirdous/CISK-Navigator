@@ -40,7 +40,7 @@
             </div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('organization_admin.configure_challenge_rollup', challenge_id=challenge.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}"/>
 
                     <p class="text-muted mb-3">
                         Configure how Initiative values aggregate to this Challenge and then to the parent Space.
