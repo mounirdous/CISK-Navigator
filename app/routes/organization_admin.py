@@ -18,9 +18,10 @@ from app.forms import (
     InitiativeCreateForm, InitiativeEditForm,
     SystemCreateForm, SystemEditForm,
     KPICreateForm, KPIEditForm,
-    ValueTypeCreateForm, ValueTypeEditForm
+    ValueTypeCreateForm, ValueTypeEditForm,
+    YAMLUploadForm
 )
-from app.services import DeletionImpactService, ValueTypeUsageService
+from app.services import DeletionImpactService, ValueTypeUsageService, YAMLImportService
 
 bp = Blueprint('organization_admin', __name__, url_prefix='/org-admin')
 
@@ -711,3 +712,121 @@ def configure_rollup(vt_id):
                           value_type=value_type,
                           default_enabled=default_enabled,
                           default_formula=default_formula)
+
+@bp.route('/yaml-upload', methods=['GET', 'POST'])
+@login_required
+@organization_required
+def yaml_upload():
+    """Upload YAML file to create complete organizational structure"""
+    org_id = session.get('organization_id')
+    form = YAMLUploadForm()
+
+    if form.validate_on_submit():
+        if not form.confirm_delete.data:
+            flash('You must confirm that you understand all data will be deleted', 'danger')
+            return redirect(url_for('organization_admin.yaml_upload'))
+
+        try:
+            # Read uploaded file
+            yaml_file = form.yaml_file.data
+            yaml_content = yaml_file.read().decode('utf-8')
+
+            # Delete ALL existing organization data
+            # This is intentional and destructive - user was warned!
+            _delete_all_organization_data(org_id)
+
+            # Import from YAML
+            result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
+
+            if result.get('success'):
+                flash(f'✓ Import successful!', 'success')
+                flash(f'Created: {result["spaces"]} spaces, {result["challenges"]} challenges, '
+                      f'{result["initiatives"]} initiatives, {result["systems"]} systems, '
+                      f'{result["kpis"]} KPIs, {result["value_types"]} value types', 'info')
+
+                if result.get('errors'):
+                    flash(f'Warnings: {len(result["errors"])} issues encountered', 'warning')
+                    for error in result['errors'][:5]:  # Show first 5 errors
+                        flash(f'⚠ {error}', 'warning')
+
+                return redirect(url_for('organization_admin.spaces'))
+            else:
+                flash('Import failed', 'danger')
+                for error in result.get('errors', []):
+                    flash(error, 'danger')
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error uploading YAML: {str(e)}', 'danger')
+
+    return render_template('organization_admin/yaml_upload.html', form=form)
+
+
+def _delete_all_organization_data(org_id):
+    """
+    Delete ALL data for an organization.
+    This is called before YAML import to start fresh.
+    
+    WARNING: This is destructive and irreversible!
+    """
+    # Delete in correct order to respect foreign keys
+    
+    # Delete Contributions (leaf level)
+    from app.models import Contribution
+    contributions = Contribution.query.join(KPIValueTypeConfig).join(KPI).join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).all()
+    for contrib in contributions:
+        db.session.delete(contrib)
+    
+    # Delete KPIValueTypeConfigs
+    configs = KPIValueTypeConfig.query.join(KPI).join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).all()
+    for config in configs:
+        db.session.delete(config)
+    
+    # Delete KPIs
+    kpis = KPI.query.join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).all()
+    for kpi in kpis:
+        db.session.delete(kpi)
+    
+    # Delete InitiativeSystemLinks
+    links = InitiativeSystemLink.query.join(Initiative).filter(Initiative.organization_id == org_id).all()
+    for link in links:
+        db.session.delete(link)
+    
+    # Delete Systems
+    systems = System.query.filter_by(organization_id=org_id).all()
+    for system in systems:
+        db.session.delete(system)
+    
+    # Delete ChallengeInitiativeLinks
+    from app.models import ChallengeInitiativeLink
+    challenge_links = ChallengeInitiativeLink.query.join(Challenge).filter(Challenge.organization_id == org_id).all()
+    for link in challenge_links:
+        db.session.delete(link)
+    
+    # Delete Initiatives
+    initiatives = Initiative.query.filter_by(organization_id=org_id).all()
+    for initiative in initiatives:
+        db.session.delete(initiative)
+    
+    # Delete Challenges
+    challenges = Challenge.query.filter_by(organization_id=org_id).all()
+    for challenge in challenges:
+        db.session.delete(challenge)
+    
+    # Delete Spaces
+    spaces = Space.query.filter_by(organization_id=org_id).all()
+    for space in spaces:
+        db.session.delete(space)
+    
+    # Delete ValueTypes
+    value_types = ValueType.query.filter_by(organization_id=org_id).all()
+    for vt in value_types:
+        db.session.delete(vt)
+    
+    # Delete RollupRules
+    from app.models import RollupRule
+    rollup_rules = RollupRule.query.join(ValueType).filter(ValueType.organization_id == org_id).all()
+    for rule in rollup_rules:
+        db.session.delete(rule)
+    
+    db.session.flush()

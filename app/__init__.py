@@ -98,9 +98,13 @@ def create_app(config_name=None):
         except (ValueError, TypeError):
             return None
 
-    # Create tables and bootstrap admin
+    # Bootstrap admin (only creates if doesn't exist)
+    # Note: DO NOT use db.create_all() in production - use migrations instead!
     with app.app_context():
-        db.create_all()
+        # Only create tables in testing/development without migrations
+        if app.config.get('TESTING') or (app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('sqlite:///')):
+            db.create_all()
+
         _bootstrap_admin()
 
     return app
