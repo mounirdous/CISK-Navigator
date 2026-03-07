@@ -30,6 +30,14 @@ value_types:
     unit_label: "days"
     default_aggregation_formula: avg
 
+  - name: "Team Readiness"
+    kind: level
+    default_aggregation_formula: avg
+
+  - name: "Stakeholder Sentiment"
+    kind: sentiment
+    default_aggregation_formula: avg
+
 # Spaces (top-level grouping)
 spaces:
   - id: S1
@@ -77,6 +85,12 @@ spaces:
                     description: "Percentage of transactions following standard process"
                     value_types:
                       - name: "Risk Level"
+
+                  - name: "Team readiness for go-live"
+                    description: "Team confidence and preparation level"
+                    value_types:
+                      - name: "Team Readiness"
+                      - name: "Stakeholder Sentiment"
 
               - id: SYS2
                 name: "CRM Core (Salesforce)"
