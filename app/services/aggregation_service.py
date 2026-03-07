@@ -4,6 +4,7 @@ Aggregation Service
 Handles upward roll-up of values through the hierarchy.
 """
 from decimal import Decimal
+from statistics import median
 from sqlalchemy import and_
 from app.models import (
     KPI, KPIValueTypeConfig, InitiativeSystemLink, ChallengeInitiativeLink,
@@ -29,7 +30,7 @@ class AggregationService:
 
         Args:
             values: list of numeric or qualitative values
-            formula: sum, min, max, or avg
+            formula: sum, min, max, avg, median, or count
             value_type: ValueType object to determine handling
 
         Returns:
@@ -56,6 +57,14 @@ class AggregationService:
                 # For qualitative, store raw average but can be rounded for display
                 return avg
             return avg
+
+        elif formula == 'median':
+            # Median: middle value when sorted, ignores outliers
+            return median(values)
+
+        elif formula == 'count':
+            # Count: number of values (useful for "how many" questions)
+            return len(values)
 
         return None
 

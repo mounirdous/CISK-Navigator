@@ -35,8 +35,10 @@ class ValueType(db.Model):
     FORMULA_MIN = 'min'
     FORMULA_MAX = 'max'
     FORMULA_AVG = 'avg'
+    FORMULA_MEDIAN = 'median'
+    FORMULA_COUNT = 'count'
 
-    FORMULAS = [FORMULA_SUM, FORMULA_MIN, FORMULA_MAX, FORMULA_AVG]
+    FORMULAS = [FORMULA_SUM, FORMULA_MIN, FORMULA_MAX, FORMULA_AVG, FORMULA_MEDIAN, FORMULA_COUNT]
 
     id = db.Column(db.Integer, primary_key=True)
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False)

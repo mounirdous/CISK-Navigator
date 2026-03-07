@@ -21,7 +21,9 @@ class ValueTypeCreateForm(FlaskForm):
         ('sum', 'Sum'),
         ('min', 'Minimum'),
         ('max', 'Maximum'),
-        ('avg', 'Average')
+        ('avg', 'Average'),
+        ('median', 'Median'),
+        ('count', 'Count')
     ], validators=[DataRequired()])
     display_order = IntegerField('Display Order', default=0)
     is_active = BooleanField('Active', default=True)
