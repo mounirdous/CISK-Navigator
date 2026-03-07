@@ -67,9 +67,9 @@ class YAMLExportService:
         """Export spaces and their hierarchy"""
         result = []
 
-        for space in spaces:
+        for idx, space in enumerate(spaces, start=1):
             space_data = {
-                'id': space.space_id,
+                'id': f'S{idx}',
                 'name': space.name,
                 'display_order': space.display_order,
             }
@@ -93,9 +93,9 @@ class YAMLExportService:
         """Export challenges"""
         result = []
 
-        for challenge in challenges:
+        for idx, challenge in enumerate(challenges, start=1):
             challenge_data = {
-                'id': challenge.challenge_id,
+                'id': f'C{idx}',
                 'name': challenge.name,
                 'display_order': challenge.display_order,
             }
@@ -124,9 +124,9 @@ class YAMLExportService:
         """Export initiatives"""
         result = []
 
-        for initiative in initiatives:
+        for idx, initiative in enumerate(initiatives, start=1):
             init_data = {
-                'id': initiative.initiative_id,
+                'id': f'I{idx}',
                 'name': initiative.name,
             }
 
@@ -154,9 +154,9 @@ class YAMLExportService:
         """Export systems"""
         result = []
 
-        for system in systems:
+        for idx, system in enumerate(systems, start=1):
             sys_data = {
-                'id': system.system_id,
+                'id': f'SYS{idx}',
                 'name': system.name,
             }
 
