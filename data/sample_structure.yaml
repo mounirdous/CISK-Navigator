@@ -1,0 +1,178 @@
+# CISK Navigator Structure Import Example
+# Version: 2.0
+# This YAML file can be uploaded to create a complete organizational structure
+
+# Value Types (organization-wide definitions)
+value_types:
+  - name: "Cost"
+    kind: numeric
+    numeric_format: decimal
+    decimal_places: 2
+    unit_label: "€"
+    default_aggregation_formula: sum
+
+  - name: "CO2 Emissions"
+    kind: numeric
+    numeric_format: decimal
+    decimal_places: 1
+    unit_label: "tCO2e"
+    default_aggregation_formula: sum
+
+  - name: "Risk Level"
+    kind: risk
+
+  - name: "Positive Impact"
+    kind: positive_impact
+
+  - name: "Time to Deliver"
+    kind: numeric
+    numeric_format: integer
+    unit_label: "days"
+    default_aggregation_formula: avg
+
+# Spaces (top-level grouping)
+spaces:
+  - id: S1
+    name: "Season 1 - Foundation"
+    description: "Building the foundation for digital transformation"
+    space_label: "Season"
+    display_order: 1
+
+    # Challenges within this space
+    challenges:
+      - id: C1
+        name: "Digital Transformation"
+        description: "Lead-time too long across Order→Engineering→Supply→Build"
+        display_order: 1
+
+        # Initiatives addressing this challenge
+        initiatives:
+          - id: I1
+            name: "Value streams & standard E2E processes"
+            description: "Standardize P2P, ETO, Service processes and consolidate CRM (3→1)"
+
+            # Systems supporting this initiative
+            systems:
+              - id: SYS1
+                name: "Core ERP (SAP S/4HANA)"
+                description: "System of record for all business processes"
+
+                # KPIs for this initiative-system combination
+                kpis:
+                  - name: "Lead time reduction"
+                    description: "End-to-end lead time improvement"
+                    value_types:
+                      - name: "Time to Deliver"
+                        colors:
+                          positive: "#dc3545"  # Red - longer time is bad
+                          zero: "#6c757d"       # Gray
+                          negative: "#28a745"   # Green - shorter time is good
+                      - name: "Cost"
+                        colors:
+                          positive: "#dc3545"  # Red - higher cost is bad
+                          zero: "#6c757d"
+                          negative: "#28a745"  # Green - savings are good
+
+                  - name: "Process compliance rate"
+                    description: "Percentage of transactions following standard process"
+                    value_types:
+                      - name: "Risk Level"
+
+              - id: SYS2
+                name: "CRM Core (Salesforce)"
+                description: "Consolidated customer relationship management"
+
+                kpis:
+                  - name: "Customer data quality"
+                    description: "Master customer data accuracy and completeness"
+                    value_types:
+                      - name: "Risk Level"
+                      - name: "Positive Impact"
+
+          - id: I2
+            name: "Planning discipline & control-tower routines"
+            description: "S&OP/MRP optimization and exception management"
+
+            systems:
+              - id: SYS3
+                name: "Planning Cockpit"
+                description: "MRP exceptions and APS where needed"
+
+                kpis:
+                  - name: "Inventory turns improvement"
+                    description: "Increase inventory turnover by 10-15%"
+                    value_types:
+                      - name: "Cost"
+                        colors:
+                          positive: "#dc3545"  # Higher inventory cost is bad
+                          zero: "#6c757d"
+                          negative: "#28a745"  # Lower inventory cost is good
+                      - name: "CO2 Emissions"
+                        colors:
+                          positive: "#dc3545"
+                          zero: "#6c757d"
+                          negative: "#28a745"
+
+      - id: C2
+        name: "Digital Architecture & Principles"
+        description: "Fragmented landscape needs consolidation"
+        display_order: 2
+
+        initiatives:
+          - id: I3
+            name: "Integration standards + platform selection"
+            description: "API/events, iPaaS platform"
+
+            systems:
+              - id: SYS4
+                name: "Integration Platform"
+                description: "iPaaS for API and event-based integration"
+
+                kpis:
+                  - name: "Integration health"
+                    description: "% interfaces via iPaaS/API"
+                    value_types:
+                      - name: "Positive Impact"
+                      - name: "Risk Level"
+
+  - id: S2
+    name: "Season 2 - Scale"
+    description: "Scaling successful pilots across the organization"
+    space_label: "Season"
+    display_order: 2
+
+    challenges:
+      - id: C3
+        name: "ERP Consolidation Strategy"
+        description: "Multiple ERP instances creating duplication and friction"
+        display_order: 1
+
+        initiatives:
+          - id: I4
+            name: "S/4HANA pilot live + rollout waves"
+            description: "First wave deployment with Finance value gate"
+
+            systems:
+              - id: SYS1  # Reusing existing system
+                name: "Core ERP (SAP S/4HANA)"
+                description: "System of record for all business processes"
+
+                kpis:
+                  - name: "ERP consolidation progress"
+                    description: "Number of legacy systems retired"
+                    value_types:
+                      - name: "Positive Impact"
+
+                  - name: "Finance efficiency"
+                    description: "Close cycle time reduction"
+                    value_types:
+                      - name: "Time to Deliver"
+                        colors:
+                          positive: "#dc3545"
+                          zero: "#6c757d"
+                          negative: "#28a745"
+                      - name: "Cost"
+                        colors:
+                          positive: "#dc3545"
+                          zero: "#6c757d"
+                          negative: "#28a745"
