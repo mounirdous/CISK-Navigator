@@ -12,9 +12,9 @@ services:
   # CISK Navigator v2.0 - Full Data Collection & Management
   - type: web
     name: cisk-navigator-app
-    env: python
+    runtime: python
     region: oregon
-    buildCommand: pip install -r requirements.txt && flask db upgrade
+    buildCommand: find . -type d -name __pycache__ -exec rm -rf {} + || true && pip install -r requirements.txt && flask db upgrade
     startCommand: gunicorn run:app
     envVars:
       - key: PYTHON_VERSION
