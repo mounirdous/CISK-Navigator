@@ -23,8 +23,10 @@ class ValueType(db.Model):
     KIND_RISK = 'risk'
     KIND_POSITIVE_IMPACT = 'positive_impact'
     KIND_NEGATIVE_IMPACT = 'negative_impact'
+    KIND_LEVEL = 'level'
+    KIND_SENTIMENT = 'sentiment'
 
-    KINDS = [KIND_NUMERIC, KIND_RISK, KIND_POSITIVE_IMPACT, KIND_NEGATIVE_IMPACT]
+    KINDS = [KIND_NUMERIC, KIND_RISK, KIND_POSITIVE_IMPACT, KIND_NEGATIVE_IMPACT, KIND_LEVEL, KIND_SENTIMENT]
 
     # Numeric formats
     FORMAT_INTEGER = 'integer'

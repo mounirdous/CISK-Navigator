@@ -280,5 +280,11 @@ class ExcelExportService:
         elif value_type.kind == 'negative_impact':
             impact_map = {1: '▼', 2: '▼▼', 3: '▼▼▼'}
             return impact_map.get(int(value), '')
+        elif value_type.kind == 'level':
+            level_map = {1: '●', 2: '●●', 3: '●●●'}
+            return level_map.get(int(value), '')
+        elif value_type.kind == 'sentiment':
+            sentiment_map = {1: '☹️', 2: '😐', 3: '😊'}
+            return sentiment_map.get(int(value), '')
 
         return str(value)

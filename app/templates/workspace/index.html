@@ -56,6 +56,10 @@
                                     {% if rollup.value == 1 %}★{% elif rollup.value == 2 %}★★{% elif rollup.value == 3 %}★★★{% endif %}
                                 {% elif vt.kind == 'negative_impact' %}
                                     {% if rollup.value == 1 %}▼{% elif rollup.value == 2 %}▼▼{% elif rollup.value == 3 %}▼▼▼{% endif %}
+                                {% elif vt.kind == 'level' %}
+                                    {% if rollup.value == 1 %}●{% elif rollup.value == 2 %}●●{% elif rollup.value == 3 %}●●●{% endif %}
+                                {% elif vt.kind == 'sentiment' %}
+                                    {% if rollup.value == 1 %}☹️{% elif rollup.value == 2 %}😐{% elif rollup.value == 3 %}😊{% endif %}
                                 {% endif %}
                                 <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
                             {% else %}

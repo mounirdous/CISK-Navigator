@@ -51,6 +51,14 @@
                             {% if consensus.value == 1 %}▼ (Low){% endif %}
                             {% if consensus.value == 2 %}▼▼ (Medium){% endif %}
                             {% if consensus.value == 3 %}▼▼▼ (High){% endif %}
+                        {% elif value_type.kind == 'level' %}
+                            {% if consensus.value == 1 %}● (Low){% endif %}
+                            {% if consensus.value == 2 %}●● (Medium){% endif %}
+                            {% if consensus.value == 3 %}●●● (High){% endif %}
+                        {% elif value_type.kind == 'sentiment' %}
+                            {% if consensus.value == 1 %}☹️ (Negative){% endif %}
+                            {% if consensus.value == 2 %}😐 (Neutral){% endif %}
+                            {% if consensus.value == 3 %}😊 (Positive){% endif %}
                         {% else %}
                             {{ consensus.value }}
                         {% endif %}
@@ -91,6 +99,14 @@
                         {% if contrib.qualitative_level == 1 %}▼ (Low){% endif %}
                         {% if contrib.qualitative_level == 2 %}▼▼ (Medium){% endif %}
                         {% if contrib.qualitative_level == 3 %}▼▼▼ (High){% endif %}
+                    {% elif value_type.kind == 'level' %}
+                        {% if contrib.qualitative_level == 1 %}● (Low){% endif %}
+                        {% if contrib.qualitative_level == 2 %}●● (Medium){% endif %}
+                        {% if contrib.qualitative_level == 3 %}●●● (High){% endif %}
+                    {% elif value_type.kind == 'sentiment' %}
+                        {% if contrib.qualitative_level == 1 %}☹️ (Negative){% endif %}
+                        {% if contrib.qualitative_level == 2 %}😐 (Neutral){% endif %}
+                        {% if contrib.qualitative_level == 3 %}😊 (Positive){% endif %}
                     {% else %}
                         Level {{ contrib.qualitative_level }}
                     {% endif %}
