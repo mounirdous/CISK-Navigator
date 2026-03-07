@@ -6,6 +6,7 @@ For managing users and organizations (global admins only).
 from flask import Blueprint, render_template, redirect, url_for, flash, session, request
 from flask_login import login_required, current_user
 from functools import wraps
+from flask_wtf import FlaskForm
 from app.extensions import db
 from app.models import User, Organization, UserOrganizationMembership, CellComment, MentionNotification, KPIValueTypeConfig, KPI, InitiativeSystemLink, Initiative
 from app.forms import UserCreateForm, UserEditForm, OrganizationCreateForm, OrganizationEditForm, OrganizationCloneForm
@@ -154,7 +155,8 @@ def delete_user(user_id):
 def organizations():
     """List all organizations"""
     organizations = Organization.query.order_by(Organization.name).all()
-    return render_template('global_admin/organizations.html', organizations=organizations)
+    csrf_form = FlaskForm()  # Simple form for CSRF token
+    return render_template('global_admin/organizations.html', organizations=organizations, csrf_form=csrf_form)
 
 
 @bp.route('/organizations/create', methods=['GET', 'POST'])
