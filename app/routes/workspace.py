@@ -946,10 +946,10 @@ def search_page():
         ValueType.organization_id == org_id,
         db.or_(
             ValueType.name.ilike(search_pattern),
-            ValueType.description.ilike(search_pattern)
+            ValueType.unit_label.ilike(search_pattern)
         )
     ).all()
-    results['value_types'] = [{'id': v.id, 'name': v.name, 'description': v.description, 'kind': v.kind} for v in value_types]
+    results['value_types'] = [{'id': v.id, 'name': v.name, 'unit_label': v.unit_label, 'kind': v.kind} for v in value_types]
 
     # Search Comments
     comments = db.session.query(CellComment).join(

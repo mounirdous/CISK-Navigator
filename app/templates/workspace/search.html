@@ -170,8 +170,8 @@
                     <h6 class="mb-1">{{ vt.name }}</h6>
                     <span class="badge bg-secondary">{{ vt.kind }}</span>
                 </div>
-                {% if vt.description %}
-                <p class="mb-1 text-muted">{{ vt.description }}</p>
+                {% if vt.unit_label %}
+                <p class="mb-1 text-muted">Unit: {{ vt.unit_label }}</p>
                 {% endif %}
             </div>
             {% endfor %}
