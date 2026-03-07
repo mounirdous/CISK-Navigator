@@ -237,6 +237,14 @@ class CommentService:
         return query.all()
 
     @staticmethod
+    def get_unread_mentions_count(user_id: int) -> int:
+        """Get total count of unread mentions for a user"""
+        return MentionNotification.query.filter_by(
+            mentioned_user_id=user_id,
+            is_read=False
+        ).count()
+
+    @staticmethod
     def mark_mention_read(notification_id: int) -> MentionNotification:
         """Mark a mention notification as read"""
         notification = MentionNotification.query.get(notification_id)

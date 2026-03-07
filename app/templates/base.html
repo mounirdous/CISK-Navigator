@@ -185,6 +185,31 @@
         if (diffMins < 10080) return `${Math.floor(diffMins / 1440)}d ago`;
         return date.toLocaleDateString();
     }
+
+    // Load unread mentions count and update badge
+    async function loadUnreadMentionsCount() {
+        try {
+            const response = await fetch('/workspace/api/mentions/unread?limit=1');
+            const data = await response.json();
+
+            const badge = document.getElementById('mentionsBadge');
+            if (badge && data.total_count !== undefined) {
+                if (data.total_count > 0) {
+                    badge.textContent = data.total_count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error loading mentions count:', error);
+        }
+    }
+
+    // Load initial count on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUnreadMentionsCount();
+    });
     </script>
     {% endif %}
 

@@ -622,10 +622,12 @@ def get_unread_mentions():
     try:
         limit = request.args.get('limit', 20, type=int)
         mentions = CommentService.get_unread_mentions(current_user.id, limit=limit)
+        total_count = CommentService.get_unread_mentions_count(current_user.id)
 
         return jsonify({
             'mentions': [m.to_dict() for m in mentions],
-            'count': len(mentions)
+            'count': len(mentions),  # Number of mentions returned (limited)
+            'total_count': total_count  # Total unread mentions count
         })
 
     except Exception as e:
