@@ -3,7 +3,7 @@ Organization Administration routes
 
 For managing business content within an organization (spaces, challenges, initiatives, etc.).
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request, jsonify, send_file
 from flask_login import login_required, current_user
 from functools import wraps
 from app.extensions import db
@@ -21,7 +21,7 @@ from app.forms import (
     ValueTypeCreateForm, ValueTypeEditForm,
     YAMLUploadForm
 )
-from app.services import DeletionImpactService, ValueTypeUsageService, YAMLImportService
+from app.services import DeletionImpactService, ValueTypeUsageService, YAMLImportService, YAMLExportService
 
 bp = Blueprint('organization_admin', __name__, url_prefix='/org-admin')
 
@@ -786,6 +786,38 @@ def yaml_upload():
             flash(f'Error uploading YAML: {str(e)}', 'danger')
 
     return render_template('organization_admin/yaml_upload.html', form=form)
+
+
+@bp.route('/yaml-export')
+@login_required
+@organization_required
+def yaml_export():
+    """Export organization structure to YAML file"""
+    from io import BytesIO
+    org_id = session.get('organization_id')
+    org_name = session.get('organization_name')
+
+    try:
+        # Generate YAML content
+        yaml_content = YAMLExportService.export_to_yaml(org_id)
+
+        # Create BytesIO object for download
+        yaml_bytes = BytesIO(yaml_content.encode('utf-8'))
+        yaml_bytes.seek(0)
+
+        # Create safe filename
+        safe_org_name = "".join(c for c in org_name if c.isalnum() or c in (' ', '-', '_')).strip()
+        filename = f"structure_{safe_org_name}.yaml"
+
+        return send_file(
+            yaml_bytes,
+            mimetype='application/x-yaml',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        flash(f'Error exporting YAML: {str(e)}', 'danger')
+        return redirect(url_for('organization_admin.index'))
 
 
 def _delete_all_organization_data(org_id):

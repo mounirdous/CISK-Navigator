@@ -32,11 +32,16 @@
 
     <div class="col-md-4">
         <div class="card border-danger">
-            <div class="card-header bg-danger text-white"><h6>⚠️ YAML Structure Import</h6></div>
+            <div class="card-header bg-danger text-white"><h6>⚠️ YAML Structure</h6></div>
             <div class="card-body">
-                <p class="text-danger"><strong>Deletes all data!</strong></p>
-                <p>Upload a YAML file to create a complete organizational structure.</p>
-                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-sm btn-danger">Import YAML</a>
+                <p><strong>Export:</strong> Download current structure as YAML</p>
+                <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-sm btn-success">📥 Export YAML</a>
+
+                <hr class="my-3">
+
+                <p class="text-danger"><strong>Import - Deletes all data!</strong></p>
+                <p>Upload a YAML file to replace the complete organizational structure.</p>
+                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-sm btn-danger">📤 Import YAML</a>
             </div>
         </div>
     </div>
