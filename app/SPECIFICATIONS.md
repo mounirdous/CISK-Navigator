@@ -1,6 +1,6 @@
 # CISK Navigator - Functional Specifications
 
-**Version 2.0.0**
+**Version 2.1.0**
 **Date: March 7, 2026**
 
 ## Table of Contents
@@ -10,11 +10,15 @@
 3. [Core Features](#core-features)
 4. [Hierarchical Data Model](#hierarchical-data-model)
 5. [Authentication & Access Control](#authentication--access-control)
-6. [Workspace & Tree/Grid Navigation](#workspace--treegrid-navigation)
-7. [Data Entry & Consensus Model](#data-entry--consensus-model)
-8. [Value Types](#value-types)
-9. [Roll-up Aggregation](#roll-up-aggregation)
-10. [Administration Features](#administration-features)
+6. [Dashboard](#dashboard)
+7. [Workspace & Tree/Grid Navigation](#workspace--treegrid-navigation)
+8. [Data Entry & Consensus Model](#data-entry--consensus-model)
+9. [Value Types](#value-types)
+10. [Roll-up Aggregation](#roll-up-aggregation)
+11. [Time-Series Tracking](#time-series-tracking)
+12. [Comments & Collaboration](#comments--collaboration)
+13. [Charts & Visualization](#charts--visualization)
+14. [Administration Features](#administration-features)
 
 ## Overview
 
@@ -34,7 +38,36 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
 - **Context-specific KPIs**: KPIs belong to initiative-system pairs, not master systems
 - **Organization isolation**: Each organization has completely separate data
 
-## What's New in v2.0
+## What's New in v2.1
+
+### Dashboard & Overview
+- **Central Hub**: Dashboard replaces workspace as home page
+- **Statistics at a Glance**: See counts of all entities in color-coded cards
+- **Quick Actions**: One-click access to common tasks (create snapshot, export, view mentions)
+- **Recent Activity**: Widgets showing last 5 snapshots and last 10 comments
+- **Unread Alerts**: Button appears when you have unread mentions
+
+### Time-Series Tracking
+- **Snapshots**: Capture current state with custom labels for tracking progress
+- **Historical View**: View workspace as it was on any snapshot date
+- **Trend Indicators**: Automatic ↗️↘️→ arrows showing value changes
+- **Comparison**: Side-by-side comparison of any two snapshots with % change
+- **Charts**: Interactive line charts (Chart.js) showing KPI history
+
+### Collaboration Features
+- **Comments**: Discussion threads on any KPI cell
+- **@Mentions**: Notify users with autocomplete dropdown (keyboard navigation!)
+- **Threading**: Full reply nesting with visual indentation
+- **Notifications**: Bell icon (🔔) shows unread mention count
+- **Real-time**: See latest discussions on dashboard widget
+
+### Enhanced UX
+- **Three-Tier Navigation**: Dashboard → Workspace → Administration
+- **Bootstrap Icons**: Visual cues throughout interface
+- **Keyboard Shortcuts**: Arrow keys + Enter in mention dropdown
+- **Auto-refresh**: Charts and widgets update automatically
+
+## What's in v2.0
 
 ### Database Migration: PostgreSQL
 - **Data Persistence**: Data now survives deployments and restarts
@@ -376,6 +409,227 @@ Location: `app/models/rollup_rule.py`
 Current status: Data model exists, UI configuration pending
 Enables per-context formula overrides
 
+## Dashboard
+
+### Overview Page
+The Dashboard is the home page after login, providing quick access and overview of the organization.
+
+**Statistics Cards:**
+- Display counts for: Spaces, Challenges, Initiatives, Systems, KPIs, Value Types
+- Color-coded cards with hover effects
+- Real-time data from database
+
+**Quick Actions Bar:**
+- Open Workspace
+- Create Snapshot
+- View Snapshots
+- Export to Excel
+- Unread Mentions Alert (appears only when mentions exist)
+
+**Recent Snapshots Widget:**
+- Shows last 5 snapshots
+- Each snapshot displays date and label
+- Action buttons: View (historical state), Compare (vs. current)
+- Link to full snapshots list
+
+**Recent Comments Widget:**
+- Shows last 10 comments across entire organization
+- Displays: user name, comment text (truncated), timestamp, KPI context
+- Scrollable container for easy browsing
+- Updates automatically when new comments posted
+
+**Getting Started Guide:**
+- Tips for new users
+- Explains core features (Workspace, Snapshots, Comments, Mentions, Trends)
+- Dismissible info panel
+
+### Navigation
+- **Logo**: Clicking "CISK Navigator" returns to Dashboard
+- **Navbar**: Dashboard, Workspace, Administration links with icons
+- **Breadcrumbs**: Context-aware navigation on all pages
+
+## Time-Series Tracking
+
+### Snapshots
+Capture the current state of all KPI values at a specific point in time for historical tracking.
+
+**Creating Snapshots:**
+1. Click "Quick Snapshot" button (available on Dashboard and Workspace)
+2. Enter snapshot date (defaults to today)
+3. Optional: Add label (e.g., "Q1 2026", "Sprint 5", "Baseline")
+4. System captures consensus values for all KPIs
+5. System captures rollup values at all hierarchy levels
+
+**Data Captured:**
+- KPI consensus values (only strong consensus)
+- Rollup values (System, Initiative, Challenge, Space levels)
+- Snapshot date and label
+- Organization context
+
+**Database Tables:**
+- `kpi_snapshots`: Individual KPI values
+- `rollup_snapshots`: Aggregated values at each level
+
+**Viewing Snapshots:**
+- **Snapshots List**: View all available snapshots with dates and labels
+- **Historical View**: Click "View" to see workspace as it was on that date
+- **Yellow Banner**: Indicates historical view mode with "Return to Current" button
+
+### Trend Indicators
+Automatic calculation and display of trends when multiple snapshots exist.
+
+**Calculation:**
+- Compares current value vs. most recent snapshot
+- Direction: ↗️ (increasing), ↘️ (decreasing), → (stable)
+- Change: Absolute difference
+- Percent Change: Percentage of change relative to previous value
+
+**Display:**
+- Small trend icon appears next to KPI cell values
+- Hover tooltip shows exact change amount and percentage
+- Only shown when at least 2 snapshots exist
+- Calculated on-demand via API
+
+**API Endpoint:**
+- `GET /workspace/api/kpi/<config_id>/trend`
+- Returns: `{'direction': 'up'|'down'|'stable', 'change': value, 'percent_change': percent}`
+
+### Snapshot Comparison
+Side-by-side comparison of two snapshots or snapshot vs. current data.
+
+**Comparison View:**
+- Select two snapshots (or snapshot vs. current)
+- See detailed comparison table with all KPIs
+- Each row shows: KPI name, Value Type, Value 1, Value 2, Change, % Change
+- Color indicators: Green (increase), Red (decrease), Gray (unchanged)
+
+**Summary Statistics:**
+- Count of KPIs that increased
+- Count of KPIs that decreased
+- Count of KPIs that stayed the same
+
+**Access:**
+- Click "Compare" button on any snapshot in list
+- Available from Dashboard recent snapshots widget
+- Default comparison: Selected snapshot vs. Current
+
+## Comments & Collaboration
+
+### Cell-Level Comments
+Discussion threads attached to any KPI cell (specific KPI + Value Type combination).
+
+**Creating Comments:**
+1. Click 💬 icon on any KPI cell in workspace
+2. Opens comment modal for that specific cell
+3. Type comment text (supports @mentions)
+4. Click "Post Comment"
+5. Comment appears in thread with timestamp
+
+**@Mention System:**
+- Type `@` to trigger autocomplete dropdown
+- Shows all users in current organization
+- Dropdown appears instantly (no typing required after @)
+- Navigate with arrow keys (↑/↓)
+- Select with Enter key or mouse click
+- Selected username inserted into text
+- Mentioned user receives notification
+
+**Keyboard Navigation:**
+- `@` - Show all users
+- `↑/↓` - Navigate dropdown
+- `Enter` - Select highlighted user
+- `Escape` - Close dropdown
+
+**Threaded Replies:**
+- Click "Reply" button on any comment
+- Reply form appears indented under parent
+- Full nesting support (replies to replies)
+- Visual indentation shows thread structure
+
+**Resolve/Unresolve:**
+- Top-level comments have "Resolve" button
+- Marks discussion as complete
+- Resolved comments appear faded
+- Can be unresolvedif needed
+
+**Edit/Delete:**
+- Own comments have Edit and Delete buttons
+- Ownership check prevents editing others' comments
+- Deleting comment deletes all replies recursively
+
+### Mention Notifications
+Track and display @mentions for each user.
+
+**Notification Bell (🔔):**
+- Located in navbar (top right)
+- Shows unread count badge when mentions exist
+- Click to open mentions modal
+
+**Mentions Modal:**
+- Lists all unread mentions with context
+- Shows: commenter name, comment text, time ago, KPI context
+- "Mark as Read" button for each mention
+- "Mark All as Read" button at bottom
+- Auto-updates count badge after marking read
+
+**Database Table:**
+- `mention_notifications`: Tracks which users were mentioned in which comments
+- Fields: user_id, comment_id, is_read, read_at, created_at
+
+### Comment Count Badges
+Visual indicators showing discussion activity.
+
+**Display:**
+- Small blue badge with number appears next to 💬 icon
+- Shows total comment count for that KPI cell
+- Updates automatically when comments added/deleted
+- Loads on page load for all visible cells
+
+## Charts & Visualization
+
+### Trend Charts
+Interactive line charts showing KPI value history over time.
+
+**Technology:**
+- Chart.js 4.4.0 (JavaScript charting library)
+- Responsive canvas-based rendering
+- Hover tooltips with exact values
+
+**Display:**
+- Appears on KPI Cell Detail page
+- Section titled "Historical Trend"
+- Only shown for numeric value types
+- Requires at least 1 snapshot to display
+
+**Chart Features:**
+- Line graph with filled area under curve
+- Blue color scheme matching UI
+- X-axis: Snapshot dates
+- Y-axis: KPI values (with unit if configured)
+- Hover tooltips show exact value and date
+- Smooth curve with tension (0.4)
+- Point markers at each snapshot
+
+**Data Source:**
+- Uses `GET /workspace/api/kpi/<config_id>/history` endpoint
+- Returns array of `{date: 'YYYY-MM-DD', value: number}` objects
+- Sorted chronologically
+
+**Empty State:**
+- When no snapshots exist: "No historical data available. Create snapshots to track trends over time."
+- Blue info alert with icon
+
+**Refresh:**
+- Refresh button next to chart title
+- Reloads data from API
+- Updates chart without page reload
+
+### Interactive Features
+- **Zoom**: Chart adapts to data range automatically
+- **Tooltips**: Hover over points for details
+- **Responsive**: Resizes with browser window
+- **Animations**: Smooth transitions when data updates
+
 ## Administration Features
 
 ### Global Administration
@@ -452,7 +706,36 @@ Benefits:
 
 ## Version History
 
-### v1.8 (Current)
+### v2.1.0 (Current - March 7, 2026)
+- **Dashboard**: Overview page with statistics, quick actions, and recent activity widgets
+- **Time-Series Tracking**: Snapshots with labels, historical view, trend indicators
+- **Snapshot Comparison**: Side-by-side comparison with change analysis
+- **Charts & Visualization**: Interactive line charts using Chart.js 4.4
+- **Comments & Collaboration**: Cell-level discussions with @mention system
+- **Threaded Replies**: Full conversation nesting with indentation
+- **Mention Notifications**: Bell icon with unread count and mentions modal
+- **Autocomplete Enhancement**: Keyboard navigation (arrows + Enter) in @mention dropdown
+- **Enhanced Navigation**: Dashboard → Workspace → Administration with Bootstrap Icons
+- **Recent Comments Widget**: Latest 10 discussions displayed on dashboard
+- **Recent Snapshots Widget**: Last 5 snapshots with View/Compare buttons
+- Database: 4 new tables (kpi_snapshots, rollup_snapshots, cell_comments, mention_notifications)
+- API: 15 new endpoints for snapshots, comments, mentions, and user search
+
+### v2.0.0 (March 2026)
+- **PostgreSQL Migration**: Data persistence across deployments
+- **Color System Refactor**: Sign-based colors configured per KPI (not value type)
+- **6 Aggregation Formulas**: sum, min, max, avg, median, count
+- **New Value Types**: Level (●●●), Sentiment (☹️😐😊)
+- **Excel Export**: Hierarchical export with row grouping
+- **YAML Export/Import**: Complete structure backup and restore
+- **Organization Cloning**: Create test/training environments
+- **Drag-and-Drop**: Reorder value types to control column order
+- **Smart Deletion**: Impact preview before deleting entities
+- **Data Loss Prevention**: Multi-layer safety checks
+- Render deployment with persistent PostgreSQL
+- psycopg3 driver for Python 3.13+ compatibility
+
+### v1.8
 - Two-step login with organization filtering
 - Users only see organizations they have access to
 - Admin checkbox only for global administrators

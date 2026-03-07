@@ -43,13 +43,15 @@ def dashboard():
     org_name = session.get('organization_name')
 
     # Get statistics
+    from app.models import InitiativeSystemLink
+
     stats = {
         'spaces': Space.query.filter_by(organization_id=org_id).count(),
         'challenges': Challenge.query.join(Space).filter(Space.organization_id == org_id).count(),
         'initiatives': Initiative.query.filter_by(organization_id=org_id).count(),
         'systems': System.query.filter_by(organization_id=org_id).count(),
         'kpis': db.session.query(KPI).join(
-            System.initiative_system_links
+            InitiativeSystemLink
         ).join(Initiative).filter(Initiative.organization_id == org_id).count(),
         'value_types': ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
     }
@@ -61,7 +63,7 @@ def dashboard():
     recent_comments = db.session.query(CellComment).join(
         KPIValueTypeConfig
     ).join(KPI).join(
-        System.initiative_system_links
+        InitiativeSystemLink
     ).join(Initiative).filter(
         Initiative.organization_id == org_id
     ).order_by(CellComment.created_at.desc()).limit(10).all()

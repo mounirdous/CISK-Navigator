@@ -1,13 +1,48 @@
-# 🧭 CISK Navigator v2.0
+# 🧭 CISK Navigator v2.1
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
-## ✨ What's New in v2.0
+## ✨ What's New in v2.1
+
+### 📊 **Dashboard & Overview**
+- **Interactive Dashboard**: Statistics cards, quick actions, recent activity
+- **Recent Snapshots Widget**: Last 5 snapshots with View/Compare buttons
+- **Recent Comments Widget**: Latest discussions across all KPIs
+- **Quick Actions**: One-click access to create snapshots, export data, view mentions
+
+### 📈 **Time-Series Tracking**
+- **Snapshots**: Capture KPI values at specific points in time
+- **Historical View**: View workspace state as of any snapshot date
+- **Trend Indicators**: Automatic ↗️↘️→ indicators on KPI cells
+- **Snapshot Comparison**: Side-by-side comparison of any two snapshots
+- **Labels**: Organize snapshots with custom labels ("Q1 2026", "Sprint 5", "Baseline")
+
+### 📉 **Charts & Visualization**
+- **Trend Charts**: Interactive line charts showing KPI history over time (Chart.js)
+- **Tooltips**: Hover for exact values and dates
+- **Auto-refresh**: Update charts with latest snapshot data
+- **Responsive Design**: Charts adapt to screen size
+
+### 💬 **Comments & Collaboration**
+- **Cell-Level Comments**: Discuss KPI values with your team
+- **@Mention System**: Notify users with @username autocomplete
+- **Threaded Replies**: Full conversation threading with indentation
+- **Resolve Discussions**: Mark conversations as complete
+- **Unread Mentions**: Bell notification (🔔) with unread count
+- **Real-time Updates**: See latest comments on dashboard
+
+### 🎨 **Enhanced Navigation**
+- **Three-Tier Nav**: Dashboard → Workspace → Administration
+- **Bootstrap Icons**: Visual cues for all navigation items
+- **Logo Redirect**: Click logo to return to Dashboard
+- **Contextual Buttons**: Dashboard button on every page
+
+## ✨ What's in v2.0
 
 ### 🎨 **Flexible Color System**
 - Colors configured per KPI, not per value type
@@ -64,12 +99,38 @@
 - **📤 Export Options**: Excel (hierarchical), YAML (structure backup), Organization cloning
 - **🎯 Smart Deletion**: Impact preview showing what will be deleted vs. preserved
 
+### Dashboard & Overview
+- **📊 Statistics Dashboard**: Overview of Spaces, Challenges, Initiatives, Systems, KPIs, Value Types
+- **🚀 Quick Actions**: Create snapshots, export data, view mentions - all one click away
+- **📸 Recent Snapshots**: Last 5 snapshots with View/Compare functionality
+- **💬 Recent Comments**: Latest 10 discussions across organization
+- **🔔 Unread Mentions**: Alert for new @mentions with count badge
+
 ### Workspace Features
 - **🌲 Interactive Tree/Grid View**: Expandable/collapsible hierarchy
 - **✅ Consensus Status**: Visual indicators (✓ complete, ⚠ partial)
 - **🎨 Color-Coded Values**: Configurable per KPI for better interpretation
 - **📊 Rollup Indicators**: See aggregated values at every level
 - **🔍 Quick Navigation**: Expand All / Collapse All buttons
+- **💬 Comment Icons**: Click 💬 on any KPI cell to open discussions
+- **↗️ Trend Indicators**: Automatic trend arrows when snapshots exist
+
+### Time-Series & Analytics
+- **📸 Snapshots**: Capture current state with custom labels
+- **📅 Historical View**: View workspace as of any snapshot date
+- **📈 Trend Analysis**: Automatic calculation of value changes over time
+- **📊 Comparison View**: Side-by-side snapshot comparison with % change
+- **📉 Trend Charts**: Interactive line charts (Chart.js) showing KPI history
+- **🏷️ Labels**: Organize snapshots ("Q1 2026", "Baseline", "Sprint 5")
+
+### Collaboration & Communication
+- **💬 Cell Comments**: Discussion threads on any KPI cell
+- **@Mentions**: Notify users with autocomplete dropdown
+- **🧵 Threading**: Full reply nesting with indentation
+- **✅ Resolve**: Mark discussions as complete
+- **🔔 Notifications**: Bell icon shows unread mention count
+- **👥 User Search**: Type @ to see all organization members
+- **⌨️ Keyboard Nav**: Arrow keys + Enter in mention dropdown
 
 ### Value Types (6 Kinds)
 - **Numeric**: Cost, CO2 emissions, licenses, people, time, etc.
@@ -148,7 +209,7 @@ Password: Zurich20
 - **Migrations**: Flask-Migrate (Alembic)
 - **Authentication**: Flask-Login, Werkzeug password hashing
 - **Forms**: Flask-WTF with CSRF protection
-- **Frontend**: Bootstrap 5, SortableJS 1.15 (drag-and-drop), Vanilla JavaScript
+- **Frontend**: Bootstrap 5, Bootstrap Icons, SortableJS 1.15 (drag-and-drop), Chart.js 4.4 (charts), Vanilla JavaScript
 - **Export**: openpyxl (Excel), PyYAML (structure files)
 
 ### Data Model
@@ -183,6 +244,67 @@ Organization
 - **Sustainability Tracking**: Aggregate CO2, cost, and impact metrics
 
 ## 🔄 Version History
+
+### v2.1.0 (March 2026) - **Major Feature Release**
+
+**Dashboard & Overview:**
+- ✨ Interactive dashboard with statistics cards and widgets
+- ✨ Recent snapshots widget with View/Compare buttons
+- ✨ Recent comments widget showing latest discussions
+- ✨ Quick actions for common tasks
+- ✨ Getting started guide for new users
+
+**Time-Series Tracking:**
+- ✨ Snapshot system for capturing KPI values over time
+- ✨ Historical view to see workspace state as of any date
+- ✨ Automatic trend indicators (↗️↘️→) on KPI cells
+- ✨ Snapshot comparison with side-by-side analysis
+- ✨ Custom labels for organizing snapshots
+
+**Charts & Visualization:**
+- ✨ Interactive line charts using Chart.js 4.4
+- ✨ Trend visualization on KPI detail pages
+- ✨ Tooltips showing exact values and dates
+- ✨ Responsive design adapting to screen size
+- ✨ Auto-refresh capability
+
+**Collaboration Features:**
+- ✨ Cell-level comments on any KPI
+- ✨ @Mention system with autocomplete (type @ for dropdown)
+- ✨ Threaded replies with full nesting support
+- ✨ Resolve/unresolve discussions
+- ✨ Unread mentions tracking with bell notification (🔔)
+- ✨ Keyboard navigation in mention dropdown (arrows + Enter)
+- ✨ Real-time mention rendering with highlighted names
+
+**Enhanced Navigation:**
+- ✨ Dashboard as new home page (replaces workspace)
+- ✨ Three-tier navigation: Dashboard → Workspace → Administration
+- ✨ Bootstrap Icons for visual clarity
+- ✨ Logo click redirects to Dashboard
+- ✨ Contextual buttons on all pages
+
+**Database Schema:**
+- 🗄️ New tables: kpi_snapshots, rollup_snapshots, cell_comments, mention_notifications
+- 🗄️ Proper indexes and foreign key relationships
+- 🗄️ Migration ID: 498afb934c2e
+
+**API Endpoints (15 new routes):**
+- GET /workspace/dashboard - Dashboard page
+- GET /workspace/snapshots/compare - Snapshot comparison
+- POST /workspace/snapshots/create - Create snapshot
+- GET /workspace/snapshots/list - List snapshots
+- GET /workspace/snapshots/view/<date> - Historical view
+- GET /workspace/api/kpi/<id>/trend - Trend data
+- GET /workspace/api/kpi/<id>/history - Value history
+- GET/POST /workspace/api/cell/<id>/comments - Comments CRUD
+- PUT/DELETE /workspace/api/comments/<id> - Edit/delete comments
+- POST /workspace/api/comments/<id>/resolve - Resolve discussion
+- POST /workspace/api/comments/<id>/unresolve - Unresolve discussion
+- GET /workspace/api/mentions/unread - Get unread mentions
+- POST /workspace/api/mentions/<id>/read - Mark as read
+- POST /workspace/api/mentions/mark-all-read - Clear all
+- GET /workspace/api/org/users/search - User autocomplete
 
 ### v2.0.0 (March 2026) - **Major Release**
 
