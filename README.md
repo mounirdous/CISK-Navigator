@@ -1,238 +1,201 @@
-# 🕸️ CISK Navigator
+# 🧭 CISK Navigator v2.0
 
-Interactive visualization tool for exploring relationships between **Challenges**, **Initiatives**, **Systems**, and **KPIs**.
+**Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.7.10-blue)
-![Python](https://img.shields.io/badge/python-3.11-green)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Python](https://img.shields.io/badge/python-3.11+-green)
+![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
-## ✨ Features
+## ✨ What's New in v2.0
 
-- **🎯 Multi-Link Support**: Initiatives can address multiple challenges, systems support multiple initiatives
-- **⭐ Priority Levels**: Visual priority indicators (⭐⭐⭐, ⭐⭐, ⭐)
-- **🎚️ Weighted Relationships**: All links have weights (1-10)
-- **💥 Impact Indicators**: High/Medium/Low impact badges
-- **🎨 Custom Colors**: Configure colors for challenges, initiatives, systems, and KPIs in YAML
-- **📊 Three Views**: Column view, interactive graph view, and Flow view (Sankey diagram)
-- **🌊 Flow Visualization**: Sankey diagram with weight-based flow thickness showing relationship strength
-- **📱 Mobile Touch Support**: Pinch-to-zoom, pan, and tap on mobile devices (iPhone, Android)
-- **🔄 Season Filtering**: Filter by S1, S2, S3
-- **📤 Upload & Download**: Upload YAML, download standalone HTML
-- **📊 Analytics Support**: Add Google Analytics or any tracking code to generated HTML
+### 🎨 **Flexible Color System**
+- Colors configured per KPI, not per value type
+- Same value type (e.g., "Cost") can have different meanings in different KPIs
+- Colors propagate through all rollup levels automatically
+
+### 🗄️ **PostgreSQL Database**
+- Data persists across deployments
+- Production-ready for real use
+- Support for concurrent users
+- Automatic migrations
+
+### 🚀 **Production Deployment**
+- Deployed on Render with persistent PostgreSQL
+- Zero downtime deployments
+- Automatic database migrations
+
+## 🎯 Features
+
+### Core Capabilities
+- **📊 Hierarchical Data Model**: Spaces → Challenges → Initiatives → Systems → KPIs
+- **👥 Consensus-Based Input**: Multiple contributors, automatic consensus calculation
+- **📈 Automatic Roll-ups**: Values aggregate up the hierarchy
+- **🎨 Flexible Color Configuration**: Sign-based colors (positive/negative/zero) per KPI
+- **🔢 Multiple Value Types**: Numeric (with decimals), Risk levels, Impact indicators
+- **🏢 Multi-Organization**: Complete data isolation between organizations
+- **👤 User Management**: Global admins, organization members, access control
+
+### Workspace Features
+- **🌲 Interactive Tree/Grid View**: Expandable/collapsible hierarchy
+- **✅ Consensus Status**: Visual indicators (✓ complete, ⚠ partial)
+- **🎨 Color-Coded Values**: Configurable per KPI for better interpretation
+- **📊 Rollup Indicators**: See aggregated values at every level
+- **🔍 Quick Navigation**: Expand All / Collapse All buttons
+
+### Value Types
+- **Numeric**: Cost, CO2 emissions, licenses, people, etc.
+  - Integer or decimal format
+  - Configurable decimal places (e.g., €1,234.56)
+  - Unit labels (€, tCO2e, licenses, etc.)
+  - Sign-based colors per KPI
+- **Qualitative**:
+  - **Risk**: Levels 1-3 (!, !!, !!!)
+  - **Positive Impact**: Levels 1-3 (★, ★★, ★★★)
+  - **Negative Impact**: Levels 1-3 (▼, ▼▼, ▼▼▼)
 
 ## 🚀 Quick Start
 
-### Use Online (No Installation)
+### Prerequisites
+- Python 3.11+
+- PostgreSQL 16+ (local development)
+- Git
 
-Visit: **[Your Railway URL here after deployment]**
-
-1. Upload your YAML file
-2. Explore in column or graph view
-3. Download standalone HTML
-
-### Run Locally
+### Local Development Setup
 
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/CISK-Navigator.git
+git clone https://github.com/mounirdous/CISK-Navigator.git
 cd CISK-Navigator
 
-# Create virtual environment
+# Install PostgreSQL (macOS with Homebrew)
+brew install postgresql@18
+brew services start postgresql@18
+
+# Create database
+createdb cisknavigator
+
+# Create Python virtual environment
 python3 -m venv venv
 source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run application
-python app.py
+# Create environment file
+cp .env.example .env
+# Edit .env to set DATABASE_URL=postgresql://localhost/cisknavigator
+
+# Run database migrations
+flask db upgrade
+
+# Start development server
+flask run --port 5003
 
 # Open browser
-open http://localhost:5002
+open http://localhost:5003
 ```
 
-## 🎨 Example Navigators
+### Default Credentials
 
-Try these fun example navigators with different themes and custom colors:
-
-1. **🏃 Getting Fit** - Your personal health transformation journey
-   - [YAML file](examples/getting_fit.yaml) | [Live HTML](examples/html/getting_fit.html)
-   - Green/Orange/Red/Blue color scheme
-
-2. **💰 Getting Rich** - Your wealth building roadmap
-   - [YAML file](examples/getting_rich.yaml) | [Live HTML](examples/html/getting_rich.html)
-   - Gold/Green/Blue/Purple color scheme
-
-3. **📚 Staying Curious** - Your lifelong learning journey
-   - [YAML file](examples/staying_curious.yaml) | [Live HTML](examples/html/staying_curious.html)
-   - Pink/Purple/Teal/Amber color scheme
-
-4. **💼 Finding Your Dream Job** - Career search navigator
-   - [YAML file](examples/finding_job.yaml) | [Live HTML](examples/html/finding_job.html)
-   - Red/Blue/Green/Yellow color scheme
-
-Download any YAML file, customize it for your needs, and upload to create your own navigator!
-
-## 📁 YAML Format
-
-```yaml
-meta:
-  title: "Your Navigator Title"    # Required - displayed in generated HTML
-  version: "1.0"                    # Optional - defaults to "1.0"
-  colors:                           # Optional - customize visualization colors
-    challenge: '#f0d24f'            # Default: yellow
-    initiative: '#8fd0ff'           # Default: light blue
-    system: '#1d4ed8'               # Default: blue
-    kpi: '#22c55e'                  # Default: green
-
-challenge_groups:
-  - id: C1
-    number: 1
-    title: "Digital Transformation"
-    priority: 1  # 1=⭐⭐⭐, 2=⭐⭐, 3=⭐
-
-sub_challenges:
-  - id: C1.SC1
-    group_id: C1
-    text: "Challenge description"
-    priority: 1
-
-initiatives:
-  - id: I1
-    season: S1
-    text: "Initiative description"
-    challenges:
-      - challenge_id: C1.SC1
-        weight: 10      # 1-10
-        impact: H       # H/M/L
-      - challenge_id: C1.SC2
-        weight: 8
-        impact: M
-
-systems:
-  - id: S1
-    text: "System description"
-    initiatives:
-      - initiative_id: I1
-        weight: 10
-      - initiative_id: I2
-        weight: 9
-
-kpis:
-  - id: K1
-    text: "KPI description"
-    systems:
-      - system_id: S1
-        weight: 9
-      - system_id: S2
-        weight: 10
+```
+Username: cisk
+Password: Zurich20
 ```
 
-## 📊 Views
-
-### Column View
-- 4-column responsive layout
-- Priority stars and impact badges
-- Weight indicators
-- Season filtering
-- Search functionality
-
-### Graph View
-- Vertical flow (Groups → Challenges → Initiatives → Systems → KPIs)
-- Click/tap nodes to filter
-- Back button navigation
-- Full chain tracing
-- Desktop: Drag, pan, mouse wheel zoom, zoom buttons
-- Mobile: Pinch-to-zoom, pan with one finger, tap to select
-
-### Flow View (Sankey Diagram)
-- Visualize relationship strength through flow thickness
-- 5 columns: Groups → Sub-Challenges → Initiatives → Systems → KPIs
-- Weight-based flow lines (thicker = stronger relationship)
-- Color-coded by entity type
-- Click nodes to filter
-- Synchronized with Graph and Column views
-
-## 🌐 Deploy Your Own
-
-See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment guide to:
-- Railway.app (recommended, free tier)
-- Render.com (free tier)
-- Vercel/Netlify (free)
-- Heroku ($5-7/month)
-
-Quick deploy to Railway:
-1. Push to GitHub
-2. Go to [railway.app](https://railway.app)
-3. Deploy from GitHub repo
-4. Done!
-
-## 🛠️ Technology
-
-- **Backend**: Python 3.11, Flask, PyYAML
-- **Frontend**: Vanilla JavaScript, HTML5 Canvas
-- **Deployment**: Gunicorn
-- **Visualization**: Custom canvas-based graph
+**⚠️ You will be prompted to change the password on first login.**
 
 ## 📖 Documentation
 
-- [DEPLOYMENT.md](DEPLOYMENT.md) - Complete deployment guide for all platforms
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Technical architecture and code structure
-- Sample data: `data/full_sample_enhanced.yaml`
-- Fun examples: See [🎨 Example Navigators](#-example-navigators) above
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical architecture and data model
+- **[app/SPECIFICATIONS.md](app/SPECIFICATIONS.md)** - Functional specifications
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Deployment guide for Render
+
+## 🏗️ Architecture Overview
+
+### Technology Stack
+- **Backend**: Python 3.11, Flask 3.0, SQLAlchemy 2.0
+- **Database**: PostgreSQL 16+ (psycopg3 driver)
+- **Migrations**: Flask-Migrate (Alembic)
+- **Authentication**: Flask-Login, Werkzeug password hashing
+- **Forms**: Flask-WTF with CSRF protection
+- **Frontend**: Bootstrap 5, Vanilla JavaScript
+
+### Data Model
+
+```
+Organization
+├── Spaces (flexible grouping: seasons, sites, customers)
+│   └── Challenges
+│       └── Challenge-Initiative Links
+│           └── Initiatives (reusable)
+│               └── Initiative-System Links
+│                   ├── Systems (reusable)
+│                   └── KPIs (context-specific)
+│                       └── KPI-ValueType Configs
+│                           └── Contributions (from users)
+└── Value Types (organization-wide definitions)
+```
+
+**Key Principles:**
+- **Reusability**: Initiatives and Systems are reusable across multiple parents
+- **Context-Specific KPIs**: KPIs belong to Initiative-System pairs
+- **Consensus-Driven**: Multiple contributors, automatic consensus calculation
+- **Hierarchical Roll-ups**: Values aggregate upward with configurable formulas
 
 ## 💡 Use Cases
 
-- Digital transformation programs
-- Enterprise architecture mapping
-- Portfolio management
-- Product roadmaps
-- Strategic planning
-- Technology governance
+- **Enterprise Architecture**: Map systems, initiatives, and business challenges
+- **Digital Transformation**: Track transformation KPIs across the organization
+- **Portfolio Management**: Manage initiative portfolios with multiple value dimensions
+- **Strategic Planning**: Link strategic initiatives to business challenges
+- **Technology Governance**: Track technical systems and their business impact
+- **Sustainability Tracking**: Aggregate CO2, cost, and impact metrics
+
+## 🔄 Version History
+
+### v2.0.0 (March 2026) - **Major Release**
+- ✨ Migrated from SQLite to PostgreSQL for data persistence
+- ✨ Color configuration moved from ValueType to KPI level
+- ✨ Colors propagate through all rollup levels
+- ✨ Deployed on Render with persistent database
+- ✨ Automatic migrations on deployment
+- ✨ psycopg3 driver for Python 3.13+ compatibility
+- 🐛 Fixed rollup color inheritance
+- 🐛 Fixed duplicate flash/redirect in edit routes
+
+### v1.10.1 (March 2026)
+- ✨ Add editable list views for challenges, initiatives, and systems
+- 🎨 Improved navigation and management interface
+
+### v1.10.0 (February 2026)
+- ✨ Add color picker feature for numeric value types
+- 🎨 Sign-based color configuration (positive/negative/zero)
+
+### v1.9.5 (February 2026)
+- ✨ Add decimal places editing
+- 🐛 Fix value formatting issues
 
 ## 🤝 Contributing
 
-Contributions welcome! Fork, modify, and submit pull requests.
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📄 License
 
-MIT License - Free for personal and commercial use
+MIT License - Free for personal and commercial use.
 
-## 🙏 Credits
+See [LICENSE](LICENSE) file for details.
 
-Built for strategic business planning and technology roadmap visualization.
+## 🙏 Acknowledgments
+
+Built for strategic business planning, digital transformation tracking, and collaborative data collection across complex organizational hierarchies.
 
 ---
 
-**Version 2.7.10** - Enhanced with multi-links, priorities, weights, interactive graph view, Flow view (Sankey diagram), dual version display, analytics tracking, customizable colors, full mobile/desktop zoom support, and tooltips
-
-### Recent Updates
-- **v2.7.10** (Feb 2026): Fixed canvas scaling issue causing weird scale changes during panning - canvas now properly matches display size
-- **v2.7.9** (Feb 2026): Added text font size controls to Graph and Flow views - independent from zoom for better readability
-- **v2.7.8** (Feb 2026): Added pan/drag and zoom functionality to Flow view - mouse drag, pinch-to-zoom, mouse wheel zoom
-- **v2.7.7** (Feb 2026): Fixed graph view filtering regression - clicking a node in graph view now correctly shows only filtered nodes
-- **v2.7.6** (Feb 2026): Fixed orphaned nodes in Graph view - nodes without visible links no longer appear
-- **v2.7.5** (Feb 2026): Graph and Flow view selections now sync back to Column view - full bidirectional sync
-- **v2.7.4** (Feb 2026): Flow view uses gradient colors - flows transition from source color to target color
-- **v2.7.3** (Feb 2026): Flow view shows selected node with visual highlight and selection indicator at top
-- **v2.7.2** (Feb 2026): Column view selections now properly sync to Graph and Flow views
-- **v2.7.1** (Feb 2026): Flow view selections sync to Graph view, filters persist when switching views
-- **v2.7.0** (Feb 2026): Flow view redesigned with colored dots instead of boxes, cleaner look, dots are clickable with tooltips
-- **v2.6.9** (Feb 2026): Flow view nodes maintain reasonable size (30-150px height) when filtered
-- **v2.6.8** (Feb 2026): "Show All" button resets all views, season filtering now applies to Flow view
-- **v2.6.7** (Feb 2026): Flow view expanded clickable area to include text labels, hover highlights, tooltips
-- **v2.6.6** (Feb 2026): Flow view filtered layout uses full canvas space, all node types clickable
-- **v2.6.5** (Feb 2026): Fix challenge group links in Flow view (use groupId instead of group_id)
-- **v2.6.4** (Feb 2026): Fix Flow view link ID handling for all node types, enable clicking all nodes
-- **v2.6.3** (Feb 2026): Fix challenge group filtering in Flow view, improve debug logging
-- **v2.6.2** (Feb 2026): Fix Graph view link preservation when switching between views
-- **v2.6.1** (Feb 2026): Fix Flow view sync with Graph view selections
-- **v2.6.0** (Feb 2026): Flow View (Sankey diagram) with weight-based flow thickness, synchronized filtering across all views, clickable nodes
-- **v2.5.3** (Feb 2026): Tooltip on hover to display full node names in graph view
-- **v2.5.2** (Feb 2026): Enable mouse wheel zoom on desktop (scroll to zoom towards cursor)
-- **v2.5.1** (Feb 2026): Mobile touch support - pinch-to-zoom and pan gestures on iPhone/Android
-- **v2.5.0** (Feb 2026): Customizable colors for challenges, initiatives, systems, and KPIs via YAML configuration
-- **v2.4.0** (Feb 2026): Analytics tracking support (Google Analytics, Plausible, etc.)
-- **v2.3.3** (Feb 2026): Fixed graph navigation A→B→A scenario
-- **v2.3.1** (Feb 2026): Upload page documentation, optional YAML version field
-- **v2.3.0** (Feb 2026): Dual version display (app + data), customizable YAML title
+**Made with ❤️ for better decision-making**

@@ -1,7 +1,7 @@
 # CISK Navigator - Functional Specifications
 
-**Version 1.8**
-**Date: March 6, 2026**
+**Version 2.0.0**
+**Date: March 7, 2026**
 
 ## Table of Contents
 
@@ -33,6 +33,28 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
 - **Flexible reusability**: Initiatives can address multiple challenges, systems can support multiple initiatives
 - **Context-specific KPIs**: KPIs belong to initiative-system pairs, not master systems
 - **Organization isolation**: Each organization has completely separate data
+
+## What's New in v2.0
+
+### Database Migration: PostgreSQL
+- **Data Persistence**: Data now survives deployments and restarts
+- **Production Ready**: PostgreSQL for reliable, concurrent access
+- **Automatic Migrations**: Schema updates deploy automatically
+- **Performance**: Better query performance for complex aggregations
+
+### Flexible Color Configuration
+- **KPI-Level Colors**: Sign-based colors (positive/negative/zero) configured per KPI, not per value type
+- **Context-Specific Meaning**: Same value type (e.g., "Cost") can have different color interpretations:
+  - Expense KPI: Negative (savings) = green, Positive (cost) = red
+  - Revenue KPI: Positive (income) = green, Negative (loss) = red
+- **Color Propagation**: Colors automatically inherit through all rollup levels (System → Initiative → Challenge → Space)
+- **UI Integration**: Color pickers in KPI creation and editing forms
+
+### Technical Improvements
+- **psycopg3**: Modern PostgreSQL driver with Python 3.13+ compatibility
+- **Flask-Migrate**: Proper database migration management
+- **Render Deployment**: Production hosting with managed PostgreSQL
+- **Version Tags**: Git tags for release tracking
 
 ## User Roles
 
@@ -91,12 +113,45 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
   - Integer or decimal format
   - Configurable decimal places
   - Unit labels (€, tCO2e, licenses, etc.)
+  - **v2.0: Sign-based colors configured per KPI** (not on value type)
 - **Qualitative**:
   - **Risk**: Levels 1-3 (!, !!, !!!)
-  - **Impact**: Levels 1-3 (★, ★★, ★★★)
+  - **Positive Impact**: Levels 1-3 (★, ★★, ★★★)
   - **Negative Impact**: Levels 1-3 (▼, ▼▼, ▼▼▼)
 - Dynamic form fields: numeric-specific fields only show for numeric types
 - Organization-specific: each organization defines its own value types
+
+### Color Configuration (v2.0)
+
+**Sign-Based Colors for Numeric Values:**
+- Configured at KPI level when creating/editing KPIs
+- Three color pickers per numeric value type:
+  - **Positive Values**: Color for values > 0 (default: green #28a745)
+  - **Zero/Null Values**: Color for values = 0 or null (default: gray #6c757d)
+  - **Negative Values**: Color for values < 0 (default: red #dc3545)
+
+**Why KPI-Level (not Value Type-Level)?**
+
+Same value type can have opposite meanings in different KPIs:
+
+| Example | Value Type | KPI: "Reduce Expenses" | KPI: "Increase Revenue" |
+|---------|-----------|------------------------|-------------------------|
+| +100€ | Cost (€) | Red (bad - cost increase) | Green (good - income) |
+| -100€ | Cost (€) | Green (good - savings) | Red (bad - loss) |
+| 0€ | Cost (€) | Gray (neutral) | Gray (neutral) |
+
+**Color Propagation:**
+- Colors configured on KPI automatically apply to all rollup levels
+- System level: Inherits from first KPI with this value type
+- Initiative level: Inherits from descendant KPIs
+- Challenge level: Inherits from descendant KPIs
+- Space level: Inherits from descendant KPIs
+- If no KPI configuration found: Falls back to default colors
+
+**UI Location:**
+- **KPI Creation**: Checkbox list of value types with color pickers
+- **KPI Editing**: Color configuration section showing current colors
+- **Workspace Display**: Values colored according to KPI configuration
 
 ### Hierarchical Administration
 - Create entities in context with nested buttons:
