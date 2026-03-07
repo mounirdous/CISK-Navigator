@@ -683,19 +683,24 @@ def search_org_users():
         org_id = session.get('organization_id')
         search_term = request.args.get('q', '').strip().lower()
 
-        if not search_term or len(search_term) < 2:
-            return jsonify({'users': []})
-
-        # Search users in organization by login or display_name
-        users = db.session.query(User).join(
+        # Build query
+        query = db.session.query(User).join(
             UserOrganizationMembership
         ).filter(
-            UserOrganizationMembership.organization_id == org_id,
-            db.or_(
-                User.login.ilike(f'%{search_term}%'),
-                User.display_name.ilike(f'%{search_term}%')
+            UserOrganizationMembership.organization_id == org_id
+        )
+
+        # Filter by search term if provided
+        if search_term:
+            query = query.filter(
+                db.or_(
+                    User.login.ilike(f'%{search_term}%'),
+                    User.display_name.ilike(f'%{search_term}%')
+                )
             )
-        ).limit(10).all()
+
+        # Get results (limit 10)
+        users = query.order_by(User.display_name).limit(10).all()
 
         return jsonify({
             'users': [

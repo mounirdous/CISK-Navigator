@@ -314,6 +314,8 @@ class CommentsManager {
      */
     setupMentionAutocomplete(textarea) {
         let mentionTimeout;
+        let currentDropdown = null;
+        let selectedIndex = -1;
 
         textarea.addEventListener('input', (e) => {
             const text = e.target.value;
@@ -326,17 +328,57 @@ class CommentsManager {
             if (lastAtIndex !== -1) {
                 const searchTerm = textBeforeCursor.substring(lastAtIndex + 1);
 
-                // Only search if we have 2+ characters and no spaces
-                if (searchTerm.length >= 2 && !searchTerm.includes(' ')) {
+                // Search if we have 0+ characters and no spaces (show all users after just @)
+                if (!searchTerm.includes(' ')) {
                     clearTimeout(mentionTimeout);
                     mentionTimeout = setTimeout(() => {
                         this.searchUsers(searchTerm, textarea, lastAtIndex);
-                    }, 300);
+                    }, 200);  // Faster response
                 } else {
                     this.hideMentionDropdown();
                 }
             } else {
                 this.hideMentionDropdown();
+            }
+        });
+
+        // Keyboard navigation
+        textarea.addEventListener('keydown', (e) => {
+            const dropdown = document.getElementById('mentionDropdown');
+            if (!dropdown || dropdown.style.display === 'none') return;
+
+            const items = dropdown.querySelectorAll('.mention-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                this.highlightDropdownItem(items, selectedIndex);
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+                this.highlightDropdownItem(items, selectedIndex);
+            } else if (e.key === 'Enter' && selectedIndex >= 0) {
+                e.preventDefault();
+                items[selectedIndex].click();
+                selectedIndex = -1;
+            } else if (e.key === 'Escape') {
+                this.hideMentionDropdown();
+                selectedIndex = -1;
+            }
+        });
+    }
+
+    /**
+     * Highlight selected item in dropdown
+     */
+    highlightDropdownItem(items, index) {
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.style.background = '#e7f3ff';
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.style.background = '';
             }
         });
     }
@@ -372,26 +414,40 @@ class CommentsManager {
             document.body.appendChild(dropdown);
         }
 
-        dropdown.innerHTML = users.map(user => `
-            <div class="mention-item" data-login="${user.login}" data-name="${user.display_name}">
-                <strong>${user.display_name}</strong> <small class="text-muted">@${user.login}</small>
-            </div>
-        `).join('');
+        if (users.length === 0) {
+            dropdown.innerHTML = '<div class="mention-item text-muted">No users found</div>';
+        } else {
+            dropdown.innerHTML = users.map(user => `
+                <div class="mention-item" data-login="${user.login}" data-name="${user.display_name}">
+                    <strong>${user.display_name}</strong> <small class="text-muted">@${user.login}</small>
+                </div>
+            `).join('');
+        }
 
-        // Position dropdown below textarea
+        // Position dropdown below textarea (with better calculation)
         const rect = textarea.getBoundingClientRect();
-        dropdown.style.top = (rect.bottom + window.scrollY) + 'px';
-        dropdown.style.left = rect.left + 'px';
+        dropdown.style.top = (rect.bottom + window.scrollY + 2) + 'px';
+        dropdown.style.left = (rect.left + window.scrollX) + 'px';
+        dropdown.style.width = Math.max(rect.width, 250) + 'px';
         dropdown.style.display = 'block';
 
         // Add click handlers
-        dropdown.querySelectorAll('.mention-item').forEach(item => {
+        dropdown.querySelectorAll('.mention-item[data-login]').forEach(item => {
             item.addEventListener('click', () => {
                 const login = item.dataset.login;
                 const text = textarea.value;
-                const searchStart = text.lastIndexOf('@', atIndex);
-                const newText = text.substring(0, searchStart) + `@${login} ` + text.substring(textarea.selectionStart);
-                textarea.value = newText;
+                const cursorPos = textarea.selectionStart;
+                const textBeforeCursor = text.substring(0, cursorPos);
+                const searchStart = textBeforeCursor.lastIndexOf('@');
+
+                if (searchStart !== -1) {
+                    const newText = text.substring(0, searchStart) + `@${login} ` + text.substring(cursorPos);
+                    textarea.value = newText;
+                    // Position cursor after the mention
+                    const newCursorPos = searchStart + login.length + 2;
+                    textarea.setSelectionRange(newCursorPos, newCursorPos);
+                }
+
                 this.hideMentionDropdown();
                 textarea.focus();
             });

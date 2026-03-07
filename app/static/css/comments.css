@@ -100,24 +100,38 @@
 .mention-dropdown {
     position: absolute;
     background: white;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    max-height: 200px;
+    border: 2px solid #0d6efd;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    max-height: 250px;
     overflow-y: auto;
-    z-index: 1050;
+    z-index: 1060;
     display: none;
-    min-width: 200px;
+    min-width: 250px;
 }
 
 .mention-item {
-    padding: 8px 12px;
+    padding: 10px 14px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.mention-item:last-child {
+    border-bottom: none;
 }
 
 .mention-item:hover {
-    background: #f8f9fa;
+    background: #e7f3ff;
+}
+
+.mention-item strong {
+    color: #0066cc;
+    font-weight: 600;
+}
+
+.mention-item .text-muted {
+    font-size: 0.85em;
 }
 
 /* New comment form */
