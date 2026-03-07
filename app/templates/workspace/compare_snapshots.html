@@ -139,7 +139,7 @@
     <div class="col-md-4">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-success">{{ comparisons|selectattr('change', 'gt', 0)|list|length }}</h3>
+                <h3 class="text-success">{{ comparisons|selectattr('change', 'ne', none)|selectattr('change', 'gt', 0)|list|length }}</h3>
                 <p class="mb-0">Increased</p>
             </div>
         </div>
@@ -147,7 +147,7 @@
     <div class="col-md-4">
         <div class="card text-center">
             <div class="card-body">
-                <h3 class="text-danger">{{ comparisons|selectattr('change', 'lt', 0)|list|length }}</h3>
+                <h3 class="text-danger">{{ comparisons|selectattr('change', 'ne', none)|selectattr('change', 'lt', 0)|list|length }}</h3>
                 <p class="mb-0">Decreased</p>
             </div>
         </div>
