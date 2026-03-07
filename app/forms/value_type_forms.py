@@ -10,7 +10,7 @@ class ValueTypeCreateForm(FlaskForm):
         ('risk', 'Risk (!, !!, !!!)'),
         ('positive_impact', 'Impact (★)'),
         ('negative_impact', 'Negative Impact (▼)'),
-        ('level', 'Level (●●●●● - Generic 5-star)'),
+        ('level', 'Level (●●● - Generic 3-level)'),
         ('sentiment', 'Sentiment (😞😐😊 - Emotions/Feelings)')
     ], validators=[DataRequired()])
     numeric_format = SelectField('Numeric Format', choices=[
