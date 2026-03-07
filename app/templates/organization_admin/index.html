@@ -31,11 +31,12 @@
     </div>
 
     <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h6>Roll-up Configuration</h6></div>
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white"><h6>⚠️ YAML Structure Import</h6></div>
             <div class="card-body">
-                <p>Configure how values roll up through the hierarchy.</p>
-                <a href="#" class="btn btn-sm btn-primary">Configure Roll-ups</a>
+                <p class="text-danger"><strong>Deletes all data!</strong></p>
+                <p>Upload a YAML file to create a complete organizational structure.</p>
+                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-sm btn-danger">Import YAML</a>
             </div>
         </div>
     </div>
