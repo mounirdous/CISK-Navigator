@@ -36,6 +36,10 @@
             <td>
                 <a href="{{ url_for('global_admin.edit_organization', org_id=org.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                 <a href="{{ url_for('global_admin.clone_organization', org_id=org.id) }}" class="btn btn-sm btn-outline-success">Clone</a>
+                <form method="POST" action="{{ url_for('global_admin.clear_organization_comments', org_id=org.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete ALL comments and mentions for {{ org.name }}? This cannot be undone.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Clear Comments</button>
+                </form>
                 <a href="{{ url_for('global_admin.delete_organization_preview', org_id=org.id) }}" class="btn btn-sm btn-outline-warning">Delete...</a>
             </td>
         </tr>

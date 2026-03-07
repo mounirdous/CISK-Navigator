@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, session,
 from flask_login import login_required, current_user
 from functools import wraps
 from app.extensions import db
-from app.models import User, Organization, UserOrganizationMembership
+from app.models import User, Organization, UserOrganizationMembership, CellComment, MentionNotification, KPIValueTypeConfig, KPI, InitiativeSystemLink, Initiative
 from app.forms import UserCreateForm, UserEditForm, OrganizationCreateForm, OrganizationEditForm, OrganizationCloneForm
 from app.services import DeletionImpactService, OrganizationCloneService
 
@@ -265,3 +265,55 @@ def clone_organization(org_id):
             flash(f"Clone failed: {result['error']}", 'danger')
 
     return render_template('global_admin/clone_organization.html', form=form, source_org=source_org)
+
+
+@bp.route('/organizations/<int:org_id>/clear-comments', methods=['POST'])
+@login_required
+@global_admin_required
+def clear_organization_comments(org_id):
+    """Clear all comments and mentions for an organization"""
+    org = Organization.query.get_or_404(org_id)
+    org_name = org.name
+
+    try:
+        # Get all KPI configs for this organization
+        kpi_config_ids = db.session.query(KPIValueTypeConfig.id).join(
+            KPI
+        ).join(
+            InitiativeSystemLink
+        ).join(
+            Initiative
+        ).filter(
+            Initiative.organization_id == org_id
+        ).all()
+
+        config_ids = [c[0] for c in kpi_config_ids]
+
+        if not config_ids:
+            flash(f'No comments found for organization {org_name}', 'info')
+            return redirect(url_for('global_admin.organizations'))
+
+        # Delete all mentions first (they cascade from comments, but explicit is safer)
+        mention_count = db.session.query(MentionNotification).join(
+            CellComment
+        ).filter(
+            CellComment.kpi_value_type_config_id.in_(config_ids)
+        ).delete(synchronize_session=False)
+
+        # Delete all comments for these configs
+        comment_count = CellComment.query.filter(
+            CellComment.kpi_value_type_config_id.in_(config_ids)
+        ).delete(synchronize_session=False)
+
+        db.session.commit()
+
+        flash(
+            f'Successfully cleared {comment_count} comment(s) and {mention_count} mention(s) from organization {org_name}',
+            'success'
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error clearing comments: {str(e)}', 'danger')
+
+    return redirect(url_for('global_admin.organizations'))
