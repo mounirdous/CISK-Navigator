@@ -19,7 +19,7 @@ def login():
     """
     # If already authenticated AND has organization context, go to workspace
     if current_user.is_authenticated and session.get('organization_id'):
-        return redirect(url_for('workspace.index'))
+        return redirect(url_for('workspace.dashboard'))
     # If authenticated but no organization (e.g., session cleared), log out and restart
     if current_user.is_authenticated and not session.get('organization_id'):
         logout_user()
@@ -98,7 +98,7 @@ def login():
                 flash('You must change your password', 'warning')
                 return redirect(url_for('auth.change_password'))
 
-            return redirect(url_for('workspace.index'))
+            return redirect(url_for('workspace.dashboard'))
 
         # GET request for step 2
         return render_template('auth/login_step2.html',
@@ -135,7 +135,7 @@ def login():
                 flash('You must change your password', 'warning')
                 return redirect(url_for('auth.change_password'))
 
-            return redirect(url_for('workspace.index'))
+            return redirect(url_for('workspace.dashboard'))
 
         # Store user ID temporarily for step 2
         session['_temp_user_id'] = user.id
@@ -181,6 +181,6 @@ def change_password():
         if session.get('organization_id') is None:
             return redirect(url_for('global_admin.index'))
         else:
-            return redirect(url_for('workspace.index'))
+            return redirect(url_for('workspace.dashboard'))
 
     return render_template('auth/change_password.html', form=form)

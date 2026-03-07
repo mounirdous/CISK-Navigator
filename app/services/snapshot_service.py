@@ -339,12 +339,16 @@ class SnapshotService:
         }
 
     @staticmethod
-    def get_available_snapshot_dates(organization_id: int) -> List[date]:
+    def get_available_snapshot_dates(organization_id: int, limit: int = None) -> List[date]:
         """
         Get all unique snapshot dates for an organization.
 
+        Args:
+            organization_id: Organization ID
+            limit: Optional limit on number of dates to return
+
         Returns:
-            List of dates, ordered descending
+            List of dates, ordered descending (most recent first)
         """
         # Query distinct snapshot dates from both tables
         kpi_dates = db.session.query(KPISnapshot.snapshot_date).distinct().join(
@@ -368,4 +372,6 @@ class SnapshotService:
         # Combine and deduplicate
         all_dates = set([d[0] for d in kpi_dates.all()] + [d[0] for d in rollup_dates.all()])
 
-        return sorted(list(all_dates), reverse=True)
+        # Sort descending and apply limit if provided
+        sorted_dates = sorted(list(all_dates), reverse=True)
+        return sorted_dates[:limit] if limit else sorted_dates

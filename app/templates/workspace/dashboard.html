@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - {{ org_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
+<style>
+.stat-card {
+    border-left: 4px solid;
+    transition: transform 0.2s;
+}
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #0d6efd;
+}
+.recent-comment {
+    border-left: 3px solid #dee2e6;
+    padding-left: 12px;
+    margin-bottom: 12px;
+}
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Dashboard: {{ org_name }}</h2>
+    <div>
+        <a href="{{ url_for('workspace.index') }}" class="btn btn-primary">
+            <i class="bi bi-grid-3x3"></i> Workspace
+        </a>
+        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">
+            <i class="bi bi-gear"></i> Administration
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card stat-card" style="border-left-color: #0d6efd;">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ stats.spaces }}</div>
+                <small class="text-muted">Spaces</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card" style="border-left-color: #6c757d;">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ stats.challenges }}</div>
+                <small class="text-muted">Challenges</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card" style="border-left-color: #17a2b8;">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ stats.initiatives }}</div>
+                <small class="text-muted">Initiatives</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card" style="border-left-color: #28a745;">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ stats.systems }}</div>
+                <small class="text-muted">Systems</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card" style="border-left-color: #ffc107;">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ stats.kpis }}</div>
+                <small class="text-muted">KPIs</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card stat-card" style="border-left-color: #dc3545;">
+            <div class="card-body text-center">
+                <div class="stat-value">{{ stats.value_types }}</div>
+                <small class="text-muted">Value Types</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-grid-3x3"></i> Open Workspace
+                </a>
+                <button class="btn btn-outline-success me-2" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal">
+                    <i class="bi bi-camera-fill"></i> Create Snapshot
+                </button>
+                <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-outline-info me-2">
+                    <i class="bi bi-clock-history"></i> View Snapshots
+                </a>
+                <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-outline-success me-2">
+                    <i class="bi bi-file-earmark-excel"></i> Export Excel
+                </a>
+                {% if unread_mentions > 0 %}
+                <button class="btn btn-outline-danger me-2" onclick="showMentions()">
+                    <i class="bi bi-bell-fill"></i> {{ unread_mentions }} Unread Mention{{ 's' if unread_mentions != 1 }}
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Two Column Layout -->
+<div class="row">
+    <!-- Left Column: Recent Snapshots -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-camera"></i> Recent Snapshots</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_snapshots %}
+                    <div class="list-group">
+                        {% for snap_date in recent_snapshots %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ snap_date.strftime('%Y-%m-%d') }}</strong>
+                                </div>
+                                <div>
+                                    <a href="{{ url_for('workspace.view_snapshot', snapshot_date=snap_date.isoformat()) }}"
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                    <a href="{{ url_for('workspace.compare_snapshots', date1=snap_date.isoformat(), date2='current') }}"
+                                       class="btn btn-sm btn-outline-info">
+                                        <i class="bi bi-bar-chart"></i> Compare
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-3 text-center">
+                        <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-sm btn-link">
+                            View All Snapshots →
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> No snapshots yet. Create your first snapshot to track changes over time.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Recent Comments -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Recent Comments</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                {% if recent_comments %}
+                    {% for comment in recent_comments %}
+                    <div class="recent-comment">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ comment.user.display_name or comment.user.login }}</strong>
+                            <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <div class="mt-1">{{ comment.comment_text[:100] }}{{ '...' if comment.comment_text|length > 100 }}</div>
+                        <small class="text-muted">
+                            on {{ comment.config.kpi.name }} - {{ comment.config.value_type.name }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i> No comments yet. Start discussions on KPI cells!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Section -->
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h6><i class="bi bi-lightbulb"></i> Getting Started</h6>
+                <ul class="mb-0">
+                    <li><strong>Workspace</strong>: View and enter KPI data in the tree/grid view</li>
+                    <li><strong>Snapshots</strong>: Capture current state to track progress over time</li>
+                    <li><strong>Comments</strong>: Click 💬 on any KPI cell to discuss values with your team</li>
+                    <li><strong>Mentions</strong>: Use @username in comments to notify team members</li>
+                    <li><strong>Trends</strong>: Create multiple snapshots to see ↗️↘️→ trend indicators</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Snapshot Modal -->
+<div class="modal fade" id="quickSnapshotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Quick Snapshot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('workspace.create_snapshot') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="snapshot_date" class="form-label">Snapshot Date</label>
+                        <input type="date" class="form-control" id="snapshot_date" name="snapshot_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="label" class="form-label">Label (Optional)</label>
+                        <input type="text" class="form-control" id="label" name="label"
+                               placeholder="e.g., Q1 2026, End of Sprint 5" maxlength="100">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Snapshot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today as default date
+    const dateInput = document.getElementById('snapshot_date');
+    if (dateInput) {
+        dateInput.valueAsDate = new Date();
+    }
+});
+</script>
+{% endblock %}

@@ -12,7 +12,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% if session.organization_id %}{{ url_for('workspace.index') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
+            <a class="navbar-brand" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
                 CISK Navigator
             </a>
             {% if current_user.is_authenticated %}
@@ -23,10 +23,19 @@
                 <ul class="navbar-nav me-auto">
                     {% if session.organization_id %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('workspace.index') }}">Workspace</a>
+                            <a class="nav-link" href="{{ url_for('workspace.dashboard') }}">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('organization_admin.index') }}">Administration</a>
+                            <a class="nav-link" href="{{ url_for('workspace.index') }}">
+                                <i class="bi bi-grid-3x3"></i> Workspace
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('organization_admin.index') }}">
+                                <i class="bi bi-gear"></i> Administration
+                            </a>
                         </li>
                     {% elif current_user.is_global_admin %}
                         <li class="nav-item">

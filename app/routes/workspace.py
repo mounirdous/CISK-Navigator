@@ -34,6 +34,49 @@ def organization_required(f):
     return decorated_function
 
 
+@bp.route('/dashboard')
+@login_required
+@organization_required
+def dashboard():
+    """Dashboard with overview, charts, and recent activity"""
+    org_id = session.get('organization_id')
+    org_name = session.get('organization_name')
+
+    # Get statistics
+    stats = {
+        'spaces': Space.query.filter_by(organization_id=org_id).count(),
+        'challenges': Challenge.query.join(Space).filter(Space.organization_id == org_id).count(),
+        'initiatives': Initiative.query.filter_by(organization_id=org_id).count(),
+        'systems': System.query.filter_by(organization_id=org_id).count(),
+        'kpis': db.session.query(KPI).join(
+            System.initiative_system_links
+        ).join(Initiative).filter(Initiative.organization_id == org_id).count(),
+        'value_types': ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
+    }
+
+    # Get recent snapshots (last 5)
+    recent_snapshots = SnapshotService.get_available_snapshot_dates(org_id, limit=5)
+
+    # Get recent comments (last 10)
+    recent_comments = db.session.query(CellComment).join(
+        KPIValueTypeConfig
+    ).join(KPI).join(
+        System.initiative_system_links
+    ).join(Initiative).filter(
+        Initiative.organization_id == org_id
+    ).order_by(CellComment.created_at.desc()).limit(10).all()
+
+    # Get unread mentions count
+    unread_mentions = CommentService.get_unread_mentions_count(current_user.id)
+
+    return render_template('workspace/dashboard.html',
+                         org_name=org_name,
+                         stats=stats,
+                         recent_snapshots=recent_snapshots,
+                         recent_comments=recent_comments,
+                         unread_mentions=unread_mentions)
+
+
 @bp.route('/')
 @login_required
 @organization_required
@@ -398,6 +441,97 @@ def view_snapshot(snapshot_date):
                          organization_name=session.get('organization_name'),
                          snapshot_date=view_date,
                          is_historical_view=True)
+
+
+@bp.route('/snapshots/compare')
+@login_required
+@organization_required
+def compare_snapshots():
+    """Compare two snapshots side-by-side"""
+    org_id = session.get('organization_id')
+
+    # Get date parameters
+    date1_str = request.args.get('date1')
+    date2_str = request.args.get('date2', str(date.today()))
+
+    if not date1_str:
+        flash('Please select a snapshot to compare', 'warning')
+        return redirect(url_for('workspace.list_snapshots'))
+
+    try:
+        date1 = date.fromisoformat(date1_str)
+        date2 = date.fromisoformat(date2_str) if date2_str != 'current' else None
+    except ValueError:
+        flash('Invalid date format', 'danger')
+        return redirect(url_for('workspace.list_snapshots'))
+
+    # Get all KPI configs for this organization
+    configs = db.session.query(KPIValueTypeConfig).join(
+        KPI
+    ).join(
+        System.initiative_system_links
+    ).join(Initiative).filter(
+        Initiative.organization_id == org_id
+    ).all()
+
+    # Build comparison data
+    comparisons = []
+    for config in configs:
+        # Get snapshot 1 value
+        snapshot1 = KPISnapshot.query.filter_by(
+            kpi_value_type_config_id=config.id,
+            snapshot_date=date1
+        ).first()
+
+        # Get snapshot 2 value (or current consensus)
+        if date2:
+            snapshot2 = KPISnapshot.query.filter_by(
+                kpi_value_type_config_id=config.id,
+                snapshot_date=date2
+            ).first()
+            value2 = snapshot2.consensus_value if snapshot2 else None
+        else:
+            # Use current consensus
+            consensus = ConsensusService.calculate_consensus(config.id)
+            value2 = consensus.get('value')
+
+        value1 = snapshot1.consensus_value if snapshot1 else None
+
+        # Calculate change
+        change = None
+        percent_change = None
+        if value1 is not None and value2 is not None:
+            change = float(value2) - float(value1)
+            if value1 != 0:
+                percent_change = (change / float(value1)) * 100
+
+        comparisons.append({
+            'config': config,
+            'kpi': config.kpi,
+            'value_type': config.value_type,
+            'value1': value1,
+            'value2': value2,
+            'change': change,
+            'percent_change': percent_change
+        })
+
+    # Get snapshot labels
+    sample1 = KPISnapshot.query.filter_by(snapshot_date=date1).first()
+    label1 = sample1.snapshot_label if sample1 else None
+
+    if date2:
+        sample2 = KPISnapshot.query.filter_by(snapshot_date=date2).first()
+        label2 = sample2.snapshot_label if sample2 else None
+    else:
+        label2 = "Current"
+
+    return render_template('workspace/compare_snapshots.html',
+                         comparisons=comparisons,
+                         date1=date1,
+                         date2=date2,
+                         label1=label1,
+                         label2=label2,
+                         organization_name=session.get('organization_name'))
 
 
 @bp.route('/api/kpi/<int:config_id>/trend')
