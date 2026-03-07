@@ -471,7 +471,7 @@ def compare_snapshots():
     configs = db.session.query(KPIValueTypeConfig).join(
         KPI
     ).join(
-        System.initiative_system_links
+        InitiativeSystemLink
     ).join(Initiative).filter(
         Initiative.organization_id == org_id
     ).all()

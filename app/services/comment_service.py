@@ -180,7 +180,12 @@ class CommentService:
 
     @staticmethod
     def resolve_comment(comment_id: int, user_id: int) -> CellComment:
-        """Mark a comment as resolved"""
+        """
+        Mark a comment as resolved.
+
+        Also marks all mention notifications for the resolving user in this
+        comment thread as read (comment + all replies).
+        """
         comment = CellComment.query.get(comment_id)
         if not comment:
             raise ValueError("Comment not found")
@@ -188,6 +193,25 @@ class CommentService:
         comment.is_resolved = True
         comment.resolved_by_user_id = user_id
         comment.resolved_at = datetime.utcnow()
+
+        # Mark all mentions for this user in this comment thread as read
+        def mark_mentions_read_recursive(comment_obj):
+            """Recursively mark mentions as read in comment and all replies"""
+            # Mark mentions in this comment
+            MentionNotification.query.filter_by(
+                comment_id=comment_obj.id,
+                mentioned_user_id=user_id,
+                is_read=False
+            ).update({
+                'is_read': True,
+                'read_at': datetime.utcnow()
+            })
+
+            # Mark mentions in all replies
+            for reply in comment_obj.replies:
+                mark_mentions_read_recursive(reply)
+
+        mark_mentions_read_recursive(comment)
 
         db.session.commit()
         return comment
