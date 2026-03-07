@@ -3,7 +3,7 @@ Workspace routes
 
 Main tree/grid navigation and data entry.
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request, jsonify, send_file
 from flask_login import login_required, current_user
 from functools import wraps
 from app.extensions import db
@@ -12,7 +12,7 @@ from app.models import (
     KPIValueTypeConfig, Contribution
 )
 from app.forms import ContributionForm
-from app.services import ConsensusService, AggregationService
+from app.services import ConsensusService, AggregationService, ExcelExportService
 
 bp = Blueprint('workspace', __name__, url_prefix='/workspace')
 
@@ -55,6 +55,29 @@ def index():
                           org_name=org_name,
                           spaces=spaces,
                           value_types=value_types)
+
+
+@bp.route('/export-excel')
+@login_required
+@organization_required
+def export_excel():
+    """Export workspace to Excel file"""
+    org_id = session.get('organization_id')
+    org_name = session.get('organization_name')
+
+    # Generate Excel file
+    excel_file = ExcelExportService.export_workspace(org_id)
+
+    # Create safe filename
+    safe_org_name = "".join(c for c in org_name if c.isalnum() or c in (' ', '-', '_')).strip()
+    filename = f"Workspace_{safe_org_name}.xlsx"
+
+    return send_file(
+        excel_file,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
 
 
 @bp.route('/kpi/<int:kpi_id>/value-type/<int:vt_id>', methods=['GET', 'POST'])

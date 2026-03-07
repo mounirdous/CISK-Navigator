@@ -7,6 +7,7 @@ from .deletion_impact_service import DeletionImpactService
 from .value_type_usage_service import ValueTypeUsageService
 from .yaml_import_service import YAMLImportService
 from .organization_clone_service import OrganizationCloneService
+from .excel_export_service import ExcelExportService
 
 __all__ = [
     'ConsensusService',
@@ -15,4 +16,5 @@ __all__ = [
     'ValueTypeUsageService',
     'YAMLImportService',
     'OrganizationCloneService',
+    'ExcelExportService',
 ]

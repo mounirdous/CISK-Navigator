@@ -8,7 +8,8 @@
 <div class="mb-3">
     <button id="expand-all" class="btn btn-outline-primary btn-sm">Expand All</button>
     <button id="collapse-all" class="btn btn-outline-secondary btn-sm">Collapse All</button>
-    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary ms-3">Administration</a>
+    <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-success btn-sm ms-2">📊 Export to Excel</a>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary btn-sm ms-3">Administration</a>
 </div>
 
 <div class="table-responsive">
