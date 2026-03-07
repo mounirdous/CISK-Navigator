@@ -491,8 +491,11 @@ def compare_snapshots():
             ).first()
             value2 = snapshot2.consensus_value if snapshot2 else None
         else:
-            # Use current consensus
-            consensus = ConsensusService.calculate_consensus(config.id)
+            # Use current consensus - get contributions for this config
+            contributions = Contribution.query.filter_by(
+                kpi_value_type_config_id=config.id
+            ).all()
+            consensus = ConsensusService.calculate_consensus(contributions)
             value2 = consensus.get('value')
 
         value1 = snapshot1.consensus_value if snapshot1 else None
