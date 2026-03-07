@@ -355,7 +355,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load trend indicators for KPI cells
     loadTrendIndicators();
+
+    // Load comment counts for all cells
+    loadAllCommentCounts();
 });
+
+// Load comment counts for all KPI cells
+function loadAllCommentCounts() {
+    document.querySelectorAll('[data-config-id]').forEach(cell => {
+        const configId = cell.dataset.configId;
+        loadCommentCount(configId);
+    });
+}
+
+// Load comment count for a specific cell
+async function loadCommentCount(configId) {
+    try {
+        const response = await fetch(`/workspace/api/cell/${configId}/comments`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        const count = data.count || 0;
+
+        // Find the comment icon in this cell
+        const cell = document.querySelector(`[data-config-id="${configId}"]`);
+        if (!cell) return;
+
+        const countBadge = cell.querySelector('.comment-count');
+        if (countBadge && count > 0) {
+            countBadge.textContent = count;
+            countBadge.style.display = 'inline-block';
+        }
+    } catch (error) {
+        console.debug('Could not load comment count for config', configId);
+    }
+}
 
 function loadTrendIndicators() {
     // Find all KPI cells with data-config-id attribute

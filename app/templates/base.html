@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}CISK Navigator{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
@@ -75,7 +76,118 @@
         {% block content %}{% endblock %}
     </div>
 
+    <!-- Mentions Modal (always available) -->
+    {% if session.organization_id %}
+        {% include 'workspace/mentions_modal.html' %}
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Global mentions functionality -->
+    {% if session.organization_id %}
+    <script>
+    // Show mentions modal
+    function showMentions() {
+        const modal = new bootstrap.Modal(document.getElementById('mentionsModal'));
+        modal.show();
+        loadMentions();
+    }
+
+    // Load mentions into modal
+    async function loadMentions() {
+        const container = document.getElementById('mentionsContainer');
+
+        try {
+            const response = await fetch('/workspace/api/mentions/unread?limit=50');
+            const data = await response.json();
+
+            if (!response.ok) {
+                container.innerHTML = '<div class="alert alert-danger">Error loading mentions</div>';
+                return;
+            }
+
+            if (data.mentions.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted p-4">
+                        <i class="bi bi-check-circle" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No unread mentions</p>
+                        <small>You're all caught up!</small>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render mentions
+            container.innerHTML = data.mentions.map(mention => {
+                const comment = mention.comment;
+                const timeAgo = formatTimeAgo(mention.created_at);
+
+                return `
+                    <div class="mention-item border-bottom p-3" data-mention-id="${mention.id}">
+                        <div class="d-flex justify-content-between">
+                            <strong>${comment.user_name}</strong>
+                            <small class="text-muted">${timeAgo}</small>
+                        </div>
+                        <div class="mt-2">${comment.comment_text}</div>
+                        <div class="mt-2">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    onclick="markMentionRead(${mention.id})">
+                                Mark as Read
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Error loading mentions:', error);
+            container.innerHTML = '<div class="alert alert-danger">Error loading mentions</div>';
+        }
+    }
+
+    // Mark mention as read
+    async function markMentionRead(mentionId) {
+        try {
+            await fetch(`/workspace/api/mentions/${mentionId}/read`, { method: 'POST' });
+            loadMentions();  // Reload
+            loadUnreadMentionsCount();  // Update badge
+        } catch (error) {
+            console.error('Error marking mention as read:', error);
+        }
+    }
+
+    // Mark all as read
+    document.addEventListener('DOMContentLoaded', function() {
+        const markAllBtn = document.getElementById('markAllReadBtn');
+        if (markAllBtn) {
+            markAllBtn.addEventListener('click', async function() {
+                try {
+                    await fetch('/workspace/api/mentions/mark-all-read', { method: 'POST' });
+                    loadMentions();
+                    loadUnreadMentionsCount();
+                } catch (error) {
+                    console.error('Error marking all as read:', error);
+                }
+            });
+        }
+    });
+
+    // Format time ago
+    function formatTimeAgo(isoString) {
+        const date = new Date(isoString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+
+        if (diffMins < 1) return 'just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+        if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+        if (diffMins < 10080) return `${Math.floor(diffMins / 1440)}d ago`;
+        return date.toLocaleDateString();
+    }
+    </script>
+    {% endif %}
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
