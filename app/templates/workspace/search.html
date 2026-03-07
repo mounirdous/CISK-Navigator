@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results - {{ organization_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-search"></i> Search Results</h2>
+    <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+</div>
+
+<!-- Search Bar -->
+<div class="row mb-4">
+    <div class="col-md-8 offset-md-2">
+        <form method="GET" action="{{ url_for('workspace.search_page') }}">
+            <div class="input-group input-group-lg">
+                <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search across all data..." autofocus>
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Search
+                </button>
+            </div>
+            <small class="text-muted">Search in spaces, challenges, initiatives, systems, KPIs, value types, and comments</small>
+        </form>
+    </div>
+</div>
+
+{% if query %}
+<!-- Results Summary -->
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Found <strong>{{ total }}</strong> results for "<strong>{{ query }}</strong>"
+</div>
+
+{% if total == 0 %}
+<div class="alert alert-warning text-center py-5">
+    <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+    <h4 class="mt-3">No results found</h4>
+    <p>Try different keywords or check your spelling</p>
+</div>
+{% else %}
+
+<!-- Spaces -->
+{% if results.spaces %}
+<div class="card mb-3">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> Spaces ({{ results.spaces|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for space in results.spaces %}
+            <a href="{{ url_for('workspace.index') }}#space-{{ space.id }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ space.name }}</h6>
+                </div>
+                {% if space.description %}
+                <p class="mb-1 text-muted">{{ space.description }}</p>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Challenges -->
+{% if results.challenges %}
+<div class="card mb-3">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0"><i class="bi bi-flag"></i> Challenges ({{ results.challenges|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for challenge in results.challenges %}
+            <a href="{{ url_for('workspace.index') }}#challenge-{{ challenge.id }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ challenge.name }}</h6>
+                    <small class="text-muted">{{ challenge.space }}</small>
+                </div>
+                {% if challenge.description %}
+                <p class="mb-1 text-muted">{{ challenge.description }}</p>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Initiatives -->
+{% if results.initiatives %}
+<div class="card mb-3">
+    <div class="card-header bg-success text-white">
+        <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Initiatives ({{ results.initiatives|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for initiative in results.initiatives %}
+            <a href="{{ url_for('workspace.index') }}#initiative-{{ initiative.id }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ initiative.name }}</h6>
+                </div>
+                {% if initiative.description %}
+                <p class="mb-1 text-muted">{{ initiative.description }}</p>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Systems -->
+{% if results.systems %}
+<div class="card mb-3">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Systems ({{ results.systems|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for system in results.systems %}
+            <a href="{{ url_for('workspace.index') }}#system-{{ system.id }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ system.name }}</h6>
+                </div>
+                {% if system.description %}
+                <p class="mb-1 text-muted">{{ system.description }}</p>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- KPIs -->
+{% if results.kpis %}
+<div class="card mb-3">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-bullseye"></i> KPIs ({{ results.kpis|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for kpi in results.kpis %}
+            <a href="{{ url_for('workspace.index') }}#kpi-{{ kpi.id }}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ kpi.name }}</h6>
+                    <small class="text-muted">{{ kpi.initiative }} / {{ kpi.system }}</small>
+                </div>
+                {% if kpi.description %}
+                <p class="mb-1 text-muted">{{ kpi.description }}</p>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Value Types -->
+{% if results.value_types %}
+<div class="card mb-3">
+    <div class="card-header bg-secondary text-white">
+        <h5 class="mb-0"><i class="bi bi-tag"></i> Value Types ({{ results.value_types|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for vt in results.value_types %}
+            <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ vt.name }}</h6>
+                    <span class="badge bg-secondary">{{ vt.kind }}</span>
+                </div>
+                {% if vt.description %}
+                <p class="mb-1 text-muted">{{ vt.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Comments -->
+{% if results.comments %}
+<div class="card mb-3">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Comments ({{ results.comments|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for comment in results.comments %}
+            <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1">{{ comment.kpi }}</h6>
+                    <small class="text-muted">{{ comment.created_at }}</small>
+                </div>
+                <p class="mb-1">{{ comment.text }}{% if comment.text|length >= 200 %}...{% endif %}</p>
+                <small class="text-muted">by {{ comment.user }}</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endif %}
+
+<style>
+.list-group-item:hover {
+    background-color: #f8f9fa;
+}
+.card-header h5 {
+    margin: 0;
+}
+</style>
+{% endblock %}

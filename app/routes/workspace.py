@@ -853,3 +853,126 @@ def search_org_users():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/search')
+@login_required
+@organization_required
+def search_page():
+    """Search results page"""
+    org_id = session.get('organization_id')
+    org_name = session.get('organization_name')
+    query = request.args.get('q', '').strip()
+
+    if not query:
+        return render_template('workspace/search.html',
+                             organization_name=org_name,
+                             query='',
+                             results={})
+
+    # Search across all entities
+    results = {
+        'spaces': [],
+        'challenges': [],
+        'initiatives': [],
+        'systems': [],
+        'kpis': [],
+        'value_types': [],
+        'comments': []
+    }
+
+    search_pattern = f'%{query}%'
+
+    # Search Spaces
+    spaces = Space.query.filter(
+        Space.organization_id == org_id,
+        db.or_(
+            Space.name.ilike(search_pattern),
+            Space.description.ilike(search_pattern)
+        )
+    ).all()
+    results['spaces'] = [{'id': s.id, 'name': s.name, 'description': s.description} for s in spaces]
+
+    # Search Challenges
+    challenges = Challenge.query.join(Space).filter(
+        Space.organization_id == org_id,
+        db.or_(
+            Challenge.name.ilike(search_pattern),
+            Challenge.description.ilike(search_pattern)
+        )
+    ).all()
+    results['challenges'] = [{'id': c.id, 'name': c.name, 'description': c.description, 'space': c.space.name} for c in challenges]
+
+    # Search Initiatives
+    initiatives = Initiative.query.filter(
+        Initiative.organization_id == org_id,
+        db.or_(
+            Initiative.name.ilike(search_pattern),
+            Initiative.description.ilike(search_pattern)
+        )
+    ).all()
+    results['initiatives'] = [{'id': i.id, 'name': i.name, 'description': i.description} for i in initiatives]
+
+    # Search Systems
+    systems = System.query.filter(
+        System.organization_id == org_id,
+        db.or_(
+            System.name.ilike(search_pattern),
+            System.description.ilike(search_pattern)
+        )
+    ).all()
+    results['systems'] = [{'id': s.id, 'name': s.name, 'description': s.description} for s in systems]
+
+    # Search KPIs
+    kpis = db.session.query(KPI).join(
+        InitiativeSystemLink
+    ).join(Initiative).filter(
+        Initiative.organization_id == org_id,
+        db.or_(
+            KPI.name.ilike(search_pattern),
+            KPI.description.ilike(search_pattern)
+        )
+    ).all()
+    results['kpis'] = [{
+        'id': k.id,
+        'name': k.name,
+        'description': k.description,
+        'initiative': k.initiative_system_link.initiative.name if k.initiative_system_link else '',
+        'system': k.initiative_system_link.system.name if k.initiative_system_link else ''
+    } for k in kpis]
+
+    # Search Value Types
+    value_types = ValueType.query.filter(
+        ValueType.organization_id == org_id,
+        db.or_(
+            ValueType.name.ilike(search_pattern),
+            ValueType.description.ilike(search_pattern)
+        )
+    ).all()
+    results['value_types'] = [{'id': v.id, 'name': v.name, 'description': v.description, 'kind': v.kind} for v in value_types]
+
+    # Search Comments
+    comments = db.session.query(CellComment).join(
+        KPIValueTypeConfig
+    ).join(KPI).join(
+        InitiativeSystemLink
+    ).join(Initiative).filter(
+        Initiative.organization_id == org_id,
+        CellComment.comment_text.ilike(search_pattern)
+    ).limit(50).all()
+    results['comments'] = [{
+        'id': c.id,
+        'text': c.comment_text[:200],
+        'user': c.user.display_name if c.user else 'Unknown',
+        'kpi': c.config.kpi.name if c.config and c.config.kpi else 'Unknown',
+        'created_at': c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else ''
+    } for c in comments]
+
+    # Count totals
+    total = sum(len(results[key]) for key in results)
+
+    return render_template('workspace/search.html',
+                         organization_name=org_name,
+                         query=query,
+                         results=results,
+                         total=total)
