@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Clone Organization - Global Administration{% endblock %}
+{% block content %}
+<h2>Clone Organization: {{ source_org.name }}</h2>
+
+<div class="alert alert-info">
+    <h5>What will be cloned:</h5>
+    <ul class="mb-0">
+        <li>All Value Types</li>
+        <li>All Spaces, Challenges, Initiatives, Systems, and KPIs</li>
+        <li>All links and relationships between entities</li>
+        <li>All KPI color configurations</li>
+        <li>All rollup rules</li>
+    </ul>
+</div>
+
+<div class="alert alert-warning">
+    <h5>What will NOT be cloned:</h5>
+    <ul class="mb-0">
+        <li>User memberships (new org will have no users)</li>
+        <li>Contributed data values</li>
+        <li>Consensus values</li>
+    </ul>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">Clone Configuration</h5>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="mb-3">
+                {{ form.new_name.label(class="form-label") }}
+                {{ form.new_name(class="form-control" + (" is-invalid" if form.new_name.errors else "")) }}
+                {% if form.new_name.errors %}
+                    <div class="invalid-feedback">
+                        {% for error in form.new_name.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+                <small class="form-text text-muted">
+                    The name for the cloned organization. Must be unique.
+                </small>
+            </div>
+
+            <div class="mb-3">
+                {{ form.new_description.label(class="form-label") }}
+                {{ form.new_description(class="form-control", rows=3, placeholder="Optional description for the cloned organization") }}
+                {% if form.new_description.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.new_description.errors %}{{ error }}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2">
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+                <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Source Organization Statistics</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-sm">
+            <tr>
+                <th>Name:</th>
+                <td>{{ source_org.name }}</td>
+            </tr>
+            <tr>
+                <th>Description:</th>
+                <td>{{ source_org.description or '-' }}</td>
+            </tr>
+            <tr>
+                <th>Value Types:</th>
+                <td>{{ source_org.value_types|length }}</td>
+            </tr>
+            <tr>
+                <th>Spaces:</th>
+                <td>{{ source_org.spaces|length }}</td>
+            </tr>
+            <tr>
+                <th>Challenges:</th>
+                <td>{{ source_org.challenges|length }}</td>
+            </tr>
+            <tr>
+                <th>Initiatives:</th>
+                <td>{{ source_org.initiatives|length }}</td>
+            </tr>
+            <tr>
+                <th>Systems:</th>
+                <td>{{ source_org.systems|length }}</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

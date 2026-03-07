@@ -12,6 +12,7 @@ from .kpi_forms import KPICreateForm, KPIEditForm
 from .value_type_forms import ValueTypeCreateForm, ValueTypeEditForm
 from .contribution_forms import ContributionForm
 from .yaml_forms import YAMLUploadForm
+from .organization_clone_forms import OrganizationCloneForm
 
 __all__ = [
     'LoginForm', 'ChangePasswordForm',
@@ -25,4 +26,5 @@ __all__ = [
     'ValueTypeCreateForm', 'ValueTypeEditForm',
     'ContributionForm',
     'YAMLUploadForm',
+    'OrganizationCloneForm',
 ]

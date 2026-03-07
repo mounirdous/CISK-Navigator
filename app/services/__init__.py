@@ -6,6 +6,7 @@ from .aggregation_service import AggregationService
 from .deletion_impact_service import DeletionImpactService
 from .value_type_usage_service import ValueTypeUsageService
 from .yaml_import_service import YAMLImportService
+from .organization_clone_service import OrganizationCloneService
 
 __all__ = [
     'ConsensusService',
@@ -13,4 +14,5 @@ __all__ = [
     'DeletionImpactService',
     'ValueTypeUsageService',
     'YAMLImportService',
+    'OrganizationCloneService',
 ]

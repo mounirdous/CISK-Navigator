@@ -35,6 +35,7 @@
             <td>{{ org.user_memberships|length }} user(s)</td>
             <td>
                 <a href="{{ url_for('global_admin.edit_organization', org_id=org.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                <a href="{{ url_for('global_admin.clone_organization', org_id=org.id) }}" class="btn btn-sm btn-outline-success">Clone</a>
                 <a href="{{ url_for('global_admin.delete_organization_preview', org_id=org.id) }}" class="btn btn-sm btn-outline-warning">Delete...</a>
             </td>
         </tr>

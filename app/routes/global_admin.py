@@ -8,8 +8,8 @@ from flask_login import login_required, current_user
 from functools import wraps
 from app.extensions import db
 from app.models import User, Organization, UserOrganizationMembership
-from app.forms import UserCreateForm, UserEditForm, OrganizationCreateForm, OrganizationEditForm
-from app.services import DeletionImpactService
+from app.forms import UserCreateForm, UserEditForm, OrganizationCreateForm, OrganizationEditForm, OrganizationCloneForm
+from app.services import DeletionImpactService, OrganizationCloneService
 
 bp = Blueprint('global_admin', __name__, url_prefix='/global-admin')
 
@@ -231,3 +231,37 @@ def delete_organization(org_id):
 
     flash(f'Organization {org_name} and all its data deleted successfully', 'success')
     return redirect(url_for('global_admin.organizations'))
+
+
+@bp.route('/organizations/<int:org_id>/clone', methods=['GET', 'POST'])
+@login_required
+@global_admin_required
+def clone_organization(org_id):
+    """Clone an organization with all its structure"""
+    source_org = Organization.query.get_or_404(org_id)
+    form = OrganizationCloneForm()
+
+    if form.validate_on_submit():
+        result = OrganizationCloneService.clone_organization(
+            source_org_id=org_id,
+            new_org_name=form.new_name.data,
+            new_org_description=form.new_description.data
+        )
+
+        if result['success']:
+            stats = result['statistics']
+            flash(
+                f"Organization cloned successfully! Created: "
+                f"{stats['value_types']} value types, "
+                f"{stats['spaces']} spaces, "
+                f"{stats['challenges']} challenges, "
+                f"{stats['initiatives']} initiatives, "
+                f"{stats['systems']} systems, "
+                f"{stats['kpis']} KPIs",
+                'success'
+            )
+            return redirect(url_for('global_admin.organizations'))
+        else:
+            flash(f"Clone failed: {result['error']}", 'danger')
+
+    return render_template('global_admin/clone_organization.html', form=form, source_org=source_org)
