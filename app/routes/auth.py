@@ -17,8 +17,14 @@ def login():
     1. Authenticate with username/password
     2. Select organization (filtered by user access)
     """
-    if current_user.is_authenticated:
+    # If already authenticated AND has organization context, go to workspace
+    if current_user.is_authenticated and session.get('organization_id'):
         return redirect(url_for('workspace.index'))
+    # If authenticated but no organization (e.g., session cleared), log out and restart
+    if current_user.is_authenticated and not session.get('organization_id'):
+        logout_user()
+        session.clear()
+        flash('Session expired. Please log in again.', 'info')
 
     # Check if we're at step 2 (user already authenticated in session)
     temp_user_id = session.get('_temp_user_id')
