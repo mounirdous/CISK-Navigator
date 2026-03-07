@@ -103,8 +103,8 @@ class ExcelExportService:
         for i, vt in enumerate(value_types, start=2):
             rollup = space.get_rollup_value(vt.id)
             if rollup:
-                value_str = ExcelExportService._format_value(rollup.value, vt)
-                status = '✓' if rollup.is_complete else '⚠'
+                value_str = ExcelExportService._format_value(rollup['value'], vt)
+                status = '✓' if rollup['is_complete'] else '⚠'
                 cell = ws.cell(row=row, column=i, value=f"{value_str} {status}")
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.fill = PatternFill(start_color=ExcelExportService.COLOR_SPACE,
@@ -138,8 +138,8 @@ class ExcelExportService:
         for i, vt in enumerate(value_types, start=2):
             rollup = challenge.get_rollup_value(vt.id)
             if rollup:
-                value_str = ExcelExportService._format_value(rollup.value, vt)
-                status = '✓' if rollup.is_complete else '⚠'
+                value_str = ExcelExportService._format_value(rollup['value'], vt)
+                status = '✓' if rollup['is_complete'] else '⚠'
                 cell = ws.cell(row=row, column=i, value=f"{value_str} {status}")
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.fill = PatternFill(start_color=ExcelExportService.COLOR_CHALLENGE,
@@ -172,8 +172,8 @@ class ExcelExportService:
         for i, vt in enumerate(value_types, start=2):
             rollup = initiative.get_rollup_value(vt.id)
             if rollup:
-                value_str = ExcelExportService._format_value(rollup.value, vt)
-                status = '✓' if rollup.is_complete else '⚠'
+                value_str = ExcelExportService._format_value(rollup['value'], vt)
+                status = '✓' if rollup['is_complete'] else '⚠'
                 cell = ws.cell(row=row, column=i, value=f"{value_str} {status}")
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.fill = PatternFill(start_color=ExcelExportService.COLOR_INITIATIVE,
@@ -207,8 +207,8 @@ class ExcelExportService:
         for i, vt in enumerate(value_types, start=2):
             rollup = sys_link.get_rollup_value(vt.id)
             if rollup:
-                value_str = ExcelExportService._format_value(rollup.value, vt)
-                status = '✓' if rollup.is_complete else '⚠'
+                value_str = ExcelExportService._format_value(rollup['value'], vt)
+                status = '✓' if rollup['is_complete'] else '⚠'
                 cell = ws.cell(row=row, column=i, value=f"{value_str} {status}")
                 cell.alignment = Alignment(horizontal='center', vertical='center')
                 cell.fill = PatternFill(start_color=ExcelExportService.COLOR_SYSTEM,
@@ -240,9 +240,9 @@ class ExcelExportService:
             # Find config for this value type
             config = next((c for c in kpi.value_type_configs if c.value_type_id == vt.id), None)
             if config:
-                consensus = config.get_consensus()
-                if consensus and consensus.value is not None:
-                    value_str = ExcelExportService._format_value(consensus.value, vt)
+                consensus = config.get_consensus_value()
+                if consensus and consensus['value'] is not None:
+                    value_str = ExcelExportService._format_value(consensus['value'], vt)
                     cell = ws.cell(row=row, column=i, value=value_str)
                     cell.alignment = Alignment(horizontal='center', vertical='center')
                     cell.fill = PatternFill(start_color=ExcelExportService.COLOR_KPI,
