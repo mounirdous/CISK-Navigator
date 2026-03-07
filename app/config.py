@@ -20,6 +20,15 @@ class Config:
         # Use psycopg3 driver (modern, compatible with Python 3.14)
         if database_url.startswith('postgresql://') and '+' not in database_url:
             database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+
+    # CRITICAL: In production, DATABASE_URL MUST be set - never fall back to SQLite!
+    if os.environ.get('FLASK_ENV') == 'production' and not database_url:
+        raise RuntimeError(
+            "CRITICAL ERROR: DATABASE_URL environment variable is not set in production! "
+            "This would create a new SQLite database and DESTROY all your data. "
+            "Please set DATABASE_URL in your Render environment variables."
+        )
+
     SQLALCHEMY_DATABASE_URI = database_url or f'sqlite:///{basedir / "cisk.db"}'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False

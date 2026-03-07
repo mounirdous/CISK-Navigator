@@ -101,8 +101,25 @@ def create_app(config_name=None):
     # Bootstrap admin (only creates if doesn't exist)
     # Note: DO NOT use db.create_all() in production - use migrations instead!
     with app.app_context():
+        # CRITICAL LOGGING: Show which database we're using
+        db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+        flask_env = app.config.get('FLASK_ENV', 'development')
+        print("=" * 80)
+        print(f"FLASK_ENV: {flask_env}")
+        if 'postgresql' in db_uri:
+            # Mask password for security
+            safe_uri = db_uri.split('@')[1] if '@' in db_uri else db_uri
+            print(f"✓ USING POSTGRESQL: {safe_uri}")
+        elif 'sqlite' in db_uri:
+            print(f"⚠ USING SQLITE: {db_uri}")
+            if flask_env == 'production':
+                print("❌ ERROR: SQLite should NEVER be used in production!")
+        print("=" * 80)
+
         # Only create tables in testing/development without migrations
         if app.config.get('TESTING') or (app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('sqlite:///')):
+            if flask_env == 'production':
+                raise RuntimeError("CRITICAL: Attempted to use SQLite in production! Check DATABASE_URL!")
             db.create_all()
 
         _bootstrap_admin()
