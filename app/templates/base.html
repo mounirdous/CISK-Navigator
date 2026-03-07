@@ -37,6 +37,14 @@
                     {% endif %}
                 </ul>
                 <ul class="navbar-nav">
+                    {% if session.organization_id %}
+                    <li class="nav-item">
+                        <a class="nav-link mentions-btn" href="#" onclick="showMentions(); return false;" title="Mentions">
+                            🔔
+                            <span id="mentionsBadge" style="display: none;">0</span>
+                        </a>
+                    </li>
+                    {% endif %}
                     <li class="nav-item">
                         <span class="navbar-text me-3">
                             {{ current_user.display_name or current_user.login }}

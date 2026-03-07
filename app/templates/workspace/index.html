@@ -2,13 +2,32 @@
 
 {% block title %}Workspace - {{ org_name }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
+{% endblock %}
+
 {% block content %}
-<h2>Workspace: {{ org_name }}</h2>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Workspace: {{ org_name }}</h2>
+
+    {% if is_historical_view %}
+    <div class="alert alert-warning mb-0">
+        <i class="bi bi-clock-history"></i> Viewing snapshot from <strong>{{ snapshot_date.strftime('%Y-%m-%d') }}</strong>
+        <a href="{{ url_for('workspace.index') }}" class="btn btn-sm btn-outline-dark ms-2">Return to Current</a>
+    </div>
+    {% endif %}
+</div>
 
 <div class="mb-3">
     <button id="expand-all" class="btn btn-outline-primary btn-sm">Expand All</button>
     <button id="collapse-all" class="btn btn-outline-secondary btn-sm">Collapse All</button>
     <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-success btn-sm ms-2">📊 Export to Excel</a>
+    <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-info btn-sm ms-2">
+        <i class="bi bi-camera"></i> Snapshots
+    </a>
+    <button class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal">
+        <i class="bi bi-camera-fill"></i> Quick Snapshot
+    </button>
     <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary btn-sm ms-3">Administration</a>
 </div>
 
@@ -182,11 +201,15 @@
                         {% set config = kpi.value_type_configs | selectattr('value_type_id', 'equalto', vt.id) | first %}
                         {% if config %}
                             {% set consensus = config.get_consensus_value() %}
-                        <td class="text-center kpi-cell" style="cursor: pointer;"
-                            onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'">
-                            {% if consensus.status == 'no_data' %}
-                                <span class="badge bg-secondary">Click to enter</span>
-                            {% elif consensus.value is not none %}
+                        <td class="text-center kpi-cell"
+                            data-config-id="{{ config.id }}"
+                            data-kpi-name="{{ kpi.name }}"
+                            data-value-type-name="{{ vt.name }}">
+                            <div style="position: relative;">
+                                <div style="cursor: pointer;" onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'">
+                                    {% if consensus.status == 'no_data' %}
+                                        <span class="badge bg-secondary">Click to enter</span>
+                                    {% elif consensus.value is not none %}
                                 <div>
                                     {% if vt.kind == 'numeric' %}
                                         <strong><span style="color: {{ config.get_value_color(consensus.value) }};">{{ consensus.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
@@ -205,14 +228,24 @@
                                     {% else %}
                                         <strong>{{ consensus.value }}</strong>
                                     {% endif %}
+                                    </div>
+                                    <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
+                                {% else %}
+                                    <div>
+                                        <small class="text-muted">{{ consensus.count }} conflicting values</small>
+                                    </div>
+                                    <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
+                                {% endif %}
                                 </div>
-                                <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
-                            {% else %}
-                                <div>
-                                    <small class="text-muted">{{ consensus.count }} conflicting values</small>
+                                <div style="position: absolute; top: 2px; right: 2px;">
+                                    <span class="comment-icon"
+                                          onclick="event.stopPropagation(); commentsManager.openCommentModal({{ config.id }}, '{{ kpi.name }}', '{{ vt.name }}');"
+                                          title="Comments">
+                                        💬
+                                        <span class="comment-count" style="display: none;">0</span>
+                                    </span>
                                 </div>
-                                <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
-                            {% endif %}
+                            </div>
                         </td>
                         {% else %}
                         <td class="text-center text-muted">
@@ -319,6 +352,126 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Expand all by default on page load
     document.getElementById('expand-all').click();
+
+    // Load trend indicators for KPI cells
+    loadTrendIndicators();
+});
+
+function loadTrendIndicators() {
+    // Find all KPI cells with data-config-id attribute
+    document.querySelectorAll('[data-config-id]').forEach(cell => {
+        const configId = cell.dataset.configId;
+
+        fetch(`/workspace/api/kpi/${configId}/trend`)
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                return null;
+            })
+            .then(trend => {
+                if (trend && trend.direction) {
+                    // Add trend indicator
+                    const icon = trend.direction === 'up' ? '↗️' :
+                                trend.direction === 'down' ? '↘️' : '→';
+
+                    const trendSpan = document.createElement('span');
+                    trendSpan.className = 'trend-indicator';
+                    trendSpan.innerHTML = ` ${icon}`;
+                    trendSpan.title = `${trend.direction === 'up' ? 'Increasing' : trend.direction === 'down' ? 'Decreasing' : 'Stable'}: ${trend.change > 0 ? '+' : ''}${trend.change.toFixed(2)} (${trend.percent_change > 0 ? '+' : ''}${trend.percent_change.toFixed(1)}%)`;
+
+                    cell.appendChild(trendSpan);
+                }
+            })
+            .catch(err => {
+                // Silently fail - trend data is optional
+                console.debug('No trend data for config', configId);
+            });
+    });
+}
+</script>
+
+<!-- Quick Snapshot Modal -->
+<div class="modal fade" id="quickSnapshotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Quick Snapshot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('workspace.create_snapshot') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="snapshot_date_quick" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="snapshot_date_quick" name="snapshot_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="label_quick" class="form-label">Label (Optional)</label>
+                        <input type="text" class="form-control" id="label_quick" name="label"
+                               placeholder="e.g., Q1 2026, End of Sprint 5" maxlength="100">
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Captures current KPI values for time-series tracking
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Snapshot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set today as default date in quick snapshot modal
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('snapshot_date_quick');
+    if (dateInput) {
+        dateInput.valueAsDate = new Date();
+    }
 });
 </script>
+
+<style>
+.trend-indicator {
+    font-size: 0.9em;
+    margin-left: 4px;
+    cursor: help;
+}
+</style>
+
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="commentModalTitle">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Existing comments -->
+                <div id="commentsContainer"></div>
+
+                <!-- New comment form -->
+                <div class="mt-4">
+                    <h6>Add Comment</h6>
+                    <textarea class="form-control" id="newCommentText" rows="3"
+                              placeholder="Type @ to mention someone..."></textarea>
+                    <small class="form-text text-muted">
+                        <i class="bi bi-lightbulb"></i> Tip: Use @username to mention colleagues
+                    </small>
+                    <div class="mt-2">
+                        <button class="btn btn-primary" id="postCommentBtn">Post Comment</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 {% endblock %}
