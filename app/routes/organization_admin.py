@@ -3,7 +3,7 @@ Organization Administration routes
 
 For managing business content within an organization (spaces, challenges, initiatives, etc.).
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request, jsonify
 from flask_login import login_required, current_user
 from functools import wraps
 from app.extensions import db
@@ -589,6 +589,32 @@ def value_types():
     org_id = session.get('organization_id')
     value_types = ValueType.query.filter_by(organization_id=org_id).order_by(ValueType.display_order).all()
     return render_template('organization_admin/value_types.html', value_types=value_types)
+
+
+@bp.route('/value-types/reorder', methods=['POST'])
+@login_required
+@organization_required
+def reorder_value_types():
+    """Update value type display order via AJAX"""
+    org_id = session.get('organization_id')
+    data = request.get_json()
+    order = data.get('order', [])
+
+    if not order:
+        return jsonify({'success': False, 'error': 'No order provided'}), 400
+
+    try:
+        # Update display_order for each value type
+        for index, vt_id in enumerate(order):
+            vt = ValueType.query.filter_by(id=vt_id, organization_id=org_id).first()
+            if vt:
+                vt.display_order = index
+
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/value-types/create', methods=['GET', 'POST'])

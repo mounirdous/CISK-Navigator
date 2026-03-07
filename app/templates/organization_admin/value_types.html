@@ -6,13 +6,19 @@
     <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary">Create Value Type</a>
     <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
 </div>
+
+<div class="alert alert-info">
+    <strong>💡 Tip:</strong> Drag rows using the ⋮⋮ handle to reorder value types. This controls the column order in the workspace.
+</div>
+
 <table class="table table-striped">
     <thead>
-        <tr><th>Name</th><th>Kind</th><th>Unit</th><th>Formula</th><th>Status</th><th>Actions</th></tr>
+        <tr><th style="width: 30px;"></th><th>Name</th><th>Kind</th><th>Unit</th><th>Formula</th><th>Status</th><th>Actions</th></tr>
     </thead>
-    <tbody>
+    <tbody id="sortable-value-types">
         {% for vt in value_types %}
-        <tr>
+        <tr data-id="{{ vt.id }}" style="cursor: move;">
+            <td class="drag-handle text-center" style="cursor: grab; font-size: 20px; color: #999;">⋮⋮</td>
             <td>{{ vt.name }}</td>
             <td><span class="badge bg-info">{{ vt.kind }}</span></td>
             <td>{{ vt.unit_label or '-' }}</td>
@@ -32,4 +38,65 @@
         {% endfor %}
     </tbody>
 </table>
+
+<!-- SortableJS from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('sortable-value-types');
+
+    if (tbody) {
+        const sortable = Sortable.create(tbody, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                // Get new order
+                const rows = tbody.querySelectorAll('tr[data-id]');
+                const order = Array.from(rows).map(row => parseInt(row.dataset.id));
+
+                // Save to server
+                fetch('{{ url_for("organization_admin.reorder_value_types") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ order: order })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show brief success indicator
+                        const msg = document.createElement('div');
+                        msg.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+                        msg.style.zIndex = '9999';
+                        msg.textContent = '✓ Order saved';
+                        document.body.appendChild(msg);
+                        setTimeout(() => msg.remove(), 2000);
+                    } else {
+                        alert('Failed to save order: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to save order');
+                });
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f8f9fa;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+</style>
+
 {% endblock %}
