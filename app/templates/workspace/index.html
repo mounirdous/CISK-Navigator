@@ -115,6 +115,10 @@
                                     {% if rollup.value == 1 %}<strong>★</strong>{% elif rollup.value == 2 %}<strong>★★</strong>{% elif rollup.value == 3 %}<strong>★★★</strong>{% endif %}
                                 {% elif vt.kind == 'negative_impact' %}
                                     {% if rollup.value == 1 %}<strong>▼</strong>{% elif rollup.value == 2 %}<strong>▼▼</strong>{% elif rollup.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                {% elif vt.kind == 'level' %}
+                                    {% if rollup.value == 1 %}<strong>●</strong>{% elif rollup.value == 2 %}<strong>●●</strong>{% elif rollup.value == 3 %}<strong>●●●</strong>{% endif %}
+                                {% elif vt.kind == 'sentiment' %}
+                                    {% if rollup.value == 1 %}<strong>☹️</strong>{% elif rollup.value == 2 %}<strong>😐</strong>{% elif rollup.value == 3 %}<strong>😊</strong>{% endif %}
                                 {% endif %}
                                 <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
                             {% else %}
@@ -149,6 +153,10 @@
                                     {% if rollup.value == 1 %}<strong>★</strong>{% elif rollup.value == 2 %}<strong>★★</strong>{% elif rollup.value == 3 %}<strong>★★★</strong>{% endif %}
                                 {% elif vt.kind == 'negative_impact' %}
                                     {% if rollup.value == 1 %}<strong>▼</strong>{% elif rollup.value == 2 %}<strong>▼▼</strong>{% elif rollup.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                {% elif vt.kind == 'level' %}
+                                    {% if rollup.value == 1 %}<strong>●</strong>{% elif rollup.value == 2 %}<strong>●●</strong>{% elif rollup.value == 3 %}<strong>●●●</strong>{% endif %}
+                                {% elif vt.kind == 'sentiment' %}
+                                    {% if rollup.value == 1 %}<strong>☹️</strong>{% elif rollup.value == 2 %}<strong>😐</strong>{% elif rollup.value == 3 %}<strong>😊</strong>{% endif %}
                                 {% endif %}
                                 <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
                             {% else %}
@@ -184,6 +192,10 @@
                                         {% if rollup.value == 1 %}<strong>★</strong>{% elif rollup.value == 2 %}<strong>★★</strong>{% elif rollup.value == 3 %}<strong>★★★</strong>{% endif %}
                                     {% elif vt.kind == 'negative_impact' %}
                                         {% if rollup.value == 1 %}<strong>▼</strong>{% elif rollup.value == 2 %}<strong>▼▼</strong>{% elif rollup.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                    {% elif vt.kind == 'level' %}
+                                        {% if rollup.value == 1 %}<strong>●</strong>{% elif rollup.value == 2 %}<strong>●●</strong>{% elif rollup.value == 3 %}<strong>●●●</strong>{% endif %}
+                                    {% elif vt.kind == 'sentiment' %}
+                                        {% if rollup.value == 1 %}<strong>☹️</strong>{% elif rollup.value == 2 %}<strong>😐</strong>{% elif rollup.value == 3 %}<strong>😊</strong>{% endif %}
                                     {% endif %}
                                 </div>
                                 <small class="text-muted">{{ '✓' if rollup.is_complete else '⚠' }} Rollup</small>
@@ -228,6 +240,14 @@
                                         {% if consensus.value == 1 %}<strong>▼</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>▼▼</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                    {% elif vt.kind == 'level' %}
+                                        {% if consensus.value == 1 %}<strong>●</strong>{% endif %}
+                                        {% if consensus.value == 2 %}<strong>●●</strong>{% endif %}
+                                        {% if consensus.value == 3 %}<strong>●●●</strong>{% endif %}
+                                    {% elif vt.kind == 'sentiment' %}
+                                        {% if consensus.value == 1 %}<strong>☹️</strong>{% endif %}
+                                        {% if consensus.value == 2 %}<strong>😐</strong>{% endif %}
+                                        {% if consensus.value == 3 %}<strong>😊</strong>{% endif %}
                                     {% else %}
                                         <strong>{{ consensus.value }}</strong>
                                     {% endif %}
