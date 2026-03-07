@@ -6,6 +6,7 @@ Manages cell comments, @mentions, and discussion threads.
 import re
 from datetime import datetime
 from typing import List, Dict, Optional
+from sqlalchemy.orm import joinedload
 from app.extensions import db
 from app.models import (
     CellComment, MentionNotification, User, KPIValueTypeConfig,
@@ -249,8 +250,10 @@ class CommentService:
 
     @staticmethod
     def get_unread_mentions(user_id: int, limit: int = None) -> List[MentionNotification]:
-        """Get unread mentions for a user"""
-        query = MentionNotification.query.filter_by(
+        """Get unread mentions for a user with eager loading for performance"""
+        query = MentionNotification.query.options(
+            joinedload(MentionNotification.comment).joinedload(CellComment.user)
+        ).filter_by(
             mentioned_user_id=user_id,
             is_read=False
         ).order_by(MentionNotification.created_at.desc())
