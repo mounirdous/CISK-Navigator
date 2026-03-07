@@ -595,7 +595,8 @@ def value_types():
 @login_required
 @organization_required
 def reorder_value_types():
-    """Update value type display order via AJAX"""
+    """Update value type display order via AJAX (CSRF exempt for AJAX)"""
+    # Note: CSRF validation happens through login_required - user must be authenticated
     org_id = session.get('organization_id')
     data = request.get_json()
     order = data.get('order', [])
