@@ -10,7 +10,7 @@ from app.extensions import db
 from app.models import (
     Space, Challenge, Initiative, System, KPI, ValueType,
     KPIValueTypeConfig, Contribution, KPISnapshot, CellComment, User,
-    UserOrganizationMembership
+    UserOrganizationMembership, InitiativeSystemLink
 )
 from app.forms import ContributionForm
 from app.services import ConsensusService, AggregationService, ExcelExportService
@@ -43,8 +43,6 @@ def dashboard():
     org_name = session.get('organization_name')
 
     # Get statistics
-    from app.models import InitiativeSystemLink
-
     stats = {
         'spaces': Space.query.filter_by(organization_id=org_id).count(),
         'challenges': Challenge.query.join(Space).filter(Space.organization_id == org_id).count(),
