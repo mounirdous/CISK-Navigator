@@ -295,11 +295,20 @@ def clear_organization_comments(org_id):
             flash(f'No comments found for organization {org_name}', 'info')
             return redirect(url_for('global_admin.organizations'))
 
-        # Delete all mentions first (they cascade from comments, but explicit is safer)
-        mention_count = db.session.query(MentionNotification).join(
-            CellComment
-        ).filter(
+        # Get all comment IDs for these configs
+        comment_ids = db.session.query(CellComment.id).filter(
             CellComment.kpi_value_type_config_id.in_(config_ids)
+        ).all()
+
+        comment_ids_list = [c[0] for c in comment_ids]
+
+        if not comment_ids_list:
+            flash(f'No comments found for organization {org_name}', 'info')
+            return redirect(url_for('global_admin.organizations'))
+
+        # Delete all mentions for these comments
+        mention_count = MentionNotification.query.filter(
+            MentionNotification.comment_id.in_(comment_ids_list)
         ).delete(synchronize_session=False)
 
         # Delete all comments for these configs
