@@ -953,12 +953,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterPills = document.querySelectorAll('.filter-pill');
     const clearFiltersBtn = document.getElementById('clear-filters');
 
-    // Level visibility controls (checkboxes with names starting with "show_")
-    const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb => cb.name.startsWith('show_'));
+    // Level visibility controls (checkboxes with names starting with "show_" except show_archived)
+    const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
+        cb.name.startsWith('show_') && cb.name !== 'show_archived'
+    );
     console.log('Level checkboxes:', levelCheckboxes.map(cb => cb.name));
 
-    // Governance body and archive checkboxes (non-level controls)
-    const dataFilterCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.name.startsWith('show_'));
+    // Governance body and archive checkboxes (data filters that trigger reload)
+    const dataFilterCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
+        !cb.name.startsWith('show_') || cb.name === 'show_archived'
+    );
     console.log('Data filter checkboxes:', dataFilterCheckboxes.map(cb => cb.name));
 
     // Handle filter pill clicks
