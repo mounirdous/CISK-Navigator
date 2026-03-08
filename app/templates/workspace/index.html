@@ -7,8 +7,8 @@
 <style>
 /* Modern Dark Workspace Theme */
 .dark-mode #workspace-container {
-    background-color: #0a0a0a;
-    color: #e0e0e0;
+    background-color: #1a1a1a;
+    color: #e8e8e8;
 }
 
 .dark-mode .modern-toolbar {
@@ -51,14 +51,14 @@
 }
 
 .dark-mode #workspace-tree {
-    background-color: #0a0a0a;
-    border-color: #333;
+    background-color: #1a1a1a;
+    border-color: #444;
 }
 
 .dark-mode #workspace-tree thead th {
-    background-color: #1a1a1a;
-    color: #e0e0e0;
-    border-color: #333;
+    background-color: #2a2a2a;
+    color: #e8e8e8;
+    border-color: #444;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -66,37 +66,38 @@
 }
 
 .dark-mode #workspace-tree tbody tr {
-    border-color: #333;
+    border-color: #444;
 }
 
 .dark-mode #workspace-tree tbody tr:hover {
-    background-color: #1a1a1a;
+    background-color: #2a2a2a;
 }
 
 .dark-mode #workspace-tree tbody td {
-    border-color: #333;
-    background-color: #0a0a0a;
+    border-color: #444;
+    background-color: #1a1a1a;
+    color: #d0d0d0;
 }
 
-/* Level-specific dark mode colors */
+/* Level-specific dark mode colors - MORE CONTRAST */
 .dark-mode tr[data-level="space"] td {
-    background-color: #1a2a3a !important;
+    background-color: #2a3a4a !important;
 }
 
 .dark-mode tr[data-level="challenge"] td {
-    background-color: #151515 !important;
+    background-color: #252525 !important;
 }
 
 .dark-mode tr[data-level="initiative"] td {
-    background-color: #1a1a1a !important;
+    background-color: #2a2a2a !important;
 }
 
 .dark-mode tr[data-level="system"] td {
-    background-color: #1a2530 !important;
+    background-color: #2a3540 !important;
 }
 
 .dark-mode tr[data-level="kpi"] td {
-    background-color: #252515 !important;
+    background-color: #353525 !important;
 }
 
 /* Hierarchy icons and visual guides */
@@ -304,32 +305,35 @@
             </div>
 
             <div class="flex-grow-1">
-                <small class="text-muted"><i class="bi bi-eye-fill"></i> <strong>Show Levels:</strong></small>
-                <label class="filter-pill ms-2 {% if show_levels.spaces %}active{% endif %}">
+                <small class="text-muted">
+                    <i class="bi bi-eye-fill"></i> <strong>Show Levels:</strong>
+                    <span style="opacity: 0.7; font-size: 0.85rem;">(Click to hide/show hierarchy levels. Blue = visible, Gray = hidden)</span>
+                </small>
+                <label class="filter-pill ms-2 {% if show_levels.spaces %}active{% endif %}" title="Toggle Spaces visibility">
                     <input type="checkbox" name="show_spaces" value="1" id="show_spaces"
                            {% if show_levels.spaces %}checked{% endif %} hidden>
                     <i class="bi bi-building"></i>
                     <span>Spaces</span>
                 </label>
-                <label class="filter-pill {% if show_levels.challenges %}active{% endif %}">
+                <label class="filter-pill {% if show_levels.challenges %}active{% endif %}" title="Toggle Challenges visibility">
                     <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
                            {% if show_levels.challenges %}checked{% endif %} hidden>
                     <i class="bi bi-flag"></i>
                     <span>Challenges</span>
                 </label>
-                <label class="filter-pill {% if show_levels.initiatives %}active{% endif %}">
+                <label class="filter-pill {% if show_levels.initiatives %}active{% endif %}" title="Toggle Initiatives visibility">
                     <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
                            {% if show_levels.initiatives %}checked{% endif %} hidden>
                     <i class="bi bi-lightbulb"></i>
                     <span>Initiatives</span>
                 </label>
-                <label class="filter-pill {% if show_levels.systems %}active{% endif %}">
+                <label class="filter-pill {% if show_levels.systems %}active{% endif %}" title="Toggle Systems visibility">
                     <input type="checkbox" name="show_systems" value="1" id="show_systems"
                            {% if show_levels.systems %}checked{% endif %} hidden>
                     <i class="bi bi-gear-wide-connected"></i>
                     <span>Systems</span>
                 </label>
-                <label class="filter-pill {% if show_levels.kpis %}active{% endif %}">
+                <label class="filter-pill {% if show_levels.kpis %}active{% endif %}" title="Toggle KPIs visibility">
                     <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
                            {% if show_levels.kpis %}checked{% endif %} hidden>
                     <i class="bi bi-graph-up"></i>
@@ -420,8 +424,8 @@
 
                 {% for challenge in space.challenges %}
                 <!-- CHALLENGE ROW -->
-                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: {% if show_levels.challenges %}none{% else %}none{% endif %};">
-                    <td class="level-border challenge" style="padding-left: 2rem;">
+                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: none;">
+                    <td class="level-border challenge" style="padding-left: 2.5rem !important;">
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🎯</span>
                         {{ challenge.name }}
@@ -460,7 +464,7 @@
                     {% set initiative = link.initiative %}
                 <!-- INITIATIVE ROW -->
                 <tr data-level="initiative" data-id="{{ initiative.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary" style="display: none;">
-                    <td class="level-border initiative" style="padding-left: 4rem;">
+                    <td class="level-border initiative" style="padding-left: 5rem !important;">
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">💡</span>
                         {{ initiative.name }}
@@ -499,7 +503,7 @@
                     {% set system = sys_link.system %}
                 <!-- SYSTEM ROW -->
                 <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info" style="display: none;">
-                    <td class="level-border system" style="padding-left: 6rem;">
+                    <td class="level-border system" style="padding-left: 7.5rem !important;">
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">⚙️</span>
                         {{ system.name }}
@@ -558,7 +562,7 @@
                 {% if show_kpi and show_levels.kpis %}
                 <!-- KPI ROW -->
                 <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}">
-                    <td class="level-border kpi" style="padding-left: 8rem;">
+                    <td class="level-border kpi" style="padding-left: 10rem !important;">
                         <span class="hierarchy-icon">📊</span>
                         {{ kpi.name }}
                         {% if kpi.is_archived %}
