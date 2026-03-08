@@ -113,6 +113,7 @@ class KPIValueTypeConfig(db.Model):
     kpi = db.relationship('KPI', back_populates='value_type_configs')
     value_type = db.relationship('ValueType', back_populates='kpi_configs')
     contributions = db.relationship('Contribution', back_populates='kpi_value_type_config', cascade='all, delete-orphan')
+    snapshots = db.relationship('KPISnapshot', foreign_keys='KPISnapshot.kpi_value_type_config_id', back_populates='config', cascade='all, delete-orphan')
     baseline_snapshot = db.relationship('KPISnapshot', foreign_keys=[baseline_snapshot_id], viewonly=True)
 
     def get_consensus_value(self):
