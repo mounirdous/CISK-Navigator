@@ -83,7 +83,7 @@ def create_user():
         flash(f'User {user.login} created successfully', 'success')
         return redirect(url_for('global_admin.users'))
 
-    return render_template('global_admin/create_user.html', form=form)
+    return render_template('global_admin/create_user.html', form=form, organizations=organizations)
 
 
 @bp.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
@@ -99,6 +99,7 @@ def edit_user(user_id):
 
     if request.method == 'GET':
         form.organizations.data = [m.organization_id for m in user.organization_memberships]
+        form.reset_password.data = None  # Explicitly clear password field
 
     if form.validate_on_submit():
         user.login = form.login.data
@@ -106,9 +107,11 @@ def edit_user(user_id):
         user.display_name = form.display_name.data
         user.is_active = form.is_active.data
         user.is_global_admin = form.is_global_admin.data
+        user.must_change_password = form.must_change_password.data
 
-        if form.reset_password.data:
-            user.set_password(form.reset_password.data)
+        # Only reset password if field has actual content (strip whitespace)
+        if form.reset_password.data and form.reset_password.data.strip():
+            user.set_password(form.reset_password.data.strip())
             user.must_change_password = True
 
         # Update organization memberships
@@ -124,7 +127,7 @@ def edit_user(user_id):
         flash(f'User {user.login} updated successfully', 'success')
         return redirect(url_for('global_admin.users'))
 
-    return render_template('global_admin/edit_user.html', form=form, user=user)
+    return render_template('global_admin/edit_user.html', form=form, user=user, organizations=organizations)
 
 
 @bp.route('/users/<int:user_id>/delete', methods=['POST'])

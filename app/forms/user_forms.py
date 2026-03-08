@@ -25,6 +25,7 @@ class UserEditForm(FlaskForm):
     display_name = StringField('Display Name', validators=[Optional(), Length(max=120)])
     is_active = BooleanField('Active')
     is_global_admin = BooleanField('Global Administrator')
+    must_change_password = BooleanField('Force Password Change on Next Login')
     organizations = SelectMultipleField('Assigned Organizations', coerce=int)
     reset_password = PasswordField('Reset Password (leave blank to keep current)', validators=[Optional(), Length(min=8)])
     submit = SubmitField('Save Changes')

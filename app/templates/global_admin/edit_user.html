@@ -9,8 +9,22 @@
     <div class="mb-3">{{ form.display_name.label }}{{ form.display_name(class="form-control") }}</div>
     <div class="mb-3">{{ form.is_active(class="form-check-input") }} {{ form.is_active.label(class="form-check-label") }}</div>
     <div class="mb-3">{{ form.is_global_admin(class="form-check-input") }} {{ form.is_global_admin.label(class="form-check-label") }}</div>
-    <div class="mb-3">{{ form.organizations.label }}{{ form.organizations(class="form-select", multiple=true, size=5) }}</div>
-    <div class="mb-3">{{ form.reset_password.label }}{{ form.reset_password(class="form-control") }}<small class="form-text">Leave blank to keep current password</small></div>
+    <div class="mb-3">{{ form.must_change_password(class="form-check-input") }} {{ form.must_change_password.label(class="form-check-label") }}</div>
+    <div class="mb-3">
+        <label class="form-label">{{ form.organizations.label.text }}</label>
+        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+            {% for org in organizations %}
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="organizations" value="{{ org.id }}" id="org_{{ org.id }}"
+                       {% if org.id in form.organizations.data %}checked{% endif %}>
+                <label class="form-check-label" for="org_{{ org.id }}">
+                    {{ org.name }}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="mb-3">{{ form.reset_password.label }}{{ form.reset_password(class="form-control", autocomplete="new-password", placeholder="Leave blank to keep current password") }}<small class="form-text text-muted">Leave blank to keep current password</small></div>
     {{ form.submit(class="btn btn-primary") }}
     <a href="{{ url_for('global_admin.users') }}" class="btn btn-secondary">Cancel</a>
 </form>
