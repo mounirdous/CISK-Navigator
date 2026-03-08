@@ -1034,25 +1034,60 @@ document.addEventListener('DOMContentLoaded', function() {
             'kpi': showKpis
         };
 
-        // Update all rows - just mark them, let expand/collapse handle display
+        // Update all rows
         let hiddenCount = 0;
-        let visibleCount = 0;
+        let shownCount = 0;
         document.querySelectorAll('#workspace-tree tbody tr[data-level]').forEach(row => {
             const level = row.getAttribute('data-level');
             const shouldShow = levelMap[level];
 
             if (!shouldShow) {
-                // Mark level as hidden
+                // Hide this level completely
                 row.setAttribute('data-level-hidden', 'true');
                 row.setAttribute('style', 'display: none !important;');
                 hiddenCount++;
             } else {
-                // Mark level as visible (but don't show yet - expand will do that)
+                // Level is enabled - check if we should show it
                 row.removeAttribute('data-level-hidden');
-                visibleCount++;
+
+                // For spaces, always show
+                if (level === 'space') {
+                    const currentStyle = row.getAttribute('style') || '';
+                    const newStyle = currentStyle.replace(/display:\s*none\s*!important;?/gi, '').trim();
+                    if (newStyle) {
+                        row.setAttribute('style', newStyle);
+                    } else {
+                        row.removeAttribute('style');
+                    }
+                    shownCount++;
+                } else {
+                    // For children, check if parent is expanded
+                    const parentType = row.getAttribute('data-parent-type');
+                    const parentId = row.getAttribute('data-parent-id');
+                    if (parentType && parentId) {
+                        const parentRow = document.querySelector(`tr[data-level="${parentType}"][data-id="${parentId}"]`);
+                        if (parentRow) {
+                            const parentIcon = parentRow.querySelector('.expand-icon');
+                            const isParentExpanded = parentIcon && parentIcon.textContent === '▼';
+
+                            if (isParentExpanded) {
+                                // Parent is expanded, show this row
+                                const currentStyle = row.getAttribute('style') || '';
+                                const newStyle = currentStyle.replace(/display:\s*none\s*!important;?/gi, '').trim();
+                                if (newStyle) {
+                                    row.setAttribute('style', newStyle);
+                                } else {
+                                    row.removeAttribute('style');
+                                }
+                                shownCount++;
+                            }
+                            // If parent collapsed, keep row hidden (it's already style="display: none")
+                        }
+                    }
+                }
             }
         });
-        console.log(`Marked ${hiddenCount} rows hidden, ${visibleCount} rows visible`);
+        console.log(`Hidden ${hiddenCount} rows, shown ${shownCount} rows`);
     }
 
     // Initialize pill colors on page load
