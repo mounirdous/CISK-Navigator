@@ -347,9 +347,7 @@
 <!-- Quick Stats -->
 <div class="stats-bar">
     <i class="bi bi-bar-chart-line"></i>
-    <strong>Viewing:</strong>
-    {% if show_levels.spaces %}{{ spaces|length }} Spaces{% endif %}
-    {% if show_levels.challenges %} • {{ spaces|sum(attribute='challenges')|length|default(0) }} Challenges{% endif %}
+    <strong>Workspace View</strong>
     <small class="text-muted ms-3">
         Filters:
         {% if selected_governance_body_ids|length > 0 and selected_governance_body_ids|length < governance_bodies|length %}
