@@ -58,7 +58,9 @@ def login():
                 session['organization_id'] = None
                 session['organization_name'] = 'Global Administration'
 
-                if user.must_change_password:
+                # Only force password change if not already done this session
+                if user.must_change_password and not session.get('_pwd_check_done'):
+                    session['_pwd_check_done'] = True
                     flash('You must change your password', 'warning')
                     return redirect(url_for('auth.change_password'))
 
@@ -94,7 +96,9 @@ def login():
             session['organization_id'] = organization.id
             session['organization_name'] = organization.name
 
-            if user.must_change_password:
+            # Only force password change if not already done this session
+            if user.must_change_password and not session.get('_pwd_check_done'):
+                session['_pwd_check_done'] = True
                 flash('You must change your password', 'warning')
                 return redirect(url_for('auth.change_password'))
 
@@ -131,7 +135,9 @@ def login():
             session['organization_id'] = organization.id
             session['organization_name'] = organization.name
 
-            if user.must_change_password:
+            # Only force password change if not already done this session
+            if user.must_change_password and not session.get('_pwd_check_done'):
+                session['_pwd_check_done'] = True
                 flash('You must change your password', 'warning')
                 return redirect(url_for('auth.change_password'))
 
@@ -152,6 +158,7 @@ def logout():
     session.pop('organization_id', None)
     session.pop('organization_name', None)
     session.pop('_temp_user_id', None)
+    session.pop('_pwd_check_done', None)
     flash('You have been logged out', 'info')
     return redirect(url_for('auth.login'))
 
@@ -174,6 +181,9 @@ def change_password():
         current_user.set_password(form.new_password.data)
         current_user.must_change_password = False
         db.session.commit()
+
+        # Clear the password check flag so they won't be prompted again
+        session.pop('_pwd_check_done', None)
 
         flash('Password changed successfully', 'success')
 
