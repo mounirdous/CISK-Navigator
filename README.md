@@ -1,13 +1,42 @@
-# 🧭 CISK Navigator v2.1
+# 🧭 CISK Navigator v1.11.7
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.1.0-blue)
+![Version](https://img.shields.io/badge/version-1.11.7-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
-## ✨ What's New in v2.1
+## ✨ What's New in v1.11 (March 2026)
+
+### 🔄 **Smart Value Entry** (v1.10.0+)
+- **Intelligent Mode Selection**: When entering a value on a cell with existing consensus, choose your intent:
+  - **"NEW data (time evolved)"**: Auto-creates snapshot of current value, then replaces all contributions with new value
+  - **"Contributing to CURRENT period"**: Adds contribution normally without creating snapshot
+- **Automatic Snapshot Creation**: Historical values preserved when time moves forward
+- **Clean Value Evolution**: Single contributor can update values without creating "low consensus"
+- **No Data Loss**: Every value change optionally preserved in snapshot history
+
+### 🎯 **Target Tracking** (v1.11.0+)
+- **Set Targets**: Optional target value and date for any KPI
+- **Visual Progress**: Progress indicator (🎯 X%) displayed in workspace grid
+- **Chart Integration**: Target shown as horizontal dashed red line on trend charts
+- **Flexible Tracking**: Different targets for different KPIs, even with same value type
+- **Baseline Support**: Reference snapshot as starting point for progress measurement
+
+### 🗑️ **Delete Functionality** (v1.10.1+)
+- **Complete CRUD**: Delete operations for KPIs, Systems, Initiatives, and Challenges
+- **Inline Deletion**: Delete buttons directly in list views
+- **Confirmation Dialogs**: Prevents accidental deletions
+- **Cascade Handling**: Related entities handled appropriately
+
+### 📊 **Chart Improvements** (v1.11.6-v1.11.7)
+- **Current Value Included**: Charts now show historical snapshots + current value
+- **Same-Day Snapshots**: Multiple snapshots on same day display as separate points
+- **Full Timestamps**: Uses HH:MM:SS for precise time series display
+- **Better History**: Up to 50 data points displayed on charts
+
+## ✨ What's New in v2.1 (March 2026)
 
 ### 📊 **Dashboard & Overview**
 - **Interactive Dashboard**: Statistics cards, quick actions, recent activity
@@ -120,8 +149,10 @@
 - **📅 Historical View**: View workspace as of any snapshot date
 - **📈 Trend Analysis**: Automatic calculation of value changes over time
 - **📊 Comparison View**: Side-by-side snapshot comparison with % change
-- **📉 Trend Charts**: Interactive line charts (Chart.js) showing KPI history
+- **📉 Trend Charts**: Interactive line charts (Chart.js) showing KPI history with current value
 - **🏷️ Labels**: Organize snapshots ("Q1 2026", "Baseline", "Sprint 5")
+- **🔄 Smart Value Entry**: Choose between "new data" (creates snapshot) or "contributing" mode
+- **🎯 Target Tracking**: Set target values with progress indicators and chart visualization
 
 ### Collaboration & Communication
 - **💬 Cell Comments**: Discussion threads on any KPI cell
@@ -244,6 +275,44 @@ Organization
 - **Sustainability Tracking**: Aggregate CO2, cost, and impact metrics
 
 ## 🔄 Version History
+
+### v1.11.7 (March 8, 2026)
+- 🐛 **Fixed**: Current value now included in trend charts
+- 🐛 **Fixed**: Same-day snapshots display as separate points using timestamps
+- 📊 **Improved**: Chart displays complete time series progression
+
+### v1.11.6 (March 8, 2026)
+- 🐛 **Fixed**: Chart API mismatch (snapshots vs history key)
+- 🐛 **Fixed**: Charts now render properly when snapshots exist
+- 📊 **Added**: Debug flash messages for snapshot creation
+
+### v1.11.5 (March 8, 2026)
+- ✨ **Restored**: Baseline snapshot feature (without FK constraint)
+- 🔧 **Changed**: Baseline implemented as property for flexibility
+
+### v1.11.0-1.11.4 (March 8, 2026)
+- ✨ **Added**: Target tracking feature with progress indicators
+- 🐛 **Fixed**: Multiple circular foreign key relationship issues
+- 🗄️ **Migration**: Added target_value, target_date fields
+
+### v1.10.2 (March 8, 2026)
+- 🐛 **Fixed**: Smart Value Entry snapshot creation bugs
+- 🐛 **Fixed**: Form auto-submission after modal
+- 🐛 **Fixed**: Snapshot deduplication on same day
+- 🐛 **Fixed**: CSRF token errors in templates
+
+### v1.10.1 (March 7, 2026)
+- ✨ **Added**: Editable list views for challenges, initiatives, and systems
+- 🎨 **Improved**: Navigation and management interface
+
+### v1.10.0 (March 8, 2026)
+- ✨ **Added**: Smart Value Entry feature with mode selection modal
+- ✨ **Added**: Automatic snapshot creation for time evolution
+- 📊 **Enhanced**: KPI cell detail page with entry mode choice
+
+### v1.9.5 (February 2026)
+- ✨ **Added**: Decimal places editing
+- 🐛 **Fixed**: Value formatting issues
 
 ### v2.1.0 (March 2026) - **Major Feature Release**
 

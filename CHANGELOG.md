@@ -1,0 +1,232 @@
+# Changelog
+
+All notable changes to CISK Navigator will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.11.7] - 2026-03-08
+
+### Fixed
+- **Chart Display**: Current value now included in trend charts (was only showing historical snapshots)
+- **Same-Day Snapshots**: Multiple snapshots created on same day now display as separate points using full timestamps
+- Chart now shows complete time series: snapshots + current value
+
+### Changed
+- Chart date labels use full timestamp (YYYY-MM-DD HH:MM:SS) instead of just date
+- Increased snapshot history limit from 10 to 50 points on charts
+
+## [1.11.6] - 2026-03-08
+
+### Fixed
+- **Chart API Mismatch**: Fixed API returning `data.snapshots` when JavaScript expected `data.history`
+- Charts now display properly when snapshots exist
+- Added flash message to confirm snapshot creation (debugging aid)
+
+### Changed
+- API endpoint `/api/kpi/<id>/history` now returns correct data structure
+- History array ordered chronologically (oldest first) for proper chart display
+
+## [1.11.5] - 2026-03-08
+
+### Fixed
+- **Baseline Snapshot Feature Restored**: Re-added `baseline_snapshot_id` field after accidental removal
+- Implemented without Foreign Key constraint to avoid circular dependency issues
+
+### Added
+- `@property baseline_snapshot` for fetching baseline snapshot object
+- Baseline snapshot allows tracking progress from a specific starting point
+
+## [1.11.4] - 2026-03-08
+
+### Changed
+- Temporarily removed `baseline_snapshot_id` field (causing circular FK issues)
+- Core target tracking features (target_value, target_date) still functional
+
+## [1.11.3] - 2026-03-08
+
+### Fixed
+- Changed from implicit `backref='snapshots'` to explicit `back_populates='snapshots'`
+- Resolved ambiguity between multiple foreign key relationships
+
+## [1.11.2] - 2026-03-08
+
+### Fixed
+- Made `baseline_snapshot` relationship view-only to prevent SQLAlchemy synchronization issues
+
+## [1.11.1] - 2026-03-08
+
+### Fixed
+- **Circular Foreign Key Fix**: Resolved ambiguous foreign key relationship between KPISnapshot and KPIValueTypeConfig
+- Added explicit `foreign_keys` parameters to both relationship definitions
+- Added `post_update=True` to handle circular dependency
+
+## [1.11.0] - 2026-03-08
+
+### Added
+- **🎯 Target Tracking Feature**
+  - Set optional target value and date when creating/editing KPIs
+  - Target displayed as dashed red line on historical trend charts
+  - Progress indicator (🎯 X%) shown in workspace grid
+  - Targets are per KPI-value type configuration
+  - Database migration: `0e11e44f5949_add_target_tracking_fields.py`
+
+### Database Schema
+- Added `target_value` (Decimal) to `kpi_value_type_configs`
+- Added `target_date` (Date) to `kpi_value_type_configs`
+- Added `baseline_snapshot_id` (Integer) to `kpi_value_type_configs`
+
+## [1.10.2] - 2026-03-08
+
+### Fixed
+- **Smart Value Entry Bug Fixes**
+  - Fixed `SnapshotService.create_snapshot()` method name (should be `create_kpi_snapshot()`)
+  - Fixed form auto-submission after modal selection (use `requestSubmit()` instead of `submit()`)
+  - Fixed snapshot deduplication preventing multiple snapshots on same day (added `allow_duplicates` parameter)
+  - Fixed CSRF token errors in templates (use `FlaskForm` instance instead of `csrf_token()` function)
+
+## [1.10.1] - 2026-03-07
+
+### Added
+- **📝 Editable List Views**
+  - Dedicated list views for Challenges, Initiatives, and Systems
+  - Inline editing and management capabilities
+  - Improved navigation and organization management
+
+### Changed
+- Enhanced admin interface organization
+- Better separation of concerns between entity types
+
+## [1.10.0] - 2026-03-08
+
+### Added
+- **🔄 Smart Value Entry Feature**
+  - Modal prompt when entering value on cell with existing consensus
+  - Two modes:
+    - **NEW data (time evolved)**: Auto-creates snapshot, replaces all contributions
+    - **Contributing to CURRENT period**: Adds contribution normally
+  - Automatic snapshot creation with label "Auto: Before update by [user]"
+  - Preserves historical data when values change over time
+
+### Changed
+- Enhanced KPI cell detail page with entry mode selection
+- Added JavaScript modal for entry mode choice
+- Modified workspace routes to handle entry_mode parameter
+
+## [1.9.5] - 2026-02-XX
+
+### Added
+- Decimal places editing for numeric value types
+- Configurable precision display
+
+### Fixed
+- Value formatting issues in workspace display
+
+## [1.9.4] - 2026-02-XX
+
+### Added
+- Value type edit functionality
+- Admin interface improvements
+
+## [1.9.3] - 2026-02-XX
+
+### Fixed
+- CSRF token errors in forms
+- Auto-login for single organization users
+
+### Added
+- Streamlined login experience
+
+## [2.1.0] - 2026-03-07 - **Major Feature Release**
+
+### Added
+- **📊 Dashboard & Overview**
+  - Interactive dashboard with statistics cards
+  - Recent snapshots widget with View/Compare buttons
+  - Recent comments widget showing latest discussions
+  - Quick actions for common tasks
+  - Getting started guide for new users
+
+- **📈 Time-Series Tracking**
+  - Snapshot system for capturing KPI values over time
+  - Historical view to see workspace state as of any date
+  - Automatic trend indicators (↗️↘️→) on KPI cells
+  - Snapshot comparison with side-by-side analysis
+  - Custom labels for organizing snapshots
+
+- **📉 Charts & Visualization**
+  - Interactive line charts using Chart.js 4.4
+  - Trend visualization on KPI detail pages
+  - Tooltips showing exact values and dates
+  - Responsive design adapting to screen size
+
+- **💬 Comments & Collaboration**
+  - Cell-level comments on any KPI
+  - @Mention system with autocomplete
+  - Threaded replies with full nesting support
+  - Resolve/unresolve discussions
+  - Unread mentions tracking with bell notification (🔔)
+  - Keyboard navigation in mention dropdown
+
+- **🎨 Enhanced Navigation**
+  - Dashboard as new home page
+  - Three-tier navigation: Dashboard → Workspace → Administration
+  - Bootstrap Icons for visual clarity
+
+### Database Schema
+- New tables: `kpi_snapshots`, `rollup_snapshots`, `cell_comments`, `mention_notifications`
+- Migration: `498afb934c2e`
+
+### API Endpoints (15 new routes)
+- Snapshot management (create, list, view, compare)
+- Comment CRUD operations
+- Mention tracking and notifications
+- User search/autocomplete
+
+## [2.0.0] - 2026-03-XX - **Major Release**
+
+### Changed
+- **🗄️ Database Migration**: SQLite → PostgreSQL for data persistence
+- **🎨 Color System Refactor**: Moved colors from ValueType to KPI level
+
+### Added
+- **📊 New Aggregation Formulas**
+  - Median (outlier-resistant aggregation)
+  - Count (quantity tracking)
+  - Total of 6 formulas: sum, min, max, avg, median, count
+
+- **🎭 New Value Types**
+  - Level (●●●): Generic 3-level scale
+  - Sentiment (☹️😐😊): Emotional states
+  - All qualitative types use 3-level scale
+
+- **📤 Export & Backup**
+  - Excel export with hierarchical row grouping
+  - YAML export/import for structure backup
+  - Organization cloning for testing/training
+
+- **🎯 UX Improvements**
+  - Drag-and-drop value type reordering
+  - Smart deletion with impact preview
+  - Improved visual hierarchy
+
+### Infrastructure
+- Deployed on Render with persistent PostgreSQL
+- Automatic migrations on deployment
+- psycopg3 driver for Python 3.13+ compatibility
+- Multi-layer data loss prevention
+
+---
+
+## Version Numbering
+
+- **Major (X.0.0)**: Breaking changes, major architecture changes
+- **Minor (1.X.0)**: New features, non-breaking changes
+- **Patch (1.0.X)**: Bug fixes, minor improvements
+
+## Links
+
+- [Repository](https://github.com/mounirdous/CISK-Navigator)
+- [Documentation](README.md)
+- [Architecture](ARCHITECTURE.md)
+- [Deployment Guide](DEPLOYMENT.md)
