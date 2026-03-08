@@ -200,14 +200,15 @@ def kpi_cell_detail(kpi_id, vt_id):
         if entry_mode == 'new_data':
             # Auto-create snapshot before replacing data
             try:
-                from datetime import datetime
-                snapshot_label = f"Auto: Before update by {contributor_name} on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+                from datetime import datetime, date
+                snapshot_label = f"Auto: Before update by {contributor_name}"
 
                 # Create snapshot for this specific KPI cell
-                SnapshotService.create_snapshot(
-                    organization_id=org_id,
+                SnapshotService.create_kpi_snapshot(
+                    config_id=config.id,
+                    snapshot_date=date.today(),
                     label=snapshot_label,
-                    created_by_user_id=current_user.id
+                    user_id=current_user.id
                 )
 
                 # Delete ALL existing contributions for this cell
