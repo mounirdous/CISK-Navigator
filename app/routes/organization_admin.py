@@ -47,12 +47,29 @@ def index():
     org_id = session.get('organization_id')
     org_name = session.get('organization_name')
 
+    # Get all stats for the organization
+    spaces_count = Space.query.filter_by(organization_id=org_id).count()
+    challenges_count = Challenge.query.filter_by(organization_id=org_id).count()
+    initiatives_count = Initiative.query.filter_by(organization_id=org_id).count()
+    systems_count = System.query.filter_by(organization_id=org_id).count()
+    value_types_count = ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
+
+    # Count KPIs
+    kpis_count = db.session.query(KPI).join(
+        InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
+    ).join(
+        Initiative, InitiativeSystemLink.initiative_id == Initiative.id
+    ).filter(
+        Initiative.organization_id == org_id
+    ).count()
+
     stats = {
-        'spaces': Space.query.filter_by(organization_id=org_id).count(),
-        'challenges': Challenge.query.filter_by(organization_id=org_id).count(),
-        'initiatives': Initiative.query.filter_by(organization_id=org_id).count(),
-        'systems': System.query.filter_by(organization_id=org_id).count(),
-        'value_types': ValueType.query.filter_by(organization_id=org_id, is_active=True).count(),
+        'spaces': spaces_count,
+        'challenges': challenges_count,
+        'initiatives': initiatives_count,
+        'systems': systems_count,
+        'kpis': kpis_count,
+        'value_types': value_types_count,
     }
 
     return render_template('organization_admin/index.html',

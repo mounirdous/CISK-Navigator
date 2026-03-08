@@ -5,49 +5,115 @@
 {% block content %}
 <h2>Administration: {{ org_name }}</h2>
 
+<!-- Organization Structure Section -->
+<div class="card mt-4 border-primary">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Organization Structure</h5>
+    </div>
+    <div class="card-body">
+        <div class="text-center mb-4">
+            <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-lg btn-primary">
+                <i class="bi bi-building"></i> Manage Complete Structure
+            </a>
+            <p class="text-muted mt-2">
+                Manage all Spaces, Challenges, Initiatives, Systems, and KPIs<br>
+                in one unified hierarchical view
+            </p>
+        </div>
+
+        <div class="alert alert-light border" role="alert">
+            <h6 class="alert-heading"><i class="bi bi-bar-chart"></i> Current Structure:</h6>
+            <div class="row text-center mt-3">
+                <div class="col">
+                    <div class="fs-4 text-primary">{{ stats.spaces }}</div>
+                    <small class="text-muted">Space{{ 's' if stats.spaces != 1 else '' }}</small>
+                </div>
+                <div class="col-auto d-flex align-items-center">
+                    <i class="bi bi-arrow-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="fs-4 text-info">{{ stats.challenges }}</div>
+                    <small class="text-muted">Challenge{{ 's' if stats.challenges != 1 else '' }}</small>
+                </div>
+                <div class="col-auto d-flex align-items-center">
+                    <i class="bi bi-arrow-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="fs-4 text-success">{{ stats.initiatives }}</div>
+                    <small class="text-muted">Initiative{{ 's' if stats.initiatives != 1 else '' }}</small>
+                </div>
+                <div class="col-auto d-flex align-items-center">
+                    <i class="bi bi-arrow-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="fs-4 text-warning">{{ stats.systems }}</div>
+                    <small class="text-muted">System{{ 's' if stats.systems != 1 else '' }}</small>
+                </div>
+                <div class="col-auto d-flex align-items-center">
+                    <i class="bi bi-arrow-right text-muted"></i>
+                </div>
+                <div class="col">
+                    <div class="fs-4 text-danger">{{ stats.kpis }}</div>
+                    <small class="text-muted">KPI{{ 's' if stats.kpis != 1 else '' }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Organization Settings Section -->
 <div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h6>Business Structure</h6></div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-sliders"></i> Value Types</h6>
+            </div>
             <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><a href="{{ url_for('organization_admin.spaces') }}">Spaces ({{ stats.spaces }})</a></li>
-                    <li><a href="{{ url_for('organization_admin.challenges') }}">Challenges ({{ stats.challenges }})</a></li>
-                    <li><a href="{{ url_for('organization_admin.initiatives') }}">Initiatives ({{ stats.initiatives }})</a></li>
-                    <li><a href="{{ url_for('organization_admin.systems') }}">Systems ({{ stats.systems }})</a></li>
-                </ul>
+                <p class="mb-3">
+                    <strong>{{ stats.value_types }}</strong> active value type{{ 's' if stats.value_types != 1 else '' }}
+                </p>
+                <p class="text-muted small">
+                    Define what kinds of values can be tracked (Cost, CO2, Risk, Impact, etc.)
+                </p>
+                <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-primary">
+                    <i class="bi bi-gear"></i> Manage Value Types
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header"><h6>Value Types</h6></div>
-            <div class="card-body">
-                <p>{{ stats.value_types }} active value types</p>
-                <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-sm btn-primary">Manage Value Types</a>
+    <div class="col-md-6">
+        <div class="card h-100 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-file-earmark-code"></i> YAML Backup & Restore</h6>
             </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card border-danger">
-            <div class="card-header bg-danger text-white"><h6>⚠️ YAML Structure</h6></div>
             <div class="card-body">
-                <p><strong>Export:</strong> Download current structure as YAML</p>
-                <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-sm btn-success">📥 Export YAML</a>
+                <div class="mb-3">
+                    <strong>Export:</strong> Download current structure as YAML
+                    <div class="mt-2">
+                        <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-download"></i> Export YAML
+                        </a>
+                    </div>
+                </div>
 
-                <hr class="my-3">
+                <hr>
 
-                <p class="text-danger"><strong>Import - Deletes all data!</strong></p>
-                <p>Upload a YAML file to replace the complete organizational structure.</p>
-                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-sm btn-danger">📤 Import YAML</a>
+                <div>
+                    <strong class="text-danger">Import - Deletes all data!</strong>
+                    <p class="small text-muted mb-2">Upload a YAML file to replace the complete organizational structure.</p>
+                    <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-danger btn-sm">
+                        <i class="bi bi-upload"></i> Import YAML
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <div class="mt-4">
-    <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">Back to Workspace</a>
+    <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-secondary">
+        <i class="bi bi-speedometer2"></i> Back to Dashboard
+    </a>
 </div>
 {% endblock %}
