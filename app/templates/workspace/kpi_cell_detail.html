@@ -410,22 +410,21 @@ async function loadTrendChart() {
             pointHoverRadius: 7
         }];
 
-        // TODO: Uncomment after migration 0e11e44f5949 runs
         // Add target line if target is set
-        // {% if config.target_value %}
-        // const targetValue = {{ config.target_value }};
-        // datasets.push({
-        //     label: 'Target ({{ config.target_value }}{% if config.target_date %} by {{ config.target_date.strftime("%Y-%m-%d") }}{% endif %})',
-        //     data: dates.map(() => targetValue),
-        //     borderColor: '#dc3545',
-        //     borderWidth: 2,
-        //     borderDash: [5, 5],
-        //     fill: false,
-        //     pointRadius: 0,
-        //     pointHoverRadius: 0,
-        //     tension: 0
-        // });
-        // {% endif %}
+        {% if config.target_value %}
+        const targetValue = {{ config.target_value }};
+        datasets.push({
+            label: 'Target ({{ config.target_value }}{% if config.target_date %} by {{ config.target_date.strftime("%Y-%m-%d") }}{% endif %})',
+            data: dates.map(() => targetValue),
+            borderColor: '#dc3545',
+            borderWidth: 2,
+            borderDash: [5, 5],
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0
+        });
+        {% endif %}
 
         trendChart = new Chart(ctx, {
             type: 'line',

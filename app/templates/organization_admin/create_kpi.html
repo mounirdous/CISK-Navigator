@@ -47,7 +47,6 @@
                     </div>
                     <small class="form-text text-muted d-block mb-3">Choose how to highlight positive, negative, and zero values for this KPI</small>
 
-                    <!-- TODO: Uncomment after migration 0e11e44f5949 runs
                     <div class="border-top pt-3">
                         <div class="form-check mb-2">
                             <input class="form-check-input target-checkbox" type="checkbox"
@@ -72,7 +71,6 @@
                             <small class="form-text text-muted">Optional: Set a target value and date to track progress</small>
                         </div>
                     </div>
-                    -->
                 </div>
                 {% endif %}
             </div>
@@ -96,17 +94,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // TODO: Uncomment after migration 0e11e44f5949 runs
     // Toggle target fields visibility when target checkbox is clicked
-    // document.querySelectorAll('.target-checkbox').forEach(checkbox => {
-    //     checkbox.addEventListener('change', function() {
-    //         const vtId = this.id.replace('has_target_', '');
-    //         const targetFields = document.getElementById('target_fields_' + vtId);
-    //         if (targetFields) {
-    //             targetFields.style.display = this.checked ? 'block' : 'none';
-    //         }
-    //     });
-    // });
+    document.querySelectorAll('.target-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const vtId = this.id.replace('has_target_', '');
+            const targetFields = document.getElementById('target_fields_' + vtId);
+            if (targetFields) {
+                targetFields.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
 });
 </script>
 {% endblock %}

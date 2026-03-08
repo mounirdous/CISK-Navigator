@@ -102,11 +102,9 @@ class KPIValueTypeConfig(db.Model):
     color_positive = db.Column(db.String(20), nullable=True, comment='Color for positive values (numeric only)')
 
     # Target tracking (v2.2)
-    # NOTE: These columns will be added via migration 0e11e44f5949
-    # Uncomment after migration runs:
-    # target_value = db.Column(db.Numeric(precision=20, scale=6), nullable=True, comment='Target value to achieve (numeric only)')
-    # target_date = db.Column(db.Date, nullable=True, comment='Date by which target should be achieved')
-    # baseline_snapshot_id = db.Column(db.Integer, db.ForeignKey('kpi_snapshots.id'), nullable=True, comment='Snapshot to use as baseline')
+    target_value = db.Column(db.Numeric(precision=20, scale=6), nullable=True, comment='Target value to achieve (numeric only)')
+    target_date = db.Column(db.Date, nullable=True, comment='Date by which target should be achieved')
+    baseline_snapshot_id = db.Column(db.Integer, db.ForeignKey('kpi_snapshots.id'), nullable=True, comment='Snapshot to use as baseline')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
