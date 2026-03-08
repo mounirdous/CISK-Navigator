@@ -204,11 +204,13 @@ def kpi_cell_detail(kpi_id, vt_id):
                 snapshot_label = f"Auto: Before update by {contributor_name}"
 
                 # Create snapshot for this specific KPI cell
+                # Use allow_duplicates=True so multiple snapshots can be created on same day
                 SnapshotService.create_kpi_snapshot(
                     config_id=config.id,
                     snapshot_date=date.today(),
                     label=snapshot_label,
-                    user_id=current_user.id
+                    user_id=current_user.id,
+                    allow_duplicates=True  # Always create new snapshot for auto-snapshots
                 )
 
                 # Delete ALL existing contributions for this cell

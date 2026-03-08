@@ -21,7 +21,7 @@ class SnapshotService:
     @staticmethod
     def create_kpi_snapshot(config_id: int, snapshot_date: date = None,
                            label: str = None, notes: str = None,
-                           user_id: int = None) -> Optional[KPISnapshot]:
+                           user_id: int = None, allow_duplicates: bool = False) -> Optional[KPISnapshot]:
         """
         Create a snapshot of the current KPI consensus value.
 
@@ -31,6 +31,7 @@ class SnapshotService:
             label: Optional label like "Q1 2026" or "Baseline"
             notes: Optional notes about this snapshot
             user_id: User creating the snapshot
+            allow_duplicates: If True, always create new snapshot even if one exists for this date
 
         Returns:
             KPISnapshot object or None if no consensus
@@ -49,23 +50,25 @@ class SnapshotService:
         if snapshot_date is None:
             snapshot_date = date.today()
 
-        existing = KPISnapshot.query.filter_by(
-            kpi_value_type_config_id=config_id,
-            snapshot_date=snapshot_date
-        ).first()
+        # Skip deduplication check if allow_duplicates is True (for auto-snapshots)
+        if not allow_duplicates:
+            existing = KPISnapshot.query.filter_by(
+                kpi_value_type_config_id=config_id,
+                snapshot_date=snapshot_date
+            ).first()
 
-        if existing:
-            # Update existing snapshot
-            existing.consensus_status = consensus['status']
-            existing.consensus_value = consensus.get('value') if config.value_type.is_numeric() else None
-            existing.qualitative_level = consensus.get('value') if not config.value_type.is_numeric() else None
-            existing.contributor_count = consensus.get('count', 0)
-            existing.is_rollup_eligible = consensus.get('is_rollup_eligible', False)
-            existing.snapshot_label = label or existing.snapshot_label
-            existing.notes = notes or existing.notes
-            existing.created_at = datetime.utcnow()
-            db.session.commit()
-            return existing
+            if existing:
+                # Update existing snapshot
+                existing.consensus_status = consensus['status']
+                existing.consensus_value = consensus.get('value') if config.value_type.is_numeric() else None
+                existing.qualitative_level = consensus.get('value') if not config.value_type.is_numeric() else None
+                existing.contributor_count = consensus.get('count', 0)
+                existing.is_rollup_eligible = consensus.get('is_rollup_eligible', False)
+                existing.snapshot_label = label or existing.snapshot_label
+                existing.notes = notes or existing.notes
+                existing.created_at = datetime.utcnow()
+                db.session.commit()
+                return existing
 
         # Create new snapshot
         snapshot = KPISnapshot(
