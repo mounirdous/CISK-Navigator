@@ -334,19 +334,26 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle modal confirmation
-    document.getElementById('confirmEntry').addEventListener('click', function(e) {
-        e.preventDefault();
+    document.getElementById('confirmEntry').addEventListener('click', function() {
         const selectedMode = document.querySelector('input[name="mode_choice"]:checked').value;
         entryModeInput.value = selectedMode;
         formSubmitAllowed = true;
 
-        // Close modal first
+        // Close modal
         entryModeModal.hide();
 
-        // Submit form immediately (don't wait for modal animation)
+        // Wait for modal to close, then click the submit button
         setTimeout(() => {
-            contributionForm.submit();
-        }, 100);
+            // Trigger click on the actual submit button instead of calling form.submit()
+            // This ensures the form validates and submits properly
+            const submitButton = document.getElementById('submitBtn');
+            if (submitButton) {
+                submitButton.click();
+            } else {
+                // Fallback: submit form directly
+                contributionForm.submit();
+            }
+        }, 300);
     });
 });
 
