@@ -4,361 +4,93 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
-<style>
-/* Modern Dark Workspace Theme */
-.dark-mode #workspace-container {
-    background-color: #0a0a0a;
-    color: #e0e0e0;
-}
-
-.dark-mode .modern-toolbar {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
-
-.dark-mode .filter-pill {
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    border-radius: 20px;
-    padding: 0.5rem 1rem;
-    margin: 0.25rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.2s;
-    cursor: pointer;
-}
-
-.dark-mode .filter-pill:hover {
-    background-color: #3a3a3a;
-    border-color: #555;
-    transform: translateY(-2px);
-}
-
-.dark-mode .filter-pill.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.dark-mode .pill-badge {
-    border-radius: 12px;
-    padding: 0.25rem 0.6rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-}
-
-.dark-mode #workspace-tree {
-    background-color: #0a0a0a;
-    border-color: #333;
-}
-
-.dark-mode #workspace-tree thead th {
-    background-color: #1a1a1a;
-    color: #e0e0e0;
-    border-color: #333;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    font-weight: 600;
-}
-
-.dark-mode #workspace-tree tbody tr {
-    border-color: #333;
-}
-
-.dark-mode #workspace-tree tbody tr:hover {
-    background-color: #1a1a1a;
-}
-
-.dark-mode #workspace-tree tbody td {
-    border-color: #333;
-    background-color: #0a0a0a;
-}
-
-/* Level-specific dark mode colors */
-.dark-mode tr[data-level="space"] td {
-    background-color: #1a2a3a !important;
-}
-
-.dark-mode tr[data-level="challenge"] td {
-    background-color: #151515 !important;
-}
-
-.dark-mode tr[data-level="initiative"] td {
-    background-color: #1a1a1a !important;
-}
-
-.dark-mode tr[data-level="system"] td {
-    background-color: #1a2530 !important;
-}
-
-.dark-mode tr[data-level="kpi"] td {
-    background-color: #252515 !important;
-}
-
-/* Hierarchy icons and visual guides */
-.hierarchy-icon {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    margin-right: 0.5rem;
-    text-align: center;
-    vertical-align: middle;
-}
-
-.level-border {
-    border-left: 4px solid;
-    padding-left: 0.5rem !important;
-}
-
-.level-border.space { border-left-color: #3498db; }
-.level-border.challenge { border-left-color: #2ecc71; }
-.level-border.initiative { border-left-color: #f39c12; }
-.level-border.system { border-left-color: #9b59b6; }
-.level-border.kpi { border-left-color: #e74c3c; }
-
-/* Modern expand icon */
-.expand-icon {
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    text-align: center;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.2s;
-    margin-right: 0.5rem;
-}
-
-.dark-mode .expand-icon:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
-}
-
-/* Sticky first column */
-#workspace-tree td:first-child,
-#workspace-tree th:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    background-color: inherit;
-}
-
-#workspace-tree thead th:first-child {
-    z-index: 15;
-}
-
-/* Modern button styles */
-.dark-mode .btn-modern {
-    border-radius: 8px;
-    padding: 0.5rem 1rem;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.dark-mode .btn-modern:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Level visibility controls */
-.level-controls {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
-    padding: 0.75rem;
-    background-color: #1a1a1a;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-}
-
-.dark-mode .level-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0.8rem;
-    background-color: #2a2a2a;
-    border: 1px solid #444;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.dark-mode .level-toggle:hover {
-    background-color: #3a3a3a;
-}
-
-.dark-mode .level-toggle.active {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-/* Quick stats bar */
-.stats-bar {
-    background: linear-gradient(90deg, rgba(13,110,253,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-}
-
-.dark-mode .stats-bar {
-    border: 1px solid #333;
-}
-
-/* Cell hover actions */
-.dark-mode .kpi-cell:hover .cell-actions {
-    opacity: 1;
-}
-
-.cell-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-    position: absolute;
-    top: 4px;
-    right: 4px;
-}
-
-/* Rollup indicator */
-.rollup-indicator {
-    font-size: 0.7rem;
-    opacity: 0.7;
-    vertical-align: super;
-}
-</style>
 {% endblock %}
 
 {% block content %}
-<div id="workspace-container">
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Workspace: {{ org_name }}</h2>
 
-{% if is_historical_view %}
-<div class="alert alert-warning mb-3">
-    <i class="bi bi-clock-history"></i> Viewing snapshot from <strong>{{ snapshot_date.strftime('%Y-%m-%d') }}</strong>
-    <a href="{{ url_for('workspace.index') }}" class="btn btn-sm btn-outline-dark ms-2">Return to Current</a>
-</div>
-{% endif %}
-
-<!-- Modern Toolbar -->
-<div class="modern-toolbar">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> Workspace: {{ org_name }}</h3>
-        <div>
-            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-sm btn-modern">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <button id="expand-all" class="btn btn-outline-primary btn-sm btn-modern ms-1">
-                <i class="bi bi-arrows-expand"></i> Expand All
-            </button>
-            <button id="collapse-all" class="btn btn-outline-secondary btn-sm btn-modern ms-1">
-                <i class="bi bi-arrows-collapse"></i> Collapse All
-            </button>
-            <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-success btn-sm btn-modern ms-1">
-                <i class="bi bi-file-earmark-spreadsheet"></i> Export
-            </a>
-            <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-info btn-sm btn-modern ms-1">
-                <i class="bi bi-camera"></i> Snapshots
-            </a>
-            <button class="btn btn-outline-success btn-sm btn-modern ms-1" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal">
-                <i class="bi bi-camera-fill"></i> Quick
-            </button>
-            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary btn-sm btn-modern ms-1">
-                <i class="bi bi-gear"></i> Admin
-            </a>
-        </div>
+    {% if is_historical_view %}
+    <div class="alert alert-warning mb-0">
+        <i class="bi bi-clock-history"></i> Viewing snapshot from <strong>{{ snapshot_date.strftime('%Y-%m-%d') }}</strong>
+        <a href="{{ url_for('workspace.index') }}" class="btn btn-sm btn-outline-dark ms-2">Return to Current</a>
     </div>
-
-    <form method="GET" id="filter-form">
-        <!-- Governance Body Filters -->
-        {% if governance_bodies %}
-        <div class="mb-2">
-            <small class="text-muted"><i class="bi bi-people-fill"></i> <strong>Governance Bodies:</strong></small>
-            <div class="d-inline-flex flex-wrap gap-1 ms-2">
-                {% for gb in governance_bodies %}
-                <label class="filter-pill {% if gb.id|string in selected_governance_body_ids %}active{% endif %}">
-                    <input type="checkbox" name="gb" value="{{ gb.id }}" id="filter_gb_{{ gb.id }}"
-                           {% if gb.id|string in selected_governance_body_ids %}checked{% endif %} hidden>
-                    <span class="pill-badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
-                    <span>{{ gb.name }}</span>
-                </label>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Archive & Level Controls -->
-        <div class="d-flex align-items-center gap-3 flex-wrap">
-            <div>
-                <small class="text-muted"><i class="bi bi-archive-fill"></i> <strong>Display:</strong></small>
-                <label class="filter-pill ms-2 {% if show_archived %}active{% endif %}">
-                    <input type="checkbox" name="show_archived" value="1" id="filter_show_archived"
-                           {% if show_archived %}checked{% endif %} hidden>
-                    <i class="bi bi-archive"></i>
-                    <span>Archived KPIs</span>
-                </label>
-            </div>
-
-            <div class="flex-grow-1">
-                <small class="text-muted"><i class="bi bi-eye-fill"></i> <strong>Show Levels:</strong></small>
-                <label class="filter-pill ms-2 {% if show_levels.spaces %}active{% endif %}">
-                    <input type="checkbox" name="show_spaces" value="1" id="show_spaces"
-                           {% if show_levels.spaces %}checked{% endif %} hidden>
-                    <i class="bi bi-building"></i>
-                    <span>Spaces</span>
-                </label>
-                <label class="filter-pill {% if show_levels.challenges %}active{% endif %}">
-                    <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
-                           {% if show_levels.challenges %}checked{% endif %} hidden>
-                    <i class="bi bi-flag"></i>
-                    <span>Challenges</span>
-                </label>
-                <label class="filter-pill {% if show_levels.initiatives %}active{% endif %}">
-                    <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
-                           {% if show_levels.initiatives %}checked{% endif %} hidden>
-                    <i class="bi bi-lightbulb"></i>
-                    <span>Initiatives</span>
-                </label>
-                <label class="filter-pill {% if show_levels.systems %}active{% endif %}">
-                    <input type="checkbox" name="show_systems" value="1" id="show_systems"
-                           {% if show_levels.systems %}checked{% endif %} hidden>
-                    <i class="bi bi-gear-wide-connected"></i>
-                    <span>Systems</span>
-                </label>
-                <label class="filter-pill {% if show_levels.kpis %}active{% endif %}">
-                    <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
-                           {% if show_levels.kpis %}checked{% endif %} hidden>
-                    <i class="bi bi-graph-up"></i>
-                    <span>KPIs</span>
-                </label>
-            </div>
-
-            <button type="button" id="clear-filters" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-x-circle"></i> Clear All
-            </button>
-        </div>
-    </form>
+    {% endif %}
 </div>
 
-<!-- Quick Stats -->
-<div class="stats-bar">
-    <i class="bi bi-bar-chart-line"></i>
-    <strong>Viewing:</strong>
-    {% if show_levels.spaces %}{{ spaces|length }} Spaces{% endif %}
-    {% if show_levels.challenges %} • {{ spaces|sum(attribute='challenges')|length|default(0) }} Challenges{% endif %}
-    <small class="text-muted ms-3">
-        Filters:
-        {% if selected_governance_body_ids|length > 0 and selected_governance_body_ids|length < governance_bodies|length %}
-            {{ selected_governance_body_ids|length }}/{{ governance_bodies|length }} Governance Bodies
-        {% else %}
-            All Governance Bodies
-        {% endif %}
-        {% if show_archived %} • Including Archived{% endif %}
-    </small>
+<div class="mb-3">
+    <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-sm">
+        <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <button id="expand-all" class="btn btn-outline-primary btn-sm ms-2">Expand All</button>
+    <button id="collapse-all" class="btn btn-outline-secondary btn-sm">Collapse All</button>
+    <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-success btn-sm ms-2">📊 Export to Excel</a>
+    <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-info btn-sm ms-2">
+        <i class="bi bi-camera"></i> Snapshots
+    </a>
+    <button class="btn btn-outline-success btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal">
+        <i class="bi bi-camera-fill"></i> Quick Snapshot
+    </button>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary btn-sm ms-2">Administration</a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" id="filter-form">
+            <!-- Governance Body Filter -->
+            {% if governance_bodies %}
+            <div class="row align-items-center mb-3">
+                <div class="col-auto">
+                    <strong><i class="bi bi-people"></i> Governance Bodies:</strong>
+                </div>
+                <div class="col">
+                    {% for gb in governance_bodies %}
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input filter-checkbox" type="checkbox"
+                               name="gb" value="{{ gb.id }}" id="filter_gb_{{ gb.id }}"
+                               {% if gb.id|string in selected_governance_body_ids %}checked{% endif %}>
+                        <label class="form-check-label" for="filter_gb_{{ gb.id }}">
+                            <span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
+                            {{ gb.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Archive Filter -->
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <strong><i class="bi bi-archive"></i> Display:</strong>
+                </div>
+                <div class="col">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input filter-checkbox" type="checkbox"
+                               name="show_archived" value="1" id="filter_show_archived"
+                               {% if show_archived %}checked{% endif %}>
+                        <label class="form-check-label" for="filter_show_archived">
+                            Show Archived KPIs
+                        </label>
+                    </div>
+                    <button type="button" id="clear-filters" class="btn btn-sm btn-outline-secondary ms-2">Clear All Filters</button>
+                </div>
+            </div>
+
+            {% if selected_governance_body_ids or show_archived %}
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-info-circle"></i>
+                {% if selected_governance_body_ids %}
+                Filtering by {{ selected_governance_body_ids|length }} governance bod{{ 'y' if selected_governance_body_ids|length == 1 else 'ies' }}.
+                {% endif %}
+                {% if show_archived %}
+                Showing archived KPIs.
+                {% endif %}
+            </small>
+            {% endif %}
+        </form>
+    </div>
 </div>
 
 <div class="table-responsive">
@@ -380,10 +112,9 @@
             {% if spaces %}
                 {% for space in spaces %}
                 <!-- SPACE ROW -->
-                <tr data-level="space" data-id="{{ space.id }}" class="table-primary" {% if not show_levels.spaces %}style="display: none;"{% endif %}>
-                    <td class="level-border space">
-                        <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">🏢</span>
+                <tr data-level="space" data-id="{{ space.id }}" class="table-primary">
+                    <td>
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
                         <strong>{{ space.name }}</strong>
                         {% if space.space_label %}
                             <span class="badge bg-info ms-2">{{ space.space_label }}</span>
@@ -394,7 +125,6 @@
                         {% set color_config = space.get_color_config(vt.id) %}
                         <td class="text-center" style="background-color: #d6e9f7; font-weight: bold;">
                             {% if rollup %}
-                                <span class="rollup-indicator">Σ</span>
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
                                     <span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
@@ -422,11 +152,10 @@
 
                 {% for challenge in space.challenges %}
                 <!-- CHALLENGE ROW -->
-                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: {% if show_levels.challenges %}none{% else %}none{% endif %};">
-                    <td class="level-border challenge" style="padding-left: 2rem;">
-                        <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">🎯</span>
-                        {{ challenge.name }}
+                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: none;">
+                    <td style="padding-left: 2rem;">
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        → {{ challenge.name }}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = challenge.get_rollup_value(vt.id) %}
@@ -462,10 +191,9 @@
                     {% set initiative = link.initiative %}
                 <!-- INITIATIVE ROW -->
                 <tr data-level="initiative" data-id="{{ initiative.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary" style="display: none;">
-                    <td class="level-border initiative" style="padding-left: 4rem;">
-                        <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">💡</span>
-                        {{ initiative.name }}
+                    <td style="padding-left: 4rem;">
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        ⮕ {{ initiative.name }}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = initiative.get_rollup_value(vt.id) %}
@@ -501,10 +229,9 @@
                     {% set system = sys_link.system %}
                 <!-- SYSTEM ROW -->
                 <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info" style="display: none;">
-                    <td class="level-border system" style="padding-left: 6rem;">
-                        <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">⚙️</span>
-                        {{ system.name }}
+                    <td style="padding-left: 6rem;">
+                        <span class="expand-icon" style="cursor: pointer; user-select: none;">▶</span>
+                        ⇨ {{ system.name }}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = sys_link.get_rollup_value(vt.id) %}
@@ -557,21 +284,16 @@
                     {% endif %}
                 {% endif %}
 
-                {% if show_kpi and show_levels.kpis %}
+                {% if show_kpi %}
                 <!-- KPI ROW -->
                 <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}">
-                    <td class="level-border kpi" style="padding-left: 8rem;">
-                        <span class="hierarchy-icon">📊</span>
-                        {{ kpi.name }}
+                    <td style="padding-left: 8rem;">
+                        ⟹ {{ kpi.name }}
                         {% if kpi.is_archived %}
-                        <span class="badge bg-secondary ms-1" title="Archived on {{ kpi.archived_at.strftime('%Y-%m-%d') }}">
-                            <i class="bi bi-archive"></i> Archived
-                        </span>
+                        <span class="badge bg-secondary ms-1" title="Archived on {{ kpi.archived_at.strftime('%Y-%m-%d') }}"><i class="bi bi-archive"></i> Archived</span>
                         {% endif %}
                         {% for gb_link in kpi.governance_body_links %}
-                        <span class="badge ms-1" style="background-color: {{ gb_link.governance_body.color }}; padding: 0.25rem 0.6rem; border-radius: 12px;" title="{{ gb_link.governance_body.name }}">
-                            {{ gb_link.governance_body.abbreviation }}
-                        </span>
+                        <span class="badge ms-1" style="background-color: {{ gb_link.governance_body.color }};" title="{{ gb_link.governance_body.name }}">{{ gb_link.governance_body.abbreviation }}</span>
                         {% endfor %}
                     </td>
                     {% for vt in value_types %}
@@ -899,66 +621,30 @@ document.addEventListener('DOMContentLoaded', function() {
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 <script>
-// Modern Filter Pills
+// Filters (Governance Bodies + Archived)
 document.addEventListener('DOMContentLoaded', function() {
     const filterForm = document.getElementById('filter-form');
-    const filterPills = document.querySelectorAll('.filter-pill');
+    const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
     const clearFiltersBtn = document.getElementById('clear-filters');
 
-    // Handle filter pill clicks
-    filterPills.forEach(pill => {
-        pill.addEventListener('click', function(e) {
-            if (e.target.tagName === 'INPUT') return; // Already handled by checkbox
-
-            const checkbox = this.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.checked = !checkbox.checked;
-                this.classList.toggle('active', checkbox.checked);
-
-                // Auto-submit form
-                setTimeout(() => filterForm.submit(), 100);
-            }
-        });
-    });
-
-    // Handle checkbox changes directly (for accessibility)
-    const allCheckboxes = filterForm.querySelectorAll('input[type="checkbox"]');
-    allCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const pill = this.closest('.filter-pill');
-            if (pill) {
-                pill.classList.toggle('active', this.checked);
-            }
-
-            // Auto-submit form
-            setTimeout(() => filterForm.submit(), 100);
-        });
-    });
-
-    // Clear all filters
-    if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', function() {
-            // Uncheck all filter checkboxes except level visibility (must keep at least one)
-            const govCheckboxes = filterForm.querySelectorAll('input[name="gb"]');
-            const archivedCheckbox = filterForm.querySelector('input[name="show_archived"]');
-
-            govCheckboxes.forEach(cb => {
-                cb.checked = false;
-                const pill = cb.closest('.filter-pill');
-                if (pill) pill.classList.remove('active');
+    if (filterCheckboxes.length > 0) {
+        // Auto-submit form when checkbox changes
+        filterCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                filterForm.submit();
             });
-
-            if (archivedCheckbox) {
-                archivedCheckbox.checked = false;
-                const pill = archivedCheckbox.closest('.filter-pill');
-                if (pill) pill.classList.remove('active');
-            }
-
-            filterForm.submit();
         });
+
+        // Clear all filters
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', function() {
+                filterCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                filterForm.submit();
+            });
+        }
     }
 });
 </script>
-
-</div> <!-- Close workspace-container -->
 {% endblock %}

@@ -108,8 +108,22 @@ def index():
     # Get selected governance body IDs from query params
     selected_governance_body_ids = request.args.getlist('gb')
 
+    # Smart default: if no governance bodies selected and some exist, select all
+    # This fixes the bug where unchecking all filters still shows KPIs
+    if not selected_governance_body_ids and governance_bodies:
+        selected_governance_body_ids = [str(gb.id) for gb in governance_bodies]
+
     # Get show_archived flag
     show_archived = request.args.get('show_archived') == '1'
+
+    # Get level visibility controls (default all visible)
+    show_levels = {
+        'spaces': request.args.get('show_spaces', '1') == '1',
+        'challenges': request.args.get('show_challenges', '1') == '1',
+        'initiatives': request.args.get('show_initiatives', '1') == '1',
+        'systems': request.args.get('show_systems', '1') == '1',
+        'kpis': request.args.get('show_kpis', '1') == '1',
+    }
 
     return render_template('workspace/index.html',
                           org_name=org_name,
@@ -117,7 +131,8 @@ def index():
                           value_types=value_types,
                           governance_bodies=governance_bodies,
                           selected_governance_body_ids=selected_governance_body_ids,
-                          show_archived=show_archived)
+                          show_archived=show_archived,
+                          show_levels=show_levels)
 
 
 @bp.route('/export-excel')
