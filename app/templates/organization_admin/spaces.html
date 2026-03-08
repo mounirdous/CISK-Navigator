@@ -4,68 +4,23 @@
 {% block extra_css %}
 <style>
 /* Better dark mode readability for hierarchical table */
-.dark-mode h2 {
-    color: #e8e8e8 !important;
-}
-
-.dark-mode .table {
-    border-color: #555 !important;
-    color: #e8e8e8 !important;
-}
-
 .dark-mode .table thead th {
     background-color: #333 !important;
-    color: #fff !important;
+    color: #ffffff !important;
     border-color: #555 !important;
 }
 
 .dark-mode .table tbody td {
-    border-color: #444 !important;
-    color: #e8e8e8 !important;
+    color: #ffffff !important;
 }
 
-.dark-mode .table tbody tr {
-    background-color: #1a1a1a !important;
+.dark-mode .table tbody td strong {
+    color: #ffffff !important;
 }
 
-.dark-mode .table-light {
-    background-color: #2a2a2a !important;
-}
-
-.dark-mode .table-light td {
-    color: #e8e8e8 !important;
-}
-
-.dark-mode .table-secondary {
-    background-color: #353535 !important;
-}
-
-.dark-mode .table-secondary td {
-    color: #e8e8e8 !important;
-}
-
-.dark-mode .table-info {
-    background-color: #2a3a4a !important;
-}
-
-.dark-mode .table-info td {
-    color: #e8e8e8 !important;
-}
-
-.dark-mode .table-warning {
-    background-color: #4a4a2a !important;
-}
-
-.dark-mode .table-warning td {
-    color: #e8e8e8 !important;
-}
-
-.dark-mode .table-striped tbody tr:nth-of-type(odd) {
-    background-color: #1f1f1f !important;
-}
-
-.dark-mode .table-striped tbody tr:nth-of-type(odd) td {
-    color: #e8e8e8 !important;
+/* Override striped table background issues */
+.dark-mode .table-striped tbody tr {
+    border-color: #555 !important;
 }
 </style>
 {% endblock %}
