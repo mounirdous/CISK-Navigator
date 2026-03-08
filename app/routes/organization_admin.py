@@ -69,7 +69,12 @@ def spaces():
     """List all spaces with full hierarchy"""
     org_id = session.get('organization_id')
     spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
-    return render_template('organization_admin/spaces.html', spaces=spaces)
+
+    # Create form for CSRF token
+    from flask_wtf import FlaskForm
+    csrf_form = FlaskForm()
+
+    return render_template('organization_admin/spaces.html', spaces=spaces, csrf_form=csrf_form)
 
 
 @bp.route('/spaces/create', methods=['GET', 'POST'])

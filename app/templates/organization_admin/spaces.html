@@ -34,7 +34,7 @@
                     <a href="{{ url_for('organization_admin.edit_challenge', challenge_id=challenge.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                     <a href="{{ url_for('organization_admin.create_initiative', challenge_id=challenge.id) }}" class="btn btn-sm btn-success">+ Initiative</a>
                     <form method="POST" action="{{ url_for('organization_admin.delete_challenge', challenge_id=challenge.id) }}" style="display:inline;">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        {{ csrf_form.hidden_tag() }}
                         <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete challenge {{ challenge.name }}? This will delete all linked data.')">Delete</button>
                     </form>
                 </td>
@@ -49,7 +49,7 @@
                         <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         <a href="{{ url_for('organization_admin.create_system', initiative_id=initiative.id) }}" class="btn btn-sm btn-success">+ System</a>
                         <form method="POST" action="{{ url_for('organization_admin.delete_initiative', initiative_id=initiative.id) }}" style="display:inline;">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            {{ csrf_form.hidden_tag() }}
                             <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete initiative {{ initiative.name }}? This will delete all linked data.')">Delete</button>
                         </form>
                     </td>
@@ -64,7 +64,7 @@
                             <a href="{{ url_for('organization_admin.edit_system', system_id=system.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                             <a href="{{ url_for('organization_admin.create_kpi', link_id=sys_link.id) }}" class="btn btn-sm btn-success">+ KPI</a>
                             <form method="POST" action="{{ url_for('organization_admin.delete_system', system_id=system.id) }}" style="display:inline;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                {{ csrf_form.hidden_tag() }}
                                 <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete system {{ system.name }}?')">Delete</button>
                             </form>
                         </td>
@@ -77,7 +77,7 @@
                             <td>
                                 <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                                 <form method="POST" action="{{ url_for('organization_admin.delete_kpi', kpi_id=kpi.id) }}" style="display:inline;">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {{ csrf_form.hidden_tag() }}
                                     <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete KPI {{ kpi.name }}? This will delete all contributions, snapshots, and comments.')">Delete</button>
                                 </form>
                             </td>
