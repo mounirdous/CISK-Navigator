@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, session,
 from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
 from app.models import User, Organization
-from app.forms import LoginForm, ChangePasswordForm
+from app.forms import LoginForm, ChangePasswordForm, ProfileEditForm
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -161,6 +161,27 @@ def logout():
     session.pop('_pwd_check_done', None)
     flash('You have been logged out', 'info')
     return redirect(url_for('auth.login'))
+
+
+@bp.route('/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    """View and edit user profile"""
+    form = ProfileEditForm()
+
+    if form.validate_on_submit():
+        current_user.display_name = form.display_name.data
+        current_user.email = form.email.data
+        db.session.commit()
+        flash('Profile updated successfully', 'success')
+        return redirect(url_for('auth.profile'))
+
+    # Pre-populate form with current values
+    if request.method == 'GET':
+        form.display_name.data = current_user.display_name
+        form.email.data = current_user.email
+
+    return render_template('auth/profile.html', form=form)
 
 
 @bp.route('/change-password', methods=['GET', 'POST'])

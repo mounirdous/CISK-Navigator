@@ -1,7 +1,7 @@
 """
 WTForms for the application
 """
-from .auth_forms import LoginForm, ChangePasswordForm
+from .auth_forms import LoginForm, ChangePasswordForm, ProfileEditForm
 from .user_forms import UserCreateForm, UserEditForm
 from .organization_forms import OrganizationCreateForm, OrganizationEditForm
 from .space_forms import SpaceCreateForm, SpaceEditForm
@@ -15,7 +15,7 @@ from .yaml_forms import YAMLUploadForm
 from .organization_clone_forms import OrganizationCloneForm
 
 __all__ = [
-    'LoginForm', 'ChangePasswordForm',
+    'LoginForm', 'ChangePasswordForm', 'ProfileEditForm',
     'UserCreateForm', 'UserEditForm',
     'OrganizationCreateForm', 'OrganizationEditForm',
     'SpaceCreateForm', 'SpaceEditForm',
