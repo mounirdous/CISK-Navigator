@@ -317,43 +317,53 @@ document.addEventListener('DOMContentLoaded', function() {
     const hasStrongConsensus = consensusStatus === 'strong';
 
     contributionForm.addEventListener('submit', function(event) {
-        // If form submission already confirmed, allow it
+        // If form submission already confirmed, allow it to proceed
         if (formSubmitAllowed) {
-            return true;
+            // Don't prevent default - let form submit
+            console.log('Form submission allowed - proceeding');
+            return;
         }
 
         // Only show modal if there's strong consensus
         if (hasStrongConsensus) {
+            console.log('Strong consensus detected - showing modal');
             event.preventDefault();
             entryModeModal.show();
-            return false;
+            return;
         }
 
         // No consensus - allow normal submission
-        return true;
+        console.log('No consensus - normal submission');
     });
 
     // Handle modal confirmation
     document.getElementById('confirmEntry').addEventListener('click', function() {
         const selectedMode = document.querySelector('input[name="mode_choice"]:checked').value;
+        console.log('Modal confirmed with mode:', selectedMode);
+
         entryModeInput.value = selectedMode;
         formSubmitAllowed = true;
 
         // Close modal
         entryModeModal.hide();
 
-        // Wait for modal to close, then click the submit button
+        // Wait for modal animation to complete, then submit
         setTimeout(() => {
-            // Trigger click on the actual submit button instead of calling form.submit()
-            // This ensures the form validates and submits properly
-            const submitButton = document.getElementById('submitBtn');
-            if (submitButton) {
-                submitButton.click();
+            console.log('Attempting form submission...');
+            // Use requestSubmit() which triggers validation and submit event properly
+            // The event handler will see formSubmitAllowed=true and allow submission
+            if (contributionForm.requestSubmit) {
+                contributionForm.requestSubmit();
             } else {
-                // Fallback: submit form directly
+                // Fallback for older browsers
                 contributionForm.submit();
             }
-        }, 300);
+
+            // Reset flag after submission attempt
+            setTimeout(() => {
+                formSubmitAllowed = false;
+            }, 100);
+        }, 400);
     });
 });
 
