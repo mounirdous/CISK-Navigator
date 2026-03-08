@@ -194,7 +194,50 @@ def kpi_cell_detail(kpi_id, vt_id):
 
     if form.validate_on_submit():
         contributor_name = form.contributor_name.data
+        entry_mode = request.form.get('entry_mode', 'contributing')  # 'new_data' or 'contributing'
 
+        # Check if this is "new data" mode (time evolved)
+        if entry_mode == 'new_data':
+            # Auto-create snapshot before replacing data
+            try:
+                from datetime import datetime
+                snapshot_label = f"Auto: Before update by {contributor_name} on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+
+                # Create snapshot for this specific KPI cell
+                SnapshotService.create_snapshot(
+                    organization_id=org_id,
+                    label=snapshot_label,
+                    created_by_user_id=current_user.id
+                )
+
+                # Delete ALL existing contributions for this cell
+                Contribution.query.filter_by(
+                    kpi_value_type_config_id=config.id
+                ).delete()
+
+                # Create new contribution
+                contribution = Contribution(
+                    kpi_value_type_config_id=config.id,
+                    contributor_name=contributor_name,
+                    comment=form.comment.data
+                )
+                if value_type.is_numeric():
+                    contribution.numeric_value = form.numeric_value.data
+                else:
+                    contribution.qualitative_level = form.qualitative_level.data
+
+                db.session.add(contribution)
+                db.session.commit()
+
+                flash(f'Previous value saved in snapshot. New value entered by {contributor_name}', 'success')
+                return redirect(url_for('workspace.kpi_cell_detail', kpi_id=kpi_id, vt_id=vt_id))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error creating snapshot: {str(e)}', 'danger')
+                return redirect(url_for('workspace.kpi_cell_detail', kpi_id=kpi_id, vt_id=vt_id))
+
+        # Normal mode: contributing to current period
         # Check if this contributor already has a contribution for this cell
         existing = Contribution.query.filter_by(
             kpi_value_type_config_id=config.id,

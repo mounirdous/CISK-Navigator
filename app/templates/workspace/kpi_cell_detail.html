@@ -7,6 +7,17 @@
     position: relative;
     height: 300px;
 }
+.form-check.border {
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.form-check.border:hover {
+    background-color: #f8f9fa;
+    border-color: #0d6efd !important;
+}
+.form-check-input:checked + .form-check-label {
+    font-weight: 600;
+}
 </style>
 {% endblock %}
 
@@ -168,8 +179,9 @@
 </table>
 
 <h4>Add/Update Contribution</h4>
-<form method="POST">
+<form method="POST" id="contributionForm">
     {{ form.hidden_tag() }}
+    <input type="hidden" name="entry_mode" id="entry_mode" value="contributing">
     <div class="mb-3">{{ form.contributor_name.label }}{{ form.contributor_name(class="form-control", id="contributor_name") }}</div>
     {% if value_type.is_numeric() %}
         <div class="mb-3">{{ form.numeric_value.label }}{{ form.numeric_value(class="form-control", id="numeric_value") }}</div>
@@ -177,9 +189,56 @@
         <div class="mb-3">{{ form.qualitative_level.label }}{{ form.qualitative_level(class="form-select", id="qualitative_level") }}</div>
     {% endif %}
     <div class="mb-3">{{ form.comment.label }}{{ form.comment(class="form-control", rows=3, id="comment") }}</div>
-    {{ form.submit(class="btn btn-primary") }}
+    {{ form.submit(class="btn btn-primary", id="submitBtn") }}
     <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">Back to Workspace</a>
 </form>
+
+<!-- Entry Mode Modal -->
+<div class="modal fade" id="entryModeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-question-circle"></i> What are you entering?</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> This KPI already has <strong>consensus</strong>.
+                </p>
+                <p>Please choose what you're doing:</p>
+
+                <div class="form-check mb-3 p-3 border rounded">
+                    <input class="form-check-input" type="radio" name="mode_choice" id="mode_new" value="new_data" checked>
+                    <label class="form-check-label" for="mode_new">
+                        <strong><i class="bi bi-clock-history"></i> Entering NEW data (time evolved)</strong>
+                        <small class="d-block text-muted mt-1">
+                            → Current value will be saved in a snapshot<br>
+                            → All contributions replaced with your new value<br>
+                            → Maintains strong consensus<br>
+                            <em>Use this for time-series tracking</em>
+                        </small>
+                    </label>
+                </div>
+
+                <div class="form-check p-3 border rounded">
+                    <input class="form-check-input" type="radio" name="mode_choice" id="mode_contrib" value="contributing">
+                    <label class="form-check-label" for="mode_contrib">
+                        <strong><i class="bi bi-people"></i> Contributing to CURRENT period</strong>
+                        <small class="d-block text-muted mt-1">
+                            → Adds your opinion to existing consensus<br>
+                            → May change consensus status<br>
+                            <em>Use this for multi-person agreement</em>
+                        </small>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmEntry">Continue</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -245,6 +304,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 form.submit();
             }
         });
+    });
+
+    // Smart Entry Mode - Intercept form submission
+    const contributionForm = document.getElementById('contributionForm');
+    const entryModeModal = new bootstrap.Modal(document.getElementById('entryModeModal'));
+    const entryModeInput = document.getElementById('entry_mode');
+    let formSubmitAllowed = false;
+
+    // Check consensus status
+    const consensusStatus = '{{ consensus.status }}';
+    const hasStrongConsensus = consensusStatus === 'strong';
+
+    contributionForm.addEventListener('submit', function(event) {
+        // If form submission already confirmed, allow it
+        if (formSubmitAllowed) {
+            return true;
+        }
+
+        // Only show modal if there's strong consensus
+        if (hasStrongConsensus) {
+            event.preventDefault();
+            entryModeModal.show();
+            return false;
+        }
+
+        // No consensus - allow normal submission
+        return true;
+    });
+
+    // Handle modal confirmation
+    document.getElementById('confirmEntry').addEventListener('click', function() {
+        const selectedMode = document.querySelector('input[name="mode_choice"]:checked').value;
+        entryModeInput.value = selectedMode;
+        formSubmitAllowed = true;
+        entryModeModal.hide();
+
+        // Submit the form
+        contributionForm.submit();
     });
 });
 
