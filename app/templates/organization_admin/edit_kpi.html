@@ -50,4 +50,14 @@
     {{ form.submit(class="btn btn-primary") }}
     <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
 </form>
+
+<!-- Delete Button -->
+<div class="mt-4 pt-4 border-top">
+    <form method="POST" action="{{ url_for('organization_admin.delete_kpi', kpi_id=kpi.id) }}" onsubmit="return confirm('Are you sure you want to delete this KPI? This will also delete all contributions, snapshots, and comments. This action cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}">
+        <button type="submit" class="btn btn-danger">
+            <i class="bi bi-trash"></i> Delete KPI
+        </button>
+    </form>
+</div>
 {% endblock %}

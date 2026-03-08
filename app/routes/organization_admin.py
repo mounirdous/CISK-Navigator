@@ -579,6 +579,104 @@ def edit_kpi(kpi_id):
     return render_template('organization_admin/edit_kpi.html', form=form, kpi=kpi)
 
 
+@bp.route('/kpis/<int:kpi_id>/delete', methods=['POST'])
+@login_required
+@organization_required
+def delete_kpi(kpi_id):
+    """Delete a KPI"""
+    org_id = session.get('organization_id')
+    kpi = KPI.query.get_or_404(kpi_id)
+
+    # Verify ownership
+    if kpi.initiative_system_link.initiative.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.spaces'))
+
+    kpi_name = kpi.name
+    db.session.delete(kpi)
+    db.session.commit()
+
+    flash(f'KPI "{kpi_name}" deleted successfully', 'success')
+    return redirect(url_for('organization_admin.spaces'))
+
+
+@bp.route('/systems/<int:system_id>/delete', methods=['POST'])
+@login_required
+@organization_required
+def delete_system(system_id):
+    """Delete a System"""
+    org_id = session.get('organization_id')
+    system = System.query.get_or_404(system_id)
+
+    # Verify ownership
+    if system.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.systems'))
+
+    system_name = system.name
+
+    # Check if system is linked to any initiatives
+    links = InitiativeSystemLink.query.filter_by(system_id=system_id).all()
+    if links:
+        flash(f'Cannot delete system "{system_name}" - it is linked to {len(links)} initiative(s). Remove links first.', 'danger')
+        return redirect(url_for('organization_admin.systems'))
+
+    db.session.delete(system)
+    db.session.commit()
+
+    flash(f'System "{system_name}" deleted successfully', 'success')
+    return redirect(url_for('organization_admin.systems'))
+
+
+@bp.route('/initiatives/<int:initiative_id>/delete', methods=['POST'])
+@login_required
+@organization_required
+def delete_initiative(initiative_id):
+    """Delete an Initiative"""
+    org_id = session.get('organization_id')
+    initiative = Initiative.query.get_or_404(initiative_id)
+
+    # Verify ownership
+    if initiative.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.initiatives'))
+
+    initiative_name = initiative.name
+
+    # Check if initiative is linked to any challenges
+    challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).all()
+    if challenge_links:
+        flash(f'Cannot delete initiative "{initiative_name}" - it is linked to {len(challenge_links)} challenge(s). Remove links first.', 'danger')
+        return redirect(url_for('organization_admin.initiatives'))
+
+    db.session.delete(initiative)
+    db.session.commit()
+
+    flash(f'Initiative "{initiative_name}" deleted successfully', 'success')
+    return redirect(url_for('organization_admin.initiatives'))
+
+
+@bp.route('/challenges/<int:challenge_id>/delete', methods=['POST'])
+@login_required
+@organization_required
+def delete_challenge(challenge_id):
+    """Delete a Challenge"""
+    org_id = session.get('organization_id')
+    challenge = Challenge.query.get_or_404(challenge_id)
+
+    # Verify ownership
+    if challenge.space.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.spaces'))
+
+    challenge_name = challenge.name
+    db.session.delete(challenge)
+    db.session.commit()
+
+    flash(f'Challenge "{challenge_name}" deleted successfully', 'success')
+    return redirect(url_for('organization_admin.spaces'))
+
+
 # Value Type Management
 
 @bp.route('/value-types')
