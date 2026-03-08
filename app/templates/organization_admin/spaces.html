@@ -22,6 +22,27 @@
 .dark-mode .table-striped tbody tr {
     border-color: #555 !important;
 }
+
+/* Dark backgrounds for each hierarchy level - must target TR directly */
+.dark-mode tr.table-light,
+.dark-mode tr.table-light > td {
+    background-color: #1f1f1f !important;
+}
+
+.dark-mode tr.table-secondary,
+.dark-mode tr.table-secondary > td {
+    background-color: #2a2a2a !important;
+}
+
+.dark-mode tr.table-info,
+.dark-mode tr.table-info > td {
+    background-color: #1a3a3a !important;
+}
+
+.dark-mode tr.table-warning,
+.dark-mode tr.table-warning > td {
+    background-color: #3a3a1a !important;
+}
 </style>
 {% endblock %}
 
