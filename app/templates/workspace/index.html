@@ -791,9 +791,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Expand all by default on page load
-    document.getElementById('expand-all').click();
-
     // Load trend indicators for KPI cells
     loadTrendIndicators();
 
@@ -992,17 +989,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const pill = this.closest('.filter-pill');
             if (pill) {
-                // Use inline styles for guaranteed visual change
+                // Use setAttribute for maximum override power
                 if (this.checked) {
-                    pill.style.backgroundColor = '#0d6efd';
-                    pill.style.color = 'white';
-                    pill.style.borderColor = '#0d6efd';
+                    pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
                 } else {
-                    pill.style.backgroundColor = '#2a2a2a';
-                    pill.style.color = '#999';
-                    pill.style.borderColor = '#444';
+                    pill.setAttribute('style', 'background-color: #2a2a2a !important; color: #999 !important; border-color: #444 !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
                 }
-                console.log(`AFTER: ${this.name} checked=${this.checked}, pill bg=${pill.style.backgroundColor}`);
+                console.log(`AFTER: ${this.name} checked=${this.checked}`);
             }
 
             // Update row visibility based on level
@@ -1041,56 +1034,25 @@ document.addEventListener('DOMContentLoaded', function() {
             'kpi': showKpis
         };
 
-        // Update all rows
+        // Update all rows - just mark them, let expand/collapse handle display
         let hiddenCount = 0;
-        let shownCount = 0;
+        let visibleCount = 0;
         document.querySelectorAll('#workspace-tree tbody tr[data-level]').forEach(row => {
             const level = row.getAttribute('data-level');
             const shouldShow = levelMap[level];
 
             if (!shouldShow) {
-                // Hide this level - use setAttribute for !important-like effect
+                // Mark level as hidden
                 row.setAttribute('data-level-hidden', 'true');
                 row.setAttribute('style', 'display: none !important;');
                 hiddenCount++;
             } else {
-                // Level should be visible
+                // Mark level as visible (but don't show yet - expand will do that)
                 row.removeAttribute('data-level-hidden');
-
-                // For spaces, always show them
-                if (level === 'space') {
-                    row.removeAttribute('style');
-                    shownCount++;
-                } else {
-                    // For children, check if parent is expanded
-                    const parentType = row.getAttribute('data-parent-type');
-                    const parentId = row.getAttribute('data-parent-id');
-                    if (parentType && parentId) {
-                        const parentRow = document.querySelector(`tr[data-level="${parentType}"][data-id="${parentId}"]`);
-                        if (parentRow) {
-                            const parentIcon = parentRow.querySelector('.expand-icon');
-                            const parentExpanded = parentIcon && parentIcon.textContent === '▼';
-
-                            if (parentExpanded) {
-                                // Show row but preserve any existing opacity/other styles
-                                const currentStyle = row.getAttribute('style') || '';
-                                const newStyle = currentStyle.replace(/display:\s*none\s*!important;?/gi, '').trim();
-                                if (newStyle) {
-                                    row.setAttribute('style', newStyle);
-                                } else {
-                                    row.removeAttribute('style');
-                                }
-                                shownCount++;
-                            } else {
-                                // Parent collapsed, keep child hidden
-                                row.setAttribute('style', 'display: none !important;');
-                            }
-                        }
-                    }
-                }
+                visibleCount++;
             }
         });
-        console.log(`Hidden ${hiddenCount} rows, shown ${shownCount} rows`);
+        console.log(`Marked ${hiddenCount} rows hidden, ${visibleCount} rows visible`);
     }
 
     // Initialize pill colors on page load
@@ -1098,19 +1060,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const pill = checkbox.closest('.filter-pill');
         if (pill) {
             if (checkbox.checked) {
-                pill.style.backgroundColor = '#0d6efd';
-                pill.style.color = 'white';
-                pill.style.borderColor = '#0d6efd';
+                pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
             } else {
-                pill.style.backgroundColor = '#2a2a2a';
-                pill.style.color = '#999';
-                pill.style.borderColor = '#444';
+                pill.setAttribute('style', 'background-color: #2a2a2a !important; color: #999 !important; border-color: #444 !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
             }
         }
     });
 
     // Initial level visibility on page load
     updateLevelVisibility();
+
+    // Force proper initial expand state
+    setTimeout(() => {
+        document.getElementById('collapse-all').click();
+        setTimeout(() => {
+            document.getElementById('expand-all').click();
+        }, 50);
+    }, 100);
 
     // Clear all filters
     if (clearFiltersBtn) {
