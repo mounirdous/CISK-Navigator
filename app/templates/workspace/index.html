@@ -952,9 +952,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Level visibility controls (checkboxes with names starting with "show_")
     const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb => cb.name.startsWith('show_'));
+    console.log('Level checkboxes:', levelCheckboxes.map(cb => cb.name));
 
     // Governance body and archive checkboxes (non-level controls)
     const dataFilterCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.name.startsWith('show_'));
+    console.log('Data filter checkboxes:', dataFilterCheckboxes.map(cb => cb.name));
 
     // Handle filter pill clicks
     filterPills.forEach(pill => {
@@ -963,7 +965,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const checkbox = this.querySelector('input[type="checkbox"]');
             if (checkbox) {
+                console.log(`Pill clicked for checkbox: ${checkbox.name}, current checked: ${checkbox.checked}`);
                 checkbox.checked = !checkbox.checked;
+                console.log(`After toggle, checked: ${checkbox.checked}`);
 
                 // Trigger change event (which will update pill appearance)
                 checkbox.dispatchEvent(new Event('change'));
@@ -973,16 +977,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Handle level visibility checkbox changes (client-side only, NO form submit)
     levelCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
+        checkbox.addEventListener('change', function(e) {
+            console.log(`BEFORE: ${this.name} checked=${this.checked}`);
+
             const pill = this.closest('.filter-pill');
             if (pill) {
-                // Explicitly add or remove active class based on checked state
+                // Force remove then conditionally add to ensure clean state
+                pill.classList.remove('active');
                 if (this.checked) {
                     pill.classList.add('active');
-                } else {
-                    pill.classList.remove('active');
                 }
-                console.log(`Level ${this.name}: checked=${this.checked}, pill has active=${pill.classList.contains('active')}`);
+                console.log(`AFTER: ${this.name} checked=${this.checked}, pill active=${pill.classList.contains('active')}`);
             }
 
             // Update row visibility based on level
@@ -1011,6 +1016,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const showSystems = document.getElementById('show_systems')?.checked ?? true;
         const showKpis = document.getElementById('show_kpis')?.checked ?? true;
 
+        console.log('updateLevelVisibility called:', {showSpaces, showChallenges, showInitiatives, showSystems, showKpis});
+
         const levelMap = {
             'space': showSpaces,
             'challenge': showChallenges,
@@ -1020,36 +1027,48 @@ document.addEventListener('DOMContentLoaded', function() {
         };
 
         // Update all rows
+        let hiddenCount = 0;
+        let shownCount = 0;
         document.querySelectorAll('#workspace-tree tbody tr[data-level]').forEach(row => {
             const level = row.getAttribute('data-level');
             const shouldShow = levelMap[level];
 
-            if (shouldShow) {
+            if (!shouldShow) {
+                // Hide this level
+                row.setAttribute('data-level-hidden', 'true');
+                row.style.display = 'none';
+                hiddenCount++;
+            } else {
+                // Level should be visible
                 row.removeAttribute('data-level-hidden');
 
-                // Show spaces immediately
+                // For spaces, always show them
                 if (level === 'space') {
                     row.style.display = '';
+                    shownCount++;
                 } else {
-                    // For child rows, show only if parent is currently expanded
+                    // For children, check if parent is expanded
                     const parentType = row.getAttribute('data-parent-type');
                     const parentId = row.getAttribute('data-parent-id');
-                    const parentRow = document.querySelector(`tr[data-level="${parentType}"][data-id="${parentId}"]`);
+                    if (parentType && parentId) {
+                        const parentRow = document.querySelector(`tr[data-level="${parentType}"][data-id="${parentId}"]`);
+                        if (parentRow) {
+                            const parentIcon = parentRow.querySelector('.expand-icon');
+                            const parentExpanded = parentIcon && parentIcon.textContent === '▼';
 
-                    if (parentRow) {
-                        const parentIcon = parentRow.querySelector('.expand-icon');
-                        const parentExpanded = parentIcon && parentIcon.textContent === '▼';
-
-                        if (parentExpanded) {
-                            row.style.display = '';
+                            if (parentExpanded) {
+                                row.style.display = '';
+                                shownCount++;
+                            } else {
+                                // Parent collapsed, keep child hidden
+                                row.style.display = 'none';
+                            }
                         }
                     }
                 }
-            } else {
-                row.setAttribute('data-level-hidden', 'true');
-                row.style.display = 'none';
             }
         });
+        console.log(`Hidden ${hiddenCount} rows, shown ${shownCount} rows`);
     }
 
     // Initial level visibility on page load
