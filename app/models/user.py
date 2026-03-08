@@ -44,18 +44,30 @@ class User(UserMixin, db.Model):
 
     def get_organizations(self):
         """Get list of organizations this user belongs to"""
-        return [membership.organization for membership in self.organization_memberships]
+        try:
+            return [membership.organization for membership in self.organization_memberships]
+        except Exception:
+            # During migrations, schema might not match - return empty list
+            return []
 
     def has_organization_access(self, organization_id):
         """Check if user has access to a specific organization"""
-        return any(m.organization_id == organization_id for m in self.organization_memberships)
+        try:
+            return any(m.organization_id == organization_id for m in self.organization_memberships)
+        except Exception:
+            # During migrations, schema might not match
+            return False
 
     def get_membership(self, organization_id):
         """Get the membership object for a specific organization"""
-        for membership in self.organization_memberships:
-            if membership.organization_id == organization_id:
-                return membership
-        return None
+        try:
+            for membership in self.organization_memberships:
+                if membership.organization_id == organization_id:
+                    return membership
+            return None
+        except Exception:
+            # During migrations, schema might not match
+            return None
 
     def can_manage_spaces(self, organization_id):
         """Check if user can manage spaces in an organization"""
