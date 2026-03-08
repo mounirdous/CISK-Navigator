@@ -205,13 +205,16 @@ def kpi_cell_detail(kpi_id, vt_id):
 
                 # Create snapshot for this specific KPI cell
                 # Use allow_duplicates=True so multiple snapshots can be created on same day
-                SnapshotService.create_kpi_snapshot(
+                snapshot = SnapshotService.create_kpi_snapshot(
                     config_id=config.id,
                     snapshot_date=date.today(),
                     label=snapshot_label,
                     user_id=current_user.id,
                     allow_duplicates=True  # Always create new snapshot for auto-snapshots
                 )
+
+                if snapshot:
+                    flash(f'Snapshot created: {snapshot.snapshot_label} (value: {snapshot.get_value()})', 'info')
 
                 # Delete ALL existing contributions for this cell
                 Contribution.query.filter_by(
@@ -614,12 +617,24 @@ def get_kpi_history(config_id):
     Returns array of snapshots with dates and values.
     """
     try:
-        limit = request.args.get('limit', 10, type=int)
+        limit = request.args.get('limit', 50, type=int)
         snapshots = SnapshotService.get_kpi_history(config_id, limit=limit)
 
+        # Format for chart: array of {date, value} objects
+        # Reverse so oldest is first (better for chart display)
+        history = []
+        for snapshot in reversed(snapshots):
+            value = snapshot.get_value()
+            if value is not None:  # Only include snapshots with actual values
+                history.append({
+                    'date': snapshot.snapshot_date.isoformat(),
+                    'value': float(value),
+                    'label': snapshot.snapshot_label
+                })
+
         return jsonify({
-            'snapshots': [s.to_dict() for s in snapshots],
-            'count': len(snapshots)
+            'history': history,
+            'count': len(history)
         })
 
     except Exception as e:
