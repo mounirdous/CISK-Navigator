@@ -976,7 +976,13 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', function() {
             const pill = this.closest('.filter-pill');
             if (pill) {
-                pill.classList.toggle('active', this.checked);
+                // Explicitly add or remove active class based on checked state
+                if (this.checked) {
+                    pill.classList.add('active');
+                } else {
+                    pill.classList.remove('active');
+                }
+                console.log(`Level ${this.name}: checked=${this.checked}, pill has active=${pill.classList.contains('active')}`);
             }
 
             // Update row visibility based on level
@@ -1020,11 +1026,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (shouldShow) {
                 row.removeAttribute('data-level-hidden');
-                // Only show if parent is expanded (for children) or if it's a space
+
+                // Show spaces immediately
                 if (level === 'space') {
                     row.style.display = '';
+                } else {
+                    // For child rows, show only if parent is currently expanded
+                    const parentType = row.getAttribute('data-parent-type');
+                    const parentId = row.getAttribute('data-parent-id');
+                    const parentRow = document.querySelector(`tr[data-level="${parentType}"][data-id="${parentId}"]`);
+
+                    if (parentRow) {
+                        const parentIcon = parentRow.querySelector('.expand-icon');
+                        const parentExpanded = parentIcon && parentIcon.textContent === '▼';
+
+                        if (parentExpanded) {
+                            row.style.display = '';
+                        }
+                    }
                 }
-                // Children remain hidden until parent is expanded by expand/collapse logic
             } else {
                 row.setAttribute('data-level-hidden', 'true');
                 row.style.display = 'none';
