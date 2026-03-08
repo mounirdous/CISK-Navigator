@@ -47,7 +47,7 @@ class KPISnapshot(db.Model):
     notes = db.Column(db.Text)
 
     # Relationships
-    config = db.relationship('KPIValueTypeConfig', backref='snapshots')
+    config = db.relationship('KPIValueTypeConfig', foreign_keys=[kpi_value_type_config_id], backref='snapshots')
     created_by = db.relationship('User', backref='created_snapshots')
 
     # Indexes for efficient querying
