@@ -1,11 +1,29 @@
-# 🧭 CISK Navigator v1.11.7
+# 🧭 CISK Navigator v1.12.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.11.7-blue)
+![Version](https://img.shields.io/badge/version-1.12.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+## ✨ What's New in v1.12 (March 2026)
+
+### 🔐 **Per-Organization User Permissions** (v1.12.0)
+- **Granular Access Control**: Control what users can create/edit/delete on a per-organization basis
+- **6 Permission Types**: Spaces, Value Types, Challenges, Initiatives, Systems, KPIs
+- **Organization-Specific**: Same user can have different permissions in different organizations
+- **UI Integration**: Buttons automatically hidden when user lacks permission
+- **URL Protection**: Direct URL access blocked with friendly error message
+- **Global Admin Bypass**: Global administrators always have full access
+- **Easy Management**: Checkbox interface during user creation/editing
+- **Backward Compatible**: All existing users get full permissions by default
+
+### 👤 **User Profile Management** (v1.11.9-v1.11.10)
+- **Profile Page**: View and edit display name and email
+- **Password Management**: Improved password change flow with manual "Force Password Change" control
+- **Bug Fixes**: Fixed password auto-population issue that caused unintended resets
+- **Better UX**: Organization assignment now uses checkboxes instead of multi-select dropdown
 
 ## ✨ What's New in v1.11 (March 2026)
 

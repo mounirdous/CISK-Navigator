@@ -5,6 +5,57 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-03-08
+
+### Added
+- **Per-Organization User Permissions**: Comprehensive permission system allowing granular control over what users can create/edit/delete
+  - 6 permission types: Spaces, Value Types, Challenges, Initiatives, Systems, KPIs
+  - Permissions configurable per organization during user creation/editing
+  - Global administrators automatically bypass all permission checks
+  - UI buttons hidden when user lacks permission
+  - Direct URL access blocked with flash message and redirect
+- Permission management UI in user create/edit forms with collapsible per-organization sections
+- 20 routes now protected with `@permission_required` decorator
+- User model methods: `can_manage_spaces()`, `can_manage_value_types()`, `can_manage_challenges()`, `can_manage_initiatives()`, `can_manage_systems()`, `can_manage_kpis()`
+
+### Changed
+- User-organization membership now includes 6 permission boolean columns (all default to TRUE)
+- User edit form now shows existing permissions for easy modification
+- Organization assignment UI changed from multi-select dropdown to checkboxes with expandable permission controls
+
+### Database
+- Migration `119d8257cb6a`: Add 5 permission columns to user_organization_memberships
+- Migration `b8447fd59186`: Add can_manage_spaces column
+
+## [1.11.10] - 2026-03-08
+
+### Fixed
+- **Password Reset Bug**: Password field no longer auto-populated when editing users, preventing unintended password resets
+- Password field now explicitly cleared on form load with `autocomplete="new-password"`
+- Password validation improved: only processes if field has actual content (strips whitespace)
+
+### Added
+- **Manual Password Change Control**: New "Force Password Change on Next Login" checkbox in user edit form
+- Admins can now control must_change_password flag without resetting password
+
+### Changed
+- Organization assignment UI improved: replaced multi-select dropdown with checkboxes in scrollable container (max-height: 200px)
+- Better visual hierarchy for user management forms
+
+## [1.11.9] - 2026-03-08
+
+### Added
+- **User Profile Page**: New profile page at `/auth/profile` showing user information
+  - Editable display name and email fields
+  - Account status badges (Active, Global Admin)
+  - Organization memberships list
+  - Link to change password functionality
+- Profile link added to navbar with person icon
+
+### Changed
+- Navbar updated: "Profile" link replaces direct "Change Password" link
+- Change password remains accessible from profile page
+
 ## [1.11.7] - 2026-03-08
 
 ### Fixed
