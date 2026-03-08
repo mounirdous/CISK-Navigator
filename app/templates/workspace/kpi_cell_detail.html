@@ -334,14 +334,19 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Handle modal confirmation
-    document.getElementById('confirmEntry').addEventListener('click', function() {
+    document.getElementById('confirmEntry').addEventListener('click', function(e) {
+        e.preventDefault();
         const selectedMode = document.querySelector('input[name="mode_choice"]:checked').value;
         entryModeInput.value = selectedMode;
         formSubmitAllowed = true;
+
+        // Close modal first
         entryModeModal.hide();
 
-        // Submit the form
-        contributionForm.submit();
+        // Submit form immediately (don't wait for modal animation)
+        setTimeout(() => {
+            contributionForm.submit();
+        }, 100);
     });
 });
 
