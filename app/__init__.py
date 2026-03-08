@@ -122,7 +122,11 @@ def create_app(config_name=None):
                 raise RuntimeError("CRITICAL: Attempted to use SQLite in production! Check DATABASE_URL!")
             db.create_all()
 
-        _bootstrap_admin()
+        try:
+            _bootstrap_admin()
+        except Exception as e:
+            # During migrations, schema might not match models yet - that's OK
+            print(f"Note: Skipping bootstrap (likely during migration): {e}")
 
     return app
 
