@@ -5,6 +5,72 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-03-08
+
+### Added
+- **🎨 Modern Workspace UI**: Complete interface redesign with dark mode and level visibility controls
+  - True dark mode theme with deep black background (#0a0a0a) and high contrast text
+  - Modern compact toolbar with gradient background and pill-shaped filter buttons
+  - Level visibility controls: Toggle display of Spaces, Challenges, Initiatives, Systems, KPIs
+  - Quick stats bar showing active filters and counts
+  - Icons for each hierarchy level: 🏢 Spaces, 🎯 Challenges, 💡 Initiatives, ⚙️ Systems, 📊 KPIs
+  - Color-coded left borders (4px) for visual hierarchy
+  - Rollup indicator (Σ symbol) for aggregated values
+  - Sticky table headers and first column
+  - Smooth transitions and hover effects
+
+### Fixed
+- **Filter Logic Bug**: Governance body filters now work correctly
+  - Auto-select all governance bodies when none chosen (smart default)
+  - Empty selection correctly hides all KPIs (was showing everything before)
+  - Fixed issue where unchecking GEN still showed KPIs
+- **Version Display**: Login page now shows correct version "CISK Navigator v1.14.0"
+
+### Changed
+- Enhanced filter UX with clickable pills (no visible checkboxes)
+- Modern expand/collapse icons with hover effects
+- Level-specific dark colors for better visual distinction
+- Improved spacing and typography throughout workspace
+
+## [1.13.0] - 2026-03-08
+
+### Added
+- **🏛️ Governance Bodies System**: Full CRUD system for committees/boards/teams oversight
+  - Organization-level governance bodies with name, abbreviation, description, and color
+  - Many-to-many relationship with KPIs (junction table: kpi_governance_body_links)
+  - Default "General" governance body created for each organization (renamable, not deletable)
+  - Full color picker for visual identification
+  - Drag-to-reorder interface for governance bodies
+  - Permission system: `can_manage_governance_bodies` (defaults to true)
+  - KPIs must belong to at least one governance body
+  - Workspace filtering by multiple governance bodies
+  - Color-coded badges on KPIs showing governance assignments
+  - Governance body management at `/org-admin/governance-bodies`
+
+- **🗄️ KPI Archiving**: Preserve historical data without workspace clutter
+  - Archive/unarchive KPIs with full audit trail
+  - Tracks who archived and when (`archived_by_user_id`, `archived_at`)
+  - Archived KPIs are read-only (no new contributions accepted)
+  - Hidden by default with "Show Archived KPIs" filter toggle
+  - Visual distinction: grayed out with archive badge (60% opacity)
+  - All historical data preserved (contributions, snapshots, comments)
+  - Easy to unarchive if needed (fully reversible)
+  - Warning banner on archived KPI detail pages
+
+### Database Schema
+- New tables: `governance_bodies`, `kpi_governance_body_links`
+- Added to `kpis`: `is_archived` (Boolean), `archived_at` (DateTime), `archived_by_user_id` (Integer)
+- Added to `user_organization_memberships`: `can_manage_governance_bodies` (Boolean, default true)
+- Migration auto-creates "General" governance body for existing organizations
+- Migration links all existing KPIs to "General" governance body
+- Migrations: `597259f31427`, `e6f86e8171ac`
+
+### Changed
+- KPI create/edit forms include governance body selection (checkboxes, minimum 1 required)
+- User create/edit forms include governance bodies permission checkbox
+- Admin dashboard shows governance bodies card with count
+- Workspace filter section expanded with governance body pills and archive toggle
+
 ## [1.12.0] - 2026-03-08
 
 ### Added

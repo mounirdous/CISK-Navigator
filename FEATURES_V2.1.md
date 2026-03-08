@@ -1,7 +1,201 @@
-# CISK Navigator v1.11+ - Feature Updates
+# CISK Navigator v1.14 - Feature Updates
 
-**Latest Version**: v1.11.7 (March 8, 2026)
+**Latest Version**: v1.14.0 (March 8, 2026)
 **Status**: ✅ **DEPLOYED TO PRODUCTION**
+
+---
+
+## 🆕 Features Added in v1.13-v1.14
+
+### Governance Bodies (v1.13.0)
+
+**Purpose**: Manage committees, boards, and teams that oversee specific KPIs with visual organization and filtering.
+
+**Features:**
+
+1. **Governance Body Management**:
+   - Create bodies with name, abbreviation, description, and color
+   - Full CRUD operations (Create, Read, Update, Delete)
+   - Drag-to-reorder for custom display order
+   - Permission control: `can_manage_governance_bodies`
+   - Default "General" body for each organization (renamable, not deletable)
+
+2. **Many-to-Many KPI Links**:
+   - KPIs can belong to multiple governance bodies
+   - Minimum of 1 governance body required per KPI
+   - Junction table: `kpi_governance_body_links`
+   - Automatic linking: all existing KPIs assigned to "General" during migration
+
+3. **Workspace Filtering**:
+   - Filter KPIs by governance body with pill-shaped buttons
+   - Multiple selections supported
+   - Smart default: all bodies selected when none explicitly chosen
+   - Empty selection = hide all KPIs (bug fixed in v1.14)
+   - Color-coded badges on each KPI row showing assignments
+
+4. **Visual Design**:
+   - Full color picker for each governance body
+   - Pill-shaped badges with abbreviations
+   - Hover tooltips show full name
+   - Color consistency across all interfaces
+
+**Database Schema:**
+```sql
+CREATE TABLE governance_bodies (
+    id INTEGER PRIMARY KEY,
+    organization_id INTEGER NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    abbreviation VARCHAR(20) NOT NULL,
+    description TEXT,
+    color VARCHAR(7) NOT NULL,  -- Hex color
+    display_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP,
+    FOREIGN KEY (organization_id) REFERENCES organizations(id)
+);
+
+CREATE TABLE kpi_governance_body_links (
+    id INTEGER PRIMARY KEY,
+    kpi_id INTEGER NOT NULL,
+    governance_body_id INTEGER NOT NULL,
+    created_at TIMESTAMP,
+    UNIQUE(kpi_id, governance_body_id),
+    FOREIGN KEY (kpi_id) REFERENCES kpis(id),
+    FOREIGN KEY (governance_body_id) REFERENCES governance_bodies(id)
+);
+```
+
+**Migrations**: `597259f31427_add_governance_bodies_and_kpi_.py`
+
+---
+
+### KPI Archiving (v1.13.0)
+
+**Purpose**: Preserve historical KPIs without cluttering active workspace.
+
+**Features:**
+
+1. **Archive/Unarchive Operations**:
+   - Archive button on KPI edit page
+   - Confirmation dialog prevents accidental archives
+   - Unarchive button for archived KPIs
+   - Full audit trail: tracks who archived and when
+
+2. **Read-Only Mode**:
+   - Archived KPIs cannot accept new contributions
+   - Block at route level with flash message
+   - Warning banner on KPI detail page
+   - All historical data (contributions, snapshots, comments) preserved
+
+3. **Workspace Display**:
+   - Hidden by default from workspace
+   - "Show Archived KPIs" filter toggle
+   - Visual distinction: 60% opacity + archive badge
+   - Archive status shown: "🗄️ Archived on YYYY-MM-DD by username"
+
+4. **Data Preservation**:
+   - ALL data retained: contributions, snapshots, comments, links
+   - Rollup calculations still include archived KPIs
+   - Export includes archived KPIs when filter enabled
+   - Full restore capability via unarchive
+
+**Database Schema:**
+```sql
+ALTER TABLE kpis ADD COLUMN is_archived BOOLEAN DEFAULT FALSE NOT NULL;
+ALTER TABLE kpis ADD COLUMN archived_at TIMESTAMP NULL;
+ALTER TABLE kpis ADD COLUMN archived_by_user_id INTEGER NULL;
+ALTER TABLE kpis ADD FOREIGN KEY (archived_by_user_id) REFERENCES users(id) ON DELETE SET NULL;
+```
+
+**Routes:**
+- POST `/org-admin/kpis/<id>/archive` - Archive KPI
+- POST `/org-admin/kpis/<id>/unarchive` - Unarchive KPI
+
+**Migrations**: `e6f86e8171ac_add_kpi_archiving_support.py`
+
+---
+
+### Modern Workspace UI (v1.14.0)
+
+**Purpose**: Complete interface modernization with dark mode, level controls, and enhanced UX.
+
+**Features:**
+
+1. **True Dark Mode Theme**:
+   - Deep black background (#0a0a0a) for reduced eye strain
+   - High contrast text (#e0e0e0)
+   - Level-specific dark colors for visual hierarchy
+   - Smooth transitions and hover effects
+   - Sticky headers with dark background
+
+2. **Compact Modern Toolbar**:
+   - Gradient background (linear-gradient 135deg)
+   - Icon-based compact buttons
+   - Pill-shaped filter interface
+   - Single unified toolbar (replaced old button rows + card)
+   - Quick stats bar showing active filters and counts
+
+3. **Level Visibility Controls** (NEW):
+   - Toggle display of: Spaces, Challenges, Initiatives, Systems, KPIs
+   - Pill-shaped checkboxes with icons
+   - Instant filtering (no page reload)
+   - Checkboxes managed in session state
+   - Query params: `show_spaces`, `show_challenges`, etc.
+
+4. **Enhanced Visual Hierarchy**:
+   - Icons per level: 🏢 🎯 💡 ⚙️ 📊
+   - Color-coded left borders (4px) per level
+   - Rollup indicator (Σ symbol) on aggregated values
+   - Modern expand/collapse icons with rounded background
+   - Vertical guide lines (like VS Code tree)
+
+5. **Interactive Filter Pills**:
+   - Click pill to toggle (no visible checkboxes)
+   - Active state: blue background (#0d6efd)
+   - Inactive state: dark gray (#2a2a2a)
+   - Auto-submit on change
+   - Clear All button resets all filters
+
+6. **Sticky Elements**:
+   - First column (Structure) sticky on horizontal scroll
+   - Header row sticky on vertical scroll
+   - Both scroll independently
+   - z-index properly layered
+
+7. **Bug Fixes**:
+   - Fixed governance body filter logic (empty = hide all, not show all)
+   - Smart default: auto-select all bodies when none explicitly chosen
+   - Fixed version display on login page (now v1.14.0)
+
+**CSS Classes Added:**
+- `.modern-toolbar` - Gradient toolbar container
+- `.filter-pill` - Pill-shaped filter button
+- `.hierarchy-icon` - Icon container for each level
+- `.level-border` - Colored left border per level
+- `.expand-icon` - Modern expand/collapse button
+- `.rollup-indicator` - Σ symbol for rollups
+- `.stats-bar` - Quick stats display
+- `.level-controls` - Level visibility toggles
+
+**Route Changes:**
+```python
+# Added to workspace.index():
+show_levels = {
+    'spaces': request.args.get('show_spaces', '1') == '1',
+    'challenges': request.args.get('show_challenges', '1') == '1',
+    'initiatives': request.args.get('show_initiatives', '1') == '1',
+    'systems': request.args.get('show_systems', '1') == '1',
+    'kpis': request.args.get('show_kpis', '1') == '1',
+}
+```
+
+**JavaScript Enhancements:**
+- Modern filter pill click handlers
+- Auto-submit on checkbox change
+- Clear All filters functionality
+- Maintains active state classes
 
 ---
 

@@ -1,11 +1,43 @@
-# 🧭 CISK Navigator v1.12.0
+# 🧭 CISK Navigator v1.14.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.12.0-blue)
+![Version](https://img.shields.io/badge/version-1.14.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+## ✨ What's New in v1.14 (March 2026)
+
+### 🎨 **Modern Workspace UI** (v1.14.0)
+- **True Dark Mode**: Deep black background with high contrast for reduced eye strain
+- **Modern Toolbar**: Compact design with gradient background and pill-shaped interactive filters
+- **Level Visibility Controls**: Toggle display of any hierarchy level (Spaces, Challenges, Initiatives, Systems, KPIs)
+- **Visual Hierarchy**: Icons (🏢🎯💡⚙️📊) and color-coded borders for each level
+- **Enhanced UX**: Sticky headers, smooth animations, rollup indicators (Σ symbol)
+- **Smart Filters**: Governance bodies and archive filters with instant feedback
+- **Quick Stats**: Real-time display of active filters and entity counts
+
+## ✨ What's New in v1.13 (March 2026)
+
+### 🏛️ **Governance Bodies** (v1.13.0)
+- **Committee/Board Management**: Create and manage governance bodies that oversee KPIs
+- **Visual Identity**: Each body has name, abbreviation, color, and description
+- **Many-to-Many Links**: KPIs can belong to multiple governance bodies
+- **Workspace Filtering**: Filter KPIs by governance body with color-coded pill badges
+- **Default Body**: Every organization gets a "General" governance body (renamable, not deletable)
+- **Permissions**: New `can_manage_governance_bodies` permission control
+- **Drag-to-Reorder**: Customize display order of governance bodies
+- **Full CRUD**: Create, edit, delete (except default) with complete audit trail
+
+### 🗄️ **KPI Archiving** (v1.13.0)
+- **Archive Inactive KPIs**: Preserve historical data without cluttering workspace
+- **Audit Trail**: Tracks who archived and when
+- **Read-Only Mode**: Archived KPIs cannot accept new contributions
+- **Toggle Visibility**: "Show Archived KPIs" filter to view when needed
+- **Visual Distinction**: Grayed out with archive badge
+- **Easy Restore**: Unarchive anytime to make KPI active again
+- **Data Preservation**: All contributions, snapshots, and comments retained
 
 ## ✨ What's New in v1.12 (March 2026)
 
