@@ -172,6 +172,7 @@ def profile():
     if form.validate_on_submit():
         current_user.display_name = form.display_name.data
         current_user.email = form.email.data
+        current_user.dark_mode = form.dark_mode.data
         db.session.commit()
         flash('Profile updated successfully', 'success')
         return redirect(url_for('auth.profile'))
@@ -180,6 +181,7 @@ def profile():
     if request.method == 'GET':
         form.display_name.data = current_user.display_name
         form.email.data = current_user.email
+        form.dark_mode.data = current_user.dark_mode
 
     return render_template('auth/profile.html', form=form)
 

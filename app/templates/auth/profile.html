@@ -45,6 +45,14 @@
                         </div>
 
                         <div class="mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.dark_mode(class="form-check-input", role="switch") }}
+                                {{ form.dark_mode.label(class="form-check-label fw-bold") }}
+                                <small class="form-text text-muted d-block">Enable dark theme with black background</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
                             {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </form>

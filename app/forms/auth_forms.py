@@ -2,7 +2,7 @@
 Authentication forms
 """
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, IntegerField, SubmitField
+from wtforms import StringField, PasswordField, IntegerField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, InputRequired, Length, Email, Optional
 
 
@@ -25,4 +25,5 @@ class ProfileEditForm(FlaskForm):
     """Form for editing user profile"""
     display_name = StringField('Display Name', validators=[Optional(), Length(max=120)])
     email = StringField('Email', validators=[Optional(), Email(), Length(max=120)])
+    dark_mode = BooleanField('Dark Mode')
     submit = SubmitField('Save Changes')
