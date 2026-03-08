@@ -720,6 +720,9 @@ def edit_kpi(kpi_id):
         for link in kpi.governance_body_links:
             db.session.delete(link)
 
+        # Flush deletes before adding new ones to avoid unique constraint violations
+        db.session.flush()
+
         # Add new links
         for gb_id in selected_gb_ids:
             gb_link = KPIGovernanceBodyLink(
