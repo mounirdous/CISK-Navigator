@@ -967,6 +967,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Handle filter pill clicks
     filterPills.forEach(pill => {
         pill.addEventListener('click', function(e) {
+            // Stop event from bubbling up
+            e.stopPropagation();
+            e.preventDefault();
+
             if (e.target.tagName === 'INPUT') return; // Already handled by checkbox
 
             const checkbox = this.querySelector('input[type="checkbox"]');
@@ -976,7 +980,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`After toggle, checked: ${checkbox.checked}`);
 
                 // Trigger change event (which will update pill appearance)
-                checkbox.dispatchEvent(new Event('change'));
+                checkbox.dispatchEvent(new Event('change', {bubbles: false}));
             }
         });
     });
