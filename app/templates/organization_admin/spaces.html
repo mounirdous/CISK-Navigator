@@ -1,5 +1,40 @@
 {% extends "base.html" %}
 {% block title %}Spaces{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Better dark mode readability for hierarchical table */
+.dark-mode .table-light {
+    background-color: #2a2a2a !important;
+    color: #e8e8e8 !important;
+}
+
+.dark-mode .table-secondary {
+    background-color: #353535 !important;
+    color: #e8e8e8 !important;
+}
+
+.dark-mode .table-info {
+    background-color: #1a3a4a !important;
+    color: #e8e8e8 !important;
+}
+
+.dark-mode .table-warning {
+    background-color: #4a4a2a !important;
+    color: #e8e8e8 !important;
+}
+
+.dark-mode .table {
+    border-color: #444 !important;
+}
+
+.dark-mode .table th,
+.dark-mode .table td {
+    border-color: #444 !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <h2>Spaces</h2>
 <div class="mb-3">

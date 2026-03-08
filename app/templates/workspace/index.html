@@ -340,31 +340,31 @@
                     <i class="bi bi-eye-fill"></i> <strong>Show Levels:</strong>
                     <span style="opacity: 0.7; font-size: 0.85rem;">(Click to hide/show hierarchy levels. Blue = visible, Gray = hidden)</span>
                 </small>
-                <label class="filter-pill ms-2 {% if show_levels.spaces %}active{% endif %}" title="Toggle Spaces visibility">
+                <label class="filter-pill ms-2" title="Toggle Spaces visibility">
                     <input type="checkbox" name="show_spaces" value="1" id="show_spaces"
                            {% if show_levels.spaces %}checked{% endif %} hidden>
                     <i class="bi bi-building"></i>
                     <span>Spaces</span>
                 </label>
-                <label class="filter-pill {% if show_levels.challenges %}active{% endif %}" title="Toggle Challenges visibility">
+                <label class="filter-pill" title="Toggle Challenges visibility">
                     <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
                            {% if show_levels.challenges %}checked{% endif %} hidden>
                     <i class="bi bi-flag"></i>
                     <span>Challenges</span>
                 </label>
-                <label class="filter-pill {% if show_levels.initiatives %}active{% endif %}" title="Toggle Initiatives visibility">
+                <label class="filter-pill" title="Toggle Initiatives visibility">
                     <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
                            {% if show_levels.initiatives %}checked{% endif %} hidden>
                     <i class="bi bi-lightbulb"></i>
                     <span>Initiatives</span>
                 </label>
-                <label class="filter-pill {% if show_levels.systems %}active{% endif %}" title="Toggle Systems visibility">
+                <label class="filter-pill" title="Toggle Systems visibility">
                     <input type="checkbox" name="show_systems" value="1" id="show_systems"
                            {% if show_levels.systems %}checked{% endif %} hidden>
                     <i class="bi bi-gear-wide-connected"></i>
                     <span>Systems</span>
                 </label>
-                <label class="filter-pill {% if show_levels.kpis %}active{% endif %}" title="Toggle KPIs visibility">
+                <label class="filter-pill" title="Toggle KPIs visibility">
                     <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
                            {% if show_levels.kpis %}checked{% endif %} hidden>
                     <i class="bi bi-graph-up"></i>
@@ -1141,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 50);
     }, 100);
 
-    // Clear all filters
+    // Clear all filters (Option B: clear governance + reset level visibility to all visible)
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
             // Uncheck all data filter checkboxes (governance bodies, archive)
@@ -1151,9 +1151,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (pill) pill.classList.remove('active');
             });
 
-            // Add level visibility hidden inputs before submit
-            addLevelVisibilityHiddenInputs();
+            // Reset all level checkboxes to checked (visible)
+            levelCheckboxes.forEach(cb => {
+                cb.checked = true;
+                const pill = cb.closest('.filter-pill');
+                if (pill) {
+                    pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
+                }
+            });
 
+            // Don't add hidden inputs - all levels are now checked and will submit as =1
             // Submit form
             filterForm.submit();
         });
