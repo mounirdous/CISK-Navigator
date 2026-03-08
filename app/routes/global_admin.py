@@ -74,9 +74,18 @@ def create_user():
         db.session.add(user)
         db.session.flush()
 
-        # Assign organizations
+        # Assign organizations with permissions
         for org_id in form.organizations.data:
-            membership = UserOrganizationMembership(user_id=user.id, organization_id=org_id)
+            membership = UserOrganizationMembership(
+                user_id=user.id,
+                organization_id=org_id,
+                can_manage_spaces=request.form.get(f'perm_spaces_{org_id}') == 'on',
+                can_manage_value_types=request.form.get(f'perm_value_types_{org_id}') == 'on',
+                can_manage_challenges=request.form.get(f'perm_challenges_{org_id}') == 'on',
+                can_manage_initiatives=request.form.get(f'perm_initiatives_{org_id}') == 'on',
+                can_manage_systems=request.form.get(f'perm_systems_{org_id}') == 'on',
+                can_manage_kpis=request.form.get(f'perm_kpis_{org_id}') == 'on'
+            )
             db.session.add(membership)
 
         db.session.commit()
@@ -118,9 +127,18 @@ def edit_user(user_id):
         # Remove old memberships
         UserOrganizationMembership.query.filter_by(user_id=user.id).delete()
 
-        # Add new memberships
+        # Add new memberships with permissions
         for org_id in form.organizations.data:
-            membership = UserOrganizationMembership(user_id=user.id, organization_id=org_id)
+            membership = UserOrganizationMembership(
+                user_id=user.id,
+                organization_id=org_id,
+                can_manage_spaces=request.form.get(f'perm_spaces_{org_id}') == 'on',
+                can_manage_value_types=request.form.get(f'perm_value_types_{org_id}') == 'on',
+                can_manage_challenges=request.form.get(f'perm_challenges_{org_id}') == 'on',
+                can_manage_initiatives=request.form.get(f'perm_initiatives_{org_id}') == 'on',
+                can_manage_systems=request.form.get(f'perm_systems_{org_id}') == 'on',
+                can_manage_kpis=request.form.get(f'perm_kpis_{org_id}') == 'on'
+            )
             db.session.add(membership)
 
         db.session.commit()

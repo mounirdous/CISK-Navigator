@@ -3,7 +3,9 @@
 {% block content %}
 <h2>Value Types</h2>
 <div class="mb-3">
+    {% if current_user.can_manage_value_types(session.organization_id) %}
     <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary">Create Value Type</a>
+    {% endif %}
     <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
 </div>
 
@@ -31,8 +33,12 @@
                 {% endif %}
             </td>
             <td>
+                {% if current_user.can_manage_value_types(session.organization_id) %}
                 <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
                 <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}" class="btn btn-sm btn-outline-danger">Delete...</a>
+                {% else %}
+                <span class="text-muted small">View only</span>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}

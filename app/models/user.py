@@ -49,5 +49,54 @@ class User(UserMixin, db.Model):
         """Check if user has access to a specific organization"""
         return any(m.organization_id == organization_id for m in self.organization_memberships)
 
+    def get_membership(self, organization_id):
+        """Get the membership object for a specific organization"""
+        for membership in self.organization_memberships:
+            if membership.organization_id == organization_id:
+                return membership
+        return None
+
+    def can_manage_spaces(self, organization_id):
+        """Check if user can manage spaces in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_spaces
+
+    def can_manage_value_types(self, organization_id):
+        """Check if user can manage value types in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_value_types
+
+    def can_manage_challenges(self, organization_id):
+        """Check if user can manage challenges in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_challenges
+
+    def can_manage_initiatives(self, organization_id):
+        """Check if user can manage initiatives in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_initiatives
+
+    def can_manage_systems(self, organization_id):
+        """Check if user can manage systems in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_systems
+
+    def can_manage_kpis(self, organization_id):
+        """Check if user can manage KPIs in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_kpis
+
     def __repr__(self):
         return f'<User {self.login}>'

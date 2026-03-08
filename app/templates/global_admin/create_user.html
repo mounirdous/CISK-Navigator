@@ -12,17 +12,54 @@
     <div class="mb-3">{{ form.is_global_admin(class="form-check-input") }} {{ form.is_global_admin.label(class="form-check-label") }}</div>
     <div class="mb-3">
         <label class="form-label">{{ form.organizations.label.text }}</label>
-        <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+        <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
             {% for org in organizations %}
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="organizations" value="{{ org.id }}" id="org_{{ org.id }}">
-                <label class="form-check-label" for="org_{{ org.id }}">
-                    {{ org.name }}
-                </label>
+            <div class="border-bottom pb-3 mb-3">
+                <div class="form-check">
+                    <input class="form-check-input org-checkbox" type="checkbox" name="organizations" value="{{ org.id }}"
+                           id="org_{{ org.id }}" onchange="togglePermissions({{ org.id }})">
+                    <label class="form-check-label fw-bold" for="org_{{ org.id }}">
+                        {{ org.name }}
+                    </label>
+                </div>
+                <div id="permissions_{{ org.id }}" class="ms-4 mt-2" style="display: none;">
+                    <small class="text-muted d-block mb-2">Permissions for {{ org.name }}:</small>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_spaces_{{ org.id }}" id="perm_spaces_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_spaces_{{ org.id }}">Spaces</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_value_types_{{ org.id }}" id="perm_value_types_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_value_types_{{ org.id }}">Value Types</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_challenges_{{ org.id }}" id="perm_challenges_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_challenges_{{ org.id }}">Challenges</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ org.id }}" id="perm_initiatives_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_initiatives_{{ org.id }}">Initiatives</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_systems_{{ org.id }}" id="perm_systems_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_systems_{{ org.id }}">Systems</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_kpis_{{ org.id }}" id="perm_kpis_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_kpis_{{ org.id }}">KPIs</label>
+                    </div>
+                </div>
             </div>
             {% endfor %}
         </div>
     </div>
+    <script>
+    function togglePermissions(orgId) {
+        const checkbox = document.getElementById('org_' + orgId);
+        const permissions = document.getElementById('permissions_' + orgId);
+        permissions.style.display = checkbox.checked ? 'block' : 'none';
+    }
+    </script>
     {{ form.submit(class="btn btn-primary") }}
     <a href="{{ url_for('global_admin.users') }}" class="btn btn-secondary">Cancel</a>
 </form>

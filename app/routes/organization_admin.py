@@ -39,6 +39,31 @@ def organization_required(f):
     return decorated_function
 
 
+def permission_required(permission_method_name):
+    """Decorator to check user permissions for an organization"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            org_id = session.get('organization_id')
+            if not org_id:
+                flash('No organization context', 'danger')
+                return redirect(url_for('auth.login'))
+
+            # Global admins bypass all permission checks
+            if current_user.is_global_admin:
+                return f(*args, **kwargs)
+
+            # Check specific permission
+            permission_method = getattr(current_user, permission_method_name, None)
+            if not permission_method or not permission_method(org_id):
+                flash('You do not have permission to perform this action', 'danger')
+                return redirect(url_for('organization_admin.index'))
+
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 @bp.route('/')
 @login_required
 @organization_required
@@ -97,6 +122,7 @@ def spaces():
 @bp.route('/spaces/create', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_spaces')
 def create_space():
     """Create a new space"""
     form = SpaceCreateForm()
@@ -120,6 +146,7 @@ def create_space():
 @bp.route('/spaces/<int:space_id>/edit', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_spaces')
 def edit_space(space_id):
     """Edit an existing space"""
     org_id = session.get('organization_id')
@@ -142,6 +169,7 @@ def edit_space(space_id):
 @bp.route('/spaces/<int:space_id>/delete', methods=['POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_spaces')
 def delete_space(space_id):
     """Delete a space"""
     org_id = session.get('organization_id')
@@ -189,6 +217,7 @@ def systems():
 @bp.route('/spaces/<int:space_id>/challenges/create', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_challenges')
 def create_challenge(space_id):
     """Create a new challenge under a space"""
     org_id = session.get('organization_id')
@@ -215,6 +244,7 @@ def create_challenge(space_id):
 @bp.route('/challenges/<int:challenge_id>/edit', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_challenges')
 def edit_challenge(challenge_id):
     """Edit an existing challenge"""
     org_id = session.get('organization_id')
@@ -285,6 +315,7 @@ def configure_challenge_rollup(challenge_id):
 @bp.route('/challenges/<int:challenge_id>/initiatives/create', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_initiatives')
 def create_initiative(challenge_id):
     """Create a new initiative and link it to a challenge"""
     org_id = session.get('organization_id')
@@ -320,6 +351,7 @@ def create_initiative(challenge_id):
 @bp.route('/initiatives/<int:initiative_id>/edit', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_initiatives')
 def edit_initiative(initiative_id):
     """Edit an existing initiative"""
     org_id = session.get('organization_id')
@@ -394,6 +426,7 @@ def configure_initiative_rollup(link_id):
 @bp.route('/initiatives/<int:initiative_id>/systems/create', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_systems')
 def create_system(initiative_id):
     """Create a new system and link it to an initiative"""
     org_id = session.get('organization_id')
@@ -429,6 +462,7 @@ def create_system(initiative_id):
 @bp.route('/systems/<int:system_id>/edit', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_systems')
 def edit_system(system_id):
     """Edit an existing system"""
     org_id = session.get('organization_id')
@@ -503,6 +537,7 @@ def configure_system_rollup(link_id):
 @bp.route('/initiative-system-links/<int:link_id>/kpis/create', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_kpis')
 def create_kpi(link_id):
     """Create a new KPI under an initiative-system link"""
     org_id = session.get('organization_id')
@@ -588,6 +623,7 @@ def create_kpi(link_id):
 @bp.route('/kpis/<int:kpi_id>/edit', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_kpis')
 def edit_kpi(kpi_id):
     """Edit an existing KPI"""
     org_id = session.get('organization_id')
@@ -651,6 +687,7 @@ def edit_kpi(kpi_id):
 @bp.route('/kpis/<int:kpi_id>/delete', methods=['POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_kpis')
 def delete_kpi(kpi_id):
     """Delete a KPI"""
     org_id = session.get('organization_id')
@@ -672,6 +709,7 @@ def delete_kpi(kpi_id):
 @bp.route('/systems/<int:system_id>/delete', methods=['POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_systems')
 def delete_system(system_id):
     """Delete a System"""
     org_id = session.get('organization_id')
@@ -700,6 +738,7 @@ def delete_system(system_id):
 @bp.route('/initiatives/<int:initiative_id>/delete', methods=['POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_initiatives')
 def delete_initiative(initiative_id):
     """Delete an Initiative"""
     org_id = session.get('organization_id')
@@ -728,6 +767,7 @@ def delete_initiative(initiative_id):
 @bp.route('/challenges/<int:challenge_id>/delete', methods=['POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_challenges')
 def delete_challenge(challenge_id):
     """Delete a Challenge"""
     org_id = session.get('organization_id')
@@ -761,6 +801,7 @@ def value_types():
 @bp.route('/value-types/reorder', methods=['POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_value_types')
 def reorder_value_types():
     """Update value type display order via AJAX (CSRF exempt for AJAX)"""
     # Note: CSRF validation happens through login_required - user must be authenticated
@@ -788,6 +829,7 @@ def reorder_value_types():
 @bp.route('/value-types/create', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_value_types')
 def create_value_type():
     """Create a new value type"""
     form = ValueTypeCreateForm()
@@ -815,6 +857,7 @@ def create_value_type():
 @bp.route('/value-types/<int:vt_id>/edit', methods=['GET', 'POST'])
 @login_required
 @organization_required
+@permission_required('can_manage_value_types')
 def edit_value_type(vt_id):
     """Edit a value type"""
     org_id = session.get('organization_id')
@@ -843,6 +886,7 @@ def edit_value_type(vt_id):
 @bp.route('/value-types/<int:vt_id>/delete-check')
 @login_required
 @organization_required
+@permission_required('can_manage_value_types')
 def delete_value_type_check(vt_id):
     """Check if value type can be deleted and show usage"""
     value_type = ValueType.query.get_or_404(vt_id)

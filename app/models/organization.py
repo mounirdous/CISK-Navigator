@@ -41,7 +41,7 @@ class UserOrganizationMembership(db.Model):
     """
     Association between users and organizations.
 
-    A user can belong to multiple organizations.
+    A user can belong to multiple organizations with different permissions per org.
     """
     __tablename__ = 'user_organization_memberships'
 
@@ -49,6 +49,14 @@ class UserOrganizationMembership(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False)
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Permissions (per organization)
+    can_manage_spaces = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_value_types = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_challenges = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_initiatives = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_systems = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_kpis = db.Column(db.Boolean, default=True, nullable=False)
 
     # Unique constraint: one user cannot be assigned twice to the same organization
     __table_args__ = (
