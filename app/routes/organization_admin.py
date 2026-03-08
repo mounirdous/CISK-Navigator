@@ -1062,9 +1062,11 @@ def configure_rollup(vt_id):
 @organization_required
 def governance_bodies():
     """List all governance bodies"""
+    from flask_wtf import FlaskForm
     org_id = session.get('organization_id')
     governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id).order_by(GovernanceBody.display_order).all()
-    return render_template('organization_admin/governance_bodies.html', governance_bodies=governance_bodies)
+    delete_form = FlaskForm()  # Simple form just for CSRF token
+    return render_template('organization_admin/governance_bodies.html', governance_bodies=governance_bodies, delete_form=delete_form)
 
 
 @bp.route('/governance-bodies/reorder', methods=['POST'])
