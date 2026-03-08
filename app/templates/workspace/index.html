@@ -1005,25 +1005,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Function to add hidden inputs for unchecked level checkboxes before form submit
     function addLevelVisibilityHiddenInputs() {
+        console.log('addLevelVisibilityHiddenInputs() called');
+
         // Remove any existing hidden level inputs
         filterForm.querySelectorAll('input[name^="show_"][type="hidden"]').forEach(el => el.remove());
 
         // Add hidden input with value="0" for each unchecked level checkbox
+        let addedCount = 0;
         levelCheckboxes.forEach(levelCb => {
+            console.log(`  ${levelCb.name}: checked=${levelCb.checked}`);
             if (!levelCb.checked) {
                 const hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = levelCb.name;
                 hiddenInput.value = '0';
                 filterForm.appendChild(hiddenInput);
+                console.log(`  -> Added hidden input: ${levelCb.name}=0`);
+                addedCount++;
             }
         });
+        console.log(`Total hidden inputs added: ${addedCount}`);
     }
-
-    // Intercept form submit to add hidden inputs
-    filterForm.addEventListener('submit', function(e) {
-        addLevelVisibilityHiddenInputs();
-    });
 
     // Handle data filter checkbox changes (governance bodies, archive) - these DO submit form
     dataFilterCheckboxes.forEach(checkbox => {
@@ -1032,6 +1034,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pill) {
                 pill.classList.toggle('active', this.checked);
             }
+
+            // Add level visibility hidden inputs before submit
+            // NOTE: calling form.submit() does NOT trigger 'submit' event, must call manually
+            addLevelVisibilityHiddenInputs();
 
             // Auto-submit form for data filters
             setTimeout(() => filterForm.submit(), 100);
@@ -1145,7 +1151,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (pill) pill.classList.remove('active');
             });
 
-            // Submit will trigger the submit event handler which adds level visibility hidden inputs
+            // Add level visibility hidden inputs before submit
+            addLevelVisibilityHiddenInputs();
+
+            // Submit form
             filterForm.submit();
         });
     }
