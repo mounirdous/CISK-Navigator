@@ -141,6 +141,43 @@
     transform: scale(1.1);
 }
 
+/* Filter pill styles */
+.filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    font-size: 0.9rem;
+    border: 1px solid #444;
+}
+
+.dark-mode .filter-pill {
+    background-color: #2a2a2a;
+    color: #999;
+}
+
+.dark-mode .filter-pill:hover {
+    background-color: #3a3a3a;
+    border-color: #555;
+}
+
+.dark-mode .filter-pill.active {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+}
+
+.filter-pill .pill-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.75rem;
+}
+
 /* Sticky first column */
 #workspace-tree td:first-child,
 #workspace-tree th:first-child {
@@ -424,7 +461,7 @@
 
                 {% for challenge in space.challenges %}
                 <!-- CHALLENGE ROW -->
-                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: none;">
+                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: none;" {% if not show_levels.challenges %}data-level-hidden="true"{% endif %}>
                     <td class="level-border challenge" style="padding-left: 2.5rem !important;">
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🎯</span>
@@ -463,7 +500,7 @@
                 {% for link in challenge.initiative_links %}
                     {% set initiative = link.initiative %}
                 <!-- INITIATIVE ROW -->
-                <tr data-level="initiative" data-id="{{ initiative.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary" style="display: none;">
+                <tr data-level="initiative" data-id="{{ initiative.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary" style="display: none;" {% if not show_levels.initiatives %}data-level-hidden="true"{% endif %}>
                     <td class="level-border initiative" style="padding-left: 5rem !important;">
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">💡</span>
@@ -502,7 +539,7 @@
                 {% for sys_link in initiative.system_links %}
                     {% set system = sys_link.system %}
                 <!-- SYSTEM ROW -->
-                <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info" style="display: none;">
+                <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info" style="display: none;" {% if not show_levels.systems %}data-level-hidden="true"{% endif %}>
                     <td class="level-border system" style="padding-left: 7.5rem !important;">
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">⚙️</span>
@@ -559,9 +596,9 @@
                     {% endif %}
                 {% endif %}
 
-                {% if show_kpi and show_levels.kpis %}
+                {% if show_kpi %}
                 <!-- KPI ROW -->
-                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}">
+                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}" {% if not show_levels.kpis %}data-level-hidden="true"{% endif %}>
                     <td class="level-border kpi" style="padding-left: 10rem !important;">
                         <span class="hierarchy-icon">📊</span>
                         {{ kpi.name }}
@@ -703,7 +740,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function expandChildren(parentLevel, parentId) {
         const rows = document.querySelectorAll(`tr[data-parent-type="${parentLevel}"][data-parent-id="${parentId}"]`);
         rows.forEach(row => {
-            row.style.display = '';
+            // Only show if level is not hidden by level visibility controls
+            if (!row.hasAttribute('data-level-hidden')) {
+                row.style.display = '';
+            }
         });
     }
 
@@ -728,7 +768,10 @@ document.addEventListener('DOMContentLoaded', function() {
             icon.textContent = '▼';
         });
         document.querySelectorAll('tr[data-parent-type]').forEach(row => {
-            row.style.display = '';
+            // Only show if level is not hidden by level visibility controls
+            if (!row.hasAttribute('data-level-hidden')) {
+                row.style.display = '';
+            }
         });
     });
 
@@ -907,6 +950,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterPills = document.querySelectorAll('.filter-pill');
     const clearFiltersBtn = document.getElementById('clear-filters');
 
+    // Level visibility controls (checkboxes with names starting with "show_")
+    const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb => cb.name.startsWith('show_'));
+
+    // Governance body and archive checkboxes (non-level controls)
+    const dataFilterCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb => !cb.name.startsWith('show_'));
+
     // Handle filter pill clicks
     filterPills.forEach(pill => {
         pill.addEventListener('click', function(e) {
@@ -917,44 +966,85 @@ document.addEventListener('DOMContentLoaded', function() {
                 checkbox.checked = !checkbox.checked;
                 this.classList.toggle('active', checkbox.checked);
 
-                // Auto-submit form
-                setTimeout(() => filterForm.submit(), 100);
+                // Trigger change event
+                checkbox.dispatchEvent(new Event('change'));
             }
         });
     });
 
-    // Handle checkbox changes directly (for accessibility)
-    const allCheckboxes = filterForm.querySelectorAll('input[type="checkbox"]');
-    allCheckboxes.forEach(checkbox => {
+    // Handle level visibility checkbox changes (client-side only, NO form submit)
+    levelCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const pill = this.closest('.filter-pill');
             if (pill) {
                 pill.classList.toggle('active', this.checked);
             }
 
-            // Auto-submit form
+            // Update row visibility based on level
+            updateLevelVisibility();
+        });
+    });
+
+    // Handle data filter checkbox changes (governance bodies, archive) - these DO submit form
+    dataFilterCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const pill = this.closest('.filter-pill');
+            if (pill) {
+                pill.classList.toggle('active', this.checked);
+            }
+
+            // Auto-submit form for data filters
             setTimeout(() => filterForm.submit(), 100);
         });
     });
 
+    // Function to update row visibility based on level checkboxes
+    function updateLevelVisibility() {
+        const showSpaces = document.getElementById('show_spaces')?.checked ?? true;
+        const showChallenges = document.getElementById('show_challenges')?.checked ?? true;
+        const showInitiatives = document.getElementById('show_initiatives')?.checked ?? true;
+        const showSystems = document.getElementById('show_systems')?.checked ?? true;
+        const showKpis = document.getElementById('show_kpis')?.checked ?? true;
+
+        const levelMap = {
+            'space': showSpaces,
+            'challenge': showChallenges,
+            'initiative': showInitiatives,
+            'system': showSystems,
+            'kpi': showKpis
+        };
+
+        // Update all rows
+        document.querySelectorAll('#workspace-tree tbody tr[data-level]').forEach(row => {
+            const level = row.getAttribute('data-level');
+            const shouldShow = levelMap[level];
+
+            if (shouldShow) {
+                row.removeAttribute('data-level-hidden');
+                // Only show if parent is expanded (for children) or if it's a space
+                if (level === 'space') {
+                    row.style.display = '';
+                }
+                // Children remain hidden until parent is expanded by expand/collapse logic
+            } else {
+                row.setAttribute('data-level-hidden', 'true');
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Initial level visibility on page load
+    updateLevelVisibility();
+
     // Clear all filters
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
-            // Uncheck all filter checkboxes except level visibility (must keep at least one)
-            const govCheckboxes = filterForm.querySelectorAll('input[name="gb"]');
-            const archivedCheckbox = filterForm.querySelector('input[name="show_archived"]');
-
-            govCheckboxes.forEach(cb => {
+            // Uncheck all data filter checkboxes (governance bodies, archive)
+            dataFilterCheckboxes.forEach(cb => {
                 cb.checked = false;
                 const pill = cb.closest('.filter-pill');
                 if (pill) pill.classList.remove('active');
             });
-
-            if (archivedCheckbox) {
-                archivedCheckbox.checked = false;
-                const pill = archivedCheckbox.closest('.filter-pill');
-                if (pill) pill.classList.remove('active');
-            }
 
             filterForm.submit();
         });
