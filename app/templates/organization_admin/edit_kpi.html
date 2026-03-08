@@ -21,7 +21,7 @@
             </div>
             {% if vt.kind == 'numeric' %}
             <div class="card-body">
-                <div class="row g-2">
+                <div class="row g-2 mb-3">
                     <div class="col-md-4">
                         <label class="form-label small">Positive Values</label>
                         <input type="color" class="form-control form-control-color"
@@ -41,6 +41,36 @@
                                value="{{ config.color_negative or '#dc3545' }}">
                     </div>
                 </div>
+
+                <!-- TODO: Uncomment after migration 0e11e44f5949 runs
+                <div class="border-top pt-3">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input target-checkbox" type="checkbox"
+                               name="has_target_{{ config.id }}" id="has_target_{{ config.id }}"
+                               {{ 'checked' if config.target_value else '' }}>
+                        <label class="form-check-label fw-bold" for="has_target_{{ config.id }}">
+                            Set Target Value
+                        </label>
+                    </div>
+                    <div class="target-fields" id="target_fields_{{ config.id }}" style="display: {{ 'block' if config.target_value else 'none' }};">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label small">Target Value</label>
+                                <input type="number" step="0.01" class="form-control form-control-sm"
+                                       name="target_value_{{ config.id }}" placeholder="e.g., 1000"
+                                       value="{{ config.target_value if config.target_value else '' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small">Target Date</label>
+                                <input type="date" class="form-control form-control-sm"
+                                       name="target_date_{{ config.id }}"
+                                       value="{{ config.target_date.strftime('%Y-%m-%d') if config.target_date else '' }}">
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Optional: Set a target value and date to track progress</small>
+                    </div>
+                </div>
+                -->
             </div>
             {% endif %}
         </div>
@@ -60,4 +90,21 @@
         </button>
     </form>
 </div>
+
+<!-- TODO: Uncomment after migration 0e11e44f5949 runs
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle target fields visibility when target checkbox is clicked
+    document.querySelectorAll('.target-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const configId = this.id.replace('has_target_', '');
+            const targetFields = document.getElementById('target_fields_' + configId);
+            if (targetFields) {
+                targetFields.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
+});
+</script>
+-->
 {% endblock %}

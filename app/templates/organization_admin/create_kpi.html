@@ -28,7 +28,7 @@
                 {% if vt.kind == 'numeric' %}
                 <div class="color-config" id="colors_{{ choice_value }}" style="display: none;">
                     <label class="form-label">Color Configuration</label>
-                    <div class="row g-2">
+                    <div class="row g-2 mb-3">
                         <div class="col-md-4">
                             <label class="form-label small">Positive Values</label>
                             <input type="color" class="form-control form-control-color"
@@ -45,7 +45,34 @@
                                    name="color_negative_{{ choice_value }}" value="#dc3545">
                         </div>
                     </div>
-                    <small class="form-text text-muted">Choose how to highlight positive, negative, and zero values for this KPI</small>
+                    <small class="form-text text-muted d-block mb-3">Choose how to highlight positive, negative, and zero values for this KPI</small>
+
+                    <!-- TODO: Uncomment after migration 0e11e44f5949 runs
+                    <div class="border-top pt-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input target-checkbox" type="checkbox"
+                                   name="has_target_{{ choice_value }}" id="has_target_{{ choice_value }}">
+                            <label class="form-check-label fw-bold" for="has_target_{{ choice_value }}">
+                                Set Target Value
+                            </label>
+                        </div>
+                        <div class="target-fields" id="target_fields_{{ choice_value }}" style="display: none;">
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small">Target Value</label>
+                                    <input type="number" step="0.01" class="form-control form-control-sm"
+                                           name="target_value_{{ choice_value }}" placeholder="e.g., 1000">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small">Target Date</label>
+                                    <input type="date" class="form-control form-control-sm"
+                                           name="target_date_{{ choice_value }}">
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Optional: Set a target value and date to track progress</small>
+                        </div>
+                    </div>
+                    -->
                 </div>
                 {% endif %}
             </div>
@@ -68,6 +95,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // TODO: Uncomment after migration 0e11e44f5949 runs
+    // Toggle target fields visibility when target checkbox is clicked
+    // document.querySelectorAll('.target-checkbox').forEach(checkbox => {
+    //     checkbox.addEventListener('change', function() {
+    //         const vtId = this.id.replace('has_target_', '');
+    //         const targetFields = document.getElementById('target_fields_' + vtId);
+    //         if (targetFields) {
+    //             targetFields.style.display = this.checked ? 'block' : 'none';
+    //         }
+    //     });
+    // });
 });
 </script>
 {% endblock %}

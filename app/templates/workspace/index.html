@@ -228,6 +228,12 @@
                                 <div>
                                     {% if vt.kind == 'numeric' %}
                                         <strong><span style="color: {{ config.get_value_color(consensus.value) }};">{{ consensus.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        {# TODO: Uncomment after migration 0e11e44f5949 runs
+                                        {% if config.target_value %}
+                                            {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            <br><small style="color: #6c757d;" title="Target: {{ config.target_value }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯 {{ progress }}%</small>
+                                        {% endif %}
+                                        #}
                                     {% elif vt.kind == 'risk' %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>!!</strong>{% endif %}

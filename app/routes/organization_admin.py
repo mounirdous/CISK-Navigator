@@ -517,12 +517,35 @@ def create_kpi(link_id):
         selected_vt_ids = request.form.getlist('value_type_ids')
         for vt_id in selected_vt_ids:
             vt_id_int = int(vt_id)
-            
+
             # Get color values from form
             color_positive = request.form.get(f'color_positive_{vt_id}', '#28a745')
             color_zero = request.form.get(f'color_zero_{vt_id}', '#6c757d')
             color_negative = request.form.get(f'color_negative_{vt_id}', '#dc3545')
-            
+
+            # TODO: Uncomment after migration 0e11e44f5949 runs
+            # Get target values from form (if checkbox was checked)
+            # has_target = request.form.get(f'has_target_{vt_id}')
+            # target_value = None
+            # target_date = None
+            #
+            # if has_target:
+            #     target_value_str = request.form.get(f'target_value_{vt_id}')
+            #     target_date_str = request.form.get(f'target_date_{vt_id}')
+            #
+            #     if target_value_str:
+            #         try:
+            #             target_value = float(target_value_str)
+            #         except ValueError:
+            #             pass
+            #
+            #     if target_date_str:
+            #         from datetime import datetime
+            #         try:
+            #             target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+            #         except ValueError:
+            #             pass
+
             config = KPIValueTypeConfig(
                 kpi_id=kpi.id,
                 value_type_id=vt_id_int,
@@ -530,6 +553,9 @@ def create_kpi(link_id):
                 color_positive=color_positive,
                 color_zero=color_zero,
                 color_negative=color_negative
+                # TODO: Uncomment after migration runs:
+                # target_value=target_value,
+                # target_date=target_date
             )
             db.session.add(config)
 
@@ -563,7 +589,7 @@ def edit_kpi(kpi_id):
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data
         
-        # Update colors for each value type config
+        # Update colors and targets for each value type config
         for config in kpi.value_type_configs:
             if config.value_type.kind == 'numeric':
                 color_positive = request.form.get(f'color_positive_{config.id}')
@@ -576,6 +602,30 @@ def edit_kpi(kpi_id):
                     config.color_zero = color_zero
                 if color_negative:
                     config.color_negative = color_negative
+
+                # TODO: Uncomment after migration 0e11e44f5949 runs
+                # Handle target updates
+                # has_target = request.form.get(f'has_target_{config.id}')
+                # if has_target:
+                #     target_value_str = request.form.get(f'target_value_{config.id}')
+                #     target_date_str = request.form.get(f'target_date_{config.id}')
+                #
+                #     if target_value_str:
+                #         try:
+                #             config.target_value = float(target_value_str)
+                #         except ValueError:
+                #             pass
+                #
+                #     if target_date_str:
+                #         from datetime import datetime
+                #         try:
+                #             config.target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+                #         except ValueError:
+                #             pass
+                # else:
+                #     # Clear target if checkbox unchecked
+                #     config.target_value = None
+                #     config.target_date = None
 
         db.session.commit()
         flash(f'KPI {kpi.name} updated successfully', 'success')
