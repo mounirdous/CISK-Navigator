@@ -617,19 +617,40 @@ def get_kpi_history(config_id):
     Returns array of snapshots with dates and values.
     """
     try:
+        from datetime import date
         limit = request.args.get('limit', 50, type=int)
         snapshots = SnapshotService.get_kpi_history(config_id, limit=limit)
 
+        # Get the config and current consensus value
+        config = KPIValueTypeConfig.query.get_or_404(config_id)
+        consensus = ConsensusService.get_cell_value(config)
+
         # Format for chart: array of {date, value} objects
         # Reverse so oldest is first (better for chart display)
+        # Use created_at timestamp to distinguish snapshots on the same day
         history = []
         for snapshot in reversed(snapshots):
             value = snapshot.get_value()
             if value is not None:  # Only include snapshots with actual values
+                # Use full timestamp for snapshots on same day
+                date_label = snapshot.created_at.strftime('%Y-%m-%d %H:%M:%S')
                 history.append({
-                    'date': snapshot.snapshot_date.isoformat(),
+                    'date': date_label,
                     'value': float(value),
                     'label': snapshot.snapshot_label
+                })
+
+        # Add current value as the latest point (if it exists and differs from last snapshot)
+        if consensus and consensus.get('status') != 'no_data':
+            current_value = consensus.get('value')
+            if current_value is not None:
+                # Use current timestamp for current value
+                from datetime import datetime
+                current_time = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+                history.append({
+                    'date': current_time,
+                    'value': float(current_value),
+                    'label': 'Current'
                 })
 
         return jsonify({
