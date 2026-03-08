@@ -104,6 +104,7 @@ class KPIValueTypeConfig(db.Model):
     # Target tracking (v2.2)
     target_value = db.Column(db.Numeric(precision=20, scale=6), nullable=True, comment='Target value to achieve (numeric only)')
     target_date = db.Column(db.Date, nullable=True, comment='Date by which target should be achieved')
+    baseline_snapshot_id = db.Column(db.Integer, nullable=True, comment='Snapshot ID to use as baseline (no FK constraint to avoid circular dependency)')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -113,6 +114,15 @@ class KPIValueTypeConfig(db.Model):
     value_type = db.relationship('ValueType', back_populates='kpi_configs')
     contributions = db.relationship('Contribution', back_populates='kpi_value_type_config', cascade='all, delete-orphan')
     snapshots = db.relationship('KPISnapshot', back_populates='config', cascade='all, delete-orphan')
+
+    # Baseline snapshot for progress tracking (no FK constraint, just a reference)
+    @property
+    def baseline_snapshot(self):
+        """Get the baseline snapshot if set"""
+        if self.baseline_snapshot_id:
+            from app.models import KPISnapshot
+            return KPISnapshot.query.get(self.baseline_snapshot_id)
+        return None
 
     def get_consensus_value(self):
         """Get consensus calculation for this KPI cell"""
