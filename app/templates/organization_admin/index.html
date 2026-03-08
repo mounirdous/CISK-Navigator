@@ -63,7 +63,7 @@
 
 <!-- Organization Settings Section -->
 <div class="row mt-4">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card h-100">
             <div class="card-header">
                 <h6 class="mb-0"><i class="bi bi-sliders"></i> Value Types</h6>
@@ -82,7 +82,26 @@
         </div>
     </div>
 
-    <div class="col-md-6">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-people"></i> Governance Bodies</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    <strong>{{ stats.governance_bodies }}</strong> active governance bod{{ 'ies' if stats.governance_bodies != 1 else 'y' }}
+                </p>
+                <p class="text-muted small">
+                    Manage committees, boards, and teams that oversee KPIs
+                </p>
+                <a href="{{ url_for('organization_admin.governance_bodies') }}" class="btn btn-primary">
+                    <i class="bi bi-gear"></i> Manage Governance Bodies
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
         <div class="card h-100 border-danger">
             <div class="card-header bg-danger text-white">
                 <h6 class="mb-0"><i class="bi bi-file-earmark-code"></i> YAML Backup & Restore</h6>

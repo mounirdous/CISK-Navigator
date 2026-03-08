@@ -33,6 +33,14 @@
     </ol>
 </nav>
 
+{% if kpi.is_archived %}
+<div class="alert alert-warning" role="alert">
+    <h5 class="alert-heading"><i class="bi bi-archive"></i> This KPI is Archived</h5>
+    <p>This KPI was archived on <strong>{{ kpi.archived_at.strftime('%Y-%m-%d %H:%M') }}</strong>{% if kpi.archived_by %} by <strong>{{ kpi.archived_by.login }}</strong>{% endif %}.</p>
+    <p class="mb-0"><strong>Note:</strong> Archived KPIs are read-only. You can view existing data and contributions, but cannot add new contributions. To add data, please unarchive this KPI first.</p>
+</div>
+{% endif %}
+
 <h2>{{ kpi.name }}</h2>
 <p class="text-muted">{{ kpi.description }}</p>
 

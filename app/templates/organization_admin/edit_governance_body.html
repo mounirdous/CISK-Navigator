@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Edit Governance Body{% endblock %}
+
+{% block content %}
+<h2>Edit Governance Body: {{ governance_body.name }}</h2>
+
+{% if governance_body.is_default %}
+<div class="alert alert-info">
+    <strong>Note:</strong> This is the default governance body. It can be renamed but cannot be deleted.
+</div>
+{% endif %}
+
+<form method="POST">
+    {{ form.csrf_token }}
+
+    <div class="mb-3">
+        {{ form.name.label(class="form-label") }}
+        {{ form.name(class="form-control") }}
+        {% if form.name.errors %}
+            <div class="text-danger">{{ form.name.errors[0] }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.abbreviation.label(class="form-label") }}
+        {{ form.abbreviation(class="form-control") }}
+        <small class="form-text text-muted">Short abbreviation (e.g., "GEN", "TECH", "FIN")</small>
+        {% if form.abbreviation.errors %}
+            <div class="text-danger">{{ form.abbreviation.errors[0] }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.description.label(class="form-label") }}
+        {{ form.description(class="form-control", rows=3) }}
+        {% if form.description.errors %}
+            <div class="text-danger">{{ form.description.errors[0] }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3">
+        {{ form.color.label(class="form-label") }}
+        <div class="input-group" style="max-width: 200px;">
+            {{ form.color(class="form-control", type="color") }}
+            <input type="text" class="form-control" id="color-hex" value="{{ governance_body.color }}" readonly>
+        </div>
+        <small class="form-text text-muted">Choose a color for this governance body</small>
+        {% if form.color.errors %}
+            <div class="text-danger">{{ form.color.errors[0] }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mb-3 form-check form-switch">
+        {{ form.is_active(class="form-check-input") }}
+        {{ form.is_active.label(class="form-check-label") }}
+        {% if form.is_active.errors %}
+            <div class="text-danger">{{ form.is_active.errors[0] }}</div>
+        {% endif %}
+    </div>
+
+    <div class="mt-4">
+        {{ form.submit(class="btn btn-primary") }}
+        <a href="{{ url_for('organization_admin.governance_bodies') }}" class="btn btn-secondary">Cancel</a>
+    </div>
+</form>
+
+<script>
+// Sync color picker with hex display
+document.addEventListener('DOMContentLoaded', function() {
+    const colorPicker = document.getElementById('color');
+    const colorHex = document.getElementById('color-hex');
+
+    if (colorPicker && colorHex) {
+        // Set initial value
+        colorHex.value = colorPicker.value;
+
+        // Update on change
+        colorPicker.addEventListener('input', function() {
+            colorHex.value = colorPicker.value;
+        });
+    }
+});
+</script>
+
+{% endblock %}

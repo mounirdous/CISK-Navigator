@@ -9,6 +9,7 @@ from .initiative import Initiative, ChallengeInitiativeLink
 from .system import System, InitiativeSystemLink
 from .kpi import KPI
 from .value_type import ValueType, KPIValueTypeConfig
+from .governance_body import GovernanceBody, KPIGovernanceBodyLink
 from .contribution import Contribution
 from .rollup_rule import RollupRule
 from .kpi_snapshot import KPISnapshot, RollupSnapshot
@@ -27,6 +28,8 @@ __all__ = [
     'KPI',
     'ValueType',
     'KPIValueTypeConfig',
+    'GovernanceBody',
+    'KPIGovernanceBodyLink',
     'Contribution',
     'RollupRule',
     'KPISnapshot',

@@ -10,7 +10,7 @@ from app.extensions import db
 from app.models import (
     Space, Challenge, Initiative, System, KPI, ValueType,
     ChallengeInitiativeLink, InitiativeSystemLink, KPIValueTypeConfig,
-    RollupRule
+    RollupRule, GovernanceBody, KPIGovernanceBodyLink
 )
 from app.forms import (
     SpaceCreateForm, SpaceEditForm,
@@ -19,6 +19,7 @@ from app.forms import (
     SystemCreateForm, SystemEditForm,
     KPICreateForm, KPIEditForm,
     ValueTypeCreateForm, ValueTypeEditForm,
+    GovernanceBodyCreateForm, GovernanceBodyEditForm,
     YAMLUploadForm
 )
 from app.services import DeletionImpactService, ValueTypeUsageService, YAMLImportService, YAMLExportService
@@ -78,6 +79,7 @@ def index():
     initiatives_count = Initiative.query.filter_by(organization_id=org_id).count()
     systems_count = System.query.filter_by(organization_id=org_id).count()
     value_types_count = ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
+    governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count()
 
     # Count KPIs
     kpis_count = db.session.query(KPI).join(
@@ -95,6 +97,7 @@ def index():
         'systems': systems_count,
         'kpis': kpis_count,
         'value_types': value_types_count,
+        'governance_bodies': governance_bodies_count,
     }
 
     return render_template('organization_admin/index.html',
@@ -551,10 +554,25 @@ def create_kpi(link_id):
     # Get active value types for selection
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
 
+    # Get active governance bodies for selection
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).all()
+
     form = KPICreateForm()
     form.value_type_ids.choices = [(vt.id, vt.name) for vt in value_types]
 
     if form.validate_on_submit():
+        # Validate governance body selection
+        selected_gb_ids = request.form.getlist('governance_body_ids')
+        if not selected_gb_ids:
+            flash('Please select at least one governance body', 'danger')
+            return render_template('organization_admin/create_kpi.html',
+                                  form=form,
+                                  link=link,
+                                  initiative=link.initiative,
+                                  system=link.system,
+                                  value_types=value_types,
+                                  governance_bodies=governance_bodies)
+
         # Create the KPI
         kpi = KPI(
             initiative_system_link_id=link_id,
@@ -564,6 +582,14 @@ def create_kpi(link_id):
         )
         db.session.add(kpi)
         db.session.flush()  # Get the ID
+
+        # Link to governance bodies
+        for gb_id in selected_gb_ids:
+            gb_link = KPIGovernanceBodyLink(
+                kpi_id=kpi.id,
+                governance_body_id=int(gb_id)
+            )
+            db.session.add(gb_link)
 
         # Link selected value types with colors
         selected_vt_ids = request.form.getlist('value_type_ids')
@@ -618,7 +644,8 @@ def create_kpi(link_id):
                           link=link,
                           initiative=link.initiative,
                           system=link.system,
-                          value_types=value_types)
+                          value_types=value_types,
+                          governance_bodies=governance_bodies)
 
 @bp.route('/kpis/<int:kpi_id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -634,8 +661,19 @@ def edit_kpi(kpi_id):
         flash('Access denied', 'danger')
         return redirect(url_for('organization_admin.spaces'))
 
+    # Get active governance bodies for selection
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).all()
+
     form = KPIEditForm(obj=kpi)
     if form.validate_on_submit():
+        # Validate governance body selection
+        selected_gb_ids = request.form.getlist('governance_body_ids')
+        if not selected_gb_ids:
+            flash('Please select at least one governance body', 'danger')
+            return render_template('organization_admin/edit_kpi.html',
+                                  form=form,
+                                  kpi=kpi,
+                                  governance_bodies=governance_bodies)
         kpi.name = form.name.data
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data
@@ -677,11 +715,24 @@ def edit_kpi(kpi_id):
                     config.target_value = None
                     config.target_date = None
 
+        # Update governance body links
+        # Remove all existing links
+        for link in kpi.governance_body_links:
+            db.session.delete(link)
+
+        # Add new links
+        for gb_id in selected_gb_ids:
+            gb_link = KPIGovernanceBodyLink(
+                kpi_id=kpi.id,
+                governance_body_id=int(gb_id)
+            )
+            db.session.add(gb_link)
+
         db.session.commit()
         flash(f'KPI {kpi.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))
 
-    return render_template('organization_admin/edit_kpi.html', form=form, kpi=kpi)
+    return render_template('organization_admin/edit_kpi.html', form=form, kpi=kpi, governance_bodies=governance_bodies)
 
 
 @bp.route('/kpis/<int:kpi_id>/delete', methods=['POST'])
@@ -703,6 +754,59 @@ def delete_kpi(kpi_id):
     db.session.commit()
 
     flash(f'KPI "{kpi_name}" deleted successfully', 'success')
+    return redirect(url_for('organization_admin.spaces'))
+
+
+@bp.route('/kpis/<int:kpi_id>/archive', methods=['POST'])
+@login_required
+@organization_required
+@permission_required('can_manage_kpis')
+def archive_kpi(kpi_id):
+    """Archive a KPI (makes it read-only and hidden by default)"""
+    org_id = session.get('organization_id')
+    kpi = KPI.query.get_or_404(kpi_id)
+
+    # Verify ownership
+    if kpi.initiative_system_link.initiative.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.spaces'))
+
+    if kpi.is_archived:
+        flash(f'KPI "{kpi.name}" is already archived', 'warning')
+    else:
+        from datetime import datetime
+        kpi.is_archived = True
+        kpi.archived_at = datetime.utcnow()
+        kpi.archived_by_user_id = current_user.id
+        db.session.commit()
+        flash(f'KPI "{kpi.name}" archived successfully', 'success')
+
+    return redirect(url_for('organization_admin.spaces'))
+
+
+@bp.route('/kpis/<int:kpi_id>/unarchive', methods=['POST'])
+@login_required
+@organization_required
+@permission_required('can_manage_kpis')
+def unarchive_kpi(kpi_id):
+    """Unarchive a KPI (makes it active again)"""
+    org_id = session.get('organization_id')
+    kpi = KPI.query.get_or_404(kpi_id)
+
+    # Verify ownership
+    if kpi.initiative_system_link.initiative.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.spaces'))
+
+    if not kpi.is_archived:
+        flash(f'KPI "{kpi.name}" is not archived', 'warning')
+    else:
+        kpi.is_archived = False
+        kpi.archived_at = None
+        kpi.archived_by_user_id = None
+        db.session.commit()
+        flash(f'KPI "{kpi.name}" unarchived successfully', 'success')
+
     return redirect(url_for('organization_admin.spaces'))
 
 
@@ -950,6 +1054,120 @@ def configure_rollup(vt_id):
                           value_type=value_type,
                           default_enabled=default_enabled,
                           default_formula=default_formula)
+
+# Governance Body Management
+
+@bp.route('/governance-bodies')
+@login_required
+@organization_required
+def governance_bodies():
+    """List all governance bodies"""
+    org_id = session.get('organization_id')
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id).order_by(GovernanceBody.display_order).all()
+    return render_template('organization_admin/governance_bodies.html', governance_bodies=governance_bodies)
+
+
+@bp.route('/governance-bodies/reorder', methods=['POST'])
+@login_required
+@organization_required
+@permission_required('can_manage_governance_bodies')
+def reorder_governance_bodies():
+    """Update governance body display order via AJAX"""
+    org_id = session.get('organization_id')
+    data = request.get_json()
+    order = data.get('order', [])
+
+    if not order:
+        return jsonify({'success': False, 'error': 'No order provided'}), 400
+
+    try:
+        for index, gb_id in enumerate(order):
+            gb = GovernanceBody.query.filter_by(id=gb_id, organization_id=org_id).first()
+            if gb:
+                gb.display_order = index
+
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/governance-bodies/create', methods=['GET', 'POST'])
+@login_required
+@organization_required
+@permission_required('can_manage_governance_bodies')
+def create_governance_body():
+    """Create a new governance body"""
+    form = GovernanceBodyCreateForm()
+
+    if form.validate_on_submit():
+        governance_body = GovernanceBody(
+            organization_id=session.get('organization_id'),
+            name=form.name.data,
+            abbreviation=form.abbreviation.data,
+            description=form.description.data,
+            color=form.color.data,
+            is_active=form.is_active.data,
+            is_default=False  # Only migration creates default
+        )
+        db.session.add(governance_body)
+        db.session.commit()
+        flash(f'Governance Body {governance_body.name} created successfully', 'success')
+        return redirect(url_for('organization_admin.governance_bodies'))
+
+    return render_template('organization_admin/create_governance_body.html', form=form)
+
+
+@bp.route('/governance-bodies/<int:gb_id>/edit', methods=['GET', 'POST'])
+@login_required
+@organization_required
+@permission_required('can_manage_governance_bodies')
+def edit_governance_body(gb_id):
+    """Edit a governance body"""
+    org_id = session.get('organization_id')
+    governance_body = GovernanceBody.query.get_or_404(gb_id)
+
+    if governance_body.organization_id != org_id:
+        flash('Access denied', 'danger')
+        return redirect(url_for('organization_admin.governance_bodies'))
+
+    form = GovernanceBodyEditForm(obj=governance_body)
+
+    if form.validate_on_submit():
+        governance_body.name = form.name.data
+        governance_body.abbreviation = form.abbreviation.data
+        governance_body.description = form.description.data
+        governance_body.color = form.color.data
+        governance_body.is_active = form.is_active.data
+        db.session.commit()
+        flash(f'Governance Body {governance_body.name} updated successfully', 'success')
+        return redirect(url_for('organization_admin.governance_bodies'))
+
+    return render_template('organization_admin/edit_governance_body.html', form=form, governance_body=governance_body)
+
+
+@bp.route('/governance-bodies/<int:gb_id>/delete', methods=['POST'])
+@login_required
+@organization_required
+@permission_required('can_manage_governance_bodies')
+def delete_governance_body(gb_id):
+    """Delete a governance body (cannot delete default)"""
+    org_id = session.get('organization_id')
+    governance_body = GovernanceBody.query.filter_by(id=gb_id, organization_id=org_id).first_or_404()
+
+    if governance_body.is_default:
+        flash('Cannot delete the default governance body', 'danger')
+        return redirect(url_for('organization_admin.governance_bodies'))
+
+    gb_name = governance_body.name
+    db.session.delete(governance_body)
+    db.session.commit()
+    flash(f'Governance Body {gb_name} deleted successfully', 'success')
+    return redirect(url_for('organization_admin.governance_bodies'))
+
+
+# YAML Import/Export
 
 @bp.route('/yaml-upload', methods=['GET', 'POST'])
 @login_required

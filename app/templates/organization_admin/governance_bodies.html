@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Governance Bodies{% endblock %}
+{% block content %}
+<h2>Governance Bodies</h2>
+<div class="mb-3">
+    {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+    <a href="{{ url_for('organization_admin.create_governance_body') }}" class="btn btn-primary">Create Governance Body</a>
+    {% endif %}
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
+</div>
+
+<div class="alert alert-info">
+    <strong>💡 Tip:</strong> Drag rows using the ⋮⋮ handle to reorder governance bodies. Default governance body cannot be deleted but can be renamed.
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th style="width: 30px;"></th>
+            <th>Name</th>
+            <th>Abbreviation</th>
+            <th>Description</th>
+            <th>Color</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="sortable-governance-bodies">
+        {% for gb in governance_bodies %}
+        <tr data-id="{{ gb.id }}" style="cursor: move;">
+            <td class="drag-handle text-center" style="cursor: grab; font-size: 20px; color: #999;">⋮⋮</td>
+            <td>
+                {{ gb.name }}
+                {% if gb.is_default %}
+                    <span class="badge bg-secondary ms-1">Default</span>
+                {% endif %}
+            </td>
+            <td><span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span></td>
+            <td>{{ gb.description or '-' }}</td>
+            <td>
+                <div style="display: inline-block; width: 30px; height: 20px; background-color: {{ gb.color }}; border: 1px solid #ccc; border-radius: 3px;" title="{{ gb.color }}"></div>
+                <small class="text-muted">{{ gb.color }}</small>
+            </td>
+            <td>
+                {% if gb.is_active %}
+                    <span class="badge bg-success">Active</span>
+                {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_governance_body', gb_id=gb.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                {% if not gb.is_default %}
+                <form method="POST" action="{{ url_for('organization_admin.delete_governance_body', gb_id=gb.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete {{ gb.name }}?');">
+                    {{ csrf_token() }}
+                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+                {% else %}
+                <button class="btn btn-sm btn-outline-secondary" disabled title="Cannot delete default governance body">Delete</button>
+                {% endif %}
+                {% else %}
+                <span class="text-muted small">View only</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- SortableJS from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('sortable-governance-bodies');
+
+    if (tbody) {
+        const sortable = Sortable.create(tbody, {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            onEnd: function(evt) {
+                // Get new order
+                const rows = tbody.querySelectorAll('tr[data-id]');
+                const order = Array.from(rows).map(row => parseInt(row.dataset.id));
+
+                // Save to server
+                fetch('{{ url_for("organization_admin.reorder_governance_bodies") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ order: order })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Show brief success indicator
+                        const msg = document.createElement('div');
+                        msg.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+                        msg.style.zIndex = '9999';
+                        msg.textContent = '✓ Order saved';
+                        document.body.appendChild(msg);
+                        setTimeout(() => msg.remove(), 2000);
+                    } else {
+                        alert('Failed to save order: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to save order');
+                });
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.sortable-ghost {
+    opacity: 0.4;
+    background: #f8f9fa;
+}
+.drag-handle:active {
+    cursor: grabbing;
+}
+</style>
+
+{% endblock %}

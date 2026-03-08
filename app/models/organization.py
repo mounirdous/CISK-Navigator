@@ -32,6 +32,7 @@ class Organization(db.Model):
     initiatives = db.relationship('Initiative', back_populates='organization', cascade='all, delete-orphan')
     systems = db.relationship('System', back_populates='organization', cascade='all, delete-orphan')
     value_types = db.relationship('ValueType', back_populates='organization', cascade='all, delete-orphan')
+    governance_bodies = db.relationship('GovernanceBody', back_populates='organization', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Organization {self.name}>'
@@ -53,6 +54,7 @@ class UserOrganizationMembership(db.Model):
     # Permissions (per organization)
     can_manage_spaces = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_value_types = db.Column(db.Boolean, default=True, nullable=False)
+    can_manage_governance_bodies = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_challenges = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_initiatives = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_systems = db.Column(db.Boolean, default=True, nullable=False)

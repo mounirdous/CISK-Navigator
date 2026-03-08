@@ -77,7 +77,31 @@
         </div>
         {% endfor %}
     </div>
-    {{ form.submit(class="btn btn-primary") }}
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">Governance Bodies <span class="text-danger">*</span></label>
+        <small class="form-text text-muted d-block mb-2">Select at least one governance body that oversees this KPI</small>
+
+        {% for gb in governance_bodies %}
+        <div class="form-check">
+            <input class="form-check-input governance-body-checkbox" type="checkbox"
+                   name="governance_body_ids" value="{{ gb.id }}" id="gb_{{ gb.id }}"
+                   {% if gb.is_default %}checked{% endif %}>
+            <label class="form-check-label" for="gb_{{ gb.id }}">
+                <span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
+                {{ gb.name }}
+                {% if gb.is_default %}
+                    <span class="badge bg-secondary ms-1">Default</span>
+                {% endif %}
+            </label>
+        </div>
+        {% endfor %}
+        <div id="governance-body-error" class="text-danger mt-2" style="display: none;">
+            Please select at least one governance body
+        </div>
+    </div>
+
+    {{ form.submit(class="btn btn-primary", id="submit-btn") }}
     <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
 </form>
 
@@ -103,6 +127,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 targetFields.style.display = this.checked ? 'block' : 'none';
             }
         });
+    });
+
+    // Validate governance body selection on form submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const checkedGBs = document.querySelectorAll('.governance-body-checkbox:checked');
+        const errorDiv = document.getElementById('governance-body-error');
+
+        if (checkedGBs.length === 0) {
+            e.preventDefault();
+            errorDiv.style.display = 'block';
+            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            errorDiv.style.display = 'none';
+        }
     });
 });
 </script>

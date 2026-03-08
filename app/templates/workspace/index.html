@@ -34,6 +34,65 @@
     <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary btn-sm ms-2">Administration</a>
 </div>
 
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" id="filter-form">
+            <!-- Governance Body Filter -->
+            {% if governance_bodies %}
+            <div class="row align-items-center mb-3">
+                <div class="col-auto">
+                    <strong><i class="bi bi-people"></i> Governance Bodies:</strong>
+                </div>
+                <div class="col">
+                    {% for gb in governance_bodies %}
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input filter-checkbox" type="checkbox"
+                               name="gb" value="{{ gb.id }}" id="filter_gb_{{ gb.id }}"
+                               {% if gb.id|string in selected_governance_body_ids %}checked{% endif %}>
+                        <label class="form-check-label" for="filter_gb_{{ gb.id }}">
+                            <span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
+                            {{ gb.name }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Archive Filter -->
+            <div class="row align-items-center">
+                <div class="col-auto">
+                    <strong><i class="bi bi-archive"></i> Display:</strong>
+                </div>
+                <div class="col">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input filter-checkbox" type="checkbox"
+                               name="show_archived" value="1" id="filter_show_archived"
+                               {% if show_archived %}checked{% endif %}>
+                        <label class="form-check-label" for="filter_show_archived">
+                            Show Archived KPIs
+                        </label>
+                    </div>
+                    <button type="button" id="clear-filters" class="btn btn-sm btn-outline-secondary ms-2">Clear All Filters</button>
+                </div>
+            </div>
+
+            {% if selected_governance_body_ids or show_archived %}
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-info-circle"></i>
+                {% if selected_governance_body_ids %}
+                Filtering by {{ selected_governance_body_ids|length }} governance bod{{ 'y' if selected_governance_body_ids|length == 1 else 'ies' }}.
+                {% endif %}
+                {% if show_archived %}
+                Showing archived KPIs.
+                {% endif %}
+            </small>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
 <div class="table-responsive">
     <table class="table table-bordered table-hover" id="workspace-tree">
         <thead class="table-light">
@@ -207,10 +266,35 @@
                 </tr>
 
                 {% for kpi in sys_link.kpis %}
+                {# Filter archived KPIs unless show_archived is true #}
+                {% if kpi.is_archived and not show_archived %}
+                    {% set show_kpi = false %}
+                {% else %}
+                    {# Filter KPIs by governance body if filter is active #}
+                    {% if selected_governance_body_ids %}
+                        {% set show_kpi = namespace(value=false) %}
+                        {% for gb_link in kpi.governance_body_links %}
+                            {% if gb_link.governance_body_id|string in selected_governance_body_ids %}
+                                {% set show_kpi.value = true %}
+                            {% endif %}
+                        {% endfor %}
+                        {% set show_kpi = show_kpi.value %}
+                    {% else %}
+                        {% set show_kpi = true %}
+                    {% endif %}
+                {% endif %}
+
+                {% if show_kpi %}
                 <!-- KPI ROW -->
-                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning" style="display: none;">
+                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}">
                     <td style="padding-left: 8rem;">
                         ⟹ {{ kpi.name }}
+                        {% if kpi.is_archived %}
+                        <span class="badge bg-secondary ms-1" title="Archived on {{ kpi.archived_at.strftime('%Y-%m-%d') }}"><i class="bi bi-archive"></i> Archived</span>
+                        {% endif %}
+                        {% for gb_link in kpi.governance_body_links %}
+                        <span class="badge ms-1" style="background-color: {{ gb_link.governance_body.color }};" title="{{ gb_link.governance_body.name }}">{{ gb_link.governance_body.abbreviation }}</span>
+                        {% endfor %}
                     </td>
                     {% for vt in value_types %}
                         {% set config = kpi.value_type_configs | selectattr('value_type_id', 'equalto', vt.id) | first %}
@@ -281,6 +365,7 @@
                         {% endif %}
                     {% endfor %}
                 </tr>
+                {% endif %} {# end show_kpi #}
                 {% endfor %}
                 {% endfor %}
                 {% endfor %}
@@ -535,4 +620,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
+<script>
+// Filters (Governance Bodies + Archived)
+document.addEventListener('DOMContentLoaded', function() {
+    const filterForm = document.getElementById('filter-form');
+    const filterCheckboxes = document.querySelectorAll('.filter-checkbox');
+    const clearFiltersBtn = document.getElementById('clear-filters');
+
+    if (filterCheckboxes.length > 0) {
+        // Auto-submit form when checkbox changes
+        filterCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                filterForm.submit();
+            });
+        });
+
+        // Clear all filters
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', function() {
+                filterCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                filterForm.submit();
+            });
+        }
+    }
+});
+</script>
 {% endblock %}

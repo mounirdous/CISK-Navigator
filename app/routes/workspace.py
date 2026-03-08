@@ -98,10 +98,26 @@ def index():
         is_active=True
     ).order_by(ValueType.display_order).all()
 
+    # Get active governance bodies for filter
+    from app.models import GovernanceBody
+    governance_bodies = GovernanceBody.query.filter_by(
+        organization_id=org_id,
+        is_active=True
+    ).order_by(GovernanceBody.display_order).all()
+
+    # Get selected governance body IDs from query params
+    selected_governance_body_ids = request.args.getlist('gb')
+
+    # Get show_archived flag
+    show_archived = request.args.get('show_archived') == '1'
+
     return render_template('workspace/index.html',
                           org_name=org_name,
                           spaces=spaces,
-                          value_types=value_types)
+                          value_types=value_types,
+                          governance_bodies=governance_bodies,
+                          selected_governance_body_ids=selected_governance_body_ids,
+                          show_archived=show_archived)
 
 
 @bp.route('/export-excel')
@@ -191,6 +207,11 @@ def kpi_cell_detail(kpi_id, vt_id):
                 ('2', '▼▼ (Medium)'),
                 ('3', '▼▼▼ (High)')
             ]
+
+    # Check if KPI is archived
+    if kpi.is_archived:
+        flash('This KPI is archived and cannot accept new contributions. Please unarchive it first if you need to add data.', 'warning')
+        return redirect(url_for('workspace.index'))
 
     if form.validate_on_submit():
         contributor_name = form.contributor_name.data

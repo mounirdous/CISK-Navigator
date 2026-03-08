@@ -10,6 +10,7 @@ from .initiative_forms import InitiativeCreateForm, InitiativeEditForm
 from .system_forms import SystemCreateForm, SystemEditForm
 from .kpi_forms import KPICreateForm, KPIEditForm
 from .value_type_forms import ValueTypeCreateForm, ValueTypeEditForm
+from .governance_body_forms import GovernanceBodyCreateForm, GovernanceBodyEditForm
 from .contribution_forms import ContributionForm
 from .yaml_forms import YAMLUploadForm
 from .organization_clone_forms import OrganizationCloneForm
@@ -24,6 +25,7 @@ __all__ = [
     'SystemCreateForm', 'SystemEditForm',
     'KPICreateForm', 'KPIEditForm',
     'ValueTypeCreateForm', 'ValueTypeEditForm',
+    'GovernanceBodyCreateForm', 'GovernanceBodyEditForm',
     'ContributionForm',
     'YAMLUploadForm',
     'OrganizationCloneForm',

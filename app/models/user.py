@@ -71,6 +71,13 @@ class User(UserMixin, db.Model):
         membership = self.get_membership(organization_id)
         return membership and membership.can_manage_value_types
 
+    def can_manage_governance_bodies(self, organization_id):
+        """Check if user can manage governance bodies in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_manage_governance_bodies
+
     def can_manage_challenges(self, organization_id):
         """Check if user can manage challenges in an organization"""
         if self.is_global_admin:
