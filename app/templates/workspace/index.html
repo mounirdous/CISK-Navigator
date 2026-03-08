@@ -575,11 +575,8 @@
                 {# Filter archived KPIs unless show_archived is true #}
                 {% if kpi.is_archived and not show_archived %}
                     {% set show_kpi = false %}
-                {% elif kpi.is_archived and show_archived %}
-                    {# Archived KPIs bypass governance body filter when show_archived is True #}
-                    {% set show_kpi = true %}
                 {% else %}
-                    {# Filter non-archived KPIs by governance body if filter is active #}
+                    {# Filter KPIs by governance body if filter is active #}
                     {% if selected_governance_body_ids %}
                         {% set show_kpi = namespace(value=false) %}
                         {% for gb_link in kpi.governance_body_links %}
