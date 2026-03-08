@@ -1,16 +1,21 @@
-# 🧭 CISK Navigator v1.14.0
+# 🧭 CISK Navigator v1.14.1
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.14.0-blue)
+![Version](https://img.shields.io/badge/version-1.14.1-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
 ## ✨ What's New in v1.14 (March 2026)
 
+### 🐛 **Bug Fixes** (v1.14.1)
+- **Level Toggle Fixes**: Pills now properly toggle colors (blue/gray) and rows hide/show correctly
+- **Dark Mode Improvements**: Better contrast and restored indentation hierarchy for readability
+- **CSRF Error Fix**: Governance body creation now works without 500 errors
+
 ### 🎨 **Modern Workspace UI** (v1.14.0)
-- **True Dark Mode**: Deep black background with high contrast for reduced eye strain
+- **True Dark Mode**: Deep background with high contrast for reduced eye strain
 - **Modern Toolbar**: Compact design with gradient background and pill-shaped interactive filters
 - **Level Visibility Controls**: Toggle display of any hierarchy level (Spaces, Challenges, Initiatives, Systems, KPIs)
 - **Visual Hierarchy**: Icons (🏢🎯💡⚙️📊) and color-coded borders for each level

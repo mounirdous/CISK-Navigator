@@ -5,6 +5,30 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.1] - 2026-03-08
+
+### Fixed
+- **Level Visibility Toggle Issues**: Complete fix for level show/hide functionality
+  - Pills now properly toggle between blue (visible) and gray (hidden) using inline styles
+  - Rows correctly hide when level is disabled
+  - Rows correctly reappear when level is re-enabled (checks parent expansion state)
+  - Fixed double-firing of click events that caused immediate toggle-back
+  - Auto-collapse then expand on page load for proper initial tree state
+  - Event bubbling prevented with stopPropagation() and preventDefault()
+- **Dark Mode Readability**: Improved contrast and visibility
+  - Lightened background from #0a0a0a to #1a1a1a for better readability
+  - Increased level-specific colors for better visual distinction
+  - Restored proper indentation hierarchy (2.5rem to 10rem with !important)
+  - Fixed border colors from #333 to #444 for better separation
+- **CSRF Token Error**: Fixed 500 error when accessing governance bodies list after creation
+  - Pass FlaskForm instance to template for proper CSRF token generation
+  - Replace invalid csrf_token() call with delete_form.hidden_tag()
+
+### Changed
+- Level visibility controls now use inline styles with !important for guaranteed visual updates
+- Simplified updateLevelVisibility() logic to work with expand/collapse functions
+- Removed duplicate CSS rules that caused pill color conflicts
+
 ## [1.14.0] - 2026-03-08
 
 ### Added
