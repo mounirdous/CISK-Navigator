@@ -1011,6 +1011,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 pill.classList.toggle('active', this.checked);
             }
 
+            // Before submitting, add hidden inputs for unchecked level checkboxes
+            // Unchecked checkboxes don't submit, causing server to default them to '1' (visible)
+            // Remove any existing hidden level inputs
+            filterForm.querySelectorAll('input[name^="show_"][type="hidden"]').forEach(el => el.remove());
+
+            // Add hidden input with value="0" for each unchecked level checkbox
+            levelCheckboxes.forEach(levelCb => {
+                if (!levelCb.checked) {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = levelCb.name;
+                    hiddenInput.value = '0';
+                    filterForm.appendChild(hiddenInput);
+                }
+            });
+
             // Auto-submit form for data filters
             setTimeout(() => filterForm.submit(), 100);
         });
