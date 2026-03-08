@@ -46,7 +46,11 @@ def create_app(config_name=None):
     @login_manager.user_loader
     def load_user(user_id):
         from app.models import User
-        return User.query.get(int(user_id))
+        try:
+            return User.query.get(int(user_id))
+        except Exception:
+            # During migrations, schema might not match - return None to force re-login
+            return None
 
     # Register blueprints
     from app.routes import auth, global_admin, organization_admin, workspace
