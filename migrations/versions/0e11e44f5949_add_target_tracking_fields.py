@@ -21,14 +21,10 @@ def upgrade():
     with op.batch_alter_table('kpi_value_type_configs', schema=None) as batch_op:
         batch_op.add_column(sa.Column('target_value', sa.Numeric(precision=20, scale=6), nullable=True, comment='Target value to achieve (numeric only)'))
         batch_op.add_column(sa.Column('target_date', sa.Date(), nullable=True, comment='Date by which target should be achieved'))
-        batch_op.add_column(sa.Column('baseline_snapshot_id', sa.Integer(), nullable=True, comment='Snapshot to use as baseline'))
-        batch_op.create_foreign_key('fk_config_baseline_snapshot', 'kpi_snapshots', ['baseline_snapshot_id'], ['id'])
 
 
 def downgrade():
     # Remove target tracking fields from kpi_value_type_configs
     with op.batch_alter_table('kpi_value_type_configs', schema=None) as batch_op:
-        batch_op.drop_constraint('fk_config_baseline_snapshot', type_='foreignkey')
-        batch_op.drop_column('baseline_snapshot_id')
         batch_op.drop_column('target_date')
         batch_op.drop_column('target_value')

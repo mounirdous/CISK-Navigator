@@ -104,7 +104,6 @@ class KPIValueTypeConfig(db.Model):
     # Target tracking (v2.2)
     target_value = db.Column(db.Numeric(precision=20, scale=6), nullable=True, comment='Target value to achieve (numeric only)')
     target_date = db.Column(db.Date, nullable=True, comment='Date by which target should be achieved')
-    baseline_snapshot_id = db.Column(db.Integer, db.ForeignKey('kpi_snapshots.id'), nullable=True, comment='Snapshot to use as baseline')
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -113,8 +112,7 @@ class KPIValueTypeConfig(db.Model):
     kpi = db.relationship('KPI', back_populates='value_type_configs')
     value_type = db.relationship('ValueType', back_populates='kpi_configs')
     contributions = db.relationship('Contribution', back_populates='kpi_value_type_config', cascade='all, delete-orphan')
-    snapshots = db.relationship('KPISnapshot', foreign_keys='KPISnapshot.kpi_value_type_config_id', back_populates='config', cascade='all, delete-orphan')
-    baseline_snapshot = db.relationship('KPISnapshot', foreign_keys=[baseline_snapshot_id], viewonly=True)
+    snapshots = db.relationship('KPISnapshot', back_populates='config', cascade='all, delete-orphan')
 
     def get_consensus_value(self):
         """Get consensus calculation for this KPI cell"""
