@@ -18,42 +18,21 @@
     color: #ffffff !important;
 }
 
-/* Override striped table background issues */
-.dark-mode .table-striped tbody tr {
-    border-color: #555 !important;
-}
-
-/* Dark backgrounds for each hierarchy level - force with multiple selectors */
-.dark-mode .table-striped tr.table-light,
-.dark-mode .table-striped tr.table-light > *,
-.dark-mode tr.table-light,
-.dark-mode tr.table-light > * {
+/* Dark backgrounds for each hierarchy level */
+.dark-mode tr.table-light {
     background-color: #2a2a2a !important;
-    color: #ffffff !important;
 }
 
-.dark-mode .table-striped tr.table-secondary,
-.dark-mode .table-striped tr.table-secondary > *,
-.dark-mode tr.table-secondary,
-.dark-mode tr.table-secondary > * {
+.dark-mode tr.table-secondary {
     background-color: #333333 !important;
-    color: #ffffff !important;
 }
 
-.dark-mode .table-striped tr.table-info,
-.dark-mode .table-striped tr.table-info > *,
-.dark-mode tr.table-info,
-.dark-mode tr.table-info > * {
+.dark-mode tr.table-info {
     background-color: #1a3a3a !important;
-    color: #ffffff !important;
 }
 
-.dark-mode .table-striped tr.table-warning,
-.dark-mode .table-striped tr.table-warning > *,
-.dark-mode tr.table-warning,
-.dark-mode tr.table-warning > * {
+.dark-mode tr.table-warning {
     background-color: #3a3a1a !important;
-    color: #ffffff !important;
 }
 </style>
 {% endblock %}
@@ -66,7 +45,7 @@
     {% endif %}
     <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
 </div>
-<table class="table table-striped">
+<table class="table">
     <thead>
         <tr><th>Name</th><th>Description</th><th>Order</th><th>Actions</th></tr>
     </thead>
