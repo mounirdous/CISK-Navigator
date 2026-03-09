@@ -10,7 +10,7 @@ from app.extensions import db
 from app.models import (
     Space, Challenge, Initiative, System, KPI, ValueType,
     KPIValueTypeConfig, Contribution, KPISnapshot, RollupSnapshot, CellComment, User,
-    UserOrganizationMembership, InitiativeSystemLink, GovernanceBody
+    UserOrganizationMembership, InitiativeSystemLink, GovernanceBody, ChallengeInitiativeLink
 )
 from app.forms import ContributionForm
 from app.services import ConsensusService, AggregationService, ExcelExportService
@@ -93,14 +93,8 @@ def index():
     org_id = session.get('organization_id')
     org_name = session.get('organization_name')
 
-    # Get all spaces for this organization
-    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
-
-    # Get active value types
-    value_types = ValueType.query.filter_by(
-        organization_id=org_id,
-        is_active=True
-    ).order_by(ValueType.display_order).all()
+    # Get space type filter (all, private, public)
+    space_type_filter = request.args.get('space_type', 'all')
 
     # Get active governance bodies for filter
     from app.models import GovernanceBody
@@ -120,6 +114,77 @@ def index():
     # Get show_archived flag
     show_archived = request.args.get('show_archived') == '1'
 
+    # Get spaces based on filter
+    spaces_query = Space.query.filter_by(organization_id=org_id)
+    if space_type_filter == 'private':
+        spaces_query = spaces_query.filter_by(is_private=True)
+    elif space_type_filter == 'public':
+        spaces_query = spaces_query.filter_by(is_private=False)
+    # 'all' means no additional filter
+    spaces = spaces_query.order_by(Space.display_order, Space.name).all()
+
+    # Get space IDs for filtering value types
+    space_ids = [space.id for space in spaces]
+
+    # Get active value types that have at least one contribution in the FILTERED spaces
+    # Join through the entire hierarchy: Space → Challenge → Initiative → System → KPI → Config → Contribution
+    from app.models import Contribution, KPIGovernanceBodyLink
+
+    if space_ids:
+        # Build query to find value types with data in filtered spaces
+        value_types_query = db.session.query(ValueType.id).join(
+            KPIValueTypeConfig, ValueType.id == KPIValueTypeConfig.value_type_id
+        ).join(
+            KPI, KPIValueTypeConfig.kpi_id == KPI.id
+        ).join(
+            InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
+        ).join(
+            Initiative, InitiativeSystemLink.initiative_id == Initiative.id
+        ).join(
+            ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id
+        ).join(
+            Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id
+        ).join(
+            Contribution, KPIValueTypeConfig.id == Contribution.kpi_value_type_config_id
+        ).filter(
+            Challenge.space_id.in_(space_ids),
+            ValueType.organization_id == org_id,
+            ValueType.is_active == True
+        )
+
+        # Apply governance body filter if selected
+        if selected_governance_body_ids:
+            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
+            value_types_query = value_types_query.join(
+                KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id
+            ).filter(
+                KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int)
+            )
+
+        # Apply archived filter
+        if not show_archived:
+            value_types_query = value_types_query.filter(KPI.is_archived == False)
+
+        value_types_with_data = value_types_query.distinct().all()
+        value_type_ids_with_data = {vt_id for (vt_id,) in value_types_with_data}
+    else:
+        value_type_ids_with_data = set()
+
+    # Get all active value types
+    all_value_types = ValueType.query.filter_by(
+        organization_id=org_id,
+        is_active=True
+    ).order_by(ValueType.display_order).all()
+
+    # Get value types - only show those with data if any exist, otherwise show all
+    if value_type_ids_with_data:
+        value_types = [vt for vt in all_value_types if vt.id in value_type_ids_with_data]
+        hidden_value_types = [vt for vt in all_value_types if vt.id not in value_type_ids_with_data]
+    else:
+        # If no contributions yet, show all active value types
+        value_types = all_value_types
+        hidden_value_types = []
+
     # Get level visibility controls (default all visible)
     show_levels = {
         'spaces': request.args.get('show_spaces', '1') == '1',
@@ -133,10 +198,12 @@ def index():
                           org_name=org_name,
                           spaces=spaces,
                           value_types=value_types,
+                          hidden_value_types=hidden_value_types,
                           governance_bodies=governance_bodies,
                           selected_governance_body_ids=selected_governance_body_ids,
                           show_archived=show_archived,
-                          show_levels=show_levels)
+                          show_levels=show_levels,
+                          space_type_filter=space_type_filter)
 
 
 @bp.route('/export-excel')

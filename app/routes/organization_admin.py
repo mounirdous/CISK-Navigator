@@ -136,7 +136,8 @@ def create_space():
             name=form.name.data,
             description=form.description.data,
             space_label=form.space_label.data,
-            display_order=form.display_order.data
+            display_order=form.display_order.data,
+            is_private=form.is_private.data
         )
         db.session.add(space)
         db.session.commit()
@@ -162,6 +163,7 @@ def edit_space(space_id):
         space.description = form.description.data
         space.space_label = form.space_label.data
         space.display_order = form.display_order.data
+        space.is_private = form.is_private.data
         db.session.commit()
         flash(f'Space {space.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))

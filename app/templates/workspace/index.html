@@ -328,6 +328,31 @@ tr[data-level="kpi"] td {
         </div>
         {% endif %}
 
+        <!-- Space Type Filter -->
+        <div class="mb-2">
+            <small class="text-muted"><i class="bi bi-shield-lock"></i> <strong>Space Type:</strong></small>
+            <div class="d-inline-flex flex-wrap gap-1 ms-2">
+                <label class="filter-pill {% if space_type_filter == 'all' %}active{% endif %}" title="Show all spaces">
+                    <input type="radio" name="space_type" value="all" id="filter_space_all"
+                           {% if space_type_filter == 'all' %}checked{% endif %} hidden>
+                    <i class="bi bi-globe"></i>
+                    <span>All Spaces</span>
+                </label>
+                <label class="filter-pill {% if space_type_filter == 'public' %}active{% endif %}" title="Show only public spaces">
+                    <input type="radio" name="space_type" value="public" id="filter_space_public"
+                           {% if space_type_filter == 'public' %}checked{% endif %} hidden>
+                    <i class="bi bi-unlock"></i>
+                    <span>Public</span>
+                </label>
+                <label class="filter-pill {% if space_type_filter == 'private' %}active{% endif %}" title="Show only private spaces">
+                    <input type="radio" name="space_type" value="private" id="filter_space_private"
+                           {% if space_type_filter == 'private' %}checked{% endif %} hidden>
+                    <i class="bi bi-lock"></i>
+                    <span>Private</span>
+                </label>
+            </div>
+        </div>
+
         <!-- Archive & Level Controls -->
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <div>
@@ -397,6 +422,15 @@ tr[data-level="kpi"] td {
         {% endif %}
         {% if show_archived %} • Including Archived{% endif %}
     </small>
+    {% if hidden_value_types %}
+    <small class="text-muted ms-3" style="opacity: 0.8;">
+        <i class="bi bi-eye-slash"></i>
+        <strong>Hidden columns</strong> (no data):
+        {% for vt in hidden_value_types %}
+            {{ vt.name }}{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </small>
+    {% endif %}
 </div>
 
 <div class="table-responsive">
@@ -425,6 +459,11 @@ tr[data-level="kpi"] td {
                         <strong>{{ space.name }}</strong>
                         {% if space.space_label %}
                             <span class="badge bg-info ms-2">{{ space.space_label }}</span>
+                        {% endif %}
+                        {% if space.is_private %}
+                            <span class="badge bg-warning ms-2" title="Private Space">
+                                <i class="bi bi-lock-fill"></i> Private
+                            </span>
                         {% endif %}
                     </td>
                     {% for vt in value_types %}
@@ -1008,6 +1047,10 @@ document.addEventListener('DOMContentLoaded', function() {
     );
     console.log('Data filter checkboxes:', dataFilterCheckboxes.map(cb => cb.name));
 
+    // Space type radio buttons (data filters that trigger reload)
+    const spaceTypeRadios = filterForm.querySelectorAll('input[type="radio"][name="space_type"]');
+    console.log('Space type radios:', spaceTypeRadios.length);
+
     // Handle filter pill clicks
     filterPills.forEach(pill => {
         pill.addEventListener('click', function(e) {
@@ -1015,9 +1058,11 @@ document.addEventListener('DOMContentLoaded', function() {
             e.stopPropagation();
             e.preventDefault();
 
-            if (e.target.tagName === 'INPUT') return; // Already handled by checkbox
+            if (e.target.tagName === 'INPUT') return; // Already handled by checkbox/radio
 
             const checkbox = this.querySelector('input[type="checkbox"]');
+            const radio = this.querySelector('input[type="radio"]');
+
             if (checkbox) {
                 console.log(`Pill clicked for checkbox: ${checkbox.name}, current checked: ${checkbox.checked}`);
                 checkbox.checked = !checkbox.checked;
@@ -1025,6 +1070,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Trigger change event (which will update pill appearance)
                 checkbox.dispatchEvent(new Event('change', {bubbles: false}));
+            } else if (radio) {
+                console.log(`Pill clicked for radio: ${radio.name}, value: ${radio.value}`);
+                radio.checked = true;
+
+                // Trigger change event (which will update pill appearance and submit form)
+                radio.dispatchEvent(new Event('change', {bubbles: true}));
             }
         });
     });
@@ -1087,6 +1138,27 @@ document.addEventListener('DOMContentLoaded', function() {
             addLevelVisibilityHiddenInputs();
 
             // Auto-submit form for data filters
+            setTimeout(() => filterForm.submit(), 100);
+        });
+    });
+
+    // Handle space type radio button changes - these DO submit form
+    spaceTypeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            console.log(`Space type radio changed: ${this.value}`);
+
+            // Update active state for all space type pills
+            spaceTypeRadios.forEach(r => {
+                const pill = r.closest('.filter-pill');
+                if (pill) {
+                    pill.classList.toggle('active', r.checked);
+                }
+            });
+
+            // Add level visibility hidden inputs before submit
+            addLevelVisibilityHiddenInputs();
+
+            // Auto-submit form for space type filter
             setTimeout(() => filterForm.submit(), 100);
         });
     });

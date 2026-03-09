@@ -20,6 +20,7 @@ class Space(db.Model):
     description = db.Column(db.Text, nullable=True)
     space_label = db.Column(db.String(100), nullable=True, comment='e.g., Season, Site, Customer, Supplier')
     display_order = db.Column(db.Integer, default=0, nullable=False)
+    is_private = db.Column(db.Boolean, default=False, nullable=False, comment='Private spaces are only visible to users with appropriate permissions')
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

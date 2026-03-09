@@ -112,7 +112,14 @@
         <tbody>
             {% for space in spaces %}
             <tr>
-                <td><strong><span style="margin-right: 0.5rem;">🏢</span>{{ space.name }}</strong></td>
+                <td>
+                    <strong><span style="margin-right: 0.5rem;">🏢</span>{{ space.name }}</strong>
+                    {% if space.is_private %}
+                        <span class="badge bg-warning ms-2" title="Private Space">
+                            <i class="bi bi-lock-fill"></i> Private
+                        </span>
+                    {% endif %}
+                </td>
                 <td>{{ space.description[:80] if space.description else '-' }}</td>
                 <td>{{ space.display_order }}</td>
                 <td>
