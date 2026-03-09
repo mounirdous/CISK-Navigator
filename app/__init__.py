@@ -59,6 +59,22 @@ def create_app(config_name=None):
     app.register_blueprint(organization_admin.bp)
     app.register_blueprint(workspace.bp)
 
+    # Root route - redirect to login or dashboard
+    @app.route('/')
+    def index():
+        """Redirect root URL to appropriate page based on authentication status"""
+        from flask import redirect, url_for, session
+        from flask_login import current_user
+
+        if current_user.is_authenticated:
+            # If user has organization context, go to dashboard
+            if session.get('organization_id'):
+                return redirect(url_for('workspace.dashboard'))
+            # If authenticated but no org, go to org selection
+            return redirect(url_for('auth.login'))
+        # Not authenticated, go to login
+        return redirect(url_for('auth.login'))
+
     # Disable caching in development
     @app.after_request
     def add_header(response):
