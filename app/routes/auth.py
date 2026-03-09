@@ -3,6 +3,7 @@ Authentication routes
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, session, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_wtf.csrf import csrf_exempt
 from app.extensions import db
 from app.models import User, Organization
 from app.forms import LoginForm, ChangePasswordForm, ProfileEditForm
@@ -177,6 +178,7 @@ def switch_organization(org_id):
 
 @bp.route('/switch-to-global-admin', methods=['POST'])
 @login_required
+@csrf_exempt
 def switch_to_global_admin():
     """Switch to Global Admin mode (clear organization context)"""
     if not current_user.is_global_admin:

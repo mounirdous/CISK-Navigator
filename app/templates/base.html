@@ -323,12 +323,9 @@
                         </li>
                         {% if current_user.is_global_admin %}
                         <li class="nav-item">
-                            <form method="POST" action="{{ url_for('auth.switch_to_global_admin') }}" style="display: inline; margin: 0;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="nav-link btn btn-link" style="border: none; background: none; padding: 0.5rem 1rem; text-decoration: none;" title="Switch to Global Administration">
-                                    <i class="bi bi-shield-lock-fill"></i> Global Admin
-                                </button>
-                            </form>
+                            <a class="nav-link" href="#" onclick="switchToGlobalAdmin(); return false;" title="Switch to Global Administration">
+                                <i class="bi bi-shield-lock-fill"></i> Global Admin
+                            </a>
                         </li>
                         {% endif %}
                     {% elif current_user.is_global_admin %}
@@ -454,7 +451,23 @@
         {% include 'workspace/mentions_modal.html' %}
     {% endif %}
 
+    <!-- Hidden form for Global Admin switch -->
+    {% if current_user.is_authenticated and current_user.is_global_admin %}
+    <form id="switchToGlobalAdminForm" method="POST" action="{{ url_for('auth.switch_to_global_admin') }}" style="display: none;">
+        <!-- CSRF token will be added by JavaScript -->
+    </form>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Global Admin switcher function -->
+    {% if current_user.is_authenticated and current_user.is_global_admin %}
+    <script>
+    function switchToGlobalAdmin() {
+        document.getElementById('switchToGlobalAdminForm').submit();
+    }
+    </script>
+    {% endif %}
 
     <!-- Global mentions functionality -->
     {% if session.organization_id %}
