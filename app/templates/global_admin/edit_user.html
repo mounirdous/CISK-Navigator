@@ -25,7 +25,7 @@
                     </label>
                 </div>
                 <div id="permissions_{{ org.id }}" class="ms-4 mt-2" style="display: {% if org.id in form.organizations.data %}block{% else %}none{% endif %};">
-                    <small class="text-muted d-block mb-2">Permissions for {{ org.name }}:</small>
+                    <small class="text-muted d-block mb-2"><strong>{{ org.name }}:</strong> User can create, edit, and delete:</small>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="checkbox" name="perm_spaces_{{ org.id }}" id="perm_spaces_{{ org.id }}"
                                {% if membership and membership.can_manage_spaces %}checked{% endif %}>
@@ -61,6 +61,19 @@
                                {% if membership and membership.can_manage_governance_bodies %}checked{% endif %}>
                         <label class="form-check-label" for="perm_governance_bodies_{{ org.id }}">Governance Bodies</label>
                     </div>
+                    <br>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ org.id }}" id="perm_view_comments_{{ org.id }}"
+                               onchange="toggleAddComments({{ org.id }})"
+                               {% if membership and membership.can_view_comments %}checked{% endif %}>
+                        <label class="form-check-label" for="perm_view_comments_{{ org.id }}">View Comments</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ org.id }}" id="perm_add_comments_{{ org.id }}"
+                               {% if membership and membership.can_add_comments %}checked{% endif %}
+                               {% if not membership or not membership.can_view_comments %}disabled{% endif %}>
+                        <label class="form-check-label" for="perm_add_comments_{{ org.id }}">Add Comments</label>
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -71,6 +84,18 @@
         const checkbox = document.getElementById('org_' + orgId);
         const permissions = document.getElementById('permissions_' + orgId);
         permissions.style.display = checkbox.checked ? 'block' : 'none';
+    }
+
+    function toggleAddComments(orgId) {
+        const viewCheckbox = document.getElementById('perm_view_comments_' + orgId);
+        const addCheckbox = document.getElementById('perm_add_comments_' + orgId);
+
+        if (!viewCheckbox.checked) {
+            addCheckbox.checked = false;
+            addCheckbox.disabled = true;
+        } else {
+            addCheckbox.disabled = false;
+        }
     }
     </script>
     <div class="mb-3">{{ form.reset_password.label }}{{ form.reset_password(class="form-control", autocomplete="new-password", placeholder="Leave blank to keep current password") }}<small class="form-text text-muted">Leave blank to keep current password</small></div>

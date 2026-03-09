@@ -181,7 +181,7 @@
 {% endif %}
 
 <!-- Comments -->
-{% if results.comments %}
+{% if current_user.can_view_comments(session.organization_id) and results.comments %}
 <div class="card mb-3">
     <div class="card-header bg-dark text-white">
         <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Comments ({{ results.comments|length }})</h5>

@@ -23,7 +23,7 @@
                     </label>
                 </div>
                 <div id="permissions_{{ org.id }}" class="ms-4 mt-2" style="display: none;">
-                    <small class="text-muted d-block mb-2">Permissions for {{ org.name }}:</small>
+                    <small class="text-muted d-block mb-2"><strong>{{ org.name }}:</strong> User can create, edit, and delete:</small>
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" type="checkbox" name="perm_spaces_{{ org.id }}" id="perm_spaces_{{ org.id }}" checked>
                         <label class="form-check-label" for="perm_spaces_{{ org.id }}">Spaces</label>
@@ -48,6 +48,20 @@
                         <input class="form-check-input" type="checkbox" name="perm_kpis_{{ org.id }}" id="perm_kpis_{{ org.id }}" checked>
                         <label class="form-check-label" for="perm_kpis_{{ org.id }}">KPIs</label>
                     </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ org.id }}" id="perm_governance_bodies_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_governance_bodies_{{ org.id }}">Governance Bodies</label>
+                    </div>
+                    <br>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ org.id }}" id="perm_view_comments_{{ org.id }}"
+                               onchange="toggleAddComments({{ org.id }})" checked>
+                        <label class="form-check-label" for="perm_view_comments_{{ org.id }}">View Comments</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ org.id }}" id="perm_add_comments_{{ org.id }}" checked>
+                        <label class="form-check-label" for="perm_add_comments_{{ org.id }}">Add Comments</label>
+                    </div>
                 </div>
             </div>
             {% endfor %}
@@ -58,6 +72,18 @@
         const checkbox = document.getElementById('org_' + orgId);
         const permissions = document.getElementById('permissions_' + orgId);
         permissions.style.display = checkbox.checked ? 'block' : 'none';
+    }
+
+    function toggleAddComments(orgId) {
+        const viewCheckbox = document.getElementById('perm_view_comments_' + orgId);
+        const addCheckbox = document.getElementById('perm_add_comments_' + orgId);
+
+        if (!viewCheckbox.checked) {
+            addCheckbox.checked = false;
+            addCheckbox.disabled = true;
+        } else {
+            addCheckbox.disabled = false;
+        }
     }
     </script>
     {{ form.submit(class="btn btn-primary") }}

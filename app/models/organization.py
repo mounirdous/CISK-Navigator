@@ -59,6 +59,8 @@ class UserOrganizationMembership(db.Model):
     can_manage_initiatives = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_systems = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_kpis = db.Column(db.Boolean, default=True, nullable=False)
+    can_view_comments = db.Column(db.Boolean, default=True, nullable=False)
+    can_add_comments = db.Column(db.Boolean, default=True, nullable=False)
 
     # Unique constraint: one user cannot be assigned twice to the same organization
     __table_args__ = (

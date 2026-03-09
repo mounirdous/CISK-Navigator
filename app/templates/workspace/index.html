@@ -659,6 +659,8 @@
                                     <span class="badge consensus-{{ consensus.status }}">{{ consensus.status }}</span>
                                 {% endif %}
                                 </div>
+                                {% if current_user.can_add_comments(session.organization_id) %}
+                                {# Users who can add: always show icon #}
                                 <div style="position: absolute; top: 2px; right: 2px;">
                                     <span class="comment-icon"
                                           onclick="event.stopPropagation(); commentsManager.openCommentModal({{ config.id }}, '{{ kpi.name }}', '{{ vt.name }}');"
@@ -667,6 +669,19 @@
                                         <span class="comment-count" style="display: none;">0</span>
                                     </span>
                                 </div>
+                                {% elif current_user.can_view_comments(session.organization_id) %}
+                                {# Users who can only view: show icon only if there are comments #}
+                                <div style="position: absolute; top: 2px; right: 2px; display: none;"
+                                     class="comment-icon-container-view-only"
+                                     data-config-id="{{ config.id }}">
+                                    <span class="comment-icon"
+                                          onclick="event.stopPropagation(); commentsManager.openCommentModal({{ config.id }}, '{{ kpi.name }}', '{{ vt.name }}');"
+                                          title="Comments">
+                                        💬
+                                        <span class="comment-count" style="display: none;">0</span>
+                                    </span>
+                                </div>
+                                {% endif %}
                             </div>
                         </td>
                         {% else %}
@@ -815,7 +830,22 @@ async function loadCommentCount(configId) {
         const data = await response.json();
         const count = data.count || 0;
 
-        // Find the comment icon in this cell
+        // Find the comment icon container (for view-only users)
+        const viewOnlyContainer = document.querySelector(`.comment-icon-container-view-only[data-config-id="${configId}"]`);
+        if (viewOnlyContainer) {
+            // For view-only users: only show icon if there are comments
+            if (count > 0) {
+                viewOnlyContainer.style.display = 'block';
+                const countBadge = viewOnlyContainer.querySelector('.comment-count');
+                if (countBadge) {
+                    countBadge.textContent = count;
+                    countBadge.style.display = 'inline-block';
+                }
+            }
+            return;
+        }
+
+        // For users who can add comments: just update the count badge
         const cell = document.querySelector(`[data-config-id="${configId}"]`);
         if (!cell) return;
 
@@ -923,9 +953,16 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="modal-body">
                 <!-- Existing comments -->
+                {% if current_user.can_view_comments(session.organization_id) %}
                 <div id="commentsContainer"></div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-lock"></i> You don't have permission to view comments.
+                </div>
+                {% endif %}
 
                 <!-- New comment form -->
+                {% if current_user.can_add_comments(session.organization_id) %}
                 <div class="mt-4">
                     <h6>Add Comment</h6>
                     <textarea class="form-control" id="newCommentText" rows="3"
@@ -937,6 +974,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <button class="btn btn-primary" id="postCommentBtn">Post Comment</button>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -708,10 +708,14 @@ def get_kpi_history(config_id):
 def get_cell_comments(config_id):
     """Get all comments for a KPI cell"""
     try:
+        org_id = session.get('organization_id')
+
+        # Check permission to view comments
+        if not current_user.can_view_comments(org_id):
+            return jsonify({'error': 'You do not have permission to view comments'}), 403
+
         include_resolved = request.args.get('include_resolved', 'true').lower() == 'true'
         comments = CommentService.get_comments_for_cell(config_id, include_resolved=include_resolved)
-
-        org_id = session.get('organization_id')
 
         def render_comment_tree(comment):
             """Recursively render comment with replies"""
@@ -743,14 +747,18 @@ def get_cell_comments(config_id):
 def create_cell_comment(config_id):
     """Create a new comment on a KPI cell"""
     try:
+        org_id = session.get('organization_id')
+
+        # Check permission to add comments
+        if not current_user.can_add_comments(org_id):
+            return jsonify({'error': 'You do not have permission to add comments'}), 403
+
         data = request.get_json()
         comment_text = data.get('comment_text', '').strip()
         parent_comment_id = data.get('parent_comment_id')
 
         if not comment_text:
             return jsonify({'error': 'Comment text is required'}), 400
-
-        org_id = session.get('organization_id')
 
         comment = CommentService.create_comment(
             config_id=config_id,

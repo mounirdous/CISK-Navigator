@@ -115,7 +115,7 @@
                 <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-outline-success me-2">
                     <i class="bi bi-file-earmark-excel"></i> Export Excel
                 </a>
-                {% if unread_mentions > 0 %}
+                {% if current_user.can_view_comments(session.organization_id) and unread_mentions > 0 %}
                 <button class="btn btn-outline-danger me-2" onclick="showMentions()">
                     <i class="bi bi-bell-fill"></i> {{ unread_mentions }} Unread Mention{{ 's' if unread_mentions != 1 }}
                 </button>
@@ -171,6 +171,7 @@
     </div>
 
     <!-- Right Column: Recent Comments -->
+    {% if current_user.can_view_comments(session.organization_id) %}
     <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-header">
@@ -198,6 +199,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 <!-- Info Section -->
@@ -209,8 +211,12 @@
                 <ul class="mb-0">
                     <li><strong>Workspace</strong>: View and enter KPI data in the tree/grid view</li>
                     <li><strong>Snapshots</strong>: Capture current state to track progress over time</li>
+                    {% if current_user.can_view_comments(session.organization_id) %}
                     <li><strong>Comments</strong>: Click 💬 on any KPI cell to discuss values with your team</li>
+                    {% endif %}
+                    {% if current_user.can_add_comments(session.organization_id) %}
                     <li><strong>Mentions</strong>: Use @username in comments to notify team members</li>
+                    {% endif %}
                     <li><strong>Trends</strong>: Create multiple snapshots to see ↗️↘️→ trend indicators</li>
                 </ul>
             </div>

@@ -118,5 +118,19 @@ class User(UserMixin, db.Model):
         membership = self.get_membership(organization_id)
         return membership and membership.can_manage_kpis
 
+    def can_view_comments(self, organization_id):
+        """Check if user can view comments in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_view_comments
+
+    def can_add_comments(self, organization_id):
+        """Check if user can add comments in an organization"""
+        if self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return membership and membership.can_add_comments
+
     def __repr__(self):
         return f'<User {self.login}>'

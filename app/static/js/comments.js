@@ -56,7 +56,7 @@ class CommentsManager {
         const container = document.getElementById('commentsContainer');
 
         if (this.comments.length === 0) {
-            container.innerHTML = '<p class="text-muted">No comments yet. Be the first to comment!</p>';
+            container.innerHTML = '<p class="text-muted">No comments yet.</p>';
             return;
         }
 
@@ -468,6 +468,20 @@ class CommentsManager {
      * Update comment count badge on cell
      */
     updateCommentCount(configId, count) {
+        // Check if this is a view-only user's icon container
+        const viewOnlyContainer = document.querySelector(`.comment-icon-container-view-only[data-config-id="${configId}"]`);
+        if (viewOnlyContainer) {
+            // For view-only users: show/hide container based on count
+            viewOnlyContainer.style.display = count > 0 ? 'block' : 'none';
+            const badge = viewOnlyContainer.querySelector('.comment-count');
+            if (badge && count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline-block';
+            }
+            return;
+        }
+
+        // For users who can add: just update the badge
         const badge = document.querySelector(`[data-config-id="${configId}"] .comment-count`);
         if (badge) {
             badge.textContent = count;

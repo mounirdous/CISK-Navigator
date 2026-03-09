@@ -172,7 +172,7 @@
                 </form>
                 {% endif %}
                 <ul class="navbar-nav">
-                    {% if session.organization_id %}
+                    {% if session.organization_id and current_user.can_view_comments(session.organization_id) %}
                     <li class="nav-item">
                         <a class="nav-link mentions-btn" href="#" onclick="showMentions(); return false;" title="Mentions">
                             🔔
