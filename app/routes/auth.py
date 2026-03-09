@@ -45,6 +45,22 @@ def login():
         user_orgs = user.get_organizations()
         active_orgs = [org for org in user_orgs if org.is_active]
 
+        # Special case: Global Admin with no organizations
+        # Allow them to log in and access Global Admin panel
+        if user.is_global_admin and not active_orgs:
+            login_user(user)
+            session['organization_id'] = None
+            session['organization_name'] = 'Global Administration'
+
+            # Handle password change requirement
+            if user.must_change_password and not session.get('_pwd_check_done'):
+                session['_pwd_check_done'] = True
+                flash('You must change your password', 'warning')
+                return redirect(url_for('auth.change_password'))
+
+            flash(f'Welcome, {user.display_name or user.login}! (Global Admin)', 'success')
+            return redirect(url_for('global_admin.index'))
+
         # Determine which organization to log into
         selected_org = None
 
@@ -58,12 +74,12 @@ def login():
         if not selected_org and active_orgs:
             selected_org = active_orgs[0]
 
-        # No organizations available
+        # No organizations available (and not a global admin)
         if not selected_org:
             flash('You do not have access to any organizations. Please contact your administrator.', 'danger')
             return redirect(url_for('auth.login'))
 
-        # Log user in
+        # Log user in with organization context
         login_user(user)
         session['organization_id'] = selected_org.id
         session['organization_name'] = selected_org.name

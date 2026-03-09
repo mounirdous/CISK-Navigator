@@ -2,31 +2,188 @@
 
 {% block title %}Profile - CISK Navigator{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Profile page modern styling */
+.profile-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.profile-section {
+    margin-bottom: 2rem;
+}
+
+.profile-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.profile-section-title i {
+    color: var(--accent-primary);
+}
+
+.info-row {
+    display: flex;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background-color: var(--bg-secondary);
+    transition: all var(--transition-fast);
+}
+
+.info-row:hover {
+    background-color: var(--hover-bg);
+    transform: translateX(4px);
+}
+
+.info-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 140px;
+    font-size: 0.9rem;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.org-card {
+    padding: 1rem;
+    border-radius: 10px;
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    margin-bottom: 0.75rem;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.org-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
+.org-card.current {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, var(--bg-secondary) 100%);
+}
+
+.form-switch .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+    cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: var(--accent-success);
+    border-color: var(--accent-success);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-subtle);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">User Profile</h4>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-8">
+        <div class="card hover-lift">
+            <div class="profile-header text-center">
+                <div class="profile-avatar">
+                    <i class="bi bi-person-fill"></i>
+                </div>
+                <h2 class="mb-1">{{ current_user.display_name or current_user.login }}</h2>
+                <p class="mb-0 opacity-75">{{ current_user.email or 'No email set' }}</p>
             </div>
-            <div class="card-body">
-                <div class="mb-4">
-                    <h5 class="text-muted mb-3">Account Information</h5>
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <!-- Account Information Section -->
+                <div class="profile-section">
+                    <div class="profile-section-title">
+                        <i class="bi bi-person-badge"></i>
+                        Account Information
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">Login Username</div>
+                        <div class="info-value">
+                            {{ current_user.login }}
+                            <small class="text-muted d-block mt-1">Cannot be changed</small>
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">Account Status</div>
+                        <div class="info-value">
+                            {% if current_user.is_active %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>
+                            {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Inactive</span>
+                            {% endif %}
+                            {% if current_user.is_global_admin %}
+                                <span class="badge" style="background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);">
+                                    <i class="bi bi-shield-lock-fill"></i> Global Admin
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-row">
+                        <div class="info-label">Member Since</div>
+                        <div class="info-value">
+                            <i class="bi bi-calendar-event"></i>
+                            {{ current_user.created_at.strftime('%B %d, %Y') }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Profile Section -->
+                <div class="profile-section">
+                    <div class="profile-section-title">
+                        <i class="bi bi-pencil-square"></i>
+                        Edit Profile
+                    </div>
 
                     <form method="POST">
                         {{ form.hidden_tag() }}
 
-                        <div class="row mb-3">
-                            <div class="col-sm-4 fw-bold">Login:</div>
-                            <div class="col-sm-8">
-                                {{ current_user.login }}
-                                <small class="text-muted d-block">Cannot be changed</small>
-                            </div>
-                        </div>
-
                         <div class="mb-3">
-                            {{ form.display_name.label(class="form-label fw-bold") }}
-                            {{ form.display_name(class="form-control") }}
+                            {{ form.display_name.label(class="form-label") }}
+                            {{ form.display_name(class="form-control", placeholder="Your full name") }}
+                            <small class="form-text text-muted">
+                                This name will be displayed throughout the application
+                            </small>
                             {% if form.display_name.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.display_name.errors %}{{ error }}{% endfor %}
@@ -35,8 +192,11 @@
                         </div>
 
                         <div class="mb-3">
-                            {{ form.email.label(class="form-label fw-bold") }}
-                            {{ form.email(class="form-control", type="email") }}
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control", type="email", placeholder="your.email@company.com") }}
+                            <small class="form-text text-muted">
+                                Used for notifications and account recovery
+                            </small>
                             {% if form.email.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.email.errors %}{{ error }}{% endfor %}
@@ -44,19 +204,12 @@
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                {{ form.dark_mode(class="form-check-input", role="switch") }}
-                                {{ form.dark_mode.label(class="form-check-label fw-bold") }}
-                                <small class="form-text text-muted d-block">Enable dark theme with black background</small>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.default_organization.label(class="form-label fw-bold") }}
+                        <div class="mb-4">
+                            {{ form.default_organization.label(class="form-label") }}
                             {{ form.default_organization(class="form-select") }}
                             <small class="form-text text-muted">
-                                Choose which organization to log into by default. You can always switch organizations using the navbar.
+                                <i class="bi bi-info-circle"></i>
+                                Choose which organization to log into automatically. You can switch organizations anytime using the navbar.
                             </small>
                             {% if form.default_organization.errors %}
                                 <div class="invalid-feedback d-block">
@@ -65,48 +218,68 @@
                             {% endif %}
                         </div>
 
-                        <div class="mb-3">
-                            {{ form.submit(class="btn btn-primary") }}
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                {{ form.dark_mode(class="form-check-input", role="switch", id="darkModeSwitch") }}
+                                {{ form.dark_mode.label(class="form-check-label", for="darkModeSwitch") }}
+                            </div>
+                            <small class="form-text text-muted d-block mt-2">
+                                <i class="bi bi-moon-stars"></i>
+                                Enable dark theme for reduced eye strain in low-light environments
+                            </small>
+                        </div>
+
+                        <div>
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
                         </div>
                     </form>
-
-                    <div class="row mb-3">
-                        <div class="col-sm-4 fw-bold">Account Status:</div>
-                        <div class="col-sm-8">
-                            {% if current_user.is_active %}
-                                <span class="badge bg-success">Active</span>
-                            {% else %}
-                                <span class="badge bg-danger">Inactive</span>
-                            {% endif %}
-                            {% if current_user.is_global_admin %}
-                                <span class="badge bg-primary">Global Admin</span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-sm-4 fw-bold">Member Since:</div>
-                        <div class="col-sm-8">{{ current_user.created_at.strftime('%Y-%m-%d') }}</div>
-                    </div>
                 </div>
 
-                <div class="mb-4">
-                    <h5 class="text-muted mb-3">Organizations</h5>
-                    <ul class="list-group">
+                <!-- Organizations Section -->
+                <div class="profile-section">
+                    <div class="profile-section-title">
+                        <i class="bi bi-building"></i>
+                        Your Organizations ({{ current_user.organization_memberships|length }})
+                    </div>
+
+                    {% if current_user.organization_memberships %}
                         {% for membership in current_user.organization_memberships %}
-                            <li class="list-group-item">
-                                {{ membership.organization.name }}
+                            <div class="org-card {% if membership.organization.id == session.get('organization_id') %}current{% endif %}">
+                                <div>
+                                    <div class="fw-bold">
+                                        <i class="bi bi-building"></i>
+                                        {{ membership.organization.name }}
+                                    </div>
+                                    <small class="text-muted">
+                                        {% if membership.organization.is_active %}
+                                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> Active</span>
+                                        {% else %}
+                                            <span class="text-danger"><i class="bi bi-x-circle-fill"></i> Inactive</span>
+                                        {% endif %}
+                                    </small>
+                                </div>
                                 {% if membership.organization.id == session.get('organization_id') %}
-                                    <span class="badge bg-info">Current</span>
+                                    <span class="badge" style="background: linear-gradient(135deg, var(--accent-info) 0%, #0aa2c0 100%);">
+                                        <i class="bi bi-star-fill"></i> Current
+                                    </span>
                                 {% endif %}
-                            </li>
+                            </div>
                         {% endfor %}
-                    </ul>
+                    {% else %}
+                        <div class="empty-state py-4">
+                            <i class="bi bi-building"></i>
+                            <p class="mt-2 mb-0">No organizations assigned</p>
+                        </div>
+                    {% endif %}
                 </div>
 
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-primary">
-                        <i class="bi bi-key"></i> Change Password
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-key-fill"></i> Change Password
+                    </a>
+                    <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-speedometer2"></i> Back to Dashboard
                     </a>
                 </div>
             </div>
