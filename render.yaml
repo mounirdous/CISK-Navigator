@@ -14,8 +14,8 @@ services:
     name: cisk-navigator-app
     runtime: python
     region: oregon
-    buildCommand: pip install -r requirements.txt && flask db upgrade
-    startCommand: gunicorn run:app
+    buildCommand: pip install -r requirements.txt
+    startCommand: flask db upgrade && gunicorn run:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
