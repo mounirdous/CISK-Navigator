@@ -131,6 +131,27 @@
         </div>
     </div>
 
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="stats-card" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h4 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-weight: 700;">
+                            <i class="bi bi-heart-pulse-fill" style="color: #667eea;"></i>
+                            System Health Dashboard
+                        </h4>
+                        <p style="margin: 0; color: var(--text-secondary);">
+                            Monitor database connection, migrations, table counts, and recent activity
+                        </p>
+                    </div>
+                    <a href="{{ url_for('global_admin.health_dashboard') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-bar-chart-fill"></i> View Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="alert alert-info mt-4" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
         <div class="d-flex align-items-center">
             <i class="bi bi-lightbulb-fill me-3" style="font-size: 1.5rem;"></i>

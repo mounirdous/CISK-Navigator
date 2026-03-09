@@ -66,10 +66,27 @@
         </div>
     </div>
 
-    <!-- Filter Controls -->
+    <!-- Filter Controls & Bulk Actions -->
     <div class="card mb-3">
         <div class="card-body">
-            <h6 class="mb-2"><i class="bi bi-funnel"></i> Filter Snapshots</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0"><i class="bi bi-funnel"></i> Filter Snapshots</h6>
+                <div id="bulkActionsBar" style="display: none;">
+                    <span class="badge bg-primary me-2" id="selectedCount">0 selected</span>
+                    <button class="btn btn-sm btn-success" onclick="bulkMakePublic()">
+                        <i class="bi bi-globe"></i> Make Public
+                    </button>
+                    <button class="btn btn-sm btn-secondary ms-1" onclick="bulkMakePrivate()">
+                        <i class="bi bi-lock-fill"></i> Make Private
+                    </button>
+                    <button class="btn btn-sm btn-danger ms-1" onclick="bulkDelete()">
+                        <i class="bi bi-trash-fill"></i> Delete
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary ms-1" onclick="clearSelection()">
+                        <i class="bi bi-x"></i> Clear
+                    </button>
+                </div>
+            </div>
             <div class="d-flex gap-3">
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="filterPublic"
@@ -85,6 +102,12 @@
                         <i class="bi bi-lock-fill"></i> Private (My Snapshots)
                     </label>
                 </div>
+                <div class="form-check ms-auto">
+                    <input class="form-check-input" type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    <label class="form-check-label" for="selectAll">
+                        <strong>Select All</strong>
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -95,6 +118,14 @@
                 {% for snapshot in snapshots %}
                 <div class="snapshot-card">
                     <div class="d-flex align-items-center justify-content-between">
+                        {% if snapshot.is_owner %}
+                        <div class="form-check me-3">
+                            <input class="form-check-input snapshot-checkbox" type="checkbox"
+                                   value="{{ snapshot.batch_id }}"
+                                   data-is-public="{{ snapshot.is_public|lower }}"
+                                   onchange="updateBulkActions()">
+                        </div>
+                        {% endif %}
                         <div class="flex-grow-1">
                             <div class="d-flex align-items-center gap-2">
                                 <div class="snapshot-date">
@@ -407,6 +438,143 @@ async function deleteSnapshot(batchId, dateStr, label) {
     } catch (error) {
         console.error('Error deleting snapshot:', error);
         alert('Error deleting snapshot: ' + error.message);
+    }
+}
+
+// ============================================================================
+// BULK OPERATIONS
+// ============================================================================
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.snapshot-checkbox:checked');
+    const count = checkboxes.length;
+    const bulkBar = document.getElementById('bulkActionsBar');
+    const countBadge = document.getElementById('selectedCount');
+
+    if (count > 0) {
+        bulkBar.style.display = 'block';
+        countBadge.textContent = `${count} selected`;
+    } else {
+        bulkBar.style.display = 'none';
+    }
+}
+
+function toggleSelectAll() {
+    const selectAllBox = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.snapshot-checkbox');
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllBox.checked;
+    });
+
+    updateBulkActions();
+}
+
+function clearSelection() {
+    document.querySelectorAll('.snapshot-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateBulkActions();
+}
+
+function getSelectedBatchIds() {
+    const checkboxes = document.querySelectorAll('.snapshot-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+async function bulkMakePublic() {
+    const batchIds = getSelectedBatchIds();
+    if (batchIds.length === 0) return;
+
+    if (!confirm(`Make ${batchIds.length} snapshot(s) PUBLIC?\n\nPublic snapshots are visible to all users in the organization.`)) {
+        return;
+    }
+
+    await bulkTogglePrivacy(batchIds, true);
+}
+
+async function bulkMakePrivate() {
+    const batchIds = getSelectedBatchIds();
+    if (batchIds.length === 0) return;
+
+    if (!confirm(`Make ${batchIds.length} snapshot(s) PRIVATE?\n\nPrivate snapshots are only visible to you.`)) {
+        return;
+    }
+
+    await bulkTogglePrivacy(batchIds, false);
+}
+
+async function bulkTogglePrivacy(batchIds, makePublic) {
+    try {
+        const url = `{{ url_for('workspace.bulk_toggle_snapshot_privacy') }}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                batch_ids: batchIds,
+                make_public: makePublic
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.error_count > 0) {
+                alert(`Updated ${data.success_count} snapshot(s), but ${data.error_count} failed.`);
+            } else {
+                alert(data.message);
+            }
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update privacy'));
+        }
+    } catch (error) {
+        console.error('Error toggling privacy:', error);
+        alert('Error updating privacy: ' + error.message);
+    }
+}
+
+async function bulkDelete() {
+    const batchIds = getSelectedBatchIds();
+    if (batchIds.length === 0) return;
+
+    if (!confirm(`⚠️ DELETE ${batchIds.length} SNAPSHOT(S)?\n\nThis will permanently delete ALL KPI and rollup data in these snapshots.\n\nTHIS CANNOT BE UNDONE!`)) {
+        return;
+    }
+
+    // Double confirm for safety
+    if (!confirm(`Are you ABSOLUTELY SURE?\n\nYou are about to delete ${batchIds.length} snapshots permanently.`)) {
+        return;
+    }
+
+    try {
+        const url = `{{ url_for('workspace.bulk_delete_snapshots') }}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                batch_ids: batchIds
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            if (data.error_count > 0) {
+                alert(`Deleted ${data.success_count} snapshot(s), but ${data.error_count} failed.`);
+            } else {
+                alert(data.message);
+            }
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete snapshots'));
+        }
+    } catch (error) {
+        console.error('Error deleting snapshots:', error);
+        alert('Error deleting snapshots: ' + error.message);
     }
 }
 </script>

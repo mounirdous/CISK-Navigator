@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}System Health Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.health-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.health-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.health-header p {
+    margin: 0.75rem 0 0 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.health-section {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all var(--transition-fast);
+}
+
+.health-section:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.health-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.health-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.health-section-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-badge.healthy {
+    background: rgba(25, 135, 84, 0.15);
+    color: #198754;
+    border: 2px solid rgba(25, 135, 84, 0.3);
+}
+
+.status-badge.warning {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-badge.error {
+    background: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+    border: 2px solid rgba(220, 53, 69, 0.3);
+}
+
+.health-metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    transition: all var(--transition-fast);
+}
+
+.health-metric:hover {
+    background: var(--bg-hover);
+    transform: translateX(4px);
+}
+
+.metric-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metric-value {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-primary);
+}
+
+.metric-value.count {
+    color: var(--accent-primary);
+}
+
+.metric-value.code {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.9rem;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    color: var(--accent-primary);
+}
+
+.table-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.table-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    transition: all var(--transition-fast);
+}
+
+.table-card:hover {
+    background: var(--bg-hover);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+}
+
+.table-card-count {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+}
+
+.table-card-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.timestamp {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.error-message {
+    background: rgba(220, 53, 69, 0.1);
+    border: 2px solid rgba(220, 53, 69, 0.3);
+    border-radius: 8px;
+    padding: 1rem;
+    color: #dc3545;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    word-break: break-all;
+}
+
+.refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="health-header">
+        <h1>
+            <i class="bi bi-heart-pulse-fill"></i>
+            System Health Dashboard
+        </h1>
+        <p>Real-time monitoring and diagnostics for CISK Navigator</p>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="timestamp">
+            <i class="bi bi-clock"></i>
+            Last updated: {{ health.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+        </div>
+        <a href="{{ url_for('global_admin.health_dashboard') }}" class="btn btn-primary refresh-btn">
+            <i class="bi bi-arrow-clockwise"></i>
+            Refresh
+        </a>
+    </div>
+
+    <!-- Database Health -->
+    <div class="health-section">
+        <div class="health-section-header">
+            <div class="health-section-title">
+                <div class="health-section-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <i class="bi bi-database-fill"></i>
+                </div>
+                Database Connection
+            </div>
+            {% if health.database.status == 'healthy' %}
+            <span class="status-badge healthy">
+                <i class="bi bi-check-circle-fill"></i>
+                Healthy
+            </span>
+            {% else %}
+            <span class="status-badge error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Error
+            </span>
+            {% endif %}
+        </div>
+
+        {% if health.database.status == 'healthy' %}
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-plug"></i>
+                Connection Status
+            </span>
+            <span class="metric-value">{{ health.database.message }}</span>
+        </div>
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-hdd"></i>
+                Database Type
+            </span>
+            <span class="metric-value code">{{ health.database.dialect }}</span>
+        </div>
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-link-45deg"></i>
+                Connection URL
+            </span>
+            <span class="metric-value code">{{ health.database.url }}</span>
+        </div>
+        {% else %}
+        <div class="error-message">
+            {{ health.database.message }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Migration Status -->
+    <div class="health-section">
+        <div class="health-section-header">
+            <div class="health-section-title">
+                <div class="health-section-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                Database Migrations
+            </div>
+            {% if health.migrations.status == 'tracked' %}
+            <span class="status-badge healthy">
+                <i class="bi bi-check-circle-fill"></i>
+                Tracked
+            </span>
+            {% else %}
+            <span class="status-badge warning">
+                <i class="bi bi-exclamation-circle-fill"></i>
+                {{ health.migrations.status|title }}
+            </span>
+            {% endif %}
+        </div>
+
+        {% if health.migrations.status == 'tracked' %}
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-git"></i>
+                Current Revision
+            </span>
+            <span class="metric-value code">{{ health.migrations.current_revision }}</span>
+        </div>
+        {% else %}
+        <div class="error-message">
+            {{ health.migrations.message }}
+        </div>
+        {% endif %}
+
+        <div class="mt-3">
+            <a href="{{ url_for('static', filename='../scripts/check_migrations.py') }}"
+               class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-file-earmark-code"></i>
+                View Migration Health Check Script
+            </a>
+        </div>
+    </div>
+
+    <!-- Table Statistics -->
+    <div class="health-section">
+        <div class="health-section-header">
+            <div class="health-section-title">
+                <div class="health-section-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white;">
+                    <i class="bi bi-table"></i>
+                </div>
+                Table Row Counts
+            </div>
+            {% if health.tables.status == 'success' %}
+            <span class="status-badge healthy">
+                <i class="bi bi-check-circle-fill"></i>
+                Available
+            </span>
+            {% else %}
+            <span class="status-badge error">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                Error
+            </span>
+            {% endif %}
+        </div>
+
+        {% if health.tables.status == 'success' %}
+        <div class="table-grid">
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.users }}</div>
+                <div class="table-card-label">Users</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.organizations }}</div>
+                <div class="table-card-label">Organizations</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.spaces }}</div>
+                <div class="table-card-label">Spaces</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.challenges }}</div>
+                <div class="table-card-label">Challenges</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.initiatives }}</div>
+                <div class="table-card-label">Initiatives</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.systems }}</div>
+                <div class="table-card-label">Systems</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.kpis }}</div>
+                <div class="table-card-label">KPIs</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.contributions }}</div>
+                <div class="table-card-label">Contributions</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.kpi_snapshots }}</div>
+                <div class="table-card-label">KPI Snapshots</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.rollup_snapshots }}</div>
+                <div class="table-card-label">Rollup Snapshots</div>
+            </div>
+            <div class="table-card">
+                <div class="table-card-count">{{ health.tables.comments }}</div>
+                <div class="table-card-label">Comments</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="error-message">
+            {{ health.tables.message }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- System Information -->
+    <div class="health-section">
+        <div class="health-section-header">
+            <div class="health-section-title">
+                <div class="health-section-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                    <i class="bi bi-cpu"></i>
+                </div>
+                System Information
+            </div>
+            <span class="status-badge healthy">
+                <i class="bi bi-info-circle-fill"></i>
+                Info
+            </span>
+        </div>
+
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-python"></i>
+                Python Version
+            </span>
+            <span class="metric-value code">{{ health.system.python_version }}</span>
+        </div>
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-laptop"></i>
+                Platform
+            </span>
+            <span class="metric-value code">{{ health.system.platform }}</span>
+        </div>
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-gear"></i>
+                Environment
+            </span>
+            <span class="metric-value code">{{ health.system.environment }}</span>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="health-section">
+        <div class="health-section-header">
+            <div class="health-section-title">
+                <div class="health-section-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); color: #333;">
+                    <i class="bi bi-activity"></i>
+                </div>
+                Recent Activity (24h)
+            </div>
+        </div>
+
+        {% if not health.recent_activity.error %}
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-pencil-square"></i>
+                Contributions Created
+            </span>
+            <span class="metric-value count">{{ health.recent_activity.contributions_24h }}</span>
+        </div>
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-chat-dots"></i>
+                Comments Posted
+            </span>
+            <span class="metric-value count">{{ health.recent_activity.comments_24h }}</span>
+        </div>
+        <div class="health-metric">
+            <span class="metric-label">
+                <i class="bi bi-camera"></i>
+                Snapshots Created
+            </span>
+            <span class="metric-value count">{{ health.recent_activity.snapshots_24h }}</span>
+        </div>
+        {% else %}
+        <div class="error-message">
+            {{ health.recent_activity.error }}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-info-circle-fill me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <strong>Health Monitoring:</strong> This dashboard provides real-time diagnostics for production monitoring.
+                Refresh regularly to track system status. For migration verification, run
+                <code>python scripts/check_migrations.py</code> before deployment.
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

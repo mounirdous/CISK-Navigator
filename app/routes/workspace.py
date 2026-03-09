@@ -855,6 +855,112 @@ def delete_snapshot(batch_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/snapshots/bulk/toggle-privacy', methods=['POST'])
+@login_required
+@organization_required
+def bulk_toggle_snapshot_privacy():
+    """Toggle privacy status for multiple snapshot batches"""
+    try:
+        data = request.get_json()
+        batch_ids = data.get('batch_ids', [])
+        make_public = data.get('make_public', True)
+
+        if not batch_ids:
+            return jsonify({'error': 'No batch IDs provided'}), 400
+
+        success_count = 0
+        error_count = 0
+
+        for batch_id in batch_ids:
+            # Get one snapshot from this batch to check ownership
+            sample_snapshot = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).first()
+
+            if not sample_snapshot:
+                error_count += 1
+                continue
+
+            # Check ownership
+            if sample_snapshot.owner_user_id != current_user.id:
+                error_count += 1
+                continue
+
+            # Update all KPI snapshots in this batch
+            KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).update({
+                'is_public': make_public
+            })
+
+            # Update all rollup snapshots in this batch
+            RollupSnapshot.query.filter_by(snapshot_batch_id=batch_id).update({
+                'is_public': make_public
+            })
+
+            success_count += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'success_count': success_count,
+            'error_count': error_count,
+            'message': f'Updated {success_count} snapshot(s) to {"public" if make_public else "private"}'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/snapshots/bulk/delete', methods=['POST'])
+@login_required
+@organization_required
+def bulk_delete_snapshots():
+    """Delete multiple snapshot batches"""
+    try:
+        data = request.get_json()
+        batch_ids = data.get('batch_ids', [])
+
+        if not batch_ids:
+            return jsonify({'error': 'No batch IDs provided'}), 400
+
+        success_count = 0
+        error_count = 0
+
+        for batch_id in batch_ids:
+            # Get one snapshot from this batch to check ownership
+            sample_snapshot = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).first()
+
+            if not sample_snapshot:
+                error_count += 1
+                continue
+
+            # Check ownership
+            if sample_snapshot.owner_user_id != current_user.id:
+                error_count += 1
+                continue
+
+            # Delete all KPI snapshots in this batch
+            KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).delete()
+
+            # Delete all rollup snapshots in this batch
+            RollupSnapshot.query.filter_by(snapshot_batch_id=batch_id).delete()
+
+            success_count += 1
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'success_count': success_count,
+            'error_count': error_count,
+            'message': f'Deleted {success_count} snapshot batch(es)'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
         print(f"[DEBUG] Error toggling privacy: {str(e)}")
         return jsonify({'error': str(e)}), 500
 

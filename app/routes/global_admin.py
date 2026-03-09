@@ -8,9 +8,13 @@ from flask_login import login_required, current_user
 from functools import wraps
 from flask_wtf import FlaskForm
 from app.extensions import db
-from app.models import User, Organization, UserOrganizationMembership, CellComment, MentionNotification, KPIValueTypeConfig, KPI, InitiativeSystemLink, Initiative
+from app.models import User, Organization, UserOrganizationMembership, CellComment, MentionNotification, KPIValueTypeConfig, KPI, InitiativeSystemLink, Initiative, Space, Challenge, System, Contribution, KPISnapshot, RollupSnapshot
 from app.forms import UserCreateForm, UserEditForm, OrganizationCreateForm, OrganizationEditForm, OrganizationCloneForm
 from app.services import DeletionImpactService, OrganizationCloneService
+import sys
+import os
+from datetime import datetime, timedelta
+from sqlalchemy import text
 
 bp = Blueprint('global_admin', __name__, url_prefix='/global-admin')
 
@@ -39,6 +43,96 @@ def index():
     return render_template('global_admin/index.html',
                           user_count=user_count,
                           org_count=org_count)
+
+
+@bp.route('/health-dashboard')
+@login_required
+@global_admin_required
+def health_dashboard():
+    """System health and diagnostics dashboard"""
+    health_data = {
+        'timestamp': datetime.now(),
+        'database': {},
+        'migrations': {},
+        'tables': {},
+        'system': {},
+        'recent_activity': {}
+    }
+
+    # Database connection check
+    try:
+        db.session.execute(text('SELECT 1'))
+        health_data['database']['status'] = 'healthy'
+        health_data['database']['message'] = 'Connected'
+
+        # Get database URL (mask password)
+        db_url = str(db.engine.url)
+        if '@' in db_url:
+            # Mask password: postgresql://user:***@host/db
+            parts = db_url.split('@')
+            user_part = parts[0].split(':')[0]
+            health_data['database']['url'] = f"{user_part}:***@{parts[1]}"
+        else:
+            health_data['database']['url'] = db_url
+
+        health_data['database']['dialect'] = db.engine.dialect.name
+
+    except Exception as e:
+        health_data['database']['status'] = 'error'
+        health_data['database']['message'] = str(e)
+
+    # Migration status
+    try:
+        result = db.session.execute(text('SELECT version_num FROM alembic_version')).fetchone()
+        if result:
+            health_data['migrations']['current_revision'] = result[0]
+            health_data['migrations']['status'] = 'tracked'
+        else:
+            health_data['migrations']['status'] = 'no_version'
+            health_data['migrations']['message'] = 'No migration version found'
+    except Exception as e:
+        health_data['migrations']['status'] = 'error'
+        health_data['migrations']['message'] = str(e)
+
+    # Table row counts
+    try:
+        health_data['tables']['users'] = User.query.count()
+        health_data['tables']['organizations'] = Organization.query.count()
+        health_data['tables']['spaces'] = Space.query.count()
+        health_data['tables']['challenges'] = Challenge.query.count()
+        health_data['tables']['initiatives'] = Initiative.query.count()
+        health_data['tables']['systems'] = System.query.count()
+        health_data['tables']['kpis'] = KPI.query.count()
+        health_data['tables']['contributions'] = Contribution.query.count()
+        health_data['tables']['kpi_snapshots'] = KPISnapshot.query.count()
+        health_data['tables']['rollup_snapshots'] = RollupSnapshot.query.count()
+        health_data['tables']['comments'] = CellComment.query.count()
+        health_data['tables']['status'] = 'success'
+    except Exception as e:
+        health_data['tables']['status'] = 'error'
+        health_data['tables']['message'] = str(e)
+
+    # System information
+    health_data['system']['python_version'] = sys.version.split()[0]
+    health_data['system']['platform'] = sys.platform
+    health_data['system']['environment'] = os.environ.get('FLASK_ENV', 'production')
+
+    # Recent activity (last 24 hours)
+    try:
+        yesterday = datetime.now() - timedelta(days=1)
+        health_data['recent_activity']['contributions_24h'] = Contribution.query.filter(
+            Contribution.created_at >= yesterday
+        ).count()
+        health_data['recent_activity']['comments_24h'] = CellComment.query.filter(
+            CellComment.created_at >= yesterday
+        ).count()
+        health_data['recent_activity']['snapshots_24h'] = KPISnapshot.query.filter(
+            KPISnapshot.snapshot_date >= yesterday.date()
+        ).count()
+    except Exception as e:
+        health_data['recent_activity']['error'] = str(e)
+
+    return render_template('global_admin/health_dashboard.html', health=health_data)
 
 
 # User Management Routes
