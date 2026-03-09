@@ -307,13 +307,27 @@ class YAMLImportService:
                         value_type = value_type_map[vt_name]
 
                         colors = vt_data.get('colors', {})
+
+                        # Parse target date if present
+                        target_date = None
+                        if vt_data.get('target_date'):
+                            from datetime import datetime
+                            try:
+                                target_date = datetime.strptime(vt_data['target_date'], '%Y-%m-%d').date()
+                            except ValueError:
+                                pass
+
                         config = KPIValueTypeConfig(
                             kpi_id=kpi.id,
                             value_type_id=value_type.id,
                             display_order=0,
                             color_positive=colors.get('positive', '#28a745'),
                             color_zero=colors.get('zero', '#6c757d'),
-                            color_negative=colors.get('negative', '#dc3545')
+                            color_negative=colors.get('negative', '#dc3545'),
+                            display_scale=vt_data.get('display_scale', 'default'),
+                            display_decimals=vt_data.get('display_decimals'),
+                            target_value=vt_data.get('target_value'),
+                            target_date=target_date
                         )
                         if not dry_run:
                             db.session.add(config)

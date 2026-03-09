@@ -197,7 +197,7 @@ class YAMLExportService:
                         'name': config.value_type.name
                     }
 
-                    # Add colors if configured and value type is numeric
+                    # Add colors and display settings if configured and value type is numeric
                     if config.value_type.kind == 'numeric':
                         if config.color_positive or config.color_zero or config.color_negative:
                             colors = {}
@@ -208,6 +208,18 @@ class YAMLExportService:
                             if config.color_negative:
                                 colors['negative'] = config.color_negative
                             vt_config['colors'] = colors
+
+                        # Add display scale and decimals
+                        if config.display_scale and config.display_scale != 'default':
+                            vt_config['display_scale'] = config.display_scale
+                        if config.display_decimals is not None:
+                            vt_config['display_decimals'] = config.display_decimals
+
+                        # Add target tracking
+                        if config.target_value is not None:
+                            vt_config['target_value'] = float(config.target_value)
+                        if config.target_date:
+                            vt_config['target_date'] = config.target_date.strftime('%Y-%m-%d')
 
                     value_types_data.append(vt_config)
 
