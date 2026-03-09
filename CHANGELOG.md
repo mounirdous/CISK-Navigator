@@ -5,6 +5,57 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.5] - 2026-03-09
+
+### Fixed
+- **Comment Deletion with Mentions**: Fixed cascade delete for comments containing @mentions
+  - Added `ON DELETE CASCADE` to `mention_notifications` foreign key constraint
+  - Added `passive_deletes=True` to SQLAlchemy relationship in `app/models/cell_comment.py`
+  - Comments with mentions can now be deleted without foreign key constraint errors
+- **Deployment Migration**: Fixed `render.yaml` to run `flask db upgrade` in `startCommand` instead of `buildCommand`
+  - Ensures database migrations run before app starts, not during build
+
+### Database
+- Migration `a7d3e4f2b8c9_fix_mention_cascade_delete.py`
+
+## [1.14.4] - 2026-03-09
+
+### Added
+- **🔒 Comment Permissions System**: Granular control over comment access per organization
+  - **View Comments** permission: See existing comments, mentions bell, recent comments on dashboard
+  - **Add Comments** permission: Create new comments (requires View permission)
+  - Permissions managed in user create/edit forms with dependency logic
+  - Global admins bypass all permission checks
+  - API enforcement: 403 responses for unauthorized access
+  - Database columns: `can_view_comments`, `can_add_comments` in `user_organization_memberships`
+
+### Changed
+- **Comment Icon UX**: Smarter visibility based on permissions
+  - Users who can add: 💬 icon always visible
+  - Users who can only view: 💬 icon only shows when comments exist (count > 0)
+  - Prevents misleading empty state for view-only users
+- **Empty State Message**: Changed from "Be the first to comment!" to "No comments yet."
+- **Admin UI**: "Add Comments" checkbox automatically disables when "View Comments" unchecked
+
+### Database
+- Migration `f3a9b2c1d5e7_add_comment_permissions.py`
+
+## [1.14.3] - 2026-03-09
+
+### Changed
+- **🏛️ Redesigned Spaces Admin Page**: Modern card-based layout with icons
+  - Added space icons (🏢) for visual identification
+  - Improved dark mode support with proper contrast
+  - Enhanced visual hierarchy and spacing
+
+## [1.14.2] - 2026-03-09
+
+### Fixed
+- **Dark Mode Readability**: Improved overall contrast and text visibility
+  - Enhanced color scheme for better readability in dark mode
+  - Fixed border colors and background contrasts
+  - Improved form element visibility
+
 ## [1.14.1] - 2026-03-08
 
 ### Fixed

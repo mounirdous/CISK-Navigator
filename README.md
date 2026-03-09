@@ -1,13 +1,24 @@
-# 🧭 CISK Navigator v1.14.1
+# 🧭 CISK Navigator v1.14.5
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.14.1-blue)
+![Version](https://img.shields.io/badge/version-1.14.5-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 
 ## ✨ What's New in v1.14 (March 2026)
+
+### 🔒 **Comment Permissions** (v1.14.4-v1.14.5)
+- **Granular Comment Access**: Control who can view and add comments per organization
+- **Two Permission Levels**: "View Comments" and "Add Comments" (dependent on view)
+- **Smart Comment Icons**: Icons only show for view-only users when comments exist
+- **API Security**: 403 responses for unauthorized comment access
+- **Fixed Comment Deletion**: Comments with @mentions now delete properly with cascade
+
+### 🎨 **UI Improvements** (v1.14.2-v1.14.3)
+- **Redesigned Spaces Admin**: Modern card-based layout with icons and better dark mode
+- **Enhanced Dark Mode**: Improved contrast and readability throughout the app
 
 ### 🐛 **Bug Fixes** (v1.14.1)
 - **Level Toggle Fixes**: Pills now properly toggle colors (blue/gray) and rows hide/show correctly
