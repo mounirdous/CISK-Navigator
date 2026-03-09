@@ -122,17 +122,137 @@
         border-color: #333 !important;
     }
 
-    /* Modern User Dropdown Styles */
+    /* Modern User Dropdown Styles - Enhanced */
+    .navbar .dropdown {
+        position: relative;
+        z-index: 1060;
+    }
+
     .dropdown-menu {
         border: none;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        border-radius: 12px;
+        padding: 0.5rem;
+        animation: dropdownSlideIn 0.2s ease-out;
+        backdrop-filter: blur(10px);
+        min-width: 280px;
+        z-index: 1060 !important;
+        position: absolute !important;
+    }
+
+    /* Ensure navbar is above workspace content */
+    .navbar {
+        z-index: 1055 !important;
+        position: relative;
+    }
+
+    @keyframes dropdownSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .dropdown-menu .px-3 {
         border-radius: 8px;
     }
 
+    .dropdown-item {
+        border-radius: 8px;
+        padding: 0.625rem 1rem;
+        margin-bottom: 0.25rem;
+        transition: all 0.2s ease;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .dropdown-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus {
+        background-color: rgba(13, 110, 253, 0.1);
+        transform: translateX(4px);
+    }
+
+    .dropdown-item i {
+        width: 20px;
+        text-align: center;
+    }
+
+    .dropdown-divider {
+        margin: 0.5rem 0;
+        opacity: 0.2;
+    }
+
+    /* User info section */
+    .dropdown-menu .px-3.py-2.border-bottom {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, transparent 100%);
+        margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+        padding: 1rem !important;
+        border-radius: 12px 12px 0 0 !important;
+    }
+
+    /* Current org section */
+    .dropdown-menu .bg-light {
+        background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(13, 110, 253, 0.03) 100%) !important;
+        border-radius: 8px;
+        margin-left: 0.5rem;
+        margin-right: 0.5rem;
+    }
+
+    /* Switch organization label */
+    .dropdown-menu .px-3.py-1 {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+        opacity: 0.6;
+        margin-top: 0.5rem;
+    }
+
+    /* Organization switch buttons */
+    .dropdown-item form button {
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 0;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .dropdown-item:active {
+        background-color: rgba(13, 110, 253, 0.2);
+        transform: scale(0.98);
+    }
+
+    /* Logout button styling */
+    .dropdown-item.text-danger {
+        color: #dc3545 !important;
+    }
+
+    .dropdown-item.text-danger:hover {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+        color: #dc3545 !important;
+    }
+
+    /* Dark mode overrides */
     .dark-mode .dropdown-menu {
-        background-color: #1a1a1a !important;
-        border-color: #333 !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        background-color: rgba(26, 26, 26, 0.98) !important;
+        border: 1px solid #333;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.6);
     }
 
     .dark-mode .dropdown-item {
@@ -141,16 +261,22 @@
 
     .dark-mode .dropdown-item:hover,
     .dark-mode .dropdown-item:focus {
-        background-color: #2a2a2a !important;
+        background-color: rgba(77, 171, 247, 0.15) !important;
         color: #fff !important;
     }
 
     .dark-mode .dropdown-divider {
-        border-color: #333 !important;
+        border-color: #444 !important;
+        opacity: 1;
     }
 
-    .dark-mode .bg-light {
-        background-color: #252525 !important;
+    .dark-mode .dropdown-menu .px-3.py-2.border-bottom {
+        background: linear-gradient(135deg, rgba(77, 171, 247, 0.1) 0%, transparent 100%);
+        border-bottom-color: #444 !important;
+    }
+
+    .dark-mode .dropdown-menu .bg-light {
+        background: linear-gradient(135deg, rgba(77, 171, 247, 0.12) 0%, rgba(77, 171, 247, 0.05) 100%) !important;
         color: #e0e0e0 !important;
     }
 
@@ -158,25 +284,9 @@
         color: #fff !important;
     }
 
-    .dark-mode .border-bottom {
-        border-color: #333 !important;
-    }
-
-    .dropdown-item button {
-        background: none;
-        border: none;
-        width: 100%;
-        text-align: left;
-        padding: 0;
-    }
-
-    .dropdown-item:active {
-        background-color: #0d6efd;
-    }
-
     .dark-mode .dropdown-item.text-danger:hover {
-        background-color: #dc3545 !important;
-        color: #fff !important;
+        background-color: rgba(255, 107, 107, 0.15) !important;
+        color: #ff6b6b !important;
     }
     </style>
 </head>
@@ -222,18 +332,21 @@
                 </ul>
                 {% if session.organization_id %}
                 <form class="d-flex me-3" method="GET" action="{{ url_for('workspace.search_page') }}">
-                    <input class="form-control me-2" type="search" name="q" placeholder="Search..." style="width: 250px;">
-                    <button class="btn btn-outline-light" type="submit">
-                        <i class="bi bi-search"></i>
-                    </button>
+                    <div class="input-group" style="width: 280px;">
+                        <input class="form-control" type="search" name="q" placeholder="Search KPIs, Systems..."
+                               style="border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                        <button class="btn btn-outline-light" type="submit" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
                 </form>
                 {% endif %}
                 <ul class="navbar-nav">
                     {% if session.organization_id and current_user.can_view_comments(session.organization_id) %}
                     <li class="nav-item">
-                        <a class="nav-link mentions-btn" href="#" onclick="showMentions(); return false;" title="Mentions">
-                            🔔
-                            <span id="mentionsBadge" style="display: none;">0</span>
+                        <a class="nav-link mentions-btn position-relative" href="#" onclick="showMentions(); return false;" title="Mentions">
+                            <i class="bi bi-bell" style="font-size: 1.25rem;"></i>
+                            <span id="mentionsBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none; font-size: 0.7rem;">0</span>
                         </a>
                     </li>
                     {% endif %}

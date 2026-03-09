@@ -3,8 +3,11 @@
 {% block title %}Search Results - {{ organization_name }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-search"></i> Search Results</h2>
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-search"></i> Search Results</h2>
+        <p class="text-muted mb-0">Find anything across your organization</p>
+    </div>
     <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-secondary">
         <i class="bi bi-speedometer2"></i> Dashboard
     </a>
@@ -27,35 +30,56 @@
 
 {% if query %}
 <!-- Results Summary -->
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i> Found <strong>{{ total }}</strong> results for "<strong>{{ query }}</strong>"
+<div class="data-card mb-4 fade-in">
+    <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-info-circle-fill fs-2" style="color: var(--accent-info);"></i>
+        <div>
+            <div class="data-label">Search Results</div>
+            <div class="h5 mb-0">
+                Found <strong class="text-primary">{{ total }}</strong> result{{ 's' if total != 1 else '' }} for "<strong>{{ query }}</strong>"
+            </div>
+        </div>
+    </div>
 </div>
 
 {% if total == 0 %}
-<div class="alert alert-warning text-center py-5">
-    <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+<div class="empty-state py-5 fade-in">
+    <i class="bi bi-search"></i>
     <h4 class="mt-3">No results found</h4>
     <p>Try different keywords or check your spelling</p>
+    <a href="{{ url_for('workspace.index') }}" class="btn btn-primary mt-3">
+        <i class="bi bi-grid-3x3"></i> Browse Workspace
+    </a>
 </div>
 {% else %}
 
 <!-- Spaces -->
 {% if results.spaces %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift slide-in-left">
     <div class="card-header bg-primary text-white">
-        <h5 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> Spaces ({{ results.spaces|length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-grid-3x3-gap-fill"></i> Spaces ({{ results.spaces|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
             {% for space in results.spaces %}
-            <a href="{{ url_for('workspace.index') }}#space-{{ space.id }}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">{{ space.name }}</h6>
-                </div>
-                {% if space.description %}
-                <p class="mb-1 text-muted">{{ space.description }}</p>
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <a href="{{ url_for('workspace.index') }}#space-{{ space.id }}" class="flex-grow-1 text-decoration-none text-dark">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ space.name }}</h6>
+                    </div>
+                    {% if space.description %}
+                    <p class="mb-1 text-muted">{{ space.description }}</p>
+                    {% endif %}
+                </a>
+                {% if current_user.can_manage_spaces(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_space', space_id=space.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit Space"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
-            </a>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -64,22 +88,32 @@
 
 <!-- Challenges -->
 {% if results.challenges %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift fade-in">
     <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-flag"></i> Challenges ({{ results.challenges|length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-flag-fill"></i> Challenges ({{ results.challenges|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
             {% for challenge in results.challenges %}
-            <a href="{{ url_for('workspace.index') }}#challenge-{{ challenge.id }}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">{{ challenge.name }}</h6>
-                    <small class="text-muted">{{ challenge.space }}</small>
-                </div>
-                {% if challenge.description %}
-                <p class="mb-1 text-muted">{{ challenge.description }}</p>
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <a href="{{ url_for('workspace.index') }}#challenge-{{ challenge.id }}" class="flex-grow-1 text-decoration-none text-dark">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ challenge.name }}</h6>
+                        <small class="text-muted">{{ challenge.space }}</small>
+                    </div>
+                    {% if challenge.description %}
+                    <p class="mb-1 text-muted">{{ challenge.description }}</p>
+                    {% endif %}
+                </a>
+                {% if current_user.can_manage_challenges(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_challenge', challenge_id=challenge.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit Challenge"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
-            </a>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -88,21 +122,31 @@
 
 <!-- Initiatives -->
 {% if results.initiatives %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift slide-in-right">
     <div class="card-header bg-success text-white">
-        <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Initiatives ({{ results.initiatives|length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-lightbulb-fill"></i> Initiatives ({{ results.initiatives|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
             {% for initiative in results.initiatives %}
-            <a href="{{ url_for('workspace.index') }}#initiative-{{ initiative.id }}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">{{ initiative.name }}</h6>
-                </div>
-                {% if initiative.description %}
-                <p class="mb-1 text-muted">{{ initiative.description }}</p>
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <a href="{{ url_for('workspace.index') }}#initiative-{{ initiative.id }}" class="flex-grow-1 text-decoration-none text-dark">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ initiative.name }}</h6>
+                    </div>
+                    {% if initiative.description %}
+                    <p class="mb-1 text-muted">{{ initiative.description }}</p>
+                    {% endif %}
+                </a>
+                {% if current_user.can_manage_initiatives(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit Initiative"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
-            </a>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -111,21 +155,31 @@
 
 <!-- Systems -->
 {% if results.systems %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift fade-in">
     <div class="card-header bg-info text-white">
-        <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Systems ({{ results.systems|length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-diagram-3-fill"></i> Systems ({{ results.systems|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
             {% for system in results.systems %}
-            <a href="{{ url_for('workspace.index') }}#system-{{ system.id }}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">{{ system.name }}</h6>
-                </div>
-                {% if system.description %}
-                <p class="mb-1 text-muted">{{ system.description }}</p>
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <a href="{{ url_for('workspace.index') }}#system-{{ system.id }}" class="flex-grow-1 text-decoration-none text-dark">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ system.name }}</h6>
+                    </div>
+                    {% if system.description %}
+                    <p class="mb-1 text-muted">{{ system.description }}</p>
+                    {% endif %}
+                </a>
+                {% if current_user.can_manage_systems(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_system', system_id=system.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit System"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
-            </a>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -134,22 +188,32 @@
 
 <!-- KPIs -->
 {% if results.kpis %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift slide-in-left">
     <div class="card-header bg-warning text-dark">
         <h5 class="mb-0"><i class="bi bi-bullseye"></i> KPIs ({{ results.kpis|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
             {% for kpi in results.kpis %}
-            <a href="{{ url_for('workspace.index') }}#kpi-{{ kpi.id }}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">{{ kpi.name }}</h6>
-                    <small class="text-muted">{{ kpi.initiative }} / {{ kpi.system }}</small>
-                </div>
-                {% if kpi.description %}
-                <p class="mb-1 text-muted">{{ kpi.description }}</p>
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <a href="{{ url_for('workspace.index') }}#kpi-{{ kpi.id }}" class="flex-grow-1 text-decoration-none text-dark">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ kpi.name }}</h6>
+                        <small class="text-muted">{{ kpi.initiative }} / {{ kpi.system }}</small>
+                    </div>
+                    {% if kpi.description %}
+                    <p class="mb-1 text-muted">{{ kpi.description }}</p>
+                    {% endif %}
+                </a>
+                {% if current_user.can_manage_kpis(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit KPI"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
-            </a>
+            </div>
             {% endfor %}
         </div>
     </div>
@@ -158,20 +222,30 @@
 
 <!-- Value Types -->
 {% if results.value_types %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift slide-in-right">
     <div class="card-header bg-secondary text-white">
-        <h5 class="mb-0"><i class="bi bi-tag"></i> Value Types ({{ results.value_types|length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-tag-fill"></i> Value Types ({{ results.value_types|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
             {% for vt in results.value_types %}
-            <div class="list-group-item">
-                <div class="d-flex w-100 justify-content-between">
-                    <h6 class="mb-1">{{ vt.name }}</h6>
-                    <span class="badge bg-secondary">{{ vt.kind }}</span>
+            <div class="list-group-item d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <div class="flex-grow-1">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ vt.name }}</h6>
+                        <span class="badge bg-secondary">{{ vt.kind }}</span>
+                    </div>
+                    {% if vt.unit_label %}
+                    <p class="mb-1 text-muted">Unit: {{ vt.unit_label }}</p>
+                    {% endif %}
                 </div>
-                {% if vt.unit_label %}
-                <p class="mb-1 text-muted">Unit: {{ vt.unit_label }}</p>
+                {% if current_user.can_manage_value_types(session.organization_id) %}
+                <a href="{{ url_for('organization_admin.edit_value_type', value_type_id=vt.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit Value Type"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
                 {% endif %}
             </div>
             {% endfor %}
@@ -182,9 +256,9 @@
 
 <!-- Comments -->
 {% if current_user.can_view_comments(session.organization_id) and results.comments %}
-<div class="card mb-3">
+<div class="card mb-3 hover-lift fade-in">
     <div class="card-header bg-dark text-white">
-        <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Comments ({{ results.comments|length }})</h5>
+        <h5 class="mb-0"><i class="bi bi-chat-dots-fill"></i> Comments ({{ results.comments|length }})</h5>
     </div>
     <div class="card-body">
         <div class="list-group">
@@ -207,11 +281,70 @@
 {% endif %}
 
 <style>
-.list-group-item:hover {
-    background-color: #f8f9fa;
+/* Search Results Modern Styling */
+.list-group-item {
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
 }
+
+.list-group-item:hover {
+    background-color: var(--hover-bg);
+    transform: translateX(4px);
+    box-shadow: var(--shadow-sm);
+}
+
 .card-header h5 {
     margin: 0;
+}
+
+.list-group-item .btn-outline-primary {
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    transform: scale(0.9);
+}
+
+.list-group-item:hover .btn-outline-primary {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.list-group-item .btn-outline-primary:hover {
+    transform: scale(1.05);
+}
+
+.list-group-item a.flex-grow-1 {
+    color: var(--text-primary);
+}
+
+.list-group-item a.flex-grow-1:hover {
+    color: var(--accent-primary);
+}
+
+/* Dark mode support */
+body.dark-mode .list-group-item a.flex-grow-1 {
+    color: var(--text-primary);
+}
+
+body.dark-mode .list-group-item:hover a.flex-grow-1 {
+    color: var(--accent-primary);
+}
+
+/* Enhanced search bar */
+.input-group-lg .form-control {
+    border-radius: 12px 0 0 12px;
+    border: 2px solid var(--border-color);
+}
+
+.input-group-lg .btn {
+    border-radius: 0 12px 12px 0;
+    padding: 0.75rem 2rem;
+}
+
+.input-group-lg .form-control:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
 }
 </style>
 {% endblock %}

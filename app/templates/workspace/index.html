@@ -5,75 +5,101 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
 <style>
-/* Modern Dark Workspace Theme */
-.dark-mode #workspace-container {
-    background-color: #1a1a1a;
-    color: #e8e8e8;
+/* Workspace Specific Styles - Using CSS Variables */
+
+#workspace-container {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
 }
 
-.dark-mode .modern-toolbar {
-    background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-    border: 1px solid #333;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
+.modern-toolbar {
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
 }
 
-.dark-mode .pill-badge {
+.pill-badge {
     border-radius: 12px;
     padding: 0.25rem 0.6rem;
     font-size: 0.75rem;
     font-weight: 600;
 }
 
-.dark-mode #workspace-tree {
-    background-color: #1a1a1a;
-    border-color: #444;
+#workspace-tree {
+    background-color: var(--bg-primary);
+    border-color: var(--border-color);
 }
 
-.dark-mode #workspace-tree thead th {
-    background-color: #2a2a2a;
-    color: #e8e8e8;
-    border-color: #444;
+#workspace-tree thead th {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
     position: sticky;
     top: 0;
     z-index: 10;
     font-weight: 600;
+    padding: var(--spacing-md);
 }
 
-.dark-mode #workspace-tree tbody tr {
-    border-color: #444;
+#workspace-tree tbody tr {
+    border-color: var(--border-subtle);
+    transition: background-color var(--transition-fast);
 }
 
-.dark-mode #workspace-tree tbody tr:hover {
-    background-color: #2a2a2a;
+#workspace-tree tbody tr:hover {
+    background-color: var(--hover-bg);
 }
 
-.dark-mode #workspace-tree tbody td {
-    border-color: #444;
-    background-color: #1a1a1a;
-    color: #d0d0d0;
+#workspace-tree tbody td {
+    border-color: var(--border-subtle);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    padding: var(--spacing-sm);
 }
 
-/* Level-specific dark mode colors - MORE CONTRAST */
+/* Level-specific colors for hierarchy (both light & dark mode) */
+tr[data-level="space"] td {
+    background-color: rgba(52, 152, 219, 0.08) !important;
+}
+
+tr[data-level="challenge"] td {
+    background-color: rgba(46, 204, 113, 0.06) !important;
+}
+
+tr[data-level="initiative"] td {
+    background-color: rgba(243, 156, 18, 0.06) !important;
+}
+
+tr[data-level="system"] td {
+    background-color: rgba(155, 89, 182, 0.06) !important;
+}
+
+tr[data-level="kpi"] td {
+    background-color: rgba(231, 76, 60, 0.06) !important;
+}
+
+/* Dark mode - stronger hierarchy colors */
 .dark-mode tr[data-level="space"] td {
-    background-color: #2a3a4a !important;
+    background-color: rgba(52, 152, 219, 0.15) !important;
 }
 
 .dark-mode tr[data-level="challenge"] td {
-    background-color: #252525 !important;
+    background-color: rgba(46, 204, 113, 0.12) !important;
 }
 
 .dark-mode tr[data-level="initiative"] td {
-    background-color: #2a2a2a !important;
+    background-color: rgba(243, 156, 18, 0.12) !important;
 }
 
 .dark-mode tr[data-level="system"] td {
-    background-color: #2a3540 !important;
+    background-color: rgba(155, 89, 182, 0.12) !important;
 }
 
 .dark-mode tr[data-level="kpi"] td {
-    background-color: #353525 !important;
+    background-color: rgba(231, 76, 60, 0.12) !important;
 }
 
 /* Hierarchy icons and visual guides */
@@ -81,14 +107,14 @@
     display: inline-block;
     width: 24px;
     height: 24px;
-    margin-right: 0.5rem;
+    margin-right: var(--spacing-sm);
     text-align: center;
     vertical-align: middle;
 }
 
 .level-border {
     border-left: 4px solid;
-    padding-left: 0.5rem !important;
+    padding-left: var(--spacing-sm) !important;
 }
 
 .level-border.space { border-left-color: #3498db; }
@@ -105,15 +131,15 @@
     line-height: 20px;
     text-align: center;
     border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: var(--bg-tertiary);
     cursor: pointer;
     user-select: none;
-    transition: all 0.2s;
-    margin-right: 0.5rem;
+    transition: all var(--transition-fast);
+    margin-right: var(--spacing-sm);
 }
 
-.dark-mode .expand-icon:hover {
-    background-color: rgba(255, 255, 255, 0.2);
+.expand-icon:hover {
+    background-color: var(--hover-bg);
     transform: scale(1.1);
 }
 
@@ -121,48 +147,27 @@
 .filter-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: var(--spacing-xs);
     padding: 0.35rem 0.75rem;
     border-radius: 16px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     user-select: none;
     font-size: 0.9rem;
-}
-
-/* Light mode default */
-.filter-pill {
-    background-color: #e9ecef !important;
-    color: #6c757d !important;
-    border: 1px solid #ced4da !important;
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-secondary) !important;
+    border: 1px solid var(--border-color) !important;
 }
 
 .filter-pill:hover {
-    background-color: #dee2e6 !important;
+    background-color: var(--hover-bg) !important;
+    border-color: var(--hover-border) !important;
 }
 
 .filter-pill.active {
-    background-color: #0d6efd !important;
+    background-color: var(--accent-primary) !important;
     color: white !important;
-    border: 1px solid #0d6efd !important;
-}
-
-/* Dark mode override */
-.dark-mode .filter-pill {
-    background-color: #2a2a2a !important;
-    color: #999 !important;
-    border: 1px solid #444 !important;
-}
-
-.dark-mode .filter-pill:hover {
-    background-color: #3a3a3a !important;
-    border-color: #555 !important;
-}
-
-.dark-mode .filter-pill.active {
-    background-color: #0d6efd !important;
-    color: white !important;
-    border-color: #0d6efd !important;
+    border: 1px solid var(--accent-primary) !important;
 }
 
 .filter-pill .pill-badge {
@@ -186,16 +191,16 @@
 }
 
 /* Modern button styles */
-.dark-mode .btn-modern {
+.btn-modern {
     border-radius: 8px;
     padding: 0.5rem 1rem;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: all var(--transition-medium);
 }
 
-.dark-mode .btn-modern:hover {
+.btn-modern:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
 /* Level visibility controls */
