@@ -1,11 +1,35 @@
-# 🧭 CISK Navigator v1.14.6
+# 🧭 CISK Navigator v1.15.2
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.14.6-blue)
+![Version](https://img.shields.io/badge/version-1.15.2-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+## ✨ What's New in v1.15.2 (March 2026)
+
+### 🚨 **CRITICAL FIX**
+- **Missing Migration Restored**: Added `f5c8a9b3d2e4_add_snapshot_privacy_columns.py`
+- **Fixed Production Error**: "column kpi_snapshots.owner_user_id does not exist"
+- **Lesson Learned**: Always create migration files when modifying database schema
+
+### 🔒 **Private/Public Spaces**
+- **Privacy Control**: Mark spaces as private or public with toggle switch
+- **Workspace Filter**: Filter by All Spaces / Public / Private
+- **Discreet Badges**: Only private spaces show 🔒 badge (public spaces have no badge)
+- **Space Counts**: Filter pills show counts: "All Spaces (15)", "Public (12)", "Private (3)"
+
+### 👁️ **Smart Column Filtering**
+- **Auto-Hide Empty Columns**: Only shows value types with actual data in filtered view
+- **Context-Aware**: Respects space type, governance body, and archived filters
+- **Show All Columns Toggle**: Override to see all value types even if empty
+- **Hidden Columns Indicator**: Shows which columns are hidden and why
+
+### 💾 **Filter State Persistence**
+- **Remember Your Filters**: Uses localStorage to persist selections across sessions
+- **Auto-Restore**: Reloads governance bodies, space type, show_archived, show_all_columns
+- **Clear All Button**: Resets all filters and clears localStorage
 
 ## ✨ What's New in v1.14.6 (March 2026)
 
