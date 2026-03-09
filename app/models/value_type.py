@@ -106,6 +106,10 @@ class KPIValueTypeConfig(db.Model):
     target_date = db.Column(db.Date, nullable=True, comment='Date by which target should be achieved')
     baseline_snapshot_id = db.Column(db.Integer, nullable=True, comment='Snapshot ID to use as baseline (no FK constraint to avoid circular dependency)')
 
+    # Display scale (v1.14.6)
+    display_scale = db.Column(db.String(20), nullable=True, default='default', comment='Display scale: default, thousands, millions')
+    display_decimals = db.Column(db.Integer, nullable=True, comment='Number of decimals when using display scale (overrides value_type decimals)')
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -144,6 +148,45 @@ class KPIValueTypeConfig(db.Model):
                 return self.color_zero or '#6c757d'
         except (ValueError, TypeError):
             return None
+
+    def get_scale_divisor(self):
+        """Get the divisor for the display scale"""
+        if self.display_scale == 'thousands':
+            return 1000
+        elif self.display_scale == 'millions':
+            return 1000000
+        else:
+            return 1
+
+    def get_scale_suffix(self):
+        """Get the suffix for the display scale"""
+        if self.display_scale == 'thousands':
+            return 'k'
+        elif self.display_scale == 'millions':
+            return 'M'
+        else:
+            return ''
+
+    def format_display_value(self, value):
+        """Format a value for display with the configured scale"""
+        if value is None or not self.value_type.is_numeric():
+            return value
+
+        try:
+            numeric_value = float(value)
+            divisor = self.get_scale_divisor()
+            scaled_value = numeric_value / divisor
+
+            # Use value_type decimal places
+            decimal_places = self.value_type.decimal_places if self.value_type.decimal_places is not None else 2
+
+            # If it's integer format, show as integer after scaling
+            if self.value_type.numeric_format == 'integer':
+                return int(round(scaled_value))
+            else:
+                return round(scaled_value, decimal_places)
+        except (ValueError, TypeError):
+            return value
 
     def __repr__(self):
         return f'<KPIValueTypeConfig kpi_id={self.kpi_id} value_type_id={self.value_type_id}>'

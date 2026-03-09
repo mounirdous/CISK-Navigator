@@ -69,8 +69,8 @@ def create_app(config_name=None):
 
     # Register Jinja2 filters
     @app.template_filter('format_value')
-    def format_value_filter(value, value_type):
-        """Format a numeric value according to its value type's decimal places"""
+    def format_value_filter(value, value_type, config=None):
+        """Format a numeric value according to its value type's decimal places and display scale"""
         if value is None:
             return ''
 
@@ -78,13 +78,42 @@ def create_app(config_name=None):
         if value_type.kind != 'numeric':
             return value
 
-        # For numeric types, format according to decimal_places
-        if value_type.numeric_format == 'integer':
-            return f'{int(value)}'
+        # Get display scale settings from config if provided
+        divisor = 1
+        suffix = ''
+        if config and hasattr(config, 'display_scale'):
+            divisor = config.get_scale_divisor()
+            suffix = config.get_scale_suffix()
+
+        # Scale the value
+        scaled_value = float(value) / divisor
+
+        # Determine decimal places to use
+        if divisor > 1:
+            # Using scale: check if display_decimals is explicitly set
+            if config and hasattr(config, 'display_decimals') and config.display_decimals is not None:
+                decimal_places = config.display_decimals
+            else:
+                # Default: use at least 2 decimals when scaling
+                decimal_places = max(2, value_type.decimal_places if value_type.decimal_places is not None else 2)
+
+            formatted = f'{scaled_value:.{decimal_places}f}'
+            # Remove trailing zeros and decimal point if not needed
+            formatted = formatted.rstrip('0').rstrip('.')
         else:
-            # Decimal format
-            decimal_places = value_type.decimal_places if value_type.decimal_places is not None else 2
-            return f'{float(value):.{decimal_places}f}'
+            # No scaling: use original format
+            if value_type.numeric_format == 'integer':
+                formatted = f'{int(round(scaled_value))}'
+            else:
+                # Decimal format
+                decimal_places = value_type.decimal_places if value_type.decimal_places is not None else 2
+                formatted = f'{scaled_value:.{decimal_places}f}'
+
+        # Add suffix if present
+        if suffix:
+            formatted = f'{formatted}{suffix}'
+
+        return formatted
 
     @app.template_filter('default_value_color')
     def default_value_color_filter(value):

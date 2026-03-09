@@ -37,15 +37,29 @@ class Space(db.Model):
             return None
 
     def get_color_config(self, value_type_id):
-        """Get a representative KPIValueTypeConfig for coloring rollups"""
+        """Get a representative KPIValueTypeConfig for coloring and scaling rollups
+
+        Returns the config with the largest display scale (millions > thousands > default)
+        to ensure rollups show appropriate precision
+        """
+        scale_priority = {'millions': 3, 'thousands': 2, 'default': 1, None: 0}
+        best_config = None
+        best_scale = 0
+
         for challenge in self.challenges:
             for init_link in challenge.initiative_links:
                 for sys_link in init_link.initiative.system_links:
                     for kpi in sys_link.kpis:
                         for config in kpi.value_type_configs:
                             if config.value_type_id == value_type_id:
-                                return config
-        return None
+                                current_scale = scale_priority.get(config.display_scale, 0)
+                                if current_scale > best_scale:
+                                    best_scale = current_scale
+                                    best_config = config
+                                elif not best_config:
+                                    best_config = config
+
+        return best_config
 
     def __repr__(self):
         return f'<Space {self.name}>'

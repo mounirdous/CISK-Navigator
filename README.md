@@ -1,11 +1,43 @@
-# 🧭 CISK Navigator v1.14.5
+# 🧭 CISK Navigator v1.14.6
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.14.5-blue)
+![Version](https://img.shields.io/badge/version-1.14.6-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+## ✨ What's New in v1.14.6 (March 2026)
+
+### 📊 **Display Scale Feature**
+- **Thousands & Millions Display**: Show values as 1.25M or 125k instead of 1,250,000
+- **Configurable per KPI**: Choose Normal, Thousands (k), or Millions (M) scale
+- **Precision Control**: Set display decimals (0-6) for scaled values
+- **Smart Defaults**: Auto-shows 2+ decimals when using scale to preserve precision
+- **Applied Everywhere**: Workspace, KPI detail pages, charts, rollups
+- **Data Entry Unaffected**: Always enter raw values (no confusion)
+
+### 🔄 **Organization Switcher**
+- **One-Click Switching**: Change organizations without logging out
+- **Modern Dropdown**: Click username → select organization
+- **User-Friendly**: Shows current org, all accessible orgs, profile, logout
+- **Full Dark Mode**: Styled for both light and dark themes
+
+### 📈 **Qualitative KPI Trends**
+- **Historical Charts**: Now work for Risk, Impact, Level, Sentiment value types
+- **Color-Coded Points**: Visual distinction for Low/Medium/High values
+- **Stepped Line Charts**: Clear transitions between discrete levels
+- **Text Y-Axis**: Shows "! Low", "!! Medium", "!!! High" instead of numbers
+
+### 🎯 **Smart Rollup Scaling**
+- **Intelligent Aggregation**: Uses largest scale when rolling up mixed KPIs
+- **Example**: 50,000 + 1,250,000 = 1.3M (not 1,300,000)
+- **Automatic**: No configuration needed, just works
+
+### 🎨 **UX Improvements**
+- **Entry Form at Top**: No more scrolling on KPI detail page
+- **Compact Layout**: Form fields in horizontal row
+- **Edit Highlight**: Clicking Edit scrolls to top with yellow border flash
 
 ## ✨ What's New in v1.14 (March 2026)
 

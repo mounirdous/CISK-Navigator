@@ -5,6 +5,48 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.6] - 2026-03-09
+
+### Added
+- **📊 Display Scale Feature**: Show numeric values in thousands (k) or millions (M)
+  - Configurable per KPI value type: Normal, Thousands, Millions
+  - Display decimals field for precision control (0-6 decimals)
+  - Smart trailing zero removal for clean display
+  - Applied to workspace, KPI detail pages, and charts
+  - Data entry still uses raw values (no confusion)
+- **🔄 Organization Switcher**: Modern dropdown in navbar
+  - One-click organization switching without logout
+  - Shows current organization with icon
+  - Lists all accessible organizations
+  - Modern UI with user info, org switcher, and actions
+  - Full dark mode support
+- **📈 Qualitative KPI Historical Trends**: Charts now work for all value types
+  - Risk, Positive Impact, Negative Impact, Level, Sentiment
+  - Stepped line charts with color-coded points
+  - Y-axis shows text labels (e.g., "! Low", "!!! High")
+  - Same chart system as numeric KPIs
+- **🎯 Smart Rollup Scaling**: Intelligent scale selection for aggregations
+  - When rolling up KPIs with different scales, uses the largest (millions > thousands > default)
+  - Ensures appropriate precision for aggregated values
+  - Example: Rolling up 50k + 1.25M shows as 1.3M (not 1,300,000)
+
+### Changed
+- **KPI Detail Page**: Entry form moved to top for better UX
+  - No more scrolling to enter values
+  - Compact horizontal layout (3 columns)
+  - Clear button added
+  - Info cards and contributions table below
+  - Edit button scrolls to top with highlight
+- **Decimal Formatting**: Smart precision handling
+  - When using scale, automatically shows at least 2 decimals
+  - User can override with display_decimals field
+  - Respects value type's decimal_places setting
+  - Clean display with trailing zero removal
+
+### Database
+- Migration `c8f5a9b2e3d1_add_display_scale_to_kpi_configs.py` - Added display_scale column
+- Migration `d9e6f8a4b5c2_add_display_decimals_to_kpi_configs.py` - Added display_decimals column
+
 ## [1.14.5] - 2026-03-09
 
 ### Fixed

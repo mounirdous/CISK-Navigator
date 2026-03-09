@@ -430,9 +430,9 @@
                                 <span class="rollup-indicator">Σ</span>
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
-                                    <span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
+                                    <span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
                                     {% else %}
-                                    <span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
+                                    <span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
                                     {% endif %}
                                 {% elif vt.kind == 'risk' %}
                                     {% if rollup.value == 1 %}!{% elif rollup.value == 2 %}!!{% elif rollup.value == 3 %}!!!{% endif %}
@@ -468,9 +468,9 @@
                             {% if rollup %}
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
-                                    <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                     {% else %}
-                                    <strong><span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    <strong><span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                     {% endif %}
                                 {% elif vt.kind == 'risk' %}
                                     {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
@@ -507,9 +507,9 @@
                             {% if rollup %}
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
-                                    <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                     {% else %}
-                                    <strong><span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                    <strong><span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                     {% endif %}
                                 {% elif vt.kind == 'risk' %}
                                     {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
@@ -547,9 +547,9 @@
                                 <div>
                                     {% if vt.kind == 'numeric' %}
                                         {% if color_config %}
-                                        <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                         {% else %}
-                                        <strong><span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        <strong><span style="color: {{ rollup.value|default_value_color }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                         {% endif %}
                                     {% elif vt.kind == 'risk' %}
                                         {% if rollup.value == 1 %}<strong>!</strong>{% elif rollup.value == 2 %}<strong>!!</strong>{% elif rollup.value == 3 %}<strong>!!!</strong>{% endif %}
@@ -622,10 +622,10 @@
                                     {% elif consensus.value is not none %}
                                 <div>
                                     {% if vt.kind == 'numeric' %}
-                                        <strong><span style="color: {{ config.get_value_color(consensus.value) }};">{{ consensus.value|format_value(vt) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        <strong><span style="color: {{ config.get_value_color(consensus.value) }};">{{ consensus.value|format_value(vt, config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                         {% if config.target_value %}
                                             {% set progress = ((consensus.value / config.target_value) * 100)|int %}
-                                            <br><small style="color: #6c757d;" title="Target: {{ config.target_value }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯 {{ progress }}%</small>
+                                            <br><small style="color: #6c757d;" title="Target: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'risk' %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}

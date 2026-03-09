@@ -601,6 +601,18 @@ def create_kpi(link_id):
             color_zero = request.form.get(f'color_zero_{vt_id}', '#6c757d')
             color_negative = request.form.get(f'color_negative_{vt_id}', '#dc3545')
 
+            # Get display scale
+            display_scale = request.form.get(f'display_scale_{vt_id}', 'default')
+
+            # Get display decimals
+            display_decimals = None
+            display_decimals_str = request.form.get(f'display_decimals_{vt_id}')
+            if display_decimals_str and display_decimals_str.strip():
+                try:
+                    display_decimals = int(display_decimals_str)
+                except ValueError:
+                    pass
+
             # Get target values from form (if checkbox was checked)
             has_target = request.form.get(f'has_target_{vt_id}')
             target_value = None
@@ -630,6 +642,8 @@ def create_kpi(link_id):
                 color_positive=color_positive,
                 color_zero=color_zero,
                 color_negative=color_negative,
+                display_scale=display_scale,
+                display_decimals=display_decimals,
                 target_value=target_value,
                 target_date=target_date
             )
@@ -691,6 +705,21 @@ def edit_kpi(kpi_id):
                     config.color_zero = color_zero
                 if color_negative:
                     config.color_negative = color_negative
+
+                # Handle display scale
+                display_scale = request.form.get(f'display_scale_{config.id}')
+                if display_scale:
+                    config.display_scale = display_scale
+
+                # Handle display decimals
+                display_decimals_str = request.form.get(f'display_decimals_{config.id}')
+                if display_decimals_str and display_decimals_str.strip():
+                    try:
+                        config.display_decimals = int(display_decimals_str)
+                    except ValueError:
+                        pass
+                else:
+                    config.display_decimals = None
 
                 # Handle target updates
                 has_target = request.form.get(f'has_target_{config.id}')

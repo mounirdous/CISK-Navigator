@@ -121,6 +121,63 @@
     .dark-mode .modal-footer {
         border-color: #333 !important;
     }
+
+    /* Modern User Dropdown Styles */
+    .dropdown-menu {
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 8px;
+    }
+
+    .dark-mode .dropdown-menu {
+        background-color: #1a1a1a !important;
+        border-color: #333 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+
+    .dark-mode .dropdown-item {
+        color: #e0e0e0 !important;
+    }
+
+    .dark-mode .dropdown-item:hover,
+    .dark-mode .dropdown-item:focus {
+        background-color: #2a2a2a !important;
+        color: #fff !important;
+    }
+
+    .dark-mode .dropdown-divider {
+        border-color: #333 !important;
+    }
+
+    .dark-mode .bg-light {
+        background-color: #252525 !important;
+        color: #e0e0e0 !important;
+    }
+
+    .dark-mode .bg-light .fw-bold {
+        color: #fff !important;
+    }
+
+    .dark-mode .border-bottom {
+        border-color: #333 !important;
+    }
+
+    .dropdown-item button {
+        background: none;
+        border: none;
+        width: 100%;
+        text-align: left;
+        padding: 0;
+    }
+
+    .dropdown-item:active {
+        background-color: #0d6efd;
+    }
+
+    .dark-mode .dropdown-item.text-danger:hover {
+        background-color: #dc3545 !important;
+        color: #fff !important;
+    }
     </style>
 </head>
 <body{% if current_user.is_authenticated and current_user.dark_mode %} class="dark-mode"{% endif %}>
@@ -129,7 +186,7 @@
             <a class="navbar-brand" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
                 <div>
                     CISK Navigator
-                    <br><small style="font-size: 0.65rem; opacity: 0.7;">v1.14.5</small>
+                    <br><small style="font-size: 0.65rem; opacity: 0.7;">v1.14.6</small>
                 </div>
             </a>
             {% if current_user.is_authenticated %}
@@ -180,19 +237,73 @@
                         </a>
                     </li>
                     {% endif %}
-                    <li class="nav-item">
-                        <span class="navbar-text me-3">
-                            {{ current_user.display_name or current_user.login }}
-                            {% if session.organization_name %} - {{ session.organization_name }}{% endif %}
-                        </span>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.profile') }}">
-                            <i class="bi bi-person-circle"></i> Profile
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-person-circle"></i> {{ current_user.display_name or current_user.login }}
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="min-width: 280px;">
+                            <!-- User Info -->
+                            <li class="px-3 py-2 border-bottom">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-circle fs-3 me-2"></i>
+                                    <div>
+                                        <div class="fw-bold">{{ current_user.display_name or current_user.login }}</div>
+                                        <small class="text-muted">{{ current_user.email or current_user.login }}</small>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Current Organization -->
+                            {% if session.organization_name %}
+                            <li class="px-3 py-2 bg-light">
+                                <small class="text-muted d-block mb-1">Current Organization</small>
+                                <div class="fw-bold">
+                                    <i class="bi bi-building"></i> {{ session.organization_name }}
+                                </div>
+                            </li>
+                            {% endif %}
+
+                            <!-- Organization Switcher -->
+                            {% set user_orgs = current_user.get_organizations() %}
+                            {% if user_orgs|length > 1 %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="px-3 py-1">
+                                <small class="text-muted">Switch Organization</small>
+                            </li>
+                            {% for org in user_orgs %}
+                                {% if org.is_active and org.id != session.organization_id %}
+                                <li>
+                                    <form method="POST" action="{{ url_for('auth.switch_organization', org_id=org.id) }}" class="m-0">
+                                        <button type="submit" class="dropdown-item d-flex align-items-center">
+                                            <i class="bi bi-building me-2"></i> {{ org.name }}
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endif %}
+                            {% endfor %}
+                            {% endif %}
+
+                            <!-- Actions -->
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                    <i class="bi bi-person"></i> Profile
+                                </a>
+                            </li>
+                            {% if current_user.is_global_admin %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('global_admin.index') }}">
+                                    <i class="bi bi-shield-lock"></i> Global Admin
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+                                    <i class="bi bi-box-arrow-right"></i> Logout
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>

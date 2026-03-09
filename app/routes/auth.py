@@ -186,6 +186,29 @@ def profile():
     return render_template('auth/profile.html', form=form)
 
 
+@bp.route('/switch-organization/<int:org_id>', methods=['POST'])
+@login_required
+def switch_organization(org_id):
+    """Switch to a different organization without logging out"""
+    # Verify user has access to this organization
+    if not current_user.has_organization_access(org_id):
+        flash('You do not have access to this organization', 'danger')
+        return redirect(request.referrer or url_for('workspace.dashboard'))
+
+    # Get organization
+    organization = Organization.query.get(org_id)
+    if not organization or not organization.is_active:
+        flash('Organization is not available', 'danger')
+        return redirect(request.referrer or url_for('workspace.dashboard'))
+
+    # Switch organization context
+    session['organization_id'] = organization.id
+    session['organization_name'] = organization.name
+
+    flash(f'Switched to {organization.name}', 'success')
+    return redirect(url_for('workspace.dashboard'))
+
+
 @bp.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():

@@ -22,23 +22,39 @@
             {% if vt.kind == 'numeric' %}
             <div class="card-body">
                 <div class="row g-2 mb-3">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Positive Values</label>
                         <input type="color" class="form-control form-control-color"
                                name="color_positive_{{ config.id }}"
                                value="{{ config.color_positive or '#28a745' }}">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Zero/Null Values</label>
                         <input type="color" class="form-control form-control-color"
                                name="color_zero_{{ config.id }}"
                                value="{{ config.color_zero or '#6c757d' }}">
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label small">Negative Values</label>
                         <input type="color" class="form-control form-control-color"
                                name="color_negative_{{ config.id }}"
                                value="{{ config.color_negative or '#dc3545' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Display Scale</label>
+                        <select class="form-select form-select-sm" name="display_scale_{{ config.id }}">
+                            <option value="default" {{ 'selected' if not config.display_scale or config.display_scale == 'default' else '' }}>Normal</option>
+                            <option value="thousands" {{ 'selected' if config.display_scale == 'thousands' else '' }}>Thousands (k)</option>
+                            <option value="millions" {{ 'selected' if config.display_scale == 'millions' else '' }}>Millions (M)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small">Display Decimals</label>
+                        <input type="number" min="0" max="6" class="form-control form-control-sm"
+                               name="display_decimals_{{ config.id }}"
+                               value="{{ config.display_decimals if config.display_decimals is not none else '' }}"
+                               placeholder="Auto">
+                        <small class="form-text text-muted d-block">For scale only</small>
                     </div>
                 </div>
 
