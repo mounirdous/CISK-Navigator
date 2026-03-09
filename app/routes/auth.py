@@ -1,16 +1,18 @@
 """
 Authentication routes
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request, current_app
-from flask_login import login_user, logout_user, login_required, current_user
+
+from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask_login import current_user, login_required, login_user, logout_user
+
 from app.extensions import db
-from app.models import User, Organization
-from app.forms import LoginForm, ChangePasswordForm, ProfileEditForm
+from app.forms import ChangePasswordForm, LoginForm, ProfileEditForm
+from app.models import Organization, User
 
-bp = Blueprint('auth', __name__, url_prefix='/auth')
+bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 
-@bp.route('/login', methods=['GET', 'POST'])
+@bp.route("/login", methods=["GET", "POST"])
 def login():
     """
     Single-step login with automatic organization selection.
@@ -19,14 +21,14 @@ def login():
     Users can switch organizations via navbar after login.
     """
     # If already authenticated AND has organization context, go to workspace
-    if current_user.is_authenticated and session.get('organization_id'):
-        return redirect(url_for('workspace.dashboard'))
+    if current_user.is_authenticated and session.get("organization_id"):
+        return redirect(url_for("workspace.dashboard"))
 
     # If authenticated but no organization, log out and restart
-    if current_user.is_authenticated and not session.get('organization_id'):
+    if current_user.is_authenticated and not session.get("organization_id"):
         logout_user()
         session.clear()
-        flash('Session expired. Please log in again.', 'info')
+        flash("Session expired. Please log in again.", "info")
 
     form = LoginForm()
 
@@ -34,12 +36,12 @@ def login():
         user = User.query.filter_by(login=form.login.data).first()
 
         if user is None or not user.check_password(form.password.data):
-            flash('Invalid login or password', 'danger')
-            return redirect(url_for('auth.login'))
+            flash("Invalid login or password", "danger")
+            return redirect(url_for("auth.login"))
 
         if not user.is_active:
-            flash('Your account is inactive', 'danger')
-            return redirect(url_for('auth.login'))
+            flash("Your account is inactive", "danger")
+            return redirect(url_for("auth.login"))
 
         # Get user's organizations
         user_orgs = user.get_organizations()
@@ -49,17 +51,17 @@ def login():
         # Allow them to log in and access Global Admin panel
         if user.is_global_admin and not active_orgs:
             login_user(user)
-            session['organization_id'] = None
-            session['organization_name'] = 'Global Administration'
+            session["organization_id"] = None
+            session["organization_name"] = "Global Administration"
 
             # Handle password change requirement
-            if user.must_change_password and not session.get('_pwd_check_done'):
-                session['_pwd_check_done'] = True
-                flash('You must change your password', 'warning')
-                return redirect(url_for('auth.change_password'))
+            if user.must_change_password and not session.get("_pwd_check_done"):
+                session["_pwd_check_done"] = True
+                flash("You must change your password", "warning")
+                return redirect(url_for("auth.change_password"))
 
-            flash(f'Welcome, {user.display_name or user.login}! (Global Admin)', 'success')
-            return redirect(url_for('global_admin.index'))
+            flash(f"Welcome, {user.display_name or user.login}! (Global Admin)", "success")
+            return redirect(url_for("global_admin.index"))
 
         # Determine which organization to log into
         selected_org = None
@@ -76,41 +78,41 @@ def login():
 
         # No organizations available (and not a global admin)
         if not selected_org:
-            flash('You do not have access to any organizations. Please contact your administrator.', 'danger')
-            return redirect(url_for('auth.login'))
+            flash("You do not have access to any organizations. Please contact your administrator.", "danger")
+            return redirect(url_for("auth.login"))
 
         # Log user in with organization context
         login_user(user)
-        session['organization_id'] = selected_org.id
-        session['organization_name'] = selected_org.name
+        session["organization_id"] = selected_org.id
+        session["organization_name"] = selected_org.name
 
         # Handle password change requirement
-        if user.must_change_password and not session.get('_pwd_check_done'):
-            session['_pwd_check_done'] = True
-            flash('You must change your password', 'warning')
-            return redirect(url_for('auth.change_password'))
+        if user.must_change_password and not session.get("_pwd_check_done"):
+            session["_pwd_check_done"] = True
+            flash("You must change your password", "warning")
+            return redirect(url_for("auth.change_password"))
 
         # Success message
-        flash(f'Welcome back, {user.display_name or user.login}!', 'success')
-        return redirect(url_for('workspace.dashboard'))
+        flash(f"Welcome back, {user.display_name or user.login}!", "success")
+        return redirect(url_for("workspace.dashboard"))
 
-    return render_template('auth/login.html', form=form)
+    return render_template("auth/login.html", form=form)
 
 
-@bp.route('/logout')
+@bp.route("/logout")
 def logout():
     """Logout current user"""
     if current_user.is_authenticated:
         logout_user()
-    session.pop('organization_id', None)
-    session.pop('organization_name', None)
-    session.pop('_temp_user_id', None)
-    session.pop('_pwd_check_done', None)
-    flash('You have been logged out', 'info')
-    return redirect(url_for('auth.login'))
+    session.pop("organization_id", None)
+    session.pop("organization_name", None)
+    session.pop("_temp_user_id", None)
+    session.pop("_pwd_check_done", None)
+    flash("You have been logged out", "info")
+    return redirect(url_for("auth.login"))
 
 
-@bp.route('/profile', methods=['GET', 'POST'])
+@bp.route("/profile", methods=["GET", "POST"])
 @login_required
 def profile():
     """View and edit user profile"""
@@ -118,7 +120,7 @@ def profile():
 
     # Populate organization choices
     user_orgs = current_user.get_organizations()
-    org_choices = [(0, '-- None (use first available) --')] + [(org.id, org.name) for org in user_orgs if org.is_active]
+    org_choices = [(0, "-- None (use first available) --")] + [(org.id, org.name) for org in user_orgs if org.is_active]
     form.default_organization.choices = org_choices
 
     if form.validate_on_submit():
@@ -135,63 +137,63 @@ def profile():
             if current_user.has_organization_access(default_org_id):
                 current_user.default_organization_id = default_org_id
             else:
-                flash('You do not have access to the selected organization', 'danger')
-                return redirect(url_for('auth.profile'))
+                flash("You do not have access to the selected organization", "danger")
+                return redirect(url_for("auth.profile"))
 
         db.session.commit()
-        flash('Profile updated successfully', 'success')
-        return redirect(url_for('auth.profile'))
+        flash("Profile updated successfully", "success")
+        return redirect(url_for("auth.profile"))
 
     # Pre-populate form with current values
-    if request.method == 'GET':
+    if request.method == "GET":
         form.display_name.data = current_user.display_name
         form.email.data = current_user.email
         form.dark_mode.data = current_user.dark_mode
         form.default_organization.data = current_user.default_organization_id or 0
 
-    return render_template('auth/profile.html', form=form)
+    return render_template("auth/profile.html", form=form)
 
 
-@bp.route('/switch-organization/<int:org_id>', methods=['POST'])
+@bp.route("/switch-organization/<int:org_id>", methods=["POST"])
 @login_required
 def switch_organization(org_id):
     """Switch to a different organization without logging out"""
     # Verify user has access to this organization
     if not current_user.has_organization_access(org_id):
-        flash('You do not have access to this organization', 'danger')
-        return redirect(request.referrer or url_for('workspace.dashboard'))
+        flash("You do not have access to this organization", "danger")
+        return redirect(request.referrer or url_for("workspace.dashboard"))
 
     # Get organization
     organization = Organization.query.get(org_id)
     if not organization or not organization.is_active:
-        flash('Organization is not available', 'danger')
-        return redirect(request.referrer or url_for('workspace.dashboard'))
+        flash("Organization is not available", "danger")
+        return redirect(request.referrer or url_for("workspace.dashboard"))
 
     # Switch organization context
-    session['organization_id'] = organization.id
-    session['organization_name'] = organization.name
+    session["organization_id"] = organization.id
+    session["organization_name"] = organization.name
 
-    flash(f'Switched to {organization.name}', 'success')
-    return redirect(url_for('workspace.dashboard'))
+    flash(f"Switched to {organization.name}", "success")
+    return redirect(url_for("workspace.dashboard"))
 
 
-@bp.route('/switch-to-global-admin', methods=['POST', 'GET'])
+@bp.route("/switch-to-global-admin", methods=["POST", "GET"])
 @login_required
 def switch_to_global_admin():
     """Switch to Global Admin mode (clear organization context)"""
     if not current_user.is_global_admin:
-        flash('Access denied: Global Administrator permission required', 'danger')
-        return redirect(url_for('workspace.dashboard'))
+        flash("Access denied: Global Administrator permission required", "danger")
+        return redirect(url_for("workspace.dashboard"))
 
     # Clear organization context
-    session['organization_id'] = None
-    session['organization_name'] = 'Global Administration'
+    session["organization_id"] = None
+    session["organization_name"] = "Global Administration"
 
-    flash('Switched to Global Administration mode', 'success')
-    return redirect(url_for('global_admin.index'))
+    flash("Switched to Global Administration mode", "success")
+    return redirect(url_for("global_admin.index"))
 
 
-@bp.route('/change-password', methods=['GET', 'POST'])
+@bp.route("/change-password", methods=["GET", "POST"])
 @login_required
 def change_password():
     """Change password (required for bootstrap admin on first login)"""
@@ -199,26 +201,26 @@ def change_password():
 
     if form.validate_on_submit():
         if not current_user.check_password(form.current_password.data):
-            flash('Current password is incorrect', 'danger')
-            return redirect(url_for('auth.change_password'))
+            flash("Current password is incorrect", "danger")
+            return redirect(url_for("auth.change_password"))
 
         if form.new_password.data != form.confirm_password.data:
-            flash('New passwords do not match', 'danger')
-            return redirect(url_for('auth.change_password'))
+            flash("New passwords do not match", "danger")
+            return redirect(url_for("auth.change_password"))
 
         current_user.set_password(form.new_password.data)
         current_user.must_change_password = False
         db.session.commit()
 
         # Clear the password check flag so they won't be prompted again
-        session.pop('_pwd_check_done', None)
+        session.pop("_pwd_check_done", None)
 
-        flash('Password changed successfully', 'success')
+        flash("Password changed successfully", "success")
 
         # Redirect based on context
-        if session.get('organization_id') is None:
-            return redirect(url_for('global_admin.index'))
+        if session.get("organization_id") is None:
+            return redirect(url_for("global_admin.index"))
         else:
-            return redirect(url_for('workspace.dashboard'))
+            return redirect(url_for("workspace.dashboard"))
 
-    return render_template('auth/change_password.html', form=form)
+    return render_template("auth/change_password.html", form=form)

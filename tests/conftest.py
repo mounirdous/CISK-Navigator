@@ -1,86 +1,105 @@
 """
-Pytest configuration and fixtures
+Shared pytest fixtures for all tests
 """
+
 import pytest
+
 from app import create_app
-from app.extensions import db
-from app.models import User, Organization, UserOrganizationMembership
+from app.extensions import db as _db
+from app.models import Organization, User, UserOrganizationMembership
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def app():
-    """Create and configure a test app instance"""
-    app = create_app('testing')
+    """Create test Flask application"""
+    app = create_app("testing")
 
+    # Override config for testing
+    app.config["TESTING"] = True
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
+    app.config["WTF_CSRF_ENABLED"] = False  # Disable CSRF for testing
+
+    return app
+
+
+@pytest.fixture(scope="function")
+def db(app):
+    """Create clean database for each test"""
     with app.app_context():
-        db.create_all()
-        yield app
-        db.session.remove()
-        db.drop_all()
+        _db.create_all()
+        yield _db
+        _db.session.rollback()
+        _db.session.close()
+        _db.drop_all()
 
 
 @pytest.fixture
-def client(app):
-    """Test client"""
+def client(app, db):
+    """Test client for making requests"""
     return app.test_client()
 
 
 @pytest.fixture
 def runner(app):
-    """Test CLI runner"""
+    """CLI test runner"""
     return app.test_cli_runner()
 
 
 @pytest.fixture
-def global_admin(app):
+def sample_user(db):
+    """Create a sample user"""
+    user = User(
+        login="testuser", email="test@example.com", display_name="Test User", is_active=True, is_global_admin=False
+    )
+    user.set_password("password123")
+    db.session.add(user)
+    db.session.commit()
+    return user
+
+
+@pytest.fixture
+def admin_user(db):
     """Create a global admin user"""
-    with app.app_context():
-        admin = User(
-            login='testadmin',
-            email='admin@test.com',
-            is_active=True,
-            is_global_admin=True,
-            must_change_password=False
-        )
-        admin.set_password('TestPass123')
-        db.session.add(admin)
-        db.session.commit()
-        return admin
+    admin = User(
+        login="admin", email="admin@example.com", display_name="Admin User", is_active=True, is_global_admin=True
+    )
+    admin.set_password("admin123")
+    db.session.add(admin)
+    db.session.commit()
+    return admin
 
 
 @pytest.fixture
-def organization(app):
-    """Create a test organization"""
-    with app.app_context():
-        org = Organization(
-            name='Test Organization',
-            description='Test org',
-            is_active=True
-        )
-        db.session.add(org)
-        db.session.commit()
-        return org
+def sample_organization(db):
+    """Create a sample organization"""
+    org = Organization(name="Test Organization", description="Test org for testing", is_active=True)
+    db.session.add(org)
+    db.session.commit()
+    return org
 
 
 @pytest.fixture
-def regular_user(app, organization):
-    """Create a regular user assigned to an organization"""
-    with app.app_context():
-        user = User(
-            login='testuser',
-            email='user@test.com',
-            is_active=True,
-            is_global_admin=False,
-            must_change_password=False
-        )
-        user.set_password('TestPass123')
-        db.session.add(user)
-        db.session.flush()
+def org_user(db, sample_user, sample_organization):
+    """Create user with organization membership"""
+    membership = UserOrganizationMembership(
+        user_id=sample_user.id,
+        organization_id=sample_organization.id,
+        can_manage_spaces=True,
+        can_manage_challenges=True,
+        can_manage_initiatives=True,
+        can_manage_systems=True,
+        can_manage_kpis=True,
+        can_view_comments=True,
+        can_add_comments=True,
+    )
+    db.session.add(membership)
+    db.session.commit()
+    return sample_user
 
-        membership = UserOrganizationMembership(
-            user_id=user.id,
-            organization_id=organization.id
-        )
-        db.session.add(membership)
-        db.session.commit()
-        return user
+
+@pytest.fixture
+def authenticated_client(client, sample_user):
+    """Client with authenticated user"""
+    with client:
+        client.post("/auth/login", data={"login": sample_user.login, "password": "password123"}, follow_redirects=True)
+        yield client

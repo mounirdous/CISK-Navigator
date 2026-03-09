@@ -3,12 +3,20 @@ Aggregation Service
 
 Handles upward roll-up of values through the hierarchy.
 """
+
 from decimal import Decimal
 from statistics import median
+
 from sqlalchemy import and_
+
 from app.models import (
-    KPI, KPIValueTypeConfig, InitiativeSystemLink, ChallengeInitiativeLink,
-    Challenge, RollupRule, ValueType
+    KPI,
+    Challenge,
+    ChallengeInitiativeLink,
+    InitiativeSystemLink,
+    KPIValueTypeConfig,
+    RollupRule,
+    ValueType,
 )
 from app.services.consensus_service import ConsensusService
 
@@ -39,30 +47,30 @@ class AggregationService:
         if not values:
             return None
 
-        if formula == 'sum':
+        if formula == "sum":
             if value_type.is_qualitative():
                 # Sum doesn't make sense for qualitative, use avg instead
-                return AggregationService.aggregate_values(values, 'avg', value_type)
+                return AggregationService.aggregate_values(values, "avg", value_type)
             return sum(values)
 
-        elif formula == 'min':
+        elif formula == "min":
             return min(values)
 
-        elif formula == 'max':
+        elif formula == "max":
             return max(values)
 
-        elif formula == 'avg':
+        elif formula == "avg":
             avg = sum(values) / len(values)
             if value_type.is_qualitative():
                 # For qualitative, store raw average but can be rounded for display
                 return avg
             return avg
 
-        elif formula == 'median':
+        elif formula == "median":
             # Median: middle value when sorted, ignores outliers
             return median(values)
 
-        elif formula == 'count':
+        elif formula == "count":
             # Count: number of values (useful for "how many" questions)
             return len(values)
 
@@ -102,10 +110,7 @@ class AggregationService:
 
         for kpi in kpis:
             # Check if this KPI uses this value type
-            config = KPIValueTypeConfig.query.filter_by(
-                kpi_id=kpi.id,
-                value_type_id=value_type_id
-            ).first()
+            config = KPIValueTypeConfig.query.filter_by(kpi_id=kpi.id, value_type_id=value_type_id).first()
 
             if not config:
                 continue
@@ -115,29 +120,22 @@ class AggregationService:
             # Get consensus for this cell
             consensus = ConsensusService.get_cell_value(config)
 
-            if consensus['is_rollup_eligible'] and consensus['value'] is not None:
-                eligible_values.append(consensus['value'])
+            if consensus["is_rollup_eligible"] and consensus["value"] is not None:
+                eligible_values.append(consensus["value"])
 
         if not eligible_values:
-            return {
-                'value': None,
-                'count_total': total_with_type,
-                'count_included': 0,
-                'is_complete': False
-            }
+            return {"value": None, "count_total": total_with_type, "count_included": 0, "is_complete": False}
 
         # Aggregate using the value type's default formula
         aggregated = AggregationService.aggregate_values(
-            eligible_values,
-            value_type.default_aggregation_formula,
-            value_type
+            eligible_values, value_type.default_aggregation_formula, value_type
         )
 
         return {
-            'value': aggregated,
-            'count_total': total_with_type,
-            'count_included': len(eligible_values),
-            'is_complete': len(eligible_values) == total_with_type and total_with_type > 0
+            "value": aggregated,
+            "count_total": total_with_type,
+            "count_included": len(eligible_values),
+            "is_complete": len(eligible_values) == total_with_type and total_with_type > 0,
         }
 
     @staticmethod
@@ -170,9 +168,7 @@ class AggregationService:
         for link in links:
             # Check if roll-up is enabled for this value type at this link
             rollup_rule = RollupRule.query.filter_by(
-                source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
-                source_id=link.id,
-                value_type_id=value_type_id
+                source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM, source_id=link.id, value_type_id=value_type_id
             ).first()
 
             # If no rule exists, default to enabled (backward compatibility)
@@ -185,23 +181,16 @@ class AggregationService:
             # Get the system-level aggregation (KPIs → System)
             system_agg = AggregationService.get_kpi_to_system_rollup(link, value_type_id)
 
-            if system_agg and system_agg['value'] is not None and system_agg['is_complete']:
-                eligible_values.append(system_agg['value'])
+            if system_agg and system_agg["value"] is not None and system_agg["is_complete"]:
+                eligible_values.append(system_agg["value"])
 
         if not eligible_values:
-            return {
-                'value': None,
-                'count_total': total_systems,
-                'count_included': 0,
-                'is_complete': False
-            }
+            return {"value": None, "count_total": total_systems, "count_included": 0, "is_complete": False}
 
         # Use the first rollup rule's formula (they should all be the same for this step)
         formula = None
         rule = RollupRule.query.filter_by(
-            source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
-            value_type_id=value_type_id,
-            rollup_enabled=True
+            source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM, value_type_id=value_type_id, rollup_enabled=True
         ).first()
 
         if rule:
@@ -212,10 +201,10 @@ class AggregationService:
         aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
-            'value': aggregated,
-            'count_total': total_systems,
-            'count_included': len(eligible_values),
-            'is_complete': len(eligible_values) == total_systems and total_systems > 0
+            "value": aggregated,
+            "count_total": total_systems,
+            "count_included": len(eligible_values),
+            "is_complete": len(eligible_values) == total_systems and total_systems > 0,
         }
 
     @staticmethod
@@ -238,9 +227,7 @@ class AggregationService:
         for link in links:
             # Check if roll-up is enabled
             rollup_rule = RollupRule.query.filter_by(
-                source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
-                source_id=link.id,
-                value_type_id=value_type_id
+                source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE, source_id=link.id, value_type_id=value_type_id
             ).first()
 
             # If no rule exists, default to enabled (backward compatibility)
@@ -251,27 +238,18 @@ class AggregationService:
             total_initiatives += 1
 
             # Get the initiative-level aggregation
-            initiative_agg = AggregationService.get_system_to_initiative_rollup(
-                link.initiative_id, value_type_id
-            )
+            initiative_agg = AggregationService.get_system_to_initiative_rollup(link.initiative_id, value_type_id)
 
-            if initiative_agg and initiative_agg['value'] is not None and initiative_agg['is_complete']:
-                eligible_values.append(initiative_agg['value'])
+            if initiative_agg and initiative_agg["value"] is not None and initiative_agg["is_complete"]:
+                eligible_values.append(initiative_agg["value"])
 
         if not eligible_values:
-            return {
-                'value': None,
-                'count_total': total_initiatives,
-                'count_included': 0,
-                'is_complete': False
-            }
+            return {"value": None, "count_total": total_initiatives, "count_included": 0, "is_complete": False}
 
         # Get formula from rollup rule
         formula = value_type.default_aggregation_formula
         rule = RollupRule.query.filter_by(
-            source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
-            value_type_id=value_type_id,
-            rollup_enabled=True
+            source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE, value_type_id=value_type_id, rollup_enabled=True
         ).first()
 
         if rule:
@@ -280,10 +258,10 @@ class AggregationService:
         aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
-            'value': aggregated,
-            'count_total': total_initiatives,
-            'count_included': len(eligible_values),
-            'is_complete': len(eligible_values) == total_initiatives and total_initiatives > 0
+            "value": aggregated,
+            "count_total": total_initiatives,
+            "count_included": len(eligible_values),
+            "is_complete": len(eligible_values) == total_initiatives and total_initiatives > 0,
         }
 
     @staticmethod
@@ -306,9 +284,7 @@ class AggregationService:
         for challenge in challenges:
             # Check if roll-up is enabled for this challenge
             rollup_rule = RollupRule.query.filter_by(
-                source_type=RollupRule.SOURCE_CHALLENGE,
-                source_id=challenge.id,
-                value_type_id=value_type_id
+                source_type=RollupRule.SOURCE_CHALLENGE, source_id=challenge.id, value_type_id=value_type_id
             ).first()
 
             # If no rule exists, default to enabled (backward compatibility)
@@ -319,27 +295,18 @@ class AggregationService:
             total_challenges += 1
 
             # Get the challenge-level aggregation
-            challenge_agg = AggregationService.get_initiative_to_challenge_rollup(
-                challenge.id, value_type_id
-            )
+            challenge_agg = AggregationService.get_initiative_to_challenge_rollup(challenge.id, value_type_id)
 
-            if challenge_agg and challenge_agg['value'] is not None and challenge_agg['is_complete']:
-                eligible_values.append(challenge_agg['value'])
+            if challenge_agg and challenge_agg["value"] is not None and challenge_agg["is_complete"]:
+                eligible_values.append(challenge_agg["value"])
 
         if not eligible_values:
-            return {
-                'value': None,
-                'count_total': total_challenges,
-                'count_included': 0,
-                'is_complete': False
-            }
+            return {"value": None, "count_total": total_challenges, "count_included": 0, "is_complete": False}
 
         # Get formula
         formula = value_type.default_aggregation_formula
         rule = RollupRule.query.filter_by(
-            source_type=RollupRule.SOURCE_CHALLENGE,
-            value_type_id=value_type_id,
-            rollup_enabled=True
+            source_type=RollupRule.SOURCE_CHALLENGE, value_type_id=value_type_id, rollup_enabled=True
         ).first()
 
         if rule:
@@ -348,8 +315,8 @@ class AggregationService:
         aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
-            'value': aggregated,
-            'count_total': total_challenges,
-            'count_included': len(eligible_values),
-            'is_complete': len(eligible_values) == total_challenges and total_challenges > 0
+            "value": aggregated,
+            "count_total": total_challenges,
+            "count_included": len(eligible_values),
+            "is_complete": len(eligible_values) == total_challenges and total_challenges > 0,
         }

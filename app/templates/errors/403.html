@@ -1,0 +1,162 @@
+{% extends "errors/base.html" %}
+
+{% block title %}403 - Access Denied{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-icon {
+        background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+        color: white;
+    }
+
+    :root {
+        --error-gradient-start: #ffc107;
+        --error-gradient-end: #ff9800;
+    }
+
+    .permission-box {
+        background: var(--bg-secondary);
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+        text-align: left;
+    }
+
+    .permission-box h5 {
+        color: var(--text-primary);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    .permission-box ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .permission-box li {
+        padding: 0.5rem 0;
+        color: var(--text-secondary);
+    }
+
+    .permission-box li i {
+        margin-right: 0.5rem;
+        color: var(--accent-primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-icon">
+    <i class="bi bi-lock-fill"></i>
+</div>
+
+<div class="error-code">403</div>
+<h1 class="error-title">Access Denied</h1>
+<p class="error-description">
+    You don't have permission to access this page. This area requires specific permissions or administrative access.
+</p>
+
+<div class="error-actions">
+    {% if current_user.is_authenticated %}
+        {% if session.organization_id %}
+            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-house-door"></i> Go to Dashboard
+            </a>
+            <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-grid-3x3"></i> Workspace
+            </a>
+        {% elif current_user.is_global_admin %}
+            <a href="{{ url_for('global_admin.index') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-shield-lock"></i> Global Admin
+            </a>
+        {% else %}
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-box-arrow-in-right"></i> Select Organization
+            </a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+    {% endif %}
+    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-lg">
+        <i class="bi bi-arrow-left"></i> Go Back
+    </button>
+</div>
+
+{% if current_user.is_authenticated %}
+<div class="permission-box">
+    <h5><i class="bi bi-person-badge"></i> Your Current Access</h5>
+    <ul>
+        {% if current_user.is_global_admin %}
+        <li>
+            <i class="bi bi-check-circle-fill text-success"></i>
+            <strong>Global Administrator</strong> - Full system access
+        </li>
+        {% endif %}
+
+        {% if session.organization_id %}
+        {% set org_membership = current_user.memberships | selectattr('organization_id', 'equalto', session.organization_id) | first %}
+        {% if org_membership %}
+        <li>
+            <i class="bi bi-building"></i>
+            Organization: <strong>{{ session.organization_name }}</strong>
+        </li>
+        {% if org_membership.can_manage_spaces %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can manage Spaces</li>
+        {% endif %}
+        {% if org_membership.can_manage_challenges %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can manage Challenges</li>
+        {% endif %}
+        {% if org_membership.can_manage_initiatives %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can manage Initiatives</li>
+        {% endif %}
+        {% if org_membership.can_manage_systems %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can manage Systems</li>
+        {% endif %}
+        {% if org_membership.can_manage_kpis %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can manage KPIs</li>
+        {% endif %}
+        {% if org_membership.can_view_comments %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can view comments</li>
+        {% endif %}
+        {% if org_membership.can_add_comments %}
+        <li><i class="bi bi-check-circle-fill text-success"></i> Can add comments</li>
+        {% endif %}
+        {% endif %}
+        {% else %}
+        <li>
+            <i class="bi bi-info-circle"></i>
+            No organization context. Select an organization to view your permissions.
+        </li>
+        {% endif %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="error-details">
+    <ul class="error-details-list">
+        {% if current_user.is_authenticated %}
+        <li>
+            <i class="bi bi-person-badge"></i>
+            Contact your organization administrator to request access
+        </li>
+        <li>
+            <i class="bi bi-shield-check"></i>
+            Some pages require specific permissions or roles
+        </li>
+        {% else %}
+        <li>
+            <i class="bi bi-box-arrow-in-right"></i>
+            You may need to login to access this page
+        </li>
+        {% endif %}
+        <li>
+            <i class="bi bi-arrow-left"></i>
+            Use the "Go Back" button to return to the previous page
+        </li>
+    </ul>
+</div>
+{% endblock %}

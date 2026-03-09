@@ -1,7 +1,9 @@
 """
 Space model
 """
+
 from datetime import datetime
+
 from app.extensions import db
 
 
@@ -12,25 +14,32 @@ class Space(db.Model):
     A space is a flexible grouping concept such as season, site, customer, supplier, etc.
     It belongs to one organization and contains challenges.
     """
-    __tablename__ = 'spaces'
+
+    __tablename__ = "spaces"
 
     id = db.Column(db.Integer, primary_key=True)
-    organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id', ondelete='CASCADE'), nullable=False)
+    organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    space_label = db.Column(db.String(100), nullable=True, comment='e.g., Season, Site, Customer, Supplier')
+    space_label = db.Column(db.String(100), nullable=True, comment="e.g., Season, Site, Customer, Supplier")
     display_order = db.Column(db.Integer, default=0, nullable=False)
-    is_private = db.Column(db.Boolean, default=False, nullable=False, comment='Private spaces are only visible to users with appropriate permissions')
+    is_private = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False,
+        comment="Private spaces are only visible to users with appropriate permissions",
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    organization = db.relationship('Organization', back_populates='spaces')
-    challenges = db.relationship('Challenge', back_populates='space', cascade='all, delete-orphan')
+    organization = db.relationship("Organization", back_populates="spaces")
+    challenges = db.relationship("Challenge", back_populates="space", cascade="all, delete-orphan")
 
     def get_rollup_value(self, value_type_id):
         """Get rolled-up value from challenges for this space"""
         from app.services import AggregationService
+
         try:
             result = AggregationService.get_challenge_to_space_rollup(self.id, value_type_id)
             return result
@@ -43,7 +52,7 @@ class Space(db.Model):
         Returns the config with the largest display scale (millions > thousands > default)
         to ensure rollups show appropriate precision
         """
-        scale_priority = {'millions': 3, 'thousands': 2, 'default': 1, None: 0}
+        scale_priority = {"millions": 3, "thousands": 2, "default": 1, None: 0}
         best_config = None
         best_scale = 0
 
@@ -63,4 +72,4 @@ class Space(db.Model):
         return best_config
 
     def __repr__(self):
-        return f'<Space {self.name}>'
+        return f"<Space {self.name}>"

@@ -16,16 +16,17 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
+
 def check_migration_chain():
     """Verify all migrations have valid revision chain"""
-    migrations_dir = project_root / 'migrations' / 'versions'
+    migrations_dir = project_root / "migrations" / "versions"
 
     if not migrations_dir.exists():
         print("❌ Migrations directory not found!")
         return False
 
-    migration_files = list(migrations_dir.glob('*.py'))
-    migration_files = [f for f in migration_files if not f.name.startswith('__')]
+    migration_files = list(migrations_dir.glob("*.py"))
+    migration_files = [f for f in migration_files if not f.name.startswith("__")]
 
     print(f"🔍 Found {len(migration_files)} migration files")
     print()
@@ -41,23 +42,19 @@ def check_migration_chain():
         revision = None
         down_revision = None
 
-        for line in content.split('\n'):
-            if line.startswith('revision = '):
-                revision = line.split('=')[1].strip().strip("'\"")
-            elif line.startswith('down_revision = '):
-                down_revision = line.split('=')[1].strip().strip("'\"")
-                if down_revision == 'None':
+        for line in content.split("\n"):
+            if line.startswith("revision = "):
+                revision = line.split("=")[1].strip().strip("'\"")
+            elif line.startswith("down_revision = "):
+                down_revision = line.split("=")[1].strip().strip("'\"")
+                if down_revision == "None":
                     down_revision = None
 
         if not revision:
             errors.append(f"❌ {migration_file.name}: No revision ID found")
             continue
 
-        migrations[revision] = {
-            'file': migration_file.name,
-            'down_revision': down_revision,
-            'revision': revision
-        }
+        migrations[revision] = {"file": migration_file.name, "down_revision": down_revision, "revision": revision}
 
     if errors:
         print("\n".join(errors))
@@ -69,7 +66,7 @@ def check_migration_chain():
     # Build chain
     heads = []
     for rev, data in migrations.items():
-        if data['down_revision'] is None:
+        if data["down_revision"] is None:
             heads.append(rev)
 
     if len(heads) == 0:
@@ -85,7 +82,7 @@ def check_migration_chain():
     # Check all down_revisions point to existing migrations
     missing_refs = []
     for rev, data in migrations.items():
-        if data['down_revision'] and data['down_revision'] not in migrations:
+        if data["down_revision"] and data["down_revision"] not in migrations:
             missing_refs.append(f"❌ {data['file']}: down_revision '{data['down_revision']}' not found")
 
     if missing_refs:
@@ -96,6 +93,7 @@ def check_migration_chain():
 
     # Check for cycles
     visited = set()
+
     def has_cycle(rev, path=None):
         if path is None:
             path = []
@@ -105,7 +103,7 @@ def check_migration_chain():
             return False
         visited.add(rev)
         path.append(rev)
-        down = migrations[rev]['down_revision']
+        down = migrations[rev]["down_revision"]
         return has_cycle(down, path)
 
     for rev in migrations:
@@ -121,8 +119,8 @@ def check_migration_chain():
     # Find leaf (most recent migration)
     children = {rev: [] for rev in migrations}
     for rev, data in migrations.items():
-        if data['down_revision']:
-            children[data['down_revision']].append(rev)
+        if data["down_revision"]:
+            children[data["down_revision"]].append(rev)
 
     # Find nodes with no children (leaves)
     leaves = [rev for rev in migrations if not children[rev]]
@@ -138,7 +136,7 @@ def check_migration_chain():
         while current and depth < 100:  # Prevent infinite loop
             data = migrations[current]
             print(f"    {'  ' * depth}↓ {current[:12]}... ({data['file']})")
-            current = data['down_revision']
+            current = data["down_revision"]
             depth += 1
 
         if depth >= 100:
@@ -149,8 +147,8 @@ def check_migration_chain():
 
 def check_migration_syntax():
     """Check that all migrations have proper upgrade/downgrade functions"""
-    migrations_dir = project_root / 'migrations' / 'versions'
-    migration_files = [f for f in migrations_dir.glob('*.py') if not f.name.startswith('__')]
+    migrations_dir = project_root / "migrations" / "versions"
+    migration_files = [f for f in migrations_dir.glob("*.py") if not f.name.startswith("__")]
 
     print("\n🔍 Checking migration syntax...")
     errors = []
@@ -158,10 +156,10 @@ def check_migration_syntax():
     for migration_file in migration_files:
         content = migration_file.read_text()
 
-        if 'def upgrade():' not in content:
+        if "def upgrade():" not in content:
             errors.append(f"❌ {migration_file.name}: Missing upgrade() function")
 
-        if 'def downgrade():' not in content:
+        if "def downgrade():" not in content:
             errors.append(f"❌ {migration_file.name}: Missing downgrade() function")
 
     if errors:
@@ -174,17 +172,17 @@ def check_migration_syntax():
 
 def check_dangerous_operations():
     """Warn about potentially dangerous migration operations"""
-    migrations_dir = project_root / 'migrations' / 'versions'
-    migration_files = [f for f in migrations_dir.glob('*.py') if not f.name.startswith('__')]
+    migrations_dir = project_root / "migrations" / "versions"
+    migration_files = [f for f in migrations_dir.glob("*.py") if not f.name.startswith("__")]
 
     print("\n🔍 Checking for dangerous operations...")
     warnings = []
 
     dangerous_patterns = {
-        'DROP TABLE': '⚠️  Dropping tables (data loss)',
-        'DROP COLUMN': '⚠️  Dropping columns (data loss)',
-        'ALTER COLUMN': '⚠️  Altering columns (may lock table)',
-        'NOT NULL': '⚠️  Adding NOT NULL (check server_default)',
+        "DROP TABLE": "⚠️  Dropping tables (data loss)",
+        "DROP COLUMN": "⚠️  Dropping columns (data loss)",
+        "ALTER COLUMN": "⚠️  Altering columns (may lock table)",
+        "NOT NULL": "⚠️  Adding NOT NULL (check server_default)",
     }
 
     for migration_file in migration_files:
@@ -234,5 +232,5 @@ def main():
     return 0 if success else 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

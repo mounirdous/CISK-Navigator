@@ -10,10 +10,10 @@ Usage:
     python scripts/restore_org.py --file backup.yaml.gz --org-id 1
     python scripts/restore_org.py --file backup.yaml --org-id 1 --mode replace
 """
-import os
-import sys
 import argparse
 import gzip
+import os
+import sys
 from pathlib import Path
 
 # Add project root to path
@@ -26,7 +26,7 @@ from app.models import Organization
 from app.services.yaml_import_service import YAMLImportService
 
 
-def restore_organization(file_path, org_id, dry_run=False, mode='merge'):
+def restore_organization(file_path, org_id, dry_run=False, mode="merge"):
     """
     Restore organization from YAML backup
 
@@ -67,32 +67,32 @@ def restore_organization(file_path, org_id, dry_run=False, mode='merge'):
 
         # Read backup file (handle gzip compression)
         print("📖 Reading backup file...")
-        if file_path.endswith('.gz'):
+        if file_path.endswith(".gz"):
             print("   (Decompressing gzip...)")
-            with gzip.open(file_path, 'rt', encoding='utf-8') as f:
+            with gzip.open(file_path, "rt", encoding="utf-8") as f:
                 yaml_content = f.read()
         else:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 yaml_content = f.read()
 
         # Extract metadata from comments (if present)
-        lines = yaml_content.split('\n')
+        lines = yaml_content.split("\n")
         metadata = {}
         for line in lines:
-            if line.startswith('# Organization:'):
-                metadata['org_name'] = line.split(':', 1)[1].strip()
-            elif line.startswith('# Backup Date:'):
-                metadata['backup_date'] = line.split(':', 1)[1].strip()
-            elif line.startswith('# Organization ID:'):
-                metadata['backup_org_id'] = line.split(':', 1)[1].strip()
+            if line.startswith("# Organization:"):
+                metadata["org_name"] = line.split(":", 1)[1].strip()
+            elif line.startswith("# Backup Date:"):
+                metadata["backup_date"] = line.split(":", 1)[1].strip()
+            elif line.startswith("# Organization ID:"):
+                metadata["backup_org_id"] = line.split(":", 1)[1].strip()
 
         if metadata:
             print("📋 Backup metadata:")
-            if 'org_name' in metadata:
+            if "org_name" in metadata:
                 print(f"   Original organization: {metadata['org_name']}")
-            if 'backup_org_id' in metadata:
+            if "backup_org_id" in metadata:
                 print(f"   Original org ID: {metadata['backup_org_id']}")
-            if 'backup_date' in metadata:
+            if "backup_date" in metadata:
                 print(f"   Backup date: {metadata['backup_date']}")
             print()
 
@@ -101,11 +101,7 @@ def restore_organization(file_path, org_id, dry_run=False, mode='merge'):
         print()
 
         try:
-            result = YAMLImportService.import_from_string(
-                yaml_content,
-                org_id,
-                dry_run=dry_run
-            )
+            result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=dry_run)
 
             # Display statistics
             print("=" * 70)
@@ -120,9 +116,9 @@ def restore_organization(file_path, org_id, dry_run=False, mode='merge'):
             print()
 
             # Display errors
-            if result['errors']:
+            if result["errors"]:
                 print("⚠️  ERRORS ENCOUNTERED:")
-                for error in result['errors']:
+                for error in result["errors"]:
                     print(f"   • {error}")
                 print()
 
@@ -140,11 +136,11 @@ def restore_organization(file_path, org_id, dry_run=False, mode='merge'):
                 print("=" * 70)
                 print()
                 print(f"Organization '{org.name}' has been restored from backup.")
-                if result['errors']:
+                if result["errors"]:
                     print(f"⚠️  Note: {len(result['errors'])} items had errors (see above)")
             print()
 
-            return 0 if not result['errors'] else 2
+            return 0 if not result["errors"] else 2
 
         except Exception as e:
             print()
@@ -154,13 +150,14 @@ def restore_organization(file_path, org_id, dry_run=False, mode='merge'):
             print(f"Error: {str(e)}")
             print()
             import traceback
+
             traceback.print_exc()
             return 1
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Restore CISK Navigator organization from YAML backup',
+        description="Restore CISK Navigator organization from YAML backup",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -180,17 +177,18 @@ Notes:
   - Default mode is 'merge' which adds to existing organization data
   - Use --dry-run to validate backup file without making changes
   - Compressed (.gz) files are automatically detected and decompressed
-        """
+        """,
     )
 
-    parser.add_argument('--file', required=True,
-                        help='Path to backup YAML file')
-    parser.add_argument('--org-id', type=int, required=True,
-                        help='Target organization ID')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Validate backup without saving to database')
-    parser.add_argument('--mode', choices=['merge', 'replace'], default='merge',
-                        help='Restore mode: merge (add to existing) or replace (clear first)')
+    parser.add_argument("--file", required=True, help="Path to backup YAML file")
+    parser.add_argument("--org-id", type=int, required=True, help="Target organization ID")
+    parser.add_argument("--dry-run", action="store_true", help="Validate backup without saving to database")
+    parser.add_argument(
+        "--mode",
+        choices=["merge", "replace"],
+        default="merge",
+        help="Restore mode: merge (add to existing) or replace (clear first)",
+    )
 
     args = parser.parse_args()
 
@@ -198,5 +196,5 @@ Notes:
     return restore_organization(args.file, args.org_id, args.dry_run, args.mode)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

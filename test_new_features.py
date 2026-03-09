@@ -1,16 +1,29 @@
 """
 Test script for Time-Series Snapshots and Comments features
 """
+
+from datetime import date, datetime
+
 from app import create_app
 from app.extensions import db
 from app.models import (
-    User, Organization, Space, Challenge, Initiative, System,
-    InitiativeSystemLink, KPI, ValueType, KPIValueTypeConfig,
-    Contribution, KPISnapshot, CellComment, MentionNotification
+    KPI,
+    CellComment,
+    Challenge,
+    Contribution,
+    Initiative,
+    InitiativeSystemLink,
+    KPISnapshot,
+    KPIValueTypeConfig,
+    MentionNotification,
+    Organization,
+    Space,
+    System,
+    User,
+    ValueType,
 )
-from app.services.snapshot_service import SnapshotService
 from app.services.comment_service import CommentService
-from datetime import date, datetime
+from app.services.snapshot_service import SnapshotService
 
 app = create_app()
 
@@ -28,7 +41,7 @@ with app.app_context():
     print(f"\n✓ Using organization: {org.name} (ID: {org.id})")
 
     # Get test user
-    user = User.query.filter_by(login='cisk').first()
+    user = User.query.filter_by(login="cisk").first()
     if not user:
         print("❌ No cisk user found")
         exit(1)
@@ -36,9 +49,7 @@ with app.app_context():
     print(f"✓ Using user: {user.display_name}")
 
     # Get a KPI for testing
-    kpi = KPI.query.join(InitiativeSystemLink).join(Initiative).filter(
-        Initiative.organization_id == org.id
-    ).first()
+    kpi = KPI.query.join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org.id).first()
 
     if not kpi:
         print("❌ No KPIs found. Please create structure first.")
@@ -62,9 +73,7 @@ with app.app_context():
     print("=" * 80)
 
     # Create a contribution first (so we have data to snapshot)
-    contrib = Contribution.query.filter_by(
-        kpi_value_type_config_id=config.id
-    ).first()
+    contrib = Contribution.query.filter_by(kpi_value_type_config_id=config.id).first()
 
     if not contrib and config.value_type.is_numeric():
         print("\n→ Creating test contribution...")
@@ -72,7 +81,7 @@ with app.app_context():
             kpi_value_type_config_id=config.id,
             contributor_name="Test User",
             numeric_value=100.50,
-            comment="Test value for snapshot"
+            comment="Test value for snapshot",
         )
         db.session.add(contrib)
         db.session.commit()
@@ -81,10 +90,7 @@ with app.app_context():
     # Test 1.1: Create a snapshot for a single KPI
     print("\n→ Creating single KPI snapshot...")
     snapshot = SnapshotService.create_kpi_snapshot(
-        config_id=config.id,
-        snapshot_date=date.today(),
-        label="Test Snapshot",
-        user_id=user.id
+        config_id=config.id, snapshot_date=date.today(), label="Test Snapshot", user_id=user.id
     )
 
     if snapshot:
@@ -119,10 +125,7 @@ with app.app_context():
     # Test 1.4: Organization-wide snapshot
     print("\n→ Creating organization-wide snapshot...")
     result = SnapshotService.create_organization_snapshot(
-        organization_id=org.id,
-        snapshot_date=date.today(),
-        label="Full Test Snapshot",
-        user_id=user.id
+        organization_id=org.id, snapshot_date=date.today(), label="Full Test Snapshot", user_id=user.id
     )
     print(f"✓ Organization snapshot created:")
     print(f"  KPI snapshots: {result['kpi_snapshots']}")
@@ -156,7 +159,7 @@ with app.app_context():
         config_id=config.id,
         user_id=user.id,
         comment_text="This is a test comment. @cisk please check this value!",
-        organization_id=org.id
+        organization_id=org.id,
     )
     print(f"✓ Comment created: ID={comment.id}")
     print(f"  Text: {comment.comment_text}")
@@ -176,9 +179,7 @@ with app.app_context():
     # Test 2.4: Update a comment
     print("\n→ Updating comment...")
     updated_comment = CommentService.update_comment(
-        comment_id=comment.id,
-        comment_text="Updated comment text. Now mentioning @cisk again!",
-        organization_id=org.id
+        comment_id=comment.id, comment_text="Updated comment text. Now mentioning @cisk again!", organization_id=org.id
     )
     print(f"✓ Comment updated")
     print(f"  New text: {updated_comment.comment_text}")
@@ -207,10 +208,7 @@ with app.app_context():
 
     # Test 2.8: Render comment with mentions
     print("\n→ Rendering comment with mentions...")
-    rendered = CommentService.render_comment_with_mentions(
-        "Hey @cisk, check this out!",
-        org.id
-    )
+    rendered = CommentService.render_comment_with_mentions("Hey @cisk, check this out!", org.id)
     print(f"✓ Rendered HTML:")
     print(f"  {rendered}")
 
@@ -226,7 +224,7 @@ with app.app_context():
         user_id=user.id,
         comment_text="This is a reply to the first comment",
         parent_comment_id=comment.id,
-        organization_id=org.id
+        organization_id=org.id,
     )
     print(f"✓ Reply created: ID={reply.id}")
     print(f"  Parent: {reply.parent_comment_id}")

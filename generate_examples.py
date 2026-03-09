@@ -3,14 +3,17 @@
 Generate standalone HTML files from example YAML files
 """
 
-from pathlib import Path
-from datetime import datetime
-from app import load_yaml_data, auto_detect_format, extract_metadata, APP_VERSION
-from flask import Flask, render_template
 import os
+from datetime import datetime
+from pathlib import Path
+
+from flask import Flask, render_template
+
+from app import APP_VERSION, auto_detect_format, extract_metadata, load_yaml_data
 
 # Create minimal Flask app for rendering
 app = Flask(__name__)
+
 
 def generate_html_from_yaml(yaml_path: Path, output_path: Path):
     """Generate standalone HTML from YAML file"""
@@ -23,16 +26,12 @@ def generate_html_from_yaml(yaml_path: Path, output_path: Path):
         metadata = extract_metadata(yaml_data)
 
         # Render HTML
-        html_content = render_template(
-            'navigator_enhanced.html',
-            data=js_data,
-            app_version=APP_VERSION,
-            **metadata
-        )
+        html_content = render_template("navigator_enhanced.html", data=js_data, app_version=APP_VERSION, **metadata)
 
         # Write to file
-        output_path.write_text(html_content, encoding='utf-8')
+        output_path.write_text(html_content, encoding="utf-8")
         print(f"✓ Generated {output_path.name}")
+
 
 def main():
     # Define example files
@@ -62,5 +61,6 @@ def main():
     print(f"\n✓ All HTML files generated in {output_dir}/")
     print(f"\nYou can now open these HTML files directly in your browser!")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

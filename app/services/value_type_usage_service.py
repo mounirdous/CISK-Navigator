@@ -3,7 +3,8 @@ Value Type Usage Service
 
 Checks whether a value type is in use and where.
 """
-from app.models import ValueType, KPIValueTypeConfig, Contribution, RollupRule
+
+from app.models import Contribution, KPIValueTypeConfig, RollupRule, ValueType
 
 
 class ValueTypeUsageService:
@@ -29,11 +30,7 @@ class ValueTypeUsageService:
         if not value_type:
             return None
 
-        usage = {
-            'kpi_configs': [],
-            'contributions_count': 0,
-            'rollup_rules_count': 0
-        }
+        usage = {"kpi_configs": [], "contributions_count": 0, "rollup_rules_count": 0}
 
         # Check KPI configurations
         kpi_configs = KPIValueTypeConfig.query.filter_by(value_type_id=value_type_id).all()
@@ -51,31 +48,26 @@ class ValueTypeUsageService:
 
             contrib_count = len(config.contributions)
 
-            usage['kpi_configs'].append({
-                'kpi_id': kpi.id,
-                'kpi_name': kpi.name,
-                'system_name': system.name,
-                'initiative_name': initiative.name,
-                'challenge_names': challenge_names,
-                'contributions_count': contrib_count
-            })
+            usage["kpi_configs"].append(
+                {
+                    "kpi_id": kpi.id,
+                    "kpi_name": kpi.name,
+                    "system_name": system.name,
+                    "initiative_name": initiative.name,
+                    "challenge_names": challenge_names,
+                    "contributions_count": contrib_count,
+                }
+            )
 
-            usage['contributions_count'] += contrib_count
+            usage["contributions_count"] += contrib_count
 
         # Check rollup rules
         rollup_rules = RollupRule.query.filter_by(value_type_id=value_type_id).all()
-        usage['rollup_rules_count'] = len(rollup_rules)
+        usage["rollup_rules_count"] = len(rollup_rules)
 
-        is_used = (
-            len(usage['kpi_configs']) > 0 or
-            usage['contributions_count'] > 0 or
-            usage['rollup_rules_count'] > 0
-        )
+        is_used = len(usage["kpi_configs"]) > 0 or usage["contributions_count"] > 0 or usage["rollup_rules_count"] > 0
 
-        return {
-            'is_used': is_used,
-            'usage': usage
-        }
+        return {"is_used": is_used, "usage": usage}
 
     @staticmethod
     def can_delete(value_type_id):
@@ -90,17 +82,17 @@ class ValueTypeUsageService:
         if not result:
             return False, "Value type not found"
 
-        if result['is_used']:
-            usage = result['usage']
+        if result["is_used"]:
+            usage = result["usage"]
             reasons = []
 
-            if len(usage['kpi_configs']) > 0:
+            if len(usage["kpi_configs"]) > 0:
                 reasons.append(f"Used in {len(usage['kpi_configs'])} KPI configuration(s)")
 
-            if usage['contributions_count'] > 0:
+            if usage["contributions_count"] > 0:
                 reasons.append(f"Has {usage['contributions_count']} contribution record(s)")
 
-            if usage['rollup_rules_count'] > 0:
+            if usage["rollup_rules_count"] > 0:
                 reasons.append(f"Referenced by {usage['rollup_rules_count']} roll-up rule(s)")
 
             return False, "; ".join(reasons)

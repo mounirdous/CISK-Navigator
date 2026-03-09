@@ -3,6 +3,7 @@ Consensus Service
 
 Calculates consensus status for KPI cells based on contributor opinions.
 """
+
 from collections import Counter
 from decimal import Decimal
 
@@ -19,11 +20,11 @@ class ConsensusService:
     - NO_CONSENSUS: 2+ contributions, no reliable agreement
     """
 
-    STATUS_NO_DATA = 'no_data'
-    STATUS_PENDING = 'pending'
-    STATUS_STRONG = 'strong'
-    STATUS_WEAK = 'weak'
-    STATUS_NO_CONSENSUS = 'no_consensus'
+    STATUS_NO_DATA = "no_data"
+    STATUS_PENDING = "pending"
+    STATUS_STRONG = "strong"
+    STATUS_WEAK = "weak"
+    STATUS_NO_CONSENSUS = "no_consensus"
 
     @staticmethod
     def calculate_consensus(contributions):
@@ -38,21 +39,16 @@ class ConsensusService:
                 - is_rollup_eligible: whether this can participate in roll-ups
         """
         if not contributions:
-            return {
-                'status': ConsensusService.STATUS_NO_DATA,
-                'value': None,
-                'count': 0,
-                'is_rollup_eligible': False
-            }
+            return {"status": ConsensusService.STATUS_NO_DATA, "value": None, "count": 0, "is_rollup_eligible": False}
 
         if len(contributions) == 1:
             contrib = contributions[0]
             value = contrib.numeric_value if contrib.numeric_value is not None else contrib.qualitative_level
             return {
-                'status': ConsensusService.STATUS_STRONG,
-                'value': value,
-                'count': 1,
-                'is_rollup_eligible': True  # Single contribution is valid!
+                "status": ConsensusService.STATUS_STRONG,
+                "value": value,
+                "count": 1,
+                "is_rollup_eligible": True,  # Single contribution is valid!
             }
 
         # Extract values from contributions
@@ -65,10 +61,10 @@ class ConsensusService:
 
         if not values:
             return {
-                'status': ConsensusService.STATUS_NO_DATA,
-                'value': None,
-                'count': len(contributions),
-                'is_rollup_eligible': False
+                "status": ConsensusService.STATUS_NO_DATA,
+                "value": None,
+                "count": len(contributions),
+                "is_rollup_eligible": False,
             }
 
         # Count occurrences
@@ -78,10 +74,10 @@ class ConsensusService:
         # Check for strong consensus (all same)
         if len(most_common) == 1:
             return {
-                'status': ConsensusService.STATUS_STRONG,
-                'value': most_common[0][0],
-                'count': len(values),
-                'is_rollup_eligible': True  # Only strong consensus is eligible
+                "status": ConsensusService.STATUS_STRONG,
+                "value": most_common[0][0],
+                "count": len(values),
+                "is_rollup_eligible": True,  # Only strong consensus is eligible
             }
 
         # Check for weak consensus (majority > 50%)
@@ -90,18 +86,18 @@ class ConsensusService:
 
         if majority_count > total / 2:
             return {
-                'status': ConsensusService.STATUS_WEAK,
-                'value': majority_value,
-                'count': total,
-                'is_rollup_eligible': False
+                "status": ConsensusService.STATUS_WEAK,
+                "value": majority_value,
+                "count": total,
+                "is_rollup_eligible": False,
             }
 
         # No consensus
         return {
-            'status': ConsensusService.STATUS_NO_CONSENSUS,
-            'value': None,
-            'count': total,
-            'is_rollup_eligible': False
+            "status": ConsensusService.STATUS_NO_CONSENSUS,
+            "value": None,
+            "count": total,
+            "is_rollup_eligible": False,
         }
 
     @staticmethod

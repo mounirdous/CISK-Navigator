@@ -11,12 +11,12 @@ Usage:
     python scripts/backup_org.py --org-id 1 --compress
     python scripts/backup_org.py --list-orgs
 """
-import os
-import sys
 import argparse
 import gzip
-from pathlib import Path
+import os
+import sys
 from datetime import datetime
+from pathlib import Path
 
 # Add project root to path
 project_root = Path(__file__).parent.parent
@@ -24,9 +24,9 @@ sys.path.insert(0, str(project_root))
 
 # Must import app after path setup
 from app import create_app
-from app.models import Organization, Space, Challenge, Initiative, System, KPI, ValueType, InitiativeSystemLink
-from app.services.yaml_export_service import YAMLExportService
 from app.extensions import db
+from app.models import KPI, Challenge, Initiative, InitiativeSystemLink, Organization, Space, System, ValueType
+from app.services.yaml_export_service import YAMLExportService
 
 
 def list_organizations():
@@ -58,17 +58,21 @@ def list_organizations():
             system_count = System.query.filter_by(organization_id=org.id).count()
 
             # Count KPIs through the hierarchy (System -> InitiativeSystemLink -> KPI)
-            kpi_count = db.session.query(KPI).join(
-                InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
-            ).join(
-                System, InitiativeSystemLink.system_id == System.id
-            ).filter(System.organization_id == org.id).count()
+            kpi_count = (
+                db.session.query(KPI)
+                .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+                .join(System, InitiativeSystemLink.system_id == System.id)
+                .filter(System.organization_id == org.id)
+                .count()
+            )
 
             vt_count = ValueType.query.filter_by(organization_id=org.id).count()
 
-            print(f"Entities: {space_count} spaces, {challenge_count} challenges, "
-                  f"{initiative_count} initiatives, {system_count} systems, "
-                  f"{kpi_count} KPIs, {vt_count} value types")
+            print(
+                f"Entities: {space_count} spaces, {challenge_count} challenges, "
+                f"{initiative_count} initiatives, {system_count} systems, "
+                f"{kpi_count} KPIs, {vt_count} value types"
+            )
 
         print("\n" + "=" * 70)
 
@@ -102,11 +106,13 @@ def backup_organization(org_id, output_dir, compress=False):
         system_count = System.query.filter_by(organization_id=org_id).count()
 
         # Count KPIs through the hierarchy
-        kpi_count = db.session.query(KPI).join(
-            InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
-        ).join(
-            System, InitiativeSystemLink.system_id == System.id
-        ).filter(System.organization_id == org_id).count()
+        kpi_count = (
+            db.session.query(KPI)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(System, InitiativeSystemLink.system_id == System.id)
+            .filter(System.organization_id == org_id)
+            .count()
+        )
 
         vt_count = ValueType.query.filter_by(organization_id=org_id).count()
 
@@ -130,7 +136,7 @@ def backup_organization(org_id, output_dir, compress=False):
         yaml_content = YAMLExportService.export_to_yaml(org_id)
 
         # Add metadata header
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         metadata = f"""# CISK Navigator Organization Backup
 # Organization: {org.name}
 # Organization ID: {org.id}
@@ -156,8 +162,8 @@ def backup_organization(org_id, output_dir, compress=False):
         output_path.mkdir(parents=True, exist_ok=True)
 
         # Generate filename
-        safe_org_name = org.name.lower().replace(' ', '-').replace('/', '-')
-        timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+        safe_org_name = org.name.lower().replace(" ", "-").replace("/", "-")
+        timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"backup_{safe_org_name}_{timestamp_str}.yaml"
 
         if compress:
@@ -169,10 +175,10 @@ def backup_organization(org_id, output_dir, compress=False):
         print(f"💾 Saving backup to: {file_path}")
 
         if compress:
-            with gzip.open(file_path, 'wt', encoding='utf-8') as f:
+            with gzip.open(file_path, "wt", encoding="utf-8") as f:
                 f.write(full_content)
         else:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.write(full_content)
 
         # Get file size
@@ -196,7 +202,7 @@ def backup_organization(org_id, output_dir, compress=False):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Backup CISK Navigator organization to YAML file',
+        description="Backup CISK Navigator organization to YAML file",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -211,17 +217,13 @@ Examples:
 
   Backup with compression:
     python scripts/backup_org.py --org-id 1 --compress
-        """
+        """,
     )
 
-    parser.add_argument('--list-orgs', action='store_true',
-                        help='List all available organizations')
-    parser.add_argument('--org-id', type=int,
-                        help='Organization ID to backup')
-    parser.add_argument('--output-dir', default='backups',
-                        help='Directory to save backup file (default: backups/)')
-    parser.add_argument('--compress', action='store_true',
-                        help='Compress backup with gzip')
+    parser.add_argument("--list-orgs", action="store_true", help="List all available organizations")
+    parser.add_argument("--org-id", type=int, help="Organization ID to backup")
+    parser.add_argument("--output-dir", default="backups", help="Directory to save backup file (default: backups/)")
+    parser.add_argument("--compress", action="store_true", help="Compress backup with gzip")
 
     args = parser.parse_args()
 
@@ -240,5 +242,5 @@ Examples:
     return backup_organization(args.org_id, args.output_dir, args.compress)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

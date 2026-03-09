@@ -1,7 +1,9 @@
 """
 KPI model
 """
+
 from datetime import datetime
+
 from app.extensions import db
 
 
@@ -14,30 +16,27 @@ class KPI(db.Model):
 
     A KPI can have multiple value types configured via KPIValueTypeConfig.
     """
-    __tablename__ = 'kpis'
+
+    __tablename__ = "kpis"
 
     id = db.Column(db.Integer, primary_key=True)
-    initiative_system_link_id = db.Column(db.Integer,
-                                          db.ForeignKey('initiative_system_links.id', ondelete='CASCADE'),
-                                          nullable=False)
+    initiative_system_link_id = db.Column(
+        db.Integer, db.ForeignKey("initiative_system_links.id", ondelete="CASCADE"), nullable=False
+    )
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     display_order = db.Column(db.Integer, default=0, nullable=False)
     is_archived = db.Column(db.Boolean, default=False, nullable=False)
     archived_at = db.Column(db.DateTime, nullable=True)
-    archived_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
+    archived_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    initiative_system_link = db.relationship('InitiativeSystemLink', back_populates='kpis')
-    value_type_configs = db.relationship('KPIValueTypeConfig',
-                                         back_populates='kpi',
-                                         cascade='all, delete-orphan')
-    governance_body_links = db.relationship('KPIGovernanceBodyLink',
-                                           back_populates='kpi',
-                                           cascade='all, delete-orphan')
-    archived_by = db.relationship('User', foreign_keys=[archived_by_user_id])
+    initiative_system_link = db.relationship("InitiativeSystemLink", back_populates="kpis")
+    value_type_configs = db.relationship("KPIValueTypeConfig", back_populates="kpi", cascade="all, delete-orphan")
+    governance_body_links = db.relationship("KPIGovernanceBodyLink", back_populates="kpi", cascade="all, delete-orphan")
+    archived_by = db.relationship("User", foreign_keys=[archived_by_user_id])
 
     def __repr__(self):
-        return f'<KPI {self.name}>'
+        return f"<KPI {self.name}>"

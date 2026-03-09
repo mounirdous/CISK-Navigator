@@ -3,15 +3,15 @@ Comment Service
 
 Manages cell comments, @mentions, and discussion threads.
 """
+
 import re
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from sqlalchemy.orm import joinedload
+
 from app.extensions import db
-from app.models import (
-    CellComment, MentionNotification, User, KPIValueTypeConfig,
-    UserOrganizationMembership
-)
+from app.models import CellComment, KPIValueTypeConfig, MentionNotification, User, UserOrganizationMembership
 
 
 class CommentService:
@@ -30,7 +30,7 @@ class CommentService:
             "@jane.doe check this" -> ["jane.doe"]
         """
         # Match @username (alphanumeric, dots, underscores, hyphens)
-        pattern = r'@([\w\.\-]+)'
+        pattern = r"@([\w\.\-]+)"
         mentions = re.findall(pattern, comment_text)
         return list(set(mentions))  # Deduplicate
 
@@ -50,19 +50,23 @@ class CommentService:
             return []
 
         # Find users by login within this organization
-        users = db.session.query(User).join(
-            UserOrganizationMembership
-        ).filter(
-            User.login.in_(mentions),
-            UserOrganizationMembership.organization_id == organization_id
-        ).all()
+        users = (
+            db.session.query(User)
+            .join(UserOrganizationMembership)
+            .filter(User.login.in_(mentions), UserOrganizationMembership.organization_id == organization_id)
+            .all()
+        )
 
         return [user.id for user in users]
 
     @staticmethod
-    def create_comment(config_id: int, user_id: int, comment_text: str,
-                      parent_comment_id: Optional[int] = None,
-                      organization_id: Optional[int] = None) -> CellComment:
+    def create_comment(
+        config_id: int,
+        user_id: int,
+        comment_text: str,
+        parent_comment_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
+    ) -> CellComment:
         """
         Create a new comment and process mentions.
 
@@ -81,9 +85,7 @@ class CommentService:
         mentioned_user_ids = []
 
         if mentioned_usernames and organization_id:
-            mentioned_user_ids = CommentService.resolve_mentions_to_user_ids(
-                mentioned_usernames, organization_id
-            )
+            mentioned_user_ids = CommentService.resolve_mentions_to_user_ids(mentioned_usernames, organization_id)
 
         # Create comment
         comment = CellComment(
@@ -91,7 +93,7 @@ class CommentService:
             user_id=user_id,
             comment_text=comment_text,
             parent_comment_id=parent_comment_id,
-            mentioned_user_ids=mentioned_user_ids
+            mentioned_user_ids=mentioned_user_ids,
         )
 
         db.session.add(comment)
@@ -101,18 +103,14 @@ class CommentService:
         for mentioned_user_id in mentioned_user_ids:
             # Don't notify yourself
             if mentioned_user_id != user_id:
-                notification = MentionNotification(
-                    mentioned_user_id=mentioned_user_id,
-                    comment_id=comment.id
-                )
+                notification = MentionNotification(mentioned_user_id=mentioned_user_id, comment_id=comment.id)
                 db.session.add(notification)
 
         db.session.commit()
         return comment
 
     @staticmethod
-    def update_comment(comment_id: int, comment_text: str,
-                      organization_id: Optional[int] = None) -> CellComment:
+    def update_comment(comment_id: int, comment_text: str, organization_id: Optional[int] = None) -> CellComment:
         """
         Update an existing comment.
 
@@ -127,9 +125,7 @@ class CommentService:
         new_mentioned_user_ids = []
 
         if mentioned_usernames and organization_id:
-            new_mentioned_user_ids = CommentService.resolve_mentions_to_user_ids(
-                mentioned_usernames, organization_id
-            )
+            new_mentioned_user_ids = CommentService.resolve_mentions_to_user_ids(mentioned_usernames, organization_id)
 
         old_mentioned_user_ids = comment.mentioned_user_ids or []
 
@@ -142,18 +138,12 @@ class CommentService:
         # Remove notifications for users no longer mentioned
         for user_id in old_mentioned_user_ids:
             if user_id not in new_mentioned_user_ids:
-                MentionNotification.query.filter_by(
-                    comment_id=comment_id,
-                    mentioned_user_id=user_id
-                ).delete()
+                MentionNotification.query.filter_by(comment_id=comment_id, mentioned_user_id=user_id).delete()
 
         # Add notifications for newly mentioned users
         for user_id in new_mentioned_user_ids:
             if user_id not in old_mentioned_user_ids and user_id != comment.user_id:
-                notification = MentionNotification(
-                    mentioned_user_id=user_id,
-                    comment_id=comment_id
-                )
+                notification = MentionNotification(mentioned_user_id=user_id, comment_id=comment_id)
                 db.session.add(notification)
 
         db.session.commit()
@@ -200,13 +190,8 @@ class CommentService:
             """Recursively mark mentions as read in comment and all replies"""
             # Mark mentions in this comment
             MentionNotification.query.filter_by(
-                comment_id=comment_obj.id,
-                mentioned_user_id=user_id,
-                is_read=False
-            ).update({
-                'is_read': True,
-                'read_at': datetime.utcnow()
-            })
+                comment_id=comment_obj.id, mentioned_user_id=user_id, is_read=False
+            ).update({"is_read": True, "read_at": datetime.utcnow()})
 
             # Mark mentions in all replies
             for reply in comment_obj.replies:
@@ -239,8 +224,7 @@ class CommentService:
         Returns top-level comments (no parents) with replies loaded.
         """
         query = CellComment.query.filter_by(
-            kpi_value_type_config_id=config_id,
-            parent_comment_id=None  # Top-level only
+            kpi_value_type_config_id=config_id, parent_comment_id=None  # Top-level only
         )
 
         if not include_resolved:
@@ -251,12 +235,11 @@ class CommentService:
     @staticmethod
     def get_unread_mentions(user_id: int, limit: int = None) -> List[MentionNotification]:
         """Get unread mentions for a user with eager loading for performance"""
-        query = MentionNotification.query.options(
-            joinedload(MentionNotification.comment).joinedload(CellComment.user)
-        ).filter_by(
-            mentioned_user_id=user_id,
-            is_read=False
-        ).order_by(MentionNotification.created_at.desc())
+        query = (
+            MentionNotification.query.options(joinedload(MentionNotification.comment).joinedload(CellComment.user))
+            .filter_by(mentioned_user_id=user_id, is_read=False)
+            .order_by(MentionNotification.created_at.desc())
+        )
 
         if limit:
             query = query.limit(limit)
@@ -266,10 +249,7 @@ class CommentService:
     @staticmethod
     def get_unread_mentions_count(user_id: int) -> int:
         """Get total count of unread mentions for a user"""
-        return MentionNotification.query.filter_by(
-            mentioned_user_id=user_id,
-            is_read=False
-        ).count()
+        return MentionNotification.query.filter_by(mentioned_user_id=user_id, is_read=False).count()
 
     @staticmethod
     def mark_mention_read(notification_id: int) -> MentionNotification:
@@ -291,10 +271,7 @@ class CommentService:
 
         Returns count of notifications marked.
         """
-        notifications = MentionNotification.query.filter_by(
-            mentioned_user_id=user_id,
-            is_read=False
-        ).all()
+        notifications = MentionNotification.query.filter_by(mentioned_user_id=user_id, is_read=False).all()
 
         count = len(notifications)
 
@@ -308,9 +285,7 @@ class CommentService:
     @staticmethod
     def get_comment_count_for_cell(config_id: int, include_resolved: bool = True) -> int:
         """Get total comment count for a cell"""
-        query = CellComment.query.filter_by(
-            kpi_value_type_config_id=config_id
-        )
+        query = CellComment.query.filter_by(kpi_value_type_config_id=config_id)
 
         if not include_resolved:
             query = query.filter_by(is_resolved=False)
@@ -335,12 +310,12 @@ class CommentService:
             return comment_text
 
         # Get users
-        users = db.session.query(User).join(
-            UserOrganizationMembership
-        ).filter(
-            User.login.in_(mentions),
-            UserOrganizationMembership.organization_id == organization_id
-        ).all()
+        users = (
+            db.session.query(User)
+            .join(UserOrganizationMembership)
+            .filter(User.login.in_(mentions), UserOrganizationMembership.organization_id == organization_id)
+            .all()
+        )
 
         user_map = {user.login: user for user in users}
 
@@ -350,7 +325,7 @@ class CommentService:
             user = user_map.get(mention)
             if user:
                 # Replace with styled mention
-                pattern = f'@{mention}'
+                pattern = f"@{mention}"
                 replacement = f'<span class="mention" data-user-id="{user.id}">@{user.display_name}</span>'
                 result = result.replace(pattern, replacement)
 

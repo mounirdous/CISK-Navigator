@@ -144,7 +144,7 @@
                             {% if vt.kind == 'numeric' %}
                             <div class="color-config" id="colors_{{ choice_value }}" style="display: none;">
                                 <h6 class="mb-3"><i class="bi bi-palette"></i> Color & Display Configuration</h6>
-                                
+
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-3">
                                         <label class="form-label small fw-semibold">Positive Values</label>
@@ -262,11 +262,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const vtId = this.value;
             const colorConfig = document.getElementById('colors_' + vtId);
             const card = document.getElementById('card_' + vtId);
-            
+
             if (colorConfig) {
                 colorConfig.style.display = this.checked ? 'block' : 'none';
             }
-            
+
             if (card) {
                 if (this.checked) {
                     card.classList.add('selected');

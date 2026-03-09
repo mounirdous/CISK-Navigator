@@ -1,9 +1,12 @@
 """
 User model
 """
+
 from datetime import datetime
+
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
+
 from app.extensions import db
 
 
@@ -15,7 +18,8 @@ class User(UserMixin, db.Model):
     - A global administrator (can manage users and organizations)
     - A regular user assigned to one or more organizations
     """
-    __tablename__ = 'users'
+
+    __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(80), unique=True, nullable=False, index=True)
@@ -26,14 +30,14 @@ class User(UserMixin, db.Model):
     is_global_admin = db.Column(db.Boolean, default=False, nullable=False)
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
     dark_mode = db.Column(db.Boolean, default=False, nullable=False)
-    default_organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=True)
+    default_organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    organization_memberships = db.relationship('UserOrganizationMembership',
-                                               back_populates='user',
-                                               cascade='all, delete-orphan')
+    organization_memberships = db.relationship(
+        "UserOrganizationMembership", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def set_password(self, password):
         """Hash and set the password"""
@@ -75,63 +79,72 @@ class User(UserMixin, db.Model):
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_spaces
+        return bool(membership and membership.can_manage_spaces)
 
     def can_manage_value_types(self, organization_id):
         """Check if user can manage value types in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_value_types
+        return bool(membership and membership.can_manage_value_types)
 
     def can_manage_governance_bodies(self, organization_id):
         """Check if user can manage governance bodies in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_governance_bodies
+        return bool(membership and membership.can_manage_governance_bodies)
 
     def can_manage_challenges(self, organization_id):
         """Check if user can manage challenges in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_challenges
+        return bool(membership and membership.can_manage_challenges)
 
     def can_manage_initiatives(self, organization_id):
         """Check if user can manage initiatives in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_initiatives
+        return bool(membership and membership.can_manage_initiatives)
 
     def can_manage_systems(self, organization_id):
         """Check if user can manage systems in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_systems
+        return bool(membership and membership.can_manage_systems)
 
     def can_manage_kpis(self, organization_id):
         """Check if user can manage KPIs in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_manage_kpis
+        return bool(membership and membership.can_manage_kpis)
 
     def can_view_comments(self, organization_id):
         """Check if user can view comments in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_view_comments
+        return bool(membership and membership.can_view_comments)
 
     def can_add_comments(self, organization_id):
         """Check if user can add comments in an organization"""
         if self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return membership and membership.can_add_comments
+        return bool(membership and membership.can_add_comments)
+
+    def has_permission(self, organization_id, permission_name):
+        """Generic permission checker - delegates to specific permission methods"""
+        if self.is_global_admin:
+            return True
+        method = getattr(self, permission_name, None)
+        if method and callable(method):
+            return method(organization_id)
+        return False
 
     def __repr__(self):
-        return f'<User {self.login}>'
+        return f"<User {self.login}>"

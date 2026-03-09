@@ -1,0 +1,85 @@
+{% extends "errors/base.html" %}
+
+{% block title %}500 - Internal Server Error{% endblock %}
+
+{% block extra_css %}
+<style>
+    .error-icon {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+    }
+
+    :root {
+        --error-gradient-start: #dc3545;
+        --error-gradient-end: #c82333;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="error-icon">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+</div>
+
+<div class="error-code">500</div>
+<h1 class="error-title">Something Went Wrong</h1>
+<p class="error-description">
+    We encountered an unexpected error while processing your request. Our team has been notified and is working on it.
+</p>
+
+<div class="error-actions">
+    <button onclick="location.reload()" class="btn btn-primary btn-lg">
+        <i class="bi bi-arrow-clockwise"></i> Try Again
+    </button>
+    {% if current_user.is_authenticated %}
+        {% if session.organization_id %}
+            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-house-door"></i> Dashboard
+            </a>
+        {% elif current_user.is_global_admin %}
+            <a href="{{ url_for('global_admin.index') }}" class="btn btn-outline-primary btn-lg">
+                <i class="bi bi-shield-lock"></i> Global Admin
+            </a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-lg">
+            <i class="bi bi-box-arrow-in-right"></i> Login
+        </a>
+    {% endif %}
+</div>
+
+<div class="error-details">
+    <ul class="error-details-list">
+        <li>
+            <i class="bi bi-arrow-clockwise"></i>
+            Try refreshing the page
+        </li>
+        <li>
+            <i class="bi bi-clock-history"></i>
+            Wait a few minutes and try again
+        </li>
+        {% if current_user.is_authenticated and current_user.is_global_admin %}
+        <li>
+            <i class="bi bi-heart-pulse"></i>
+            <a href="{{ url_for('global_admin.health_dashboard') }}" style="color: var(--accent-primary); text-decoration: none;">
+                Check the Health Dashboard
+            </a>
+        </li>
+        {% endif %}
+        <li>
+            <i class="bi bi-envelope"></i>
+            Contact your administrator if the problem persists
+        </li>
+    </ul>
+</div>
+
+{% if current_user.is_authenticated and current_user.is_global_admin %}
+<div class="mt-4 p-3" style="background: rgba(220, 53, 69, 0.1); border-radius: 12px; border: 2px solid rgba(220, 53, 69, 0.3);">
+    <small class="text-muted">
+        <i class="bi bi-shield-lock"></i>
+        <strong>Admin Note:</strong> Check server logs for detailed error information.
+        If this error persists, review the Health Dashboard and recent changes.
+    </small>
+</div>
+{% endif %}
+{% endblock %}
