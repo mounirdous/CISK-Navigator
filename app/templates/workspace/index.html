@@ -337,18 +337,21 @@ tr[data-level="kpi"] td {
                            {% if space_type_filter == 'all' %}checked{% endif %} hidden>
                     <i class="bi bi-globe"></i>
                     <span>All Spaces</span>
+                    <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ all_spaces_count }}</span>
                 </label>
                 <label class="filter-pill {% if space_type_filter == 'public' %}active{% endif %}" title="Show only public spaces">
                     <input type="radio" name="space_type" value="public" id="filter_space_public"
                            {% if space_type_filter == 'public' %}checked{% endif %} hidden>
                     <i class="bi bi-unlock"></i>
                     <span>Public</span>
+                    <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ public_spaces_count }}</span>
                 </label>
                 <label class="filter-pill {% if space_type_filter == 'private' %}active{% endif %}" title="Show only private spaces">
                     <input type="radio" name="space_type" value="private" id="filter_space_private"
                            {% if space_type_filter == 'private' %}checked{% endif %} hidden>
                     <i class="bi bi-lock"></i>
                     <span>Private</span>
+                    <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ private_spaces_count }}</span>
                 </label>
             </div>
         </div>
@@ -362,6 +365,12 @@ tr[data-level="kpi"] td {
                            {% if show_archived %}checked{% endif %} hidden>
                     <i class="bi bi-archive"></i>
                     <span>Archived KPIs</span>
+                </label>
+                <label class="filter-pill ms-2 {% if show_all_columns %}active{% endif %}" title="Show all value type columns, even if empty">
+                    <input type="checkbox" name="show_all_columns" value="1" id="filter_show_all_columns"
+                           {% if show_all_columns %}checked{% endif %} hidden>
+                    <i class="bi bi-columns-gap"></i>
+                    <span>Show All Columns</span>
                 </label>
             </div>
 
@@ -1035,15 +1044,52 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterPills = document.querySelectorAll('.filter-pill');
     const clearFiltersBtn = document.getElementById('clear-filters');
 
-    // Level visibility controls (checkboxes with names starting with "show_" except show_archived)
+    // Restore filter state from localStorage
+    const savedFilters = localStorage.getItem('workspaceFilters');
+    if (savedFilters) {
+        try {
+            const filters = JSON.parse(savedFilters);
+            console.log('Restoring filters from localStorage:', filters);
+
+            // Restore governance bodies
+            if (filters.gb) {
+                filters.gb.forEach(gbId => {
+                    const checkbox = filterForm.querySelector(`input[name="gb"][value="${gbId}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
+            // Restore space type
+            if (filters.space_type) {
+                const radio = filterForm.querySelector(`input[name="space_type"][value="${filters.space_type}"]`);
+                if (radio) radio.checked = true;
+            }
+
+            // Restore show_archived
+            if (filters.show_archived) {
+                const checkbox = filterForm.querySelector('input[name="show_archived"]');
+                if (checkbox) checkbox.checked = true;
+            }
+
+            // Restore show_all_columns
+            if (filters.show_all_columns) {
+                const checkbox = filterForm.querySelector('input[name="show_all_columns"]');
+                if (checkbox) checkbox.checked = true;
+            }
+        } catch (e) {
+            console.error('Error restoring filters from localStorage:', e);
+        }
+    }
+
+    // Level visibility controls (checkboxes with names starting with "show_" except show_archived and show_all_columns)
     const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
-        cb.name.startsWith('show_') && cb.name !== 'show_archived'
+        cb.name.startsWith('show_') && cb.name !== 'show_archived' && cb.name !== 'show_all_columns'
     );
     console.log('Level checkboxes:', levelCheckboxes.map(cb => cb.name));
 
-    // Governance body and archive checkboxes (data filters that trigger reload)
+    // Governance body, archive, and show_all_columns checkboxes (data filters that trigger reload)
     const dataFilterCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
-        !cb.name.startsWith('show_') || cb.name === 'show_archived'
+        !cb.name.startsWith('show_') || cb.name === 'show_archived' || cb.name === 'show_all_columns'
     );
     console.log('Data filter checkboxes:', dataFilterCheckboxes.map(cb => cb.name));
 
@@ -1101,6 +1147,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Function to save filter state to localStorage
+    function saveFiltersToLocalStorage() {
+        const filters = {
+            gb: Array.from(filterForm.querySelectorAll('input[name="gb"]:checked')).map(cb => cb.value),
+            space_type: filterForm.querySelector('input[name="space_type"]:checked')?.value || 'all',
+            show_archived: filterForm.querySelector('input[name="show_archived"]')?.checked || false,
+            show_all_columns: filterForm.querySelector('input[name="show_all_columns"]')?.checked || false
+        };
+        localStorage.setItem('workspaceFilters', JSON.stringify(filters));
+        console.log('Saved filters to localStorage:', filters);
+    }
+
     // Function to add hidden inputs for unchecked level checkboxes before form submit
     function addLevelVisibilityHiddenInputs() {
         console.log('addLevelVisibilityHiddenInputs() called');
@@ -1125,13 +1183,16 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Total hidden inputs added: ${addedCount}`);
     }
 
-    // Handle data filter checkbox changes (governance bodies, archive) - these DO submit form
+    // Handle data filter checkbox changes (governance bodies, archive, show_all_columns) - these DO submit form
     dataFilterCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             const pill = this.closest('.filter-pill');
             if (pill) {
                 pill.classList.toggle('active', this.checked);
             }
+
+            // Save filter state to localStorage
+            saveFiltersToLocalStorage();
 
             // Add level visibility hidden inputs before submit
             // NOTE: calling form.submit() does NOT trigger 'submit' event, must call manually
@@ -1154,6 +1215,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     pill.classList.toggle('active', r.checked);
                 }
             });
+
+            // Save filter state to localStorage
+            saveFiltersToLocalStorage();
 
             // Add level visibility hidden inputs before submit
             addLevelVisibilityHiddenInputs();
@@ -1263,12 +1327,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clear all filters (Option B: clear governance + reset level visibility to all visible)
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', function() {
-            // Uncheck all data filter checkboxes (governance bodies, archive)
+            // Uncheck all data filter checkboxes (governance bodies, archive, show_all_columns)
             dataFilterCheckboxes.forEach(cb => {
                 cb.checked = false;
                 const pill = cb.closest('.filter-pill');
                 if (pill) pill.classList.remove('active');
             });
+
+            // Reset space type to "all"
+            const allSpacesRadio = filterForm.querySelector('input[name="space_type"][value="all"]');
+            if (allSpacesRadio) {
+                allSpacesRadio.checked = true;
+                spaceTypeRadios.forEach(r => {
+                    const pill = r.closest('.filter-pill');
+                    if (pill) {
+                        pill.classList.toggle('active', r.checked);
+                    }
+                });
+            }
 
             // Reset all level checkboxes to checked (visible)
             levelCheckboxes.forEach(cb => {
@@ -1278,6 +1354,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
                 }
             });
+
+            // Clear localStorage
+            localStorage.removeItem('workspaceFilters');
+            console.log('Cleared filters from localStorage');
 
             // Don't add hidden inputs - all levels are now checked and will submit as =1
             // Submit form

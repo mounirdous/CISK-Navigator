@@ -1,7 +1,7 @@
 """Add is_private to spaces
 
 Revision ID: a8c4b3e7d2f6
-Revises: f2d6dc7cbc3a
+Revises: f5c8a9b3d2e4
 Create Date: 2026-03-09 14:00:00
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'a8c4b3e7d2f6'
-down_revision = 'f2d6dc7cbc3a'
+down_revision = 'f5c8a9b3d2e4'
 branch_labels = None
 depends_on = None
 

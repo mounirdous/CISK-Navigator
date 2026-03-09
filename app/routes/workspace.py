@@ -96,6 +96,14 @@ def index():
     # Get space type filter (all, private, public)
     space_type_filter = request.args.get('space_type', 'all')
 
+    # Get space counts for filter pills
+    all_spaces_count = Space.query.filter_by(organization_id=org_id).count()
+    public_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=False).count()
+    private_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=True).count()
+
+    # Get show_all_columns flag (override smart column filtering)
+    show_all_columns = request.args.get('show_all_columns') == '1'
+
     # Get active governance bodies for filter
     from app.models import GovernanceBody
     governance_bodies = GovernanceBody.query.filter_by(
@@ -176,8 +184,13 @@ def index():
         is_active=True
     ).order_by(ValueType.display_order).all()
 
-    # Get value types - only show those with data if any exist, otherwise show all
-    if value_type_ids_with_data:
+    # Get value types - apply smart filtering unless show_all_columns is enabled
+    if show_all_columns:
+        # Show all columns override
+        value_types = all_value_types
+        hidden_value_types = []
+    elif value_type_ids_with_data:
+        # Smart filtering: only show columns with data
         value_types = [vt for vt in all_value_types if vt.id in value_type_ids_with_data]
         hidden_value_types = [vt for vt in all_value_types if vt.id not in value_type_ids_with_data]
     else:
@@ -203,7 +216,11 @@ def index():
                           selected_governance_body_ids=selected_governance_body_ids,
                           show_archived=show_archived,
                           show_levels=show_levels,
-                          space_type_filter=space_type_filter)
+                          space_type_filter=space_type_filter,
+                          all_spaces_count=all_spaces_count,
+                          public_spaces_count=public_spaces_count,
+                          private_spaces_count=private_spaces_count,
+                          show_all_columns=show_all_columns)
 
 
 @bp.route('/export-excel')
