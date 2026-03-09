@@ -13,104 +13,21 @@ bp = Blueprint('auth', __name__, url_prefix='/auth')
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     """
-    Two-step login:
-    1. Authenticate with username/password
-    2. Select organization (filtered by user access)
+    Single-step login with automatic organization selection.
+
+    Uses user's default organization or first available org.
+    Users can switch organizations via navbar after login.
     """
     # If already authenticated AND has organization context, go to workspace
     if current_user.is_authenticated and session.get('organization_id'):
         return redirect(url_for('workspace.dashboard'))
-    # If authenticated but no organization (e.g., session cleared), log out and restart
+
+    # If authenticated but no organization, log out and restart
     if current_user.is_authenticated and not session.get('organization_id'):
         logout_user()
         session.clear()
         flash('Session expired. Please log in again.', 'info')
 
-    # Check if we're at step 2 (user already authenticated in session)
-    temp_user_id = session.get('_temp_user_id')
-
-    if temp_user_id:
-        # STEP 2: Organization selection
-        user = User.query.get(temp_user_id)
-        if not user:
-            session.pop('_temp_user_id', None)
-            flash('Session expired. Please log in again.', 'warning')
-            return redirect(url_for('auth.login'))
-
-        # Get organizations user has access to
-        user_orgs = user.get_organizations()
-        org_choices = [(org.id, org.name) for org in user_orgs if org.is_active]
-
-        if request.method == 'POST':
-            is_admin_login = request.form.get('admin_login') == 'on'
-
-            # Handle Global Administration
-            if is_admin_login:
-                if not user.is_global_admin:
-                    flash('You do not have permission to access Global Administration', 'danger')
-                    return render_template('auth/login_step2.html',
-                                         user=user,
-                                         organizations=org_choices,
-                                         show_admin=user.is_global_admin)
-
-                login_user(user)
-                session.pop('_temp_user_id', None)
-                session['organization_id'] = None
-                session['organization_name'] = 'Global Administration'
-
-                # Only force password change if not already done this session
-                if user.must_change_password and not session.get('_pwd_check_done'):
-                    session['_pwd_check_done'] = True
-                    flash('You must change your password', 'warning')
-                    return redirect(url_for('auth.change_password'))
-
-                return redirect(url_for('global_admin.index'))
-
-            # Handle organization selection
-            selected_org_id = request.form.get('organization')
-            if not selected_org_id:
-                flash('Please select an organization', 'warning')
-                return render_template('auth/login_step2.html',
-                                     user=user,
-                                     organizations=org_choices,
-                                     show_admin=user.is_global_admin)
-
-            selected_org_id = int(selected_org_id)
-            if not user.has_organization_access(selected_org_id):
-                flash('You do not have access to this organization', 'danger')
-                return render_template('auth/login_step2.html',
-                                     user=user,
-                                     organizations=org_choices,
-                                     show_admin=user.is_global_admin)
-
-            organization = Organization.query.get(selected_org_id)
-            if not organization or not organization.is_active:
-                flash('Selected organization is not available', 'danger')
-                return render_template('auth/login_step2.html',
-                                     user=user,
-                                     organizations=org_choices,
-                                     show_admin=user.is_global_admin)
-
-            login_user(user)
-            session.pop('_temp_user_id', None)
-            session['organization_id'] = organization.id
-            session['organization_name'] = organization.name
-
-            # Only force password change if not already done this session
-            if user.must_change_password and not session.get('_pwd_check_done'):
-                session['_pwd_check_done'] = True
-                flash('You must change your password', 'warning')
-                return redirect(url_for('auth.change_password'))
-
-            return redirect(url_for('workspace.dashboard'))
-
-        # GET request for step 2
-        return render_template('auth/login_step2.html',
-                             user=user,
-                             organizations=org_choices,
-                             show_admin=user.is_global_admin)
-
-    # STEP 1: Username/password authentication
     form = LoginForm()
 
     if form.validate_on_submit():
@@ -124,28 +41,42 @@ def login():
             flash('Your account is inactive', 'danger')
             return redirect(url_for('auth.login'))
 
-        # Check if user has only one org - auto-login if so
+        # Get user's organizations
         user_orgs = user.get_organizations()
         active_orgs = [org for org in user_orgs if org.is_active]
 
-        # Auto-login if user has exactly one org and is not a global admin
-        if len(active_orgs) == 1 and not user.is_global_admin:
-            organization = active_orgs[0]
-            login_user(user)
-            session['organization_id'] = organization.id
-            session['organization_name'] = organization.name
+        # Determine which organization to log into
+        selected_org = None
 
-            # Only force password change if not already done this session
-            if user.must_change_password and not session.get('_pwd_check_done'):
-                session['_pwd_check_done'] = True
-                flash('You must change your password', 'warning')
-                return redirect(url_for('auth.change_password'))
+        # Priority 1: User's default organization (if set and user has access)
+        if user.default_organization_id:
+            default_org = Organization.query.get(user.default_organization_id)
+            if default_org and default_org.is_active and user.has_organization_access(default_org.id):
+                selected_org = default_org
 
-            return redirect(url_for('workspace.dashboard'))
+        # Priority 2: First available organization
+        if not selected_org and active_orgs:
+            selected_org = active_orgs[0]
 
-        # Store user ID temporarily for step 2
-        session['_temp_user_id'] = user.id
-        return redirect(url_for('auth.login'))
+        # No organizations available
+        if not selected_org:
+            flash('You do not have access to any organizations. Please contact your administrator.', 'danger')
+            return redirect(url_for('auth.login'))
+
+        # Log user in
+        login_user(user)
+        session['organization_id'] = selected_org.id
+        session['organization_name'] = selected_org.name
+
+        # Handle password change requirement
+        if user.must_change_password and not session.get('_pwd_check_done'):
+            session['_pwd_check_done'] = True
+            flash('You must change your password', 'warning')
+            return redirect(url_for('auth.change_password'))
+
+        # Success message
+        flash(f'Welcome back, {user.display_name or user.login}!', 'success')
+        return redirect(url_for('workspace.dashboard'))
 
     return render_template('auth/login.html', form=form)
 
@@ -169,10 +100,28 @@ def profile():
     """View and edit user profile"""
     form = ProfileEditForm()
 
+    # Populate organization choices
+    user_orgs = current_user.get_organizations()
+    org_choices = [(0, '-- None (use first available) --')] + [(org.id, org.name) for org in user_orgs if org.is_active]
+    form.default_organization.choices = org_choices
+
     if form.validate_on_submit():
         current_user.display_name = form.display_name.data
         current_user.email = form.email.data
         current_user.dark_mode = form.dark_mode.data
+
+        # Handle default organization
+        default_org_id = form.default_organization.data
+        if default_org_id == 0:
+            current_user.default_organization_id = None
+        else:
+            # Verify user has access
+            if current_user.has_organization_access(default_org_id):
+                current_user.default_organization_id = default_org_id
+            else:
+                flash('You do not have access to the selected organization', 'danger')
+                return redirect(url_for('auth.profile'))
+
         db.session.commit()
         flash('Profile updated successfully', 'success')
         return redirect(url_for('auth.profile'))
@@ -182,6 +131,7 @@ def profile():
         form.display_name.data = current_user.display_name
         form.email.data = current_user.email
         form.dark_mode.data = current_user.dark_mode
+        form.default_organization.data = current_user.default_organization_id or 0
 
     return render_template('auth/profile.html', form=form)
 

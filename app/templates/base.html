@@ -318,9 +318,16 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('organization_admin.index') }}">
-                                <i class="bi bi-gear"></i> Administration
+                                <i class="bi bi-building-gear"></i> Org Admin
                             </a>
                         </li>
+                        {% if current_user.is_global_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('global_admin.index') }}" title="Global Administration">
+                                <i class="bi bi-shield-lock-fill"></i> Global Admin
+                            </a>
+                        </li>
+                        {% endif %}
                     {% elif current_user.is_global_admin %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('global_admin.users') }}">Users</a>

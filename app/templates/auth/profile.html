@@ -53,6 +53,19 @@
                         </div>
 
                         <div class="mb-3">
+                            {{ form.default_organization.label(class="form-label fw-bold") }}
+                            {{ form.default_organization(class="form-select") }}
+                            <small class="form-text text-muted">
+                                Choose which organization to log into by default. You can always switch organizations using the navbar.
+                            </small>
+                            {% if form.default_organization.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.default_organization.errors %}{{ error }}{% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
                             {{ form.submit(class="btn btn-primary") }}
                         </div>
                     </form>

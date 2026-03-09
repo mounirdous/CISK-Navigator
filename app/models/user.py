@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     is_global_admin = db.Column(db.Boolean, default=False, nullable=False)
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
     dark_mode = db.Column(db.Boolean, default=False, nullable=False)
+    default_organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
