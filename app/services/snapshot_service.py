@@ -146,7 +146,8 @@ class SnapshotService:
                 label=label,
                 user_id=user_id,
                 batch_id=batch_id,
-                is_public=is_public
+                is_public=is_public,
+                allow_duplicates=True
             )
             if snapshot:
                 created_count += 1
@@ -156,7 +157,7 @@ class SnapshotService:
         # Also create rollup snapshots
         rollup_count = SnapshotService.create_rollup_snapshots(
             organization_id, snapshot_date, label, batch_id=batch_id,
-            user_id=user_id, is_public=is_public
+            user_id=user_id, is_public=is_public, allow_duplicates=True
         )
 
         return {
@@ -170,7 +171,8 @@ class SnapshotService:
     @staticmethod
     def create_rollup_snapshots(organization_id: int, snapshot_date: date,
                                label: str = None, batch_id: str = None,
-                               user_id: int = None, is_public: bool = False) -> int:
+                               user_id: int = None, is_public: bool = False,
+                               allow_duplicates: bool = False) -> int:
         """
         Create rollup snapshots for all hierarchy levels.
 
@@ -197,7 +199,8 @@ class SnapshotService:
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
                         'space', space.id, vt.id, rollup, snapshot_date, label,
-                        batch_id=batch_id, user_id=user_id, is_public=is_public
+                        batch_id=batch_id, user_id=user_id, is_public=is_public,
+                        allow_duplicates=allow_duplicates
                     )
                     if snapshot:
                         count += 1
@@ -212,7 +215,8 @@ class SnapshotService:
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
                         'challenge', challenge.id, vt.id, rollup, snapshot_date, label,
-                        batch_id=batch_id, user_id=user_id, is_public=is_public
+                        batch_id=batch_id, user_id=user_id, is_public=is_public,
+                        allow_duplicates=allow_duplicates
                     )
                     if snapshot:
                         count += 1
@@ -225,7 +229,8 @@ class SnapshotService:
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
                         'initiative', initiative.id, vt.id, rollup, snapshot_date, label,
-                        batch_id=batch_id, user_id=user_id, is_public=is_public
+                        batch_id=batch_id, user_id=user_id, is_public=is_public,
+                        allow_duplicates=allow_duplicates
                     )
                     if snapshot:
                         count += 1
@@ -242,7 +247,8 @@ class SnapshotService:
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
                         'system', link.id, vt.id, rollup, snapshot_date, label,
-                        batch_id=batch_id, user_id=user_id, is_public=is_public
+                        batch_id=batch_id, user_id=user_id, is_public=is_public,
+                        allow_duplicates=allow_duplicates
                     )
                     if snapshot:
                         count += 1
@@ -253,15 +259,8 @@ class SnapshotService:
     def _create_rollup_snapshot(entity_type: str, entity_id: int, value_type_id: int,
                                rollup: Dict, snapshot_date: date, label: str = None,
                                batch_id: str = None, user_id: int = None,
-                               is_public: bool = False) -> Optional[RollupSnapshot]:
+                               is_public: bool = False, allow_duplicates: bool = False) -> Optional[RollupSnapshot]:
         """Create a single rollup snapshot"""
-        # Check if exists
-        existing = RollupSnapshot.query.filter_by(
-            entity_type=entity_type,
-            entity_id=entity_id,
-            value_type_id=value_type_id,
-            snapshot_date=snapshot_date
-        ).first()
 
         value_type = ValueType.query.get(value_type_id)
 
@@ -269,18 +268,28 @@ class SnapshotService:
         if batch_id is None:
             batch_id = str(uuid.uuid4())
 
-        if existing:
-            # Update
-            existing.rollup_value = rollup['value'] if value_type.is_numeric() else None
-            existing.qualitative_level = rollup['value'] if not value_type.is_numeric() else None
-            existing.is_complete = rollup.get('is_complete', False)
-            existing.snapshot_label = label or existing.snapshot_label
-            existing.created_at = datetime.utcnow()
-            existing.snapshot_batch_id = batch_id
-            existing.is_public = is_public
-            existing.owner_user_id = user_id
-            db.session.commit()
-            return existing
+        # Skip deduplication check if allow_duplicates is True
+        if not allow_duplicates:
+            # Check if exists
+            existing = RollupSnapshot.query.filter_by(
+                entity_type=entity_type,
+                entity_id=entity_id,
+                value_type_id=value_type_id,
+                snapshot_date=snapshot_date
+            ).first()
+
+            if existing:
+                # Update
+                existing.rollup_value = rollup['value'] if value_type.is_numeric() else None
+                existing.qualitative_level = rollup['value'] if not value_type.is_numeric() else None
+                existing.is_complete = rollup.get('is_complete', False)
+                existing.snapshot_label = label or existing.snapshot_label
+                existing.created_at = datetime.utcnow()
+                existing.snapshot_batch_id = batch_id
+                existing.is_public = is_public
+                existing.owner_user_id = user_id
+                db.session.commit()
+                return existing
 
         # Create new
         snapshot = RollupSnapshot(
@@ -459,7 +468,7 @@ class SnapshotService:
         snapshots = db.session.query(
             KPISnapshot.snapshot_batch_id,
             KPISnapshot.snapshot_date,
-            KPISnapshot.created_at,
+            func.min(KPISnapshot.created_at).label('created_at'),
             KPISnapshot.snapshot_label,
             KPISnapshot.is_public,
             KPISnapshot.owner_user_id,
@@ -481,13 +490,12 @@ class SnapshotService:
         ).group_by(
             KPISnapshot.snapshot_batch_id,
             KPISnapshot.snapshot_date,
-            KPISnapshot.created_at,
             KPISnapshot.snapshot_label,
             KPISnapshot.is_public,
             KPISnapshot.owner_user_id,
             User.display_name
         ).order_by(
-            KPISnapshot.created_at.desc()
+            func.min(KPISnapshot.created_at).desc()
         ).all()
 
         if limit:

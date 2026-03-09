@@ -143,6 +143,10 @@
                                 <i class="bi bi-{% if snapshot.is_public %}lock-fill{% else %}globe{% endif %}" id="privacy-icon-{{ snapshot.batch_id }}"></i>
                                 <span id="privacy-text-{{ snapshot.batch_id }}">{% if snapshot.is_public %}Make Private{% else %}Make Public{% endif %}</span>
                             </button>
+                            <button class="btn btn-outline-danger"
+                                    onclick="deleteSnapshot('{{ snapshot.batch_id }}', '{{ snapshot.formatted_date }}', '{{ snapshot.label or '' }}')">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </div>
@@ -372,6 +376,37 @@ async function togglePrivacy(batchId, isCurrentlyPublic) {
         console.error('Error updating privacy:', error);
         alert('Error updating privacy: ' + error.message);
         btn.disabled = false;
+    }
+}
+
+async function deleteSnapshot(batchId, dateStr, label) {
+    const snapshotInfo = `${dateStr}${label ? ' - ' + label : ''}`;
+
+    if (!confirm(`Are you sure you want to delete this snapshot?\n\n${snapshotInfo}\n\nThis will delete ALL KPI and rollup data in this batch and cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const url = `{{ url_for('workspace.delete_snapshot', batch_id='BATCH_ID') }}`.replace('BATCH_ID', batchId);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            // Reload page to update the list
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to delete snapshot'));
+        }
+    } catch (error) {
+        console.error('Error deleting snapshot:', error);
+        alert('Error deleting snapshot: ' + error.message);
     }
 }
 </script>

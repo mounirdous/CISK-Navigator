@@ -737,6 +737,40 @@ def toggle_snapshot_privacy(batch_id):
 
     except Exception as e:
         db.session.rollback()
+
+
+@bp.route('/snapshots/<batch_id>/delete', methods=['POST'])
+@login_required
+@organization_required
+def delete_snapshot(batch_id):
+    """Delete all snapshots in a batch"""
+    try:
+        # Get one snapshot from this batch to check ownership
+        sample_snapshot = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).first()
+
+        if not sample_snapshot:
+            return jsonify({'error': 'Snapshot not found'}), 404
+
+        # Check ownership
+        if sample_snapshot.owner_user_id != current_user.id:
+            return jsonify({'error': 'Only the snapshot owner can delete snapshots'}), 403
+
+        # Delete all KPI snapshots in this batch
+        kpi_count = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).delete()
+
+        # Delete all rollup snapshots in this batch
+        rollup_count = RollupSnapshot.query.filter_by(snapshot_batch_id=batch_id).delete()
+
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'Deleted snapshot batch ({kpi_count} KPI snapshots, {rollup_count} rollup snapshots)'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
         print(f"[DEBUG] Error toggling privacy: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
