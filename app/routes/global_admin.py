@@ -395,8 +395,6 @@ def clone_organization(org_id):
 @global_admin_required
 def backup_restore():
     """Backup and restore management page"""
-    from pathlib import Path
-
     # Get all organizations
     orgs = Organization.query.order_by(Organization.name).all()
 
@@ -427,35 +425,17 @@ def backup_restore():
             'value_types': vt_count
         })
 
-    # Get list of existing backup files
-    backup_dir = Path('backups')
-    backup_files = []
-
-    if backup_dir.exists():
-        for backup_file in sorted(backup_dir.glob('backup_*.yaml*'), reverse=True):
-            file_size = backup_file.stat().st_size / (1024 * 1024)  # MB
-            file_time = datetime.fromtimestamp(backup_file.stat().st_mtime)
-
-            backup_files.append({
-                'name': backup_file.name,
-                'path': str(backup_file),
-                'size_mb': round(file_size, 2),
-                'created': file_time,
-                'compressed': backup_file.suffix == '.gz'
-            })
-
     return render_template('global_admin/backup_restore.html',
-                          org_stats=org_stats,
-                          backup_files=backup_files)
+                          org_stats=org_stats)
 
 
-@bp.route('/backup-restore/create/<int:org_id>', methods=['POST'])
+@bp.route('/backup-restore/create/<int:org_id>', methods=['GET'])
 @login_required
 @global_admin_required
 def create_backup(org_id):
-    """Create backup of organization"""
+    """Create and download backup of organization"""
     from app.services.yaml_export_service import YAMLExportService
-    from pathlib import Path
+    from io import BytesIO
     import gzip
 
     org = db.session.get(Organization, org_id)
@@ -464,8 +444,8 @@ def create_backup(org_id):
         return redirect(url_for('global_admin.backup_restore'))
 
     try:
-        # Get compression preference
-        compress = request.form.get('compress') == 'true'
+        # Get compression preference from query parameter
+        compress = request.args.get('compress', 'false') == 'true'
 
         # Export to YAML
         yaml_content = YAMLExportService.export_to_yaml(org_id)
@@ -497,84 +477,51 @@ def create_backup(org_id):
 """
         full_content = metadata + yaml_content
 
-        # Create backups directory
-        backup_dir = Path('backups')
-        backup_dir.mkdir(exist_ok=True)
-
         # Generate filename
         safe_org_name = org.name.lower().replace(' ', '-').replace('/', '-')
         timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"backup_{safe_org_name}_{timestamp_str}.yaml"
 
+        # Stream file to browser
         if compress:
             filename += ".gz"
-
-        file_path = backup_dir / filename
-
-        # Save file
-        if compress:
-            with gzip.open(file_path, 'wt', encoding='utf-8') as f:
+            # Compress in memory
+            bio = BytesIO()
+            with gzip.open(bio, 'wt', encoding='utf-8') as f:
                 f.write(full_content)
+            bio.seek(0)
+            return send_file(
+                bio,
+                mimetype='application/gzip',
+                as_attachment=True,
+                download_name=filename
+            )
         else:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(full_content)
-
-        file_size = file_path.stat().st_size / (1024 * 1024)
-
-        flash(f'Backup created successfully: {filename} ({file_size:.2f} MB)', 'success')
+            # Send uncompressed
+            bio = BytesIO(full_content.encode('utf-8'))
+            bio.seek(0)
+            return send_file(
+                bio,
+                mimetype='application/x-yaml',
+                as_attachment=True,
+                download_name=filename
+            )
 
     except Exception as e:
         flash(f'Error creating backup: {str(e)}', 'danger')
-
-    return redirect(url_for('global_admin.backup_restore'))
-
-
-@bp.route('/backup-restore/download/<path:filename>')
-@login_required
-@global_admin_required
-def download_backup(filename):
-    """Download backup file"""
-    from pathlib import Path
-
-    backup_dir = Path('backups')
-    file_path = backup_dir / filename
-
-    if not file_path.exists() or not file_path.is_file():
-        flash('Backup file not found', 'danger')
         return redirect(url_for('global_admin.backup_restore'))
-
-    return send_file(file_path, as_attachment=True, download_name=filename)
-
-
-@bp.route('/backup-restore/delete/<path:filename>', methods=['POST'])
-@login_required
-@global_admin_required
-def delete_backup(filename):
-    """Delete backup file"""
-    from pathlib import Path
-
-    backup_dir = Path('backups')
-    file_path = backup_dir / filename
-
-    if file_path.exists() and file_path.is_file():
-        file_path.unlink()
-        flash(f'Backup deleted: {filename}', 'success')
-    else:
-        flash('Backup file not found', 'warning')
-
-    return redirect(url_for('global_admin.backup_restore'))
 
 
 @bp.route('/backup-restore/restore', methods=['POST'])
 @login_required
 @global_admin_required
 def restore_backup():
-    """Restore organization from backup file"""
+    """Restore organization from uploaded backup file"""
     from app.services.yaml_import_service import YAMLImportService
     import gzip
+    import io
 
     org_id = request.form.get('org_id', type=int)
-    backup_source = request.form.get('backup_source')  # 'file' or 'upload'
 
     if not org_id:
         flash('Please select a target organization', 'danger')
@@ -585,58 +532,26 @@ def restore_backup():
         flash('Organization not found', 'danger')
         return redirect(url_for('global_admin.backup_restore'))
 
+    # Check if file was uploaded
+    if 'backup_upload' not in request.files:
+        flash('No file uploaded', 'danger')
+        return redirect(url_for('global_admin.backup_restore'))
+
+    file = request.files['backup_upload']
+    if file.filename == '':
+        flash('No file selected', 'danger')
+        return redirect(url_for('global_admin.backup_restore'))
+
     try:
+        filename = file.filename
         yaml_content = None
-        filename = None
 
-        if backup_source == 'file':
-            # Restore from existing backup file
-            backup_filename = request.form.get('backup_file')
-            if not backup_filename:
-                flash('Please select a backup file', 'danger')
-                return redirect(url_for('global_admin.backup_restore'))
-
-            from pathlib import Path
-            backup_path = Path('backups') / backup_filename
-
-            if not backup_path.exists():
-                flash('Backup file not found', 'danger')
-                return redirect(url_for('global_admin.backup_restore'))
-
-            filename = backup_filename
-
-            # Read file (handle compression)
-            if backup_filename.endswith('.gz'):
-                with gzip.open(backup_path, 'rt', encoding='utf-8') as f:
-                    yaml_content = f.read()
-            else:
-                with open(backup_path, 'r', encoding='utf-8') as f:
-                    yaml_content = f.read()
-
-        elif backup_source == 'upload':
-            # Restore from uploaded file
-            if 'backup_upload' not in request.files:
-                flash('No file uploaded', 'danger')
-                return redirect(url_for('global_admin.backup_restore'))
-
-            file = request.files['backup_upload']
-            if file.filename == '':
-                flash('No file selected', 'danger')
-                return redirect(url_for('global_admin.backup_restore'))
-
-            filename = file.filename
-
-            # Read uploaded file (handle compression)
-            if filename.endswith('.gz'):
-                import io
-                with gzip.open(io.BytesIO(file.read()), 'rt', encoding='utf-8') as f:
-                    yaml_content = f.read()
-            else:
-                yaml_content = file.read().decode('utf-8')
-
+        # Read uploaded file (handle compression)
+        if filename.endswith('.gz'):
+            with gzip.open(io.BytesIO(file.read()), 'rt', encoding='utf-8') as f:
+                yaml_content = f.read()
         else:
-            flash('Invalid backup source', 'danger')
-            return redirect(url_for('global_admin.backup_restore'))
+            yaml_content = file.read().decode('utf-8')
 
         # Import from YAML
         result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)

@@ -100,77 +100,11 @@
     gap: 0.5rem;
 }
 
-.backup-file-card {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-    transition: all var(--transition-fast);
-}
-
-.backup-file-card:hover {
-    border-color: var(--accent-primary);
-}
-
-.file-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.75rem;
-}
-
-.file-name {
-    font-weight: 700;
-    color: var(--text-primary);
-    font-family: 'Monaco', 'Courier New', monospace;
-    font-size: 0.95rem;
-}
-
-.file-meta {
-    display: flex;
-    gap: 1.5rem;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.file-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
 .restore-form {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
     border-radius: 12px;
     padding: 2rem;
-}
-
-.radio-group {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 1.5rem;
-}
-
-.radio-option {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 1rem 1.5rem;
-    background: var(--bg-primary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.radio-option:hover {
-    border-color: var(--accent-primary);
-}
-
-.radio-option input[type="radio"]:checked + label {
-    color: var(--accent-primary);
-    font-weight: 700;
 }
 
 .empty-state {
@@ -194,7 +128,7 @@
             <i class="bi bi-archive-fill"></i>
             Backup & Restore
         </h1>
-        <p>Create backups, download, and restore organization data</p>
+        <p>Create and download backups, restore organization data</p>
     </div>
 
     <!-- Create Backup Section -->
@@ -203,7 +137,13 @@
             <div class="section-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <i class="bi bi-download"></i>
             </div>
-            Create Backup
+            Create & Download Backup
+        </div>
+
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle-fill"></i>
+            <strong>Note:</strong> Backups are generated on-demand and downloaded immediately.
+            For automated backups, use the CLI scripts in <code>scripts/</code> directory.
         </div>
 
         {% if org_stats %}
@@ -217,12 +157,14 @@
                     {% endif %}
                 </div>
                 <div>
-                    <button class="btn btn-primary" onclick="createBackup({{ stat.org.id }}, '{{ stat.org.name }}', false)">
-                        <i class="bi bi-download"></i> Create Backup
-                    </button>
-                    <button class="btn btn-outline-primary" onclick="createBackup({{ stat.org.id }}, '{{ stat.org.name }}', true)">
+                    <a href="{{ url_for('global_admin.create_backup', org_id=stat.org.id, compress='false') }}"
+                       class="btn btn-primary">
+                        <i class="bi bi-download"></i> Download Backup
+                    </a>
+                    <a href="{{ url_for('global_admin.create_backup', org_id=stat.org.id, compress='true') }}"
+                       class="btn btn-outline-primary">
                         <i class="bi bi-file-zip"></i> Compressed
-                    </button>
+                    </a>
                 </div>
             </div>
             <div class="org-stats">
@@ -261,60 +203,6 @@
         {% endif %}
     </div>
 
-    <!-- Existing Backups Section -->
-    <div class="section-card">
-        <div class="section-header">
-            <div class="section-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                <i class="bi bi-archive"></i>
-            </div>
-            Existing Backups
-        </div>
-
-        {% if backup_files %}
-        {% for backup in backup_files %}
-        <div class="backup-file-card">
-            <div class="file-header">
-                <div class="file-name">
-                    <i class="bi bi-file-earmark-zip{% if not backup.compressed %}-fill{% endif %}"></i>
-                    {{ backup.name }}
-                </div>
-                <div class="file-actions">
-                    <a href="{{ url_for('global_admin.download_backup', filename=backup.name) }}"
-                       class="btn btn-sm btn-primary">
-                        <i class="bi bi-download"></i> Download
-                    </a>
-                    <button class="btn btn-sm btn-danger"
-                            onclick="deleteBackup('{{ backup.name }}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="file-meta">
-                <span>
-                    <i class="bi bi-hdd"></i>
-                    {{ backup.size_mb }} MB
-                </span>
-                <span>
-                    <i class="bi bi-clock"></i>
-                    {{ backup.created.strftime('%Y-%m-%d %H:%M:%S') }}
-                </span>
-                {% if backup.compressed %}
-                <span>
-                    <i class="bi bi-file-zip"></i>
-                    Compressed
-                </span>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
-        {% else %}
-        <div class="empty-state">
-            <i class="bi bi-inbox"></i>
-            <p>No backups found. Create a backup above to get started.</p>
-        </div>
-        {% endif %}
-    </div>
-
     <!-- Restore Section -->
     <div class="section-card">
         <div class="section-header">
@@ -322,6 +210,46 @@
                 <i class="bi bi-upload"></i>
             </div>
             Restore from Backup
+        </div>
+
+        <div class="alert alert-warning mb-4">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong>⚠️ Important: Merge Mode Limitations</strong>
+                    <p class="mb-2 mt-2">This restore uses <strong>merge mode</strong> which adds data to existing organizations. This works best with <strong>empty organizations</strong>.</p>
+                    <p class="mb-2"><strong>Safe to restore (empty organizations):</strong></p>
+                    <ul class="mb-2">
+                        {% set has_empty = false %}
+                        {% for stat in org_stats %}
+                        {% if stat.spaces == 0 and stat.challenges == 0 and stat.initiatives == 0 %}
+                        {% set has_empty = true %}
+                        <li><strong>{{ stat.org.name }}</strong> - Empty, safe for restore</li>
+                        {% endif %}
+                        {% endfor %}
+                        {% if not has_empty %}
+                        <li><em>No empty organizations available</em></li>
+                        {% endif %}
+                    </ul>
+                    <p class="mb-2"><strong>⚠️ Organizations with existing data (may cause conflicts):</strong></p>
+                    <ul class="mb-2">
+                        {% set has_data = false %}
+                        {% for stat in org_stats %}
+                        {% if stat.spaces > 0 or stat.challenges > 0 or stat.initiatives > 0 %}
+                        {% set has_data = true %}
+                        <li><strong>{{ stat.org.name }}</strong> - Has {{ stat.spaces }} spaces, {{ stat.challenges }} challenges, {{ stat.initiatives }} initiatives</li>
+                        {% endif %}
+                        {% endfor %}
+                        {% if not has_data %}
+                        <li><em>All organizations are empty</em></li>
+                        {% endif %}
+                    </ul>
+                    <p class="mb-0">
+                        <strong>💡 To replace existing data:</strong> Switch to the target organization, then go to
+                        <strong>Organization Admin → YAML Import</strong>. This will clear existing data before importing.
+                    </p>
+                </div>
+            </div>
         </div>
 
         <form method="POST" action="{{ url_for('global_admin.restore_backup') }}"
@@ -332,58 +260,42 @@
                 <label class="form-label fw-bold">
                     <i class="bi bi-building"></i> Target Organization
                 </label>
-                <select name="org_id" class="form-select" required>
+                <select name="org_id" class="form-select" required id="orgSelect" onchange="updateOrgWarning()">
                     <option value="">Select organization...</option>
                     {% for stat in org_stats %}
-                    <option value="{{ stat.org.id }}">{{ stat.org.name }}</option>
-                    {% endfor %}
-                </select>
-                <small class="text-muted">
-                    The backup data will be added to this organization (merge mode)
-                </small>
-            </div>
-
-            <!-- Backup Source -->
-            <div class="mb-4">
-                <label class="form-label fw-bold">
-                    <i class="bi bi-folder"></i> Backup Source
-                </label>
-                <div class="radio-group">
-                    <div class="radio-option">
-                        <input type="radio" name="backup_source" value="file" id="source_file"
-                               onchange="toggleBackupSource()" checked>
-                        <label for="source_file" style="margin: 0; cursor: pointer;">
-                            <i class="bi bi-archive"></i> Existing Backup
-                        </label>
-                    </div>
-                    <div class="radio-option">
-                        <input type="radio" name="backup_source" value="upload" id="source_upload"
-                               onchange="toggleBackupSource()">
-                        <label for="source_upload" style="margin: 0; cursor: pointer;">
-                            <i class="bi bi-upload"></i> Upload File
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Existing Backup Selector -->
-            <div class="mb-4" id="file_selector">
-                <label class="form-label fw-bold">Select Backup File</label>
-                <select name="backup_file" class="form-select">
-                    <option value="">Choose backup...</option>
-                    {% for backup in backup_files %}
-                    <option value="{{ backup.name }}">
-                        {{ backup.name }} ({{ backup.size_mb }} MB, {{ backup.created.strftime('%Y-%m-%d %H:%M') }})
+                    <option value="{{ stat.org.id }}"
+                            data-spaces="{{ stat.spaces }}"
+                            data-challenges="{{ stat.challenges }}"
+                            data-initiatives="{{ stat.initiatives }}"
+                            data-systems="{{ stat.systems }}"
+                            data-kpis="{{ stat.kpis }}">
+                        {{ stat.org.name }}
+                        {% if stat.spaces == 0 and stat.challenges == 0 and stat.initiatives == 0 %}
+                        (Empty - Safe)
+                        {% else %}
+                        (Has data - May conflict)
+                        {% endif %}
                     </option>
                     {% endfor %}
                 </select>
+                <div id="orgWarning" style="display: none;" class="alert alert-danger mt-2 mb-0">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                    <strong>Warning:</strong> This organization has existing data. Restore may fail with ID conflicts.
+                    Consider using <strong>Organization Admin → YAML Import</strong> instead to replace all data.
+                </div>
+                <div id="orgSafe" style="display: none;" class="alert alert-success mt-2 mb-0">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <strong>Safe:</strong> This organization is empty. Restore will work without conflicts.
+                </div>
             </div>
 
             <!-- Upload File -->
-            <div class="mb-4" id="upload_selector" style="display: none;">
-                <label class="form-label fw-bold">Upload Backup File</label>
+            <div class="mb-4">
+                <label class="form-label fw-bold">
+                    <i class="bi bi-upload"></i> Upload Backup File
+                </label>
                 <input type="file" name="backup_upload" class="form-control"
-                       accept=".yaml,.yaml.gz,.yml,.yml.gz">
+                       accept=".yaml,.yaml.gz,.yml,.yml.gz" required>
                 <small class="text-muted">
                     Accepts .yaml or .yaml.gz files
                 </small>
@@ -411,104 +323,94 @@
             <div>
                 <strong>Backup Best Practices:</strong>
                 Create regular backups before major changes, migrations, or deletions.
-                Download backups for long-term storage. Use compressed backups for large organizations.
-                Always test restore with a dry-run first using the CLI scripts.
+                Store backups securely offsite. Use compressed backups for large organizations.
+                For automated backups, use the CLI scripts: <code>python scripts/backup_org.py --org-id 1 --compress</code>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Hidden form for backup creation -->
-<form id="backupForm" method="POST" style="display: none;">
-    <input type="hidden" name="compress" id="backupCompress">
-</form>
-
-<!-- Hidden form for backup deletion -->
-<form id="deleteForm" method="POST" style="display: none;">
-</form>
-
 <script>
-function createBackup(orgId, orgName, compress) {
-    if (!confirm(`Create backup for organization: ${orgName}?\n\nThis will export all spaces, challenges, initiatives, systems, KPIs, and value types.`)) {
+function updateOrgWarning() {
+    const select = document.getElementById('orgSelect');
+    const warning = document.getElementById('orgWarning');
+    const safe = document.getElementById('orgSafe');
+
+    if (!select.value) {
+        warning.style.display = 'none';
+        safe.style.display = 'none';
         return;
     }
 
-    const form = document.getElementById('backupForm');
-    form.action = `{{ url_for('global_admin.create_backup', org_id=0) }}`.replace('/0', `/${orgId}`);
-    document.getElementById('backupCompress').value = compress;
-    form.submit();
-}
+    const option = select.options[select.selectedIndex];
+    const spaces = parseInt(option.dataset.spaces || 0);
+    const challenges = parseInt(option.dataset.challenges || 0);
+    const initiatives = parseInt(option.dataset.initiatives || 0);
+    const systems = parseInt(option.dataset.systems || 0);
+    const kpis = parseInt(option.dataset.kpis || 0);
 
-function deleteBackup(filename) {
-    if (!confirm(`Delete backup file?\n\n${filename}\n\nThis cannot be undone.`)) {
-        return;
-    }
+    const isEmpty = spaces === 0 && challenges === 0 && initiatives === 0 && systems === 0 && kpis === 0;
 
-    const form = document.getElementById('deleteForm');
-    form.action = `{{ url_for('global_admin.delete_backup', filename='FILENAME') }}`.replace('FILENAME', filename);
-    form.submit();
-}
-
-function toggleBackupSource() {
-    const sourceFile = document.getElementById('source_file').checked;
-    document.getElementById('file_selector').style.display = sourceFile ? 'block' : 'none';
-    document.getElementById('upload_selector').style.display = sourceFile ? 'none' : 'block';
-
-    // Update required attribute
-    const fileSelect = document.querySelector('select[name="backup_file"]');
-    const fileUpload = document.querySelector('input[name="backup_upload"]');
-
-    if (sourceFile) {
-        fileSelect.required = true;
-        fileUpload.required = false;
+    if (isEmpty) {
+        warning.style.display = 'none';
+        safe.style.display = 'block';
     } else {
-        fileSelect.required = false;
-        fileUpload.required = true;
+        warning.style.display = 'block';
+        safe.style.display = 'none';
     }
 }
 
 function confirmRestore() {
     const form = document.getElementById('restoreForm');
     const orgSelect = form.querySelector('select[name="org_id"]');
-    const orgName = orgSelect.options[orgSelect.selectedIndex].text;
-    const source = form.querySelector('input[name="backup_source"]:checked').value;
-
-    let backupName = '';
-    if (source === 'file') {
-        const backupSelect = form.querySelector('select[name="backup_file"]');
-        if (!backupSelect.value) {
-            alert('Please select a backup file');
-            return;
-        }
-        backupName = backupSelect.options[backupSelect.selectedIndex].text;
-    } else {
-        const fileInput = form.querySelector('input[name="backup_upload"]');
-        if (!fileInput.files || fileInput.files.length === 0) {
-            alert('Please select a file to upload');
-            return;
-        }
-        backupName = fileInput.files[0].name;
-    }
+    const fileInput = form.querySelector('input[name="backup_upload"]');
 
     if (!orgSelect.value) {
         alert('Please select a target organization');
         return;
     }
 
-    if (!confirm(`⚠️ RESTORE BACKUP?\n\nTarget Organization: ${orgName}\nBackup: ${backupName}\n\nThis will ADD data to the organization. Existing data will NOT be deleted.\n\nContinue?`)) {
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert('Please select a backup file to upload');
         return;
     }
 
-    if (!confirm(`Are you ABSOLUTELY SURE?\n\nThis operation cannot be undone.`)) {
+    const option = orgSelect.options[orgSelect.selectedIndex];
+    const orgName = option.text;
+    const backupName = fileInput.files[0].name;
+
+    // Check if org has data
+    const spaces = parseInt(option.dataset.spaces || 0);
+    const challenges = parseInt(option.dataset.challenges || 0);
+    const initiatives = parseInt(option.dataset.initiatives || 0);
+    const isEmpty = spaces === 0 && challenges === 0 && initiatives === 0;
+
+    let confirmMessage = `⚠️ RESTORE BACKUP?\n\nTarget Organization: ${orgName}\nBackup: ${backupName}\n\n`;
+
+    if (isEmpty) {
+        confirmMessage += 'This organization is empty. Restore should work without conflicts.\n\n';
+    } else {
+        confirmMessage += `⚠️ WARNING: This organization has existing data (${spaces} spaces, ${challenges} challenges, ${initiatives} initiatives).\n`;
+        confirmMessage += 'Restore may FAIL with ID conflicts. Consider using Organization Admin → YAML Import instead.\n\n';
+    }
+
+    confirmMessage += 'This will ADD data to the organization. Existing data will NOT be deleted.\n\nContinue?';
+
+    if (!confirm(confirmMessage)) {
         return;
+    }
+
+    if (!isEmpty) {
+        if (!confirm('⚠️ FINAL WARNING\n\nThis organization has data and restore may fail!\n\nAre you ABSOLUTELY SURE you want to continue?')) {
+            return;
+        }
+    } else {
+        if (!confirm('Are you ABSOLUTELY SURE?\n\nThis operation cannot be undone.')) {
+            return;
+        }
     }
 
     form.submit();
 }
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    toggleBackupSource();
-});
 </script>
 {% endblock %}
