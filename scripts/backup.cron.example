@@ -1,0 +1,81 @@
+# CISK Navigator Automated Backup - Cron Job Example
+#
+# This file provides examples for setting up automated backups using cron.
+# DO NOT copy this file directly to crontab - edit the paths and settings first!
+#
+# To edit your crontab: crontab -e
+# To list your crontab: crontab -l
+#
+# Cron format: MIN HOUR DAY MONTH WEEKDAY COMMAND
+#              0-59 0-23 1-31 1-12  0-7 (0=Sunday, 7=Sunday)
+
+# ============================================================================
+# PRODUCTION BACKUPS
+# ============================================================================
+
+# Daily backup at 2:00 AM (recommended for production)
+# Keeps compressed backups for last 30 days
+0 2 * * * cd /path/to/CISK-Navigator && DATABASE_URL="postgresql://localhost/cisknavigator" /path/to/CISK-Navigator/venv/bin/python scripts/backup_org.py --org-id 1 --output-dir /var/backups/cisk --compress >> /var/log/cisk-backup.log 2>&1
+
+# Weekly cleanup - delete backups older than 30 days (runs at 3:00 AM Sunday)
+0 3 * * 0 find /var/backups/cisk -name "backup_*.yaml.gz" -mtime +30 -delete
+
+# ============================================================================
+# DEVELOPMENT BACKUPS
+# ============================================================================
+
+# Weekly backup on Sundays at 1:00 AM
+0 1 * * 0 cd /Users/username/projects/CISK-Navigator && DATABASE_URL="postgresql://localhost/cisknavigator" ./venv/bin/python scripts/backup_org.py --org-id 1 --output-dir /Users/username/backups/cisk --compress
+
+# ============================================================================
+# MULTIPLE ORGANIZATIONS
+# ============================================================================
+
+# Backup multiple organizations sequentially
+0 2 * * * cd /path/to/CISK-Navigator && DATABASE_URL="postgresql://localhost/cisknavigator" ./venv/bin/python scripts/backup_org.py --org-id 1 --output-dir /var/backups/cisk --compress
+10 2 * * * cd /path/to/CISK-Navigator && DATABASE_URL="postgresql://localhost/cisknavigator" ./venv/bin/python scripts/backup_org.py --org-id 2 --output-dir /var/backups/cisk --compress
+20 2 * * * cd /path/to/CISK-Navigator && DATABASE_URL="postgresql://localhost/cisknavigator" ./venv/bin/python scripts/backup_org.py --org-id 3 --output-dir /var/backups/cisk --compress
+
+# ============================================================================
+# ADVANCED: Backup with rotation and notification
+# ============================================================================
+
+# Backup with email notification on failure
+0 2 * * * cd /path/to/CISK-Navigator && DATABASE_URL="postgresql://localhost/cisknavigator" ./venv/bin/python scripts/backup_org.py --org-id 1 --output-dir /var/backups/cisk --compress || echo "CISK backup failed!" | mail -s "Backup Failure Alert" admin@example.com
+
+# Monthly archive - copy to long-term storage (1st of each month at 4 AM)
+0 4 1 * * cp /var/backups/cisk/backup_*.yaml.gz /mnt/archive/cisk/$(date +\%Y\%m)/
+
+# ============================================================================
+# NOTES
+# ============================================================================
+#
+# 1. Replace /path/to/CISK-Navigator with actual project path
+# 2. Update DATABASE_URL with your actual database connection
+# 3. Ensure backup directories exist and have proper permissions:
+#    mkdir -p /var/backups/cisk
+#    chmod 700 /var/backups/cisk
+#
+# 4. Test your cron command manually first:
+#    cd /path/to/CISK-Navigator
+#    DATABASE_URL="postgresql://localhost/cisknavigator" ./venv/bin/python scripts/backup_org.py --org-id 1 --output-dir /var/backups/cisk --compress
+#
+# 5. Check cron logs to verify execution:
+#    tail -f /var/log/cron
+#    tail -f /var/log/cisk-backup.log
+#
+# 6. Recommended schedule:
+#    - Production: Daily with 30-day retention
+#    - Development: Weekly with 90-day retention
+#    - Archive: Monthly copy to long-term storage
+#
+# 7. Security:
+#    - Never store database passwords in crontab
+#    - Use environment files or secret managers
+#    - Restrict backup directory permissions (chmod 700)
+#    - Encrypt backups for production environments
+#
+# 8. Monitoring:
+#    - Set up email notifications for failures
+#    - Monitor backup file sizes for anomalies
+#    - Test restore process quarterly

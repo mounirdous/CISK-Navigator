@@ -3,12 +3,12 @@ Global Administration routes
 
 For managing users and organizations (global admins only).
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, session, request
+from flask import Blueprint, render_template, redirect, url_for, flash, session, request, send_file
 from flask_login import login_required, current_user
 from functools import wraps
 from flask_wtf import FlaskForm
 from app.extensions import db
-from app.models import User, Organization, UserOrganizationMembership, CellComment, MentionNotification, KPIValueTypeConfig, KPI, InitiativeSystemLink, Initiative, Space, Challenge, System, Contribution, KPISnapshot, RollupSnapshot
+from app.models import User, Organization, UserOrganizationMembership, CellComment, MentionNotification, KPIValueTypeConfig, KPI, InitiativeSystemLink, Initiative, Space, Challenge, System, Contribution, KPISnapshot, RollupSnapshot, ValueType
 from app.forms import UserCreateForm, UserEditForm, OrganizationCreateForm, OrganizationEditForm, OrganizationCloneForm
 from app.services import DeletionImpactService, OrganizationCloneService
 import sys
@@ -388,6 +388,278 @@ def clone_organization(org_id):
             flash(f"Clone failed: {result['error']}", 'danger')
 
     return render_template('global_admin/clone_organization.html', form=form, source_org=source_org)
+
+
+@bp.route('/backup-restore')
+@login_required
+@global_admin_required
+def backup_restore():
+    """Backup and restore management page"""
+    from pathlib import Path
+
+    # Get all organizations
+    orgs = Organization.query.order_by(Organization.name).all()
+
+    # Get entity counts for each org
+    org_stats = []
+    for org in orgs:
+        spaces_count = Space.query.filter_by(organization_id=org.id).count()
+        challenges_count = Challenge.query.filter_by(organization_id=org.id).count()
+        initiatives_count = Initiative.query.filter_by(organization_id=org.id).count()
+        systems_count = System.query.filter_by(organization_id=org.id).count()
+
+        # Count KPIs through hierarchy
+        kpis_count = db.session.query(KPI).join(
+            InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
+        ).join(
+            System, InitiativeSystemLink.system_id == System.id
+        ).filter(System.organization_id == org.id).count()
+
+        vt_count = db.session.query(ValueType).filter_by(organization_id=org.id).count()
+
+        org_stats.append({
+            'org': org,
+            'spaces': spaces_count,
+            'challenges': challenges_count,
+            'initiatives': initiatives_count,
+            'systems': systems_count,
+            'kpis': kpis_count,
+            'value_types': vt_count
+        })
+
+    # Get list of existing backup files
+    backup_dir = Path('backups')
+    backup_files = []
+
+    if backup_dir.exists():
+        for backup_file in sorted(backup_dir.glob('backup_*.yaml*'), reverse=True):
+            file_size = backup_file.stat().st_size / (1024 * 1024)  # MB
+            file_time = datetime.fromtimestamp(backup_file.stat().st_mtime)
+
+            backup_files.append({
+                'name': backup_file.name,
+                'path': str(backup_file),
+                'size_mb': round(file_size, 2),
+                'created': file_time,
+                'compressed': backup_file.suffix == '.gz'
+            })
+
+    return render_template('global_admin/backup_restore.html',
+                          org_stats=org_stats,
+                          backup_files=backup_files)
+
+
+@bp.route('/backup-restore/create/<int:org_id>', methods=['POST'])
+@login_required
+@global_admin_required
+def create_backup(org_id):
+    """Create backup of organization"""
+    from app.services.yaml_export_service import YAMLExportService
+    from pathlib import Path
+    import gzip
+
+    org = db.session.get(Organization, org_id)
+    if not org:
+        flash('Organization not found', 'danger')
+        return redirect(url_for('global_admin.backup_restore'))
+
+    try:
+        # Get compression preference
+        compress = request.form.get('compress') == 'true'
+
+        # Export to YAML
+        yaml_content = YAMLExportService.export_to_yaml(org_id)
+
+        # Count entities for metadata
+        kpis_count = db.session.query(KPI).join(
+            InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
+        ).join(
+            System, InitiativeSystemLink.system_id == System.id
+        ).filter(System.organization_id == org_id).count()
+
+        spaces_count = Space.query.filter_by(organization_id=org_id).count()
+        challenges_count = Challenge.query.filter_by(organization_id=org_id).count()
+        initiatives_count = Initiative.query.filter_by(organization_id=org_id).count()
+        systems_count = System.query.filter_by(organization_id=org_id).count()
+        vt_count = ValueType.query.filter_by(organization_id=org_id).count()
+
+        # Add metadata header
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        metadata = f"""# CISK Navigator Organization Backup
+# Organization: {org.name}
+# Organization ID: {org.id}
+# Backup Date: {timestamp}
+# Backup Version: 1.0
+#
+# Entities: {spaces_count} spaces, {challenges_count} challenges, {initiatives_count} initiatives, {systems_count} systems, {kpis_count} KPIs, {vt_count} value types
+#
+
+"""
+        full_content = metadata + yaml_content
+
+        # Create backups directory
+        backup_dir = Path('backups')
+        backup_dir.mkdir(exist_ok=True)
+
+        # Generate filename
+        safe_org_name = org.name.lower().replace(' ', '-').replace('/', '-')
+        timestamp_str = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"backup_{safe_org_name}_{timestamp_str}.yaml"
+
+        if compress:
+            filename += ".gz"
+
+        file_path = backup_dir / filename
+
+        # Save file
+        if compress:
+            with gzip.open(file_path, 'wt', encoding='utf-8') as f:
+                f.write(full_content)
+        else:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(full_content)
+
+        file_size = file_path.stat().st_size / (1024 * 1024)
+
+        flash(f'Backup created successfully: {filename} ({file_size:.2f} MB)', 'success')
+
+    except Exception as e:
+        flash(f'Error creating backup: {str(e)}', 'danger')
+
+    return redirect(url_for('global_admin.backup_restore'))
+
+
+@bp.route('/backup-restore/download/<path:filename>')
+@login_required
+@global_admin_required
+def download_backup(filename):
+    """Download backup file"""
+    from pathlib import Path
+
+    backup_dir = Path('backups')
+    file_path = backup_dir / filename
+
+    if not file_path.exists() or not file_path.is_file():
+        flash('Backup file not found', 'danger')
+        return redirect(url_for('global_admin.backup_restore'))
+
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
+
+@bp.route('/backup-restore/delete/<path:filename>', methods=['POST'])
+@login_required
+@global_admin_required
+def delete_backup(filename):
+    """Delete backup file"""
+    from pathlib import Path
+
+    backup_dir = Path('backups')
+    file_path = backup_dir / filename
+
+    if file_path.exists() and file_path.is_file():
+        file_path.unlink()
+        flash(f'Backup deleted: {filename}', 'success')
+    else:
+        flash('Backup file not found', 'warning')
+
+    return redirect(url_for('global_admin.backup_restore'))
+
+
+@bp.route('/backup-restore/restore', methods=['POST'])
+@login_required
+@global_admin_required
+def restore_backup():
+    """Restore organization from backup file"""
+    from app.services.yaml_import_service import YAMLImportService
+    import gzip
+
+    org_id = request.form.get('org_id', type=int)
+    backup_source = request.form.get('backup_source')  # 'file' or 'upload'
+
+    if not org_id:
+        flash('Please select a target organization', 'danger')
+        return redirect(url_for('global_admin.backup_restore'))
+
+    org = db.session.get(Organization, org_id)
+    if not org:
+        flash('Organization not found', 'danger')
+        return redirect(url_for('global_admin.backup_restore'))
+
+    try:
+        yaml_content = None
+        filename = None
+
+        if backup_source == 'file':
+            # Restore from existing backup file
+            backup_filename = request.form.get('backup_file')
+            if not backup_filename:
+                flash('Please select a backup file', 'danger')
+                return redirect(url_for('global_admin.backup_restore'))
+
+            from pathlib import Path
+            backup_path = Path('backups') / backup_filename
+
+            if not backup_path.exists():
+                flash('Backup file not found', 'danger')
+                return redirect(url_for('global_admin.backup_restore'))
+
+            filename = backup_filename
+
+            # Read file (handle compression)
+            if backup_filename.endswith('.gz'):
+                with gzip.open(backup_path, 'rt', encoding='utf-8') as f:
+                    yaml_content = f.read()
+            else:
+                with open(backup_path, 'r', encoding='utf-8') as f:
+                    yaml_content = f.read()
+
+        elif backup_source == 'upload':
+            # Restore from uploaded file
+            if 'backup_upload' not in request.files:
+                flash('No file uploaded', 'danger')
+                return redirect(url_for('global_admin.backup_restore'))
+
+            file = request.files['backup_upload']
+            if file.filename == '':
+                flash('No file selected', 'danger')
+                return redirect(url_for('global_admin.backup_restore'))
+
+            filename = file.filename
+
+            # Read uploaded file (handle compression)
+            if filename.endswith('.gz'):
+                import io
+                with gzip.open(io.BytesIO(file.read()), 'rt', encoding='utf-8') as f:
+                    yaml_content = f.read()
+            else:
+                yaml_content = file.read().decode('utf-8')
+
+        else:
+            flash('Invalid backup source', 'danger')
+            return redirect(url_for('global_admin.backup_restore'))
+
+        # Import from YAML
+        result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
+
+        # Build success message
+        msg = f'Restored to {org.name}: {result["value_types"]} value types, {result["spaces"]} spaces, '
+        msg += f'{result["challenges"]} challenges, {result["initiatives"]} initiatives, '
+        msg += f'{result["systems"]} systems, {result["kpis"]} KPIs'
+
+        if result['errors']:
+            msg += f' (with {len(result["errors"])} errors)'
+            flash(msg, 'warning')
+            for error in result['errors'][:5]:  # Show first 5 errors
+                flash(f'  • {error}', 'warning')
+        else:
+            flash(msg, 'success')
+
+    except Exception as e:
+        flash(f'Error restoring backup: {str(e)}', 'danger')
+        import traceback
+        traceback.print_exc()
+
+    return redirect(url_for('global_admin.backup_restore'))
 
 
 @bp.route('/organizations/<int:org_id>/clear-comments', methods=['POST'])

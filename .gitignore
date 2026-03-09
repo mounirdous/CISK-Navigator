@@ -39,12 +39,18 @@ nohup.out
 !README_NEW_APP.md
 !app/SPECIFICATIONS.md
 !app/ARCHITECTURE.md
+!scripts/README.md
 START_HERE_README.txt
 
 # Database files (local only)
 *.db
 *.sqlite
 *.sqlite3
+
+# Backup files (sensitive data - never commit)
+backups/
+*.backup.yaml
+*.backup.yaml.gz
 
 # Local development notes (not for GitHub)
 .dev-notes
