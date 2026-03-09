@@ -323,9 +323,12 @@
                         </li>
                         {% if current_user.is_global_admin %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('global_admin.index') }}" title="Global Administration">
-                                <i class="bi bi-shield-lock-fill"></i> Global Admin
-                            </a>
+                            <form method="POST" action="{{ url_for('auth.switch_to_global_admin') }}" style="display: inline; margin: 0;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="nav-link btn btn-link" style="border: none; background: none; padding: 0.5rem 1rem; text-decoration: none;" title="Switch to Global Administration">
+                                    <i class="bi bi-shield-lock-fill"></i> Global Admin
+                                </button>
+                            </form>
                         </li>
                         {% endif %}
                     {% elif current_user.is_global_admin %}

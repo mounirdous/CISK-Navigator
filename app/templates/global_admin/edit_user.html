@@ -1,105 +1,420 @@
 {% extends "base.html" %}
-{% block title %}Edit User{% endblock %}
+
+{% block title %}Edit User - CISK Navigator{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Modern Edit User Page Styling */
+.page-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-subtle);
+}
+
+.form-section-title i {
+    color: var(--accent-primary);
+}
+
+.org-card {
+    padding: 1.25rem;
+    border-radius: 12px;
+    background-color: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    margin-bottom: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.org-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.org-card.selected {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, var(--bg-secondary) 100%);
+}
+
+.org-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.org-checkbox-label {
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.org-checkbox-label i {
+    color: var(--accent-primary);
+}
+
+.permissions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.permission-item {
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.permission-item:hover {
+    background: var(--hover-bg);
+    border-color: var(--accent-primary);
+}
+
+.permission-item.checked {
+    background: rgba(13, 110, 253, 0.1);
+    border-color: var(--accent-primary);
+}
+
+.form-check-input:checked ~ .form-check-label {
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-subtle);
+}
+
+.organizations-container {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.organizations-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.organizations-container::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+    border-radius: 4px;
+}
+
+.organizations-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.organizations-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Edit User: {{ user.login }}</h2>
-<form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.login.label }}{{ form.login(class="form-control") }}</div>
-    <div class="mb-3">{{ form.email.label }}{{ form.email(class="form-control") }}</div>
-    <div class="mb-3">{{ form.display_name.label }}{{ form.display_name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.is_active(class="form-check-input") }} {{ form.is_active.label(class="form-check-label") }}</div>
-    <div class="mb-3">{{ form.is_global_admin(class="form-check-input") }} {{ form.is_global_admin.label(class="form-check-label") }}</div>
-    <div class="mb-3">{{ form.must_change_password(class="form-check-input") }} {{ form.must_change_password.label(class="form-check-label") }}</div>
-    <div class="mb-3">
-        <label class="form-label">{{ form.organizations.label.text }}</label>
-        <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto;">
-            {% for org in organizations %}
-            {% set membership = user.get_membership(org.id) %}
-            <div class="border-bottom pb-3 mb-3">
-                <div class="form-check">
-                    <input class="form-check-input org-checkbox" type="checkbox" name="organizations" value="{{ org.id }}"
-                           id="org_{{ org.id }}" onchange="togglePermissions({{ org.id }})"
-                           {% if org.id in form.organizations.data %}checked{% endif %}>
-                    <label class="form-check-label fw-bold" for="org_{{ org.id }}">
-                        {{ org.name }}
-                    </label>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-11 col-lg-10">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-person-gear"></i>
                 </div>
-                <div id="permissions_{{ org.id }}" class="ms-4 mt-2" style="display: {% if org.id in form.organizations.data %}block{% else %}none{% endif %};">
-                    <small class="text-muted d-block mb-2"><strong>{{ org.name }}:</strong> User can create, edit, and delete:</small>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_spaces_{{ org.id }}" id="perm_spaces_{{ org.id }}"
-                               {% if membership and membership.can_manage_spaces %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_spaces_{{ org.id }}">Spaces</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_value_types_{{ org.id }}" id="perm_value_types_{{ org.id }}"
-                               {% if membership and membership.can_manage_value_types %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_value_types_{{ org.id }}">Value Types</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_challenges_{{ org.id }}" id="perm_challenges_{{ org.id }}"
-                               {% if membership and membership.can_manage_challenges %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_challenges_{{ org.id }}">Challenges</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ org.id }}" id="perm_initiatives_{{ org.id }}"
-                               {% if membership and membership.can_manage_initiatives %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_initiatives_{{ org.id }}">Initiatives</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_systems_{{ org.id }}" id="perm_systems_{{ org.id }}"
-                               {% if membership and membership.can_manage_systems %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_systems_{{ org.id }}">Systems</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_kpis_{{ org.id }}" id="perm_kpis_{{ org.id }}"
-                               {% if membership and membership.can_manage_kpis %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_kpis_{{ org.id }}">KPIs</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ org.id }}" id="perm_governance_bodies_{{ org.id }}"
-                               {% if membership and membership.can_manage_governance_bodies %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_governance_bodies_{{ org.id }}">Governance Bodies</label>
-                    </div>
-                    <br>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ org.id }}" id="perm_view_comments_{{ org.id }}"
-                               onchange="toggleAddComments({{ org.id }})"
-                               {% if membership and membership.can_view_comments %}checked{% endif %}>
-                        <label class="form-check-label" for="perm_view_comments_{{ org.id }}">View Comments</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ org.id }}" id="perm_add_comments_{{ org.id }}"
-                               {% if membership and membership.can_add_comments %}checked{% endif %}
-                               {% if not membership or not membership.can_view_comments %}disabled{% endif %}>
-                        <label class="form-check-label" for="perm_add_comments_{{ org.id }}">Add Comments</label>
-                    </div>
+                <div>
+                    <h2 class="mb-1">Edit User</h2>
+                    <p class="mb-0 opacity-75">Manage user account and permissions for {{ user.login }}</p>
                 </div>
             </div>
-            {% endfor %}
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-person-badge"></i>
+                            Basic Information
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.login.label(class="form-label fw-semibold") }}
+                                {{ form.login(class="form-control", placeholder="Username for login") }}
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Username cannot be changed after creation
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.email.label(class="form-label fw-semibold") }}
+                                {{ form.email(class="form-control", type="email", placeholder="user@company.com") }}
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-envelope"></i> Used for notifications
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.display_name.label(class="form-label fw-semibold") }}
+                            {{ form.display_name(class="form-control", placeholder="Full name for display") }}
+                            <small class="form-text text-muted">
+                                <i class="bi bi-person"></i> Name shown throughout the application
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Account Settings Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-gear"></i>
+                            Account Settings
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_active(class="form-check-input", role="switch", id="isActiveSwitch") }}
+                                    {{ form.is_active.label(class="form-check-label fw-semibold", for="isActiveSwitch") }}
+                                </div>
+                                <small class="form-text text-muted d-block mt-1">
+                                    <i class="bi bi-power"></i> Enable/disable login access
+                                </small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_global_admin(class="form-check-input", role="switch", id="isGlobalAdminSwitch") }}
+                                    {{ form.is_global_admin.label(class="form-check-label fw-semibold", for="isGlobalAdminSwitch") }}
+                                </div>
+                                <small class="form-text text-muted d-block mt-1">
+                                    <i class="bi bi-shield-lock"></i> Full system access
+                                </small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.must_change_password(class="form-check-input", role="switch", id="mustChangePasswordSwitch") }}
+                                    {{ form.must_change_password.label(class="form-check-label fw-semibold", for="mustChangePasswordSwitch") }}
+                                </div>
+                                <small class="form-text text-muted d-block mt-1">
+                                    <i class="bi bi-key"></i> Force password change on next login
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.reset_password.label(class="form-label fw-semibold") }}
+                            {{ form.reset_password(class="form-control", autocomplete="new-password", placeholder="Leave blank to keep current password") }}
+                            <small class="form-text text-muted">
+                                <i class="bi bi-shield-exclamation"></i> Only enter a new password if you want to reset it
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- Organizations & Permissions Section -->
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-buildings"></i>
+                            Organizations & Permissions
+                        </div>
+
+                        <div class="organizations-container">
+                            {% for org in organizations %}
+                            {% set membership = user.get_membership(org.id) %}
+                            <div class="org-card {% if org.id in form.organizations.data %}selected{% endif %}" id="card_{{ org.id }}">
+                                <div class="org-card-header">
+                                    <div class="form-check">
+                                        <input class="form-check-input org-checkbox" type="checkbox" name="organizations" value="{{ org.id }}"
+                                               id="org_{{ org.id }}" onchange="togglePermissions({{ org.id }})"
+                                               {% if org.id in form.organizations.data %}checked{% endif %}>
+                                        <label class="org-checkbox-label" for="org_{{ org.id }}">
+                                            <i class="bi bi-building"></i>
+                                            {{ org.name }}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="permissions_{{ org.id }}" style="display: {% if org.id in form.organizations.data %}block{% else %}none{% endif %};">
+                                    <small class="text-muted d-block mb-3">
+                                        <strong>{{ org.name }}:</strong> User can create, edit, and delete:
+                                    </small>
+
+                                    <div class="permissions-grid">
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_spaces %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_spaces_{{ org.id }}" id="perm_spaces_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_spaces %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_spaces_{{ org.id }}">
+                                                <i class="bi bi-grid-3x3"></i> Spaces
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_value_types %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_value_types_{{ org.id }}" id="perm_value_types_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_value_types %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_value_types_{{ org.id }}">
+                                                <i class="bi bi-hash"></i> Value Types
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_challenges %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_challenges_{{ org.id }}" id="perm_challenges_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_challenges %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_challenges_{{ org.id }}">
+                                                <i class="bi bi-flag"></i> Challenges
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_initiatives %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ org.id }}" id="perm_initiatives_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_initiatives %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_initiatives_{{ org.id }}">
+                                                <i class="bi bi-lightbulb"></i> Initiatives
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_systems %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_systems_{{ org.id }}" id="perm_systems_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_systems %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_systems_{{ org.id }}">
+                                                <i class="bi bi-cpu"></i> Systems
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_kpis %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_kpis_{{ org.id }}" id="perm_kpis_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_kpis %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_kpis_{{ org.id }}">
+                                                <i class="bi bi-graph-up"></i> KPIs
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_manage_governance_bodies %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ org.id }}" id="perm_governance_bodies_{{ org.id }}"
+                                                   {% if membership and membership.can_manage_governance_bodies %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_governance_bodies_{{ org.id }}">
+                                                <i class="bi bi-bank"></i> Governance Bodies
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_view_comments %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ org.id }}" id="perm_view_comments_{{ org.id }}"
+                                                   onchange="toggleAddComments({{ org.id }})"
+                                                   {% if membership and membership.can_view_comments %}checked{% endif %}>
+                                            <label class="form-check-label" for="perm_view_comments_{{ org.id }}">
+                                                <i class="bi bi-eye"></i> View Comments
+                                            </label>
+                                        </div>
+
+                                        <div class="permission-item form-check {% if membership and membership.can_add_comments %}checked{% endif %}">
+                                            <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ org.id }}" id="perm_add_comments_{{ org.id }}"
+                                                   {% if membership and membership.can_add_comments %}checked{% endif %}
+                                                   {% if not membership or not membership.can_view_comments %}disabled{% endif %}>
+                                            <label class="form-check-label" for="perm_add_comments_{{ org.id }}">
+                                                <i class="bi bi-chat-left-text"></i> Add Comments
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('global_admin.users') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-    <script>
-    function togglePermissions(orgId) {
-        const checkbox = document.getElementById('org_' + orgId);
-        const permissions = document.getElementById('permissions_' + orgId);
-        permissions.style.display = checkbox.checked ? 'block' : 'none';
-    }
+</div>
 
-    function toggleAddComments(orgId) {
-        const viewCheckbox = document.getElementById('perm_view_comments_' + orgId);
-        const addCheckbox = document.getElementById('perm_add_comments_' + orgId);
+<script>
+function togglePermissions(orgId) {
+    const checkbox = document.getElementById('org_' + orgId);
+    const permissions = document.getElementById('permissions_' + orgId);
+    const card = document.getElementById('card_' + orgId);
 
-        if (!viewCheckbox.checked) {
-            addCheckbox.checked = false;
-            addCheckbox.disabled = true;
-        } else {
-            addCheckbox.disabled = false;
-        }
+    permissions.style.display = checkbox.checked ? 'block' : 'none';
+
+    if (checkbox.checked) {
+        card.classList.add('selected');
+    } else {
+        card.classList.remove('selected');
     }
-    </script>
-    <div class="mb-3">{{ form.reset_password.label }}{{ form.reset_password(class="form-control", autocomplete="new-password", placeholder="Leave blank to keep current password") }}<small class="form-text text-muted">Leave blank to keep current password</small></div>
-    {{ form.submit(class="btn btn-primary") }}
-    <a href="{{ url_for('global_admin.users') }}" class="btn btn-secondary">Cancel</a>
-</form>
+}
+
+function toggleAddComments(orgId) {
+    const viewCheckbox = document.getElementById('perm_view_comments_' + orgId);
+    const addCheckbox = document.getElementById('perm_add_comments_' + orgId);
+
+    if (!viewCheckbox.checked) {
+        addCheckbox.checked = false;
+        addCheckbox.disabled = true;
+    } else {
+        addCheckbox.disabled = false;
+    }
+}
+
+// Add checked class styling to permission items on checkbox change
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.permission-item .form-check-input').forEach(function(checkbox) {
+        checkbox.addEventListener('change', function() {
+            const permissionItem = this.closest('.permission-item');
+            if (this.checked) {
+                permissionItem.classList.add('checked');
+            } else {
+                permissionItem.classList.remove('checked');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

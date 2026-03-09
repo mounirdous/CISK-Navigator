@@ -175,6 +175,22 @@ def switch_organization(org_id):
     return redirect(url_for('workspace.dashboard'))
 
 
+@bp.route('/switch-to-global-admin', methods=['POST'])
+@login_required
+def switch_to_global_admin():
+    """Switch to Global Admin mode (clear organization context)"""
+    if not current_user.is_global_admin:
+        flash('Access denied: Global Administrator permission required', 'danger')
+        return redirect(url_for('workspace.dashboard'))
+
+    # Clear organization context
+    session['organization_id'] = None
+    session['organization_name'] = 'Global Administration'
+
+    flash('Switched to Global Administration mode', 'success')
+    return redirect(url_for('global_admin.index'))
+
+
 @bp.route('/change-password', methods=['GET', 'POST'])
 @login_required
 def change_password():
