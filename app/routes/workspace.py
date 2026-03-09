@@ -534,9 +534,28 @@ def view_snapshot(snapshot_date):
         is_active=True
     ).order_by(ValueType.display_order).all()
 
+    # Get governance bodies for filtering
+    governance_bodies = GovernanceBody.query.filter_by(
+        organization_id=org_id,
+        is_active=True
+    ).order_by(GovernanceBody.display_order).all()
+
+    # Get level visibility controls (default all visible)
+    show_levels = {
+        'spaces': request.args.get('show_spaces', '1') == '1',
+        'challenges': request.args.get('show_challenges', '1') == '1',
+        'initiatives': request.args.get('show_initiatives', '1') == '1',
+        'systems': request.args.get('show_systems', '1') == '1',
+        'kpis': request.args.get('show_kpis', '1') == '1',
+    }
+
     return render_template('workspace/index.html',
                          spaces=spaces,
                          value_types=value_types,
+                         governance_bodies=governance_bodies,
+                         selected_governance_body_ids=[],
+                         show_archived=False,
+                         show_levels=show_levels,
                          organization_name=session.get('organization_name'),
                          snapshot_date=view_date,
                          is_historical_view=True)
