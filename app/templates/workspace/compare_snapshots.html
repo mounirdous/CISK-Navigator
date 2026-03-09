@@ -2,169 +2,191 @@
 
 {% block title %}Compare Snapshots - {{ organization_name }}{% endblock %}
 
-{% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-bar-chart"></i> Snapshot Comparison</h2>
-    <div>
-        <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Back to Snapshots
-        </a>
-        <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-speedometer2"></i> Dashboard
-        </a>
-    </div>
-</div>
-
-<!-- Comparison Header -->
-<div class="row mb-4">
-    <div class="col-md-6">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0">Snapshot 1</h5>
-            </div>
-            <div class="card-body">
-                <h4>{{ date1.strftime('%Y-%m-%d') }}</h4>
-                {% if label1 %}
-                    <span class="badge bg-info">{{ label1 }}</span>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card border-success">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0">Snapshot 2</h5>
-            </div>
-            <div class="card-body">
-                {% if date2 %}
-                    <h4>{{ date2.strftime('%Y-%m-%d') }}</h4>
-                    {% if label2 %}
-                        <span class="badge bg-info">{{ label2 }}</span>
-                    {% endif %}
-                {% else %}
-                    <h4>Current</h4>
-                    <span class="badge bg-success">Live Data</span>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Comparison Table -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">Value Comparison</h5>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>KPI</th>
-                        <th>Value Type</th>
-                        <th class="text-center">{{ date1.strftime('%Y-%m-%d') }}</th>
-                        <th class="text-center">{% if date2 %}{{ date2.strftime('%Y-%m-%d') }}{% else %}Current{% endif %}</th>
-                        <th class="text-center">Change</th>
-                        <th class="text-center">% Change</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for comp in comparisons %}
-                    {% if comp.value1 is not none or comp.value2 is not none %}
-                    <tr>
-                        <td>{{ comp.kpi.name }}</td>
-                        <td>
-                            {{ comp.value_type.name }}
-                            {% if comp.value_type.unit_label %}
-                                <small class="text-muted">({{ comp.value_type.unit_label }})</small>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if comp.value1 is not none %}
-                                {{ comp.value1|round(comp.value_type.decimal_places or 2) }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if comp.value2 is not none %}
-                                {{ comp.value2|round(comp.value_type.decimal_places or 2) }}
-                            {% else %}
-                                <span class="text-muted">N/A</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if comp.change is not none %}
-                                {% if comp.change > 0 %}
-                                    <span class="text-success">+{{ comp.change|round(comp.value_type.decimal_places or 2) }}</span>
-                                {% elif comp.change < 0 %}
-                                    <span class="text-danger">{{ comp.change|round(comp.value_type.decimal_places or 2) }}</span>
-                                {% else %}
-                                    <span class="text-muted">0</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% if comp.percent_change is not none %}
-                                {% if comp.percent_change > 0 %}
-                                    <span class="badge bg-success">+{{ comp.percent_change|round(1) }}%</span>
-                                {% elif comp.percent_change < 0 %}
-                                    <span class="badge bg-danger">{{ comp.percent_change|round(1) }}%</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">0%</span>
-                                {% endif %}
-                            {% else %}
-                                <span class="text-muted">—</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endif %}
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        {% if comparisons|length == 0 %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No data available for comparison.
-        </div>
-        {% endif %}
-    </div>
-</div>
-
-<!-- Summary Stats -->
-<div class="row mt-4">
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-success">{{ comparisons|selectattr('change', 'ne', none)|selectattr('change', 'gt', 0)|list|length }}</h3>
-                <p class="mb-0">Increased</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-danger">{{ comparisons|selectattr('change', 'ne', none)|selectattr('change', 'lt', 0)|list|length }}</h3>
-                <p class="mb-0">Decreased</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-center">
-            <div class="card-body">
-                <h3 class="text-secondary">{{ comparisons|selectattr('change', 'equalto', 0)|list|length }}</h3>
-                <p class="mb-0">Unchanged</p>
-            </div>
-        </div>
-    </div>
-</div>
-
+{% block extra_css %}
 <style>
-.table tbody tr:hover {
-    background-color: #f8f9fa;
+.page-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.comparison-header-card {
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    overflow: hidden;
+}
+
+.comparison-header-card.snapshot1 {
+    border-color: var(--accent-primary);
+}
+
+.comparison-header-card.snapshot2 {
+    border-color: var(--accent-success);
+}
+
+.comparison-header-title {
+    padding: 1rem;
+    color: white;
+    font-weight: 600;
+}
+
+.snapshot1 .comparison-header-title {
+    background: var(--accent-primary);
+}
+
+.snapshot2 .comparison-header-title {
+    background: var(--accent-success);
+}
+
+.trend-up {
+    color: var(--accent-success);
+}
+
+.trend-down {
+    color: var(--accent-danger);
+}
+
+.trend-neutral {
+    color: var(--text-secondary);
 }
 </style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <div class="page-header">
+        <h2 class="mb-2"><i class="bi bi-bar-chart-fill"></i> Snapshot Comparison</h2>
+        <p class="mb-3 opacity-75">Compare KPI values across time periods</p>
+        <div>
+            <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left"></i> Back to Snapshots
+            </a>
+            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-light">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Comparison Header -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-6">
+            <div class="comparison-header-card snapshot1">
+                <div class="comparison-header-title">
+                    <i class="bi bi-calendar-event"></i> Snapshot 1
+                </div>
+                <div class="card-body">
+                    <h4>{{ date1.strftime('%Y-%m-%d') }}</h4>
+                    {% if label1 %}
+                        <span class="badge bg-info">{{ label1 }}</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="comparison-header-card snapshot2">
+                <div class="comparison-header-title">
+                    <i class="bi bi-calendar-event"></i> Snapshot 2
+                </div>
+                <div class="card-body">
+                    {% if date2 %}
+                        <h4>{{ date2.strftime('%Y-%m-%d') }}</h4>
+                        {% if label2 %}
+                            <span class="badge bg-info">{{ label2 }}</span>
+                        {% endif %}
+                    {% else %}
+                        <h4>Current</h4>
+                        <span class="badge bg-success">Live Data</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-table"></i> Value Comparison</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>KPI</th>
+                            <th>Value Type</th>
+                            <th class="text-center">{{ date1.strftime('%Y-%m-%d') }}</th>
+                            <th class="text-center">{% if date2 %}{{ date2.strftime('%Y-%m-%d') }}{% else %}Current{% endif %}</th>
+                            <th class="text-center">Change</th>
+                            <th class="text-center">% Change</th>
+                            <th class="text-center">Trend</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comp in comparisons %}
+                        {% if comp.value1 is not none or comp.value2 is not none %}
+                        <tr>
+                            <td><strong>{{ comp.kpi.name }}</strong></td>
+                            <td>
+                                {{ comp.value_type.name }}
+                                {% if comp.value_type.unit_label %}
+                                    <small class="text-muted">({{ comp.value_type.unit_label }})</small>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if comp.value1 is not none %}
+                                    <strong>{{ comp.value1 }}</strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if comp.value2 is not none %}
+                                    <strong>{{ comp.value2 }}</strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if comp.change is not none %}
+                                    <span class="{% if comp.change > 0 %}trend-up{% elif comp.change < 0 %}trend-down{% else %}trend-neutral{% endif %}">
+                                        <strong>{{ '%+.2f'|format(comp.change) if comp.change != 0 else '0.00' }}</strong>
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if comp.percent_change is not none %}
+                                    <span class="{% if comp.percent_change > 0 %}trend-up{% elif comp.percent_change < 0 %}trend-down{% else %}trend-neutral{% endif %}">
+                                        <strong>{{ '%+.1f'|format(comp.percent_change) if comp.percent_change != 0 else '0.0' }}%</strong>
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if comp.change is not none and comp.change != 0 %}
+                                    {% if comp.change > 0 %}
+                                        <span class="trend-up"><i class="bi bi-arrow-up-circle-fill"></i> Up</span>
+                                    {% else %}
+                                        <span class="trend-down"><i class="bi bi-arrow-down-circle-fill"></i> Down</span>
+                                    {% endif %}
+                                {% elif comp.change == 0 %}
+                                    <span class="trend-neutral"><i class="bi bi-dash-circle-fill"></i> Stable</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

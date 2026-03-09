@@ -1,65 +1,201 @@
 {% extends "base.html" %}
-{% block title %}Value Types{% endblock %}
+
+{% block title %}Value Types - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--border-subtle);
+}
+
+.page-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.page-title h2 i {
+    color: var(--accent-primary);
+}
+
+.value-type-row {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all var(--transition-fast);
+    cursor: move;
+}
+
+.value-type-row:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.sortable-ghost {
+    opacity: 0.4;
+    background: var(--bg-secondary);
+}
+
+.drag-handle {
+    cursor: grab;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    width: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.vt-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.vt-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.vt-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Value Types</h2>
-<div class="mb-3">
-    {% if current_user.can_manage_value_types(session.organization_id) %}
-    <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary">Create Value Type</a>
+<div class="fade-in">
+    <div class="page-title">
+        <h2>
+            <i class="bi bi-hash"></i>
+            Value Types
+        </h2>
+        <div class="d-flex gap-2">
+            {% if current_user.can_manage_value_types(session.organization_id) %}
+            <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle-fill"></i> Create Value Type
+            </a>
+            {% endif %}
+            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <i class="bi bi-lightbulb-fill"></i>
+        <strong>💡 Tip:</strong> Drag rows using the ⋮⋮ handle to reorder value types. This controls the column order in the workspace.
+    </div>
+
+    {% if value_types %}
+        <div id="sortable-value-types">
+            {% for vt in value_types %}
+            <div class="value-type-row" data-id="{{ vt.id }}">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="drag-handle">⋮⋮</div>
+
+                    <div class="flex-grow-1">
+                        <div class="vt-name">
+                            {{ vt.name }}
+                            {% if vt.is_active %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-check-circle-fill"></i> Active
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-x-circle-fill"></i> Inactive
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="vt-meta">
+                            <div class="vt-meta-item">
+                                <i class="bi bi-tag"></i>
+                                <span class="badge bg-info">{{ vt.kind }}</span>
+                            </div>
+                            {% if vt.unit_label %}
+                            <div class="vt-meta-item">
+                                <i class="bi bi-rulers"></i>
+                                {{ vt.unit_label }}
+                            </div>
+                            {% endif %}
+                            <div class="vt-meta-item">
+                                <i class="bi bi-calculator"></i>
+                                {{ vt.default_aggregation_formula }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        {% if current_user.can_manage_value_types(session.organization_id) %}
+                        <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}"
+                           class="btn btn-outline-primary btn-sm"
+                           title="Edit value type">
+                            <i class="bi bi-pencil-fill"></i> Edit
+                        </a>
+                        <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}"
+                           class="btn btn-outline-danger btn-sm"
+                           title="Delete value type">
+                            <i class="bi bi-trash-fill"></i> Delete
+                        </a>
+                        {% else %}
+                        <span class="text-muted small">View only</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-hash" style="font-size: 4rem; opacity: 0.3;"></i>
+            <h3 class="mt-3">No Value Types</h3>
+            <p class="text-muted">Create your first value type to define what can be tracked.</p>
+            {% if current_user.can_manage_value_types(session.organization_id) %}
+            <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle-fill"></i> Create First Value Type
+            </a>
+            {% endif %}
+        </div>
     {% endif %}
-    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
 </div>
-
-<div class="alert alert-info">
-    <strong>💡 Tip:</strong> Drag rows using the ⋮⋮ handle to reorder value types. This controls the column order in the workspace.
-</div>
-
-<table class="table table-striped">
-    <thead>
-        <tr><th style="width: 30px;"></th><th>Name</th><th>Kind</th><th>Unit</th><th>Formula</th><th>Status</th><th>Actions</th></tr>
-    </thead>
-    <tbody id="sortable-value-types">
-        {% for vt in value_types %}
-        <tr data-id="{{ vt.id }}" style="cursor: move;">
-            <td class="drag-handle text-center" style="cursor: grab; font-size: 20px; color: #999;">⋮⋮</td>
-            <td>{{ vt.name }}</td>
-            <td><span class="badge bg-info">{{ vt.kind }}</span></td>
-            <td>{{ vt.unit_label or '-' }}</td>
-            <td>{{ vt.default_aggregation_formula }}</td>
-            <td>
-                {% if vt.is_active %}
-                    <span class="badge bg-success">Active</span>
-                {% else %}
-                    <span class="badge bg-secondary">Inactive</span>
-                {% endif %}
-            </td>
-            <td>
-                {% if current_user.can_manage_value_types(session.organization_id) %}
-                <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}" class="btn btn-sm btn-outline-danger">Delete...</a>
-                {% else %}
-                <span class="text-muted small">View only</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 
 <!-- SortableJS from CDN -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const tbody = document.getElementById('sortable-value-types');
+    const container = document.getElementById('sortable-value-types');
 
-    if (tbody) {
-        const sortable = Sortable.create(tbody, {
+    if (container) {
+        const sortable = Sortable.create(container, {
             animation: 150,
             handle: '.drag-handle',
             ghostClass: 'sortable-ghost',
             onEnd: function(evt) {
                 // Get new order
-                const rows = tbody.querySelectorAll('tr[data-id]');
+                const rows = container.querySelectorAll('[data-id]');
                 const order = Array.from(rows).map(row => parseInt(row.dataset.id));
 
                 // Save to server
@@ -93,15 +229,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
-<style>
-.sortable-ghost {
-    opacity: 0.4;
-    background: #f8f9fa;
-}
-.drag-handle:active {
-    cursor: grabbing;
-}
-</style>
-
 {% endblock %}

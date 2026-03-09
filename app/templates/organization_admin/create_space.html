@@ -1,14 +1,104 @@
 {% extends "base.html" %}
-{% block title %}Create Space{% endblock %}
+
+{% block title %}Create Space - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Create New Space</h2>
-<form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
-    <div class="mb-3">{{ form.space_label.label }}{{ form.space_label(class="form-control") }}<small class="form-text">e.g., Season, Site, Customer</small></div>
-    <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
-    {{ form.submit(class="btn btn-primary") }}
-    <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
-</form>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-8">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-building"></i>
+                </div>
+                <h2 class="mb-1">Create Space</h2>
+                <p class="mb-0 opacity-75">Top-level organizational unit</p>
+            </div>
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-4">
+                        {{ form.name.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                            {{ form.name(class="form-control", placeholder="e.g., Season 1, Division A", autofocus=True) }}
+                        </div>
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">{% for error in form.name.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.description.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                            {{ form.description(class="form-control", rows=4, placeholder="Describe this space...") }}
+                        </div>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            {{ form.space_label.label(class="form-label fw-semibold") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                {{ form.space_label(class="form-control", placeholder="e.g., Season, Phase") }}
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Label used in workspace for this level
+                            </small>
+                        </div>
+
+                        <div class="col-md-6 mb-4">
+                            {{ form.display_order.label(class="form-label fw-semibold") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-sort-numeric-down"></i></span>
+                                {{ form.display_order(class="form-control", type="number") }}
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Controls the order in lists
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

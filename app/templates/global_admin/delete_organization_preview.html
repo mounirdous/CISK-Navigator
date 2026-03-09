@@ -1,33 +1,174 @@
 {% extends "base.html" %}
-{% block title %}Delete Organization - Preview{% endblock %}
+
+{% block title %}Delete Organization - CISK Navigator{% endblock %}
+
+{% block extra_css %}
+<style>
+.danger-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.danger-icon {
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.impact-card {
+    background: var(--bg-secondary);
+    border-left: 4px solid #dc3545;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.impact-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    margin-bottom: 0.5rem;
+}
+
+.impact-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.impact-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #dc3545;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Delete Organization: {{ org.name }}</h2>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-8">
+        <div class="card hover-lift">
+            <div class="danger-header">
+                <div class="danger-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h2 class="mb-1">Delete Organization</h2>
+                <p class="mb-0 opacity-75">{{ org.name }}</p>
+            </div>
 
-<div class="alert alert-danger">
-    <h4>⚠️ Warning: This action cannot be undone!</h4>
-    <p>Deleting this organization will permanently delete all associated data.</p>
-</div>
+            <div class="card-body" style="padding: 2.5rem;">
+                <div class="alert alert-danger" style="border-left: 4px solid #dc3545;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-shield-exclamation me-3" style="font-size: 2rem;"></i>
+                        <div>
+                            <h4 class="mb-1">⚠️ Warning: This action cannot be undone!</h4>
+                            <p class="mb-0">Deleting this organization will permanently delete all associated data including user memberships, comments, and all organizational content.</p>
+                        </div>
+                    </div>
+                </div>
 
-<div class="card">
-    <div class="card-header"><h5>Deletion Impact</h5></div>
-    <div class="card-body">
-        <ul>
-            <li><strong>{{ impact.spaces }}</strong> spaces</li>
-            <li><strong>{{ impact.challenges }}</strong> challenges</li>
-            <li><strong>{{ impact.initiatives }}</strong> initiatives</li>
-            <li><strong>{{ impact.systems }}</strong> systems</li>
-            <li><strong>{{ impact.value_types }}</strong> value types</li>
-            <li>All associated KPIs, contributions, and roll-up rules</li>
-        </ul>
+                <div class="impact-card">
+                    <h5 class="mb-3">
+                        <i class="bi bi-clipboard-data"></i> Deletion Impact Analysis
+                    </h5>
+
+                    <div class="impact-item">
+                        <div class="impact-icon">
+                            <i class="bi bi-grid-3x3"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>Spaces</strong>
+                        </div>
+                        <div class="impact-number">{{ impact.spaces }}</div>
+                    </div>
+
+                    <div class="impact-item">
+                        <div class="impact-icon">
+                            <i class="bi bi-flag"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>Challenges</strong>
+                        </div>
+                        <div class="impact-number">{{ impact.challenges }}</div>
+                    </div>
+
+                    <div class="impact-item">
+                        <div class="impact-icon">
+                            <i class="bi bi-lightbulb"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>Initiatives</strong>
+                        </div>
+                        <div class="impact-number">{{ impact.initiatives }}</div>
+                    </div>
+
+                    <div class="impact-item">
+                        <div class="impact-icon">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>Systems</strong>
+                        </div>
+                        <div class="impact-number">{{ impact.systems }}</div>
+                    </div>
+
+                    <div class="impact-item">
+                        <div class="impact-icon">
+                            <i class="bi bi-hash"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <strong>Value Types</strong>
+                        </div>
+                        <div class="impact-number">{{ impact.value_types }}</div>
+                    </div>
+
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>Additionally deleted:</strong>
+                        All associated KPIs, contributions, consensus values, roll-up rules, comments, mentions, and user memberships
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ url_for('global_admin.delete_organization', org_id=org.id) }}">
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit"
+                                class="btn btn-danger btn-lg"
+                                onclick="return confirm('⚠️ FINAL CONFIRMATION ⚠️\n\nYou are about to PERMANENTLY DELETE the organization:\n\'{{ org.name }}\'\n\nThis will delete:\n- {{ impact.spaces }} spaces\n- {{ impact.challenges }} challenges\n- {{ impact.initiatives }} initiatives\n- {{ impact.systems }} systems\n- {{ impact.value_types }} value types\n- All KPIs, data, comments, and user access\n\nThis action CANNOT be undone!\n\nType YES in the next dialog to confirm.')">
+                            <i class="bi bi-trash-fill"></i> Confirm Deletion
+                        </button>
+                        <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
-</div>
-
-<div class="mt-4">
-    <form method="POST" action="{{ url_for('global_admin.delete_organization', org_id=org.id) }}">
-        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you absolutely sure? Type the organization name to confirm.')">
-            Confirm Deletion
-        </button>
-        <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-secondary">Cancel</a>
-    </form>
 </div>
 {% endblock %}

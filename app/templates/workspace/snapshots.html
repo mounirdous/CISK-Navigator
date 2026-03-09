@@ -1,87 +1,121 @@
 {% extends "base.html" %}
+
 {% block title %}Snapshots - {{ organization_name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    backdrop-filter: blur(10px);
+    margin: 0 auto 1rem;
+}
+
+.snapshot-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.snapshot-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+}
+
+.snapshot-date {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2>📸 Workspace Snapshots</h2>
-            <p class="text-muted">Historical snapshots of KPI values for time-series tracking</p>
+<div class="container-fluid fade-in">
+    <div class="page-header text-center">
+        <div class="page-header-icon">
+            <i class="bi bi-camera-fill"></i>
         </div>
-        <div class="col-md-4 text-end">
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createSnapshotModal">
+        <h2 class="mb-2">📸 Workspace Snapshots</h2>
+        <p class="mb-0 opacity-75">Historical snapshots of KPI values for time-series tracking</p>
+        <div class="mt-3">
+            <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#createSnapshotModal">
                 <i class="bi bi-camera"></i> Create Snapshot
             </button>
-            <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">
-                Back to Workspace
+            <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light btn-lg">
+                <i class="bi bi-arrow-left"></i> Back to Workspace
             </a>
         </div>
     </div>
 
-    <!-- Snapshots List -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Available Snapshots</h5>
-        </div>
-        <div class="card-body">
-            {% if snapshots %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Label</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for snapshot in snapshots %}
-                            <tr>
-                                <td>
-                                    <strong>{{ snapshot.formatted_date }}</strong>
-                                </td>
-                                <td>
-                                    {% if snapshot.label %}
-                                        <span class="badge bg-info">{{ snapshot.label }}</span>
-                                    {% else %}
-                                        <span class="text-muted">—</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('workspace.view_snapshot', snapshot_date=snapshot.date) }}"
-                                       class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-eye"></i> View
-                                    </a>
-                                    <a href="{{ url_for('workspace.compare_snapshots', date1=snapshot.date, date2='current') }}"
-                                       class="btn btn-sm btn-outline-info">
-                                        <i class="bi bi-bar-chart"></i> Compare
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    {% if snapshots %}
+        <div class="row">
+            <div class="col-12">
+                {% for snapshot in snapshots %}
+                <div class="snapshot-card">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <div class="snapshot-date">
+                                <i class="bi bi-calendar-event"></i>
+                                {{ snapshot.formatted_date }}
+                            </div>
+                            {% if snapshot.label %}
+                            <span class="badge bg-info mt-2">{{ snapshot.label }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('workspace.view_snapshot', snapshot_date=snapshot.date) }}"
+                               class="btn btn-outline-primary">
+                                <i class="bi bi-eye-fill"></i> View
+                            </a>
+                            <a href="{{ url_for('workspace.compare_snapshots', date1=snapshot.date, date2='current') }}"
+                               class="btn btn-outline-info">
+                                <i class="bi bi-bar-chart-fill"></i> Compare to Current
+                            </a>
+                        </div>
+                    </div>
                 </div>
-            {% else %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> No snapshots yet. Create your first snapshot to start tracking changes over time.
-                </div>
-            {% endif %}
+                {% endfor %}
+            </div>
         </div>
-    </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-camera" style="font-size: 4rem; opacity: 0.3;"></i>
+            <h3 class="mt-3">No Snapshots Yet</h3>
+            <p class="text-muted">Create your first snapshot to start tracking changes over time.</p>
+            <button class="btn btn-primary btn-lg mt-3" data-bs-toggle="modal" data-bs-target="#createSnapshotModal">
+                <i class="bi bi-camera"></i> Create First Snapshot
+            </button>
+        </div>
+    {% endif %}
 
-    <!-- Info Box -->
-    <div class="card mt-4">
-        <div class="card-body">
-            <h6><i class="bi bi-lightbulb"></i> About Snapshots</h6>
-            <ul class="mb-0">
-                <li><strong>Snapshots</strong> capture the current consensus values of all KPIs at a specific point in time</li>
-                <li>Use snapshots to track progress over time (weekly, monthly, quarterly)</li>
-                <li>Compare snapshots to see trends: ↗️ improving, ↘️ declining, → stable</li>
-                <li>Recommended: Create snapshots at regular intervals (e.g., end of each sprint, month, or quarter)</li>
-                <li>Snapshot labels help organize: "Q1 2026", "Sprint 5", "Baseline", "Go-Live"</li>
-            </ul>
-        </div>
+    <div class="alert alert-info mt-4" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <h6><i class="bi bi-lightbulb-fill"></i> About Snapshots</h6>
+        <ul class="mb-0">
+            <li><strong>Snapshots</strong> capture the current consensus values of all KPIs at a specific point in time</li>
+            <li>Use snapshots to track progress over time (weekly, monthly, quarterly)</li>
+            <li>Compare snapshots to see trends: ↗️ improving, ↘️ declining, → stable</li>
+            <li>Recommended: Create snapshots at regular intervals (e.g., end of each sprint, month, or quarter)</li>
+            <li>Snapshot labels help organize: "Q1 2026", "Sprint 5", "Baseline", "Go-Live"</li>
+        </ul>
     </div>
 </div>
 
@@ -90,53 +124,40 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Create Snapshot</h5>
+                <h5 class="modal-title"><i class="bi bi-camera"></i> Create Snapshot</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form method="POST" action="{{ url_for('workspace.create_snapshot') }}">
                 {{ form.hidden_tag() if form else '' }}
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label for="snapshot_date" class="form-label">Snapshot Date</label>
-                        <input type="date" class="form-control" id="snapshot_date" name="snapshot_date"
-                               value="{{ today }}" required>
-                        <div class="form-text">Date to associate with this snapshot</div>
+                        <label for="snapshot_date" class="form-label fw-semibold">Snapshot Date</label>
+                        <input type="date" class="form-control" id="snapshot_date" name="snapshot_date" required 
+                               value="{{ today if today else '' }}">
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Date this snapshot represents
+                        </small>
                     </div>
+
                     <div class="mb-3">
-                        <label for="label" class="form-label">Label (Optional)</label>
-                        <input type="text" class="form-control" id="label" name="label"
-                               placeholder="e.g., Q1 2026, Sprint 5, Baseline" maxlength="100">
-                        <div class="form-text">Descriptive label to identify this snapshot</div>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i> This will capture the current consensus values for all KPIs and rollups in the workspace.
+                        <label for="label" class="form-label fw-semibold">Label (Optional)</label>
+                        <input type="text" class="form-control" id="label" name="label" 
+                               placeholder="e.g., Q1 2026, Sprint 5, Baseline">
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Descriptive label to identify this snapshot
+                        </small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
                     <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-camera"></i> Create Snapshot
+                        <i class="bi bi-camera-fill"></i> Create Snapshot
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Set today's date as default
-    const dateInput = document.getElementById('snapshot_date');
-    if (dateInput && !dateInput.value) {
-        dateInput.valueAsDate = new Date();
-    }
-});
-</script>
-
-<style>
-.table-hover tbody tr:hover {
-    background-color: #f8f9fa;
-    cursor: pointer;
-}
-</style>
 {% endblock %}

@@ -2,32 +2,140 @@
 
 {% block title %}Global Administration{% endblock %}
 
-{% block content %}
-<h2>Global Administration</h2>
+{% block extra_css %}
+<style>
+.admin-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);
+    color: white;
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-lg);
+}
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Users</h5>
+.admin-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-header p {
+    margin: 0.75rem 0 0 0;
+    opacity: 0.9;
+    font-size: 1.1rem;
+}
+
+.stats-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all var(--transition-fast);
+    height: 100%;
+}
+
+.stats-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stats-icon {
+    width: 70px;
+    height: 70px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.stats-icon.users {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.stats-icon.organizations {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.stats-number {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.stats-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.stats-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="admin-header">
+        <h1>
+            <i class="bi bi-shield-lock-fill"></i>
+            Global Administration
+        </h1>
+        <p>Manage system-wide users, organizations, and settings</p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon users">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="stats-number">{{ user_count }}</div>
+                <div class="stats-label">Total Users</div>
+                <div class="stats-description">
+                    <i class="bi bi-info-circle"></i> Manage user accounts, permissions, and organization access
+                </div>
+                <a href="{{ url_for('global_admin.users') }}" class="btn btn-primary">
+                    <i class="bi bi-gear-fill"></i> Manage Users
+                </a>
             </div>
-            <div class="card-body">
-                <p class="card-text">Manage user accounts and permissions.</p>
-                <p><strong>{{ user_count }}</strong> users in system</p>
-                <a href="{{ url_for('global_admin.users') }}" class="btn btn-primary">Manage Users</a>
+        </div>
+
+        <div class="col-md-6">
+            <div class="stats-card">
+                <div class="stats-icon organizations">
+                    <i class="bi bi-buildings-fill"></i>
+                </div>
+                <div class="stats-number">{{ org_count }}</div>
+                <div class="stats-label">Organizations</div>
+                <div class="stats-description">
+                    <i class="bi bi-info-circle"></i> Create, edit, clone, and manage organization data
+                </div>
+                <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-primary">
+                    <i class="bi bi-gear-fill"></i> Manage Organizations
+                </a>
             </div>
         </div>
     </div>
 
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Organizations</h5>
-            </div>
-            <div class="card-body">
-                <p class="card-text">Manage organizations and their data.</p>
-                <p><strong>{{ org_count }}</strong> organizations</p>
-                <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-primary">Manage Organizations</a>
+    <div class="alert alert-info mt-4" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <div class="d-flex align-items-center">
+            <i class="bi bi-lightbulb-fill me-3" style="font-size: 1.5rem;"></i>
+            <div>
+                <strong>Quick Tip:</strong> Use the navigation above to switch between Global Admin and organization-specific views.
             </div>
         </div>
     </div>

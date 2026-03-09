@@ -1,106 +1,91 @@
 {% extends "base.html" %}
-{% block title %}Edit Challenge{% endblock %}
+
+{% block title %}Edit Challenge - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-header {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.form-header h2 {
+    margin: 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.form-header p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+}
+
+.form-card {
+    max-width: 700px;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Edit Challenge: {{ challenge.name }}</h2>
-
-<ul class="nav nav-tabs mb-3" role="tablist">
-    <li class="nav-item" role="presentation">
-        <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button">Details</button>
-    </li>
-    <li class="nav-item" role="presentation">
-        <button class="nav-link" id="rollup-tab" data-bs-toggle="tab" data-bs-target="#rollup" type="button">⚙️ Rollup Config</button>
-    </li>
-</ul>
-
-<div class="tab-content">
-    <!-- Details Tab -->
-    <div class="tab-pane fade show active" id="details" role="tabpanel">
-        <form method="POST">
-            {{ form.hidden_tag() }}
-            <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-            <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
-            <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
-            {{ form.submit(class="btn btn-primary") }}
-            <a href="{{ url_for('organization_admin.challenges') }}" class="btn btn-secondary">Cancel</a>
-        </form>
-
-        <!-- Delete Button -->
-        <div class="mt-4 pt-4 border-top">
-            <form method="POST" action="{{ url_for('organization_admin.delete_challenge', challenge_id=challenge.id) }}" onsubmit="return confirm('Are you sure you want to delete this Challenge? This will also delete all linked Initiatives, Systems, and KPIs. This action cannot be undone.');">
-                <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}">
-                <button type="submit" class="btn btn-danger">
-                    <i class="bi bi-trash"></i> Delete Challenge
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Rollup Config Tab -->
-    <div class="tab-pane fade" id="rollup" role="tabpanel">
-        <div class="alert alert-info">
-            <strong>Configure Rollup from Initiatives to this Challenge (and then to Space)</strong><br>
-            Choose which value types roll up from Initiatives to <strong>{{ challenge.name }}</strong>, and then to its Space "<strong>{{ challenge.space.name }}</strong>".
-        </div>
-
-        <div class="card mb-3">
-            <div class="card-header bg-light">
-                <h5 class="mb-0">
-                    Rollup Configuration
-                </h5>
+<div class="row justify-content-center fade-in">
+    <div class="col-lg-8">
+        <div class="card hover-lift form-card">
+            <div class="form-header">
+                <h2>
+                    <i class="bi bi-flag-fill"></i>
+                    Edit Challenge
+                </h2>
+                <p>Modify challenge: {{ challenge.name }}</p>
             </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('organization_admin.configure_challenge_rollup', challenge_id=challenge.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ form.csrf_token._value() }}"/>
 
-                    <p class="text-muted mb-3">
-                        Configure how Initiative values aggregate to this Challenge and then to the parent Space.
-                    </p>
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
 
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Value Type</th>
-                                <th>Default Formula</th>
-                                <th>Enable Rollup</th>
-                                <th>Formula Override</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for vt in value_types %}
-                                {% set existing_rules = challenge.rollup_rules if challenge.rollup_rules else [] %}
-                                {% set rule = existing_rules | selectattr('value_type_id', 'equalto', vt.id) | first %}
-                            <tr>
-                                <td><strong>{{ vt.name }}</strong></td>
-                                <td><span class="badge bg-secondary">{{ vt.default_aggregation_formula }}</span></td>
-                                <td>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox"
-                                               id="enabled_{{ vt.id }}" name="enabled_{{ vt.id }}"
-                                               {{ 'checked' if (rule and rule.rollup_enabled) or not rule else '' }}>
-                                    </div>
-                                </td>
-                                <td>
-                                    <select class="form-select form-select-sm" name="formula_{{ vt.id }}">
-                                        <option value="default" {{ 'selected' if not rule or rule.formula_override == 'default' else '' }}>
-                                            Use Default ({{ vt.default_aggregation_formula }})
-                                        </option>
-                                        <option value="sum" {{ 'selected' if rule and rule.formula_override == 'sum' else '' }}>Sum</option>
-                                        <option value="min" {{ 'selected' if rule and rule.formula_override == 'min' else '' }}>Minimum</option>
-                                        <option value="max" {{ 'selected' if rule and rule.formula_override == 'max' else '' }}>Maximum</option>
-                                        <option value="avg" {{ 'selected' if rule and rule.formula_override == 'avg' else '' }}>Average</option>
-                                    </select>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-flag"></i></span>
+                            {{ form.name(class="form-control", placeholder="Enter challenge name") }}
+                        </div>
+                    </div>
 
-                    <button type="submit" class="btn btn-primary">Save Rollup Config</button>
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                            {{ form.description(class="form-control", rows=4, placeholder="Describe this challenge...") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.display_order.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-sort-numeric-down"></i></span>
+                            {{ form.display_order(class="form-control") }}
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Lower numbers appear first
+                        </small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>
-
-        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Back to Spaces</a>
     </div>
 </div>
 {% endblock %}

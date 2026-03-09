@@ -1,79 +1,126 @@
 {% extends "base.html" %}
-{% block title %}Create Governance Body{% endblock %}
+
+{% block title %}Create Governance Body - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<h2>Create Governance Body</h2>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-8">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-bank"></i>
+                </div>
+                <h2 class="mb-1">Create Governance Body</h2>
+                <p class="mb-0 opacity-75">Define a committee, board, or team</p>
+            </div>
 
-<form method="POST">
-    {{ form.csrf_token }}
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
 
-    <div class="mb-3">
-        {{ form.name.label(class="form-label") }}
-        {{ form.name(class="form-control") }}
-        {% if form.name.errors %}
-            <div class="text-danger">{{ form.name.errors[0] }}</div>
-        {% endif %}
-    </div>
+                    <div class="mb-4">
+                        {{ form.name.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-people"></i></span>
+                            {{ form.name(class="form-control", placeholder="e.g., Steering Committee", autofocus=True) }}
+                        </div>
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">{% for error in form.name.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
 
-    <div class="mb-3">
-        {{ form.abbreviation.label(class="form-label") }}
-        {{ form.abbreviation(class="form-control") }}
-        <small class="form-text text-muted">Short abbreviation (e.g., "GEN", "TECH", "FIN")</small>
-        {% if form.abbreviation.errors %}
-            <div class="text-danger">{{ form.abbreviation.errors[0] }}</div>
-        {% endif %}
-    </div>
+                    <div class="mb-4">
+                        {{ form.abbreviation.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                            {{ form.abbreviation(class="form-control", placeholder="e.g., SC or L1", maxlength="20") }}
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Short label displayed in workspace (max 20 characters)
+                        </small>
+                        {% if form.abbreviation.errors %}
+                            <div class="invalid-feedback d-block">{% for error in form.abbreviation.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
 
-    <div class="mb-3">
-        {{ form.description.label(class="form-label") }}
-        {{ form.description(class="form-control", rows=3) }}
-        {% if form.description.errors %}
-            <div class="text-danger">{{ form.description.errors[0] }}</div>
-        {% endif %}
-    </div>
+                    <div class="mb-4">
+                        {{ form.description.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                            {{ form.description(class="form-control", rows=4, placeholder="Describe the purpose and responsibilities...") }}
+                        </div>
+                        {% if form.description.errors %}
+                            <div class="invalid-feedback d-block">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
 
-    <div class="mb-3">
-        {{ form.color.label(class="form-label") }}
-        <div class="input-group" style="max-width: 200px;">
-            {{ form.color(class="form-control", type="color") }}
-            <input type="text" class="form-control" id="color-hex" value="#3498db" readonly>
+                    <div class="mb-4">
+                        {{ form.color.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-palette"></i></span>
+                            {{ form.color(class="form-control", type="color", value="#3498db") }}
+                            <input type="text" class="form-control" value="#3498db" readonly style="max-width: 100px;" id="color-text">
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Badge color for this governance body
+                        </small>
+                        {% if form.color.errors %}
+                            <div class="invalid-feedback d-block">{% for error in form.color.errors %}{{ error }}{% endfor %}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            {{ form.is_active(class="form-check-input", checked=True) }}
+                            {{ form.is_active.label(class="form-check-label fw-semibold") }}
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Inactive governance bodies are hidden from selections
+                        </small>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('organization_admin.governance_bodies') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+
+                <script>
+                    // Sync color picker with text display
+                    document.querySelector('input[name="color"]').addEventListener('input', function(e) {
+                        document.getElementById('color-text').value = e.target.value.toUpperCase();
+                    });
+                </script>
+            </div>
         </div>
-        <small class="form-text text-muted">Choose a color for this governance body</small>
-        {% if form.color.errors %}
-            <div class="text-danger">{{ form.color.errors[0] }}</div>
-        {% endif %}
     </div>
-
-    <div class="mb-3 form-check form-switch">
-        {{ form.is_active(class="form-check-input") }}
-        {{ form.is_active.label(class="form-check-label") }}
-        {% if form.is_active.errors %}
-            <div class="text-danger">{{ form.is_active.errors[0] }}</div>
-        {% endif %}
-    </div>
-
-    <div class="mt-4">
-        {{ form.submit(class="btn btn-primary") }}
-        <a href="{{ url_for('organization_admin.governance_bodies') }}" class="btn btn-secondary">Cancel</a>
-    </div>
-</form>
-
-<script>
-// Sync color picker with hex display
-document.addEventListener('DOMContentLoaded', function() {
-    const colorPicker = document.getElementById('color');
-    const colorHex = document.getElementById('color-hex');
-
-    if (colorPicker && colorHex) {
-        // Set initial value
-        colorHex.value = colorPicker.value;
-
-        // Update on change
-        colorPicker.addEventListener('input', function() {
-            colorHex.value = colorPicker.value;
-        });
-    }
-});
-</script>
-
+</div>
 {% endblock %}

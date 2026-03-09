@@ -1,100 +1,211 @@
 {% extends "base.html" %}
-{% block title %}Clone Organization - Global Administration{% endblock %}
+
+{% block title %}Clone Organization - CISK Navigator{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.info-box {
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--accent-info);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.info-box.success {
+    border-left-color: var(--accent-success);
+}
+
+.info-box.warning {
+    border-left-color: var(--accent-warning);
+}
+
+.info-box h5 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.info-box ul {
+    margin-bottom: 0;
+    padding-left: 1.5rem;
+}
+
+.info-box li {
+    margin-bottom: 0.5rem;
+}
+
+.stats-table {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.stats-table tr {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stats-table tr:last-child {
+    border-bottom: none;
+}
+
+.stats-table th {
+    background: var(--bg-primary);
+    font-weight: 600;
+    padding: 0.75rem 1rem;
+    width: 40%;
+}
+
+.stats-table td {
+    padding: 0.75rem 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Clone Organization: {{ source_org.name }}</h2>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-9">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-files"></i>
+                </div>
+                <h2 class="mb-1">Clone Organization</h2>
+                <p class="mb-0 opacity-75">Create a copy of {{ source_org.name }}</p>
+            </div>
 
-<div class="alert alert-info">
-    <h5>What will be cloned:</h5>
-    <ul class="mb-0">
-        <li>All Value Types</li>
-        <li>All Spaces, Challenges, Initiatives, Systems, and KPIs</li>
-        <li>All links and relationships between entities</li>
-        <li>All KPI color configurations</li>
-        <li>All rollup rules</li>
-    </ul>
-</div>
+            <div class="card-body" style="padding: 2.5rem;">
+                <div class="info-box success">
+                    <h5>
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        What will be cloned:
+                    </h5>
+                    <ul>
+                        <li><strong>All Value Types</strong> - Including configurations and settings</li>
+                        <li><strong>Organization Structure</strong> - Spaces, Challenges, Initiatives, Systems, and KPIs</li>
+                        <li><strong>Relationships</strong> - All links and relationships between entities</li>
+                        <li><strong>KPI Configurations</strong> - Color configurations and display settings</li>
+                        <li><strong>Rollup Rules</strong> - All aggregation and rollup rules</li>
+                    </ul>
+                </div>
 
-<div class="alert alert-warning">
-    <h5>What will NOT be cloned:</h5>
-    <ul class="mb-0">
-        <li>User memberships (new org will have no users)</li>
-        <li>Contributed data values</li>
-        <li>Consensus values</li>
-    </ul>
-</div>
+                <div class="info-box warning">
+                    <h5>
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        What will NOT be cloned:
+                    </h5>
+                    <ul>
+                        <li><strong>User Memberships</strong> - New org will have no users (must be assigned manually)</li>
+                        <li><strong>Contributed Data Values</strong> - No historical data values</li>
+                        <li><strong>Consensus Values</strong> - No consensus data</li>
+                        <li><strong>Comments</strong> - No KPI cell comments or mentions</li>
+                    </ul>
+                </div>
 
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">Clone Configuration</h5>
-        <form method="POST">
-            {{ form.hidden_tag() }}
+                <div class="mb-4">
+                    <h5 class="mb-3">
+                        <i class="bi bi-clipboard-data"></i> Source Organization Statistics
+                    </h5>
+                    <table class="stats-table table table-sm mb-0">
+                        <tr>
+                            <th><i class="bi bi-building"></i> Name</th>
+                            <td>{{ source_org.name }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-text-paragraph"></i> Description</th>
+                            <td>{{ source_org.description or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-hash"></i> Value Types</th>
+                            <td><span class="badge bg-primary">{{ source_org.value_types|length }}</span></td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-grid-3x3"></i> Spaces</th>
+                            <td><span class="badge bg-primary">{{ source_org.spaces|length }}</span></td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-flag"></i> Challenges</th>
+                            <td><span class="badge bg-primary">{{ source_org.challenges|length }}</span></td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-lightbulb"></i> Initiatives</th>
+                            <td><span class="badge bg-primary">{{ source_org.initiatives|length }}</span></td>
+                        </tr>
+                        <tr>
+                            <th><i class="bi bi-cpu"></i> Systems</th>
+                            <td><span class="badge bg-primary">{{ source_org.systems|length }}</span></td>
+                        </tr>
+                    </table>
+                </div>
 
-            <div class="mb-3">
-                {{ form.new_name.label(class="form-label") }}
-                {{ form.new_name(class="form-control" + (" is-invalid" if form.new_name.errors else "")) }}
-                {% if form.new_name.errors %}
-                    <div class="invalid-feedback">
-                        {% for error in form.new_name.errors %}{{ error }}{% endfor %}
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <h5 class="mb-3">
+                        <i class="bi bi-gear"></i> Clone Configuration
+                    </h5>
+
+                    <div class="mb-4">
+                        {{ form.new_name.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                            {{ form.new_name(class="form-control" + (" is-invalid" if form.new_name.errors else ""), placeholder="New organization name", autofocus=True) }}
+                        </div>
+                        {% if form.new_name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.new_name.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Must be unique across all organizations
+                        </small>
                     </div>
-                {% endif %}
-                <small class="form-text text-muted">
-                    The name for the cloned organization. Must be unique.
-                </small>
-            </div>
 
-            <div class="mb-3">
-                {{ form.new_description.label(class="form-label") }}
-                {{ form.new_description(class="form-control", rows=3, placeholder="Optional description for the cloned organization") }}
-                {% if form.new_description.errors %}
-                    <div class="invalid-feedback d-block">
-                        {% for error in form.new_description.errors %}{{ error }}{% endfor %}
+                    <div class="mb-4">
+                        {{ form.new_description.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                            {{ form.new_description(class="form-control", rows=3, placeholder="Optional description for the cloned organization") }}
+                        </div>
+                        {% if form.new_description.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.new_description.errors %}{{ error }}{% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
-            </div>
 
-            <div class="d-grid gap-2">
-                {{ form.submit(class="btn btn-primary btn-lg") }}
-                <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-secondary">Cancel</a>
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        {{ form.submit(class="btn btn-success btn-lg") }}
+                        <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
             </div>
-        </form>
-    </div>
-</div>
-
-<div class="card mt-4">
-    <div class="card-header">
-        <h5>Source Organization Statistics</h5>
-    </div>
-    <div class="card-body">
-        <table class="table table-sm">
-            <tr>
-                <th>Name:</th>
-                <td>{{ source_org.name }}</td>
-            </tr>
-            <tr>
-                <th>Description:</th>
-                <td>{{ source_org.description or '-' }}</td>
-            </tr>
-            <tr>
-                <th>Value Types:</th>
-                <td>{{ source_org.value_types|length }}</td>
-            </tr>
-            <tr>
-                <th>Spaces:</th>
-                <td>{{ source_org.spaces|length }}</td>
-            </tr>
-            <tr>
-                <th>Challenges:</th>
-                <td>{{ source_org.challenges|length }}</td>
-            </tr>
-            <tr>
-                <th>Initiatives:</th>
-                <td>{{ source_org.initiatives|length }}</td>
-            </tr>
-            <tr>
-                <th>Systems:</th>
-                <td>{{ source_org.systems|length }}</td>
-            </tr>
-        </table>
+        </div>
     </div>
 </div>
 {% endblock %}

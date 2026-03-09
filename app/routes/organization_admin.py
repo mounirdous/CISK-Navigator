@@ -678,6 +678,9 @@ def edit_kpi(kpi_id):
     # Get active governance bodies for selection
     governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).all()
 
+    # Get current governance body IDs for this KPI
+    current_gb_ids = [link.governance_body_id for link in kpi.governance_body_links]
+
     form = KPIEditForm(obj=kpi)
     if form.validate_on_submit():
         # Validate governance body selection
@@ -687,7 +690,8 @@ def edit_kpi(kpi_id):
             return render_template('organization_admin/edit_kpi.html',
                                   form=form,
                                   kpi=kpi,
-                                  governance_bodies=governance_bodies)
+                                  governance_bodies=governance_bodies,
+                                  current_gb_ids=current_gb_ids)
         kpi.name = form.name.data
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data
@@ -764,7 +768,11 @@ def edit_kpi(kpi_id):
         flash(f'KPI {kpi.name} updated successfully', 'success')
         return redirect(url_for('organization_admin.spaces'))
 
-    return render_template('organization_admin/edit_kpi.html', form=form, kpi=kpi, governance_bodies=governance_bodies)
+    return render_template('organization_admin/edit_kpi.html',
+                          form=form,
+                          kpi=kpi,
+                          governance_bodies=governance_bodies,
+                          current_gb_ids=current_gb_ids)
 
 
 @bp.route('/kpis/<int:kpi_id>/delete', methods=['POST'])

@@ -1,47 +1,97 @@
 {% extends "base.html" %}
-{% block title %}Delete Value Type - Check{% endblock %}
+
+{% block title %}Delete Value Type - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.danger-header {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.danger-icon {
+    width: 70px;
+    height: 70px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.impact-card {
+    background: var(--bg-secondary);
+    border-left: 4px solid #dc3545;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Delete Value Type: {{ value_type.name }}</h2>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-8">
+        <div class="card hover-lift">
+            <div class="danger-header">
+                <div class="danger-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <h2 class="mb-1">Delete Value Type</h2>
+                <p class="mb-0 opacity-75">{{ value_type.name }}</p>
+            </div>
 
-{% if can_delete %}
-    <div class="alert alert-success">
-        <h4>✓ This value type can be deleted</h4>
-        <p>It is not currently in use.</p>
-    </div>
-    <form method="POST" action="#">
-        <button type="submit" class="btn btn-danger">Confirm Deletion</button>
-        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Cancel</a>
-    </form>
-{% else %}
-    <div class="alert alert-danger">
-        <h4>✗ This value type cannot be deleted</h4>
-        <p><strong>Reason:</strong> {{ reason }}</p>
-    </div>
+            <div class="card-body" style="padding: 2.5rem;">
+                <div class="alert alert-danger" style="border-left: 4px solid #dc3545;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-shield-exclamation me-3" style="font-size: 2rem;"></i>
+                        <div>
+                            <h4 class="mb-1">⚠️ Warning: This action cannot be undone!</h4>
+                            <p class="mb-0">Deleting this value type will permanently remove all associated data.</p>
+                        </div>
+                    </div>
+                </div>
 
-    <div class="card">
-        <div class="card-header"><h5>Usage Details</h5></div>
-        <div class="card-body">
-            {% if usage.usage.kpi_configs %}
-                <h6>Used in {{ usage.usage.kpi_configs|length }} KPI(s):</h6>
-                <ul>
-                    {% for config in usage.usage.kpi_configs %}
-                    <li>
-                        <strong>{{ config.kpi_name }}</strong> (System: {{ config.system_name }}, Initiative: {{ config.initiative_name }})
-                        <br>{{ config.contributions_count }} contribution(s)
-                    </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
+                <div class="impact-card">
+                    <h5 class="mb-3">
+                        <i class="bi bi-clipboard-data"></i> Deletion Impact
+                    </h5>
+                    <ul class="mb-0">
+                        <li><strong>{{ impact.kpi_configs }}</strong> KPI configuration(s) will be deleted</li>
+                        <li><strong>{{ impact.contributions }}</strong> contributed value(s) will be deleted</li>
+                        <li><strong>{{ impact.consensus_values }}</strong> consensus value(s) will be deleted</li>
+                        <li>All color configurations for this value type will be removed</li>
+                        <li>Workspace columns for this value type will disappear</li>
+                    </ul>
+                </div>
 
-            {% if usage.usage.rollup_rules_count > 0 %}
-                <p>Referenced by <strong>{{ usage.usage.rollup_rules_count }}</strong> roll-up rule(s)</p>
-            {% endif %}
+                <form method="POST" action="{{ url_for('organization_admin.delete_value_type', vt_id=value_type.id) }}">
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit"
+                                class="btn btn-danger btn-lg"
+                                onclick="return confirm('⚠️ FINAL CONFIRMATION ⚠️\n\nYou are about to PERMANENTLY DELETE the value type:\n\'{{ value_type.name }}\'\n\nThis will delete:\n- {{ impact.kpi_configs }} KPI configuration(s)\n- {{ impact.contributions }} contributed value(s)\n- {{ impact.consensus_values }} consensus value(s)\n\nThis action CANNOT be undone!\n\nClick OK to proceed with deletion.')">
+                            <i class="bi bi-trash-fill"></i> Confirm Deletion
+                        </button>
+                        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-
-    <div class="mt-4">
-        <p><strong>Suggestion:</strong> Deactivate this value type instead of deleting it, or remove it from all KPIs first.</p>
-        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Back to Value Types</a>
-    </div>
-{% endif %}
+</div>
 {% endblock %}

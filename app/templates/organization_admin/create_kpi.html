@@ -1,123 +1,258 @@
 {% extends "base.html" %}
-{% block title %}Create KPI{% endblock %}
+
+{% block title %}Create KPI - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-section {
+    margin-bottom: 2.5rem;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-subtle);
+}
+
+.form-section-title i {
+    color: var(--accent-primary);
+}
+
+.value-type-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.value-type-card.selected {
+    border-color: var(--accent-primary);
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, var(--bg-secondary) 100%);
+}
+
+.color-config {
+    background: var(--bg-primary);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Create KPI</h2>
-<p><strong>Initiative:</strong> {{ initiative.name }} | <strong>System:</strong> {{ system.name }}</p>
-<form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
-    <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
-    <div class="mb-3">
-        <label class="form-label fw-bold">Select Value Types and Configure Colors</label>
-        <small class="form-text text-muted d-block mb-2">Select value types and set colors for positive, zero, and negative values</small>
-
-        {% for choice_value, choice_label in form.value_type_ids.choices %}
-        {% set vt = value_types|selectattr('id', 'equalto', choice_value)|first %}
-        <div class="card mb-3">
-            <div class="card-body">
-                <div class="form-check mb-3">
-                    <input class="form-check-input value-type-checkbox" type="checkbox"
-                           name="value_type_ids" value="{{ choice_value }}" id="vt_{{ choice_value }}">
-                    <label class="form-check-label fw-bold" for="vt_{{ choice_value }}">
-                        {{ choice_label }}
-                        <span class="badge bg-info ms-2">{{ vt.kind }}</span>
-                    </label>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-11 col-lg-10">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-graph-up"></i>
                 </div>
+                <h2 class="mb-1">Create KPI</h2>
+                <p class="mb-0 opacity-75">{{ initiative.name }} → {{ system.name }}</p>
+            </div>
 
-                {% if vt.kind == 'numeric' %}
-                <div class="color-config" id="colors_{{ choice_value }}" style="display: none;">
-                    <label class="form-label">Color Configuration</label>
-                    <div class="row g-2 mb-2">
-                        <div class="col-md-3">
-                            <label class="form-label small">Positive Values</label>
-                            <input type="color" class="form-control form-control-color"
-                                   name="color_positive_{{ choice_value }}" value="#28a745">
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-info-circle"></i>
+                            Basic Information
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Zero/Null Values</label>
-                            <input type="color" class="form-control form-control-color"
-                                   name="color_zero_{{ choice_value }}" value="#6c757d">
+
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label fw-semibold") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-graph-up"></i></span>
+                                {{ form.name(class="form-control", placeholder="KPI name", autofocus=True) }}
+                            </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label small">Negative Values</label>
-                            <input type="color" class="form-control form-control-color"
-                                   name="color_negative_{{ choice_value }}" value="#dc3545">
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-semibold") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                                {{ form.description(class="form-control", rows=4, placeholder="Describe this KPI...") }}
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Display Scale</label>
-                            <select class="form-select form-select-sm" name="display_scale_{{ choice_value }}">
-                                <option value="default" selected>Normal</option>
-                                <option value="thousands">Thousands (k)</option>
-                                <option value="millions">Millions (M)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label small">Display Decimals</label>
-                            <input type="number" min="0" max="6" class="form-control form-control-sm"
-                                   name="display_decimals_{{ choice_value }}"
-                                   placeholder="Auto">
+
+                        <div class="mb-3">
+                            {{ form.display_order.label(class="form-label fw-semibold") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-sort-numeric-down"></i></span>
+                                {{ form.display_order(class="form-control", type="number") }}
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Controls the order in lists
+                            </small>
                         </div>
                     </div>
-                    <small class="form-text text-muted d-block mb-3">Choose how to highlight values and display scale (display only, not for data entry)</small>
 
-                    <div class="border-top pt-3">
-                        <div class="form-check mb-2">
-                            <input class="form-check-input target-checkbox" type="checkbox"
-                                   name="has_target_{{ choice_value }}" id="has_target_{{ choice_value }}">
-                            <label class="form-check-label fw-bold" for="has_target_{{ choice_value }}">
-                                Set Target Value
-                            </label>
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-hash"></i>
+                            Value Types & Configuration
                         </div>
-                        <div class="target-fields" id="target_fields_{{ choice_value }}" style="display: none;">
-                            <div class="row g-2">
-                                <div class="col-md-6">
-                                    <label class="form-label small">Target Value</label>
-                                    <input type="number" step="0.01" class="form-control form-control-sm"
-                                           name="target_value_{{ choice_value }}" placeholder="e.g., 1000">
+                        <p class="text-muted mb-3">Select value types to track for this KPI and configure colors and targets</p>
+
+                        {% for choice_value, choice_label in form.value_type_ids.choices %}
+                        {% set vt = value_types|selectattr('id', 'equalto', choice_value)|first %}
+                        <div class="value-type-card" id="card_{{ choice_value }}">
+                            <div class="form-check mb-3">
+                                <input class="form-check-input value-type-checkbox" type="checkbox"
+                                       name="value_type_ids" value="{{ choice_value }}" id="vt_{{ choice_value }}">
+                                <label class="form-check-label fw-bold" for="vt_{{ choice_value }}">
+                                    {{ choice_label }}
+                                    <span class="badge bg-info ms-2">{{ vt.kind }}</span>
+                                    {% if vt.unit_label %}
+                                    <span class="badge bg-secondary ms-1">{{ vt.unit_label }}</span>
+                                    {% endif %}
+                                </label>
+                            </div>
+
+                            {% if vt.kind == 'numeric' %}
+                            <div class="color-config" id="colors_{{ choice_value }}" style="display: none;">
+                                <h6 class="mb-3"><i class="bi bi-palette"></i> Color & Display Configuration</h6>
+                                
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-semibold">Positive Values</label>
+                                        <input type="color" class="form-control form-control-color"
+                                               name="color_positive_{{ choice_value }}" value="#28a745">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-semibold">Zero/Null Values</label>
+                                        <input type="color" class="form-control form-control-color"
+                                               name="color_zero_{{ choice_value }}" value="#6c757d">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-semibold">Negative Values</label>
+                                        <input type="color" class="form-control form-control-color"
+                                               name="color_negative_{{ choice_value }}" value="#dc3545">
+                                    </div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small">Target Date</label>
-                                    <input type="date" class="form-control form-control-sm"
-                                           name="target_date_{{ choice_value }}">
+
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Display Scale</label>
+                                        <select class="form-select" name="display_scale_{{ choice_value }}">
+                                            <option value="default" selected>Normal</option>
+                                            <option value="thousands">Thousands (k)</option>
+                                            <option value="millions">Millions (M)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-semibold">Display Decimals</label>
+                                        <input type="number" min="0" max="6" class="form-control"
+                                               name="display_decimals_{{ choice_value }}"
+                                               placeholder="Auto">
+                                    </div>
+                                </div>
+
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input target-checkbox" type="checkbox"
+                                               name="has_target_{{ choice_value }}" id="has_target_{{ choice_value }}">
+                                        <label class="form-check-label fw-semibold" for="has_target_{{ choice_value }}">
+                                            <i class="bi bi-bullseye"></i> Set Target Value
+                                        </label>
+                                    </div>
+                                    <div class="target-fields" id="target_fields_{{ choice_value }}" style="display: none;">
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-semibold">Target Value</label>
+                                                <input type="number" step="0.01" class="form-control"
+                                                       name="target_value_{{ choice_value }}" placeholder="e.g., 1000">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label small fw-semibold">Target Date</label>
+                                                <input type="date" class="form-control"
+                                                       name="target_date_{{ choice_value }}">
+                                            </div>
+                                        </div>
+                                        <small class="form-text text-muted mt-2 d-block">
+                                            <i class="bi bi-info-circle"></i> Optional: Set a target value and date to track progress
+                                        </small>
+                                    </div>
                                 </div>
                             </div>
-                            <small class="form-text text-muted">Optional: Set a target value and date to track progress</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-bank"></i>
+                            Governance Bodies <span class="text-danger">*</span>
+                        </div>
+                        <p class="text-muted mb-3">Select at least one governance body that oversees this KPI</p>
+
+                        <div class="row">
+                            {% for gb in governance_bodies %}
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input governance-body-checkbox" type="checkbox"
+                                           name="governance_body_ids" value="{{ gb.id }}" id="gb_{{ gb.id }}"
+                                           {% if gb.is_default %}checked{% endif %}>
+                                    <label class="form-check-label" for="gb_{{ gb.id }}">
+                                        <span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
+                                        {{ gb.name }}
+                                        {% if gb.is_default %}
+                                            <span class="badge bg-secondary ms-1">Default</span>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div id="governance-body-error" class="alert alert-danger mt-3" style="display: none;">
+                            <i class="bi bi-exclamation-triangle-fill"></i> Please select at least one governance body
                         </div>
                     </div>
-                </div>
-                {% endif %}
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        {{ form.submit(class="btn btn-primary btn-lg", id="submit-btn") }}
+                        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
-        {% endfor %}
     </div>
-
-    <div class="mb-3">
-        <label class="form-label fw-bold">Governance Bodies <span class="text-danger">*</span></label>
-        <small class="form-text text-muted d-block mb-2">Select at least one governance body that oversees this KPI</small>
-
-        {% for gb in governance_bodies %}
-        <div class="form-check">
-            <input class="form-check-input governance-body-checkbox" type="checkbox"
-                   name="governance_body_ids" value="{{ gb.id }}" id="gb_{{ gb.id }}"
-                   {% if gb.is_default %}checked{% endif %}>
-            <label class="form-check-label" for="gb_{{ gb.id }}">
-                <span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
-                {{ gb.name }}
-                {% if gb.is_default %}
-                    <span class="badge bg-secondary ms-1">Default</span>
-                {% endif %}
-            </label>
-        </div>
-        {% endfor %}
-        <div id="governance-body-error" class="text-danger mt-2" style="display: none;">
-            Please select at least one governance body
-        </div>
-    </div>
-
-    {{ form.submit(class="btn btn-primary", id="submit-btn") }}
-    <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
-</form>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -126,8 +261,18 @@ document.addEventListener('DOMContentLoaded', function() {
         checkbox.addEventListener('change', function() {
             const vtId = this.value;
             const colorConfig = document.getElementById('colors_' + vtId);
+            const card = document.getElementById('card_' + vtId);
+            
             if (colorConfig) {
                 colorConfig.style.display = this.checked ? 'block' : 'none';
+            }
+            
+            if (card) {
+                if (this.checked) {
+                    card.classList.add('selected');
+                } else {
+                    card.classList.remove('selected');
+                }
             }
         });
     });

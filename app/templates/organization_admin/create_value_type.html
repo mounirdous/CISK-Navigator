@@ -1,35 +1,186 @@
 {% extends "base.html" %}
-{% block title %}Create Value Type{% endblock %}
+
+{% block title %}Create Value Type - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-subtle);
+}
+
+.form-section-title i {
+    color: var(--accent-primary);
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Create New Value Type</h2>
-<form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.kind.label }}{{ form.kind(class="form-select", id="kind-select") }}</div>
-    <div class="mb-3 numeric-only">{{ form.numeric_format.label }}{{ form.numeric_format(class="form-select") }}<small class="form-text text-muted"> For numeric types only</small></div>
-    <div class="mb-3 numeric-only">{{ form.decimal_places.label }}{{ form.decimal_places(class="form-control") }}</div>
-    <div class="mb-3 numeric-only">{{ form.unit_label.label }}{{ form.unit_label(class="form-control") }}</div>
-    <div class="mb-3">{{ form.default_aggregation_formula.label }}{{ form.default_aggregation_formula(class="form-select") }}</div>
-    <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
-    <div class="mb-3">{{ form.is_active(class="form-check-input") }} {{ form.is_active.label(class="form-check-label") }}</div>
-    {{ form.submit(class="btn btn-primary") }}
-    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Cancel</a>
-</form>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-8">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-hash"></i>
+                </div>
+                <h2 class="mb-1">Create Value Type</h2>
+                <p class="mb-0 opacity-75">Define a new measurable value type</p>
+            </div>
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-info-circle"></i>
+                            Basic Information
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label fw-semibold") }}
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                                {{ form.name(class="form-control", placeholder="e.g., Cost, CO2, Risk", autofocus=True) }}
+                            </div>
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">{% for error in form.name.errors %}{{ error }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.kind.label(class="form-label fw-semibold") }}
+                            {{ form.kind(class="form-select") }}
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Numeric: numbers | Qualitative: text labels (High/Medium/Low)
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.is_active.label(class="form-check-label fw-semibold", for="is_active") }}
+                            <div class="form-check form-switch">
+                                {{ form.is_active(class="form-check-input", role="switch", id="is_active", checked=True) }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section" id="numeric-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-calculator"></i>
+                            Numeric Configuration
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.numeric_format.label(class="form-label fw-semibold") }}
+                                {{ form.numeric_format(class="form-select") }}
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Only for numeric types
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.decimal_places.label(class="form-label fw-semibold") }}
+                                {{ form.decimal_places(class="form-control", type="number", min="0", max="10") }}
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> For decimal format
+                                </small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.unit_label.label(class="form-label fw-semibold") }}
+                                {{ form.unit_label(class="form-control", placeholder="€, kg, %") }}
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Optional unit symbol
+                                </small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.default_aggregation_formula.label(class="form-label fw-semibold") }}
+                                {{ form.default_aggregation_formula(class="form-select") }}
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> How to aggregate values
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-sort-numeric-down"></i>
+                            Display Settings
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.display_order.label(class="form-label fw-semibold") }}
+                            {{ form.display_order(class="form-control", type="number") }}
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Lower numbers appear first
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const kindSelect = document.getElementById('kind-select');
-    const numericFields = document.querySelectorAll('.numeric-only');
+    const kindSelect = document.querySelector('select[name="kind"]');
+    const numericSection = document.getElementById('numeric-section');
 
-    function toggleNumericFields() {
-        const isNumeric = kindSelect.value === 'numeric';
-        numericFields.forEach(field => {
-            field.style.display = isNumeric ? 'block' : 'none';
-        });
+    function toggleNumericSection() {
+        // Show numeric settings only for 'numeric' kind
+        if (kindSelect.value === 'numeric') {
+            numericSection.style.display = 'block';
+        } else {
+            numericSection.style.display = 'none';
+        }
     }
 
-    kindSelect.addEventListener('change', toggleNumericFields);
-    toggleNumericFields(); // Initialize on page load
+    kindSelect.addEventListener('change', toggleNumericSection);
+    toggleNumericSection();
 });
 </script>
 {% endblock %}

@@ -1,130 +1,107 @@
 {% extends "base.html" %}
-{% block title %}Governance Bodies{% endblock %}
-{% block content %}
-<h2>Governance Bodies</h2>
-<div class="mb-3">
-    {% if current_user.can_manage_governance_bodies(session.organization_id) %}
-    <a href="{{ url_for('organization_admin.create_governance_body') }}" class="btn btn-primary">Create Governance Body</a>
-    {% endif %}
-    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
-</div>
 
-<div class="alert alert-info">
-    <strong>💡 Tip:</strong> Drag rows using the ⋮⋮ handle to reorder governance bodies. Default governance body cannot be deleted but can be renamed.
-</div>
+{% block title %}Governance Bodies - {{ session.organization_name }}{% endblock %}
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th style="width: 30px;"></th>
-            <th>Name</th>
-            <th>Abbreviation</th>
-            <th>Description</th>
-            <th>Color</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody id="sortable-governance-bodies">
-        {% for gb in governance_bodies %}
-        <tr data-id="{{ gb.id }}" style="cursor: move;">
-            <td class="drag-handle text-center" style="cursor: grab; font-size: 20px; color: #999;">⋮⋮</td>
-            <td>
-                {{ gb.name }}
-                {% if gb.is_default %}
-                    <span class="badge bg-secondary ms-1">Default</span>
-                {% endif %}
-            </td>
-            <td><span class="badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span></td>
-            <td>{{ gb.description or '-' }}</td>
-            <td>
-                <div style="display: inline-block; width: 30px; height: 20px; background-color: {{ gb.color }}; border: 1px solid #ccc; border-radius: 3px;" title="{{ gb.color }}"></div>
-                <small class="text-muted">{{ gb.color }}</small>
-            </td>
-            <td>
-                {% if gb.is_active %}
-                    <span class="badge bg-success">Active</span>
-                {% else %}
-                    <span class="badge bg-secondary">Inactive</span>
-                {% endif %}
-            </td>
-            <td>
-                {% if current_user.can_manage_governance_bodies(session.organization_id) %}
-                <a href="{{ url_for('organization_admin.edit_governance_body', gb_id=gb.id) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                {% if not gb.is_default %}
-                <form method="POST" action="{{ url_for('organization_admin.delete_governance_body', gb_id=gb.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete {{ gb.name }}?');">
-                    {{ delete_form.hidden_tag() }}
-                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                </form>
-                {% else %}
-                <button class="btn btn-sm btn-outline-secondary" disabled title="Cannot delete default governance body">Delete</button>
-                {% endif %}
-                {% else %}
-                <span class="text-muted small">View only</span>
-                {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-
-<!-- SortableJS from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tbody = document.getElementById('sortable-governance-bodies');
-
-    if (tbody) {
-        const sortable = Sortable.create(tbody, {
-            animation: 150,
-            handle: '.drag-handle',
-            ghostClass: 'sortable-ghost',
-            onEnd: function(evt) {
-                // Get new order
-                const rows = tbody.querySelectorAll('tr[data-id]');
-                const order = Array.from(rows).map(row => parseInt(row.dataset.id));
-
-                // Save to server
-                fetch('{{ url_for("organization_admin.reorder_governance_bodies") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ order: order })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show brief success indicator
-                        const msg = document.createElement('div');
-                        msg.className = 'alert alert-success position-fixed top-0 end-0 m-3';
-                        msg.style.zIndex = '9999';
-                        msg.textContent = '✓ Order saved';
-                        document.body.appendChild(msg);
-                        setTimeout(() => msg.remove(), 2000);
-                    } else {
-                        alert('Failed to save order: ' + (data.error || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to save order');
-                });
-            }
-        });
-    }
-});
-</script>
-
+{% block extra_css %}
 <style>
-.sortable-ghost {
-    opacity: 0.4;
-    background: #f8f9fa;
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--border-subtle);
 }
-.drag-handle:active {
-    cursor: grabbing;
+
+.page-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.gb-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all var(--transition-fast);
+}
+
+.gb-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+    transform: translateX(4px);
+}
+
+.gb-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
 }
 </style>
+{% endblock %}
 
+{% block content %}
+<div class="fade-in">
+    <div class="page-title">
+        <h2>
+            <i class="bi bi-bank"></i>
+            Governance Bodies
+        </h2>
+        <div class="d-flex gap-2">
+            {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+            <a href="{{ url_for('organization_admin.create_governance_body') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle-fill"></i> Create Governance Body
+            </a>
+            {% endif %}
+            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    {% if governance_bodies %}
+        {% for gb in governance_bodies %}
+        <div class="gb-card">
+            <div class="d-flex align-items-start gap-3">
+                <div class="gb-icon">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h5 class="mb-2">{{ gb.name }}</h5>
+                    {% if gb.description %}
+                    <p class="text-muted mb-0">{{ gb.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2">
+                    {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.edit_governance_body', gb_id=gb.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pencil-fill"></i> Edit
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-bank" style="font-size: 4rem; opacity: 0.3;"></i>
+            <h3 class="mt-3">No Governance Bodies</h3>
+            <p class="text-muted">Create committees, boards, or teams that oversee KPIs.</p>
+            {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+            <a href="{{ url_for('organization_admin.create_governance_body') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle-fill"></i> Create First Governance Body
+            </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
 {% endblock %}

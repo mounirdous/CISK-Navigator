@@ -222,6 +222,20 @@ def kpi_cell_detail(kpi_id, vt_id):
                 ('2', '▼▼ (Medium)'),
                 ('3', '▼▼▼ (High)')
             ]
+        elif value_type.kind == 'level':
+            form.qualitative_level.choices = [
+                ('', 'Select...'),
+                ('1', '● (Low)'),
+                ('2', '●● (Medium)'),
+                ('3', '●●● (High)')
+            ]
+        elif value_type.kind == 'sentiment':
+            form.qualitative_level.choices = [
+                ('', 'Select...'),
+                ('1', '☹️ (Negative)'),
+                ('2', '😐 (Neutral)'),
+                ('3', '😊 (Positive)')
+            ]
 
     # Check if KPI is archived
     if kpi.is_archived:

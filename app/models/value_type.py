@@ -68,7 +68,7 @@ class ValueType(db.Model):
 
     def is_qualitative(self):
         """Check if this is a qualitative value type"""
-        return self.kind in [self.KIND_RISK, self.KIND_POSITIVE_IMPACT, self.KIND_NEGATIVE_IMPACT]
+        return self.kind in [self.KIND_RISK, self.KIND_POSITIVE_IMPACT, self.KIND_NEGATIVE_IMPACT, self.KIND_LEVEL, self.KIND_SENTIMENT]
 
     def get_display_symbol(self, level):
         """Get display symbol for qualitative types"""

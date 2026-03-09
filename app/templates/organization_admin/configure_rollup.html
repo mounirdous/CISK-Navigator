@@ -1,124 +1,196 @@
 {% extends "base.html" %}
+
 {% block title %}Configure Rollup - {{ value_type.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+}
+
+.page-header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    backdrop-filter: blur(10px);
+    margin: 0 auto 1rem;
+}
+
+.rollup-card {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+
+.rollup-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+}
+
+.rollup-card-header {
+    padding: 1.25rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.rollup-card-header.level-1 {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    color: white;
+}
+
+.rollup-card-header.level-2 {
+    background: linear-gradient(135deg, #20c997 0%, #1aa179 100%);
+    color: white;
+}
+
+.rollup-card-header.level-3 {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #000;
+}
+
+.rollup-card-body {
+    padding: 1.5rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Configure Rollup: {{ value_type.name }}</h2>
-
-<div class="alert alert-info">
-    <strong>Roll-up Configuration</strong><br>
-    Control how <strong>{{ value_type.name }}</strong> values aggregate through the hierarchy:
-    <ul class="mb-0 mt-2">
-        <li><strong>System → Initiative</strong>: Aggregate KPI values to System level</li>
-        <li><strong>Initiative → Challenge</strong>: Aggregate System values to Initiative level</li>
-        <li><strong>Challenge → Space</strong>: Aggregate Initiative values to Challenge level</li>
-    </ul>
-</div>
-
-<form method="POST" class="mt-4">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
-    <div class="card mb-3">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">System → Initiative Roll-up</h5>
-        </div>
-        <div class="card-body">
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="rollup_enabled_system"
-                       name="rollup_enabled_system" {{ 'checked' if default_enabled else '' }}>
-                <label class="form-check-label" for="rollup_enabled_system">
-                    <strong>Enable roll-up from KPIs to System level</strong>
-                </label>
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-9">
+        <div class="page-header text-center">
+            <div class="page-header-icon">
+                <i class="bi bi-diagram-3"></i>
             </div>
-            <div class="mb-3">
-                <label for="formula_system" class="form-label">Aggregation Formula</label>
-                <select class="form-select" id="formula_system" name="formula_system">
-                    <option value="default" selected>Use Default ({{ default_formula }})</option>
-                    <option value="sum">Sum</option>
-                    <option value="min">Minimum</option>
-                    <option value="max">Maximum</option>
-                    <option value="avg">Average</option>
-                </select>
-                <small class="form-text text-muted">
-                    How to aggregate multiple KPI values into one System value
-                </small>
-            </div>
+            <h2 class="mb-2">Configure Rollup</h2>
+            <p class="mb-0 opacity-75">{{ value_type.name }} aggregation rules</p>
         </div>
-    </div>
 
-    <div class="card mb-3">
-        <div class="card-header bg-secondary text-white">
-            <h5 class="mb-0">Initiative → Challenge Roll-up</h5>
+        <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+            <h6><i class="bi bi-info-circle-fill"></i> Roll-up Configuration</h6>
+            <p class="mb-2">Control how <strong>{{ value_type.name }}</strong> values aggregate through the hierarchy:</p>
+            <ul class="mb-0">
+                <li><strong>System → Initiative</strong>: Aggregate KPI values to System level</li>
+                <li><strong>Initiative → Challenge</strong>: Aggregate System values to Initiative level</li>
+                <li><strong>Challenge → Space</strong>: Aggregate Initiative values to Challenge level</li>
+            </ul>
         </div>
-        <div class="card-body">
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="rollup_enabled_initiative"
-                       name="rollup_enabled_initiative" {{ 'checked' if default_enabled else '' }}>
-                <label class="form-check-label" for="rollup_enabled_initiative">
-                    <strong>Enable roll-up from Systems to Initiative level</strong>
-                </label>
-            </div>
-            <div class="mb-3">
-                <label for="formula_initiative" class="form-label">Aggregation Formula</label>
-                <select class="form-select" id="formula_initiative" name="formula_initiative">
-                    <option value="default" selected>Use Default ({{ default_formula }})</option>
-                    <option value="sum">Sum</option>
-                    <option value="min">Minimum</option>
-                    <option value="max">Maximum</option>
-                    <option value="avg">Average</option>
-                </select>
-                <small class="form-text text-muted">
-                    How to aggregate multiple System values into one Initiative value
-                </small>
-            </div>
-        </div>
-    </div>
 
-    <div class="card mb-3">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Challenge → Space Roll-up</h5>
-        </div>
-        <div class="card-body">
-            <div class="form-check mb-3">
-                <input class="form-check-input" type="checkbox" id="rollup_enabled_challenge"
-                       name="rollup_enabled_challenge" {{ 'checked' if default_enabled else '' }}>
-                <label class="form-check-label" for="rollup_enabled_challenge">
-                    <strong>Enable roll-up from Initiatives to Challenge level</strong>
-                </label>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <!-- System to Initiative -->
+            <div class="rollup-card">
+                <div class="rollup-card-header level-1">
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                    Level 1: System → Initiative Roll-up
+                </div>
+                <div class="rollup-card-body">
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" role="switch" id="rollup_enabled_system"
+                               name="rollup_enabled_system" {{ 'checked' if default_enabled else '' }}>
+                        <label class="form-check-label fw-semibold" for="rollup_enabled_system">
+                            Enable roll-up from KPIs to System level
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="formula_system" class="form-label fw-semibold">Aggregation Formula</label>
+                        <select class="form-select" id="formula_system" name="formula_system">
+                            <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            <option value="sum">Sum</option>
+                            <option value="min">Minimum</option>
+                            <option value="max">Maximum</option>
+                            <option value="avg">Average</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> How to aggregate multiple KPI values into one System value
+                        </small>
+                    </div>
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="formula_challenge" class="form-label">Aggregation Formula</label>
-                <select class="form-select" id="formula_challenge" name="formula_challenge">
-                    <option value="default" selected>Use Default ({{ default_formula }})</option>
-                    <option value="sum">Sum</option>
-                    <option value="min">Minimum</option>
-                    <option value="max">Maximum</option>
-                    <option value="avg">Average</option>
-                </select>
-                <small class="form-text text-muted">
-                    How to aggregate multiple Initiative values into one Challenge value
-                </small>
+
+            <!-- Initiative to Challenge -->
+            <div class="rollup-card">
+                <div class="rollup-card-header level-2">
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                    Level 2: Initiative → Challenge Roll-up
+                </div>
+                <div class="rollup-card-body">
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" role="switch" id="rollup_enabled_initiative"
+                               name="rollup_enabled_initiative" {{ 'checked' if default_enabled else '' }}>
+                        <label class="form-check-label fw-semibold" for="rollup_enabled_initiative">
+                            Enable roll-up from Systems to Initiative level
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="formula_initiative" class="form-label fw-semibold">Aggregation Formula</label>
+                        <select class="form-select" id="formula_initiative" name="formula_initiative">
+                            <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            <option value="sum">Sum</option>
+                            <option value="min">Minimum</option>
+                            <option value="max">Maximum</option>
+                            <option value="avg">Average</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> How to aggregate multiple System values into one Initiative value
+                        </small>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <div class="alert alert-warning">
-        <strong>Note:</strong> These settings apply organization-wide for this value type.
-        Future updates will allow per-context configuration (e.g., different rules for different initiatives).
-    </div>
+            <!-- Challenge to Space -->
+            <div class="rollup-card">
+                <div class="rollup-card-header level-3">
+                    <i class="bi bi-arrow-up-circle-fill"></i>
+                    Level 3: Challenge → Space Roll-up
+                </div>
+                <div class="rollup-card-body">
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" role="switch" id="rollup_enabled_challenge"
+                               name="rollup_enabled_challenge" {{ 'checked' if default_enabled else '' }}>
+                        <label class="form-check-label fw-semibold" for="rollup_enabled_challenge">
+                            Enable roll-up from Initiatives to Challenge level
+                        </label>
+                    </div>
+                    <div class="mb-3">
+                        <label for="formula_challenge" class="form-label fw-semibold">Aggregation Formula</label>
+                        <select class="form-select" id="formula_challenge" name="formula_challenge">
+                            <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            <option value="sum">Sum</option>
+                            <option value="min">Minimum</option>
+                            <option value="max">Maximum</option>
+                            <option value="avg">Average</option>
+                        </select>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> How to aggregate multiple Initiative values into one Challenge value
+                        </small>
+                    </div>
+                </div>
+            </div>
 
-    <button type="submit" class="btn btn-primary">Save Configuration</button>
-    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-secondary">Cancel</a>
-</form>
-
-<div class="card mt-4">
-    <div class="card-header">
-        <h5 class="mb-0">Current Default Formula</h5>
-    </div>
-    <div class="card-body">
-        <p><strong>{{ value_type.name }}</strong> uses <span class="badge bg-info">{{ default_formula }}</span> by default.</p>
-        <p class="mb-0">
-            This is set when creating the value type. You can override it per level above,
-            or keep using "default" to apply this formula everywhere.
-        </p>
+            <div class="d-flex gap-2 pt-3 border-top">
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="bi bi-check-circle-fill"></i> Save Configuration
+                </button>
+                <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

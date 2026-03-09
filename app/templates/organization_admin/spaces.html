@@ -1,75 +1,69 @@
 {% extends "base.html" %}
-{% block title %}Spaces{% endblock %}
+
+{% block title %}Organization Structure - {{ session.organization_name }}{% endblock %}
 
 {% block extra_css %}
 <style>
-/* Clean table styling */
-.table {
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--border-subtle);
+}
+
+.page-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+/* Clean modern table styling */
+.structure-table {
     border-collapse: collapse;
-    background-color: #fff;
+    background-color: var(--bg-primary);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
-.dark-mode .table {
-    background-color: #1a1a1a;
-}
-
-.table thead th {
-    border-bottom: 2px solid #dee2e6;
-    padding: 0.75rem;
+.structure-table thead th {
+    border-bottom: 2px solid var(--border-color);
+    padding: 1rem 0.75rem;
     font-weight: 600;
-    background-color: #f8f9fa;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
-.dark-mode .table thead th {
-    border-bottom-color: #555;
-    background-color: #2a2a2a;
-    color: #ffffff !important;
+.structure-table tbody tr {
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-primary);
+    transition: background-color 0.2s;
 }
 
-.table tbody tr {
-    border-bottom: 1px solid #dee2e6;
-    background-color: #fff;
+.structure-table tbody tr:hover {
+    background-color: var(--hover-bg);
 }
 
-.dark-mode .table tbody tr {
-    border-bottom-color: #333 !important;
-    background-color: #1a1a1a !important;
-}
-
-.dark-mode .table tbody tr:hover {
-    background-color: #242424 !important;
-}
-
-.dark-mode .table tbody tr > td {
-    background-color: #1a1a1a !important;
-}
-
-.table tbody td {
+.structure-table tbody td {
     padding: 0.75rem;
-    color: #212529;
+    color: var(--text-primary);
 }
 
-.dark-mode .table tbody td {
-    color: #ffffff !important;
-}
-
-.dark-mode .table tbody td strong {
-    color: #ffffff !important;
-}
-
-/* Icon buttons */
 .icon-btn {
     padding: 0.25rem 0.5rem;
     border: none;
     background: transparent;
     cursor: pointer;
     font-size: 1rem;
-    color: #6c757d;
+    color: var(--text-secondary);
     transition: color 0.2s;
 }
 
 .icon-btn:hover {
-    color: #0d6efd;
+    color: var(--accent-primary);
 }
 
 .icon-btn.text-danger:hover {
@@ -79,129 +73,146 @@
 .icon-btn.text-success:hover {
     color: #198754 !important;
 }
-
-.dark-mode .icon-btn {
-    color: #adb5bd;
-}
 </style>
 {% endblock %}
 
 {% block content %}
-<h2>Spaces</h2>
-<div class="mb-3">
-    {% if current_user.can_manage_spaces(session.organization_id) %}
-    <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-primary">Create Space</a>
-    {% endif %}
-    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">Back</a>
-</div>
-<table class="table">
-    <thead>
-        <tr><th>Name</th><th>Description</th><th>Order</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-        {% for space in spaces %}
-        <tr>
-            <td><strong><span style="margin-right: 0.5rem;">🏢</span>{{ space.name }}</strong></td>
-            <td>{{ space.description[:80] if space.description else '-' }}</td>
-            <td>{{ space.display_order }}</td>
-            <td>
-                {% if current_user.can_manage_spaces(session.organization_id) %}
-                <a href="{{ url_for('organization_admin.edit_space', space_id=space.id) }}" class="icon-btn" title="Edit">
-                    <i class="bi bi-pencil"></i>
-                </a>
-                <form method="POST" action="{{ url_for('organization_admin.delete_space', space_id=space.id) }}" style="display:inline;">
-                    <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete space {{ space.name }}?')" title="Delete">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </form>
-                {% endif %}
-                {% if current_user.can_manage_challenges(session.organization_id) %}
-                <a href="{{ url_for('organization_admin.create_challenge', space_id=space.id) }}" class="icon-btn text-success" title="Add Challenge">
-                    <i class="bi bi-plus-circle"></i> Challenge
-                </a>
-                {% endif %}
-            </td>
-        </tr>
-        {% if space.challenges %}
-            {% for challenge in space.challenges %}
+<div class="fade-in">
+    <div class="page-title">
+        <h2>
+            <i class="bi bi-diagram-3-fill"></i>
+            Organization Structure
+        </h2>
+        <div class="d-flex gap-2">
+            {% if current_user.can_manage_spaces(session.organization_id) %}
+            <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle-fill"></i> Create Space
+            </a>
+            {% endif %}
+            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <i class="bi bi-lightbulb-fill"></i>
+        <strong>Hierarchical Structure:</strong> Spaces → Challenges → Initiatives → Systems → KPIs. Use the + buttons to add items at each level.
+    </div>
+
+    <table class="structure-table table">
+        <thead>
             <tr>
-                <td style="padding-left: 2rem;"><span style="margin-right: 0.5rem;">🎯</span>{{ challenge.name }}</td>
-                <td>{{ challenge.description[:80] if challenge.description else '-' }}</td>
-                <td>{{ challenge.display_order }}</td>
+                <th>Name</th>
+                <th>Description</th>
+                <th style="width: 100px;">Order</th>
+                <th style="width: 250px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for space in spaces %}
+            <tr>
+                <td><strong><span style="margin-right: 0.5rem;">🏢</span>{{ space.name }}</strong></td>
+                <td>{{ space.description[:80] if space.description else '-' }}</td>
+                <td>{{ space.display_order }}</td>
                 <td>
-                    {% if current_user.can_manage_challenges(session.organization_id) %}
-                    <a href="{{ url_for('organization_admin.edit_challenge', challenge_id=challenge.id) }}" class="icon-btn" title="Edit">
+                    {% if current_user.can_manage_spaces(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.edit_space', space_id=space.id) }}" class="icon-btn" title="Edit">
                         <i class="bi bi-pencil"></i>
                     </a>
-                    <form method="POST" action="{{ url_for('organization_admin.delete_challenge', challenge_id=challenge.id) }}" style="display:inline;">
-                        {{ csrf_form.hidden_tag() }}
-                        <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete challenge {{ challenge.name }}? This will delete all linked data.')" title="Delete">
+                    <form method="POST" action="{{ url_for('organization_admin.delete_space', space_id=space.id) }}" style="display:inline;">
+                        <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete space {{ space.name }}?')" title="Delete">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>
                     {% endif %}
-                    {% if current_user.can_manage_initiatives(session.organization_id) %}
-                    <a href="{{ url_for('organization_admin.create_initiative', challenge_id=challenge.id) }}" class="icon-btn text-success" title="Add Initiative">
-                        <i class="bi bi-plus-circle"></i> Initiative
+                    {% if current_user.can_manage_challenges(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.create_challenge', space_id=space.id) }}" class="icon-btn text-success" title="Add Challenge">
+                        <i class="bi bi-plus-circle"></i> Challenge
                     </a>
                     {% endif %}
                 </td>
             </tr>
-            {% for link in challenge.initiative_links %}
-                {% set initiative = link.initiative %}
+            {% if space.challenges %}
+                {% for challenge in space.challenges %}
                 <tr>
-                    <td style="padding-left: 4rem;"><span style="margin-right: 0.5rem;">💡</span>{{ initiative.name }}</td>
-                    <td>{{ initiative.description[:80] if initiative.description else '-' }}</td>
-                    <td>-</td>
+                    <td style="padding-left: 2rem;"><span style="margin-right: 0.5rem;">🎯</span>{{ challenge.name }}</td>
+                    <td>{{ challenge.description[:80] if challenge.description else '-' }}</td>
+                    <td>{{ challenge.display_order }}</td>
                     <td>
-                        {% if current_user.can_manage_initiatives(session.organization_id) %}
-                        <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id) }}" class="icon-btn" title="Edit">
+                        {% if current_user.can_manage_challenges(session.organization_id) %}
+                        <a href="{{ url_for('organization_admin.edit_challenge', challenge_id=challenge.id) }}" class="icon-btn" title="Edit">
                             <i class="bi bi-pencil"></i>
                         </a>
-                        <form method="POST" action="{{ url_for('organization_admin.delete_initiative', initiative_id=initiative.id) }}" style="display:inline;">
+                        <form method="POST" action="{{ url_for('organization_admin.delete_challenge', challenge_id=challenge.id) }}" style="display:inline;">
                             {{ csrf_form.hidden_tag() }}
-                            <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete initiative {{ initiative.name }}? This will delete all linked data.')" title="Delete">
+                            <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete challenge {{ challenge.name }}? This will delete all linked data.')" title="Delete">
                                 <i class="bi bi-trash"></i>
                             </button>
                         </form>
                         {% endif %}
-                        {% if current_user.can_manage_systems(session.organization_id) %}
-                        <a href="{{ url_for('organization_admin.create_system', initiative_id=initiative.id) }}" class="icon-btn text-success" title="Add System">
-                            <i class="bi bi-plus-circle"></i> System
+                        {% if current_user.can_manage_initiatives(session.organization_id) %}
+                        <a href="{{ url_for('organization_admin.create_initiative', challenge_id=challenge.id) }}" class="icon-btn text-success" title="Add Initiative">
+                            <i class="bi bi-plus-circle"></i> Initiative
                         </a>
                         {% endif %}
                     </td>
                 </tr>
-                {% for sys_link in initiative.system_links %}
-                    {% set system = sys_link.system %}
+                {% for link in challenge.initiative_links %}
+                    {% set initiative = link.initiative %}
                     <tr>
-                        <td style="padding-left: 6rem;"><span style="margin-right: 0.5rem;">⚙️</span>{{ system.name }}</td>
-                        <td>{{ system.description[:80] if system.description else '-' }}</td>
+                        <td style="padding-left: 4rem;"><span style="margin-right: 0.5rem;">💡</span>{{ initiative.name }}</td>
+                        <td>{{ initiative.description[:80] if initiative.description else '-' }}</td>
                         <td>-</td>
                         <td>
-                            {% if current_user.can_manage_systems(session.organization_id) %}
-                            <a href="{{ url_for('organization_admin.edit_system', system_id=system.id) }}" class="icon-btn" title="Edit">
+                            {% if current_user.can_manage_initiatives(session.organization_id) %}
+                            <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id) }}" class="icon-btn" title="Edit">
                                 <i class="bi bi-pencil"></i>
                             </a>
-                            <form method="POST" action="{{ url_for('organization_admin.delete_system', system_id=system.id) }}" style="display:inline;">
+                            <form method="POST" action="{{ url_for('organization_admin.delete_initiative', initiative_id=initiative.id) }}" style="display:inline;">
                                 {{ csrf_form.hidden_tag() }}
-                                <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete system {{ system.name }}?')" title="Delete">
+                                <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete initiative {{ initiative.name }}? This will delete all linked data.')" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                             {% endif %}
-                            {% if current_user.can_manage_kpis(session.organization_id) %}
-                            <a href="{{ url_for('organization_admin.create_kpi', link_id=sys_link.id) }}" class="icon-btn text-success" title="Add KPI">
-                                <i class="bi bi-plus-circle"></i> KPI
+                            {% if current_user.can_manage_systems(session.organization_id) %}
+                            <a href="{{ url_for('organization_admin.create_system', initiative_id=initiative.id) }}" class="icon-btn text-success" title="Add System">
+                                <i class="bi bi-plus-circle"></i> System
                             </a>
                             {% endif %}
                         </td>
                     </tr>
-                    {% for kpi in sys_link.kpis %}
+                    {% for sys_link in initiative.system_links %}
+                        {% set system = sys_link.system %}
+                        <tr>
+                            <td style="padding-left: 6rem;"><span style="margin-right: 0.5rem;">⚙️</span>{{ system.name }}</td>
+                            <td>{{ system.description[:80] if system.description else '-' }}</td>
+                            <td>-</td>
+                            <td>
+                                {% if current_user.can_manage_systems(session.organization_id) %}
+                                <a href="{{ url_for('organization_admin.edit_system', system_id=system.id) }}" class="icon-btn" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form method="POST" action="{{ url_for('organization_admin.delete_system', system_id=system.id) }}" style="display:inline;">
+                                    {{ csrf_form.hidden_tag() }}
+                                    <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete system {{ system.name }}?')" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if current_user.can_manage_kpis(session.organization_id) %}
+                                <a href="{{ url_for('organization_admin.create_kpi', link_id=sys_link.id) }}" class="icon-btn text-success" title="Add KPI">
+                                    <i class="bi bi-plus-circle"></i> KPI
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% for kpi in sys_link.kpis %}
                         <tr>
                             <td style="padding-left: 8rem;"><span style="margin-right: 0.5rem;">📊</span>{{ kpi.name }}</td>
                             <td>{{ kpi.description[:80] if kpi.description else '-' }}</td>
-                            <td>{{ kpi.display_order }}</td>
+                            <td>-</td>
                             <td>
                                 {% if current_user.can_manage_kpis(session.organization_id) %}
                                 <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="icon-btn" title="Edit">
@@ -209,19 +220,33 @@
                                 </a>
                                 <form method="POST" action="{{ url_for('organization_admin.delete_kpi', kpi_id=kpi.id) }}" style="display:inline;">
                                     {{ csrf_form.hidden_tag() }}
-                                    <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete KPI {{ kpi.name }}? This will delete all contributions, snapshots, and comments.')" title="Delete">
+                                    <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete KPI {{ kpi.name }}?')" title="Delete">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
                                 {% endif %}
                             </td>
                         </tr>
+                        {% endfor %}
                     {% endfor %}
                 {% endfor %}
+                {% endfor %}
+            {% endif %}
             {% endfor %}
-            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if not spaces %}
+    <div class="text-center py-5">
+        <i class="bi bi-diagram-3" style="font-size: 4rem; opacity: 0.3;"></i>
+        <h3 class="mt-3">No Spaces Yet</h3>
+        <p class="text-muted">Create your first space to begin building your organization structure.</p>
+        {% if current_user.can_manage_spaces(session.organization_id) %}
+        <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-primary mt-3">
+            <i class="bi bi-plus-circle-fill"></i> Create First Space
+        </a>
         {% endif %}
-        {% endfor %}
-    </tbody>
-</table>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

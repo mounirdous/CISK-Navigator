@@ -1,13 +1,91 @@
 {% extends "base.html" %}
-{% block title %}Create Challenge{% endblock %}
+
+{% block title %}Create Challenge - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-header {
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.form-header h2 {
+    margin: 0;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.form-header p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+}
+
+.form-card {
+    max-width: 700px;
+    margin: 0 auto;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<h2>Create Challenge in Space: {{ space.name }}</h2>
-<form method="POST">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">{{ form.name.label }}{{ form.name(class="form-control") }}</div>
-    <div class="mb-3">{{ form.description.label }}{{ form.description(class="form-control", rows=4) }}</div>
-    <div class="mb-3">{{ form.display_order.label }}{{ form.display_order(class="form-control") }}</div>
-    {{ form.submit(class="btn btn-primary") }}
-    <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-secondary">Cancel</a>
-</form>
+<div class="row justify-content-center fade-in">
+    <div class="col-lg-8">
+        <div class="card hover-lift form-card">
+            <div class="form-header">
+                <h2>
+                    <i class="bi bi-flag-fill"></i>
+                    Create Challenge
+                </h2>
+                <p>Add a new challenge to {{ space.name }}</p>
+            </div>
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-flag"></i></span>
+                            {{ form.name(class="form-control", placeholder="Enter challenge name") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                            {{ form.description(class="form-control", rows=4, placeholder="Describe this challenge...") }}
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        {{ form.display_order.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-sort-numeric-down"></i></span>
+                            {{ form.display_order(class="form-control") }}
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Lower numbers appear first
+                        </small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
