@@ -33,6 +33,13 @@ class KPISnapshot(db.Model):
     created_by_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     snapshot_label = db.Column(db.String(100))  # Optional: "Q1 2026", "Baseline", "End of Season 1"
 
+    # Batch tracking - groups all KPIs/rollups created in same snapshot operation
+    snapshot_batch_id = db.Column(db.String(36), nullable=False, index=True)
+
+    # Privacy and ownership
+    is_public = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    owner_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+
     # Snapshot data (denormalized for historical preservation)
     consensus_status = db.Column(db.String(50), nullable=False)  # 'strong_consensus', 'weak_consensus', etc.
     consensus_value = db.Column(db.Numeric(precision=20, scale=6))  # Numeric value
@@ -48,7 +55,8 @@ class KPISnapshot(db.Model):
 
     # Relationships
     config = db.relationship('KPIValueTypeConfig', back_populates='snapshots')
-    created_by = db.relationship('User', backref='created_snapshots')
+    created_by = db.relationship('User', foreign_keys=[created_by_user_id], backref='created_snapshots')
+    owner = db.relationship('User', foreign_keys=[owner_user_id], backref='owned_snapshots')
 
     # Indexes for efficient querying
     __table_args__ = (
@@ -78,6 +86,9 @@ class KPISnapshot(db.Model):
             'is_rollup_eligible': self.is_rollup_eligible,
             'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'snapshot_batch_id': self.snapshot_batch_id,
+            'is_public': self.is_public,
+            'owner_user_id': self.owner_user_id,
         }
 
 
@@ -96,6 +107,13 @@ class RollupSnapshot(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     snapshot_label = db.Column(db.String(100))
 
+    # Batch tracking - groups all KPIs/rollups created in same snapshot operation
+    snapshot_batch_id = db.Column(db.String(36), nullable=False, index=True)
+
+    # Privacy and ownership
+    is_public = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    owner_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
+
     # Entity being tracked (polymorphic)
     entity_type = db.Column(db.String(50), nullable=False)  # 'space', 'challenge', 'initiative', 'system'
     entity_id = db.Column(db.Integer, nullable=False)
@@ -109,6 +127,7 @@ class RollupSnapshot(db.Model):
 
     # Relationships
     value_type = db.relationship('ValueType', backref='rollup_snapshots')
+    owner = db.relationship('User', foreign_keys=[owner_user_id], backref='owned_rollup_snapshots')
 
     # Indexes
     __table_args__ = (
@@ -139,4 +158,7 @@ class RollupSnapshot(db.Model):
             'is_complete': self.is_complete,
             'child_count': self.child_count,
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'snapshot_batch_id': self.snapshot_batch_id,
+            'is_public': self.is_public,
+            'owner_user_id': self.owner_user_id,
         }

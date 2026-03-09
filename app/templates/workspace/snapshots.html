@@ -66,30 +66,84 @@
         </div>
     </div>
 
+    <!-- Filter Controls -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="mb-2"><i class="bi bi-funnel"></i> Filter Snapshots</h6>
+            <div class="d-flex gap-3">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterPublic"
+                           {% if show_public %}checked{% endif %} onchange="applyFilters()">
+                    <label class="form-check-label" for="filterPublic">
+                        <i class="bi bi-globe"></i> Public
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="filterPrivate"
+                           {% if show_private %}checked{% endif %} onchange="applyFilters()">
+                    <label class="form-check-label" for="filterPrivate">
+                        <i class="bi bi-lock-fill"></i> Private (My Snapshots)
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {% if snapshots %}
         <div class="row">
             <div class="col-12">
                 {% for snapshot in snapshots %}
                 <div class="snapshot-card">
                     <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <div class="snapshot-date">
-                                <i class="bi bi-calendar-event"></i>
-                                {{ snapshot.formatted_date }}
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="snapshot-date">
+                                    <i class="bi bi-calendar-event"></i>
+                                    {{ snapshot.formatted_date }}
+                                    <span class="text-muted ms-2">
+                                        <i class="bi bi-clock"></i> {{ snapshot.formatted_time }}
+                                    </span>
+                                </div>
+                                {% if snapshot.is_public %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-globe"></i> Public
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-lock-fill"></i> Private
+                                </span>
+                                {% endif %}
                             </div>
-                            {% if snapshot.label %}
-                            <span class="badge bg-info mt-2">{{ snapshot.label }}</span>
-                            {% endif %}
+                            <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
+                                {% if snapshot.label %}
+                                <span class="badge bg-info">{{ snapshot.label }}</span>
+                                {% endif %}
+                                <small class="text-muted">
+                                    <i class="bi bi-bar-chart"></i> {{ snapshot.kpi_count }} KPI value{{ 's' if snapshot.kpi_count != 1 else '' }}
+                                </small>
+                                {% if snapshot.owner_name %}
+                                <small class="text-muted">
+                                    <i class="bi bi-person"></i> {{ snapshot.owner_name }}
+                                </small>
+                                {% endif %}
+                            </div>
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="{{ url_for('workspace.view_snapshot', snapshot_date=snapshot.date) }}"
+                            <a href="{{ url_for('workspace.view_snapshot', batch_id=snapshot.batch_id) }}"
                                class="btn btn-outline-primary">
                                 <i class="bi bi-eye-fill"></i> View
                             </a>
-                            <a href="{{ url_for('workspace.compare_snapshots', date1=snapshot.date, date2='current') }}"
-                               class="btn btn-outline-info">
-                                <i class="bi bi-bar-chart-fill"></i> Compare to Current
-                            </a>
+                            <button class="btn btn-outline-info" onclick="openCompareModal('{{ snapshot.batch_id }}', '{{ snapshot.label }}', '{{ snapshot.formatted_date }} {{ snapshot.formatted_time }}')">
+                                <i class="bi bi-bar-chart-fill"></i> Compare
+                            </button>
+                            {% if snapshot.is_owner %}
+                            <button class="btn btn-outline-{% if snapshot.is_public %}secondary{% else %}success{% endif %}"
+                                    onclick="togglePrivacy('{{ snapshot.batch_id }}', {{ snapshot.is_public|lower }})"
+                                    id="privacy-btn-{{ snapshot.batch_id }}">
+                                <i class="bi bi-{% if snapshot.is_public %}lock-fill{% else %}globe{% endif %}" id="privacy-icon-{{ snapshot.batch_id }}"></i>
+                                <span id="privacy-text-{{ snapshot.batch_id }}">{% if snapshot.is_public %}Make Private{% else %}Make Public{% endif %}</span>
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -141,10 +195,23 @@
 
                     <div class="mb-3">
                         <label for="label" class="form-label fw-semibold">Label (Optional)</label>
-                        <input type="text" class="form-control" id="label" name="label" 
+                        <input type="text" class="form-control" id="label" name="label"
                                placeholder="e.g., Q1 2026, Sprint 5, Baseline">
                         <small class="form-text text-muted">
                             <i class="bi bi-info-circle"></i> Descriptive label to identify this snapshot
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Privacy</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_public" name="is_public" value="true">
+                            <label class="form-check-label" for="is_public">
+                                <i class="bi bi-globe"></i> <strong>Public</strong> - Share with all users in this organization
+                            </label>
+                        </div>
+                        <small class="form-text text-muted d-block mt-1">
+                            <i class="bi bi-info-circle"></i> If unchecked, snapshot will be private (only visible to you)
                         </small>
                     </div>
                 </div>
@@ -160,4 +227,152 @@
         </div>
     </div>
 </div>
+
+<!-- Compare Snapshots Modal -->
+<div class="modal fade" id="compareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-bar-chart-fill"></i> Compare Snapshots</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <i class="bi bi-info-circle"></i> <strong>Snapshot 1:</strong> <span id="snapshot1Info"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Compare to:</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="compareTarget" id="compareCurrent" value="current" checked>
+                        <label class="form-check-label" for="compareCurrent">
+                            <strong>Current (Live Data)</strong>
+                            <br><small class="text-muted">Compare to current consensus values</small>
+                        </label>
+                    </div>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="radio" name="compareTarget" id="compareSnapshot" value="snapshot">
+                        <label class="form-check-label" for="compareSnapshot">
+                            <strong>Another Snapshot</strong>
+                            <br><small class="text-muted">Compare to a specific historical snapshot</small>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="snapshot2Selector" style="display: none;">
+                    <label for="snapshot2Select" class="form-label fw-semibold">Select Snapshot 2:</label>
+                    <select class="form-select" id="snapshot2Select">
+                        <option value="">-- Select a snapshot --</option>
+                        {% for snap in snapshots %}
+                        <option value="{{ snap.batch_id }}" data-batch-id="{{ snap.batch_id }}">
+                            {{ snap.formatted_date }} {{ snap.formatted_time }}{% if snap.label %} - {{ snap.label }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="submitComparison()">
+                    <i class="bi bi-bar-chart-fill"></i> Compare
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let selectedSnapshot1 = null;
+
+function openCompareModal(batchId, label, displayText) {
+    selectedSnapshot1 = batchId;
+    document.getElementById('snapshot1Info').textContent = `${displayText}${label ? ' - ' + label : ''}`;
+
+    // Remove the selected snapshot from snapshot2 selector
+    const select = document.getElementById('snapshot2Select');
+    Array.from(select.options).forEach(option => {
+        if (option.value === batchId) {
+            option.disabled = true;
+            option.style.opacity = '0.5';
+        } else {
+            option.disabled = false;
+            option.style.opacity = '1';
+        }
+    });
+
+    const modal = new bootstrap.Modal(document.getElementById('compareModal'));
+    modal.show();
+}
+
+// Show/hide snapshot selector based on radio selection
+document.querySelectorAll('input[name="compareTarget"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.getElementById('snapshot2Selector').style.display =
+            this.value === 'snapshot' ? 'block' : 'none';
+    });
+});
+
+function submitComparison() {
+    const compareType = document.querySelector('input[name="compareTarget"]:checked').value;
+    let batchId2;
+
+    if (compareType === 'current') {
+        batchId2 = 'current';
+    } else {
+        batchId2 = document.getElementById('snapshot2Select').value;
+        if (!batchId2) {
+            alert('Please select a snapshot to compare');
+            return;
+        }
+    }
+
+    window.location.href = `{{ url_for('workspace.compare_snapshots') }}?batch_id1=${selectedSnapshot1}&batch_id2=${batchId2}`;
+}
+
+function applyFilters() {
+    const showPublic = document.getElementById('filterPublic').checked ? '1' : '0';
+    const showPrivate = document.getElementById('filterPrivate').checked ? '1' : '0';
+    window.location.href = `{{ url_for('workspace.list_snapshots') }}?show_public=${showPublic}&show_private=${showPrivate}`;
+}
+
+async function togglePrivacy(batchId, isCurrentlyPublic) {
+    console.log('Toggling privacy for batch:', batchId, 'Current status:', isCurrentlyPublic);
+    const btn = document.getElementById(`privacy-btn-${batchId}`);
+    const icon = document.getElementById(`privacy-icon-${batchId}`);
+    const text = document.getElementById(`privacy-text-${batchId}`);
+
+    // Disable button during request
+    btn.disabled = true;
+
+    try {
+        const url = `{{ url_for('workspace.toggle_snapshot_privacy', batch_id='BATCH_ID') }}`.replace('BATCH_ID', batchId);
+        console.log('Calling API:', url);
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const data = await response.json();
+        console.log('API response:', data);
+
+        if (data.success) {
+            console.log('Privacy toggled successfully, new status:', data.is_public);
+            // Reload page to update all badges and buttons
+            window.location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update privacy'));
+            btn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error updating privacy:', error);
+        alert('Error updating privacy: ' + error.message);
+        btn.disabled = false;
+    }
+}
+</script>
 {% endblock %}

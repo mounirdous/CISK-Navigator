@@ -79,6 +79,9 @@
                 </div>
                 <div class="card-body">
                     <h4>{{ date1.strftime('%Y-%m-%d') }}</h4>
+                    <p class="text-muted mb-2">
+                        <i class="bi bi-clock"></i> {{ datetime1.strftime('%H:%M:%S') }}
+                    </p>
                     {% if label1 %}
                         <span class="badge bg-info">{{ label1 }}</span>
                     {% endif %}
@@ -93,6 +96,9 @@
                 <div class="card-body">
                     {% if date2 %}
                         <h4>{{ date2.strftime('%Y-%m-%d') }}</h4>
+                        <p class="text-muted mb-2">
+                            <i class="bi bi-clock"></i> {{ datetime2.strftime('%H:%M:%S') }}
+                        </p>
                         {% if label2 %}
                             <span class="badge bg-info">{{ label2 }}</span>
                         {% endif %}
@@ -137,14 +143,50 @@
                             </td>
                             <td class="text-center">
                                 {% if comp.value1 is not none %}
-                                    <strong>{{ comp.value1 }}</strong>
+                                    {% if comp.value_type.kind == 'numeric' %}
+                                        {% if comp.config.display_decimals is not none %}
+                                            <strong>{{ ('{:.' + comp.config.display_decimals|string + 'f}').format(comp.value1|float) }}</strong>
+                                        {% else %}
+                                            <strong>{{ ('{:.' + comp.value_type.decimal_places|string + 'f}').format(comp.value1|float) }}</strong>
+                                        {% endif %}
+                                    {% elif comp.value_type.kind == 'risk' %}
+                                        {% if comp.value1 == 1 %}<strong>!</strong>{% elif comp.value1 == 2 %}<strong>!!</strong>{% elif comp.value1 == 3 %}<strong>!!!</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'positive_impact' %}
+                                        {% if comp.value1 == 1 %}<strong>★</strong>{% elif comp.value1 == 2 %}<strong>★★</strong>{% elif comp.value1 == 3 %}<strong>★★★</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'negative_impact' %}
+                                        {% if comp.value1 == 1 %}<strong>▼</strong>{% elif comp.value1 == 2 %}<strong>▼▼</strong>{% elif comp.value1 == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'level' %}
+                                        {% if comp.value1 == 1 %}<strong>●</strong>{% elif comp.value1 == 2 %}<strong>●●</strong>{% elif comp.value1 == 3 %}<strong>●●●</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'sentiment' %}
+                                        {% if comp.value1 == 1 %}<strong>☹️</strong>{% elif comp.value1 == 2 %}<strong>😐</strong>{% elif comp.value1 == 3 %}<strong>😊</strong>{% endif %}
+                                    {% else %}
+                                        <strong>{{ comp.value1 }}</strong>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td class="text-center">
                                 {% if comp.value2 is not none %}
-                                    <strong>{{ comp.value2 }}</strong>
+                                    {% if comp.value_type.kind == 'numeric' %}
+                                        {% if comp.config.display_decimals is not none %}
+                                            <strong>{{ ('{:.' + comp.config.display_decimals|string + 'f}').format(comp.value2|float) }}</strong>
+                                        {% else %}
+                                            <strong>{{ ('{:.' + comp.value_type.decimal_places|string + 'f}').format(comp.value2|float) }}</strong>
+                                        {% endif %}
+                                    {% elif comp.value_type.kind == 'risk' %}
+                                        {% if comp.value2 == 1 %}<strong>!</strong>{% elif comp.value2 == 2 %}<strong>!!</strong>{% elif comp.value2 == 3 %}<strong>!!!</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'positive_impact' %}
+                                        {% if comp.value2 == 1 %}<strong>★</strong>{% elif comp.value2 == 2 %}<strong>★★</strong>{% elif comp.value2 == 3 %}<strong>★★★</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'negative_impact' %}
+                                        {% if comp.value2 == 1 %}<strong>▼</strong>{% elif comp.value2 == 2 %}<strong>▼▼</strong>{% elif comp.value2 == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'level' %}
+                                        {% if comp.value2 == 1 %}<strong>●</strong>{% elif comp.value2 == 2 %}<strong>●●</strong>{% elif comp.value2 == 3 %}<strong>●●●</strong>{% endif %}
+                                    {% elif comp.value_type.kind == 'sentiment' %}
+                                        {% if comp.value2 == 1 %}<strong>☹️</strong>{% elif comp.value2 == 2 %}<strong>😐</strong>{% elif comp.value2 == 3 %}<strong>😊</strong>{% endif %}
+                                    {% else %}
+                                        <strong>{{ comp.value2 }}</strong>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">-</span>
                                 {% endif %}

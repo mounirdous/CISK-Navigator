@@ -6,6 +6,7 @@ Creates and retrieves historical snapshots of KPI values for time-series trackin
 from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Dict, Optional
+import uuid
 from app.extensions import db
 from app.models import (
     KPISnapshot, RollupSnapshot, KPIValueTypeConfig, KPI, Space, Challenge,
@@ -21,7 +22,8 @@ class SnapshotService:
     @staticmethod
     def create_kpi_snapshot(config_id: int, snapshot_date: date = None,
                            label: str = None, notes: str = None,
-                           user_id: int = None, allow_duplicates: bool = False) -> Optional[KPISnapshot]:
+                           user_id: int = None, allow_duplicates: bool = False,
+                           batch_id: str = None, is_public: bool = False) -> Optional[KPISnapshot]:
         """
         Create a snapshot of the current KPI consensus value.
 
@@ -32,6 +34,8 @@ class SnapshotService:
             notes: Optional notes about this snapshot
             user_id: User creating the snapshot
             allow_duplicates: If True, always create new snapshot even if one exists for this date
+            batch_id: Batch ID to group snapshots (auto-generated if not provided)
+            is_public: Whether snapshot is public (default: False/private)
 
         Returns:
             KPISnapshot object or None if no consensus
@@ -50,6 +54,10 @@ class SnapshotService:
         if snapshot_date is None:
             snapshot_date = date.today()
 
+        # Generate batch ID if not provided
+        if batch_id is None:
+            batch_id = str(uuid.uuid4())
+
         # Skip deduplication check if allow_duplicates is True (for auto-snapshots)
         if not allow_duplicates:
             existing = KPISnapshot.query.filter_by(
@@ -67,6 +75,9 @@ class SnapshotService:
                 existing.snapshot_label = label or existing.snapshot_label
                 existing.notes = notes or existing.notes
                 existing.created_at = datetime.utcnow()
+                existing.snapshot_batch_id = batch_id
+                existing.is_public = is_public
+                existing.owner_user_id = user_id
                 db.session.commit()
                 return existing
 
@@ -81,7 +92,10 @@ class SnapshotService:
             contributor_count=consensus.get('count', 0),
             is_rollup_eligible=consensus.get('is_rollup_eligible', False),
             notes=notes,
-            created_by_user_id=user_id
+            created_by_user_id=user_id,
+            snapshot_batch_id=batch_id,
+            is_public=is_public,
+            owner_user_id=user_id
         )
 
         db.session.add(snapshot)
@@ -90,7 +104,8 @@ class SnapshotService:
 
     @staticmethod
     def create_organization_snapshot(organization_id: int, snapshot_date: date = None,
-                                    label: str = None, user_id: int = None) -> Dict:
+                                    label: str = None, user_id: int = None,
+                                    is_public: bool = False) -> Dict:
         """
         Create snapshots for all KPIs in an organization.
 
@@ -99,12 +114,16 @@ class SnapshotService:
             snapshot_date: Date of snapshot (default: today)
             label: Label for this snapshot
             user_id: User creating snapshots
+            is_public: Whether snapshot is public (default: False/private)
 
         Returns:
             Dict with counts of created snapshots
         """
         if snapshot_date is None:
             snapshot_date = date.today()
+
+        # Generate a single batch ID for all snapshots in this operation
+        batch_id = str(uuid.uuid4())
 
         # Get all KPI configs for this organization
         configs = db.session.query(KPIValueTypeConfig).join(
@@ -125,7 +144,9 @@ class SnapshotService:
                 config.id,
                 snapshot_date=snapshot_date,
                 label=label,
-                user_id=user_id
+                user_id=user_id,
+                batch_id=batch_id,
+                is_public=is_public
             )
             if snapshot:
                 created_count += 1
@@ -134,7 +155,8 @@ class SnapshotService:
 
         # Also create rollup snapshots
         rollup_count = SnapshotService.create_rollup_snapshots(
-            organization_id, snapshot_date, label
+            organization_id, snapshot_date, label, batch_id=batch_id,
+            user_id=user_id, is_public=is_public
         )
 
         return {
@@ -147,7 +169,8 @@ class SnapshotService:
 
     @staticmethod
     def create_rollup_snapshots(organization_id: int, snapshot_date: date,
-                               label: str = None) -> int:
+                               label: str = None, batch_id: str = None,
+                               user_id: int = None, is_public: bool = False) -> int:
         """
         Create rollup snapshots for all hierarchy levels.
 
@@ -155,6 +178,10 @@ class SnapshotService:
             Count of created rollup snapshots
         """
         count = 0
+
+        # Generate batch ID if not provided
+        if batch_id is None:
+            batch_id = str(uuid.uuid4())
 
         # Get all value types for this organization
         value_types = ValueType.query.filter_by(
@@ -169,7 +196,8 @@ class SnapshotService:
                 rollup = space.get_rollup_value(vt.id)
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
-                        'space', space.id, vt.id, rollup, snapshot_date, label
+                        'space', space.id, vt.id, rollup, snapshot_date, label,
+                        batch_id=batch_id, user_id=user_id, is_public=is_public
                     )
                     if snapshot:
                         count += 1
@@ -183,7 +211,8 @@ class SnapshotService:
                 rollup = challenge.get_rollup_value(vt.id)
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
-                        'challenge', challenge.id, vt.id, rollup, snapshot_date, label
+                        'challenge', challenge.id, vt.id, rollup, snapshot_date, label,
+                        batch_id=batch_id, user_id=user_id, is_public=is_public
                     )
                     if snapshot:
                         count += 1
@@ -195,7 +224,8 @@ class SnapshotService:
                 rollup = initiative.get_rollup_value(vt.id)
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
-                        'initiative', initiative.id, vt.id, rollup, snapshot_date, label
+                        'initiative', initiative.id, vt.id, rollup, snapshot_date, label,
+                        batch_id=batch_id, user_id=user_id, is_public=is_public
                     )
                     if snapshot:
                         count += 1
@@ -211,7 +241,8 @@ class SnapshotService:
                 rollup = link.get_rollup_value(vt.id)
                 if rollup and rollup['value'] is not None:
                     snapshot = SnapshotService._create_rollup_snapshot(
-                        'system', link.id, vt.id, rollup, snapshot_date, label
+                        'system', link.id, vt.id, rollup, snapshot_date, label,
+                        batch_id=batch_id, user_id=user_id, is_public=is_public
                     )
                     if snapshot:
                         count += 1
@@ -220,7 +251,9 @@ class SnapshotService:
 
     @staticmethod
     def _create_rollup_snapshot(entity_type: str, entity_id: int, value_type_id: int,
-                               rollup: Dict, snapshot_date: date, label: str = None) -> Optional[RollupSnapshot]:
+                               rollup: Dict, snapshot_date: date, label: str = None,
+                               batch_id: str = None, user_id: int = None,
+                               is_public: bool = False) -> Optional[RollupSnapshot]:
         """Create a single rollup snapshot"""
         # Check if exists
         existing = RollupSnapshot.query.filter_by(
@@ -232,6 +265,10 @@ class SnapshotService:
 
         value_type = ValueType.query.get(value_type_id)
 
+        # Generate batch ID if not provided
+        if batch_id is None:
+            batch_id = str(uuid.uuid4())
+
         if existing:
             # Update
             existing.rollup_value = rollup['value'] if value_type.is_numeric() else None
@@ -239,6 +276,9 @@ class SnapshotService:
             existing.is_complete = rollup.get('is_complete', False)
             existing.snapshot_label = label or existing.snapshot_label
             existing.created_at = datetime.utcnow()
+            existing.snapshot_batch_id = batch_id
+            existing.is_public = is_public
+            existing.owner_user_id = user_id
             db.session.commit()
             return existing
 
@@ -251,7 +291,10 @@ class SnapshotService:
             snapshot_label=label,
             rollup_value=rollup['value'] if value_type.is_numeric() else None,
             qualitative_level=rollup['value'] if not value_type.is_numeric() else None,
-            is_complete=rollup.get('is_complete', False)
+            is_complete=rollup.get('is_complete', False),
+            snapshot_batch_id=batch_id,
+            is_public=is_public,
+            owner_user_id=user_id
         )
 
         db.session.add(snapshot)
@@ -378,3 +421,88 @@ class SnapshotService:
         # Sort descending and apply limit if provided
         sorted_dates = sorted(list(all_dates), reverse=True)
         return sorted_dates[:limit] if limit else sorted_dates
+
+    @staticmethod
+    def get_all_snapshots(organization_id: int, user_id: int = None,
+                         limit: int = None, show_private: bool = True,
+                         show_public: bool = True):
+        """
+        Get all snapshots for an organization with full details.
+
+        Args:
+            organization_id: Organization ID
+            user_id: Current user ID (to filter private snapshots)
+            limit: Optional limit on number of snapshots
+            show_private: Include private snapshots (owned by user)
+            show_public: Include public snapshots
+
+        Returns list of dict with: snapshot_batch_id, snapshot_date, created_at,
+        snapshot_label, kpi_count, is_public, owner_user_id, owner_name
+        """
+        from sqlalchemy import func, or_, and_
+        from app.models import User
+
+        # Build privacy filter
+        privacy_filters = []
+        if show_public:
+            privacy_filters.append(KPISnapshot.is_public == True)
+        if show_private and user_id:
+            privacy_filters.append(and_(
+                KPISnapshot.is_public == False,
+                KPISnapshot.owner_user_id == user_id
+            ))
+
+        if not privacy_filters:
+            return []
+
+        # Get all unique snapshots grouped by batch_id
+        snapshots = db.session.query(
+            KPISnapshot.snapshot_batch_id,
+            KPISnapshot.snapshot_date,
+            KPISnapshot.created_at,
+            KPISnapshot.snapshot_label,
+            KPISnapshot.is_public,
+            KPISnapshot.owner_user_id,
+            User.display_name.label('owner_name'),
+            func.count(KPISnapshot.id).label('kpi_count')
+        ).join(
+            KPIValueTypeConfig, KPISnapshot.kpi_value_type_config_id == KPIValueTypeConfig.id
+        ).join(
+            KPI, KPIValueTypeConfig.kpi_id == KPI.id
+        ).join(
+            InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id
+        ).join(
+            Initiative, InitiativeSystemLink.initiative_id == Initiative.id
+        ).outerjoin(
+            User, KPISnapshot.owner_user_id == User.id
+        ).filter(
+            Initiative.organization_id == organization_id,
+            or_(*privacy_filters)
+        ).group_by(
+            KPISnapshot.snapshot_batch_id,
+            KPISnapshot.snapshot_date,
+            KPISnapshot.created_at,
+            KPISnapshot.snapshot_label,
+            KPISnapshot.is_public,
+            KPISnapshot.owner_user_id,
+            User.display_name
+        ).order_by(
+            KPISnapshot.created_at.desc()
+        ).all()
+
+        if limit:
+            snapshots = snapshots[:limit]
+
+        return [
+            {
+                'snapshot_batch_id': s.snapshot_batch_id,
+                'snapshot_date': s.snapshot_date,
+                'created_at': s.created_at,
+                'snapshot_label': s.snapshot_label,
+                'kpi_count': s.kpi_count,
+                'is_public': s.is_public,
+                'owner_user_id': s.owner_user_id,
+                'owner_name': s.owner_name
+            }
+            for s in snapshots
+        ]

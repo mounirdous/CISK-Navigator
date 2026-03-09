@@ -9,8 +9,8 @@ from functools import wraps
 from app.extensions import db
 from app.models import (
     Space, Challenge, Initiative, System, KPI, ValueType,
-    KPIValueTypeConfig, Contribution, KPISnapshot, CellComment, User,
-    UserOrganizationMembership, InitiativeSystemLink
+    KPIValueTypeConfig, Contribution, KPISnapshot, RollupSnapshot, CellComment, User,
+    UserOrganizationMembership, InitiativeSystemLink, GovernanceBody
 )
 from app.forms import ContributionForm
 from app.services import ConsensusService, AggregationService, ExcelExportService
@@ -54,8 +54,12 @@ def dashboard():
         'value_types': ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
     }
 
-    # Get recent snapshots (last 5)
-    recent_snapshots = SnapshotService.get_available_snapshot_dates(org_id, limit=5)
+    # Get recent snapshots (last 5) - now with full snapshot info
+    recent_snapshots = SnapshotService.get_all_snapshots(
+        org_id,
+        user_id=current_user.id,
+        limit=5
+    )
 
     # Get recent comments (last 10)
     recent_comments = db.session.query(CellComment).join(
@@ -440,6 +444,7 @@ def create_snapshot():
     org_id = session.get('organization_id')
     snapshot_date_str = request.form.get('snapshot_date')
     label = request.form.get('label', '').strip()
+    is_public = request.form.get('is_public') == 'true'
 
     # Parse date
     if snapshot_date_str:
@@ -457,10 +462,12 @@ def create_snapshot():
             org_id,
             snapshot_date=snapshot_date,
             label=label or None,
-            user_id=current_user.id
+            user_id=current_user.id,
+            is_public=is_public
         )
 
-        flash(f'Snapshot created: {result["kpi_snapshots"]} KPI values, '
+        visibility = "Public" if is_public else "Private"
+        flash(f'{visibility} snapshot created: {result["kpi_snapshots"]} KPI values, '
               f'{result["rollup_snapshots"]} rollup values captured for {snapshot_date.isoformat()}',
               'success')
 
@@ -471,7 +478,7 @@ def create_snapshot():
         db.session.rollback()
         flash(f'Error creating snapshot: {str(e)}', 'danger')
 
-    return redirect(url_for('workspace.index'))
+    return redirect(url_for('workspace.list_snapshots'))
 
 
 @bp.route('/snapshots/list')
@@ -481,48 +488,67 @@ def list_snapshots():
     """List all available snapshots for the organization"""
     org_id = session.get('organization_id')
 
+    # Get filter parameters
+    show_private = request.args.get('show_private', '1') == '1'
+    show_public = request.args.get('show_public', '1') == '1'
+
     try:
-        snapshot_dates = SnapshotService.get_available_snapshot_dates(org_id)
+        # Get all snapshots with full details
+        snapshots = SnapshotService.get_all_snapshots(
+            org_id,
+            user_id=current_user.id,
+            show_private=show_private,
+            show_public=show_public
+        )
 
-        # Get labels for each date
+        # Format for template
         snapshots_info = []
-        for snap_date in snapshot_dates:
-            # Get a sample snapshot to find the label
-            sample = KPISnapshot.query.filter_by(
-                snapshot_date=snap_date
-            ).first()
-
+        for snap in snapshots:
             snapshots_info.append({
-                'date': snap_date.isoformat(),
-                'label': sample.snapshot_label if sample else None,
-                'formatted_date': snap_date.strftime('%Y-%m-%d (%A)')
+                'batch_id': snap['snapshot_batch_id'],
+                'date': snap['snapshot_date'].isoformat(),
+                'created_at': snap['created_at'].strftime('%Y-%m-%d %H:%M:%S'),
+                'timestamp': snap['created_at'].isoformat(),
+                'label': snap['snapshot_label'],
+                'kpi_count': snap['kpi_count'],
+                'formatted_date': snap['snapshot_date'].strftime('%Y-%m-%d (%A)'),
+                'formatted_time': snap['created_at'].strftime('%H:%M:%S'),
+                'is_public': snap['is_public'],
+                'owner_user_id': snap['owner_user_id'],
+                'owner_name': snap['owner_name'],
+                'is_owner': snap['owner_user_id'] == current_user.id
             })
 
         return render_template('workspace/snapshots.html',
                              snapshots=snapshots_info,
-                             organization_name=session.get('organization_name'))
+                             organization_name=session.get('organization_name'),
+                             show_private=show_private,
+                             show_public=show_public,
+                             current_user_id=current_user.id)
 
     except Exception as e:
         flash(f'Error loading snapshots: {str(e)}', 'danger')
         return redirect(url_for('workspace.index'))
 
 
-@bp.route('/snapshots/view/<snapshot_date>')
+@bp.route('/snapshots/view/<batch_id>')
 @login_required
 @organization_required
-def view_snapshot(snapshot_date):
+def view_snapshot(batch_id):
     """
-    View workspace state as of a specific snapshot date.
+    View workspace state as of a specific snapshot batch.
 
     Shows historical values instead of current values.
     """
     org_id = session.get('organization_id')
 
-    try:
-        view_date = date.fromisoformat(snapshot_date)
-    except ValueError:
-        flash('Invalid date format', 'danger')
-        return redirect(url_for('workspace.index'))
+    # Get snapshot info from batch
+    sample = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).first()
+    if not sample:
+        flash('Snapshot not found', 'danger')
+        return redirect(url_for('workspace.list_snapshots'))
+
+    view_date = sample.snapshot_date
 
     # Get spaces and value types (current structure)
     spaces = Space.query.filter_by(organization_id=org_id).order_by(
@@ -568,20 +594,37 @@ def compare_snapshots():
     """Compare two snapshots side-by-side"""
     org_id = session.get('organization_id')
 
-    # Get date parameters
-    date1_str = request.args.get('date1')
-    date2_str = request.args.get('date2', str(date.today()))
+    # Get batch_id parameters
+    batch_id1 = request.args.get('batch_id1')
+    batch_id2 = request.args.get('batch_id2', 'current')
 
-    if not date1_str:
+    if not batch_id1:
         flash('Please select a snapshot to compare', 'warning')
         return redirect(url_for('workspace.list_snapshots'))
 
-    try:
-        date1 = date.fromisoformat(date1_str)
-        date2 = date.fromisoformat(date2_str) if date2_str != 'current' else None
-    except ValueError:
-        flash('Invalid date format', 'danger')
+    # Get first snapshot info
+    sample1 = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id1).first()
+    if not sample1:
+        flash('Snapshot not found', 'danger')
         return redirect(url_for('workspace.list_snapshots'))
+
+    date1 = sample1.snapshot_date
+    datetime1 = sample1.created_at
+    label1 = sample1.snapshot_label
+
+    # Get second snapshot info (or use current)
+    if batch_id2 != 'current':
+        sample2 = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id2).first()
+        if not sample2:
+            flash('Second snapshot not found', 'danger')
+            return redirect(url_for('workspace.list_snapshots'))
+        date2 = sample2.snapshot_date
+        datetime2 = sample2.created_at
+        label2 = sample2.snapshot_label
+    else:
+        date2 = None
+        datetime2 = None
+        label2 = "Current"
 
     # Get all KPI configs for this organization
     configs = db.session.query(KPIValueTypeConfig).join(
@@ -595,19 +638,19 @@ def compare_snapshots():
     # Build comparison data
     comparisons = []
     for config in configs:
-        # Get snapshot 1 value
+        # Get snapshot 1 value - match by batch_id
         snapshot1 = KPISnapshot.query.filter_by(
             kpi_value_type_config_id=config.id,
-            snapshot_date=date1
+            snapshot_batch_id=batch_id1
         ).first()
 
         # Get snapshot 2 value (or current consensus)
-        if date2:
+        if batch_id2 != 'current':
             snapshot2 = KPISnapshot.query.filter_by(
                 kpi_value_type_config_id=config.id,
-                snapshot_date=date2
+                snapshot_batch_id=batch_id2
             ).first()
-            value2 = snapshot2.consensus_value if snapshot2 else None
+            value2 = snapshot2.get_value() if snapshot2 else None
         else:
             # Use current consensus - get contributions for this config
             contributions = Contribution.query.filter_by(
@@ -616,7 +659,7 @@ def compare_snapshots():
             consensus = ConsensusService.calculate_consensus(contributions)
             value2 = consensus.get('value')
 
-        value1 = snapshot1.consensus_value if snapshot1 else None
+        value1 = snapshot1.get_value() if snapshot1 else None
 
         # Calculate change
         change = None
@@ -636,23 +679,66 @@ def compare_snapshots():
             'percent_change': percent_change
         })
 
-    # Get snapshot labels
-    sample1 = KPISnapshot.query.filter_by(snapshot_date=date1).first()
-    label1 = sample1.snapshot_label if sample1 else None
-
-    if date2:
-        sample2 = KPISnapshot.query.filter_by(snapshot_date=date2).first()
-        label2 = sample2.snapshot_label if sample2 else None
-    else:
-        label2 = "Current"
-
     return render_template('workspace/compare_snapshots.html',
                          comparisons=comparisons,
                          date1=date1,
+                         datetime1=datetime1,
                          date2=date2,
+                         datetime2=datetime2,
                          label1=label1,
                          label2=label2,
                          organization_name=session.get('organization_name'))
+
+
+@bp.route('/snapshots/<batch_id>/toggle-privacy', methods=['POST'])
+@login_required
+@organization_required
+def toggle_snapshot_privacy(batch_id):
+    """Toggle privacy status of a snapshot batch (private <-> public)"""
+    org_id = session.get('organization_id')
+
+    try:
+        print(f"[DEBUG] Toggling privacy for batch_id: {batch_id}")
+
+        # Get one snapshot from this batch to check ownership
+        sample_snapshot = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).first()
+
+        if not sample_snapshot:
+            print(f"[DEBUG] Snapshot not found for batch_id: {batch_id}")
+            return jsonify({'error': 'Snapshot not found'}), 404
+
+        print(f"[DEBUG] Current is_public: {sample_snapshot.is_public}, owner: {sample_snapshot.owner_user_id}, current_user: {current_user.id}")
+
+        # Check ownership
+        if sample_snapshot.owner_user_id != current_user.id:
+            print(f"[DEBUG] Ownership check failed: {sample_snapshot.owner_user_id} != {current_user.id}")
+            return jsonify({'error': 'Only the snapshot owner can change privacy settings'}), 403
+
+        # Toggle all KPI snapshots in this batch
+        new_status = not sample_snapshot.is_public
+        kpi_count = KPISnapshot.query.filter_by(snapshot_batch_id=batch_id).update({
+            'is_public': new_status
+        })
+
+        # Toggle all rollup snapshots in this batch
+        rollup_count = RollupSnapshot.query.filter_by(snapshot_batch_id=batch_id).update({
+            'is_public': new_status
+        })
+
+        db.session.commit()
+
+        print(f"[DEBUG] Toggled {kpi_count} KPI snapshots and {rollup_count} rollup snapshots to is_public={new_status}")
+
+        return jsonify({
+            'success': True,
+            'is_public': new_status,
+            'message': f'Snapshot is now {"public" if new_status else "private"}'
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"[DEBUG] Error toggling privacy: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 
 @bp.route('/api/kpi/<int:config_id>/trend')

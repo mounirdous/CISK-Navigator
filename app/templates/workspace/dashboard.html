@@ -135,18 +135,27 @@
             <div class="card-body">
                 {% if recent_snapshots %}
                     <div class="list-group">
-                        {% for snap_date in recent_snapshots %}
+                        {% for snapshot in recent_snapshots %}
                         <div class="list-group-item">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <strong>{{ snap_date.strftime('%Y-%m-%d') }}</strong>
+                                    <strong>{{ snapshot['snapshot_date'].strftime('%Y-%m-%d') }}</strong>
+                                    <span class="text-muted ms-2">{{ snapshot['created_at'].strftime('%H:%M') }}</span>
+                                    {% if snapshot['snapshot_label'] %}
+                                    <span class="badge bg-info ms-2">{{ snapshot['snapshot_label'] }}</span>
+                                    {% endif %}
+                                    {% if snapshot['is_public'] %}
+                                    <span class="badge bg-success ms-1"><i class="bi bi-globe"></i></span>
+                                    {% else %}
+                                    <span class="badge bg-secondary ms-1"><i class="bi bi-lock-fill"></i></span>
+                                    {% endif %}
                                 </div>
                                 <div>
-                                    <a href="{{ url_for('workspace.view_snapshot', snapshot_date=snap_date.isoformat()) }}"
+                                    <a href="{{ url_for('workspace.view_snapshot', batch_id=snapshot['snapshot_batch_id']) }}"
                                        class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-eye"></i> View
                                     </a>
-                                    <a href="{{ url_for('workspace.compare_snapshots', date1=snap_date.isoformat(), date2='current') }}"
+                                    <a href="{{ url_for('workspace.compare_snapshots', batch_id1=snapshot['snapshot_batch_id'], batch_id2='current') }}"
                                        class="btn btn-sm btn-outline-info">
                                         <i class="bi bi-bar-chart"></i> Compare
                                     </a>
