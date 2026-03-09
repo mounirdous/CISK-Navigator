@@ -110,7 +110,7 @@ class MentionNotification(db.Model):
 
     # Relationships
     mentioned_user = db.relationship('User', backref='mention_notifications')
-    comment = db.relationship('CellComment', backref='mention_notifications')
+    comment = db.relationship('CellComment', backref=db.backref('mention_notifications', passive_deletes=True))
 
     def __repr__(self):
         return f'<MentionNotification {self.id} for user {self.mentioned_user_id}>'
