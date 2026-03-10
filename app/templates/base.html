@@ -456,7 +456,7 @@
     }
     </style>
 </head>
-<body{% if current_user.is_authenticated and current_user.dark_mode %} class="dark-mode{% endif %}{% if current_user.is_authenticated %} navbar-{{ current_user.navbar_position }}{% if current_user.navbar_autohide %} navbar-autohide{% endif %}{% endif %}"{% if not current_user.is_authenticated or not current_user.dark_mode %}{% endif %}>
+<body{% if current_user.is_authenticated %} class="{% if current_user.dark_mode %}dark-mode {% endif %}navbar-{{ current_user.navbar_position }}{% if current_user.navbar_autohide %} navbar-autohide{% endif %}"{% endif %}>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark{% if current_user.is_authenticated %} navbar-{{ current_user.navbar_position }}{% endif %}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
