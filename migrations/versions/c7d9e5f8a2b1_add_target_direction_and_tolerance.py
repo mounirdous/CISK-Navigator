@@ -1,7 +1,7 @@
 """Add target direction and tolerance to KPI configs
 
 Revision ID: c7d9e5f8a2b1
-Revises: a8c4b3e7d2f6
+Revises: j4d5e6f7g8h9
 Create Date: 2026-03-10 16:30:00.000000
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "c7d9e5f8a2b1"
-down_revision = "a8c4b3e7d2f6"
+down_revision = "j4d5e6f7g8h9"
 branch_labels = None
 depends_on = None
 
