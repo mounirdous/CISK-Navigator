@@ -153,7 +153,7 @@
                             {% endif %}
                             {% if current_user.is_global_admin %}
                                 <span class="badge" style="background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);">
-                                    <i class="bi bi-shield-lock-fill"></i> Global Admin
+                                    <i class="bi bi-shield-lock-fill"></i> Instance Admin
                                 </span>
                             {% endif %}
                         </div>
@@ -244,8 +244,8 @@
                                 {{ form.navbar_autohide.label(class="form-check-label", for="navbarAutohideSwitch") }}
                             </div>
                             <small class="form-text text-muted d-block mt-2">
-                                <i class="bi bi-eye-slash"></i>
-                                Automatically hide navigation when not in use (hover to show)
+                                <i class="bi bi-arrows-collapse"></i>
+                                Collapse navigation to icons only (hover to expand with full labels)
                             </small>
                         </div>
 

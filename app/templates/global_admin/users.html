@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Users - Global Administration{% endblock %}
+{% block title %}Users - Instance Admin{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -137,7 +137,7 @@
                                 {{ user.display_name or user.login }}
                                 {% if user.is_global_admin %}
                                 <span class="badge" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
-                                    <i class="bi bi-shield-lock-fill"></i> Global Admin
+                                    <i class="bi bi-shield-lock-fill"></i> Instance Admin
                                 </span>
                                 {% endif %}
                                 {% if user.is_active %}

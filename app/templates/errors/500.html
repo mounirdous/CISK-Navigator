@@ -38,7 +38,7 @@
             </a>
         {% elif current_user.is_global_admin %}
             <a href="{{ url_for('global_admin.index') }}" class="btn btn-outline-primary btn-lg">
-                <i class="bi bi-shield-lock"></i> Global Admin
+                <i class="bi bi-shield-lock"></i> Instance Admin
             </a>
         {% endif %}
     {% else %}

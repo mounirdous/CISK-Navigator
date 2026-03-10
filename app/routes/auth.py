@@ -52,12 +52,12 @@ def login():
         user_orgs = user.get_organizations()
         active_orgs = [org for org in user_orgs if org.is_active and not org.is_deleted]
 
-        # Special case: Global Admin with no organizations
-        # Allow them to log in and access Global Admin panel
+        # Special case: Instance Admin with no organizations
+        # Allow them to log in and access Instance Admin panel
         if user.is_global_admin and not active_orgs:
             login_user(user)
             session["organization_id"] = None
-            session["organization_name"] = "Global Administration"
+            session["organization_name"] = "Instance Admin"
 
             # Audit log successful login
             AuditService.log_login(user, success=True)
@@ -68,7 +68,7 @@ def login():
                 flash("You must change your password", "warning")
                 return redirect(url_for("auth.change_password"))
 
-            flash(f"Welcome, {user.display_name or user.login}! (Global Admin)", "success")
+            flash(f"Welcome, {user.display_name or user.login}! (Instance Admin)", "success")
             return redirect(url_for("global_admin.index"))
 
         # Determine which organization to log into
@@ -208,16 +208,16 @@ def switch_organization(org_id):
 @bp.route("/switch-to-global-admin", methods=["POST", "GET"])
 @login_required
 def switch_to_global_admin():
-    """Switch to Global Admin mode (clear organization context)"""
+    """Switch to Instance Admin mode (clear organization context)"""
     if not current_user.is_global_admin:
-        flash("Access denied: Global Administrator permission required", "danger")
+        flash("Access denied: Instance Administrator permission required", "danger")
         return redirect(url_for("workspace.dashboard"))
 
     # Clear organization context
     session["organization_id"] = None
-    session["organization_name"] = "Global Administration"
+    session["organization_name"] = "Instance Admin"
 
-    flash("Switched to Global Administration mode", "success")
+    flash("Switched to Instance Admin mode", "success")
     return redirect(url_for("global_admin.index"))
 
 
@@ -330,14 +330,14 @@ def sso_callback():
     user_orgs = user.get_organizations()
     active_orgs = [org for org in user_orgs if org.is_active]
 
-    # Special case: Global Admin with no organizations
+    # Special case: Instance Admin with no organizations
     if user.is_global_admin and not active_orgs:
         login_user(user)
         session["organization_id"] = None
-        session["organization_name"] = "Global Administration"
+        session["organization_name"] = "Instance Admin"
         session.pop("sso_state", None)
 
-        flash(f"Welcome, {user.display_name or user.login}! (Global Admin)", "success")
+        flash(f"Welcome, {user.display_name or user.login}! (Instance Admin)", "success")
         return redirect(url_for("global_admin.index"))
 
     # Determine which organization to log into

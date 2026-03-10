@@ -69,7 +69,7 @@
             </a>
         {% elif current_user.is_global_admin %}
             <a href="{{ url_for('global_admin.index') }}" class="btn btn-primary btn-lg">
-                <i class="bi bi-shield-lock"></i> Global Admin
+                <i class="bi bi-shield-lock"></i> Instance Admin
             </a>
         {% else %}
             <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">
@@ -93,7 +93,7 @@
         {% if current_user.is_global_admin %}
         <li>
             <i class="bi bi-check-circle-fill text-success"></i>
-            <strong>Global Administrator</strong> - Full system access
+            <strong>Instance Administrator</strong> - Full system access
         </li>
         {% endif %}
 

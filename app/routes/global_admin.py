@@ -1,7 +1,7 @@
 """
-Global Administration routes
+Instance Admin routes
 
-For managing users and organizations (global admins only).
+For managing users and organizations (instance admins only).
 """
 
 import os
@@ -45,10 +45,10 @@ def global_admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_authenticated or not current_user.is_global_admin:
-            flash("Access denied: Global Administrator permission required", "danger")
+            flash("Access denied: Instance Admin permission required", "danger")
             return redirect(url_for("auth.login"))
         if session.get("organization_id") is not None:
-            flash("Please log in to Global Administration", "warning")
+            flash("Please log in to Instance Admin", "warning")
             return redirect(url_for("auth.login"))
         return f(*args, **kwargs)
 

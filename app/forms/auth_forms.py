@@ -35,6 +35,6 @@ class ProfileEditForm(FlaskForm):
         choices=[("top", "Top (Horizontal)"), ("left", "Left Sidebar (Vertical)")],
         validators=[DataRequired()],
     )
-    navbar_autohide = BooleanField("Auto-hide Navigation")
+    navbar_autohide = BooleanField("Auto-collapse Navigation (icons only, expands on hover)")
     default_organization = SelectField("Default Organization", coerce=int, validators=[Optional()])
     submit = SubmitField("Save Changes")

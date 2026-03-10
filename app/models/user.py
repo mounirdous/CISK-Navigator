@@ -16,10 +16,10 @@ class User(UserMixin, db.Model):
 
     A user can be:
     - A super administrator (can manage system settings and has all privileges)
-    - A global administrator (can manage users and organizations)
+    - An instance administrator (can manage users and organizations)
     - A regular user assigned to one or more organizations
 
-    Hierarchy: Super Admin > Global Admin > Org User
+    Hierarchy: Super Admin > Instance Admin > Org User
     """
 
     __tablename__ = "users"
@@ -166,7 +166,7 @@ class User(UserMixin, db.Model):
         if self.is_super_admin:
             return "Super Admin"
         elif self.is_global_admin:
-            return "Global Admin"
+            return "Instance Admin"
         else:
             return "User"
 
