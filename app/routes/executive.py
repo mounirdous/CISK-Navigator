@@ -67,6 +67,19 @@ def dashboard():
 
     kpis = kpi_query.order_by(KPI.name).all()
 
+    # Check if user has access to any private spaces (to show privacy filter)
+    has_private_spaces = (
+        db.session.query(Space.id)
+        .join(Challenge, Space.id == Challenge.space_id)
+        .join(ChallengeInitiativeLink, Challenge.id == ChallengeInitiativeLink.challenge_id)
+        .join(Initiative, ChallengeInitiativeLink.initiative_id == Initiative.id)
+        .join(InitiativeSystemLink, Initiative.id == InitiativeSystemLink.initiative_id)
+        .join(System, InitiativeSystemLink.system_id == System.id)
+        .filter(System.organization_id == org_id, Space.is_private.is_(True))
+        .first()
+        is not None
+    )
+
     # Calculate status for each KPI
     kpi_statuses = []
     for kpi in kpis:
@@ -409,6 +422,7 @@ def dashboard():
         days=days,
         # Privacy filter
         space_type=space_type,
+        has_private_spaces=has_private_spaces,
     )
 
 
