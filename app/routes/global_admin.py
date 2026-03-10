@@ -622,8 +622,16 @@ def clone_organization(org_id):
 @global_admin_required
 def backup_restore():
     """Backup and restore management page"""
-    # Get all organizations
-    orgs = Organization.query.order_by(Organization.name).all()
+    # Get organizations based on context
+    # If in Global Admin mode (no org context), show ALL organizations
+    # If in organization context, show only user's organizations
+    if session.get("organization_id") is None:
+        # Global Admin mode - show all organizations
+        orgs = Organization.query.order_by(Organization.name).all()
+    else:
+        # Organization context - show only user's organizations
+        orgs = current_user.get_organizations()
+        orgs = sorted([org for org in orgs if org.is_active and not org.is_deleted], key=lambda o: o.name)
 
     # Get entity counts for each org
     org_stats = []

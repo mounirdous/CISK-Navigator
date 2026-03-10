@@ -85,6 +85,7 @@ class YAMLImportService:
             value_type_map = {}  # name -> ValueType
             initiative_map = {}  # id -> Initiative
             system_map = {}  # id -> System
+            link_map = {}  # (initiative_id, system_id) -> InitiativeSystemLink
 
             # Step 1: Import Value Types
             if "value_types" in data:
@@ -104,7 +105,7 @@ class YAMLImportService:
                 for space_data in data["spaces"]:
                     try:
                         space_stats = YAMLImportService._create_space_and_children(
-                            space_data, organization_id, value_type_map, initiative_map, system_map, dry_run
+                            space_data, organization_id, value_type_map, initiative_map, system_map, link_map, dry_run
                         )
                         for key in ["spaces", "challenges", "initiatives", "systems", "kpis"]:
                             stats[key] += space_stats.get(key, 0)
@@ -144,7 +145,9 @@ class YAMLImportService:
         return vt
 
     @staticmethod
-    def _create_space_and_children(space_data, organization_id, value_type_map, initiative_map, system_map, dry_run):
+    def _create_space_and_children(
+        space_data, organization_id, value_type_map, initiative_map, system_map, link_map, dry_run
+    ):
         """Create a Space and all its children recursively"""
         stats = {"spaces": 0, "challenges": 0, "initiatives": 0, "systems": 0, "kpis": 0, "errors": []}
 
@@ -165,7 +168,14 @@ class YAMLImportService:
         for challenge_data in space_data.get("challenges", []):
             try:
                 challenge_stats = YAMLImportService._create_challenge_and_children(
-                    challenge_data, space.id, organization_id, value_type_map, initiative_map, system_map, dry_run
+                    challenge_data,
+                    space.id,
+                    organization_id,
+                    value_type_map,
+                    initiative_map,
+                    system_map,
+                    link_map,
+                    dry_run,
                 )
                 for key in ["challenges", "initiatives", "systems", "kpis"]:
                     stats[key] += challenge_stats.get(key, 0)
@@ -177,7 +187,7 @@ class YAMLImportService:
 
     @staticmethod
     def _create_challenge_and_children(
-        challenge_data, space_id, organization_id, value_type_map, initiative_map, system_map, dry_run
+        challenge_data, space_id, organization_id, value_type_map, initiative_map, system_map, link_map, dry_run
     ):
         """Create a Challenge and all its children"""
         stats = {"challenges": 0, "initiatives": 0, "systems": 0, "kpis": 0, "errors": []}
@@ -230,7 +240,7 @@ class YAMLImportService:
                 for system_data in initiative_data.get("systems", []):
                     try:
                         system_stats = YAMLImportService._create_system_and_kpis(
-                            system_data, initiative.id, organization_id, value_type_map, system_map, dry_run
+                            system_data, initiative.id, organization_id, value_type_map, system_map, link_map, dry_run
                         )
                         stats["systems"] += system_stats.get("systems", 0)
                         stats["kpis"] += system_stats.get("kpis", 0)
@@ -244,7 +254,9 @@ class YAMLImportService:
         return stats
 
     @staticmethod
-    def _create_system_and_kpis(system_data, initiative_id, organization_id, value_type_map, system_map, dry_run):
+    def _create_system_and_kpis(
+        system_data, initiative_id, organization_id, value_type_map, system_map, link_map, dry_run
+    ):
         """Create a System and all its KPIs"""
         stats = {"systems": 0, "kpis": 0, "errors": []}
 
@@ -264,23 +276,38 @@ class YAMLImportService:
             system_map[system_id] = system
             stats["systems"] += 1
 
-        # Link Initiative to System (check if link already exists)
-        link = (
-            db.session.query(InitiativeSystemLink).filter_by(initiative_id=initiative_id, system_id=system.id).first()
-        )
+        # Link Initiative to System (check in-memory map first to avoid duplicates in same transaction)
+        link_key = (initiative_id, system.id)
 
-        if link is None:
-            # Create new link if it doesn't exist
-            link = InitiativeSystemLink(
-                initiative_id=initiative_id, system_id=system.id, display_order=system_data.get("display_order", 0)
-            )
-            if not dry_run:
-                db.session.add(link)
-                db.session.flush()
-        else:
-            # Update display_order if link already exists
-            if not dry_run:
+        if link_key in link_map:
+            # Link already created in this transaction - reuse it
+            link = link_map[link_key]
+            # Update display_order if different
+            if not dry_run and link.display_order != system_data.get("display_order", 0):
                 link.display_order = system_data.get("display_order", 0)
+        else:
+            # Check if link exists in database
+            link = (
+                db.session.query(InitiativeSystemLink)
+                .filter_by(initiative_id=initiative_id, system_id=system.id)
+                .first()
+            )
+
+            if link is None:
+                # Create new link
+                link = InitiativeSystemLink(
+                    initiative_id=initiative_id, system_id=system.id, display_order=system_data.get("display_order", 0)
+                )
+                if not dry_run:
+                    db.session.add(link)
+                    db.session.flush()
+            else:
+                # Update display_order if link already exists
+                if not dry_run:
+                    link.display_order = system_data.get("display_order", 0)
+
+            # Store in map for future reference
+            link_map[link_key] = link
 
         # Create KPIs
         for kpi_data in system_data.get("kpis", []):
