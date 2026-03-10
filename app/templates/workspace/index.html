@@ -53,6 +53,24 @@
     background-color: var(--hover-bg);
 }
 
+/* Action Icons - Hidden by default, shown in edit mode */
+.action-icons {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+body.edit-mode .action-icons {
+    display: inline;
+    opacity: 1;
+}
+
+body.edit-mode #toggle-edit-mode {
+    background-color: #ffc107 !important;
+    border-color: #ffc107 !important;
+    color: #000 !important;
+}
+
 #workspace-tree tbody td {
     border-color: var(--border-subtle);
     background-color: var(--bg-primary);
@@ -286,7 +304,12 @@ tr[data-level="kpi"] td {
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0"><i class="bi bi-grid-3x3-gap"></i> Workspace: {{ org_name }}</h3>
         <div>
-            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-sm btn-modern">
+            {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
+            <button id="toggle-edit-mode" class="btn btn-outline-warning btn-sm btn-modern">
+                <i class="bi bi-pencil-square"></i> Edit Mode
+            </button>
+            {% endif %}
+            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-sm btn-modern ms-1">
                 <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             <button id="expand-all" class="btn btn-outline-primary btn-sm btn-modern ms-1">
@@ -474,6 +497,16 @@ tr[data-level="kpi"] td {
                                 <i class="bi bi-lock-fill"></i> Private
                             </span>
                         {% endif %}
+                        {% if current_user.can_manage_spaces(org_id) %}
+                        <span class="action-icons ms-2">
+                            <a href="#" onclick="editSpace({{ space.id }}); return false;" class="text-primary" title="Edit Space">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="#" onclick="deleteSpace({{ space.id }}, '{{ space.name }}'); return false;" class="text-danger ms-1" title="Delete Space">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </span>
+                        {% endif %}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = space.get_rollup_value(vt.id) %}
@@ -513,6 +546,16 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🎯</span>
                         {{ challenge.name }}
+                        {% if current_user.can_manage_challenges(org_id) %}
+                        <span class="action-icons ms-2">
+                            <a href="#" onclick="editChallenge({{ challenge.id }}); return false;" class="text-primary" title="Edit Challenge">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="#" onclick="deleteChallenge({{ challenge.id }}, '{{ challenge.name }}'); return false;" class="text-danger ms-1" title="Delete Challenge">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </span>
+                        {% endif %}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = challenge.get_rollup_value(vt.id) %}
@@ -552,6 +595,16 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">💡</span>
                         {{ initiative.name }}
+                        {% if current_user.can_manage_initiatives(org_id) %}
+                        <span class="action-icons ms-2">
+                            <a href="#" onclick="editInitiative({{ initiative.id }}); return false;" class="text-primary" title="Edit Initiative">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="#" onclick="deleteInitiative({{ initiative.id }}, '{{ initiative.name }}'); return false;" class="text-danger ms-1" title="Delete Initiative">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </span>
+                        {% endif %}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = initiative.get_rollup_value(vt.id) %}
@@ -591,6 +644,16 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">⚙️</span>
                         {{ system.name }}
+                        {% if current_user.can_manage_systems(org_id) %}
+                        <span class="action-icons ms-2">
+                            <a href="#" onclick="editSystem({{ system.id }}); return false;" class="text-primary" title="Edit System">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a href="#" onclick="deleteSystem({{ system.id }}, '{{ system.name }}'); return false;" class="text-danger ms-1" title="Delete System">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </span>
+                        {% endif %}
                     </td>
                     {% for vt in value_types %}
                         {% set rollup = sys_link.get_rollup_value(vt.id) %}
@@ -659,6 +722,22 @@ tr[data-level="kpi"] td {
                             {{ gb_link.governance_body.abbreviation }}
                         </span>
                         {% endfor %}
+                        {% if current_user.can_manage_kpis(org_id) %}
+                        <span class="action-icons ms-2">
+                            <a href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=value_types[0].id if value_types else 0) }}" class="text-primary" title="Edit KPI">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            {% if not kpi.is_archived %}
+                            <a href="#" onclick="archiveKPI({{ kpi.id }}, '{{ kpi.name }}'); return false;" class="text-warning ms-1" title="Archive KPI">
+                                <i class="bi bi-archive"></i>
+                            </a>
+                            {% else %}
+                            <a href="#" onclick="restoreKPI({{ kpi.id }}, '{{ kpi.name }}'); return false;" class="text-success ms-1" title="Restore KPI">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </a>
+                            {% endif %}
+                        </span>
+                        {% endif %}
                     </td>
                     {% for vt in value_types %}
                         {% set config = kpi.value_type_configs | selectattr('value_type_id', 'equalto', vt.id) | first %}
@@ -1364,7 +1443,182 @@ document.addEventListener('DOMContentLoaded', function() {
             filterForm.submit();
         });
     }
+
+    // ========================================
+    // EDIT MODE TOGGLE
+    // ========================================
+    const toggleEditModeBtn = document.getElementById('toggle-edit-mode');
+    if (toggleEditModeBtn) {
+        toggleEditModeBtn.addEventListener('click', function() {
+            document.body.classList.toggle('edit-mode');
+            const isEditMode = document.body.classList.contains('edit-mode');
+            this.innerHTML = isEditMode ?
+                '<i class="bi bi-check-circle"></i> Exit Edit Mode' :
+                '<i class="bi bi-pencil-square"></i> Edit Mode';
+        });
+    }
 });
+
+// ========================================
+// INLINE CRUD FUNCTIONS
+// ========================================
+
+// SPACE CRUD
+async function editSpace(spaceId) {
+    // Fetch space data
+    const response = await fetch(`/organization-admin/spaces/${spaceId}/edit`);
+    if (response.redirected) {
+        window.location.href = response.url;
+    }
+}
+
+async function deleteSpace(spaceId, spaceName) {
+    if (!confirm(`Are you sure you want to delete space "${spaceName}"?\n\nThis will delete all challenges, initiatives, systems, and KPIs within it.`)) {
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/organization-admin/spaces/${spaceId}/delete`;
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrf_token';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// CHALLENGE CRUD
+async function editChallenge(challengeId) {
+    window.location.href = `/organization-admin/challenges/${challengeId}/edit`;
+}
+
+async function deleteChallenge(challengeId, challengeName) {
+    if (!confirm(`Are you sure you want to delete challenge "${challengeName}"?\n\nThis will delete all initiatives, systems, and KPIs within it.`)) {
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/organization-admin/challenges/${challengeId}/delete`;
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrf_token';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// INITIATIVE CRUD
+async function editInitiative(initiativeId) {
+    window.location.href = `/organization-admin/initiatives/${initiativeId}/edit`;
+}
+
+async function deleteInitiative(initiativeId, initiativeName) {
+    if (!confirm(`Are you sure you want to delete initiative "${initiativeName}"?\n\nThis will delete all systems and KPIs linked to it.`)) {
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/organization-admin/initiatives/${initiativeId}/delete`;
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrf_token';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// SYSTEM CRUD
+async function editSystem(systemId) {
+    window.location.href = `/organization-admin/systems/${systemId}/edit`;
+}
+
+async function deleteSystem(systemId, systemName) {
+    if (!confirm(`Are you sure you want to delete system "${systemName}"?\n\nThis will delete all KPIs within it.`)) {
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/organization-admin/systems/${systemId}/delete`;
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrf_token';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// KPI CRUD
+async function archiveKPI(kpiId, kpiName) {
+    if (!confirm(`Archive KPI "${kpiName}"?\n\nArchived KPIs can be restored later.`)) {
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/organization-admin/kpis/${kpiId}/archive`;
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrf_token';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
+async function restoreKPI(kpiId, kpiName) {
+    if (!confirm(`Restore KPI "${kpiName}"?`)) {
+        return;
+    }
+
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/organization-admin/kpis/${kpiId}/restore`;
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
+    if (csrfToken) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'csrf_token';
+        input.value = csrfToken;
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+}
 </script>
 
 </div> <!-- Close workspace-container -->
