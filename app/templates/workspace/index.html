@@ -864,6 +864,13 @@ tr[data-level="kpi"] td {
                 <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}" {% if not show_levels.kpis %}data-level-hidden="true"{% endif %}>
                     <td class="level-border kpi" style="padding-left: 10rem !important;">
                         <span class="hierarchy-icon">📊</span>
+                        {% set has_target_direction = namespace(value=none) %}
+                        {% for config in kpi.value_type_configs %}
+                            {% if config.target_value is not none and has_target_direction.value is none %}
+                                {% set has_target_direction.value = config.target_direction or 'maximize' %}
+                            {% endif %}
+                        {% endfor %}
+                        {% if has_target_direction.value == 'minimize' %}⬇️{% elif has_target_direction.value == 'exact' %}🎯{% elif has_target_direction.value %}⬆️{% endif %}
                         {{ kpi.name }}
                         {% if kpi.is_archived %}
                         <span class="badge bg-secondary ms-1" title="Archived on {{ kpi.archived_at.strftime('%Y-%m-%d') }}">
@@ -877,8 +884,8 @@ tr[data-level="kpi"] td {
                         {% endfor %}
                         {% if current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
-                            <a href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=value_types[0].id if value_types else 0) }}" class="text-primary" title="Edit KPI">
-                                <i class="bi bi-pencil-square"></i>
+                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="text-primary" title="Edit KPI Settings">
+                                <i class="bi bi-sliders"></i>
                             </a>
                             {% if not kpi.is_archived %}
                             <a href="#" onclick="archiveKPI({{ kpi.id }}, '{{ kpi.name }}'); return false;" class="text-warning ms-1" title="Archive KPI">
@@ -909,29 +916,97 @@ tr[data-level="kpi"] td {
                                     {% if vt.kind == 'numeric' %}
                                         <strong><span style="color: {{ config.get_value_color(consensus.value) }};">{{ consensus.value|format_value(vt, config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                         {% if config.target_value %}
-                                            {% set progress = ((consensus.value / config.target_value) * 100)|int %}
-                                            <br><small style="color: #6c757d;" title="Target: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯 {{ progress }}%</small>
+                                            {% set target_dir = config.target_direction or 'maximize' %}
+                                            {% if target_dir == 'minimize' %}
+                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                            {% elif target_dir == 'exact' %}
+                                                {% set tolerance = config.target_value * ((config.target_tolerance_pct or 10) / 100) %}
+                                                {% set diff = (consensus.value - config.target_value)|abs %}
+                                                {% if diff <= tolerance %}
+                                                    {% set progress = 100 %}
+                                                {% else %}
+                                                    {% set progress = ([0, (100 - ((diff - tolerance) / config.target_value * 100))]|max)|int %}
+                                                {% endif %}
+                                            {% else %}
+                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            {% endif %}
+                                            <br><small style="color: #6c757d;" title="Target: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'risk' %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>!!</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>!!!</strong>{% endif %}
+                                        {% if config.target_value %}
+                                            {% set target_dir = config.target_direction or 'maximize' %}
+                                            {% if target_dir == 'minimize' %}
+                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                            {% elif target_dir == 'exact' %}
+                                                {% set progress = 100 if consensus.value == config.target_value else 50 %}
+                                            {% else %}
+                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            {% endif %}
+                                            <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
+                                        {% endif %}
                                     {% elif vt.kind == 'positive_impact' %}
                                         {% if consensus.value == 1 %}<strong>★</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>★★</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>★★★</strong>{% endif %}
+                                        {% if config.target_value %}
+                                            {% set target_dir = config.target_direction or 'maximize' %}
+                                            {% if target_dir == 'minimize' %}
+                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                            {% elif target_dir == 'exact' %}
+                                                {% set progress = 100 if consensus.value == config.target_value else 50 %}
+                                            {% else %}
+                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            {% endif %}
+                                            <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
+                                        {% endif %}
                                     {% elif vt.kind == 'negative_impact' %}
                                         {% if consensus.value == 1 %}<strong>▼</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>▼▼</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>▼▼▼</strong>{% endif %}
+                                        {% if config.target_value %}
+                                            {% set target_dir = config.target_direction or 'maximize' %}
+                                            {% if target_dir == 'minimize' %}
+                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                            {% elif target_dir == 'exact' %}
+                                                {% set progress = 100 if consensus.value == config.target_value else 50 %}
+                                            {% else %}
+                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            {% endif %}
+                                            <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
+                                        {% endif %}
                                     {% elif vt.kind == 'level' %}
                                         {% if consensus.value == 1 %}<strong>●</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>●●</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>●●●</strong>{% endif %}
+                                        {% if config.target_value %}
+                                            {% set target_dir = config.target_direction or 'maximize' %}
+                                            {% if target_dir == 'minimize' %}
+                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                            {% elif target_dir == 'exact' %}
+                                                {% set progress = 100 if consensus.value == config.target_value else 50 %}
+                                            {% else %}
+                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            {% endif %}
+                                            <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
+                                        {% endif %}
                                     {% elif vt.kind == 'sentiment' %}
                                         {% if consensus.value == 1 %}<strong>☹️</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>😐</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>😊</strong>{% endif %}
+                                        {% if config.target_value %}
+                                            {% set target_dir = config.target_direction or 'maximize' %}
+                                            {% if target_dir == 'minimize' %}
+                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                            {% elif target_dir == 'exact' %}
+                                                {% set progress = 100 if consensus.value == config.target_value else 50 %}
+                                            {% else %}
+                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                            {% endif %}
+                                            <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
+                                        {% endif %}
                                     {% else %}
                                         <strong>{{ consensus.value }}</strong>
                                     {% endif %}
@@ -1617,6 +1692,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 '<i class="bi bi-check-circle"></i> <span class="d-none d-md-inline">Exit Edit Mode</span>' :
                 '<i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit Mode</span>';
         });
+
+        // Auto-enable edit mode if URL parameter is present
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auto_edit') === '1') {
+            document.body.classList.add('edit-mode');
+            toggleEditModeBtn.innerHTML = '<i class="bi bi-check-circle"></i> <span class="d-none d-md-inline">Exit Edit Mode</span>';
+            // Clean up URL without reloading
+            window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        }
     }
 });
 
@@ -1627,7 +1711,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // SPACE CRUD
 async function editSpace(spaceId) {
     // Fetch space data
-    const response = await fetch(`/organization-admin/spaces/${spaceId}/edit`);
+    const response = await fetch(`/org-admin/spaces/${spaceId}/edit`);
     if (response.redirected) {
         window.location.href = response.url;
     }
@@ -1640,7 +1724,7 @@ async function deleteSpace(spaceId, spaceName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/organization-admin/spaces/${spaceId}/delete`;
+    form.action = `/org-admin/spaces/${spaceId}/delete`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {
@@ -1657,7 +1741,7 @@ async function deleteSpace(spaceId, spaceName) {
 
 // CHALLENGE CRUD
 async function editChallenge(challengeId) {
-    window.location.href = `/organization-admin/challenges/${challengeId}/edit`;
+    window.location.href = `/org-admin/challenges/${challengeId}/edit`;
 }
 
 async function deleteChallenge(challengeId, challengeName) {
@@ -1667,7 +1751,7 @@ async function deleteChallenge(challengeId, challengeName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/organization-admin/challenges/${challengeId}/delete`;
+    form.action = `/org-admin/challenges/${challengeId}/delete`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {
@@ -1684,7 +1768,7 @@ async function deleteChallenge(challengeId, challengeName) {
 
 // INITIATIVE CRUD
 async function editInitiative(initiativeId) {
-    window.location.href = `/organization-admin/initiatives/${initiativeId}/edit`;
+    window.location.href = `/org-admin/initiatives/${initiativeId}/edit`;
 }
 
 async function deleteInitiative(initiativeId, initiativeName) {
@@ -1694,7 +1778,7 @@ async function deleteInitiative(initiativeId, initiativeName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/organization-admin/initiatives/${initiativeId}/delete`;
+    form.action = `/org-admin/initiatives/${initiativeId}/delete`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {
@@ -1711,7 +1795,7 @@ async function deleteInitiative(initiativeId, initiativeName) {
 
 // SYSTEM CRUD
 async function editSystem(systemId) {
-    window.location.href = `/organization-admin/systems/${systemId}/edit`;
+    window.location.href = `/org-admin/systems/${systemId}/edit`;
 }
 
 async function deleteSystem(systemId, systemName) {
@@ -1721,7 +1805,7 @@ async function deleteSystem(systemId, systemName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/organization-admin/systems/${systemId}/delete`;
+    form.action = `/org-admin/systems/${systemId}/delete`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {
@@ -1744,7 +1828,7 @@ async function archiveKPI(kpiId, kpiName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/organization-admin/kpis/${kpiId}/archive`;
+    form.action = `/org-admin/kpis/${kpiId}/archive`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {
@@ -1766,7 +1850,7 @@ async function restoreKPI(kpiId, kpiName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/organization-admin/kpis/${kpiId}/restore`;
+    form.action = `/org-admin/kpis/${kpiId}/restore`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {

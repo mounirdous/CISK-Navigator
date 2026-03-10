@@ -115,6 +115,15 @@ class KPIValueTypeConfig(db.Model):
         db.Numeric(precision=20, scale=6), nullable=True, comment="Target value to achieve (numeric only)"
     )
     target_date = db.Column(db.Date, nullable=True, comment="Date by which target should be achieved")
+    target_direction = db.Column(
+        db.String(20),
+        nullable=True,
+        default="maximize",
+        comment="Target direction: maximize (higher is better), minimize (lower is better), or exact (at target)",
+    )
+    target_tolerance_pct = db.Column(
+        db.Integer, nullable=True, default=10, comment="Tolerance percentage for 'exact' target direction"
+    )
     baseline_snapshot_id = db.Column(
         db.Integer,
         nullable=True,

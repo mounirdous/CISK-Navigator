@@ -118,7 +118,14 @@
                             <i class="bi bi-hash"></i>
                             Value Type Configuration
                         </div>
-                        <p class="text-muted mb-3">Configure colors, display settings, and targets for each value type</p>
+                        <div class="alert alert-info" style="border-left: 4px solid #0dcaf0;">
+                            <strong><i class="bi bi-info-circle"></i> What You Can Configure:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Colors:</strong> How positive/negative/zero values are displayed</li>
+                                <li><strong>Display Scale:</strong> Show in thousands (k) or millions (M)</li>
+                                <li><strong>Target Definition:</strong> Set target value, date, and success criteria (At or Above, At or Below, At target)</li>
+                            </ul>
+                        </div>
 
                         {% for config in kpi.value_type_configs %}
                         {% set vt = config.value_type %}
@@ -187,22 +194,142 @@
                                         </label>
                                     </div>
                                     <div class="target-fields" id="target_fields_{{ config.id }}" style="display: {{ 'block' if config.target_value else 'none' }};">
-                                        <div class="row g-3">
-                                            <div class="col-md-6">
-                                                <label class="form-label small fw-semibold">Target Value</label>
-                                                <input type="number" step="0.01" class="form-control"
-                                                       name="target_value_{{ config.id }}" placeholder="e.g., 1000"
-                                                       value="{{ config.target_value if config.target_value else '' }}">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Success Definition</label>
+                                            <small class="text-muted d-block mb-2">When is the target considered achieved?</small>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="target_direction_{{ config.id }}"
+                                                       id="dir_max_{{ config.id }}" value="maximize"
+                                                       {{ 'checked' if not config.target_direction or config.target_direction == 'maximize' else '' }}>
+                                                <label class="form-check-label" for="dir_max_{{ config.id }}">
+                                                    ⬆️ <strong>At or Above target</strong> <span class="text-muted">(Revenue, Satisfaction, Growth)</span>
+                                                </label>
                                             </div>
-                                            <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="target_direction_{{ config.id }}"
+                                                       id="dir_min_{{ config.id }}" value="minimize"
+                                                       {{ 'checked' if config.target_direction == 'minimize' else '' }}>
+                                                <label class="form-check-label" for="dir_min_{{ config.id }}">
+                                                    ⬇️ <strong>At or Below target</strong> <span class="text-muted">(Cost, Risk, CO2, Defects)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input direction-radio" type="radio" name="target_direction_{{ config.id }}"
+                                                       id="dir_exact_{{ config.id }}" value="exact"
+                                                       {{ 'checked' if config.target_direction == 'exact' else '' }}>
+                                                <label class="form-check-label" for="dir_exact_{{ config.id }}">
+                                                    🎯 <strong>At target (with tolerance)</strong> <span class="text-muted">(Budget ±10%, Headcount)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-semibold">Target Value</label>
+                                                <input type="number" step="{{ '1' if vt.numeric_format == 'integer' else ('0.' + '0' * (vt.decimal_places - 1) + '1' if vt.decimal_places and vt.decimal_places > 0 else '0.01') }}" class="form-control"
+                                                       name="target_value_{{ config.id }}" placeholder="e.g., 1000"
+                                                       value="{{ '{:.{}f}'.format(config.target_value, vt.decimal_places if vt.decimal_places is not none else 0) if config.target_value else '' }}">
+                                            </div>
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-semibold">Target Date</label>
+                                                <input type="date" class="form-control"
+                                                       name="target_date_{{ config.id }}"
+                                                       value="{{ config.target_date.strftime('%Y-%m-%d') if config.target_date else '' }}">
+                                            </div>
+                                            <div class="col-md-4" id="tolerance_field_{{ config.id }}" style="display: {{ 'block' if config.target_direction == 'exact' else 'none' }};">
+                                                <label class="form-label small fw-semibold">Tolerance (%)</label>
+                                                <input type="number" min="1" max="50" class="form-control"
+                                                       name="target_tolerance_{{ config.id }}"
+                                                       value="{{ config.target_tolerance_pct if config.target_tolerance_pct else 10 }}"
+                                                       placeholder="10">
+                                                <small class="form-text text-muted">For "At Target" only</small>
+                                            </div>
+                                        </div>
+                                        <small class="form-text text-muted d-block">
+                                            <i class="bi bi-info-circle"></i> Target direction affects traffic lights and dashboards
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% else %}
+                            {# Qualitative value types (risk, impact, level, sentiment) #}
+                            <div class="color-config">
+                                <h6 class="mb-3"><i class="bi bi-bullseye"></i> Target Configuration</h6>
+
+                                <div class="border-top pt-3 mt-3">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input target-checkbox" type="checkbox"
+                                               name="has_target_{{ config.id }}" id="has_target_{{ config.id }}"
+                                               {{ 'checked' if config.target_value else '' }}>
+                                        <label class="form-check-label fw-semibold" for="has_target_{{ config.id }}">
+                                            <i class="bi bi-bullseye"></i> Set Target Level
+                                        </label>
+                                    </div>
+                                    <div class="target-fields" id="target_fields_{{ config.id }}" style="display: {{ 'block' if config.target_value else 'none' }};">
+                                        <div class="mb-3">
+                                            <label class="form-label small fw-semibold">Success Definition</label>
+                                            <small class="text-muted d-block mb-2">When is the target considered achieved?</small>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="target_direction_{{ config.id }}"
+                                                       id="dir_max_{{ config.id }}" value="maximize"
+                                                       {{ 'checked' if not config.target_direction or config.target_direction == 'maximize' else '' }}>
+                                                <label class="form-check-label" for="dir_max_{{ config.id }}">
+                                                    ⬆️ <strong>At or Above target level</strong> <span class="text-muted">(Satisfaction, Impact)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="target_direction_{{ config.id }}"
+                                                       id="dir_min_{{ config.id }}" value="minimize"
+                                                       {{ 'checked' if config.target_direction == 'minimize' else '' }}>
+                                                <label class="form-check-label" for="dir_min_{{ config.id }}">
+                                                    ⬇️ <strong>At or Below target level</strong> <span class="text-muted">(Risk, Negative Impact)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input direction-radio" type="radio" name="target_direction_{{ config.id }}"
+                                                       id="dir_exact_{{ config.id }}" value="exact"
+                                                       {{ 'checked' if config.target_direction == 'exact' else '' }}>
+                                                <label class="form-check-label" for="dir_exact_{{ config.id }}">
+                                                    🎯 <strong>Exactly at target level</strong>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-semibold">Target Level</label>
+                                                <select class="form-select" name="target_value_{{ config.id }}">
+                                                    <option value="">Select level...</option>
+                                                    {% if vt.kind == 'risk' %}
+                                                        <option value="1" {{ 'selected' if config.target_value and config.target_value|float == 1.0 else '' }}>! Low Risk</option>
+                                                        <option value="2" {{ 'selected' if config.target_value and config.target_value|float == 2.0 else '' }}>!! Medium Risk</option>
+                                                        <option value="3" {{ 'selected' if config.target_value and config.target_value|float == 3.0 else '' }}>!!! High Risk</option>
+                                                    {% elif vt.kind == 'positive_impact' %}
+                                                        <option value="1" {{ 'selected' if config.target_value and config.target_value|float == 1.0 else '' }}>★ Low Impact</option>
+                                                        <option value="2" {{ 'selected' if config.target_value and config.target_value|float == 2.0 else '' }}>★★ Medium Impact</option>
+                                                        <option value="3" {{ 'selected' if config.target_value and config.target_value|float == 3.0 else '' }}>★★★ High Impact</option>
+                                                    {% elif vt.kind == 'negative_impact' %}
+                                                        <option value="1" {{ 'selected' if config.target_value and config.target_value|float == 1.0 else '' }}>▼ Low Impact</option>
+                                                        <option value="2" {{ 'selected' if config.target_value and config.target_value|float == 2.0 else '' }}>▼▼ Medium Impact</option>
+                                                        <option value="3" {{ 'selected' if config.target_value and config.target_value|float == 3.0 else '' }}>▼▼▼ High Impact</option>
+                                                    {% elif vt.kind == 'level' %}
+                                                        <option value="1" {{ 'selected' if config.target_value and config.target_value|float == 1.0 else '' }}>● Level 1</option>
+                                                        <option value="2" {{ 'selected' if config.target_value and config.target_value|float == 2.0 else '' }}>●● Level 2</option>
+                                                        <option value="3" {{ 'selected' if config.target_value and config.target_value|float == 3.0 else '' }}>●●● Level 3</option>
+                                                    {% elif vt.kind == 'sentiment' %}
+                                                        <option value="1" {{ 'selected' if config.target_value and config.target_value|float == 1.0 else '' }}>😞 Negative</option>
+                                                        <option value="2" {{ 'selected' if config.target_value and config.target_value|float == 2.0 else '' }}>😐 Neutral</option>
+                                                        <option value="3" {{ 'selected' if config.target_value and config.target_value|float == 3.0 else '' }}>😊 Positive</option>
+                                                    {% endif %}
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
                                                 <label class="form-label small fw-semibold">Target Date</label>
                                                 <input type="date" class="form-control"
                                                        name="target_date_{{ config.id }}"
                                                        value="{{ config.target_date.strftime('%Y-%m-%d') if config.target_date else '' }}">
                                             </div>
                                         </div>
-                                        <small class="form-text text-muted mt-2 d-block">
-                                            <i class="bi bi-info-circle"></i> Optional: Set a target value and date to track progress
+                                        <small class="form-text text-muted d-block">
+                                            <i class="bi bi-info-circle"></i> Target direction affects traffic lights and dashboards
                                         </small>
                                     </div>
                                 </div>
@@ -263,6 +390,17 @@ document.addEventListener('DOMContentLoaded', function() {
             const targetFields = document.getElementById('target_fields_' + configId);
             if (targetFields) {
                 targetFields.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
+
+    // Toggle tolerance field visibility based on target direction
+    document.querySelectorAll('input[type="radio"][name^="target_direction_"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const configId = this.name.replace('target_direction_', '');
+            const toleranceField = document.getElementById('tolerance_field_' + configId);
+            if (toleranceField) {
+                toleranceField.style.display = this.value === 'exact' ? 'block' : 'none';
             }
         });
     });

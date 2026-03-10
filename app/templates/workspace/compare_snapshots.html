@@ -134,7 +134,12 @@
                         {% for comp in comparisons %}
                         {% if comp.value1 is not none or comp.value2 is not none %}
                         <tr>
-                            <td><strong>{{ comp.kpi.name }}</strong></td>
+                            <td>
+                                <strong>
+                                    {% if comp.config.target_direction == 'minimize' %}⬇️{% elif comp.config.target_direction == 'exact' %}🎯{% elif comp.config.target_direction %}⬆️{% endif %}
+                                    {{ comp.kpi.name }}
+                                </strong>
+                            </td>
                             <td>
                                 {{ comp.value_type.name }}
                                 {% if comp.value_type.unit_label %}

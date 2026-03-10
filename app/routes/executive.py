@@ -9,7 +9,18 @@ from flask_login import login_required
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models import KPI, Contribution, GovernanceBody, InitiativeSystemLink, KPIValueTypeConfig, System
+from app.models import (
+    KPI,
+    Challenge,
+    ChallengeInitiativeLink,
+    Contribution,
+    GovernanceBody,
+    Initiative,
+    InitiativeSystemLink,
+    KPIValueTypeConfig,
+    Space,
+    System,
+)
 
 bp = Blueprint("executive", __name__, url_prefix="/executive")
 
@@ -32,15 +43,29 @@ def dashboard():
     today = datetime.now().date()
     period_start = today - timedelta(days=days)
 
-    # === GET ALL KPIs WITH STATUS ===
+    # Space privacy filter (default: all)
+    space_type = request.args.get("space_type", "all")
 
-    kpis = (
+    # === GET ALL KPIs WITH STATUS (FILTERED BY SPACE PRIVACY) ===
+
+    kpi_query = (
         KPI.query.join(InitiativeSystemLink)
         .join(System)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+        .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+        .join(Space, Challenge.space_id == Space.id)
         .filter(System.organization_id == org_id)
-        .order_by(KPI.name)
-        .all()
     )
+
+    # Apply space privacy filter
+    if space_type == "public":
+        kpi_query = kpi_query.filter(Space.is_private.is_(False))
+    elif space_type == "private":
+        kpi_query = kpi_query.filter(Space.is_private.is_(True))
+    # else: space_type == "all", no filter
+
+    kpis = kpi_query.order_by(KPI.name).all()
 
     # Calculate status for each KPI
     kpi_statuses = []
@@ -59,9 +84,13 @@ def dashboard():
 
     total_kpis = len(kpi_statuses)
     active_kpis = sum(1 for k in kpi_statuses if not k["kpi"].is_archived)
-    green_count = sum(1 for k in kpi_statuses if k["status"] == "green")
-    yellow_count = sum(1 for k in kpi_statuses if k["status"] == "yellow")
-    red_count = sum(1 for k in kpi_statuses if k["status"] == "red")
+    green_kpis = [k for k in kpi_statuses if k["status"] == "green"]
+    yellow_kpis = [k for k in kpi_statuses if k["status"] == "yellow"]
+    red_kpis = [k for k in kpi_statuses if k["status"] == "red"]
+
+    green_count = len(green_kpis)
+    yellow_count = len(yellow_kpis)
+    red_count = len(red_kpis)
 
     # Calculate percentages
     green_pct = (green_count / active_kpis * 100) if active_kpis > 0 else 0
@@ -69,39 +98,60 @@ def dashboard():
     red_pct = (red_count / active_kpis * 100) if active_kpis > 0 else 0
 
     # Calculate "On Target" percentage (green + yellow achieving > 60%)
-    on_target_count = green_count + sum(
-        1 for k in kpi_statuses if k["status"] == "yellow" and k["details"].get("target_achievement_pct", 0) >= 60
-    )
+    on_target_kpis = green_kpis + [
+        k
+        for k in yellow_kpis
+        if k["details"].get("target_achievement_pct") is not None and k["details"]["target_achievement_pct"] >= 60
+    ]
+    on_target_count = len(on_target_kpis)
     on_target_pct = (on_target_count / active_kpis * 100) if active_kpis > 0 else 0
 
     # === TREND CALCULATION ===
 
-    # Count contributions in current period
-    current_contributions = (
+    # Count contributions in current period (filtered by space privacy)
+    current_contrib_query = (
         db.session.query(func.count(Contribution.id))
         .join(KPIValueTypeConfig, Contribution.kpi_value_type_config_id == KPIValueTypeConfig.id)
         .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
         .join(System, InitiativeSystemLink.system_id == System.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+        .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+        .join(Space, Challenge.space_id == Space.id)
         .filter(System.organization_id == org_id, Contribution.created_at >= period_start)
-        .scalar()
     )
+    if space_type == "public":
+        current_contrib_query = current_contrib_query.filter(Space.is_private.is_(False))
+    elif space_type == "private":
+        current_contrib_query = current_contrib_query.filter(Space.is_private.is_(True))
 
-    # Count contributions in previous period (for trend comparison)
+    current_contributions = current_contrib_query.scalar()
+
+    # Count contributions in previous period (for trend comparison, filtered by space privacy)
     previous_period_start = period_start - timedelta(days=days)
-    previous_contributions = (
+    previous_contrib_query = (
         db.session.query(func.count(Contribution.id))
         .join(KPIValueTypeConfig, Contribution.kpi_value_type_config_id == KPIValueTypeConfig.id)
         .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
         .join(System, InitiativeSystemLink.system_id == System.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+        .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+        .join(Space, Challenge.space_id == Space.id)
         .filter(
             System.organization_id == org_id,
             Contribution.created_at >= previous_period_start,
             Contribution.created_at < period_start,
         )
-        .scalar()
     )
+    if space_type == "public":
+        previous_contrib_query = previous_contrib_query.filter(Space.is_private.is_(False))
+    elif space_type == "private":
+        previous_contrib_query = previous_contrib_query.filter(Space.is_private.is_(True))
+
+    previous_contributions = previous_contrib_query.scalar()
 
     # Calculate trend
     if previous_contributions > 0:
@@ -142,6 +192,7 @@ def dashboard():
                     "performance_pct": round(gb_pct, 0),
                     "status": gb_status,
                     "kpi_count": gb_total,
+                    "kpis": gb_kpis,  # Include KPI list for tooltips
                 }
             )
 
@@ -153,10 +204,18 @@ def dashboard():
         if k["status"] == "green" and k["details"].get("target_achievement_pct"):
             achievement_pct = k["details"]["target_achievement_pct"]
             if achievement_pct >= 100:
+                # Find target direction from configs with targets
+                target_direction = None
+                for config in k["kpi"].value_type_configs:
+                    if config.target_value is not None:
+                        target_direction = config.target_direction or "maximize"
+                        break
+
                 top_performers.append(
                     {
                         "kpi": k["kpi"],
                         "achievement_pct": achievement_pct,
+                        "target_direction": target_direction,
                         "system": (
                             k["kpi"].initiative_system_link.system.name if k["kpi"].initiative_system_link else "N/A"
                         ),
@@ -171,13 +230,22 @@ def dashboard():
     # Red KPIs or yellow KPIs with low achievement
     needs_attention = []
     for k in kpi_statuses:
-        if k["status"] == "red" or (k["status"] == "yellow" and k["details"].get("target_achievement_pct", 100) < 70):
+        target_pct = k["details"].get("target_achievement_pct")
+        if k["status"] == "red" or (k["status"] == "yellow" and target_pct is not None and target_pct < 70):
+            # Find target direction from configs with targets
+            target_direction = None
+            for config in k["kpi"].value_type_configs:
+                if config.target_value is not None:
+                    target_direction = config.target_direction or "maximize"
+                    break
+
             needs_attention.append(
                 {
                     "kpi": k["kpi"],
                     "status": k["status"],
                     "reason": k["reason"],
                     "achievement_pct": k["details"].get("target_achievement_pct"),
+                    "target_direction": target_direction,
                     "days_since_activity": k["details"].get("days_since_activity"),
                     "system": k["kpi"].initiative_system_link.system.name if k["kpi"].initiative_system_link else "N/A",
                 }
@@ -190,25 +258,34 @@ def dashboard():
 
     # === ACTIVITY TREND (Weekly) ===
 
-    # Get contributions by week for chart
+    # Get contributions by week for chart (filtered by space privacy)
     weeks = []
     for i in range(4):
         week_end = today - timedelta(days=i * 7)
         week_start = week_end - timedelta(days=7)
 
-        week_contributions = (
+        week_contrib_query = (
             db.session.query(func.count(Contribution.id))
             .join(KPIValueTypeConfig, Contribution.kpi_value_type_config_id == KPIValueTypeConfig.id)
             .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
             .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
             .join(System, InitiativeSystemLink.system_id == System.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .join(Space, Challenge.space_id == Space.id)
             .filter(
                 System.organization_id == org_id,
                 Contribution.created_at >= week_start,
                 Contribution.created_at < week_end,
             )
-            .scalar()
         )
+        if space_type == "public":
+            week_contrib_query = week_contrib_query.filter(Space.is_private.is_(False))
+        elif space_type == "private":
+            week_contrib_query = week_contrib_query.filter(Space.is_private.is_(True))
+
+        week_contributions = week_contrib_query.scalar()
 
         weeks.append({"label": f"Week {4-i}", "count": week_contributions})
 
@@ -311,6 +388,11 @@ def dashboard():
         green_pct=round(green_pct, 0),
         yellow_pct=round(yellow_pct, 0),
         red_pct=round(red_pct, 0),
+        # KPI Lists for Tooltips
+        green_kpis=green_kpis,
+        yellow_kpis=yellow_kpis,
+        red_kpis=red_kpis,
+        on_target_kpis=on_target_kpis,
         # Trends
         activity_trend_pct=round(activity_trend_pct, 1),
         # Governance
@@ -325,6 +407,8 @@ def dashboard():
         alerts=alerts,
         # Period
         days=days,
+        # Privacy filter
+        space_type=space_type,
     )
 
 

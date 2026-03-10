@@ -146,12 +146,21 @@ body.dark-mode .card.border-primary {
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h2 class="mb-1">{{ kpi.name }}</h2>
+        <h2 class="mb-1"><i class="bi bi-graph-up"></i> KPI: {{ kpi.name }}</h2>
         <p class="text-muted mb-0">{{ kpi.description }}</p>
     </div>
-    <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">
-        <i class="bi bi-arrow-left"></i> Back to Workspace
-    </a>
+    <div class="d-flex gap-2">
+        {% if current_user.can_manage_kpis(session.organization_id) %}
+        <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="btn btn-outline-primary"
+           title="Configure targets, colors, display scale, and success criteria">
+            <i class="bi bi-sliders"></i> Advanced Settings
+            <small class="d-none d-lg-inline text-muted ms-1">(Targets, Colors, Scale)</small>
+        </a>
+        {% endif %}
+        <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Organization
+        </a>
+    </div>
 </div>
 
 <!-- Add/Update Contribution Form - NOW AT TOP -->
@@ -652,8 +661,11 @@ async function loadTrendChart() {
         {% if config.target_value and value_type.kind == 'numeric' %}
         const targetValue = {{ config.target_value }} / scaleDivisor;
         const targetValueFormatted = formatNumber(targetValue, decimalPlaces);
+        const targetDirection = '{{ config.target_direction or "maximize" }}';
+        const directionIcon = targetDirection === 'minimize' ? '⬇️' : (targetDirection === 'exact' ? '🎯' : '⬆️');
+        const directionLabel = targetDirection === 'minimize' ? 'At or Below' : (targetDirection === 'exact' ? 'At' : 'At or Above');
         datasets.push({
-            label: 'Target (' + targetValueFormatted + scaleSuffix + (unitLabel ? ' ' + unitLabel : '') + '{% if config.target_date %} by {{ config.target_date.strftime("%Y-%m-%d") }}{% endif %})',
+            label: directionIcon + ' Target ' + directionLabel + ' (' + targetValueFormatted + scaleSuffix + (unitLabel ? ' ' + unitLabel : '') + '{% if config.target_date %} by {{ config.target_date.strftime("%Y-%m-%d") }}{% endif %})',
             data: dates.map(() => targetValue),
             borderColor: '#dc3545',
             borderWidth: 2,

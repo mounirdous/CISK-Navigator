@@ -59,7 +59,10 @@ class KPI(db.Model):
             return {
                 "status": "red",
                 "reason": "KPI is archived",
-                "details": {"archived_at": self.archived_at.isoformat() if self.archived_at else None},
+                "details": {
+                    "archived_at": self.archived_at.isoformat() if self.archived_at else None,
+                    "target_achievement_pct": None,
+                },
             }
 
         # Get all contributions for this KPI (across all value types)
@@ -114,7 +117,11 @@ class KPI(db.Model):
             return {
                 "status": "red",
                 "reason": "No contributions yet",
-                "details": {"days_since_activity": None, "total_contributions": 0},
+                "details": {
+                    "days_since_activity": None,
+                    "total_contributions": 0,
+                    "target_achievement_pct": None,
+                },
             }
 
         # RED: Stale (no activity in 30+ days)
@@ -125,6 +132,7 @@ class KPI(db.Model):
                 "details": {
                     "days_since_activity": days_since_activity,
                     "total_contributions": total_contributions,
+                    "target_achievement_pct": round(target_achievement_pct, 1) if target_achievement_pct else None,
                 },
             }
 
@@ -139,6 +147,18 @@ class KPI(db.Model):
                 },
             }
 
+        # GREEN OVERRIDE: Excellent target achievement (≥90%) overrides other concerns
+        if target_achievement_pct is not None and target_achievement_pct >= 90:
+            return {
+                "status": "green",
+                "reason": f"Excellent target achievement ({target_achievement_pct:.0f}%)",
+                "details": {
+                    "days_since_activity": days_since_activity,
+                    "total_contributions": total_contributions,
+                    "target_achievement_pct": round(target_achievement_pct, 1),
+                },
+            }
+
         # YELLOW: Low activity (14-29 days)
         if days_since_activity >= 14:
             return {
@@ -147,6 +167,7 @@ class KPI(db.Model):
                 "details": {
                     "days_since_activity": days_since_activity,
                     "total_contributions": total_contributions,
+                    "target_achievement_pct": round(target_achievement_pct, 1) if target_achievement_pct else None,
                 },
             }
 
@@ -158,6 +179,7 @@ class KPI(db.Model):
                 "details": {
                     "days_since_activity": days_since_activity,
                     "total_contributions": total_contributions,
+                    "target_achievement_pct": round(target_achievement_pct, 1) if target_achievement_pct else None,
                 },
             }
 
@@ -205,6 +227,11 @@ class KPI(db.Model):
         """
         Calculate overall target achievement percentage for this KPI.
         Returns average % across all configs that have targets.
+
+        Respects target_direction:
+        - maximize: Higher than target = >100% (good)
+        - minimize: Lower than target = >100% (good)
+        - exact: Within tolerance = 100%, outside = <100%
         """
         from app.services import ConsensusService
 
@@ -216,7 +243,35 @@ class KPI(db.Model):
                     try:
                         current_value = float(consensus_result["value"])
                         target_value = float(config.target_value)
-                        achievement_pct = (current_value / target_value) * 100
+                        target_direction = config.target_direction or "maximize"
+
+                        if target_direction == "minimize":
+                            # For minimize: being BELOW target is good
+                            # If current < target, achievement > 100%
+                            # If current > target, achievement < 100%
+                            if current_value == 0:
+                                achievement_pct = 100  # At minimum is perfect
+                            else:
+                                achievement_pct = (target_value / current_value) * 100
+
+                        elif target_direction == "exact":
+                            # For exact: being within tolerance is 100%
+                            tolerance_pct = config.target_tolerance_pct or 10
+                            tolerance = target_value * (tolerance_pct / 100)
+                            diff = abs(current_value - target_value)
+
+                            if diff <= tolerance:
+                                # Within tolerance = 100%
+                                achievement_pct = 100
+                            else:
+                                # Outside tolerance: scale down based on distance
+                                # At 2x tolerance = 50%, at 3x = 33%, etc.
+                                achievement_pct = max(0, 100 - ((diff - tolerance) / target_value * 100))
+
+                        else:  # maximize (default)
+                            # For maximize: being ABOVE target is good
+                            achievement_pct = (current_value / target_value) * 100
+
                         achievements.append(achievement_pct)
                     except (ValueError, TypeError, ZeroDivisionError):
                         pass

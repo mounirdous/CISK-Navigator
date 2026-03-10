@@ -138,16 +138,9 @@ def index():
 @login_required
 @organization_required
 def spaces():
-    """List all spaces with full hierarchy"""
-    org_id = session.get("organization_id")
-    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
-
-    # Create form for CSRF token
-    from flask_wtf import FlaskForm
-
-    csrf_form = FlaskForm()
-
-    return render_template("organization_admin/spaces.html", spaces=spaces, csrf_form=csrf_form)
+    """Redirect to workspace - modern interface with Edit Mode"""
+    flash("Use the Workspace view to manage your organization structure with Edit Mode toggle.", "info")
+    return redirect(url_for("workspace.index"))
 
 
 @bp.route("/spaces/create", methods=["GET", "POST"])
@@ -185,7 +178,7 @@ def create_space():
 
         db.session.commit()
         flash(f"Space {space.name} created successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return render_template("organization_admin/create_space.html", form=form)
 
@@ -227,7 +220,7 @@ def edit_space(space_id):
 
         db.session.commit()
         flash(f"Space {space.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return render_template("organization_admin/edit_space.html", form=form, space=space)
 
@@ -257,7 +250,7 @@ def delete_space(space_id):
 
     db.session.commit()
     flash(f"Space {space_name} deleted successfully", "success")
-    return redirect(url_for("organization_admin.spaces"))
+    return redirect(url_for("workspace.index"))
 
 
 # Challenge Management
@@ -325,7 +318,7 @@ def create_challenge(space_id):
 
         db.session.commit()
         flash(f"Challenge {challenge.name} created successfully in {space.name}", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return render_template("organization_admin/create_challenge.html", form=form, space=space)
 
@@ -355,7 +348,7 @@ def edit_challenge(challenge_id):
 
         db.session.commit()
         flash(f"Challenge {challenge.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -437,7 +430,7 @@ def create_initiative(challenge_id):
         db.session.commit()
 
         flash(f"Initiative {initiative.name} created and linked to {challenge.name}", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return render_template("organization_admin/create_initiative.html", form=form, challenge=challenge)
 
@@ -466,7 +459,7 @@ def edit_initiative(initiative_id):
 
         db.session.commit()
         flash(f"Initiative {initiative.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -487,7 +480,7 @@ def configure_initiative_rollup(link_id):
     # Verify ownership
     if link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     # Get all value types
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -555,7 +548,7 @@ def create_system(initiative_id):
         db.session.commit()
 
         flash(f"System {system.name} created and linked to {initiative.name}", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return render_template("organization_admin/create_system.html", form=form, initiative=initiative)
 
@@ -584,7 +577,7 @@ def edit_system(system_id):
 
         db.session.commit()
         flash(f"System {system.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -603,7 +596,7 @@ def configure_system_rollup(link_id):
     # Verify ownership
     if link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     # Get all value types
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -651,7 +644,7 @@ def create_kpi(link_id):
     # Verify ownership
     if link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     # Get active value types for selection
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -665,19 +658,25 @@ def create_kpi(link_id):
 
     # Check prerequisites: Value Types must exist
     if not value_types:
+        # Store return context in session
+        session["return_to_kpi_creation"] = link_id
         flash(
-            "⚠️ Please create at least one Value Type first. KPIs require value types to track metrics.",
+            "⚠️ Please create at least one Value Type first. KPIs require value types to track metrics. "
+            "After creating a value type, you'll be returned here to continue creating your KPI.",
             "warning",
         )
-        return redirect(url_for("organization_admin.value_types"))
+        return redirect(url_for("organization_admin.create_value_type"))
 
     # Check prerequisites: Governance Bodies must exist
     if not governance_bodies:
+        # Store return context in session
+        session["return_to_kpi_creation"] = link_id
         flash(
-            "⚠️ Please create at least one Governance Body first. KPIs require governance bodies for oversight.",
+            "⚠️ Please create at least one Governance Body first. KPIs require governance bodies for oversight. "
+            "After creating a governance body, you'll be returned here to continue creating your KPI.",
             "warning",
         )
-        return redirect(url_for("organization_admin.governance_bodies"))
+        return redirect(url_for("organization_admin.create_governance_body"))
 
     form = KPICreateForm()
     form.value_type_ids.choices = [(vt.id, vt.name) for vt in value_types]
@@ -738,10 +737,14 @@ def create_kpi(link_id):
             has_target = request.form.get(f"has_target_{vt_id}")
             target_value = None
             target_date = None
+            target_direction = "maximize"  # default
+            target_tolerance_pct = 10  # default
 
             if has_target:
                 target_value_str = request.form.get(f"target_value_{vt_id}")
                 target_date_str = request.form.get(f"target_date_{vt_id}")
+                target_direction = request.form.get(f"target_direction_{vt_id}", "maximize")
+                target_tolerance_str = request.form.get(f"target_tolerance_{vt_id}")
 
                 if target_value_str:
                     try:
@@ -757,6 +760,12 @@ def create_kpi(link_id):
                     except ValueError:
                         pass
 
+                if target_tolerance_str:
+                    try:
+                        target_tolerance_pct = int(target_tolerance_str)
+                    except ValueError:
+                        target_tolerance_pct = 10
+
             config = KPIValueTypeConfig(
                 kpi_id=kpi.id,
                 value_type_id=vt_id_int,
@@ -768,6 +777,8 @@ def create_kpi(link_id):
                 display_decimals=display_decimals,
                 target_value=target_value,
                 target_date=target_date,
+                target_direction=target_direction,
+                target_tolerance_pct=target_tolerance_pct,
             )
             db.session.add(config)
 
@@ -788,7 +799,11 @@ def create_kpi(link_id):
 
         db.session.commit()
         flash(f"KPI {kpi.name} created successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
+
+    # Get preselected items from session (if returning from creation flow)
+    preselect_value_types = session.pop("preselect_value_types", [])
+    preselect_governance_bodies = session.pop("preselect_governance_bodies", [])
 
     return render_template(
         "organization_admin/create_kpi.html",
@@ -798,6 +813,8 @@ def create_kpi(link_id):
         system=link.system,
         value_types=value_types,
         governance_bodies=governance_bodies,
+        preselect_value_types=preselect_value_types,
+        preselect_governance_bodies=preselect_governance_bodies,
     )
 
 
@@ -813,7 +830,7 @@ def edit_kpi(kpi_id):
     # Verify ownership
     if kpi.initiative_system_link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     # Get active governance bodies for selection
     governance_bodies = (
@@ -883,12 +900,15 @@ def edit_kpi(kpi_id):
                 if has_target:
                     target_value_str = request.form.get(f"target_value_{config.id}")
                     target_date_str = request.form.get(f"target_date_{config.id}")
+                    target_direction = request.form.get(f"target_direction_{config.id}", "maximize")
+                    target_tolerance_str = request.form.get(f"target_tolerance_{config.id}")
 
-                    if target_value_str:
+                    if target_value_str and target_value_str.strip():
                         try:
                             config.target_value = float(target_value_str)
                         except ValueError:
-                            pass
+                            # If conversion fails, clear the target
+                            config.target_value = None
 
                     if target_date_str:
                         from datetime import datetime
@@ -897,10 +917,24 @@ def edit_kpi(kpi_id):
                             config.target_date = datetime.strptime(target_date_str, "%Y-%m-%d").date()
                         except ValueError:
                             pass
+
+                    # Update target direction
+                    config.target_direction = target_direction
+
+                    # Update tolerance
+                    if target_tolerance_str:
+                        try:
+                            config.target_tolerance_pct = int(target_tolerance_str)
+                        except ValueError:
+                            config.target_tolerance_pct = 10
+                    else:
+                        config.target_tolerance_pct = 10
                 else:
                     # Clear target if checkbox unchecked
                     config.target_value = None
                     config.target_date = None
+                    config.target_direction = "maximize"
+                    config.target_tolerance_pct = 10
 
         # Update governance body links
         # Remove all existing links
@@ -921,7 +955,7 @@ def edit_kpi(kpi_id):
 
         db.session.commit()
         flash(f"KPI {kpi.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return render_template(
         "organization_admin/edit_kpi.html",
@@ -944,14 +978,14 @@ def delete_kpi(kpi_id):
     # Verify ownership
     if kpi.initiative_system_link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     kpi_name = kpi.name
     db.session.delete(kpi)
     db.session.commit()
 
     flash(f'KPI "{kpi_name}" deleted successfully', "success")
-    return redirect(url_for("organization_admin.spaces"))
+    return redirect(url_for("workspace.index"))
 
 
 @bp.route("/kpis/<int:kpi_id>/archive", methods=["POST"])
@@ -966,7 +1000,7 @@ def archive_kpi(kpi_id):
     # Verify ownership
     if kpi.initiative_system_link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     if kpi.is_archived:
         flash(f'KPI "{kpi.name}" is already archived', "warning")
@@ -983,7 +1017,7 @@ def archive_kpi(kpi_id):
         db.session.commit()
         flash(f'KPI "{kpi.name}" archived successfully', "success")
 
-    return redirect(url_for("organization_admin.spaces"))
+    return redirect(url_for("workspace.index"))
 
 
 @bp.route("/kpis/<int:kpi_id>/unarchive", methods=["POST"])
@@ -998,7 +1032,7 @@ def unarchive_kpi(kpi_id):
     # Verify ownership
     if kpi.initiative_system_link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     if not kpi.is_archived:
         flash(f'KPI "{kpi.name}" is not archived', "warning")
@@ -1009,7 +1043,7 @@ def unarchive_kpi(kpi_id):
         db.session.commit()
         flash(f'KPI "{kpi.name}" unarchived successfully', "success")
 
-    return redirect(url_for("organization_admin.spaces"))
+    return redirect(url_for("workspace.index"))
 
 
 @bp.route("/systems/<int:system_id>/delete", methods=["POST"])
@@ -1102,7 +1136,7 @@ def delete_challenge(challenge_id):
     # Verify ownership
     if challenge.space.organization_id != org_id:
         flash("Access denied", "danger")
-        return redirect(url_for("organization_admin.spaces"))
+        return redirect(url_for("workspace.index"))
 
     challenge_name = challenge.name
     challenge_id_for_audit = challenge.id
@@ -1116,7 +1150,7 @@ def delete_challenge(challenge_id):
     db.session.commit()
 
     flash(f'Challenge "{challenge_name}" deleted successfully', "success")
-    return redirect(url_for("organization_admin.spaces"))
+    return redirect(url_for("workspace.index"))
 
 
 # Value Type Management
@@ -1199,6 +1233,18 @@ def create_value_type():
 
         db.session.commit()
         flash(f"Value Type {value_type.name} created successfully", "success")
+
+        # Check if we need to return to KPI creation
+        return_to_link_id = session.pop("return_to_kpi_creation", None)
+        if return_to_link_id:
+            # Store the newly created value type ID for pre-selection
+            if "preselect_value_types" not in session:
+                session["preselect_value_types"] = []
+            session["preselect_value_types"].append(value_type.id)
+            session.modified = True
+            flash("✓ Value Type created! Continue creating your KPI below.", "info")
+            return redirect(url_for("organization_admin.create_kpi", link_id=return_to_link_id))
+
         return redirect(url_for("organization_admin.value_types"))
 
     return render_template("organization_admin/create_value_type.html", form=form)
@@ -1392,6 +1438,18 @@ def create_governance_body():
         db.session.add(governance_body)
         db.session.commit()
         flash(f"Governance Body {governance_body.name} created successfully", "success")
+
+        # Check if we need to return to KPI creation
+        return_to_link_id = session.pop("return_to_kpi_creation", None)
+        if return_to_link_id:
+            # Store the newly created governance body ID for pre-selection
+            if "preselect_governance_bodies" not in session:
+                session["preselect_governance_bodies"] = []
+            session["preselect_governance_bodies"].append(governance_body.id)
+            session.modified = True
+            flash("✓ Governance Body created! Continue creating your KPI below.", "info")
+            return redirect(url_for("organization_admin.create_kpi", link_id=return_to_link_id))
+
         return redirect(url_for("organization_admin.governance_bodies"))
 
     return render_template("organization_admin/create_governance_body.html", form=form)
@@ -1487,7 +1545,7 @@ def yaml_upload():
                     for error in result["errors"][:5]:  # Show first 5 errors
                         flash(f"⚠ {error}", "warning")
 
-                return redirect(url_for("organization_admin.spaces"))
+                return redirect(url_for("workspace.index"))
             else:
                 flash("Import failed", "danger")
                 for error in result.get("errors", []):
@@ -1536,99 +1594,37 @@ def _delete_all_organization_data(org_id):
     WARNING: This is destructive and irreversible!
     """
     # Delete in correct order to respect foreign keys
+    # RULE: Delete dependent data BEFORE the entities they depend on
 
-    # Delete Contributions (leaf level)
-    from app.models import Contribution
+    # 1. Delete Mentions and Comments (depends on KPIs)
+    from app.models import CellComment, MentionNotification
 
-    contributions = (
-        Contribution.query.join(KPIValueTypeConfig)
+    # Delete mentions first (they reference comments with CASCADE, but explicit is safer)
+    mentions = (
+        MentionNotification.query.join(CellComment)
+        .join(KPIValueTypeConfig)
         .join(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
         .all()
     )
-    for contrib in contributions:
-        db.session.delete(contrib)
+    for mention in mentions:
+        db.session.delete(mention)
 
-    # Delete KPIValueTypeConfigs
-    configs = (
-        KPIValueTypeConfig.query.join(KPI)
+    # Then delete comments
+    comments = (
+        CellComment.query.join(KPIValueTypeConfig)
+        .join(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
         .all()
     )
-    for config in configs:
-        db.session.delete(config)
+    for comment in comments:
+        db.session.delete(comment)
 
-    # Delete KPIs
-    kpis = KPI.query.join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).all()
-    for kpi in kpis:
-        db.session.delete(kpi)
-
-    # Delete InitiativeSystemLinks
-    links = InitiativeSystemLink.query.join(Initiative).filter(Initiative.organization_id == org_id).all()
-    for link in links:
-        db.session.delete(link)
-
-    # Delete Systems
-    systems = System.query.filter_by(organization_id=org_id).all()
-    for system in systems:
-        db.session.delete(system)
-
-    # Delete ChallengeInitiativeLinks
-    from app.models import ChallengeInitiativeLink
-
-    challenge_links = ChallengeInitiativeLink.query.join(Challenge).filter(Challenge.organization_id == org_id).all()
-    for link in challenge_links:
-        db.session.delete(link)
-
-    # Delete Initiatives
-    initiatives = Initiative.query.filter_by(organization_id=org_id).all()
-    for initiative in initiatives:
-        db.session.delete(initiative)
-
-    # Delete Challenges
-    challenges = Challenge.query.filter_by(organization_id=org_id).all()
-    for challenge in challenges:
-        db.session.delete(challenge)
-
-    # Delete Spaces
-    spaces = Space.query.filter_by(organization_id=org_id).all()
-    for space in spaces:
-        db.session.delete(space)
-
-    # Delete ValueTypes
-    value_types = ValueType.query.filter_by(organization_id=org_id).all()
-    for vt in value_types:
-        db.session.delete(vt)
-
-    # Delete RollupRules
-    from app.models import RollupRule
-
-    rollup_rules = RollupRule.query.join(ValueType).filter(ValueType.organization_id == org_id).all()
-    for rule in rollup_rules:
-        db.session.delete(rule)
-
-    # Delete Governance Bodies and their links
-    from app.models import KPIGovernanceBodyLink
-
-    gb_links = (
-        KPIGovernanceBodyLink.query.join(KPI)
-        .join(InitiativeSystemLink)
-        .join(Initiative)
-        .filter(Initiative.organization_id == org_id)
-        .all()
-    )
-    for link in gb_links:
-        db.session.delete(link)
-
-    gov_bodies = GovernanceBody.query.filter_by(organization_id=org_id).all()
-    for gb in gov_bodies:
-        db.session.delete(gb)
-
-    # Delete Snapshots
+    # 2. Delete Snapshots (depends on KPIs and ValueTypes)
     from app.models import KPISnapshot, RollupSnapshot
 
     kpi_snapshots = (
@@ -1646,34 +1642,99 @@ def _delete_all_organization_data(org_id):
     for snapshot in rollup_snapshots:
         db.session.delete(snapshot)
 
-    # Delete Comments and Mentions
-    from app.models import CellComment, MentionNotification
+    # 3. Delete Contributions (depends on Configs)
+    from app.models import Contribution
 
-    comments = (
-        CellComment.query.join(KPIValueTypeConfig)
+    contributions = (
+        Contribution.query.join(KPIValueTypeConfig)
         .join(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
         .all()
     )
-    for comment in comments:
-        db.session.delete(comment)
+    for contrib in contributions:
+        db.session.delete(contrib)
 
-    # Delete mention notifications (they reference comments)
-    mentions = (
-        MentionNotification.query.join(CellComment)
-        .join(KPIValueTypeConfig)
-        .join(KPI)
+    # 4. Delete KPI-Governance Body Links (depends on KPIs and GovernanceBodies)
+    from app.models import KPIGovernanceBodyLink
+
+    gb_links = (
+        KPIGovernanceBodyLink.query.join(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
         .all()
     )
-    for mention in mentions:
-        db.session.delete(mention)
+    for link in gb_links:
+        db.session.delete(link)
 
-    # Delete Audit Logs
+    # 5. Delete KPIValueTypeConfigs (depends on KPIs and ValueTypes)
+    configs = (
+        KPIValueTypeConfig.query.join(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(Initiative.organization_id == org_id)
+        .all()
+    )
+    for config in configs:
+        db.session.delete(config)
+
+    # 6. Delete KPIs (depends on InitiativeSystemLinks)
+    kpis = KPI.query.join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).all()
+    for kpi in kpis:
+        db.session.delete(kpi)
+
+    # 7. Delete InitiativeSystemLinks
+    links = InitiativeSystemLink.query.join(Initiative).filter(Initiative.organization_id == org_id).all()
+    for link in links:
+        db.session.delete(link)
+
+    # 8. Delete Systems
+    systems = System.query.filter_by(organization_id=org_id).all()
+    for system in systems:
+        db.session.delete(system)
+
+    # 9. Delete ChallengeInitiativeLinks
+    from app.models import ChallengeInitiativeLink
+
+    challenge_links = ChallengeInitiativeLink.query.join(Challenge).filter(Challenge.organization_id == org_id).all()
+    for link in challenge_links:
+        db.session.delete(link)
+
+    # 10. Delete Initiatives
+    initiatives = Initiative.query.filter_by(organization_id=org_id).all()
+    for initiative in initiatives:
+        db.session.delete(initiative)
+
+    # 11. Delete Challenges
+    challenges = Challenge.query.filter_by(organization_id=org_id).all()
+    for challenge in challenges:
+        db.session.delete(challenge)
+
+    # 12. Delete Spaces
+    spaces = Space.query.filter_by(organization_id=org_id).all()
+    for space in spaces:
+        db.session.delete(space)
+
+    # 13. Delete RollupRules (depends on ValueTypes)
+    from app.models import RollupRule
+
+    rollup_rules = RollupRule.query.join(ValueType).filter(ValueType.organization_id == org_id).all()
+    for rule in rollup_rules:
+        db.session.delete(rule)
+
+    # 14. Delete ValueTypes (NOW safe to delete)
+    value_types = ValueType.query.filter_by(organization_id=org_id).all()
+    for vt in value_types:
+        db.session.delete(vt)
+
+    # 15. Delete Governance Bodies (NOW safe to delete)
+    gov_bodies = GovernanceBody.query.filter_by(organization_id=org_id).all()
+    for gb in gov_bodies:
+        db.session.delete(gb)
+
+    # 16. Delete Audit Logs
     from app.models import AuditLog
 
     audit_logs = AuditLog.query.filter_by(organization_id=org_id).all()

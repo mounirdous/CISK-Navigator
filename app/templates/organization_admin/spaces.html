@@ -128,6 +128,7 @@
                         <i class="bi bi-pencil"></i>
                     </a>
                     <form method="POST" action="{{ url_for('organization_admin.delete_space', space_id=space.id) }}" style="display:inline;">
+                        {{ csrf_form.hidden_tag() }}
                         <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete space {{ space.name }}?')" title="Delete">
                             <i class="bi bi-trash"></i>
                         </button>

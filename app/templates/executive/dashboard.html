@@ -179,6 +179,7 @@
     font-weight: 500;
     color: white;
     text-decoration: none;
+    transition: all 0.2s;
 }
 
 .period-btn:hover {
@@ -189,6 +190,7 @@
 .period-btn.active {
     background: rgba(255, 255, 255, 0.3);
     color: white;
+    font-weight: 600;
 }
 
 .status-indicator {
@@ -209,6 +211,19 @@
     right: 2rem;
     z-index: 1000;
 }
+
+/* Improved tooltips */
+[title] {
+    position: relative;
+}
+
+/* Make tooltips wrap on multiple lines */
+.metric-card[title],
+.traffic-light[title],
+.governance-row[title],
+.kpi-list-item[title] {
+    white-space: normal;
+}
 </style>
 {% endblock %}
 
@@ -216,17 +231,32 @@
 <!-- Header -->
 <div class="exec-header">
     <div class="container">
-        <div class="row align-items-center">
+        <div class="row align-items-center mb-3">
             <div class="col-md-8">
                 <h1 class="mb-2"><i class="bi bi-speedometer"></i> Executive Dashboard</h1>
                 <p class="mb-0 opacity-75">Strategic Overview - {{ session.organization_name }}</p>
             </div>
             <div class="col-md-4 text-end">
                 <div class="period-selector">
-                    <a href="?days=7" class="period-btn {% if days == 7 %}active{% endif %}">7 Days</a>
-                    <a href="?days=30" class="period-btn {% if days == 30 %}active{% endif %}">30 Days</a>
-                    <a href="?days=90" class="period-btn {% if days == 90 %}active{% endif %}">90 Days</a>
-                    <a href="?days=365" class="period-btn {% if days == 365 %}active{% endif %}">1 Year</a>
+                    <a href="?days=7&space_type={{ space_type }}" class="period-btn {% if days == 7 %}active{% endif %}">7 Days</a>
+                    <a href="?days=30&space_type={{ space_type }}" class="period-btn {% if days == 30 %}active{% endif %}">30 Days</a>
+                    <a href="?days=90&space_type={{ space_type }}" class="period-btn {% if days == 90 %}active{% endif %}">90 Days</a>
+                    <a href="?days=365&space_type={{ space_type }}" class="period-btn {% if days == 365 %}active{% endif %}">1 Year</a>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-12">
+                <div class="period-selector">
+                    <a href="?days={{ days }}&space_type=all" class="period-btn {% if space_type == 'all' %}active{% endif %}">
+                        <i class="bi bi-grid-3x3-gap"></i> All Spaces
+                    </a>
+                    <a href="?days={{ days }}&space_type=public" class="period-btn {% if space_type == 'public' %}active{% endif %}">
+                        <i class="bi bi-unlock"></i> Public Only
+                    </a>
+                    <a href="?days={{ days }}&space_type=private" class="period-btn {% if space_type == 'private' %}active{% endif %}">
+                        <i class="bi bi-lock"></i> Private Only
+                    </a>
                 </div>
             </div>
         </div>
@@ -246,14 +276,14 @@
     <!-- Key Metrics Row -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
-            <div class="metric-card">
-                <div class="metric-number text-primary">{{ active_kpis }}</div>
+            <div class="metric-card" style="cursor: help;" title="Total non-archived KPIs in your organization">
+                <div class="metric-number text-primary">{{ active_kpis }} <i class="bi bi-info-circle" style="font-size: 1rem; opacity: 0.5;"></i></div>
                 <div class="metric-label">Active KPIs</div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="metric-card">
-                <div class="metric-number" style="color: var(--status-green);">{{ on_target_pct|int }}%</div>
+            <div class="metric-card" style="cursor: help;" title="{% for k in on_target_kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if on_target_kpis|length > 5 %} and {{ on_target_kpis|length - 5 }} more{% endif %}">
+                <div class="metric-number" style="color: var(--status-green);">{{ on_target_pct|int }}% <i class="bi bi-info-circle" style="font-size: 1rem; opacity: 0.5;"></i></div>
                 <div class="metric-label">On Target</div>
                 {% if activity_trend_pct > 0 %}
                 <div class="metric-trend trend-up">
@@ -267,14 +297,14 @@
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="metric-card">
-                <div class="metric-number" style="color: var(--status-yellow);">{{ needs_attention_count }}</div>
+            <div class="metric-card" style="cursor: help;" title="{% for k in yellow_kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if yellow_kpis|length > 5 %} and {{ yellow_kpis|length - 5 }} more{% endif %}">
+                <div class="metric-number" style="color: var(--status-yellow);">{{ needs_attention_count }} <i class="bi bi-info-circle" style="font-size: 1rem; opacity: 0.5;"></i></div>
                 <div class="metric-label">Needs Attention</div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="metric-card">
-                <div class="metric-number" style="color: var(--status-red);">{{ at_risk_count }}</div>
+            <div class="metric-card" style="cursor: help;" title="{% for k in red_kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if red_kpis|length > 5 %} and {{ red_kpis|length - 5 }} more{% endif %}">
+                <div class="metric-number" style="color: var(--status-red);">{{ at_risk_count }} <i class="bi bi-info-circle" style="font-size: 1rem; opacity: 0.5;"></i></div>
                 <div class="metric-label">At Risk</div>
             </div>
         </div>
@@ -286,21 +316,21 @@
             <div class="traffic-light-card" style="height: 100%;">
                 <h4 class="mb-3">KPI Health Status</h4>
                 <div class="traffic-lights" style="flex-direction: column; gap: 0.5rem;">
-                    <div class="traffic-light green" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+                    <div class="traffic-light green" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; cursor: help;" title="{% for k in green_kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if green_kpis|length > 5 %} and {{ green_kpis|length - 5 }} more{% endif %}">
                         <div>
                             <div style="font-size: 1.5rem; font-weight: 700; display: inline;">{{ green_count }}</div>
                             <span class="text-muted small ms-2">ON TRACK</span>
                         </div>
                         <div style="color: var(--status-green); font-weight: 600; font-size: 1.25rem;">{{ green_pct|int }}%</div>
                     </div>
-                    <div class="traffic-light yellow" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+                    <div class="traffic-light yellow" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; cursor: help;" title="{% for k in yellow_kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if yellow_kpis|length > 5 %} and {{ yellow_kpis|length - 5 }} more{% endif %}">
                         <div>
                             <div style="font-size: 1.5rem; font-weight: 700; display: inline;">{{ yellow_count }}</div>
                             <span class="text-muted small ms-2">NEEDS ATTENTION</span>
                         </div>
                         <div style="color: var(--status-yellow); font-weight: 600; font-size: 1.25rem;">{{ yellow_pct|int }}%</div>
                     </div>
-                    <div class="traffic-light red" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+                    <div class="traffic-light red" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; cursor: help;" title="{% for k in red_kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if red_kpis|length > 5 %} and {{ red_kpis|length - 5 }} more{% endif %}">
                         <div>
                             <div style="font-size: 1.5rem; font-weight: 700; display: inline;">{{ red_count }}</div>
                             <span class="text-muted small ms-2">AT RISK</span>
@@ -331,7 +361,7 @@
                 <div class="row">
                     {% for gb in gov_body_performance %}
                     <div class="col-md-6">
-                        <div class="governance-row">
+                        <div class="governance-row" style="cursor: help;" title="{{ gb.kpi_count }} KPIs: {% for k in gb.kpis[:5] %}{{ k.kpi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if gb.kpis|length > 5 %} and {{ gb.kpis|length - 5 }} more{% endif %}">
                             <div class="governance-name">
                                 <span class="governance-badge" style="background: {{ gb.color }};"></span>
                                 {{ gb.name }}
@@ -364,9 +394,12 @@
 
                 {% if top_performers %}
                 {% for item in top_performers %}
-                <div class="kpi-list-item">
+                <div class="kpi-list-item" style="cursor: help;" title="{{ item.system }} - {{ item.achievement_pct|round(1) }}% achievement ({{ 'At or Above' if item.target_direction == 'maximize' else ('At or Below' if item.target_direction == 'minimize' else 'At target') }})">
                     <div>
-                        <strong>{{ item.kpi.name }}</strong>
+                        <strong>
+                            {% if item.target_direction == 'minimize' %}⬇️{% elif item.target_direction == 'exact' %}🎯{% else %}⬆️{% endif %}
+                            {{ item.kpi.name }}
+                        </strong>
                         <div class="small text-muted">{{ item.system }}</div>
                     </div>
                     <div class="text-end">
@@ -389,9 +422,12 @@
 
                 {% if needs_attention %}
                 {% for item in needs_attention %}
-                <div class="kpi-list-item">
+                <div class="kpi-list-item" style="cursor: help;" title="{{ item.reason }} - {{ item.system }}">
                     <div>
-                        <strong>{{ item.kpi.name }}</strong>
+                        <strong>
+                            {% if item.target_direction == 'minimize' %}⬇️{% elif item.target_direction == 'exact' %}🎯{% elif item.target_direction %}⬆️{% endif %}
+                            {{ item.kpi.name }}
+                        </strong>
                         <div class="small text-muted">{{ item.system }}</div>
                     </div>
                     <div class="text-end">
