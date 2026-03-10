@@ -229,25 +229,6 @@
                             </small>
                         </div>
 
-                        <div class="mb-4">
-                            {{ form.navbar_position.label(class="form-label") }}
-                            {{ form.navbar_position(class="form-select") }}
-                            <small class="form-text text-muted d-block mt-2">
-                                <i class="bi bi-layout-sidebar"></i>
-                                Choose where the navigation bar appears
-                            </small>
-                        </div>
-
-                        <div class="mb-4">
-                            <div class="form-check form-switch">
-                                {{ form.navbar_autohide(class="form-check-input", role="switch", id="navbarAutohideSwitch") }}
-                                {{ form.navbar_autohide.label(class="form-check-label", for="navbarAutohideSwitch") }}
-                            </div>
-                            <small class="form-text text-muted d-block mt-2">
-                                <i class="bi bi-arrows-collapse"></i>
-                                Collapse navigation to icons only (hover to expand with full labels)
-                            </small>
-                        </div>
 
                         <div>
                             {{ form.submit(class="btn btn-primary btn-lg") }}

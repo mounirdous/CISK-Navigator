@@ -30,11 +30,5 @@ class ProfileEditForm(FlaskForm):
     display_name = StringField("Display Name", validators=[Optional(), Length(max=120)])
     email = StringField("Email", validators=[Optional(), Email(), Length(max=120)])
     dark_mode = BooleanField("Dark Mode")
-    navbar_position = SelectField(
-        "Navigation Bar Position",
-        choices=[("top", "Top (Horizontal)"), ("left", "Left Sidebar (Vertical)")],
-        validators=[DataRequired()],
-    )
-    navbar_autohide = BooleanField("Auto-collapse Navigation (icons only, expands on hover)")
     default_organization = SelectField("Default Organization", coerce=int, validators=[Optional()])
     submit = SubmitField("Save Changes")
