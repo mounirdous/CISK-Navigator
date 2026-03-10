@@ -659,6 +659,22 @@ def create_kpi(link_id):
         .all()
     )
 
+    # Check prerequisites: Value Types must exist
+    if not value_types:
+        flash(
+            "⚠️ Please create at least one Value Type first. KPIs require value types to track metrics.",
+            "warning",
+        )
+        return redirect(url_for("organization_admin.value_types"))
+
+    # Check prerequisites: Governance Bodies must exist
+    if not governance_bodies:
+        flash(
+            "⚠️ Please create at least one Governance Body first. KPIs require governance bodies for oversight.",
+            "warning",
+        )
+        return redirect(url_for("organization_admin.governance_bodies"))
+
     form = KPICreateForm()
     form.value_type_ids.choices = [(vt.id, vt.name) for vt in value_types]
 
