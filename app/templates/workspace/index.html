@@ -789,7 +789,7 @@ tr[data-level="kpi"] td {
                         {% if current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
                             {% if current_user.can_manage_kpis(org_id) %}
-                            <a href="{{ url_for('organization_admin.create_kpi', system_link_id=sys_link.id) }}" class="text-success" title="Add KPI to this System">
+                            <a href="{{ url_for('organization_admin.create_kpi', link_id=sys_link.id) }}" class="text-success" title="Add KPI to this System">
                                 <i class="bi bi-plus-circle"></i>
                             </a>
                             {% endif %}
