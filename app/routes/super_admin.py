@@ -8,7 +8,7 @@ from flask_login import current_user
 from app.decorators import super_admin_required
 from app.extensions import db
 from app.forms import OrganizationSSOConfigForm
-from app.models import Organization, SSOConfig, SystemSetting, User, UserOrganizationMembership
+from app.models import AuditLog, Organization, SSOConfig, SystemSetting, User, UserOrganizationMembership
 
 bp = Blueprint("super_admin", __name__, url_prefix="/super-admin")
 
@@ -178,9 +178,61 @@ def users():
 @bp.route("/logs")
 @super_admin_required
 def logs():
-    """System audit logs (placeholder for future implementation)"""
-    # TODO: Implement audit logging system
-    return render_template("super_admin/logs.html")
+    """System audit logs with search and filters"""
+    # Get filter parameters
+    action_filter = request.args.get("action", "")
+    entity_type_filter = request.args.get("entity_type", "")
+    user_filter = request.args.get("user", "")
+    search_query = request.args.get("search", "")
+    limit = request.args.get("limit", 100, type=int)
+
+    # Build query
+    query = AuditLog.query
+
+    if action_filter:
+        query = query.filter_by(action=action_filter)
+    if entity_type_filter:
+        query = query.filter_by(entity_type=entity_type_filter)
+    if user_filter:
+        query = query.filter_by(user_login=user_filter)
+    if search_query:
+        # Search in entity_name and description
+        query = query.filter(
+            db.or_(AuditLog.entity_name.ilike(f"%{search_query}%"), AuditLog.description.ilike(f"%{search_query}%"))
+        )
+
+    # Get logs ordered by most recent
+    logs = query.order_by(AuditLog.created_at.desc()).limit(limit).all()
+
+    # Get unique values for filters
+    distinct_actions = db.session.query(AuditLog.action).distinct().order_by(AuditLog.action).all()
+    distinct_entity_types = db.session.query(AuditLog.entity_type).distinct().order_by(AuditLog.entity_type).all()
+    distinct_users = (
+        db.session.query(AuditLog.user_login)
+        .distinct()
+        .filter(AuditLog.user_login.isnot(None))
+        .order_by(AuditLog.user_login)
+        .all()
+    )
+
+    actions = [a[0] for a in distinct_actions]
+    entity_types = [e[0] for e in distinct_entity_types]
+    users = [u[0] for u in distinct_users]
+
+    return render_template(
+        "super_admin/logs.html",
+        logs=logs,
+        actions=actions,
+        entity_types=entity_types,
+        users=users,
+        current_filters={
+            "action": action_filter,
+            "entity_type": entity_type_filter,
+            "user": user_filter,
+            "search": search_query,
+            "limit": limit,
+        },
+    )
 
 
 @bp.route("/health")

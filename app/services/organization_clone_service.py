@@ -155,7 +155,10 @@ class OrganizationCloneService:
 
             # 6. Clone ChallengeInitiativeLinks
             for old_link in (
-                ChallengeInitiativeLink.query.join(Challenge).filter(Challenge.organization_id == source_org_id).all()
+                db.session.query(ChallengeInitiativeLink)
+                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+                .filter(Challenge.organization_id == source_org_id)
+                .all()
             ):
                 new_link = ChallengeInitiativeLink(
                     challenge_id=challenge_map[old_link.challenge_id].id,
@@ -168,7 +171,10 @@ class OrganizationCloneService:
 
             # 7. Clone InitiativeSystemLinks
             for old_link in (
-                InitiativeSystemLink.query.join(Initiative).filter(Initiative.organization_id == source_org_id).all()
+                db.session.query(InitiativeSystemLink)
+                .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+                .filter(Initiative.organization_id == source_org_id)
+                .all()
             ):
                 new_link = InitiativeSystemLink(
                     initiative_id=initiative_map[old_link.initiative_id].id, system_id=system_map[old_link.system_id].id
@@ -180,8 +186,9 @@ class OrganizationCloneService:
 
             # 8. Clone KPIs and their configs
             for old_kpi in (
-                KPI.query.join(InitiativeSystemLink)
-                .join(Initiative)
+                db.session.query(KPI)
+                .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+                .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
                 .filter(Initiative.organization_id == source_org_id)
                 .all()
             ):
@@ -215,17 +222,98 @@ class OrganizationCloneService:
             db.session.flush()
 
             # 9. Clone RollupRules
+            # RollupRules are polymorphic - they can be attached to InitiativeSystemLinks, ChallengeInitiativeLinks, or Challenges
+
+            # 9a. Clone RollupRules for InitiativeSystemLinks
+            old_init_system_link_ids = [
+                link.id
+                for link in (
+                    db.session.query(InitiativeSystemLink)
+                    .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+                    .filter(Initiative.organization_id == source_org_id)
+                    .all()
+                )
+            ]
+
             for old_rule in (
-                RollupRule.query.join(KPI)
-                .join(InitiativeSystemLink)
-                .join(Initiative)
-                .filter(Initiative.organization_id == source_org_id)
+                db.session.query(RollupRule)
+                .filter(
+                    RollupRule.source_type == "initiative_system", RollupRule.source_id.in_(old_init_system_link_ids)
+                )
                 .all()
             ):
+                # Find the new InitiativeSystemLink
+                old_link = InitiativeSystemLink.query.get(old_rule.source_id)
+                new_init_id = initiative_map[old_link.initiative_id].id
+                new_system_id = system_map[old_link.system_id].id
+                new_link = InitiativeSystemLink.query.filter_by(
+                    initiative_id=new_init_id, system_id=new_system_id
+                ).first()
+
                 new_rule = RollupRule(
-                    kpi_id=kpi_map[old_rule.kpi_id].id,
+                    source_type="initiative_system",
+                    source_id=new_link.id,
                     value_type_id=value_type_map[old_rule.value_type_id].id,
-                    aggregation_formula=old_rule.aggregation_formula,
+                    rollup_enabled=old_rule.rollup_enabled,
+                    formula_override=old_rule.formula_override,
+                )
+                db.session.add(new_rule)
+                stats["rollup_rules"] += 1
+
+            # 9b. Clone RollupRules for ChallengeInitiativeLinks
+            old_challenge_init_link_ids = [
+                link.id
+                for link in (
+                    db.session.query(ChallengeInitiativeLink)
+                    .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+                    .filter(Challenge.organization_id == source_org_id)
+                    .all()
+                )
+            ]
+
+            for old_rule in (
+                db.session.query(RollupRule)
+                .filter(
+                    RollupRule.source_type == "challenge_initiative",
+                    RollupRule.source_id.in_(old_challenge_init_link_ids),
+                )
+                .all()
+            ):
+                # Find the new ChallengeInitiativeLink
+                old_link = ChallengeInitiativeLink.query.get(old_rule.source_id)
+                new_challenge_id = challenge_map[old_link.challenge_id].id
+                new_init_id = initiative_map[old_link.initiative_id].id
+                new_link = ChallengeInitiativeLink.query.filter_by(
+                    challenge_id=new_challenge_id, initiative_id=new_init_id
+                ).first()
+
+                new_rule = RollupRule(
+                    source_type="challenge_initiative",
+                    source_id=new_link.id,
+                    value_type_id=value_type_map[old_rule.value_type_id].id,
+                    rollup_enabled=old_rule.rollup_enabled,
+                    formula_override=old_rule.formula_override,
+                )
+                db.session.add(new_rule)
+                stats["rollup_rules"] += 1
+
+            # 9c. Clone RollupRules for Challenges
+            old_challenge_ids = [challenge.id for challenge in source_org.challenges]
+
+            for old_rule in (
+                db.session.query(RollupRule)
+                .filter(RollupRule.source_type == "challenge", RollupRule.source_id.in_(old_challenge_ids))
+                .all()
+            ):
+                # Find the new Challenge
+                new_challenge_id = challenge_map[old_rule.source_id].id
+
+                new_rule = RollupRule(
+                    source_type="challenge",
+                    source_id=new_challenge_id,
+                    value_type_id=value_type_map[old_rule.value_type_id].id,
+                    rollup_enabled=old_rule.rollup_enabled,
+                    formula_override=old_rule.formula_override,
                 )
                 db.session.add(new_rule)
                 stats["rollup_rules"] += 1

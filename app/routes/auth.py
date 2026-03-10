@@ -2,12 +2,13 @@
 Authentication routes
 """
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from app.extensions import db
 from app.forms import ChangePasswordForm, LoginForm, ProfileEditForm
 from app.models import Organization, SSOConfig, User
+from app.services import AuditService
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -36,10 +37,14 @@ def login():
         user = User.query.filter_by(login=form.login.data).first()
 
         if user is None or not user.check_password(form.password.data):
+            # Audit log failed login
+            AuditService.log_login(user, success=False, reason="Invalid credentials")
             flash("Invalid login or password", "danger")
             return redirect(url_for("auth.login"))
 
         if not user.is_active:
+            # Audit log failed login
+            AuditService.log_login(user, success=False, reason="Account inactive")
             flash("Your account is inactive", "danger")
             return redirect(url_for("auth.login"))
 
@@ -53,6 +58,9 @@ def login():
             login_user(user)
             session["organization_id"] = None
             session["organization_name"] = "Global Administration"
+
+            # Audit log successful login
+            AuditService.log_login(user, success=True)
 
             # Handle password change requirement
             if user.must_change_password and not session.get("_pwd_check_done"):
@@ -69,7 +77,12 @@ def login():
         # Priority 1: User's default organization (if set and user has access)
         if user.default_organization_id:
             default_org = Organization.query.get(user.default_organization_id)
-            if default_org and default_org.is_active and not default_org.is_deleted and user.has_organization_access(default_org.id):
+            if (
+                default_org
+                and default_org.is_active
+                and not default_org.is_deleted
+                and user.has_organization_access(default_org.id)
+            ):
                 selected_org = default_org
 
         # Priority 2: First available organization
@@ -85,6 +98,9 @@ def login():
         login_user(user)
         session["organization_id"] = selected_org.id
         session["organization_name"] = selected_org.name
+
+        # Audit log successful login
+        AuditService.log_login(user, success=True)
 
         # Handle password change requirement
         if user.must_change_password and not session.get("_pwd_check_done"):
@@ -109,6 +125,8 @@ def login():
 def logout():
     """Logout current user"""
     if current_user.is_authenticated:
+        # Audit log before logging out
+        AuditService.log_logout(current_user)
         logout_user()
     session.pop("organization_id", None)
     session.pop("organization_name", None)

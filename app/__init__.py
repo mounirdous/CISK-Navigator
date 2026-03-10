@@ -36,7 +36,6 @@ def create_app(config_name=None):
 
         @app.before_request
         def _enable_foreign_keys():
-            from flask import g
             from sqlalchemy import event
             from sqlalchemy.engine import Engine
 
@@ -58,13 +57,14 @@ def create_app(config_name=None):
             return None
 
     # Register blueprints
-    from app.routes import auth, global_admin, organization_admin, super_admin, workspace
+    from app.routes import analytics, auth, global_admin, organization_admin, super_admin, workspace
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(super_admin.bp)
     app.register_blueprint(global_admin.bp)
     app.register_blueprint(organization_admin.bp)
     app.register_blueprint(workspace.bp)
+    app.register_blueprint(analytics.bp)
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":

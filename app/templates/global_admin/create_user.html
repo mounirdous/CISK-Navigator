@@ -243,6 +243,22 @@
                                 </small>
                             </div>
                         </div>
+
+                        {% if current_user.is_super_admin %}
+                        <div class="alert alert-danger border-0 shadow-sm mb-3" style="background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-crown-fill text-danger me-2" style="font-size: 1.5rem;"></i>
+                                <div>
+                                    <strong>Super Administrator Access</strong>
+                                    <p class="mb-2 mt-1">Super Admins have unrestricted access to all system settings, configurations, and data.</p>
+                                    <div class="form-check form-switch">
+                                        {{ form.is_super_admin(class="form-check-input", role="switch", id="isSuperAdminSwitch") }}
+                                        {{ form.is_super_admin.label(class="form-check-label fw-semibold", for="isSuperAdminSwitch") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <!-- Organizations & Permissions Section -->

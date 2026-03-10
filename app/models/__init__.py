@@ -2,6 +2,7 @@
 Database models
 """
 
+from .audit_log import AuditLog
 from .cell_comment import CellComment, MentionNotification
 from .challenge import Challenge
 from .contribution import Contribution
@@ -19,6 +20,7 @@ from .user import User
 from .value_type import KPIValueTypeConfig, ValueType
 
 __all__ = [
+    "AuditLog",
     "User",
     "Organization",
     "UserOrganizationMembership",

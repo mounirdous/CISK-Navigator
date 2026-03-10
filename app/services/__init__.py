@@ -3,6 +3,7 @@ Business logic services
 """
 
 from .aggregation_service import AggregationService
+from .audit_service import AuditService
 from .consensus_service import ConsensusService
 from .deletion_impact_service import DeletionImpactService
 from .excel_export_service import ExcelExportService
@@ -13,6 +14,7 @@ from .yaml_export_service import YAMLExportService
 from .yaml_import_service import YAMLImportService
 
 __all__ = [
+    "AuditService",
     "ConsensusService",
     "AggregationService",
     "DeletionImpactService",

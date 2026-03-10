@@ -1,11 +1,41 @@
-# 🧭 CISK Navigator v1.15.2
+# 🧭 CISK Navigator v1.16.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.15.2-blue)
+![Version](https://img.shields.io/badge/version-1.16.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+## ✨ What's New in v1.16.0 (March 2026)
+
+### 📋 **Audit Logging System**
+- **Complete Audit Trail**: Tracks all create, update, delete, and archive operations
+- **Comprehensive Coverage**: User management, Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Governance Bodies
+- **Detailed Tracking**: Records who, what, when, old values, new values
+- **Super Admin Access**: View audit logs from Super Admin panel
+- **New Database Table**: `audit_logs` with migration `b2c3d4e5f6a7`
+- **Centralized Service**: `AuditService` with log_create/update/delete/archive methods
+
+### 📊 **Analytics Dashboard**
+- **KPI Health Metrics**: Total, active, recent activity (7 days), stale KPIs
+- **30-Day Contribution Trends**: Interactive Chart.js line graph
+- **Top Contributors**: Leaderboard of most active contributors
+- **Most Commented KPIs**: Top 10 KPIs by comment count
+- **Space Statistics**: Public/private space counts
+- **New Route**: `/analytics/dashboard` accessible from main navigation
+
+### 🔍 **Search & Navigation**
+- **Global Search Documented**: Comprehensive search across all entities
+- **Top Navbar Integration**: Search bar accessible from anywhere
+- **Permission-Aware Results**: Edit buttons only shown when authorized
+- **User Search API**: Autocomplete for @mentions in comments
+
+### 📚 **Documentation Improvements**
+- **Comprehensive README**: All features documented with clear categorization
+- **Security & Authentication Section**: SSO, password management, access control, audit trail
+- **Administration Section**: Global Admin, Organization Admin, User Management, Super Admin, Analytics, Search, Audit Logging
+- **Updated Memory**: Existing features list to prevent duplicate work
 
 ## ✨ What's New in v1.15.2 (March 2026)
 
@@ -246,9 +276,12 @@
 - **🎨 Flexible Color Configuration**: Sign-based colors (positive/negative/zero) per KPI
 - **🔢 6 Value Types**: Numeric, Risk, Positive/Negative Impact, Level, Sentiment
 - **🏢 Multi-Organization**: Complete data isolation between organizations
-- **👤 User Management**: Global admins, organization members, access control
+- **👤 User Management**: Global admins, organization members, granular permissions
 - **📤 Export Options**: Excel (hierarchical), YAML (structure backup), Organization cloning
 - **🎯 Smart Deletion**: Impact preview showing what will be deleted vs. preserved
+- **🔒 SSO Integration**: SAML 2.0 authentication with Okta, Azure AD, Google Workspace
+- **📊 Analytics Dashboard**: KPI health metrics, contribution trends, activity tracking
+- **🔍 Global Search**: Search across all entities (Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Comments)
 
 ### Dashboard & Overview
 - **📊 Statistics Dashboard**: Overview of Spaces, Challenges, Initiatives, Systems, KPIs, Value Types
@@ -261,10 +294,22 @@
 - **🌲 Interactive Tree/Grid View**: Expandable/collapsible hierarchy
 - **✅ Consensus Status**: Visual indicators (✓ complete, ⚠ partial)
 - **🎨 Color-Coded Values**: Configurable per KPI for better interpretation
-- **📊 Rollup Indicators**: See aggregated values at every level
+- **📊 Rollup Indicators**: See aggregated values at every level with Σ symbol
 - **🔍 Quick Navigation**: Expand All / Collapse All buttons
 - **💬 Comment Icons**: Click 💬 on any KPI cell to open discussions
 - **↗️ Trend Indicators**: Automatic trend arrows when snapshots exist
+- **🎚️ Level Visibility Controls**: Toggle display of hierarchy levels (Spaces, Challenges, Initiatives, Systems, KPIs)
+- **🔍 Smart Filters**:
+  - Governance body filtering (multi-select with color-coded pills)
+  - Space type filtering (All/Public/Private with counts)
+  - Show archived KPIs toggle
+  - Show all columns toggle (override smart column hiding)
+  - Filter state persistence via localStorage
+  - Clear All button
+- **📊 Smart Column Filtering**: Auto-hide value type columns with no data (context-aware)
+- **📱 Responsive Design**: Works on desktop, tablet, and mobile
+- **🌙 True Dark Mode**: Deep background with high contrast for reduced eye strain
+- **📤 Excel Export**: Hierarchical export with outline levels and color coding
 
 ### Time-Series & Analytics
 - **📸 Snapshots**: Capture current state with custom labels
@@ -284,6 +329,33 @@
 - **🔔 Notifications**: Bell icon shows unread mention count
 - **👥 User Search**: Type @ to see all organization members
 - **⌨️ Keyboard Nav**: Arrow keys + Enter in mention dropdown
+- **🔒 Comment Permissions**: Granular view/add permissions per organization
+
+### Security & Authentication
+- **🔐 SSO/SAML Integration**: Enterprise single sign-on
+  - Okta, Azure AD, Google Workspace support
+  - SAML 2.0 protocol
+  - Auto-provision users on first login
+  - Pending user approval workflow
+  - Configurable via Super Admin panel
+  - Organization-based user mapping
+- **🔒 Password Management**: Secure credential handling
+  - Werkzeug password hashing
+  - Force password change on first login
+  - Self-service password change
+  - Profile management (display name, email)
+- **🛡️ Access Control**: Multi-level permissions
+  - Super Admin (system-wide configuration)
+  - Global Admin (cross-organization management)
+  - Organization Member (per-org permissions)
+  - Granular permissions: Spaces, Value Types, Challenges, Initiatives, Systems, KPIs
+  - Comment permissions (view/add)
+  - Permission-aware UI (buttons/links only shown when authorized)
+- **🔍 Audit Trail**: Complete activity logging
+  - All create/edit/delete operations
+  - User management events
+  - Tracks: who, what, when, old/new values
+  - Super Admin access only
 
 ### Value Types (6 Kinds)
 - **Numeric**: Cost, CO2 emissions, licenses, people, time, etc.
@@ -291,11 +363,64 @@
   - Configurable decimal places (e.g., €1,234.56)
   - Unit labels (€, tCO2e, licenses, days, etc.)
   - Sign-based colors per KPI (positive/negative/zero)
+  - Display scale options: Normal, Thousands (k), Millions (M)
 - **Risk**: 3 levels (!, !!, !!!) - Low, Medium, High risk
 - **Positive Impact**: 3 levels (★, ★★, ★★★) - Impact magnitude
 - **Negative Impact**: 3 levels (▼, ▼▼, ▼▼▼) - Negative consequences
 - **Level**: 3 levels (●, ●●, ●●●) - Generic scale for readiness, maturity, quality
 - **Sentiment**: 3 levels (☹️, 😐, 😊) - Emotional states, satisfaction, morale
+
+### Administration & Management
+- **🔐 Global Admin Panel**: Organization management, user administration, health dashboard
+  - Create/edit/archive/restore organizations
+  - User creation with organization assignments and permissions
+  - Organization cloning for test/training environments
+  - Backup & restore system (YAML-based)
+  - Clear comments utility (bulk cleanup)
+  - Health dashboard with system statistics
+- **🏢 Organization Admin Panel**: Entity management within an organization
+  - Spaces (create, edit, delete, privacy controls)
+  - Challenges (create, edit, delete, link to initiatives)
+  - Initiatives (create, edit, delete, reusable across challenges)
+  - Systems (create, edit, delete, reusable across initiatives)
+  - KPIs (create, edit, delete, archive/unarchive)
+  - Value Types (create, edit, delete, reorder via drag-and-drop)
+  - Governance Bodies (create, edit, delete, reorder, color-coded)
+  - Rollup configuration at each link level
+  - YAML import/export for structure management
+- **👤 User Management**:
+  - User profiles (display name, email, password)
+  - Per-organization permissions (6 types: Spaces, Value Types, Challenges, Initiatives, Systems, KPIs)
+  - Comment permissions (view/add comments)
+  - Organization switcher (multi-org access from dropdown)
+  - Force password change flag
+  - Pending user approval workflow (SSO-based)
+- **🔧 Super Admin Panel**: System-wide configuration
+  - SSO/SAML configuration (Okta, Azure AD, Google Workspace)
+  - Security settings
+  - Maintenance mode toggle
+  - Audit log viewer (all system events)
+  - User overview with pending approvals
+  - Health monitoring
+- **📊 Analytics Dashboard**: Organization-level insights
+  - KPI statistics (total, active, recent activity, stale)
+  - 30-day contribution trends (interactive chart)
+  - Top contributors leaderboard
+  - Most commented KPIs
+  - Space statistics (public/private counts)
+- **🔍 Search**: Global search across organization
+  - Search bar in top navigation
+  - Searches: Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Comments
+  - Permission-aware results (edit buttons only if authorized)
+  - Color-coded results by entity type
+  - User search API for @mentions
+- **📋 Audit Logging**: Comprehensive audit trail
+  - User management events (create, edit, delete)
+  - Entity management (Spaces, Challenges, Initiatives, Systems, KPIs, Value Types)
+  - KPI archiving/unarchiving
+  - Governance body management
+  - Tracks: who, what, when, old/new values
+  - Accessible to Super Admins only
 
 ## 🚀 Quick Start
 

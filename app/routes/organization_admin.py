@@ -41,7 +41,7 @@ from app.models import (
     System,
     ValueType,
 )
-from app.services import DeletionImpactService, ValueTypeUsageService, YAMLExportService, YAMLImportService
+from app.services import AuditService, ValueTypeUsageService, YAMLExportService, YAMLImportService
 
 bp = Blueprint("organization_admin", __name__, url_prefix="/org-admin")
 
@@ -164,6 +164,21 @@ def create_space():
             is_private=form.is_private.data,
         )
         db.session.add(space)
+        db.session.flush()
+
+        # Audit log
+        AuditService.log_create(
+            "Space",
+            space.id,
+            space.name,
+            {
+                "description": space.description,
+                "space_label": space.space_label,
+                "is_private": space.is_private,
+                "organization_id": space.organization_id,
+            },
+        )
+
         db.session.commit()
         flash(f"Space {space.name} created successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -183,11 +198,29 @@ def edit_space(space_id):
     form = SpaceEditForm(obj=space)
 
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {
+            "name": space.name,
+            "description": space.description,
+            "space_label": space.space_label,
+            "is_private": space.is_private,
+        }
+
         space.name = form.name.data
         space.description = form.description.data
         space.space_label = form.space_label.data
         space.display_order = form.display_order.data
         space.is_private = form.is_private.data
+
+        # Audit log
+        new_values = {
+            "name": space.name,
+            "description": space.description,
+            "space_label": space.space_label,
+            "is_private": space.is_private,
+        }
+        AuditService.log_update("Space", space.id, space.name, old_values, new_values)
+
         db.session.commit()
         flash(f"Space {space.name} updated successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -205,7 +238,19 @@ def delete_space(space_id):
     space = Space.query.filter_by(id=space_id, organization_id=org_id).first_or_404()
 
     space_name = space.name
+    space_id_for_audit = space.id
+    space_details = {
+        "description": space.description,
+        "space_label": space.space_label,
+        "is_private": space.is_private,
+        "organization_id": space.organization_id,
+    }
+
     db.session.delete(space)
+
+    # Audit log
+    AuditService.log_delete("Space", space_id_for_audit, space_name, space_details)
+
     db.session.commit()
     flash(f"Space {space_name} deleted successfully", "success")
     return redirect(url_for("organization_admin.spaces"))
@@ -264,6 +309,16 @@ def create_challenge(space_id):
             display_order=form.display_order.data,
         )
         db.session.add(challenge)
+        db.session.flush()
+
+        # Audit log
+        AuditService.log_create(
+            "Challenge",
+            challenge.id,
+            challenge.name,
+            {"description": challenge.description, "space": space.name, "organization_id": org_id},
+        )
+
         db.session.commit()
         flash(f"Challenge {challenge.name} created successfully in {space.name}", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -283,9 +338,17 @@ def edit_challenge(challenge_id):
     form = ChallengeEditForm(obj=challenge)
 
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {"name": challenge.name, "description": challenge.description}
+
         challenge.name = form.name.data
         challenge.description = form.description.data
         challenge.display_order = form.display_order.data
+
+        # Audit log
+        new_values = {"name": challenge.name, "description": challenge.description}
+        AuditService.log_update("Challenge", challenge.id, challenge.name, old_values, new_values)
+
         db.session.commit()
         flash(f"Challenge {challenge.name} updated successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -358,6 +421,15 @@ def create_initiative(challenge_id):
         # Link to challenge
         link = ChallengeInitiativeLink(challenge_id=challenge_id, initiative_id=initiative.id, display_order=0)
         db.session.add(link)
+
+        # Audit log
+        AuditService.log_create(
+            "Initiative",
+            initiative.id,
+            initiative.name,
+            {"description": initiative.description, "challenge": challenge.name, "organization_id": org_id},
+        )
+
         db.session.commit()
 
         flash(f"Initiative {initiative.name} created and linked to {challenge.name}", "success")
@@ -378,8 +450,16 @@ def edit_initiative(initiative_id):
     form = InitiativeEditForm(obj=initiative)
 
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {"name": initiative.name, "description": initiative.description}
+
         initiative.name = form.name.data
         initiative.description = form.description.data
+
+        # Audit log
+        new_values = {"name": initiative.name, "description": initiative.description}
+        AuditService.log_update("Initiative", initiative.id, initiative.name, old_values, new_values)
+
         db.session.commit()
         flash(f"Initiative {initiative.name} updated successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -459,6 +539,15 @@ def create_system(initiative_id):
         # Link to initiative
         link = InitiativeSystemLink(initiative_id=initiative_id, system_id=system.id, display_order=0)
         db.session.add(link)
+
+        # Audit log
+        AuditService.log_create(
+            "System",
+            system.id,
+            system.name,
+            {"description": system.description, "initiative": initiative.name, "organization_id": org_id},
+        )
+
         db.session.commit()
 
         flash(f"System {system.name} created and linked to {initiative.name}", "success")
@@ -479,8 +568,16 @@ def edit_system(system_id):
     form = SystemEditForm(obj=system)
 
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {"name": system.name, "description": system.description}
+
         system.name = form.name.data
         system.description = form.description.data
+
+        # Audit log
+        new_values = {"name": system.name, "description": system.description}
+        AuditService.log_update("System", system.id, system.name, old_values, new_values)
+
         db.session.commit()
         flash(f"System {system.name} updated successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -654,6 +751,21 @@ def create_kpi(link_id):
             )
             db.session.add(config)
 
+        # Audit log
+        AuditService.log_create(
+            "KPI",
+            kpi.id,
+            kpi.name,
+            {
+                "description": kpi.description,
+                "initiative": link.initiative.name,
+                "system": link.system.name,
+                "value_types_count": len(selected_vt_ids),
+                "governance_bodies_count": len(selected_gb_ids),
+                "organization_id": org_id,
+            },
+        )
+
         db.session.commit()
         flash(f"KPI {kpi.name} created successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -695,6 +807,13 @@ def edit_kpi(kpi_id):
 
     form = KPIEditForm(obj=kpi)
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {
+            "name": kpi.name,
+            "description": kpi.description,
+            "governance_bodies_count": len(kpi.governance_body_links),
+        }
+
         # Validate governance body selection
         selected_gb_ids = request.form.getlist("governance_body_ids")
         if not selected_gb_ids:
@@ -776,6 +895,10 @@ def edit_kpi(kpi_id):
             gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=int(gb_id))
             db.session.add(gb_link)
 
+        # Audit log
+        new_values = {"name": kpi.name, "description": kpi.description, "governance_bodies_count": len(selected_gb_ids)}
+        AuditService.log_update("KPI", kpi.id, kpi.name, old_values, new_values)
+
         db.session.commit()
         flash(f"KPI {kpi.name} updated successfully", "success")
         return redirect(url_for("organization_admin.spaces"))
@@ -833,6 +956,10 @@ def archive_kpi(kpi_id):
         kpi.is_archived = True
         kpi.archived_at = datetime.utcnow()
         kpi.archived_by_user_id = current_user.id
+
+        # Audit log
+        AuditService.log_archive("KPI", kpi.id, kpi.name)
+
         db.session.commit()
         flash(f'KPI "{kpi.name}" archived successfully', "success")
 
@@ -880,6 +1007,7 @@ def delete_system(system_id):
         return redirect(url_for("organization_admin.systems"))
 
     system_name = system.name
+    system_id_for_audit = system.id
 
     # Check if system is linked to any initiatives
     links = InitiativeSystemLink.query.filter_by(system_id=system_id).all()
@@ -890,7 +1018,13 @@ def delete_system(system_id):
         )
         return redirect(url_for("organization_admin.systems"))
 
+    system_details = {"description": system.description, "organization_id": org_id}
+
     db.session.delete(system)
+
+    # Audit log
+    AuditService.log_delete("System", system_id_for_audit, system_name, system_details)
+
     db.session.commit()
 
     flash(f'System "{system_name}" deleted successfully', "success")
@@ -912,6 +1046,7 @@ def delete_initiative(initiative_id):
         return redirect(url_for("organization_admin.initiatives"))
 
     initiative_name = initiative.name
+    initiative_id_for_audit = initiative.id
 
     # Check if initiative is linked to any challenges
     challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).all()
@@ -922,7 +1057,13 @@ def delete_initiative(initiative_id):
         )
         return redirect(url_for("organization_admin.initiatives"))
 
+    initiative_details = {"description": initiative.description, "organization_id": org_id}
+
     db.session.delete(initiative)
+
+    # Audit log
+    AuditService.log_delete("Initiative", initiative_id_for_audit, initiative_name, initiative_details)
+
     db.session.commit()
 
     flash(f'Initiative "{initiative_name}" deleted successfully', "success")
@@ -944,7 +1085,14 @@ def delete_challenge(challenge_id):
         return redirect(url_for("organization_admin.spaces"))
 
     challenge_name = challenge.name
+    challenge_id_for_audit = challenge.id
+    challenge_details = {"description": challenge.description, "space": challenge.space.name, "organization_id": org_id}
+
     db.session.delete(challenge)
+
+    # Audit log
+    AuditService.log_delete("Challenge", challenge_id_for_audit, challenge_name, challenge_details)
+
     db.session.commit()
 
     flash(f'Challenge "{challenge_name}" deleted successfully', "success")
@@ -1013,6 +1161,22 @@ def create_value_type():
             is_active=form.is_active.data,
         )
         db.session.add(value_type)
+        db.session.flush()
+
+        # Audit log
+        AuditService.log_create(
+            "ValueType",
+            value_type.id,
+            value_type.name,
+            {
+                "kind": value_type.kind,
+                "numeric_format": value_type.numeric_format,
+                "unit_label": value_type.unit_label,
+                "default_aggregation_formula": value_type.default_aggregation_formula,
+                "organization_id": value_type.organization_id,
+            },
+        )
+
         db.session.commit()
         flash(f"Value Type {value_type.name} created successfully", "success")
         return redirect(url_for("organization_admin.value_types"))
@@ -1036,6 +1200,14 @@ def edit_value_type(vt_id):
     form = ValueTypeEditForm(obj=value_type)
 
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {
+            "name": value_type.name,
+            "decimal_places": value_type.decimal_places,
+            "unit_label": value_type.unit_label,
+            "is_active": value_type.is_active,
+        }
+
         value_type.name = form.name.data
         if value_type.kind == "numeric" and form.decimal_places.data is not None:
             value_type.decimal_places = form.decimal_places.data
@@ -1043,6 +1215,16 @@ def edit_value_type(vt_id):
             value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data
+
+        # Audit log
+        new_values = {
+            "name": value_type.name,
+            "decimal_places": value_type.decimal_places,
+            "unit_label": value_type.unit_label,
+            "is_active": value_type.is_active,
+        }
+        AuditService.log_update("ValueType", value_type.id, value_type.name, old_values, new_values)
+
         db.session.commit()
         flash(f"Value Type {value_type.name} updated successfully", "success")
         return redirect(url_for("organization_admin.value_types"))
@@ -1091,16 +1273,16 @@ def configure_rollup(vt_id):
         # Format: rollup_enabled_<level> and formula_<level>
 
         # System → Initiative rules (for all InitiativeSystemLinks)
-        sys_enabled = request.form.get("rollup_enabled_system") == "on"
-        sys_formula = request.form.get("formula_system", "default")
+        # sys_enabled = request.form.get("rollup_enabled_system") == "on"
+        # sys_formula = request.form.get("formula_system", "default")
 
         # Initiative → Challenge rules (for all ChallengeInitiativeLinks)
-        init_enabled = request.form.get("rollup_enabled_initiative") == "on"
-        init_formula = request.form.get("formula_initiative", "default")
+        # init_enabled = request.form.get("rollup_enabled_initiative") == "on"
+        # init_formula = request.form.get("formula_initiative", "default")
 
         # Challenge → Space rules (for all Challenges)
-        chal_enabled = request.form.get("rollup_enabled_challenge") == "on"
-        chal_formula = request.form.get("formula_challenge", "default")
+        # chal_enabled = request.form.get("rollup_enabled_challenge") == "on"
+        # chal_formula = request.form.get("formula_challenge", "default")
 
         # Update or create default rules
         # Note: These are organization-level defaults. Specific overrides can be added later.
@@ -1272,7 +1454,7 @@ def yaml_upload():
             result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
 
             if result.get("success"):
-                flash(f"✓ Import successful!", "success")
+                flash("✓ Import successful!", "success")
                 flash(
                     f'Created: {result["spaces"]} spaces, {result["challenges"]} challenges, '
                     f'{result["initiatives"]} initiatives, {result["systems"]} systems, '

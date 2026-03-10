@@ -16,6 +16,7 @@ class UserCreateForm(FlaskForm):
     password = PasswordField("Temporary Password", validators=[DataRequired(), Length(min=8)])
     is_active = BooleanField("Active", default=True)
     is_global_admin = BooleanField("Global Administrator")
+    is_super_admin = BooleanField("Super Administrator (System-wide)")
     organizations = SelectMultipleField("Assigned Organizations", coerce=int)
     submit = SubmitField("Create User")
 
@@ -28,6 +29,7 @@ class UserEditForm(FlaskForm):
     display_name = StringField("Display Name", validators=[Optional(), Length(max=120)])
     is_active = BooleanField("Active")
     is_global_admin = BooleanField("Global Administrator")
+    is_super_admin = BooleanField("Super Administrator (System-wide)")
     must_change_password = BooleanField("Force Password Change on Next Login")
     organizations = SelectMultipleField("Assigned Organizations", coerce=int)
     reset_password = PasswordField(

@@ -34,7 +34,7 @@ from app.models import (
     UserOrganizationMembership,
     ValueType,
 )
-from app.services import DeletionImpactService, OrganizationCloneService
+from app.services import AuditService, OrganizationCloneService
 
 bp = Blueprint("global_admin", __name__, url_prefix="/global-admin")
 
@@ -183,6 +183,7 @@ def create_user():
             display_name=form.display_name.data,
             is_active=form.is_active.data,
             is_global_admin=form.is_global_admin.data,
+            is_super_admin=form.is_super_admin.data if current_user.is_super_admin else False,
             must_change_password=True,
         )
         user.set_password(form.password.data)
@@ -205,6 +206,21 @@ def create_user():
                 can_add_comments=request.form.get(f"perm_add_comments_{org_id}") == "on",
             )
             db.session.add(membership)
+
+        # Audit log
+        AuditService.log_create(
+            "User",
+            user.id,
+            user.login,
+            {
+                "email": user.email,
+                "display_name": user.display_name,
+                "is_active": user.is_active,
+                "is_global_admin": user.is_global_admin,
+                "is_super_admin": user.is_super_admin,
+                "organizations_assigned": len(form.organizations.data),
+            },
+        )
 
         db.session.commit()
         flash(f"User {user.login} created successfully", "success")
@@ -229,11 +245,26 @@ def edit_user(user_id):
         form.reset_password.data = None  # Explicitly clear password field
 
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {
+            "email": user.email,
+            "display_name": user.display_name,
+            "is_active": user.is_active,
+            "is_global_admin": user.is_global_admin,
+            "is_super_admin": user.is_super_admin,
+            "organizations_count": len(user.organization_memberships),
+        }
+
         user.login = form.login.data
         user.email = form.email.data
         user.display_name = form.display_name.data
         user.is_active = form.is_active.data
         user.is_global_admin = form.is_global_admin.data
+
+        # Only Super Admins can set Super Admin status
+        if current_user.is_super_admin:
+            user.is_super_admin = form.is_super_admin.data
+
         user.must_change_password = form.must_change_password.data
 
         # Only reset password if field has actual content (strip whitespace)
@@ -262,6 +293,17 @@ def edit_user(user_id):
             )
             db.session.add(membership)
 
+        # Audit log
+        new_values = {
+            "email": user.email,
+            "display_name": user.display_name,
+            "is_active": user.is_active,
+            "is_global_admin": user.is_global_admin,
+            "is_super_admin": user.is_super_admin,
+            "organizations_count": len(form.organizations.data),
+        }
+        AuditService.log_update("User", user.id, user.login, old_values, new_values)
+
         db.session.commit()
         flash(f"User {user.login} updated successfully", "success")
         return redirect(url_for("global_admin.users"))
@@ -283,9 +325,23 @@ def delete_user(user_id):
             flash("Cannot delete the last active global administrator", "danger")
             return redirect(url_for("global_admin.users"))
 
+    # Capture user details before deletion
+    user_login = user.login
+    user_details = {
+        "email": user.email,
+        "display_name": user.display_name,
+        "is_global_admin": user.is_global_admin,
+        "is_super_admin": user.is_super_admin,
+        "organizations_count": len(user.organization_memberships),
+    }
+
     db.session.delete(user)
+
+    # Audit log
+    AuditService.log_delete("User", user_id, user_login, user_details)
+
     db.session.commit()
-    flash(f"User {user.login} deleted successfully", "success")
+    flash(f"User {user_login} deleted successfully", "success")
     return redirect(url_for("global_admin.users"))
 
 
@@ -300,7 +356,9 @@ def organizations():
     organizations = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
     deleted_count = Organization.query.filter_by(is_deleted=True).count()
     csrf_form = FlaskForm()  # Simple form for CSRF token
-    return render_template("global_admin/organizations.html", organizations=organizations, csrf_form=csrf_form, deleted_count=deleted_count)
+    return render_template(
+        "global_admin/organizations.html", organizations=organizations, csrf_form=csrf_form, deleted_count=deleted_count
+    )
 
 
 @bp.route("/organizations/create", methods=["GET", "POST"])
@@ -310,14 +368,45 @@ def create_organization():
     """Create a new organization"""
     form = OrganizationCreateForm()
 
+    # Populate users choices
+    all_users = User.query.filter_by(is_active=True).order_by(User.display_name, User.login).all()
+    form.users.choices = [(u.id, u.display_name or u.login) for u in all_users]
+
     if form.validate_on_submit():
         org = Organization(name=form.name.data, description=form.description.data, is_active=form.is_active.data)
         db.session.add(org)
+        db.session.flush()  # Get org.id before audit log
+
+        # Assign users with permissions
+        for user_id in form.users.data:
+            membership = UserOrganizationMembership(
+                user_id=user_id,
+                organization_id=org.id,
+                can_manage_spaces=request.form.get(f"perm_spaces_{user_id}") == "on",
+                can_manage_value_types=request.form.get(f"perm_value_types_{user_id}") == "on",
+                can_manage_governance_bodies=request.form.get(f"perm_governance_bodies_{user_id}") == "on",
+                can_manage_challenges=request.form.get(f"perm_challenges_{user_id}") == "on",
+                can_manage_initiatives=request.form.get(f"perm_initiatives_{user_id}") == "on",
+                can_manage_systems=request.form.get(f"perm_systems_{user_id}") == "on",
+                can_manage_kpis=request.form.get(f"perm_kpis_{user_id}") == "on",
+                can_view_comments=request.form.get(f"perm_view_comments_{user_id}") == "on",
+                can_add_comments=request.form.get(f"perm_add_comments_{user_id}") == "on",
+            )
+            db.session.add(membership)
+
+        # Audit log
+        AuditService.log_create(
+            "Organization",
+            org.id,
+            org.name,
+            {"description": org.description, "is_active": org.is_active, "users_assigned": len(form.users.data)},
+        )
+
         db.session.commit()
-        flash(f"Organization {org.name} created successfully", "success")
+        flash(f"Organization {org.name} created successfully with {len(form.users.data)} user(s)", "success")
         return redirect(url_for("global_admin.organizations"))
 
-    return render_template("global_admin/create_organization.html", form=form)
+    return render_template("global_admin/create_organization.html", form=form, all_users=all_users)
 
 
 @bp.route("/organizations/<int:org_id>/edit", methods=["GET", "POST"])
@@ -328,15 +417,63 @@ def edit_organization(org_id):
     org = Organization.query.get_or_404(org_id)
     form = OrganizationEditForm(obj=org)
 
+    # Populate users choices
+    all_users = User.query.filter_by(is_active=True).order_by(User.display_name, User.login).all()
+    form.users.choices = [(u.id, u.display_name or u.login) for u in all_users]
+
+    # Pre-populate with existing users on GET
+    if request.method == "GET":
+        form.users.data = [m.user_id for m in org.user_memberships]
+
     if form.validate_on_submit():
+        # Capture old values for audit
+        old_values = {
+            "name": org.name,
+            "description": org.description,
+            "is_active": org.is_active,
+            "users_count": len(org.user_memberships),
+        }
+
+        # Apply changes
         org.name = form.name.data
         org.description = form.description.data
         org.is_active = form.is_active.data
+
+        # Update user memberships
+        # Remove old memberships
+        UserOrganizationMembership.query.filter_by(organization_id=org.id).delete()
+
+        # Add new memberships with permissions
+        for user_id in form.users.data:
+            membership = UserOrganizationMembership(
+                user_id=user_id,
+                organization_id=org.id,
+                can_manage_spaces=request.form.get(f"perm_spaces_{user_id}") == "on",
+                can_manage_value_types=request.form.get(f"perm_value_types_{user_id}") == "on",
+                can_manage_governance_bodies=request.form.get(f"perm_governance_bodies_{user_id}") == "on",
+                can_manage_challenges=request.form.get(f"perm_challenges_{user_id}") == "on",
+                can_manage_initiatives=request.form.get(f"perm_initiatives_{user_id}") == "on",
+                can_manage_systems=request.form.get(f"perm_systems_{user_id}") == "on",
+                can_manage_kpis=request.form.get(f"perm_kpis_{user_id}") == "on",
+                can_view_comments=request.form.get(f"perm_view_comments_{user_id}") == "on",
+                can_add_comments=request.form.get(f"perm_add_comments_{user_id}") == "on",
+            )
+            db.session.add(membership)
+
+        # Audit log
+        new_values = {
+            "name": org.name,
+            "description": org.description,
+            "is_active": org.is_active,
+            "users_count": len(form.users.data),
+        }
+        AuditService.log_update("Organization", org.id, org.name, old_values, new_values)
+
         db.session.commit()
         flash(f"Organization {org.name} updated successfully", "success")
         return redirect(url_for("global_admin.organizations"))
 
-    return render_template("global_admin/edit_organization.html", form=form, org=org)
+    return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users)
 
 
 @bp.route("/organizations/<int:org_id>/delete-preview")
@@ -347,7 +484,7 @@ def delete_organization_preview(org_id):
     org = Organization.query.get_or_404(org_id)
 
     # Calculate impact
-    from app.models import KPI, Challenge, Contribution, Initiative, Space, System, ValueType
+    from app.models import Challenge, Initiative, Space, System, ValueType
 
     impact = {
         "organization": org.name,
@@ -370,9 +507,15 @@ def archive_organization(org_id):
     org_name = org.name
 
     org.soft_delete(current_user.id)
+
+    # Audit log
+    AuditService.log_archive("Organization", org.id, org_name)
+
     db.session.commit()
 
-    flash(f"Organization '{org_name}' archived successfully. It can be restored from Archived Organizations.", "success")
+    flash(
+        f"Organization '{org_name}' archived successfully. It can be restored from Archived Organizations.", "success"
+    )
     return redirect(url_for("global_admin.organizations"))
 
 
@@ -398,6 +541,10 @@ def restore_organization(org_id):
 
     org_name = org.name
     org.restore()
+
+    # Audit log
+    AuditService.log_restore("Organization", org.id, org_name)
+
     db.session.commit()
 
     flash(f"Organization '{org_name}' restored successfully", "success")
@@ -411,11 +558,25 @@ def delete_organization(org_id):
     """Permanently delete an organization (cascades to all data) - CANNOT BE UNDONE"""
     org = Organization.query.get_or_404(org_id)
     org_name = org.name
+    org_description = org.description
 
     # Require organization to be archived first (safety measure)
     if not org.is_deleted:
-        flash(f"Organization must be archived before permanent deletion. Use 'Archive' instead.", "danger")
+        flash("Organization must be archived before permanent deletion. Use 'Archive' instead.", "danger")
         return redirect(url_for("global_admin.organizations"))
+
+    # Audit log before deletion
+    AuditService.log_delete(
+        "Organization",
+        org.id,
+        org_name,
+        {
+            "name": org_name,
+            "description": org_description,
+            "was_deleted": org.is_deleted,
+            "deleted_at": org.deleted_at.isoformat() if org.deleted_at else None,
+        },
+    )
 
     db.session.delete(org)
     db.session.commit()
