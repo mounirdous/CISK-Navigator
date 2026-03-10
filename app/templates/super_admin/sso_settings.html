@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}SSO Settings - Super Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('super_admin.index') }}">Super Admin</a></li>
+                    <li class="breadcrumb-item active">SSO Settings</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-shield-alt text-primary me-2"></i>
+                Single Sign-On (SSO) Configuration
+            </h1>
+            <p class="text-muted mb-0">Enable and configure SSO authentication system-wide</p>
+        </div>
+    </div>
+
+    <!-- SSO Master Toggle -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1 me-4">
+                            <h4 class="mb-2">
+                                {% if sso_enabled %}
+                                    <span class="badge bg-success me-2">ENABLED</span>
+                                {% else %}
+                                    <span class="badge bg-secondary me-2">DISABLED</span>
+                                {% endif %}
+                                SSO System Status
+                            </h4>
+                            <p class="text-muted mb-0">
+                                {% if sso_enabled %}
+                                    SSO authentication is <strong>active</strong>. Users can log in via configured identity providers.
+                                {% else %}
+                                    SSO authentication is <strong>disabled</strong>. Only password authentication is available.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <form action="{{ url_for('super_admin.toggle_sso') }}" method="POST" onsubmit="return confirm('Are you sure you want to {% if sso_enabled %}disable{% else %}enable{% endif %} SSO system-wide?');">
+                                <button type="submit" class="btn btn-lg {% if sso_enabled %}btn-warning{% else %}btn-success{% endif %}">
+                                    <i class="fas fa-{% if sso_enabled %}times-circle{% else %}check-circle{% endif %}"></i>
+                                    {% if sso_enabled %}Disable SSO{% else %}Enable SSO{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% if not sso_enabled %}
+                    <div class="alert alert-info border-0 mt-4 mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Zero Impact Mode:</strong> SSO is currently disabled. No changes to login behavior.
+                        Enable SSO to start configuring identity providers.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">
+                        <i class="fas fa-layer-group me-2"></i>
+                        Implementation Status
+                    </h6>
+                    <div class="mb-2">
+                        <small class="text-muted">Phase 1:</small>
+                        <div class="progress mb-1" style="height: 6px;">
+                            <div class="progress-bar bg-success" style="width: 100%"></div>
+                        </div>
+                        <small>Foundation & Toggle ✓</small>
+                    </div>
+                    <div class="mb-2">
+                        <small class="text-muted">Phase 2:</small>
+                        <div class="progress mb-1" style="height: 6px;">
+                            <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                        </div>
+                        <small>OIDC Integration (Pending)</small>
+                    </div>
+                    <div class="mb-0">
+                        <small class="text-muted">Phase 3:</small>
+                        <div class="progress mb-1" style="height: 6px;">
+                            <div class="progress-bar bg-secondary" style="width: 0%"></div>
+                        </div>
+                        <small>Per-Org Configuration (Pending)</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SSO Configuration (Only shown when SSO is enabled) -->
+    {% if sso_enabled %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0 pt-3">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cog me-2"></i>
+                        SSO Configuration
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('super_admin.update_setting') }}">
+                        <!-- SSO Provider -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Default SSO Provider</label>
+                            <select class="form-select" name="value" onchange="this.form.submit()">
+                                <option value="oidc" {% if sso_provider == 'oidc' %}selected{% endif %}>
+                                    OAuth 2.0 / OpenID Connect (OIDC)
+                                </option>
+                                <option value="saml" {% if sso_provider == 'saml' %}selected{% endif %}>
+                                    SAML 2.0
+                                </option>
+                                <option value="both" {% if sso_provider == 'both' %}selected{% endif %}>
+                                    Both (OIDC & SAML)
+                                </option>
+                            </select>
+                            <input type="hidden" name="key" value="sso_provider">
+                            <small class="text-muted">Protocol used for SSO authentication</small>
+                        </div>
+
+                        <!-- Auto Provision -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch form-switch-lg">
+                                <input class="form-check-input" type="checkbox" id="autoProvision"
+                                       {% if sso_auto_provision %}checked{% endif %}
+                                       onchange="document.getElementById('autoProvisionForm').submit();">
+                                <label class="form-check-label fw-bold" for="autoProvision">
+                                    Just-in-Time (JIT) User Provisioning
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                Automatically create user accounts on first SSO login
+                            </small>
+                        </div>
+                    </form>
+
+                    <form id="autoProvisionForm" method="POST" action="{{ url_for('super_admin.update_setting') }}" style="display: none;">
+                        <input type="hidden" name="key" value="sso_auto_provision">
+                        <input type="hidden" name="value" id="autoProvisionValue" value="{% if sso_auto_provision %}false{% else %}true{% endif %}">
+                    </form>
+
+                    <hr class="my-4">
+
+                    <!-- Coming Soon -->
+                    <div class="text-center py-4">
+                        <i class="fas fa-rocket text-muted fa-3x mb-3"></i>
+                        <h5 class="text-muted">Additional SSO Features Coming Soon</h5>
+                        <p class="text-muted mb-0">
+                            Phase 2 will include per-organization SSO configuration,<br>
+                            OIDC client setup, and identity provider integration.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Documentation Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="fas fa-book me-2"></i>
+                        SSO Documentation
+                    </h6>
+                    <p class="small text-muted mb-3">
+                        Learn how to configure SSO with popular identity providers:
+                    </p>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2">
+                            <i class="fab fa-google text-danger me-2"></i>
+                            <a href="#" class="text-decoration-none">Google Workspace</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fab fa-microsoft text-primary me-2"></i>
+                            <a href="#" class="text-decoration-none">Azure AD / Entra ID</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-shield-alt text-warning me-2"></i>
+                            <a href="#" class="text-decoration-none">Okta</a>
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-lock text-info me-2"></i>
+                            <a href="#" class="text-decoration-none">Auth0</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="card border-warning shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-warning mb-2">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Security Notice
+                    </h6>
+                    <p class="small mb-0">
+                        SSO requires HTTPS in production. Ensure SSL certificates are properly configured
+                        before enabling SSO for end users.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Placeholder when SSO is disabled -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-lock fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">SSO Configuration Locked</h5>
+                    <p class="text-muted mb-4">
+                        Enable SSO above to access configuration options
+                    </p>
+                    <p class="small text-muted mb-0">
+                        Current behavior: Password authentication only<br>
+                        No changes to existing login flow
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.form-switch-lg .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+</style>
+
+<script>
+// Update hidden form value when checkbox changes
+document.getElementById('autoProvision')?.addEventListener('change', function() {
+    document.getElementById('autoProvisionValue').value = this.checked ? 'true' : 'false';
+});
+</script>
+{% endblock %}

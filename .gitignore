@@ -21,6 +21,9 @@ instance/
 *.swo
 *~
 
+# Claude Code settings (local preferences)
+.claude/settings.json
+
 # OS
 .DS_Store
 Thumbs.db

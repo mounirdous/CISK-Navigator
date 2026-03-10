@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs - Super Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('super_admin.index') }}">Super Admin</a></li>
+                    <li class="breadcrumb-item active">Audit Logs</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-clipboard-list text-info me-2"></i>
+                Audit Logs
+            </h1>
+            <p class="text-muted mb-0">Track system changes and admin actions</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-list-alt text-muted fa-3x mb-3"></i>
+                    <h5 class="text-muted">Audit Logging Coming Soon</h5>
+                    <p class="text-muted mb-4">
+                        System audit logs will track all super admin actions including:
+                    </p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled text-start text-muted small">
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Setting changes</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> SSO toggle events</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> User privilege modifications</li>
+                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Maintenance mode activation</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <span class="badge bg-info">Phase 3 Feature</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

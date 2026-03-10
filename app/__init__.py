@@ -58,9 +58,10 @@ def create_app(config_name=None):
             return None
 
     # Register blueprints
-    from app.routes import auth, global_admin, organization_admin, workspace
+    from app.routes import auth, global_admin, organization_admin, super_admin, workspace
 
     app.register_blueprint(auth.bp)
+    app.register_blueprint(super_admin.bp)
     app.register_blueprint(global_admin.bp)
     app.register_blueprint(organization_admin.bp)
     app.register_blueprint(workspace.bp)

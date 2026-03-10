@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}Super Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-crown text-danger me-2"></i>
+                        Super Admin Dashboard
+                    </h1>
+                    <p class="text-muted mb-0">System-wide settings and configuration</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('global_admin.index') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-users-cog"></i> Global Admin
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Stats Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Users -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Users</p>
+                            <h3 class="mb-0">{{ total_users }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-users text-primary fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Super Admins -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Super Admins</p>
+                            <h3 class="mb-0">{{ super_admins }}</h3>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-crown text-danger fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Admins -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Global Admins</p>
+                            <h3 class="mb-0">{{ global_admins }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-user-shield text-warning fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">System Status</p>
+                            <h5 class="mb-0">
+                                {% if maintenance_mode %}
+                                    <span class="badge bg-warning">Maintenance</span>
+                                {% else %}
+                                    <span class="badge bg-success">Operational</span>
+                                {% endif %}
+                            </h5>
+                        </div>
+                        <div class="{% if maintenance_mode %}bg-warning{% else %}bg-success{% endif %} bg-opacity-10 p-3 rounded">
+                            <i class="fas fa-heartbeat {% if maintenance_mode %}text-warning{% else %}text-success{% endif %} fa-lg"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Toggles -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-3 pb-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-shield-alt text-primary me-2"></i>
+                        Authentication
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">Single Sign-On (SSO)</h6>
+                            <p class="text-muted small mb-0">Enable SSO authentication system-wide</p>
+                        </div>
+                        <div class="form-check form-switch form-switch-lg">
+                            <input class="form-check-input" type="checkbox" id="ssoToggle"
+                                   {% if sso_enabled %}checked{% endif %} disabled>
+                            <label class="form-check-label" for="ssoToggle"></label>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('super_admin.sso_config') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-cog"></i> Configure SSO
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 pt-3 pb-0">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-wrench text-warning me-2"></i>
+                        System Maintenance
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">Maintenance Mode</h6>
+                            <p class="text-muted small mb-0">Put system in read-only mode</p>
+                        </div>
+                        <div class="form-check form-switch form-switch-lg">
+                            <input class="form-check-input" type="checkbox" id="maintenanceToggle"
+                                   {% if maintenance_mode %}checked{% endif %} disabled>
+                            <label class="form-check-label" for="maintenanceToggle"></label>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('super_admin.maintenance_settings') }}" class="btn btn-sm btn-outline-warning">
+                        <i class="fas fa-tools"></i> Maintenance Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a href="{{ url_for('super_admin.settings') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-sliders-h text-primary fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">System Settings</h5>
+                        <p class="text-muted small mb-0">Configure system-wide settings and features</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ url_for('super_admin.users') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-success bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-users text-success fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">User Management</h5>
+                        <p class="text-muted small mb-0">View all users and admin levels</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ url_for('super_admin.pending_users') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-warning bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-user-clock text-warning fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">Pending SSO Users</h5>
+                        <p class="text-muted small mb-0">Assign organizations to new SSO users</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{{ url_for('super_admin.health') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-info bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-heartbeat text-info fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">System Health</h5>
+                        <p class="text-muted small mb-0">Monitor system health and performance</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.form-switch-lg .form-check-input {
+    width: 3rem;
+    height: 1.5rem;
+}
+</style>
+{% endblock %}

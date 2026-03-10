@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}System Health - Super Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('super_admin.index') }}">Super Admin</a></li>
+                    <li class="breadcrumb-item active">System Health</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-0">
+                <i class="fas fa-heartbeat text-success me-2"></i>
+                System Health
+            </h1>
+            <p class="text-muted mb-0">Monitor system components and performance</p>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Database</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-database text-success fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ health_status.database|title }}</h5>
+                            <small class="text-muted">PostgreSQL</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Users</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-users text-primary fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ health_status.users }}</h5>
+                            <small class="text-muted">Total users</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted mb-3">Settings</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info bg-opacity-10 p-3 rounded-circle me-3">
+                            <i class="fas fa-cog text-info fa-2x"></i>
+                        </div>
+                        <div>
+                            <h5 class="mb-0">{{ health_status.settings }}</h5>
+                            <small class="text-muted">Configured</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-check-circle text-success fa-3x mb-3"></i>
+                    <h5>All Systems Operational</h5>
+                    <p class="text-muted mb-0">CISK Navigator is running smoothly</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -118,7 +118,7 @@ class RollupSnapshot(db.Model):
     # Entity being tracked (polymorphic)
     entity_type = db.Column(db.String(50), nullable=False)  # 'space', 'challenge', 'initiative', 'system'
     entity_id = db.Column(db.Integer, nullable=False)
-    value_type_id = db.Column(db.Integer, db.ForeignKey("value_types.id"), nullable=False)
+    value_type_id = db.Column(db.Integer, db.ForeignKey("value_types.id", ondelete="CASCADE"), nullable=False)
 
     # Rollup data
     rollup_value = db.Column(db.Numeric(precision=20, scale=6))
@@ -127,7 +127,7 @@ class RollupSnapshot(db.Model):
     child_count = db.Column(db.Integer, default=0)  # How many children contributed
 
     # Relationships
-    value_type = db.relationship("ValueType", backref="rollup_snapshots")
+    value_type = db.relationship("ValueType", back_populates="rollup_snapshots")
     owner = db.relationship("User", foreign_keys=[owner_user_id], backref="owned_rollup_snapshots")
 
     # Indexes

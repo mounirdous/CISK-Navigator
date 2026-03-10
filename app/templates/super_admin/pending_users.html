@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Pending SSO Users - CISK Navigator{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-people"></i> Pending SSO Users</h2>
+            <p class="text-muted">Users who logged in via SSO but need organization assignment</p>
+        </div>
+        <a href="{{ url_for('super_admin.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    {% if pending_users %}
+    <!-- Pending Users Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="bi bi-clock-history"></i>
+                {{ pending_users|length }} User{{ 's' if pending_users|length != 1 else '' }} Awaiting Assignment
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>SSO Provider</th>
+                            <th>Last SSO Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in pending_users %}
+                        <tr>
+                            <td>
+                                <strong>{{ user.display_name or user.login }}</strong>
+                                <br>
+                                <small class="text-muted">@{{ user.login }}</small>
+                            </td>
+                            <td>
+                                {% if user.email %}
+                                <i class="bi bi-envelope"></i> {{ user.email }}
+                                {% else %}
+                                <span class="text-muted">No email</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.sso_provider %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-shield-alt"></i> {{ user.sso_provider|upper }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">Password</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.last_sso_login %}
+                                {{ user.last_sso_login.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                        data-bs-target="#assignModal{{ user.id }}">
+                                    <i class="bi bi-plus-circle"></i> Assign Organization
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Assignment Modal -->
+                        <div class="modal fade" id="assignModal{{ user.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ url_for('super_admin.assign_organization', user_id=user.id) }}">
+                                        {{ csrf_token() }}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">
+                                                Assign {{ user.display_name or user.login }} to Organization
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <!-- Organization Selection -->
+                                            <div class="mb-3">
+                                                <label for="organization_id" class="form-label">Select Organization</label>
+                                                <select name="organization_id" id="organization_id" class="form-select" required>
+                                                    <option value="">-- Select Organization --</option>
+                                                    {% for org in organizations %}
+                                                    <option value="{{ org.id }}">{{ org.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+
+                                            <hr>
+
+                                            <!-- Permissions -->
+                                            <h6 class="mb-3">Permissions</h6>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_spaces" id="spaces{{ user.id }}">
+                                                        <label class="form-check-label" for="spaces{{ user.id }}">
+                                                            Can manage spaces
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_challenges" id="challenges{{ user.id }}">
+                                                        <label class="form-check-label" for="challenges{{ user.id }}">
+                                                            Can manage challenges
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_initiatives" id="initiatives{{ user.id }}">
+                                                        <label class="form-check-label" for="initiatives{{ user.id }}">
+                                                            Can manage initiatives
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_systems" id="systems{{ user.id }}">
+                                                        <label class="form-check-label" for="systems{{ user.id }}">
+                                                            Can manage systems
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_kpis" id="kpis{{ user.id }}">
+                                                        <label class="form-check-label" for="kpis{{ user.id }}">
+                                                            Can manage KPIs
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_value_types" id="valuetypes{{ user.id }}">
+                                                        <label class="form-check-label" for="valuetypes{{ user.id }}">
+                                                            Can manage value types
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_manage_governance_bodies" id="governance{{ user.id }}">
+                                                        <label class="form-check-label" for="governance{{ user.id }}">
+                                                            Can manage governance bodies
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_view_comments" id="viewcomments{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="viewcomments{{ user.id }}">
+                                                            Can view comments
+                                                        </label>
+                                                    </div>
+                                                    <div class="form-check mb-2">
+                                                        <input type="checkbox" class="form-check-input"
+                                                               name="can_add_comments" id="addcomments{{ user.id }}">
+                                                        <label class="form-check-label" for="addcomments{{ user.id }}">
+                                                            Can add comments
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-check-circle"></i> Assign User
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- No Pending Users -->
+    <div class="alert alert-success">
+        <i class="bi bi-check-circle"></i>
+        <strong>All set!</strong> There are no pending users awaiting organization assignment.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

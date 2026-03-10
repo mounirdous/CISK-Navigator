@@ -62,6 +62,7 @@ class ValueType(db.Model):
     organization = db.relationship("Organization", back_populates="value_types")
     kpi_configs = db.relationship("KPIValueTypeConfig", back_populates="value_type", cascade="all, delete-orphan")
     rollup_rules = db.relationship("RollupRule", back_populates="value_type", cascade="all, delete-orphan")
+    rollup_snapshots = db.relationship("RollupSnapshot", back_populates="value_type", cascade="all, delete-orphan")
 
     def is_numeric(self):
         """Check if this is a numeric value type"""

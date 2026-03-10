@@ -70,6 +70,23 @@ def admin_user(db):
 
 
 @pytest.fixture
+def super_admin_user(db):
+    """Create a super admin user"""
+    super_admin = User(
+        login="superadmin",
+        email="superadmin@example.com",
+        display_name="Super Admin",
+        is_active=True,
+        is_super_admin=True,
+        is_global_admin=True,
+    )
+    super_admin.set_password("superadmin123")
+    db.session.add(super_admin)
+    db.session.commit()
+    return super_admin
+
+
+@pytest.fixture
 def sample_organization(db):
     """Create a sample organization"""
     org = Organization(name="Test Organization", description="Test org for testing", is_active=True)

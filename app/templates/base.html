@@ -6,6 +6,7 @@
     <title>{% block title %}CISK Navigator{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
     <style>
@@ -321,6 +322,13 @@
                                 <i class="bi bi-building-gear"></i> Org Admin
                             </a>
                         </li>
+                        {% if current_user.is_super_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{{ url_for('super_admin.index') }}" title="Super Admin - System Settings">
+                                <i class="bi bi-gear-fill"></i> Super Admin
+                            </a>
+                        </li>
+                        {% endif %}
                         {% if current_user.is_global_admin %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.switch_to_global_admin') }}" title="Switch to Global Administration">
@@ -328,7 +336,14 @@
                             </a>
                         </li>
                         {% endif %}
-                    {% elif current_user.is_global_admin %}
+                    {% elif current_user.is_global_admin or current_user.is_super_admin %}
+                        {% if current_user.is_super_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link text-danger" href="{{ url_for('super_admin.index') }}">
+                                <i class="bi bi-gear-fill"></i> Super Admin
+                            </a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('global_admin.users') }}">Users</a>
                         </li>

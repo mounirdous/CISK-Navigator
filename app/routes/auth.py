@@ -7,7 +7,7 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from app.extensions import db
 from app.forms import ChangePasswordForm, LoginForm, ProfileEditForm
-from app.models import Organization, User
+from app.models import Organization, SSOConfig, User
 
 bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -96,7 +96,13 @@ def login():
         flash(f"Welcome back, {user.display_name or user.login}!", "success")
         return redirect(url_for("workspace.dashboard"))
 
-    return render_template("auth/login.html", form=form)
+    # Check SSO status - only use SSOConfig as single source of truth
+    sso_config = SSOConfig.get_instance()
+    sso_enabled = sso_config and sso_config.is_enabled and sso_config.is_configured()
+
+    return render_template(
+        "auth/login.html", form=form, sso_enabled=sso_enabled, sso_config=sso_config if sso_enabled else None
+    )
 
 
 @bp.route("/logout")
@@ -224,3 +230,153 @@ def change_password():
             return redirect(url_for("workspace.dashboard"))
 
     return render_template("auth/change_password.html", form=form)
+
+
+# ============================================================================
+# SSO Routes
+# ============================================================================
+
+
+@bp.route("/sso/initiate")
+def sso_initiate():
+    """
+    Initiate SSO authentication flow.
+
+    Redirects user to the identity provider's authorization endpoint.
+    """
+    from app.services import SSOService
+
+    # Check if SSO is enabled and configured
+    if not SSOService.can_use_sso():
+        flash("SSO is not available", "warning")
+        return redirect(url_for("auth.login"))
+
+    # Initiate OIDC flow
+    redirect_url = SSOService.initiate_oidc_flow()
+    if redirect_url:
+        return redirect(redirect_url)
+    else:
+        flash("Failed to initiate SSO flow", "danger")
+        return redirect(url_for("auth.login"))
+
+
+@bp.route("/sso/callback")
+def sso_callback():
+    """
+    Handle SSO callback from identity provider.
+
+    Exchanges authorization code for tokens and logs user in.
+    """
+    from app.services import SSOService
+
+    # Get authorization code and state from query parameters
+    code = request.args.get("code")
+    state = request.args.get("state")
+    error = request.args.get("error")
+
+    if error:
+        flash(f"SSO authentication failed: {error}", "danger")
+        return redirect(url_for("auth.login"))
+
+    if not code or not state:
+        flash("Invalid SSO callback", "danger")
+        return redirect(url_for("auth.login"))
+
+    # Handle OIDC callback
+    user_info, error_msg = SSOService.handle_oidc_callback(code, state)
+
+    if error_msg:
+        flash(error_msg, "danger")
+        return redirect(url_for("auth.login"))
+
+    if not user_info:
+        flash("Failed to retrieve user information from SSO provider", "danger")
+        return redirect(url_for("auth.login"))
+
+    # Provision or update user (JIT)
+    user, was_created = SSOService.provision_or_update_user(user_info)
+
+    if not user:
+        flash("Failed to provision user. Please contact your administrator.", "danger")
+        return redirect(url_for("auth.login"))
+
+    if not user.is_active:
+        flash("Your account is inactive", "danger")
+        return redirect(url_for("auth.login"))
+
+    # Get user's organizations
+    user_orgs = user.get_organizations()
+    active_orgs = [org for org in user_orgs if org.is_active]
+
+    # Special case: Global Admin with no organizations
+    if user.is_global_admin and not active_orgs:
+        login_user(user)
+        session["organization_id"] = None
+        session["organization_name"] = "Global Administration"
+        session.pop("sso_state", None)
+
+        flash(f"Welcome, {user.display_name or user.login}! (Global Admin)", "success")
+        return redirect(url_for("global_admin.index"))
+
+    # Determine which organization to log into
+    selected_org = None
+
+    # Priority 1: User's default organization (if set and user has access)
+    if user.default_organization_id:
+        default_org = Organization.query.get(user.default_organization_id)
+        if default_org and default_org.is_active and user.has_organization_access(default_org.id):
+            selected_org = default_org
+
+    # Priority 2: First available organization
+    if not selected_org and active_orgs:
+        selected_org = active_orgs[0]
+
+    # No organizations available
+    if not selected_org:
+        if was_created:
+            # New SSO user with no organizations - show helpful message
+            flash(
+                f"Welcome, {user.display_name or user.login}! Your account has been created. "
+                "Please contact your administrator to be added to an organization.",
+                "info",
+            )
+        else:
+            flash("You do not have access to any organizations. Please contact your administrator.", "warning")
+        logout_user()  # Log them out since they can't access anything
+        return redirect(url_for("auth.login"))
+
+    # Log user in with organization context
+    login_user(user)
+    session["organization_id"] = selected_org.id
+    session["organization_name"] = selected_org.name
+
+    # Clean up SSO session data
+    session.pop("sso_state", None)
+
+    # Flash welcome message
+    if was_created:
+        flash(f"Welcome to CISK Navigator, {user.display_name or user.login}!", "success")
+    else:
+        flash(f"Welcome back, {user.display_name or user.login}!", "success")
+
+    return redirect(url_for("workspace.dashboard"))
+
+
+@bp.route("/sso/logout")
+@login_required
+def sso_logout():
+    """
+    Handle SSO logout.
+
+    Logs user out of CISK Navigator and optionally redirects to IdP logout.
+    """
+    # Check if user is SSO user
+    if current_user.is_sso_user():
+        # TODO: Implement IdP logout (Single Logout - SLO)
+        # For now, just local logout
+        pass
+
+    logout_user()
+    session.clear()
+    flash("You have been logged out", "info")
+    return redirect(url_for("auth.login"))
