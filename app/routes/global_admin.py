@@ -173,7 +173,7 @@ def users():
 def create_user():
     """Create a new user"""
     form = UserCreateForm()
-    organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
+    organizations = Organization.query.filter_by(is_active=True, is_deleted=False).order_by(Organization.name).all()
     form.organizations.choices = [(org.id, org.name) for org in organizations]
 
     if form.validate_on_submit():
@@ -221,7 +221,7 @@ def edit_user(user_id):
     user = User.query.get_or_404(user_id)
     form = UserEditForm(obj=user)
 
-    organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
+    organizations = Organization.query.filter_by(is_active=True, is_deleted=False).order_by(Organization.name).all()
     form.organizations.choices = [(org.id, org.name) for org in organizations]
 
     if request.method == "GET":
@@ -296,10 +296,11 @@ def delete_user(user_id):
 @login_required
 @global_admin_required
 def organizations():
-    """List all organizations"""
-    organizations = Organization.query.order_by(Organization.name).all()
+    """List all active (non-deleted) organizations"""
+    organizations = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
+    deleted_count = Organization.query.filter_by(is_deleted=True).count()
     csrf_form = FlaskForm()  # Simple form for CSRF token
-    return render_template("global_admin/organizations.html", organizations=organizations, csrf_form=csrf_form)
+    return render_template("global_admin/organizations.html", organizations=organizations, csrf_form=csrf_form, deleted_count=deleted_count)
 
 
 @bp.route("/organizations/create", methods=["GET", "POST"])
@@ -360,19 +361,67 @@ def delete_organization_preview(org_id):
     return render_template("global_admin/delete_organization_preview.html", org=org, impact=impact)
 
 
+@bp.route("/organizations/<int:org_id>/archive", methods=["POST"])
+@login_required
+@global_admin_required
+def archive_organization(org_id):
+    """Archive an organization (soft delete - can be restored)"""
+    org = Organization.query.get_or_404(org_id)
+    org_name = org.name
+
+    org.soft_delete(current_user.id)
+    db.session.commit()
+
+    flash(f"Organization '{org_name}' archived successfully. It can be restored from Archived Organizations.", "success")
+    return redirect(url_for("global_admin.organizations"))
+
+
+@bp.route("/organizations/archived")
+@login_required
+@global_admin_required
+def archived_organizations():
+    """List all archived (soft-deleted) organizations"""
+    archived_orgs = Organization.query.filter_by(is_deleted=True).order_by(Organization.deleted_at.desc()).all()
+    csrf_form = FlaskForm()
+    return render_template("global_admin/archived_organizations.html", organizations=archived_orgs, csrf_form=csrf_form)
+
+
+@bp.route("/organizations/<int:org_id>/restore", methods=["POST"])
+@login_required
+@global_admin_required
+def restore_organization(org_id):
+    """Restore an archived organization"""
+    org = Organization.query.get_or_404(org_id)
+    if not org.is_deleted:
+        flash(f"Organization '{org.name}' is not archived", "warning")
+        return redirect(url_for("global_admin.organizations"))
+
+    org_name = org.name
+    org.restore()
+    db.session.commit()
+
+    flash(f"Organization '{org_name}' restored successfully", "success")
+    return redirect(url_for("global_admin.organizations"))
+
+
 @bp.route("/organizations/<int:org_id>/delete", methods=["POST"])
 @login_required
 @global_admin_required
 def delete_organization(org_id):
-    """Delete an organization (cascades to all data)"""
+    """Permanently delete an organization (cascades to all data) - CANNOT BE UNDONE"""
     org = Organization.query.get_or_404(org_id)
     org_name = org.name
+
+    # Require organization to be archived first (safety measure)
+    if not org.is_deleted:
+        flash(f"Organization must be archived before permanent deletion. Use 'Archive' instead.", "danger")
+        return redirect(url_for("global_admin.organizations"))
 
     db.session.delete(org)
     db.session.commit()
 
-    flash(f"Organization {org_name} and all its data deleted successfully", "success")
-    return redirect(url_for("global_admin.organizations"))
+    flash(f"Organization '{org_name}' and ALL its data permanently deleted", "warning")
+    return redirect(url_for("global_admin.archived_organizations"))
 
 
 @bp.route("/organizations/<int:org_id>/clone", methods=["GET", "POST"])

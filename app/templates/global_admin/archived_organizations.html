@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Archived Organizations - Global Administration{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--border-subtle);
+}
+
+.page-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.page-title h2 i {
+    color: #ffc107;
+}
+
+.org-card {
+    background: var(--bg-primary);
+    border: 2px solid #ffc107;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.9;
+    transition: all var(--transition-fast);
+}
+
+.org-card:hover {
+    opacity: 1;
+    box-shadow: var(--shadow-md);
+}
+
+.org-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.org-info {
+    flex: 1;
+}
+
+.org-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.org-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.org-meta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.org-meta-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.org-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="page-title">
+        <h2>
+            <i class="bi bi-archive-fill"></i>
+            Archived Organizations
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Organizations
+            </a>
+        </div>
+    </div>
+
+    {% if organizations %}
+        <div class="alert alert-warning">
+            <i class="bi bi-info-circle-fill"></i>
+            <strong>Archived Organizations:</strong> These organizations are hidden but can be restored.
+            To permanently delete an organization, use the "Permanent Delete" button (cannot be undone).
+        </div>
+
+        <div class="row">
+            {% for org in organizations %}
+            <div class="col-12">
+                <div class="org-card">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="org-icon">
+                            <i class="bi bi-archive"></i>
+                        </div>
+
+                        <div class="org-info">
+                            <div class="org-name">
+                                {{ org.name }}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-archive-fill"></i> Archived
+                                </span>
+                            </div>
+
+                            {% if org.description %}
+                            <div class="org-description">
+                                <i class="bi bi-info-circle"></i>
+                                {{ org.description[:100] }}{% if org.description|length > 100 %}...{% endif %}
+                            </div>
+                            {% endif %}
+
+                            <div class="org-meta">
+                                <div class="org-meta-item">
+                                    <i class="bi bi-calendar-x"></i>
+                                    Archived: {{ org.deleted_at.strftime('%Y-%m-%d %H:%M') if org.deleted_at else 'Unknown' }}
+                                </div>
+                                {% if org.deleter %}
+                                <div class="org-meta-item">
+                                    <i class="bi bi-person"></i>
+                                    By: {{ org.deleter.display_name or org.deleter.login }}
+                                </div>
+                                {% endif %}
+                                <div class="org-meta-item">
+                                    <i class="bi bi-people"></i>
+                                    {{ org.user_memberships|length }} member{{ 's' if org.user_memberships|length != 1 else '' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="org-actions">
+                            <form method="POST" action="{{ url_for('global_admin.restore_organization', org_id=org.id) }}" style="display: inline;"
+                                  onsubmit="return confirm('Restore organization {{ org.name }}?\n\nThe organization will be reactivated and visible again.');">
+                                {{ csrf_form.hidden_tag() }}
+                                <button type="submit" class="btn btn-success btn-sm" title="Restore organization">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('global_admin.delete_organization', org_id=org.id) }}" style="display: inline;"
+                                  onsubmit="return confirm('⚠️ PERMANENT DELETE: {{ org.name }}?\n\n🛑 THIS CANNOT BE UNDONE!\n\nThis will permanently delete:\n- All spaces, challenges, initiatives\n- All systems and KPIs\n- All contributions and snapshots\n- All comments and mentions\n- All value types and configurations\n\nType the organization name to confirm: {{ org.name }}') && prompt('Type organization name to confirm deletion:') === '{{ org.name }}';">
+                                {{ csrf_form.hidden_tag() }}
+                                <button type="submit" class="btn btn-danger btn-sm" title="Permanently delete organization">
+                                    <i class="bi bi-trash-fill"></i> Permanent Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="bi bi-archive"></i>
+            <h3>No Archived Organizations</h3>
+            <p class="text-muted">Archived organizations will appear here.</p>
+            <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-outline-secondary mt-3">
+                <i class="bi bi-arrow-left"></i> Back to Organizations
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

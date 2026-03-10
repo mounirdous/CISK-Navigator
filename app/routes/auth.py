@@ -43,9 +43,9 @@ def login():
             flash("Your account is inactive", "danger")
             return redirect(url_for("auth.login"))
 
-        # Get user's organizations
+        # Get user's organizations (exclude deleted ones)
         user_orgs = user.get_organizations()
-        active_orgs = [org for org in user_orgs if org.is_active]
+        active_orgs = [org for org in user_orgs if org.is_active and not org.is_deleted]
 
         # Special case: Global Admin with no organizations
         # Allow them to log in and access Global Admin panel
@@ -69,7 +69,7 @@ def login():
         # Priority 1: User's default organization (if set and user has access)
         if user.default_organization_id:
             default_org = Organization.query.get(user.default_organization_id)
-            if default_org and default_org.is_active and user.has_organization_access(default_org.id):
+            if default_org and default_org.is_active and not default_org.is_deleted and user.has_organization_access(default_org.id):
                 selected_org = default_org
 
         # Priority 2: First available organization

@@ -23,6 +23,12 @@ class Organization(db.Model):
     name = db.Column(db.String(200), unique=True, nullable=False, index=True)
     description = db.Column(db.Text, nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    # Soft delete fields
+    is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
+    deleted_at = db.Column(db.DateTime, nullable=True)
+    deleted_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -36,6 +42,28 @@ class Organization(db.Model):
     systems = db.relationship("System", back_populates="organization", cascade="all, delete-orphan")
     value_types = db.relationship("ValueType", back_populates="organization", cascade="all, delete-orphan")
     governance_bodies = db.relationship("GovernanceBody", back_populates="organization", cascade="all, delete-orphan")
+    deleter = db.relationship("User", foreign_keys=[deleted_by])
+
+    def soft_delete(self, user_id):
+        """Soft delete this organization (mark as deleted, don't remove from database)"""
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+        self.deleted_by = user_id
+        self.is_active = False  # Also mark as inactive
+
+    def restore(self):
+        """Restore a soft-deleted organization"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.deleted_by = None
+        self.is_active = True  # Restore as active
+
+    @staticmethod
+    def get_active_query():
+        """Get query for non-deleted organizations"""
+        from app.models import Organization
+
+        return Organization.query.filter_by(is_deleted=False)
 
     def __repr__(self):
         return f"<Organization {self.name}>"
