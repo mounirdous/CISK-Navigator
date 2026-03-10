@@ -57,7 +57,7 @@ def create_app(config_name=None):
             return None
 
     # Register blueprints
-    from app.routes import analytics, auth, global_admin, organization_admin, super_admin, workspace
+    from app.routes import analytics, auth, executive, global_admin, organization_admin, super_admin, workspace
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(super_admin.bp)
@@ -65,6 +65,7 @@ def create_app(config_name=None):
     app.register_blueprint(organization_admin.bp)
     app.register_blueprint(workspace.bp)
     app.register_blueprint(analytics.bp)
+    app.register_blueprint(executive.bp)
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":

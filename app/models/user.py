@@ -34,6 +34,8 @@ class User(UserMixin, db.Model):
     is_global_admin = db.Column(db.Boolean, default=False, nullable=False)
     must_change_password = db.Column(db.Boolean, default=False, nullable=False)
     dark_mode = db.Column(db.Boolean, default=False, nullable=False)
+    navbar_position = db.Column(db.String(10), default="top", nullable=False)  # 'top' or 'left'
+    navbar_autohide = db.Column(db.Boolean, default=False, nullable=False)
     default_organization_id = db.Column(
         db.Integer, db.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
     )

@@ -26,3 +26,4 @@ black==24.3.0
 isort==5.13.2
 flake8==7.0.0
 coverage==7.4.0
+python-pptx==1.0.2

@@ -1,11 +1,43 @@
-# 🧭 CISK Navigator v1.16.0
+# 🧭 CISK Navigator v1.17.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.16.0-blue)
+![Version](https://img.shields.io/badge/version-1.17.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+
+## ✨ What's New in v1.17.0 (March 2026)
+
+### 🎯 **Reorganized Navigation**
+- **Cleaner Structure**: Workspace → Dashboards → Admin (no more confusion!)
+- **Main Workspace**: Primary KPI grid for day-to-day work
+- **Dashboards Dropdown**: Overview, Executive, Analytics (all viewing options grouped)
+- **Admin Dropdown**: Org Admin, Global Admin, Super Admin (all admin functions grouped)
+- **User-Friendly**: New users can navigate intuitively
+
+### 🎨 **Customizable Navigation Bar**
+- **Position Choice**: Top (horizontal) or Left Sidebar (vertical)
+- **Auto-Hide Option**: Navbar hides when not in use, shows on hover
+- **User Preference**: Each user chooses their own layout
+- **Smooth Animations**: Polished transitions for professional feel
+- **Trigger Bar**: Visual indicator when navbar is hidden (hover edge to show)
+- **Responsive**: Works perfectly on all screen sizes
+- **Profile Settings**: Configure in User Profile → Navigation Bar Position/Auto-hide
+
+### 🚀 **Executive Dashboard** (v1.16.0 → v1.17.0)
+- **Traffic Light Status**: Green/Yellow/Red KPI health indicators
+- **High-Level Metrics**: Active KPIs, On Target %, Needs Attention, At Risk
+- **Governance Performance**: Track which governance bodies are on track
+- **Top Performers**: KPIs exceeding targets
+- **Activity Trends**: Weekly contribution graphs
+- **Smart Insights**: Auto-generated recommendations
+- **Export Options**: PDF, PowerPoint, Excel downloads
+- **Compact Layout**: Traffic lights + chart side-by-side
+
+### 🗄️ **Database Changes**
+- **New Migration**: `j4d5e6f7g8h9_add_navbar_preferences.py`
+- **New Columns**: `users.navbar_position` (default: 'top'), `users.navbar_autohide` (default: false)
 
 ## ✨ What's New in v1.16.0 (March 2026)
 
@@ -399,7 +431,14 @@
   - SSO/SAML configuration (Okta, Azure AD, Google Workspace)
   - Security settings
   - Maintenance mode toggle
-  - Audit log viewer (all system events)
+  - **Audit log viewer** with advanced filtering:
+    - Search by entity name
+    - Filter by action (CREATE, UPDATE, DELETE, ARCHIVE, RESTORE, LOGIN)
+    - Filter by entity type (User, Space, Challenge, Initiative, System, KPI, ValueType, etc.)
+    - Filter by user who performed action
+    - Adjustable result limits (50, 100, 250, 500)
+    - Color-coded display (green=create, blue=update, red=delete, yellow=archive)
+    - JSON viewer for old/new value comparison
   - User overview with pending approvals
   - Health monitoring
 - **📊 Analytics Dashboard**: Organization-level insights
@@ -415,12 +454,12 @@
   - Color-coded results by entity type
   - User search API for @mentions
 - **📋 Audit Logging**: Comprehensive audit trail
-  - User management events (create, edit, delete)
-  - Entity management (Spaces, Challenges, Initiatives, Systems, KPIs, Value Types)
-  - KPI archiving/unarchiving
-  - Governance body management
-  - Tracks: who, what, when, old/new values
-  - Accessible to Super Admins only
+  - **Coverage**: User management, Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Governance Bodies
+  - **Tracks**: who, what, when, old values, new values, IP address, user agent
+  - **Advanced Filtering**: Search, action type, entity type, user, result limits
+  - **Visual**: Color-coded by action type (CREATE/UPDATE/DELETE/ARCHIVE/RESTORE)
+  - **Detail View**: Expandable JSON viewer for change comparison
+  - **Access**: Super Admins only
 
 ## 🚀 Quick Start
 

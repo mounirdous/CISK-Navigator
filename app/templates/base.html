@@ -289,15 +289,173 @@
         background-color: rgba(255, 107, 107, 0.15) !important;
         color: #ff6b6b !important;
     }
+
+    /* Left Sidebar Navbar Styles */
+    body.navbar-left {
+        padding-left: 250px;
+        transition: padding-left 0.3s ease;
+    }
+
+    body.navbar-left.navbar-autohide {
+        padding-left: 50px;
+    }
+
+    body.navbar-left.navbar-autohide.navbar-visible {
+        padding-left: 250px;
+    }
+
+    .navbar.navbar-left {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 250px;
+        height: 100vh;
+        flex-direction: column;
+        padding: 0;
+        z-index: 1055;
+        overflow-y: auto;
+        transition: transform 0.3s ease, width 0.3s ease;
+    }
+
+    .navbar.navbar-left .container-fluid {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+    }
+
+    .navbar.navbar-left .navbar-brand {
+        text-align: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        margin-bottom: 1rem;
+    }
+
+    .navbar.navbar-left .navbar-nav {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .navbar.navbar-left .nav-item {
+        width: 100%;
+    }
+
+    .navbar.navbar-left .nav-link {
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        margin-bottom: 0.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .navbar.navbar-left .nav-link:hover {
+        background-color: rgba(255,255,255,0.1);
+        transform: translateX(4px);
+    }
+
+    .navbar.navbar-left .dropdown-menu {
+        position: relative !important;
+        transform: none !important;
+        box-shadow: none;
+        border: none;
+        background: rgba(0,0,0,0.2);
+        margin-left: 1rem;
+    }
+
+    .navbar.navbar-left .navbar-collapse {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .navbar.navbar-left form.d-flex {
+        width: 100%;
+        margin: 1rem 0;
+    }
+
+    .navbar.navbar-left form.d-flex .input-group {
+        width: 100% !important;
+    }
+
+    /* Auto-hide for left sidebar */
+    body.navbar-left.navbar-autohide .navbar {
+        width: 50px;
+    }
+
+    body.navbar-left.navbar-autohide .navbar:hover,
+    body.navbar-left.navbar-autohide.navbar-visible .navbar {
+        width: 250px;
+    }
+
+    body.navbar-left.navbar-autohide .navbar .navbar-brand div,
+    body.navbar-left.navbar-autohide .navbar .nav-link span,
+    body.navbar-left.navbar-autohide .navbar form,
+    body.navbar-left.navbar-autohide .navbar .dropdown-toggle::after {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    body.navbar-left.navbar-autohide .navbar:hover .navbar-brand div,
+    body.navbar-left.navbar-autohide .navbar:hover .nav-link span,
+    body.navbar-left.navbar-autohide .navbar:hover form,
+    body.navbar-left.navbar-autohide .navbar:hover .dropdown-toggle::after {
+        opacity: 1;
+    }
+
+    /* Auto-hide for top navbar */
+    body.navbar-top.navbar-autohide .navbar {
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+    }
+
+    body.navbar-top.navbar-autohide .navbar:hover,
+    body.navbar-top.navbar-autohide.navbar-visible .navbar {
+        transform: translateY(0);
+    }
+
+    /* Navbar trigger bar for auto-hide */
+    body.navbar-autohide::before {
+        content: '';
+        position: fixed;
+        z-index: 1054;
+        background: rgba(13, 110, 253, 0.3);
+        transition: background 0.2s ease;
+    }
+
+    body.navbar-top.navbar-autohide::before {
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+    }
+
+    body.navbar-left.navbar-autohide::before {
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 3px;
+    }
+
+    body.navbar-autohide::before:hover {
+        background: rgba(13, 110, 253, 0.6);
+    }
+
+    /* Adjust main content for navbar layouts */
+    body.navbar-top .container-fluid.mt-4 {
+        margin-top: 1.5rem !important;
+    }
+
+    body.navbar-left .container-fluid.mt-4 {
+        margin-top: 1.5rem !important;
+        padding-left: 2rem;
+    }
     </style>
 </head>
-<body{% if current_user.is_authenticated and current_user.dark_mode %} class="dark-mode"{% endif %}>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<body{% if current_user.is_authenticated and current_user.dark_mode %} class="dark-mode{% endif %}{% if current_user.is_authenticated %} navbar-{{ current_user.navbar_position }}{% if current_user.navbar_autohide %} navbar-autohide{% endif %}{% endif %}"{% if not current_user.is_authenticated or not current_user.dark_mode %}{% endif %}>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark{% if current_user.is_authenticated %} navbar-{{ current_user.navbar_position }}{% endif %}">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
                 <div>
                     CISK Navigator
-                    <br><small style="font-size: 0.65rem; opacity: 0.7;">v1.16.0</small>
+                    <br><small style="font-size: 0.65rem; opacity: 0.7;">v1.17.0</small>
                 </div>
             </a>
             {% if current_user.is_authenticated %}
@@ -308,39 +466,59 @@
                 <ul class="navbar-nav me-auto">
                     {% if session.organization_id %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('workspace.dashboard') }}">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('workspace.index') }}">
                                 <i class="bi bi-grid-3x3"></i> Workspace
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('analytics.dashboard') }}">
-                                <i class="bi bi-graph-up"></i> Analytics
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="dashboardsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-speedometer2"></i> Dashboards
                             </a>
+                            <ul class="dropdown-menu" aria-labelledby="dashboardsDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.dashboard') }}">
+                                        <i class="bi bi-house-door"></i> Overview
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('executive.dashboard') }}">
+                                        <i class="bi bi-briefcase"></i> Executive
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('analytics.dashboard') }}">
+                                        <i class="bi bi-graph-up"></i> Analytics
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('organization_admin.index') }}">
-                                <i class="bi bi-building-gear"></i> Org Admin
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-gear-fill"></i> Admin
                             </a>
+                            <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('organization_admin.index') }}">
+                                        <i class="bi bi-building-gear"></i> Org Admin
+                                    </a>
+                                </li>
+                                {% if current_user.is_global_admin %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('auth.switch_to_global_admin') }}">
+                                        <i class="bi bi-shield-lock-fill"></i> Global Admin
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if current_user.is_super_admin %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item text-danger" href="{{ url_for('super_admin.index') }}">
+                                        <i class="bi bi-gear-fill"></i> Super Admin
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
                         </li>
-                        {% if current_user.is_super_admin %}
-                        <li class="nav-item">
-                            <a class="nav-link text-danger" href="{{ url_for('super_admin.index') }}" title="Super Admin - System Settings">
-                                <i class="bi bi-gear-fill"></i> Super Admin
-                            </a>
-                        </li>
-                        {% endif %}
-                        {% if current_user.is_global_admin %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.switch_to_global_admin') }}" title="Switch to Global Administration">
-                                <i class="bi bi-shield-lock-fill"></i> Global Admin
-                            </a>
-                        </li>
-                        {% endif %}
                     {% elif current_user.is_global_admin or current_user.is_super_admin %}
                         {% if current_user.is_super_admin %}
                         <li class="nav-item">
@@ -482,6 +660,48 @@
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Navbar auto-hide functionality -->
+    {% if current_user.is_authenticated and current_user.navbar_autohide %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const body = document.body;
+        const navbar = document.querySelector('.navbar');
+        let hideTimeout;
+
+        function showNavbar() {
+            body.classList.add('navbar-visible');
+            clearTimeout(hideTimeout);
+        }
+
+        function hideNavbar() {
+            hideTimeout = setTimeout(function() {
+                body.classList.remove('navbar-visible');
+            }, 500);
+        }
+
+        // Show on navbar hover
+        navbar.addEventListener('mouseenter', showNavbar);
+        navbar.addEventListener('mouseleave', hideNavbar);
+
+        // Show on trigger bar hover
+        if (body.classList.contains('navbar-autohide')) {
+            body.addEventListener('mouseenter', function(e) {
+                const rect = body.getBoundingClientRect();
+                if (body.classList.contains('navbar-top')) {
+                    if (e.clientY - rect.top < 10) {
+                        showNavbar();
+                    }
+                } else if (body.classList.contains('navbar-left')) {
+                    if (e.clientX - rect.left < 10) {
+                        showNavbar();
+                    }
+                }
+            });
+        }
+    });
+    </script>
+    {% endif %}
 
     <!-- Global mentions functionality -->
     {% if session.organization_id %}

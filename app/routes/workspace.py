@@ -173,7 +173,9 @@ def index():
             .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
             .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
             .join(Contribution, KPIValueTypeConfig.id == Contribution.kpi_value_type_config_id)
-            .filter(Challenge.space_id.in_(space_ids), ValueType.organization_id == org_id, ValueType.is_active == True)
+            .filter(
+                Challenge.space_id.in_(space_ids), ValueType.organization_id == org_id, ValueType.is_active.is_(True)
+            )
         )
 
         # Apply governance body filter if selected
@@ -185,7 +187,7 @@ def index():
 
         # Apply archived filter
         if not show_archived:
-            value_types_query = value_types_query.filter(KPI.is_archived == False)
+            value_types_query = value_types_query.filter(KPI.is_archived.is_(False))
 
         value_types_with_data = value_types_query.distinct().all()
         value_type_ids_with_data = {vt_id for (vt_id,) in value_types_with_data}
@@ -356,8 +358,6 @@ def kpi_cell_detail(kpi_id, vt_id):
         if entry_mode == "new_data":
             # Auto-create snapshot before replacing data
             try:
-                from datetime import date, datetime
-
                 snapshot_label = f"Auto: Before update by {contributor_name}"
 
                 # Create snapshot for this specific KPI cell
@@ -793,8 +793,6 @@ def compare_snapshots():
 @organization_required
 def toggle_snapshot_privacy(batch_id):
     """Toggle privacy status of a snapshot batch (private <-> public)"""
-    org_id = session.get("organization_id")
-
     try:
         print(f"[DEBUG] Toggling privacy for batch_id: {batch_id}")
 
@@ -835,7 +833,7 @@ def toggle_snapshot_privacy(batch_id):
             }
         )
 
-    except Exception as e:
+    except Exception:
         db.session.rollback()
 
 
@@ -1014,8 +1012,6 @@ def get_kpi_history(config_id):
     Returns array of snapshots with dates and values.
     """
     try:
-        from datetime import date
-
         limit = request.args.get("limit", 50, type=int)
         snapshots = SnapshotService.get_kpi_history(config_id, limit=limit)
 
@@ -1435,3 +1431,84 @@ def search_page():
     return render_template(
         "workspace/search.html", organization_name=org_name, query=query, results=results, total=total
     )
+
+
+@bp.route("/api/kpi/<int:kpi_id>/status")
+@login_required
+@organization_required
+def get_kpi_status(kpi_id):
+    """
+    Get traffic light status for a KPI.
+
+    Returns JSON with status (green/yellow/red), reason, and details.
+    """
+    try:
+        # Verify KPI belongs to current organization
+        kpi = (
+            KPI.query.join(InitiativeSystemLink)
+            .join(System)
+            .filter(KPI.id == kpi_id, System.organization_id == session.get("organization_id"))
+            .first_or_404()
+        )
+
+        status_data = kpi.get_status()
+
+        return jsonify(
+            {
+                "kpi_id": kpi.id,
+                "kpi_name": kpi.name,
+                "status": status_data["status"],
+                "reason": status_data["reason"],
+                "details": status_data["details"],
+            }
+        )
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/kpis/statuses")
+@login_required
+@organization_required
+def get_all_kpi_statuses():
+    """
+    Get traffic light statuses for all KPIs in the organization.
+
+    Returns JSON with array of {kpi_id, kpi_name, status, reason, details}.
+    Useful for dashboard displays.
+    """
+    try:
+        org_id = session.get("organization_id")
+
+        # Get all KPIs for this organization
+        kpis = (
+            KPI.query.join(InitiativeSystemLink)
+            .join(System)
+            .filter(System.organization_id == org_id)
+            .order_by(KPI.name)
+            .all()
+        )
+
+        results = []
+        for kpi in kpis:
+            status_data = kpi.get_status()
+            results.append(
+                {
+                    "kpi_id": kpi.id,
+                    "kpi_name": kpi.name,
+                    "status": status_data["status"],
+                    "reason": status_data["reason"],
+                    "details": status_data["details"],
+                    "is_archived": kpi.is_archived,
+                }
+            )
+
+        # Count by status
+        status_counts = {"green": 0, "yellow": 0, "red": 0}
+        for result in results:
+            status_counts[result["status"]] += 1
+
+        return jsonify({"kpis": results, "summary": status_counts, "total": len(results)})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

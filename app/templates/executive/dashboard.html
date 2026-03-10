@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Executive Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --status-green: #28a745;
+    --status-yellow: #ffc107;
+    --status-red: #dc3545;
+}
+
+.exec-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    height: 100%;
+    transition: transform 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+.metric-number {
+    font-size: 3rem;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.metric-trend {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.trend-up { color: var(--status-green); }
+.trend-down { color: var(--status-red); }
+.trend-neutral { color: #6c757d; }
+
+.traffic-light-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+
+.traffic-lights {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.traffic-light {
+    flex: 1;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.traffic-light:hover {
+    transform: scale(1.05);
+}
+
+.traffic-light.green {
+    background: rgba(40, 167, 69, 0.1);
+    border: 2px solid var(--status-green);
+}
+
+.traffic-light.yellow {
+    background: rgba(255, 193, 7, 0.1);
+    border: 2px solid var(--status-yellow);
+}
+
+.traffic-light.red {
+    background: rgba(220, 53, 69, 0.1);
+    border: 2px solid var(--status-red);
+}
+
+.traffic-light-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.governance-row {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.governance-name {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.governance-badge {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.75rem;
+}
+
+.progress-thin {
+    height: 8px;
+    border-radius: 4px;
+    flex: 1;
+    margin: 0 1rem;
+}
+
+.alert-box {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 1.5rem;
+}
+
+.kpi-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.kpi-list-item:last-child {
+    border-bottom: none;
+}
+
+.period-selector {
+    background: white;
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: inline-flex;
+    gap: 0.25rem;
+}
+
+.period-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    color: white;
+    text-decoration: none;
+}
+
+.period-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.period-btn.active {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.status-indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-green { background: var(--status-green); }
+.status-yellow { background: var(--status-yellow); }
+.status-red { background: var(--status-red); }
+
+.export-button {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="exec-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2"><i class="bi bi-speedometer"></i> Executive Dashboard</h1>
+                <p class="mb-0 opacity-75">Strategic Overview - {{ session.organization_name }}</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="period-selector">
+                    <a href="?days=7" class="period-btn {% if days == 7 %}active{% endif %}">7 Days</a>
+                    <a href="?days=30" class="period-btn {% if days == 30 %}active{% endif %}">30 Days</a>
+                    <a href="?days=90" class="period-btn {% if days == 90 %}active{% endif %}">90 Days</a>
+                    <a href="?days=365" class="period-btn {% if days == 365 %}active{% endif %}">1 Year</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Alerts -->
+    {% for alert in alerts %}
+    <div class="alert-box">
+        <strong><i class="bi bi-exclamation-triangle"></i> Action Required:</strong>
+        {{ alert.message }}
+        <a href="{{ alert.url }}" class="ms-2">View Details →</a>
+    </div>
+    {% endfor %}
+
+    <!-- Key Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-number text-primary">{{ active_kpis }}</div>
+                <div class="metric-label">Active KPIs</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-number" style="color: var(--status-green);">{{ on_target_pct|int }}%</div>
+                <div class="metric-label">On Target</div>
+                {% if activity_trend_pct > 0 %}
+                <div class="metric-trend trend-up">
+                    <i class="bi bi-arrow-up-right"></i> {{ activity_trend_pct|round(1) }}% vs last period
+                </div>
+                {% elif activity_trend_pct < 0 %}
+                <div class="metric-trend trend-down">
+                    <i class="bi bi-arrow-down-right"></i> {{ activity_trend_pct|round(1)|abs }}% vs last period
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-number" style="color: var(--status-yellow);">{{ needs_attention_count }}</div>
+                <div class="metric-label">Needs Attention</div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="metric-card">
+                <div class="metric-number" style="color: var(--status-red);">{{ at_risk_count }}</div>
+                <div class="metric-label">At Risk</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Traffic Light Dashboard & Activity Chart Side by Side -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="traffic-light-card" style="height: 100%;">
+                <h4 class="mb-3">KPI Health Status</h4>
+                <div class="traffic-lights" style="flex-direction: column; gap: 0.5rem;">
+                    <div class="traffic-light green" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; display: inline;">{{ green_count }}</div>
+                            <span class="text-muted small ms-2">ON TRACK</span>
+                        </div>
+                        <div style="color: var(--status-green); font-weight: 600; font-size: 1.25rem;">{{ green_pct|int }}%</div>
+                    </div>
+                    <div class="traffic-light yellow" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; display: inline;">{{ yellow_count }}</div>
+                            <span class="text-muted small ms-2">NEEDS ATTENTION</span>
+                        </div>
+                        <div style="color: var(--status-yellow); font-weight: 600; font-size: 1.25rem;">{{ yellow_pct|int }}%</div>
+                    </div>
+                    <div class="traffic-light red" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem;">
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; display: inline;">{{ red_count }}</div>
+                            <span class="text-muted small ms-2">AT RISK</span>
+                        </div>
+                        <div style="color: var(--status-red); font-weight: 600; font-size: 1.25rem;">{{ red_pct|int }}%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="traffic-light-card" style="height: 100%;">
+                <h4 class="mb-3">Activity Trend ({{ days }} Days)</h4>
+                <div style="height: 200px;">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Governance Body Performance -->
+    {% if gov_body_performance %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="traffic-light-card">
+                <h4 class="mb-3">Governance Body Performance</h4>
+
+                <div class="row">
+                    {% for gb in gov_body_performance %}
+                    <div class="col-md-6">
+                        <div class="governance-row">
+                            <div class="governance-name">
+                                <span class="governance-badge" style="background: {{ gb.color }};"></span>
+                                {{ gb.name }}
+                            </div>
+                            <div class="progress progress-thin">
+                                {% if gb.performance_pct >= 75 %}
+                                <div class="progress-bar bg-success" style="width: {{ gb.performance_pct }}%"></div>
+                                {% elif gb.performance_pct >= 50 %}
+                                <div class="progress-bar bg-warning" style="width: {{ gb.performance_pct }}%"></div>
+                                {% else %}
+                                <div class="progress-bar bg-danger" style="width: {{ gb.performance_pct }}%"></div>
+                                {% endif %}
+                            </div>
+                            <span class="fw-bold">{{ gb.performance_pct|int }}%</span>
+                            <span class="status-indicator status-{{ gb.status }} ms-2"></span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Top & Bottom Performers -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5 class="mb-3 text-success"><i class="bi bi-trophy"></i> Top Performers</h5>
+
+                {% if top_performers %}
+                {% for item in top_performers %}
+                <div class="kpi-list-item">
+                    <div>
+                        <strong>{{ item.kpi.name }}</strong>
+                        <div class="small text-muted">{{ item.system }}</div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success">{{ item.achievement_pct|round(0)|int }}% of target</span>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-info-circle fs-1"></i>
+                    <p class="mb-0 mt-2">No KPIs with targets achieving > 100% yet</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="chart-container" id="needs-attention">
+                <h5 class="mb-3 text-danger"><i class="bi bi-exclamation-triangle"></i> Needs Attention</h5>
+
+                {% if needs_attention %}
+                {% for item in needs_attention %}
+                <div class="kpi-list-item">
+                    <div>
+                        <strong>{{ item.kpi.name }}</strong>
+                        <div class="small text-muted">{{ item.system }}</div>
+                    </div>
+                    <div class="text-end">
+                        {% if item.achievement_pct %}
+                        <span class="badge bg-{{ 'danger' if item.status == 'red' else 'warning' }}">
+                            {{ item.achievement_pct|round(0)|int }}% of target
+                        </span>
+                        {% endif %}
+                        {% if item.days_since_activity %}
+                        <small class="text-muted d-block mt-1">No activity: {{ item.days_since_activity }} days</small>
+                        {% elif item.days_since_activity is none %}
+                        <small class="text-muted d-block mt-1">No contributions yet</small>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-check-circle fs-1"></i>
+                    <p class="mb-0 mt-2">All KPIs are on track!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Insights -->
+    {% if insights %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="chart-container">
+                <h4 class="mb-3"><i class="bi bi-lightbulb"></i> Key Insights</h4>
+
+                <div class="row">
+                    {% for insight in insights %}
+                    <div class="col-md-4">
+                        <div class="alert alert-{{ insight.type }} mb-0">
+                            <h6><i class="bi bi-{{ 'check-circle' if insight.type == 'success' else 'hourglass-split' if insight.type == 'warning' else 'graph-up' }}"></i> {{ insight.title }}</h6>
+                            <p class="small mb-0">{{ insight.message }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Export Buttons -->
+<div class="export-button">
+    <div class="btn-group-vertical shadow-lg">
+        <a href="{{ url_for('executive.export_pdf', days=days) }}" class="btn btn-primary btn-lg" target="_blank">
+            <i class="bi bi-file-pdf"></i> Export PDF
+        </a>
+        <a href="{{ url_for('executive.export_powerpoint', days=days) }}" class="btn btn-danger">
+            <i class="bi bi-file-earmark-ppt"></i> PowerPoint
+        </a>
+        <a href="{{ url_for('executive.export_excel', days=days) }}" class="btn btn-success">
+            <i class="bi bi-file-excel"></i> Excel
+        </a>
+    </div>
+</div>
+
+<!-- Chart.js for activity trend -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('activityChart');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ weeks|map(attribute='label')|list|tojson }},
+        datasets: [{
+            label: 'Contributions',
+            data: {{ weeks|map(attribute='count')|list|tojson }},
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: { color: '#6c757d' }
+            },
+            x: {
+                ticks: { color: '#6c757d' }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
