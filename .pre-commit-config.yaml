@@ -40,9 +40,16 @@ repos:
           '--exclude=migrations,venv,.venv'
         ]
 
-  # Run tests before commit (optional - can be disabled for speed)
+  # CRITICAL: Block requirements.new.txt from being committed
   - repo: local
     hooks:
+      - id: check-requirements-files
+        name: check-requirements-files
+        entry: .githooks/check-requirements.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
       - id: pytest-check
         name: pytest-check
         entry: bash -c 'pytest tests/unit/ tests/integration/test_auth.py -x --tb=short'
