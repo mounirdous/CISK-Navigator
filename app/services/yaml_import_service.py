@@ -264,13 +264,23 @@ class YAMLImportService:
             system_map[system_id] = system
             stats["systems"] += 1
 
-        # Link Initiative to System
-        link = InitiativeSystemLink(
-            initiative_id=initiative_id, system_id=system.id, display_order=system_data.get("display_order", 0)
+        # Link Initiative to System (check if link already exists)
+        link = (
+            db.session.query(InitiativeSystemLink).filter_by(initiative_id=initiative_id, system_id=system.id).first()
         )
-        if not dry_run:
-            db.session.add(link)
-            db.session.flush()
+
+        if link is None:
+            # Create new link if it doesn't exist
+            link = InitiativeSystemLink(
+                initiative_id=initiative_id, system_id=system.id, display_order=system_data.get("display_order", 0)
+            )
+            if not dry_run:
+                db.session.add(link)
+                db.session.flush()
+        else:
+            # Update display_order if link already exists
+            if not dry_run:
+                link.display_order = system_data.get("display_order", 0)
 
         # Create KPIs
         for kpi_data in system_data.get("kpis", []):
