@@ -396,6 +396,13 @@ tr[data-level="kpi"] td {
             </button>
             {% endif %}
 
+            <!-- Create New (only in edit mode) -->
+            {% if current_user.can_manage_spaces(org_id) %}
+            <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-success btn-sm btn-modern action-icons">
+                <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">New Space</span>
+            </a>
+            {% endif %}
+
             <!-- Dashboard -->
             <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-sm btn-modern">
                 <i class="bi bi-speedometer2"></i> <span class="d-none d-md-inline">Dashboard</span>
@@ -611,14 +618,21 @@ tr[data-level="kpi"] td {
                                 <i class="bi bi-lock-fill"></i> Private
                             </span>
                         {% endif %}
-                        {% if current_user.can_manage_spaces(org_id) %}
+                        {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) %}
                         <span class="action-icons ms-2">
-                            <a href="#" onclick="editSpace({{ space.id }}); return false;" class="text-primary" title="Edit Space">
+                            {% if current_user.can_manage_challenges(org_id) %}
+                            <a href="{{ url_for('organization_admin.create_challenge', space_id=space.id) }}" class="text-success" title="Add Challenge to this Space">
+                                <i class="bi bi-plus-circle"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.can_manage_spaces(org_id) %}
+                            <a href="#" onclick="editSpace({{ space.id }}); return false;" class="text-primary ms-1" title="Edit Space">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
                             <a href="#" onclick="deleteSpace({{ space.id }}, '{{ space.name }}'); return false;" class="text-danger ms-1" title="Delete Space">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% endif %}
                         </span>
                         {% endif %}
                     </td>
@@ -660,14 +674,21 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🎯</span>
                         {{ challenge.name }}
-                        {% if current_user.can_manage_challenges(org_id) %}
+                        {% if current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) %}
                         <span class="action-icons ms-2">
-                            <a href="#" onclick="editChallenge({{ challenge.id }}); return false;" class="text-primary" title="Edit Challenge">
+                            {% if current_user.can_manage_initiatives(org_id) %}
+                            <a href="{{ url_for('organization_admin.create_initiative', challenge_id=challenge.id) }}" class="text-success" title="Add Initiative to this Challenge">
+                                <i class="bi bi-plus-circle"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.can_manage_challenges(org_id) %}
+                            <a href="#" onclick="editChallenge({{ challenge.id }}); return false;" class="text-primary ms-1" title="Edit Challenge">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
                             <a href="#" onclick="deleteChallenge({{ challenge.id }}, '{{ challenge.name }}'); return false;" class="text-danger ms-1" title="Delete Challenge">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% endif %}
                         </span>
                         {% endif %}
                     </td>
@@ -709,14 +730,21 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">💡</span>
                         {{ initiative.name }}
-                        {% if current_user.can_manage_initiatives(org_id) %}
+                        {% if current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) %}
                         <span class="action-icons ms-2">
-                            <a href="#" onclick="editInitiative({{ initiative.id }}); return false;" class="text-primary" title="Edit Initiative">
+                            {% if current_user.can_manage_systems(org_id) %}
+                            <a href="{{ url_for('organization_admin.create_system', initiative_id=initiative.id) }}" class="text-success" title="Link System to this Initiative">
+                                <i class="bi bi-plus-circle"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.can_manage_initiatives(org_id) %}
+                            <a href="#" onclick="editInitiative({{ initiative.id }}); return false;" class="text-primary ms-1" title="Edit Initiative">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
                             <a href="#" onclick="deleteInitiative({{ initiative.id }}, '{{ initiative.name }}'); return false;" class="text-danger ms-1" title="Delete Initiative">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% endif %}
                         </span>
                         {% endif %}
                     </td>
@@ -758,14 +786,21 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">⚙️</span>
                         {{ system.name }}
-                        {% if current_user.can_manage_systems(org_id) %}
+                        {% if current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
-                            <a href="#" onclick="editSystem({{ system.id }}); return false;" class="text-primary" title="Edit System">
+                            {% if current_user.can_manage_kpis(org_id) %}
+                            <a href="{{ url_for('organization_admin.create_kpi', system_link_id=sys_link.id) }}" class="text-success" title="Add KPI to this System">
+                                <i class="bi bi-plus-circle"></i>
+                            </a>
+                            {% endif %}
+                            {% if current_user.can_manage_systems(org_id) %}
+                            <a href="#" onclick="editSystem({{ system.id }}); return false;" class="text-primary ms-1" title="Edit System">
                                 <i class="bi bi-pencil-square"></i>
                             </a>
                             <a href="#" onclick="deleteSystem({{ system.id }}, '{{ system.name }}'); return false;" class="text-danger ms-1" title="Delete System">
                                 <i class="bi bi-trash"></i>
                             </a>
+                            {% endif %}
                         </span>
                         {% endif %}
                     </td>
