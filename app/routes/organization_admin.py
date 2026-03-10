@@ -1687,10 +1687,11 @@ def clear_organization_data():
     try:
         # Log the action before deletion
         AuditService.log_action(
-            user=current_user,
-            organization_id=org_id,
-            action="clear_organization_data",
-            details=f"User {current_user.login} initiated complete data deletion for organization {org_name}",
+            action="CLEAR_ALL_DATA",
+            entity_type="Organization",
+            entity_id=org_id,
+            entity_name=org_name,
+            description=f"Complete data deletion for organization {org_name}",
         )
 
         # Delete all organization data
