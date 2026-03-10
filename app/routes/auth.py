@@ -151,8 +151,6 @@ def profile():
         current_user.display_name = form.display_name.data
         current_user.email = form.email.data
         current_user.dark_mode = form.dark_mode.data
-        current_user.navbar_position = form.navbar_position.data
-        current_user.navbar_autohide = form.navbar_autohide.data
 
         # Handle default organization
         default_org_id = form.default_organization.data
@@ -167,7 +165,7 @@ def profile():
                 return redirect(url_for("auth.profile"))
 
         db.session.commit()
-        flash("Profile updated successfully. Refresh the page to apply navbar changes.", "success")
+        flash("Profile updated successfully.", "success")
         return redirect(url_for("auth.profile"))
 
     # Pre-populate form with current values
@@ -175,8 +173,6 @@ def profile():
         form.display_name.data = current_user.display_name
         form.email.data = current_user.email
         form.dark_mode.data = current_user.dark_mode
-        form.navbar_position.data = current_user.navbar_position
-        form.navbar_autohide.data = current_user.navbar_autohide
         form.default_organization.data = current_user.default_organization_id or 0
 
     return render_template("auth/profile.html", form=form)
