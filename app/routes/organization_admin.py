@@ -8,6 +8,7 @@ from functools import wraps
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
+from flask_wtf import FlaskForm
 
 from app.extensions import db
 from app.forms import (
@@ -124,7 +125,10 @@ def index():
         "governance_bodies": governance_bodies_count,
     }
 
-    return render_template("organization_admin/index.html", org_name=org_name, stats=stats)
+    # Create empty form for CSRF token
+    form = FlaskForm()
+
+    return render_template("organization_admin/index.html", org_name=org_name, stats=stats, form=form)
 
 
 # Space Management
@@ -1607,4 +1611,102 @@ def _delete_all_organization_data(org_id):
     for rule in rollup_rules:
         db.session.delete(rule)
 
+    # Delete Governance Bodies and their links
+    from app.models import KPIGovernanceBodyLink
+
+    gb_links = (
+        KPIGovernanceBodyLink.query.join(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(Initiative.organization_id == org_id)
+        .all()
+    )
+    for link in gb_links:
+        db.session.delete(link)
+
+    gov_bodies = GovernanceBody.query.filter_by(organization_id=org_id).all()
+    for gb in gov_bodies:
+        db.session.delete(gb)
+
+    # Delete Snapshots
+    from app.models import KPISnapshot, RollupSnapshot
+
+    kpi_snapshots = (
+        KPISnapshot.query.join(KPIValueTypeConfig)
+        .join(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(Initiative.organization_id == org_id)
+        .all()
+    )
+    for snapshot in kpi_snapshots:
+        db.session.delete(snapshot)
+
+    rollup_snapshots = RollupSnapshot.query.join(ValueType).filter(ValueType.organization_id == org_id).all()
+    for snapshot in rollup_snapshots:
+        db.session.delete(snapshot)
+
+    # Delete Comments
+    from app.models import Comment
+
+    comments = (
+        Comment.query.join(KPIValueTypeConfig)
+        .join(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(Initiative.organization_id == org_id)
+        .all()
+    )
+    for comment in comments:
+        db.session.delete(comment)
+
+    # Delete Audit Logs
+    from app.models import AuditLog
+
+    audit_logs = AuditLog.query.filter_by(organization_id=org_id).all()
+    for log in audit_logs:
+        db.session.delete(log)
+
     db.session.flush()
+
+
+@bp.route("/clear-organization-data", methods=["POST"])
+@login_required
+@organization_required
+def clear_organization_data():
+    """Clear all data from the current organization (DESTRUCTIVE!)"""
+    org_id = session.get("organization_id")
+    org_name = session.get("organization_name")
+
+    # Verify organization name confirmation
+    confirm_name = request.form.get("confirm_org_name", "").strip()
+    if confirm_name != org_name:
+        flash("Organization name confirmation does not match. Data deletion cancelled.", "danger")
+        return redirect(url_for("organization_admin.index"))
+
+    try:
+        # Log the action before deletion
+        AuditService.log_action(
+            user=current_user,
+            organization_id=org_id,
+            action="clear_organization_data",
+            details=f"User {current_user.login} initiated complete data deletion for organization {org_name}",
+        )
+
+        # Delete all organization data
+        _delete_all_organization_data(org_id)
+
+        # Commit the transaction
+        db.session.commit()
+
+        flash(
+            f"All data has been permanently deleted from {org_name}. The organization is now empty.",
+            "success",
+        )
+
+        return redirect(url_for("workspace.index"))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error clearing organization data: {str(e)}", "danger")
+        return redirect(url_for("organization_admin.index"))
