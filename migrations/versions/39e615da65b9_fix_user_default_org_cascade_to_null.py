@@ -22,37 +22,40 @@ def upgrade():
 
     Without this, deleting an organization that is set as any user's default
     will either block the deletion or leave orphaned references.
+
+    This migration is safe to run multiple times - it checks before modifying.
     """
-    # Get database connection to check if constraint exists
+    # Get database connection
     conn = op.get_bind()
 
-    # Check if constraint exists (PostgreSQL specific query)
+    # Check if constraint exists and what its delete behavior is
     result = conn.execute(sa.text("""
-        SELECT constraint_name
-        FROM information_schema.table_constraints
-        WHERE table_name = 'users'
-        AND constraint_name = 'users_default_organization_id_fkey'
-        AND constraint_type = 'FOREIGN KEY'
+        SELECT c.confdeltype
+        FROM pg_constraint c
+        JOIN pg_class t ON c.conrelid = t.oid
+        JOIN pg_namespace n ON t.relnamespace = n.oid
+        WHERE c.conname = 'users_default_organization_id_fkey'
+        AND t.relname = 'users'
+        AND c.contype = 'f'
     """))
 
-    constraint_exists = result.fetchone() is not None
+    row = result.fetchone()
 
-    if constraint_exists:
-        # Drop existing foreign key constraint
+    # If constraint doesn't exist, create it with SET NULL
+    if row is None:
+        op.create_foreign_key(
+            "users_default_organization_id_fkey",
+            "users",
+            "organizations",
+            ["default_organization_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+    # If constraint exists but doesn't have SET NULL (confdeltype != 'n'), fix it
+    elif row[0] != 'n':
+        # Drop existing constraint
         op.drop_constraint("users_default_organization_id_fkey", "users", type_="foreignkey")
 
-    # Check if constraint already has correct definition
-    result = conn.execute(sa.text("""
-        SELECT confdeltype
-        FROM pg_constraint
-        WHERE conname = 'users_default_organization_id_fkey'
-    """))
-
-    existing_delete_type = result.fetchone()
-
-    # Only recreate if constraint doesn't exist or doesn't have SET NULL behavior
-    # confdeltype: 'a' = no action, 'r' = restrict, 'c' = cascade, 'n' = set null
-    if not existing_delete_type or existing_delete_type[0] != 'n':
         # Recreate with ON DELETE SET NULL
         op.create_foreign_key(
             "users_default_organization_id_fkey",
@@ -62,6 +65,7 @@ def upgrade():
             ["id"],
             ondelete="SET NULL",
         )
+    # Else: constraint already has SET NULL, nothing to do
 
 
 def downgrade():
