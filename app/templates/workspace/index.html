@@ -389,47 +389,51 @@ tr[data-level="kpi"] td {
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0"><i class="bi bi-building"></i> Organization: {{ org_name }}</h3>
         <div class="d-flex flex-wrap gap-2">
-            <!-- Edit Mode (if permitted) -->
-            {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
-            <button id="toggle-edit-mode" class="btn btn-outline-warning btn-sm btn-modern">
-                <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit Mode</span>
-            </button>
-            {% endif %}
-
-            <!-- Create New Space (always visible - primary action) -->
-            {% if current_user.can_manage_spaces(org_id) %}
-            <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-success btn-sm btn-modern">
-                <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">New Space</span>
-            </a>
-            {% endif %}
-
-            <!-- Dashboard -->
-            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-primary btn-sm btn-modern">
-                <i class="bi bi-speedometer2"></i> <span class="d-none d-md-inline">Dashboard</span>
-            </a>
-
-            <!-- Tree Controls -->
-            <div class="btn-group btn-group-sm">
-                <button id="expand-all" class="btn btn-outline-primary btn-modern" title="Expand All">
-                    <i class="bi bi-arrows-expand"></i>
+            {% if spaces %}
+                <!-- Edit Mode (only show when there's content) -->
+                {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
+                <button id="toggle-edit-mode" class="btn btn-outline-warning btn-sm btn-modern">
+                    <i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit Mode</span>
                 </button>
-                <button id="collapse-all" class="btn btn-outline-secondary btn-modern" title="Collapse All">
-                    <i class="bi bi-arrows-collapse"></i>
-                </button>
-            </div>
+                {% endif %}
 
-            <!-- Data Actions -->
-            <div class="btn-group btn-group-sm">
-                <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-success btn-modern" title="Export to Excel">
-                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                <!-- Create New Space -->
+                {% if current_user.can_manage_spaces(org_id) %}
+                <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-success btn-sm btn-modern">
+                    <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">New Space</span>
                 </a>
-                <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-info btn-modern" title="View Snapshots">
-                    <i class="bi bi-camera"></i>
+                {% endif %}
+
+                <!-- Tree Controls -->
+                <div class="btn-group btn-group-sm">
+                    <button id="expand-all" class="btn btn-outline-primary btn-modern" title="Expand All">
+                        <i class="bi bi-arrows-expand"></i>
+                    </button>
+                    <button id="collapse-all" class="btn btn-outline-secondary btn-modern" title="Collapse All">
+                        <i class="bi bi-arrows-collapse"></i>
+                    </button>
+                </div>
+
+                <!-- Data Actions -->
+                <div class="btn-group btn-group-sm">
+                    <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-success btn-modern" title="Export to Excel">
+                        <i class="bi bi-file-earmark-spreadsheet"></i>
+                    </a>
+                    <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-info btn-modern" title="View Snapshots">
+                        <i class="bi bi-camera"></i>
+                    </a>
+                    <button class="btn btn-outline-info btn-modern" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal" title="Quick Snapshot">
+                        <i class="bi bi-camera-fill"></i>
+                    </button>
+                </div>
+            {% else %}
+                <!-- Empty org: only show New Space button -->
+                {% if current_user.can_manage_spaces(org_id) %}
+                <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-success btn-lg btn-modern">
+                    <i class="bi bi-plus-circle"></i> New Space
                 </a>
-                <button class="btn btn-outline-info btn-modern" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal" title="Quick Snapshot">
-                    <i class="bi bi-camera-fill"></i>
-                </button>
-            </div>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 
@@ -1610,8 +1614,8 @@ document.addEventListener('DOMContentLoaded', function() {
             document.body.classList.toggle('edit-mode');
             const isEditMode = document.body.classList.contains('edit-mode');
             this.innerHTML = isEditMode ?
-                '<i class="bi bi-check-circle"></i> Exit Edit Mode' :
-                '<i class="bi bi-pencil-square"></i> Edit Mode';
+                '<i class="bi bi-check-circle"></i> <span class="d-none d-md-inline">Exit Edit Mode</span>' :
+                '<i class="bi bi-pencil-square"></i> <span class="d-none d-md-inline">Edit Mode</span>';
         });
     }
 });
