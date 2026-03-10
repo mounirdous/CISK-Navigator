@@ -1646,11 +1646,11 @@ def _delete_all_organization_data(org_id):
     for snapshot in rollup_snapshots:
         db.session.delete(snapshot)
 
-    # Delete Comments
-    from app.models import Comment
+    # Delete Comments and Mentions
+    from app.models import CellComment, MentionNotification
 
     comments = (
-        Comment.query.join(KPIValueTypeConfig)
+        CellComment.query.join(KPIValueTypeConfig)
         .join(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
@@ -1659,6 +1659,19 @@ def _delete_all_organization_data(org_id):
     )
     for comment in comments:
         db.session.delete(comment)
+
+    # Delete mention notifications (they reference comments)
+    mentions = (
+        MentionNotification.query.join(CellComment)
+        .join(KPIValueTypeConfig)
+        .join(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(Initiative.organization_id == org_id)
+        .all()
+    )
+    for mention in mentions:
+        db.session.delete(mention)
 
     # Delete Audit Logs
     from app.models import AuditLog
