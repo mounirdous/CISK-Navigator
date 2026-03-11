@@ -95,7 +95,7 @@ def create_app(config_name=None):
             # Block write operations (POST, PUT, DELETE, PATCH)
             if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
                 flash(
-                    "⚠️ System is in maintenance mode. Write operations are temporarily disabled.",
+                    "[MAINTENANCE] System is in maintenance mode. Write operations are temporarily disabled.",
                     "warning",
                 )
                 # Try to redirect to referer or dashboard
@@ -233,11 +233,11 @@ def create_app(config_name=None):
         if "postgresql" in db_uri:
             # Mask password for security
             safe_uri = db_uri.split("@")[1] if "@" in db_uri else db_uri
-            print(f"✓ USING POSTGRESQL: {safe_uri}")
+            print(f"[OK] USING POSTGRESQL: {safe_uri}")
         elif "sqlite" in db_uri:
-            print(f"⚠ USING SQLITE: {db_uri}")
+            print(f"[WARN] USING SQLITE: {db_uri}")
             if flask_env == "production":
-                print("❌ ERROR: SQLite should NEVER be used in production!")
+                print("[ERROR] SQLite should NEVER be used in production!")
         print("=" * 80)
 
         # Only create tables in testing/development without migrations
