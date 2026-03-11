@@ -4,7 +4,7 @@ Custom decorators for route protection and permission checking
 
 from functools import wraps
 
-from flask import abort, flash, redirect, url_for
+from flask import abort, flash, redirect, request, url_for
 from flask_login import current_user
 
 
@@ -124,7 +124,7 @@ def organization_permission_required(permission_name):
                 return redirect(url_for("auth.login"))
 
             if not current_user.has_permission(organization_id, permission_name):
-                flash(f"You don't have permission to access this feature", "danger")
+                flash("You don't have permission to access this feature", "danger")
                 abort(403)
 
             return f(*args, **kwargs)
@@ -132,3 +132,41 @@ def organization_permission_required(permission_name):
         return decorated_function
 
     return decorator
+
+
+def maintenance_mode_check(f):
+    """
+    Decorator to block write operations during maintenance mode.
+
+    Super admins are exempt and can still make changes.
+    All other users get read-only access during maintenance.
+
+    Usage:
+        @maintenance_mode_check
+        def create_space():
+            pass
+    """
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Import here to avoid circular dependency
+        from app.models import SystemSetting
+
+        # Check if maintenance mode is active
+        if SystemSetting.is_maintenance_mode():
+            # Super admins can bypass maintenance mode
+            if current_user.is_authenticated and current_user.is_super_admin:
+                return f(*args, **kwargs)
+
+            # Block write operations (POST, PUT, DELETE, PATCH)
+            if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+                flash(
+                    "System is in maintenance mode. Write operations are temporarily disabled.",
+                    "warning",
+                )
+                # Try to redirect to referer or index
+                return redirect(request.referrer or url_for("workspace.dashboard"))
+
+        return f(*args, **kwargs)
+
+    return decorated_function

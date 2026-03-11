@@ -73,6 +73,36 @@ def create_app(config_name=None):
 
         app.register_blueprint(test_errors.bp)
 
+    # Maintenance mode check (global)
+    @app.before_request
+    def check_maintenance_mode():
+        """Block write operations during maintenance mode (except for super admins)"""
+        from flask import flash, redirect, request, url_for
+        from flask_login import current_user
+
+        from app.models import SystemSetting
+
+        # Skip check for static files and certain routes
+        if request.endpoint in ["static", "auth.login", "auth.logout", None]:
+            return None
+
+        # Check if maintenance mode is active
+        if SystemSetting.is_maintenance_mode():
+            # Super admins can bypass maintenance mode
+            if current_user.is_authenticated and current_user.is_super_admin:
+                return None
+
+            # Block write operations (POST, PUT, DELETE, PATCH)
+            if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+                flash(
+                    "⚠️ System is in maintenance mode. Write operations are temporarily disabled.",
+                    "warning",
+                )
+                # Try to redirect to referer or dashboard
+                return redirect(request.referrer or url_for("workspace.dashboard"))
+
+        return None
+
     # Root route - redirect to login or dashboard
     @app.route("/")
     def index():
@@ -96,6 +126,14 @@ def create_app(config_name=None):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "-1"
         return response
+
+    # Context processor - inject maintenance_mode into all templates
+    @app.context_processor
+    def inject_maintenance_mode():
+        """Make maintenance_mode available to all templates"""
+        from app.models import SystemSetting
+
+        return {"maintenance_mode": SystemSetting.is_maintenance_mode()}
 
     # Register error handlers
     @app.errorhandler(404)
