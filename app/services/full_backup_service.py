@@ -76,15 +76,15 @@ class FullBackupService:
                 "display_name": user.display_name,
                 "is_active": user.is_active,
                 "permissions": {
-                    "is_organization_admin": membership.is_organization_admin,
                     "can_manage_spaces": membership.can_manage_spaces,
+                    "can_manage_value_types": membership.can_manage_value_types,
+                    "can_manage_governance_bodies": membership.can_manage_governance_bodies,
                     "can_manage_challenges": membership.can_manage_challenges,
                     "can_manage_initiatives": membership.can_manage_initiatives,
                     "can_manage_systems": membership.can_manage_systems,
                     "can_manage_kpis": membership.can_manage_kpis,
-                    "can_contribute": membership.can_contribute,
-                    "can_comment": membership.can_comment,
-                    "can_view_analytics": membership.can_view_analytics,
+                    "can_view_comments": membership.can_view_comments,
+                    "can_add_comments": membership.can_add_comments,
                 },
             }
             result.append(user_data)
