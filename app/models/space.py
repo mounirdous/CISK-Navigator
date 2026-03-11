@@ -29,6 +29,13 @@ class Space(db.Model):
         nullable=False,
         comment="Private spaces are only visible to users with appropriate permissions",
     )
+
+    # SWOT Analysis
+    swot_strengths = db.Column(db.Text, nullable=True, comment="SWOT: Internal positive attributes")
+    swot_weaknesses = db.Column(db.Text, nullable=True, comment="SWOT: Internal negative attributes")
+    swot_opportunities = db.Column(db.Text, nullable=True, comment="SWOT: External positive factors")
+    swot_threats = db.Column(db.Text, nullable=True, comment="SWOT: External negative factors")
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

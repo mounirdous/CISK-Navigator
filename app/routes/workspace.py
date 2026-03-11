@@ -9,6 +9,7 @@ from functools import wraps
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import or_
 
 from app.extensions import db
 from app.forms import ContributionForm
@@ -144,6 +145,9 @@ def index():
     if not selected_governance_body_ids and governance_bodies:
         selected_governance_body_ids = [str(gb.id) for gb in governance_bodies]
 
+    # Get initiative group filter
+    selected_group_labels = request.args.getlist("group")
+
     # Get show_archived flag
     show_archived = request.args.get("show_archived") == "1"
 
@@ -155,6 +159,17 @@ def index():
         spaces_query = spaces_query.filter_by(is_private=False)
     # 'all' means no additional filter
     spaces = spaces_query.order_by(Space.display_order, Space.name).all()
+
+    # Filter initiatives by group in Python (cleaner than template logic)
+    if selected_group_labels:
+        for space in spaces:
+            for challenge in space.challenges:
+                # Filter initiative_links to only show selected groups or ungrouped
+                challenge.initiative_links = [
+                    link
+                    for link in challenge.initiative_links
+                    if not link.initiative.group_label or link.initiative.group_label in selected_group_labels
+                ]
 
     # Get space IDs for filtering value types
     space_ids = [space.id for space in spaces]
@@ -185,6 +200,13 @@ def index():
             value_types_query = value_types_query.join(
                 KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id
             ).filter(KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int))
+
+        # Apply initiative group filter if selected
+        # Always include initiatives with no group assigned
+        if selected_group_labels:
+            value_types_query = value_types_query.filter(
+                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
+            )
 
         # Apply archived filter
         if not show_archived:
@@ -231,6 +253,7 @@ def index():
         hidden_value_types=hidden_value_types,
         governance_bodies=governance_bodies,
         selected_governance_body_ids=selected_governance_body_ids,
+        selected_group_labels=selected_group_labels,
         show_archived=show_archived,
         show_levels=show_levels,
         space_type_filter=space_type_filter,

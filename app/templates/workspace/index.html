@@ -65,6 +65,12 @@ body.edit-mode .action-icons {
     opacity: 1;
 }
 
+/* Form view icons - Always visible */
+.form-view-icon {
+    display: inline !important;
+    opacity: 1 !important;
+}
+
 body.edit-mode #toggle-edit-mode {
     background-color: #ffc107 !important;
     border-color: #ffc107 !important;
@@ -331,6 +337,85 @@ tr[data-level="kpi"] td {
     font-size: 0.75rem;
 }
 
+/* Modern Filter Layout */
+.filter-section {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 1.25rem;
+    height: 100%;
+}
+
+.filter-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.filter-section-title i {
+    color: var(--accent-primary);
+}
+
+.filter-group {
+    margin-bottom: 1.25rem;
+}
+
+.filter-group:last-child {
+    margin-bottom: 0;
+}
+
+.filter-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.filter-label i {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.filter-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+/* Scrollable governance bodies for large lists */
+.filter-group:first-child .filter-pills {
+    max-height: 120px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.filter-group:first-child .filter-pills::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filter-group:first-child .filter-pills::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.filter-group:first-child .filter-pills::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.filter-group:first-child .filter-pills::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 /* Sticky first column */
 #workspace-tree td:first-child,
 #workspace-tree th:first-child {
@@ -496,120 +581,185 @@ tr[data-level="kpi"] td {
                         style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
                     <i class="bi bi-funnel me-2"></i> <strong>Filters & Display Options</strong>
                     <span class="ms-2 badge bg-primary">
-                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (1 if show_archived else 0) + (1 if show_all_columns else 0) %}
+                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) + (1 if show_all_columns else 0) %}
                         {{ active_filters }} active
                     </span>
                 </button>
             </h2>
             <div id="filtersCollapse" class="accordion-collapse collapse">
-                <div class="accordion-body" style="padding: 1rem; background-color: rgba(255,255,255,0.02); border-radius: 8px; margin-top: 0.5rem;">
+                <div class="accordion-body" style="padding: 1.5rem; background-color: rgba(255,255,255,0.02); border-radius: 8px; margin-top: 0.5rem;">
                     <form method="GET" id="filter-form">
-                        <!-- Governance Body Filters -->
-                        {% if governance_bodies %}
-                        <div class="mb-3">
-                            <small class="text-muted"><i class="bi bi-people-fill"></i> <strong>Governance Bodies:</strong></small>
-                            <div class="d-flex flex-wrap gap-1 ms-2 mt-1">
-                                {% for gb in governance_bodies %}
-                                <label class="filter-pill {% if gb.id|string in selected_governance_body_ids %}active{% endif %}">
-                                    <input type="checkbox" name="gb" value="{{ gb.id }}" id="filter_gb_{{ gb.id }}"
-                                           {% if gb.id|string in selected_governance_body_ids %}checked{% endif %} hidden>
-                                    <span class="pill-badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
-                                    <span>{{ gb.name }}</span>
-                                </label>
-                                {% endfor %}
+                        <div class="row g-3">
+                            <!-- LEFT COLUMN: Data Filters -->
+                            <div class="col-lg-6">
+                                <div class="filter-section">
+                                    <div class="filter-section-title">
+                                        <i class="bi bi-funnel-fill"></i> Data Filters
+                                    </div>
+
+                                    {% if governance_bodies %}
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-people-fill"></i> Governance Bodies
+                                        </div>
+                                        <div class="filter-pills">
+                                            {% for gb in governance_bodies %}
+                                            <label class="filter-pill {% if gb.id|string in selected_governance_body_ids %}active{% endif %}">
+                                                <input type="checkbox" name="gb" value="{{ gb.id }}" id="filter_gb_{{ gb.id }}"
+                                                       {% if gb.id|string in selected_governance_body_ids %}checked{% endif %} hidden>
+                                                <span class="pill-badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
+                                                <span>{{ gb.name }}</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-shield-lock"></i> Space Type
+                                        </div>
+                                        <div class="filter-pills">
+                                            <label class="filter-pill {% if space_type_filter == 'all' %}active{% endif %}">
+                                                <input type="radio" name="space_type" value="all" id="filter_space_all"
+                                                       {% if space_type_filter == 'all' %}checked{% endif %} hidden>
+                                                <i class="bi bi-globe"></i> All
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ all_spaces_count }}</span>
+                                            </label>
+                                            <label class="filter-pill {% if space_type_filter == 'public' %}active{% endif %}">
+                                                <input type="radio" name="space_type" value="public" id="filter_space_public"
+                                                       {% if space_type_filter == 'public' %}checked{% endif %} hidden>
+                                                <i class="bi bi-unlock"></i> Public
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ public_spaces_count }}</span>
+                                            </label>
+                                            <label class="filter-pill {% if space_type_filter == 'private' %}active{% endif %}">
+                                                <input type="radio" name="space_type" value="private" id="filter_space_private"
+                                                       {% if space_type_filter == 'private' %}checked{% endif %} hidden>
+                                                <i class="bi bi-lock"></i> Private
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ private_spaces_count }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-tags"></i> Initiative Groups
+                                        </div>
+                                        <div class="filter-pills">
+                                            <label class="filter-pill {% if 'A' in selected_group_labels %}active{% endif %}">
+                                                <input type="checkbox" name="group" value="A" id="filter_group_A"
+                                                       {% if 'A' in selected_group_labels %}checked{% endif %} hidden>
+                                                Group A
+                                            </label>
+                                            <label class="filter-pill {% if 'B' in selected_group_labels %}active{% endif %}">
+                                                <input type="checkbox" name="group" value="B" id="filter_group_B"
+                                                       {% if 'B' in selected_group_labels %}checked{% endif %} hidden>
+                                                Group B
+                                            </label>
+                                            <label class="filter-pill {% if 'C' in selected_group_labels %}active{% endif %}">
+                                                <input type="checkbox" name="group" value="C" id="filter_group_C"
+                                                       {% if 'C' in selected_group_labels %}checked{% endif %} hidden>
+                                                Group C
+                                            </label>
+                                            <label class="filter-pill {% if 'D' in selected_group_labels %}active{% endif %}">
+                                                <input type="checkbox" name="group" value="D" id="filter_group_D"
+                                                       {% if 'D' in selected_group_labels %}checked{% endif %} hidden>
+                                                Group D
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- RIGHT COLUMN: Display Controls -->
+                            <div class="col-lg-6">
+                                <div class="filter-section">
+                                    <div class="filter-section-title">
+                                        <i class="bi bi-eye-fill"></i> Display Controls
+                                    </div>
+
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-diagram-3"></i> Show Levels
+                                        </div>
+                                        <div class="filter-pills">
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_spaces" value="1" id="show_spaces"
+                                                       {% if show_levels.spaces %}checked{% endif %} hidden>
+                                                <i class="bi bi-building"></i> Spaces
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
+                                                       {% if show_levels.challenges %}checked{% endif %} hidden>
+                                                <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
+                                                       {% if show_levels.initiatives %}checked{% endif %} hidden>
+                                                <span style="font-weight: bold;">δ</span> Initiatives
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_systems" value="1" id="show_systems"
+                                                       {% if show_levels.systems %}checked{% endif %} hidden>
+                                                <span style="font-weight: bold;">Φ</span> Systems
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
+                                                       {% if show_levels.kpis %}checked{% endif %} hidden>
+                                                <span style="font-weight: bold;">Ψ</span> KPIs
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-bar-chart-line"></i> Show Aggregations
+                                        </div>
+                                        <div class="filter-pills">
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_space_aggs" value="1" id="show_space_aggs" checked hidden>
+                                                <i class="bi bi-building"></i> Spaces
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_challenge_aggs" value="1" id="show_challenge_aggs" checked hidden>
+                                                <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_initiative_aggs" value="1" id="show_initiative_aggs" checked hidden>
+                                                <span style="font-weight: bold;">δ</span> Initiatives
+                                            </label>
+                                            <label class="filter-pill">
+                                                <input type="checkbox" name="show_system_aggs" value="1" id="show_system_aggs" checked hidden>
+                                                <span style="font-weight: bold;">Φ</span> Systems
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-sliders"></i> Options
+                                        </div>
+                                        <div class="filter-pills">
+                                            <label class="filter-pill {% if show_archived %}active{% endif %}">
+                                                <input type="checkbox" name="show_archived" value="1" id="filter_show_archived"
+                                                       {% if show_archived %}checked{% endif %} hidden>
+                                                <i class="bi bi-archive"></i> Archived KPIs
+                                            </label>
+                                            <label class="filter-pill {% if show_all_columns %}active{% endif %}">
+                                                <input type="hidden" name="show_all_columns" value="0">
+                                                <input type="checkbox" name="show_all_columns" value="1" id="filter_show_all_columns"
+                                                       {% if show_all_columns %}checked{% endif %} hidden>
+                                                <i class="bi bi-columns-gap"></i> All Columns
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        {% endif %}
 
-                        <!-- Space Type Filter -->
-                        <div class="mb-3">
-                            <small class="text-muted"><i class="bi bi-shield-lock"></i> <strong>Space Type:</strong></small>
-                            <div class="d-flex flex-wrap gap-1 ms-2 mt-1">
-                                <label class="filter-pill {% if space_type_filter == 'all' %}active{% endif %}" title="Show all spaces">
-                                    <input type="radio" name="space_type" value="all" id="filter_space_all"
-                                           {% if space_type_filter == 'all' %}checked{% endif %} hidden>
-                                    <i class="bi bi-globe"></i>
-                                    <span>All Spaces</span>
-                                    <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ all_spaces_count }}</span>
-                                </label>
-                                <label class="filter-pill {% if space_type_filter == 'public' %}active{% endif %}" title="Show only public spaces">
-                                    <input type="radio" name="space_type" value="public" id="filter_space_public"
-                                           {% if space_type_filter == 'public' %}checked{% endif %} hidden>
-                                    <i class="bi bi-unlock"></i>
-                                    <span>Public</span>
-                                    <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ public_spaces_count }}</span>
-                                </label>
-                                <label class="filter-pill {% if space_type_filter == 'private' %}active{% endif %}" title="Show only private spaces">
-                                    <input type="radio" name="space_type" value="private" id="filter_space_private"
-                                           {% if space_type_filter == 'private' %}checked{% endif %} hidden>
-                                    <i class="bi bi-lock"></i>
-                                    <span>Private</span>
-                                    <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ private_spaces_count }}</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Display Options -->
-                        <div class="mb-3">
-                            <small class="text-muted"><i class="bi bi-eye-fill"></i> <strong>Display Options:</strong></small>
-                            <div class="d-flex flex-wrap gap-1 ms-2 mt-1">
-                                <label class="filter-pill {% if show_archived %}active{% endif %}">
-                                    <input type="checkbox" name="show_archived" value="1" id="filter_show_archived"
-                                           {% if show_archived %}checked{% endif %} hidden>
-                                    <i class="bi bi-archive"></i>
-                                    <span>Archived KPIs</span>
-                                </label>
-                                <label class="filter-pill {% if show_all_columns %}active{% endif %}" title="Show all value type columns, even if empty">
-                                    <!-- Hidden input ensures show_all_columns=0 is sent when unchecked -->
-                                    <input type="hidden" name="show_all_columns" value="0">
-                                    <input type="checkbox" name="show_all_columns" value="1" id="filter_show_all_columns"
-                                           {% if show_all_columns %}checked{% endif %} hidden>
-                                    <i class="bi bi-columns-gap"></i>
-                                    <span>Show All Columns</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Hierarchy Levels -->
-                        <div class="mb-3">
-                            <small class="text-muted"><i class="bi bi-diagram-3"></i> <strong>Show Levels:</strong></small>
-                            <div class="d-flex flex-wrap gap-1 ms-2 mt-1">
-                                <label class="filter-pill" title="Toggle Spaces visibility">
-                                    <input type="checkbox" name="show_spaces" value="1" id="show_spaces"
-                                           {% if show_levels.spaces %}checked{% endif %} hidden>
-                                    <i class="bi bi-building"></i>
-                                    <span>Spaces</span>
-                                </label>
-                                <label class="filter-pill" title="Toggle Challenges visibility">
-                                    <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
-                                           {% if show_levels.challenges %}checked{% endif %} hidden>
-                                    <span style="font-weight: bold; font-style: italic;">ƒ</span>
-                                    <span>Challenges</span>
-                                </label>
-                                <label class="filter-pill" title="Toggle Initiatives visibility">
-                                    <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
-                                           {% if show_levels.initiatives %}checked{% endif %} hidden>
-                                    <span style="font-weight: bold;">δ</span>
-                                    <span>Initiatives</span>
-                                </label>
-                                <label class="filter-pill" title="Toggle Systems visibility">
-                                    <input type="checkbox" name="show_systems" value="1" id="show_systems"
-                                           {% if show_levels.systems %}checked{% endif %} hidden>
-                                    <span style="font-weight: bold;">Φ</span>
-                                    <span>Systems</span>
-                                </label>
-                                <label class="filter-pill" title="Toggle KPIs visibility">
-                                    <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
-                                           {% if show_levels.kpis %}checked{% endif %} hidden>
-                                    <span style="font-weight: bold;">Ψ</span>
-                                    <span>KPIs</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="text-end">
+                        <div class="text-end mt-3 pt-3" style="border-top: 1px solid rgba(255,255,255,0.1);">
                             <button type="button" id="clear-filters" class="btn btn-sm btn-outline-light">
-                                <i class="bi bi-x-circle"></i> Clear All
+                                <i class="bi bi-x-circle"></i> Clear All Filters
                             </button>
                         </div>
                     </form>
@@ -681,8 +831,13 @@ tr[data-level="kpi"] td {
                                 <i class="bi bi-lock-fill"></i> Private
                             </span>
                         {% endif %}
+                        <span class="form-view-icon ms-2">
+                            <a href="{{ url_for('organization_admin.space_swot', space_id=space.id) }}" class="text-info" title="View SWOT Analysis">
+                                <i class="bi bi-grid-3x3"></i>
+                            </a>
+                        </span>
                         {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) %}
-                        <span class="action-icons ms-2">
+                        <span class="action-icons ms-1">
                             {% if current_user.can_manage_challenges(org_id) %}
                             <a href="{{ url_for('organization_admin.create_challenge', space_id=space.id) }}" class="text-success" title="Add Challenge to this Space">
                                 <i class="bi bi-plus-circle"></i>
@@ -702,7 +857,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = space.get_rollup_value(vt.id) %}
                         {% set color_config = space.get_color_config(vt.id) %}
-                        <td class="text-center" style="background-color: #d6e9f7; font-weight: bold;">
+                        <td class="text-center" data-agg-level="space" style="background-color: #d6e9f7; font-weight: bold;">
                             {% if rollup %}
                                 {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
@@ -771,7 +926,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = challenge.get_rollup_value(vt.id) %}
                         {% set color_config = challenge.get_color_config(vt.id) %}
-                        <td class="text-center" style="background-color: #f0f4f8;">
+                        <td class="text-center" data-agg-level="challenge" style="background-color: #f0f4f8;">
                             {% if rollup %}
                                 {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
@@ -820,8 +975,13 @@ tr[data-level="kpi"] td {
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">δ</span>
                         {{ initiative.name }}
+                        <span class="form-view-icon ms-2">
+                            <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="text-info" title="View Initiative Form">
+                                <i class="bi bi-file-text"></i>
+                            </a>
+                        </span>
                         {% if current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) %}
-                        <span class="action-icons ms-2">
+                        <span class="action-icons ms-1">
                             {% if current_user.can_manage_systems(org_id) %}
                             <a href="{{ url_for('organization_admin.create_system', initiative_id=initiative.id) }}" class="text-success" title="Link System to this Initiative">
                                 <i class="bi bi-plus-circle"></i>
@@ -841,7 +1001,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = initiative.get_rollup_value(vt.id) %}
                         {% set color_config = initiative.get_color_config(vt.id) %}
-                        <td class="text-center" style="background-color: #eff6f9;">
+                        <td class="text-center" data-agg-level="initiative" style="background-color: #eff6f9;">
                             {% if rollup %}
                                 {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
@@ -911,7 +1071,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = sys_link.get_rollup_value(vt.id) %}
                         {% set color_config = sys_link.get_color_config(vt.id) %}
-                        <td class="text-center" style="background-color: #e8f4f8;">
+                        <td class="text-center" data-agg-level="system" style="background-color: #e8f4f8;">
                             {% if rollup %}
                                 <div>
                                     {% if rollup.formula == 'sum' %}
@@ -1560,6 +1720,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (radio) radio.checked = true;
             }
 
+            // Restore initiative groups
+            if (filters.group) {
+                filters.group.forEach(groupLabel => {
+                    const checkbox = filterForm.querySelector(`input[name="group"][value="${groupLabel}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            }
+
             // Restore show_archived
             if (filters.show_archived) {
                 const checkbox = filterForm.querySelector('input[name="show_archived"]');
@@ -1567,26 +1735,54 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Restore show_all_columns (defaults to true if not in localStorage)
-            const checkbox = filterForm.querySelector('input[name="show_all_columns"]');
-            if (checkbox) {
-                checkbox.checked = filters.show_all_columns !== false; // Default to true
+            const showAllColumnsCheckbox = filterForm.querySelector('input[name="show_all_columns"]');
+            if (showAllColumnsCheckbox) {
+                showAllColumnsCheckbox.checked = filters.show_all_columns !== false; // Default to true
             }
+
+            // Restore level visibility (defaults to true if not in localStorage)
+            const levelNames = ['show_spaces', 'show_challenges', 'show_initiatives', 'show_systems', 'show_kpis'];
+            levelNames.forEach(levelName => {
+                const checkbox = filterForm.querySelector(`input[name="${levelName}"]`);
+                if (checkbox) {
+                    checkbox.checked = filters[levelName] !== false; // Default to true
+                }
+            });
+
+            // Restore aggregation visibility (defaults to true if not in localStorage)
+            const aggNames = ['show_space_aggs', 'show_challenge_aggs', 'show_initiative_aggs', 'show_system_aggs'];
+            aggNames.forEach(aggName => {
+                const checkbox = filterForm.querySelector(`input[name="${aggName}"]`);
+                if (checkbox) {
+                    checkbox.checked = filters[aggName] !== false; // Default to true
+                }
+            });
         } catch (e) {
             console.error('Error restoring filters from localStorage:', e);
         }
     } else {
         // First visit (no localStorage) - ensure show_all_columns defaults to checked
-        const checkbox = filterForm.querySelector('input[name="show_all_columns"]');
-        if (checkbox && !checkbox.checked) {
-            checkbox.checked = true;
+        const showAllColumnsCheckbox = filterForm.querySelector('input[name="show_all_columns"]');
+        if (showAllColumnsCheckbox && !showAllColumnsCheckbox.checked) {
+            showAllColumnsCheckbox.checked = true;
         }
     }
 
-    // Sync pill active states with checkbox states after restoration
-    filterForm.querySelectorAll('.filter-pill input[type="checkbox"]').forEach(checkbox => {
-        const pill = checkbox.closest('.filter-pill');
+    // Sync pill active states with checkbox/radio states after restoration
+    filterForm.querySelectorAll('.filter-pill input[type="checkbox"], .filter-pill input[type="radio"]').forEach(input => {
+        const pill = input.closest('.filter-pill');
         if (pill) {
-            pill.classList.toggle('active', checkbox.checked);
+            // Level visibility pills need special setAttribute treatment
+            if (input.name.startsWith('show_') && input.name !== 'show_archived' && input.name !== 'show_all_columns') {
+                if (input.checked) {
+                    pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
+                } else {
+                    pill.setAttribute('style', 'background-color: #2a2a2a !important; color: #999 !important; border-color: #444 !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
+                }
+            } else {
+                // Regular filters use classList
+                pill.classList.toggle('active', input.checked);
+            }
         }
     });
 
@@ -1651,8 +1847,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log(`AFTER: ${this.name} checked=${this.checked}`);
             }
 
+            // Save filter state to localStorage (persist level and aggregation visibility)
+            saveFiltersToLocalStorage();
+
             // Update row visibility based on level
             updateLevelVisibility();
+
+            // Update aggregation cell visibility
+            updateAggregationVisibility();
         });
     });
 
@@ -1661,8 +1863,18 @@ document.addEventListener('DOMContentLoaded', function() {
         const filters = {
             gb: Array.from(filterForm.querySelectorAll('input[name="gb"]:checked')).map(cb => cb.value),
             space_type: filterForm.querySelector('input[name="space_type"]:checked')?.value || 'all',
+            group: Array.from(filterForm.querySelectorAll('input[name="group"]:checked')).map(cb => cb.value),
             show_archived: filterForm.querySelector('input[name="show_archived"]')?.checked || false,
-            show_all_columns: filterForm.querySelector('input[name="show_all_columns"]')?.checked !== false // Default to true
+            show_all_columns: filterForm.querySelector('input[name="show_all_columns"]')?.checked !== false, // Default to true
+            show_spaces: filterForm.querySelector('input[name="show_spaces"]')?.checked !== false,
+            show_challenges: filterForm.querySelector('input[name="show_challenges"]')?.checked !== false,
+            show_initiatives: filterForm.querySelector('input[name="show_initiatives"]')?.checked !== false,
+            show_systems: filterForm.querySelector('input[name="show_systems"]')?.checked !== false,
+            show_kpis: filterForm.querySelector('input[name="show_kpis"]')?.checked !== false,
+            show_space_aggs: filterForm.querySelector('input[name="show_space_aggs"]')?.checked !== false,
+            show_challenge_aggs: filterForm.querySelector('input[name="show_challenge_aggs"]')?.checked !== false,
+            show_initiative_aggs: filterForm.querySelector('input[name="show_initiative_aggs"]')?.checked !== false,
+            show_system_aggs: filterForm.querySelector('input[name="show_system_aggs"]')?.checked !== false
         };
         localStorage.setItem('workspaceFilters', JSON.stringify(filters));
         console.log('Saved filters to localStorage:', filters);
@@ -1692,9 +1904,22 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Total hidden inputs added: ${addedCount}`);
     }
 
-    // Handle data filter checkbox changes (governance bodies, archive, show_all_columns) - these DO submit form
+    // Debounce function for form submission (allows multi-selection)
+    let submitTimeout = null;
+    function debouncedSubmit() {
+        if (submitTimeout) clearTimeout(submitTimeout);
+        submitTimeout = setTimeout(() => {
+            addLevelVisibilityHiddenInputs();
+            console.log('Submitting form...');
+            filterForm.submit();
+        }, 800); // Wait 800ms after last change
+    }
+
+    // Handle data filter checkbox changes (governance bodies, groups, archive, show_all_columns) - these DO submit form
     dataFilterCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            console.log(`Filter changed: ${this.name}=${this.value}, checked=${this.checked}`);
+
             const pill = this.closest('.filter-pill');
             if (pill) {
                 pill.classList.toggle('active', this.checked);
@@ -1703,12 +1928,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Save filter state to localStorage
             saveFiltersToLocalStorage();
 
-            // Add level visibility hidden inputs before submit
-            // NOTE: calling form.submit() does NOT trigger 'submit' event, must call manually
-            addLevelVisibilityHiddenInputs();
-
-            // Auto-submit form for data filters
-            setTimeout(() => filterForm.submit(), 100);
+            // Debounced auto-submit for data filters (allows multi-selection)
+            console.log('Calling debouncedSubmit...');
+            debouncedSubmit();
         });
     });
 
@@ -1728,11 +1950,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // Save filter state to localStorage
             saveFiltersToLocalStorage();
 
-            // Add level visibility hidden inputs before submit
-            addLevelVisibilityHiddenInputs();
-
-            // Auto-submit form for space type filter
-            setTimeout(() => filterForm.submit(), 100);
+            // Use debounced submit for consistency (same 800ms as other filters)
+            console.log('Calling debouncedSubmit...');
+            debouncedSubmit();
         });
     });
 
@@ -1810,6 +2030,40 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Hidden ${hiddenCount} rows, shown ${shownCount} rows`);
     }
 
+    // Function to update aggregation cell visibility
+    function updateAggregationVisibility() {
+        const showSpaceAggs = document.getElementById('show_space_aggs')?.checked ?? true;
+        const showChallengeAggs = document.getElementById('show_challenge_aggs')?.checked ?? true;
+        const showInitiativeAggs = document.getElementById('show_initiative_aggs')?.checked ?? true;
+        const showSystemAggs = document.getElementById('show_system_aggs')?.checked ?? true;
+
+        console.log('updateAggregationVisibility called:', {
+            showSpaceAggs,
+            showChallengeAggs,
+            showInitiativeAggs,
+            showSystemAggs
+        });
+
+        const aggMap = {
+            'space': showSpaceAggs,
+            'challenge': showChallengeAggs,
+            'initiative': showInitiativeAggs,
+            'system': showSystemAggs
+        };
+
+        // Update all aggregation cells
+        document.querySelectorAll('td[data-agg-level]').forEach(cell => {
+            const aggLevel = cell.getAttribute('data-agg-level');
+            const shouldShow = aggMap[aggLevel];
+
+            if (shouldShow) {
+                cell.style.display = '';
+            } else {
+                cell.style.display = 'none';
+            }
+        });
+    }
+
     // Initialize pill colors on page load
     levelCheckboxes.forEach(checkbox => {
         const pill = checkbox.closest('.filter-pill');
@@ -1824,6 +2078,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initial level visibility on page load
     updateLevelVisibility();
+
+    // Initial aggregation visibility on page load
+    updateAggregationVisibility();
 
     // Force proper initial expand state
     setTimeout(() => {

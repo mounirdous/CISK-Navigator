@@ -253,6 +253,38 @@ def delete_space(space_id):
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/spaces/<int:space_id>/swot")
+@login_required
+@organization_required
+def space_swot(space_id):
+    """View SWOT analysis for a space"""
+    org_id = session.get("organization_id")
+    space = Space.query.filter_by(id=space_id, organization_id=org_id).first_or_404()
+    return render_template("organization_admin/space_swot.html", space=space)
+
+
+@bp.route("/spaces/<int:space_id>/swot/edit", methods=["GET", "POST"])
+@login_required
+@organization_required
+@permission_required("can_manage_spaces")
+def edit_space_swot(space_id):
+    """Edit SWOT analysis for a space"""
+    org_id = session.get("organization_id")
+    space = Space.query.filter_by(id=space_id, organization_id=org_id).first_or_404()
+
+    if request.method == "POST":
+        space.swot_strengths = request.form.get("swot_strengths", "").strip() or None
+        space.swot_weaknesses = request.form.get("swot_weaknesses", "").strip() or None
+        space.swot_opportunities = request.form.get("swot_opportunities", "").strip() or None
+        space.swot_threats = request.form.get("swot_threats", "").strip() or None
+
+        db.session.commit()
+        flash(f"SWOT analysis for {space.name} updated successfully", "success")
+        return redirect(url_for("organization_admin.space_swot", space_id=space.id))
+
+    return render_template("organization_admin/edit_space_swot.html", space=space)
+
+
 # Challenge Management
 
 
@@ -411,7 +443,12 @@ def create_initiative(challenge_id):
 
     if form.validate_on_submit():
         # Create the initiative
-        initiative = Initiative(organization_id=org_id, name=form.name.data, description=form.description.data)
+        initiative = Initiative(
+            organization_id=org_id,
+            name=form.name.data,
+            description=form.description.data,
+            group_label=form.group_label.data if form.group_label.data else None,
+        )
         db.session.add(initiative)
         db.session.flush()  # Get the ID
 
@@ -424,7 +461,12 @@ def create_initiative(challenge_id):
             "Initiative",
             initiative.id,
             initiative.name,
-            {"description": initiative.description, "challenge": challenge.name, "organization_id": org_id},
+            {
+                "description": initiative.description,
+                "group_label": initiative.group_label,
+                "challenge": challenge.name,
+                "organization_id": org_id,
+            },
         )
 
         db.session.commit()
@@ -448,13 +490,22 @@ def edit_initiative(initiative_id):
 
     if form.validate_on_submit():
         # Capture old values for audit
-        old_values = {"name": initiative.name, "description": initiative.description}
+        old_values = {
+            "name": initiative.name,
+            "description": initiative.description,
+            "group_label": initiative.group_label,
+        }
 
         initiative.name = form.name.data
         initiative.description = form.description.data
+        initiative.group_label = form.group_label.data if form.group_label.data else None
 
         # Audit log
-        new_values = {"name": initiative.name, "description": initiative.description}
+        new_values = {
+            "name": initiative.name,
+            "description": initiative.description,
+            "group_label": initiative.group_label,
+        }
         AuditService.log_update("Initiative", initiative.id, initiative.name, old_values, new_values)
 
         db.session.commit()
@@ -1970,3 +2021,106 @@ def clear_organization_data():
         db.session.rollback()
         flash(f"Error clearing organization data: {str(e)}", "danger")
         return redirect(url_for("organization_admin.index"))
+
+
+@bp.route("/initiatives/<int:initiative_id>/form", methods=["GET", "POST"])
+@login_required
+@organization_required
+def initiative_form(initiative_id):
+    """View and edit detailed initiative form"""
+    org_id = session.get("organization_id")
+    initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
+
+    # Check edit permission
+    can_edit = current_user.can_manage_initiatives(org_id)
+
+    # Check if user requested edit mode
+    edit_mode = request.args.get("edit", "0") == "1" and can_edit
+
+    if request.method == "POST":
+        if not can_edit:
+            flash("You do not have permission to edit initiative forms", "error")
+            return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative.id))
+        # Capture old values for audit
+        old_values = {
+            "mission": initiative.mission,
+            "success_criteria": initiative.success_criteria,
+            "responsible_person": initiative.responsible_person,
+            "team_members": initiative.team_members,
+            "handover_organization": initiative.handover_organization,
+            "deliverables": initiative.deliverables,
+        }
+
+        # Update fields
+        initiative.mission = request.form.get("mission")
+        initiative.success_criteria = request.form.get("success_criteria")
+        initiative.responsible_person = request.form.get("responsible_person")
+        initiative.team_members = request.form.get("team_members")
+        initiative.handover_organization = request.form.get("handover_organization")
+        initiative.deliverables = request.form.get("deliverables")
+
+        # Audit log
+        new_values = {
+            "mission": initiative.mission,
+            "success_criteria": initiative.success_criteria,
+            "responsible_person": initiative.responsible_person,
+            "team_members": initiative.team_members,
+            "handover_organization": initiative.handover_organization,
+            "deliverables": initiative.deliverables,
+        }
+        AuditService.log_update("Initiative Form", initiative.id, initiative.name, old_values, new_values)
+
+        db.session.commit()
+        flash(f"Initiative form for '{initiative.name}' updated successfully", "success")
+        return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative.id))
+
+    # Prepare KPI data with values
+    kpi_data = []
+    for sys_link in initiative.system_links:
+        system_kpis = []
+        for kpi in sys_link.kpis:
+            if kpi.is_archived:
+                continue
+
+            # Get status
+            status = kpi.get_status()
+
+            # Get values for each value type
+            value_types_data = []
+            for config in kpi.value_type_configs:
+                consensus = config.get_consensus_value()
+                if consensus:
+                    value_types_data.append(
+                        {
+                            "name": config.value_type.name,
+                            "value": consensus.get("value"),
+                            "formatted_value": consensus.get("formatted_value"),
+                            "unit_label": config.value_type.unit_label,
+                            "color": config.get_value_color(consensus.get("value")),
+                            "kind": config.value_type.kind,
+                        }
+                    )
+
+            system_kpis.append(
+                {
+                    "id": kpi.id,
+                    "name": kpi.name,
+                    "status": status["status"],
+                    "status_reason": status["reason"],
+                    "value_types": value_types_data,
+                }
+            )
+
+        if system_kpis:
+            kpi_data.append({"system_name": sys_link.system.name, "kpis": system_kpis})
+
+    from flask_wtf.csrf import generate_csrf
+
+    return render_template(
+        "organization_admin/initiative_form.html",
+        initiative=initiative,
+        kpi_data=kpi_data,
+        csrf_token=generate_csrf,
+        can_edit=can_edit,
+        edit_mode=edit_mode,
+    )

@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Edit SWOT - {{ space.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.swot-edit-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2.5rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.swot-edit-header h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.swot-edit-header p {
+    margin: 0.75rem 0 0 0;
+    opacity: 0.95;
+    font-size: 1.1rem;
+}
+
+.swot-section {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.swot-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.swot-section-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.swot-section-icon {
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+}
+
+.swot-strengths .swot-section-icon {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.swot-weaknesses .swot-section-icon {
+    background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+}
+
+.swot-opportunities .swot-section-icon {
+    background: linear-gradient(135deg, #007bff 0%, #0dcaf0 100%);
+}
+
+.swot-threats .swot-section-icon {
+    background: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+}
+
+.swot-textarea {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    width: 100%;
+    min-height: 150px;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.swot-textarea:focus {
+    outline: none;
+    border-color: var(--border-hover);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.swot-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-lg-10">
+        <div class="card hover-lift">
+            <div class="swot-edit-header">
+                <h2>
+                    <i class="bi bi-pencil-square"></i>
+                    Edit SWOT Analysis
+                </h2>
+                <p>{{ space.name }}</p>
+            </div>
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <div class="alert alert-info d-flex align-items-center mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <div>
+                        <strong>SWOT Framework:</strong>
+                        Identify internal strengths & weaknesses, and external opportunities & threats.
+                        Use bullet points or paragraphs to organize your analysis.
+                    </div>
+                </div>
+
+                <form method="POST" novalidate>
+                    <!-- Strengths -->
+                    <div class="swot-section swot-strengths">
+                        <div class="swot-section-header">
+                            <div class="swot-section-icon">
+                                <i class="bi bi-trophy-fill" style="color: white;"></i>
+                            </div>
+                            <h3>Strengths</h3>
+                        </div>
+                        <label for="swot_strengths" class="form-label fw-semibold">Internal Positive Attributes</label>
+                        <textarea
+                            class="swot-textarea"
+                            id="swot_strengths"
+                            name="swot_strengths"
+                            placeholder="What advantages does this space have?&#10;What do you do better than others?&#10;What unique resources can you draw upon?&#10;What do others see as your strengths?"
+                        >{{ space.swot_strengths or '' }}</textarea>
+                        <div class="swot-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: skilled team, strong brand, efficient processes, proprietary technology
+                        </div>
+                    </div>
+
+                    <!-- Weaknesses -->
+                    <div class="swot-section swot-weaknesses">
+                        <div class="swot-section-header">
+                            <div class="swot-section-icon">
+                                <i class="bi bi-exclamation-triangle-fill" style="color: white;"></i>
+                            </div>
+                            <h3>Weaknesses</h3>
+                        </div>
+                        <label for="swot_weaknesses" class="form-label fw-semibold">Internal Negative Attributes</label>
+                        <textarea
+                            class="swot-textarea"
+                            id="swot_weaknesses"
+                            name="swot_weaknesses"
+                            placeholder="What could you improve?&#10;Where do you have fewer resources than others?&#10;What are others likely to see as weaknesses?"
+                        >{{ space.swot_weaknesses or '' }}</textarea>
+                        <div class="swot-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: limited budget, outdated technology, skills gaps, weak online presence
+                        </div>
+                    </div>
+
+                    <!-- Opportunities -->
+                    <div class="swot-section swot-opportunities">
+                        <div class="swot-section-header">
+                            <div class="swot-section-icon">
+                                <i class="bi bi-lightbulb-fill" style="color: white;"></i>
+                            </div>
+                            <h3>Opportunities</h3>
+                        </div>
+                        <label for="swot_opportunities" class="form-label fw-semibold">External Positive Factors</label>
+                        <textarea
+                            class="swot-textarea"
+                            id="swot_opportunities"
+                            name="swot_opportunities"
+                            placeholder="What good opportunities are available?&#10;What trends could you take advantage of?&#10;How can you turn your strengths into opportunities?"
+                        >{{ space.swot_opportunities or '' }}</textarea>
+                        <div class="swot-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: market growth, regulatory changes, new partnerships, emerging technologies
+                        </div>
+                    </div>
+
+                    <!-- Threats -->
+                    <div class="swot-section swot-threats">
+                        <div class="swot-section-header">
+                            <div class="swot-section-icon">
+                                <i class="bi bi-shield-fill-exclamation" style="color: white;"></i>
+                            </div>
+                            <h3>Threats</h3>
+                        </div>
+                        <label for="swot_threats" class="form-label fw-semibold">External Negative Factors</label>
+                        <textarea
+                            class="swot-textarea"
+                            id="swot_threats"
+                            name="swot_threats"
+                            placeholder="What obstacles do you face?&#10;What is your competition doing?&#10;What threats do your weaknesses expose you to?"
+                        >{{ space.swot_threats or '' }}</textarea>
+                        <div class="swot-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: increasing competition, economic downturn, regulatory changes, shifting consumer preferences
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Save SWOT Analysis
+                        </button>
+                        <a href="{{ url_for('organization_admin.space_swot', space_id=space.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

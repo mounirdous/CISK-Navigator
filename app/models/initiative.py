@@ -22,6 +22,16 @@ class Initiative(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
+
+    # Initiative Form Fields (v1.19.0)
+    mission = db.Column(db.Text, nullable=True, comment="Mission/objectives of the initiative")
+    success_criteria = db.Column(db.Text, nullable=True, comment="Success criteria and metrics")
+    responsible_person = db.Column(db.String(200), nullable=True, comment="Person responsible for the initiative")
+    team_members = db.Column(db.Text, nullable=True, comment="Team members involved (one per line)")
+    handover_organization = db.Column(db.String(200), nullable=True, comment="Handover organization/department")
+    deliverables = db.Column(db.Text, nullable=True, comment="Deliverables and milestones (JSON format)")
+    group_label = db.Column(db.String(1), nullable=True, comment="Group label for filtering (A, B, C, or D)")
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
