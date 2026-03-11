@@ -137,13 +137,19 @@
             <div class="section-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
                 <i class="bi bi-download"></i>
             </div>
-            Create & Download Backup
+            Create & Download Full Backup
         </div>
 
-        <div class="alert alert-info mb-4">
-            <i class="bi bi-info-circle-fill"></i>
-            <strong>Note:</strong> Backups are generated on-demand and downloaded immediately.
-            For automated backups, use the CLI scripts in <code>scripts/</code> directory.
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-database-check"></i>
+            <strong>Full Backup Includes:</strong> Structure + ALL Data (contributions, KPI values, governance bodies)
+            <ul class="mb-0 mt-2">
+                <li>✅ Complete organization structure</li>
+                <li>✅ <strong>All KPI contributions (actual values!)</strong></li>
+                <li>✅ Governance body links</li>
+                <li>✅ KPI configurations & targets</li>
+            </ul>
+            <small class="text-muted">Format: JSON. For automated backups, use CLI scripts in <code>scripts/</code></small>
         </div>
 
         {% if org_stats %}
@@ -212,41 +218,55 @@
             Restore from Backup
         </div>
 
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-database-check"></i>
+            <strong>Full Restore Includes:</strong> Structure + ALL Data (contributions, KPI values, governance bodies)
+            <ul class="mb-0 mt-2">
+                <li>✅ Complete organization structure</li>
+                <li>✅ <strong>All KPI contributions (actual values!)</strong></li>
+                <li>✅ Governance body mapping (choose existing or create new)</li>
+                <li>✅ KPI configurations & targets</li>
+            </ul>
+        </div>
+
         <div class="alert alert-warning mb-4">
             <div class="d-flex align-items-start">
                 <i class="bi bi-exclamation-triangle-fill me-3" style="font-size: 1.5rem;"></i>
                 <div>
-                    <strong>⚠️ Important: Merge Mode Limitations</strong>
-                    <p class="mb-2 mt-2">This restore uses <strong>merge mode</strong> which adds data to existing organizations. This works best with <strong>empty organizations</strong>.</p>
-                    <p class="mb-2"><strong>Safe to restore (empty organizations):</strong></p>
+                    <strong>⚠️ Important: Full Restore Process</strong>
+                    <p class="mb-2 mt-2">Restoring a full backup will <strong>REPLACE ALL DATA</strong> in the target organization. Existing data will be deleted first.</p>
+                    <p class="mb-2"><strong>Best practice:</strong> Restore to an <strong>empty organization</strong> to avoid confusion.</p>
+                    <p class="mb-2"><strong>Empty organizations (recommended):</strong></p>
                     <ul class="mb-2">
                         {% set has_empty = false %}
                         {% for stat in org_stats %}
                         {% if stat.spaces == 0 and stat.challenges == 0 and stat.initiatives == 0 %}
                         {% set has_empty = true %}
-                        <li><strong>{{ stat.org.name }}</strong> - Empty, safe for restore</li>
+                        <li><strong>{{ stat.org.name }}</strong> - Empty, ready for restore</li>
                         {% endif %}
                         {% endfor %}
                         {% if not has_empty %}
-                        <li><em>No empty organizations available</em></li>
+                        <li><em>No empty organizations available - consider creating one first</em></li>
                         {% endif %}
                     </ul>
-                    <p class="mb-2"><strong>⚠️ Organizations with existing data (may cause conflicts):</strong></p>
+                    {% set has_data = false %}
+                    {% for stat in org_stats %}
+                    {% if stat.spaces > 0 or stat.challenges > 0 or stat.initiatives > 0 %}
+                    {% set has_data = true %}
+                    {% endif %}
+                    {% endfor %}
+                    {% if has_data %}
+                    <p class="mb-2"><strong>⚠️ Organizations with existing data (will be cleared):</strong></p>
                     <ul class="mb-2">
-                        {% set has_data = false %}
                         {% for stat in org_stats %}
                         {% if stat.spaces > 0 or stat.challenges > 0 or stat.initiatives > 0 %}
-                        {% set has_data = true %}
-                        <li><strong>{{ stat.org.name }}</strong> - Has {{ stat.spaces }} spaces, {{ stat.challenges }} challenges, {{ stat.initiatives }} initiatives</li>
+                        <li><strong>{{ stat.org.name }}</strong> - Has {{ stat.spaces }} spaces, {{ stat.challenges }} challenges, {{ stat.initiatives }} initiatives (all will be deleted)</li>
                         {% endif %}
                         {% endfor %}
-                        {% if not has_data %}
-                        <li><em>All organizations are empty</em></li>
-                        {% endif %}
                     </ul>
+                    {% endif %}
                     <p class="mb-0">
-                        <strong>💡 To replace existing data:</strong> Switch to the target organization, then go to
-                        <strong>Organization Admin → YAML Import</strong>. This will clear existing data before importing.
+                        <strong>💡 For structure-only imports:</strong> Use <strong>Organization Admin → YAML Import</strong> instead.
                     </p>
                 </div>
             </div>
@@ -280,12 +300,11 @@
                 </select>
                 <div id="orgWarning" style="display: none;" class="alert alert-danger mt-2 mb-0">
                     <i class="bi bi-exclamation-octagon-fill"></i>
-                    <strong>Warning:</strong> This organization has existing data. Restore may fail with ID conflicts.
-                    Consider using <strong>Organization Admin → YAML Import</strong> instead to replace all data.
+                    <strong>Warning:</strong> This organization has existing data. <strong>ALL DATA WILL BE DELETED</strong> before restoring the backup.
                 </div>
                 <div id="orgSafe" style="display: none;" class="alert alert-success mt-2 mb-0">
                     <i class="bi bi-check-circle-fill"></i>
-                    <strong>Safe:</strong> This organization is empty. Restore will work without conflicts.
+                    <strong>Recommended:</strong> This organization is empty. Restore will proceed cleanly.
                 </div>
             </div>
 
@@ -295,17 +314,18 @@
                     <i class="bi bi-upload"></i> Upload Backup File
                 </label>
                 <input type="file" name="backup_upload" class="form-control"
-                       accept=".yaml,.yaml.gz,.yml,.yml.gz" required>
+                       accept=".json,.json.gz,.yaml,.yaml.gz,.yml,.yml.gz" required>
                 <small class="text-muted">
-                    Accepts .yaml or .yaml.gz files
+                    Accepts .json (full backup) or .yaml (structure only) files
                 </small>
             </div>
 
             <!-- Warning -->
-            <div class="alert alert-warning">
+            <div class="alert alert-danger">
                 <i class="bi bi-exclamation-triangle-fill"></i>
-                <strong>Important:</strong> Restoring will ADD data to the target organization.
-                Existing data will not be deleted. This operation cannot be undone.
+                <strong>⚠️ DANGER:</strong> Full restore will <strong>REPLACE ALL DATA</strong> in the target organization.
+                All existing spaces, challenges, KPIs, and contributions will be deleted first.
+                <strong>This operation cannot be undone.</strong>
             </div>
 
             <!-- Submit -->
@@ -385,27 +405,27 @@ function confirmRestore() {
     const initiatives = parseInt(option.dataset.initiatives || 0);
     const isEmpty = spaces === 0 && challenges === 0 && initiatives === 0;
 
-    let confirmMessage = `⚠️ RESTORE BACKUP?\n\nTarget Organization: ${orgName}\nBackup: ${backupName}\n\n`;
+    let confirmMessage = `⚠️ RESTORE FULL BACKUP?\n\nTarget Organization: ${orgName}\nBackup: ${backupName}\n\n`;
 
     if (isEmpty) {
-        confirmMessage += 'This organization is empty. Restore should work without conflicts.\n\n';
+        confirmMessage += '✅ This organization is empty. Restore will proceed cleanly.\n\n';
     } else {
-        confirmMessage += `⚠️ WARNING: This organization has existing data (${spaces} spaces, ${challenges} challenges, ${initiatives} initiatives).\n`;
-        confirmMessage += 'Restore may FAIL with ID conflicts. Consider using Organization Admin → YAML Import instead.\n\n';
+        confirmMessage += `⚠️ DANGER: This organization has existing data (${spaces} spaces, ${challenges} challenges, ${initiatives} initiatives).\n`;
+        confirmMessage += '🗑️ ALL EXISTING DATA WILL BE DELETED before restoring the backup.\n\n';
     }
 
-    confirmMessage += 'This will ADD data to the organization. Existing data will NOT be deleted.\n\nContinue?';
+    confirmMessage += '⚠️ This will REPLACE ALL DATA in the organization with the backup contents.\n\nContinue?';
 
     if (!confirm(confirmMessage)) {
         return;
     }
 
     if (!isEmpty) {
-        if (!confirm('⚠️ FINAL WARNING\n\nThis organization has data and restore may fail!\n\nAre you ABSOLUTELY SURE you want to continue?')) {
+        if (!confirm('⚠️ FINAL WARNING\n\n🗑️ ALL DATA in this organization will be PERMANENTLY DELETED!\n\nAre you ABSOLUTELY SURE you want to continue?')) {
             return;
         }
     } else {
-        if (!confirm('Are you ABSOLUTELY SURE?\n\nThis operation cannot be undone.')) {
+        if (!confirm('Are you ABSOLUTELY SURE?\n\nThis will restore all structure and data from the backup.\n\nThis operation cannot be undone.')) {
             return;
         }
     }

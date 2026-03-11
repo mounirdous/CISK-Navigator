@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Map Governance Bodies - Full Backup Restore{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 class="mb-0 text-white">
+                        <i class="bi bi-diagram-3"></i> Map Governance Bodies
+                    </h3>
+                    <p class="mb-0 mt-2 text-white">
+                        <strong>Restoring to:</strong> {{ org.name }}
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Governance Bodies Found in Backup</strong>
+                        <p class="mb-0 mt-2">
+                            The backup contains {{ governance_bodies|length }} governance bodies.
+                            For each one, choose whether to <strong>create a new governance body</strong> or <strong>map it to an existing one</strong> in {{ org.name }}.
+                        </p>
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-lightbulb"></i>
+                        <strong>How Mapping Works:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li><strong>Create New:</strong> Creates a new governance body with this name in {{ org.name }}</li>
+                            <li><strong>Map to Existing:</strong> Links backup data to an existing governance body (useful when names differ)</li>
+                            <li><strong>Auto-selected:</strong> Exact name matches are pre-selected for you</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('global_admin.full_backup_governance_mapping') }}">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40%;">Governance Body in Backup</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for gb_name in governance_bodies %}
+                                    <tr>
+                                        <td class="align-middle">
+                                            <strong class="text-primary">{{ gb_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <select name="gb_action_{{ gb_name }}" class="form-select" required>
+                                                <option value="">-- Select Action --</option>
+                                                <option value="create"
+                                                    {% if not existing_gbs or gb_name not in existing_gbs|map(attribute='name')|list %}selected{% endif %}>
+                                                    ✨ Create New: "{{ gb_name }}"
+                                                </option>
+                                                {% if existing_gbs %}
+                                                <optgroup label="Map to Existing in {{ org.name }}">
+                                                    {% for existing_gb in existing_gbs %}
+                                                    <option value="map_{{ existing_gb.id }}"
+                                                        {% if existing_gb.name == gb_name %}selected{% endif %}>
+                                                        📌 {{ existing_gb.name }}
+                                                        {% if existing_gb.description %} - {{ existing_gb.description[:50] }}{% endif %}
+                                                    </option>
+                                                    {% endfor %}
+                                                </optgroup>
+                                                {% endif %}
+                                            </select>
+                                            <small class="form-text text-muted">
+                                                {% set exact_match = existing_gbs|selectattr('name', 'equalto', gb_name)|list|first %}
+                                                {% if exact_match %}
+                                                    <i class="bi bi-check-circle text-success"></i> Exact match found - auto-selected
+                                                {% else %}
+                                                    Will create new governance body
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="alert alert-danger mt-4">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> Proceeding will <strong>REPLACE ALL DATA</strong> in <strong>{{ org.name }}</strong> with the backup contents (structure + all KPI values + contributions).
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('global_admin.backup_restore') }}" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                                <i class="bi bi-cloud-download"></i> Restore Full Backup to {{ org.name }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow mt-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> What Gets Restored</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-success"><i class="bi bi-check-circle"></i> Included:</h6>
+                            <ul>
+                                <li>All value types</li>
+                                <li>Governance bodies (with mapping)</li>
+                                <li>Complete org structure (spaces, challenges, initiatives, systems, KPIs)</li>
+                                <li><strong>All contributions (KPI values!)</strong></li>
+                                <li>KPI configurations (colors, targets, etc.)</li>
+                                <li>Governance body links to KPIs</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-muted"><i class="bi bi-x-circle"></i> Not Included:</h6>
+                            <ul>
+                                <li>User memberships</li>
+                                <li>Comments</li>
+                                <li>Snapshots</li>
+                                <li>Audit logs</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

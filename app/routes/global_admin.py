@@ -671,11 +671,11 @@ def backup_restore():
 @login_required
 @global_admin_required
 def create_backup(org_id):
-    """Create and download backup of organization"""
+    """Create and download FULL backup of organization with all data"""
     import gzip
     from io import BytesIO
 
-    from app.services.yaml_export_service import YAMLExportService
+    from app.services.full_backup_service import FullBackupService
 
     org = db.session.get(Organization, org_id)
     if not org:
@@ -686,42 +686,13 @@ def create_backup(org_id):
         # Get compression preference from query parameter
         compress = request.args.get("compress", "false") == "true"
 
-        # Export to YAML
-        yaml_content = YAMLExportService.export_to_yaml(org_id)
-
-        # Count entities for metadata
-        kpis_count = (
-            db.session.query(KPI)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(System, InitiativeSystemLink.system_id == System.id)
-            .filter(System.organization_id == org_id)
-            .count()
-        )
-
-        spaces_count = Space.query.filter_by(organization_id=org_id).count()
-        challenges_count = Challenge.query.filter_by(organization_id=org_id).count()
-        initiatives_count = Initiative.query.filter_by(organization_id=org_id).count()
-        systems_count = System.query.filter_by(organization_id=org_id).count()
-        vt_count = ValueType.query.filter_by(organization_id=org_id).count()
-
-        # Add metadata header
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        metadata = f"""# CISK Navigator Organization Backup
-# Organization: {org.name}
-# Organization ID: {org.id}
-# Backup Date: {timestamp}
-# Backup Version: 1.0
-#
-# Entities: {spaces_count} spaces, {challenges_count} challenges, {initiatives_count} initiatives, {systems_count} systems, {kpis_count} KPIs, {vt_count} value types
-#
-
-"""
-        full_content = metadata + yaml_content
+        # Create FULL backup (structure + all data)
+        json_content = FullBackupService.export_to_json_string(org_id)
 
         # Generate filename
         safe_org_name = org.name.lower().replace(" ", "-").replace("/", "-")
         timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"backup_{safe_org_name}_{timestamp_str}.yaml"
+        filename = f"full_backup_{safe_org_name}_{timestamp_str}.json"
 
         # Stream file to browser
         if compress:
@@ -729,14 +700,14 @@ def create_backup(org_id):
             # Compress in memory
             bio = BytesIO()
             with gzip.open(bio, "wt", encoding="utf-8") as f:
-                f.write(full_content)
+                f.write(json_content)
             bio.seek(0)
             return send_file(bio, mimetype="application/gzip", as_attachment=True, download_name=filename)
         else:
             # Send uncompressed
-            bio = BytesIO(full_content.encode("utf-8"))
+            bio = BytesIO(json_content.encode("utf-8"))
             bio.seek(0)
-            return send_file(bio, mimetype="application/x-yaml", as_attachment=True, download_name=filename)
+            return send_file(bio, mimetype="application/json", as_attachment=True, download_name=filename)
 
     except Exception as e:
         flash(f"Error creating backup: {str(e)}", "danger")
@@ -747,11 +718,9 @@ def create_backup(org_id):
 @login_required
 @global_admin_required
 def restore_backup():
-    """Restore organization from uploaded backup file"""
+    """Restore organization from uploaded backup file (JSON format with full data)"""
     import gzip
     import io
-
-    from app.services.yaml_import_service import YAMLImportService
 
     org_id = request.form.get("org_id", type=int)
 
@@ -776,30 +745,60 @@ def restore_backup():
 
     try:
         filename = file.filename
-        yaml_content = None
+        backup_content = None
 
         # Read uploaded file (handle compression)
         if filename.endswith(".gz"):
             with gzip.open(io.BytesIO(file.read()), "rt", encoding="utf-8") as f:
-                yaml_content = f.read()
+                backup_content = f.read()
         else:
-            yaml_content = file.read().decode("utf-8")
+            backup_content = file.read().decode("utf-8")
 
-        # Import from YAML
-        result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
+        # Detect format: JSON (full backup) or YAML (structure only)
+        if filename.endswith((".json", ".json.gz")):
+            # Full backup - extract governance bodies for mapping
+            from app.services.full_backup_service import FullBackupService
 
-        # Build success message
-        msg = f'Restored to {org.name}: {result["value_types"]} value types, {result["spaces"]} spaces, '
-        msg += f'{result["challenges"]} challenges, {result["initiatives"]} initiatives, '
-        msg += f'{result["systems"]} systems, {result["kpis"]} KPIs'
+            try:
+                import json
 
-        if result["errors"]:
-            msg += f' (with {len(result["errors"])} errors)'
-            flash(msg, "warning")
-            for error in result["errors"][:5]:  # Show first 5 errors
-                flash(f"  • {error}", "warning")
+                backup_data = json.loads(backup_content)
+                governance_bodies = backup_data.get("governance_bodies", [])
+            except Exception:
+                governance_bodies = []
+
+            if governance_bodies:
+                # Store backup and org_id in session for mapping step
+                session["pending_full_backup"] = backup_content
+                session["full_backup_org_id"] = org_id
+                session["full_backup_governance_bodies"] = [gb["name"] for gb in governance_bodies]
+
+                # Redirect to mapping page
+                return redirect(url_for("global_admin.full_backup_governance_mapping"))
+            else:
+                # No governance bodies, proceed directly
+                from app.services.full_restore_service import FullRestoreService
+
+                result = FullRestoreService.restore_from_json(backup_content, org_id)
+                FullBackupService._flash_restore_results(result, org.name)
+
         else:
-            flash(msg, "success")
+            # YAML - structure only (backward compatibility)
+            from app.services.yaml_import_service import YAMLImportService
+
+            result = YAMLImportService.import_from_string(backup_content, org_id, dry_run=False)
+
+            msg = f'Restored structure to {org.name}: {result["value_types"]} value types, {result["spaces"]} spaces, '
+            msg += f'{result["challenges"]} challenges, {result["initiatives"]} initiatives, '
+            msg += f'{result["systems"]} systems, {result["kpis"]} KPIs (structure only, no data)'
+
+            if result["errors"]:
+                msg += f' (with {len(result["errors"])} errors)'
+                flash(msg, "warning")
+                for error in result["errors"][:5]:
+                    flash(f"  • {error}", "warning")
+            else:
+                flash(msg, "info")
 
     except Exception as e:
         flash(f"Error restoring backup: {str(e)}", "danger")
@@ -808,6 +807,96 @@ def restore_backup():
         traceback.print_exc()
 
     return redirect(url_for("global_admin.backup_restore"))
+
+
+@bp.route("/backup-restore/governance-mapping", methods=["GET", "POST"])
+@login_required
+@global_admin_required
+def full_backup_governance_mapping():
+    """Map governance bodies from full backup to existing or create new"""
+    from app.services.full_restore_service import FullRestoreService
+
+    # Check if we have pending backup restore
+    backup_content = session.get("pending_full_backup")
+    org_id = session.get("full_backup_org_id")
+    gb_names = session.get("full_backup_governance_bodies", [])
+
+    if not backup_content or not org_id or not gb_names:
+        flash("No pending backup restore found", "warning")
+        return redirect(url_for("global_admin.backup_restore"))
+
+    org = db.session.get(Organization, org_id)
+    if not org:
+        flash("Organization not found", "danger")
+        return redirect(url_for("global_admin.backup_restore"))
+
+    # Get existing governance bodies in target organization
+    from app.models import GovernanceBody
+
+    existing_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).all()
+
+    if request.method == "POST":
+        try:
+            # Build governance body mapping from form
+            governance_body_mapping = {}
+
+            for gb_name in gb_names:
+                action = request.form.get(f"gb_action_{gb_name}")
+
+                if action == "create":
+                    governance_body_mapping[gb_name] = "create"
+                elif action and action.startswith("map_"):
+                    # Extract GB ID from "map_123"
+                    gb_id = int(action.split("_")[1])
+                    governance_body_mapping[gb_name] = gb_id
+
+            # Clear session data
+            session.pop("pending_full_backup", None)
+            session.pop("full_backup_org_id", None)
+            session.pop("full_backup_governance_bodies", None)
+
+            # Restore with governance body mapping
+            result = FullRestoreService.restore_from_json(
+                backup_content, org_id, governance_body_mapping=governance_body_mapping
+            )
+
+            if result.get("success"):
+                msg = f"✓ Full restore to {org.name} complete!"
+                flash(msg, "success")
+
+                details = (
+                    f'Created: {result["value_types"]} value types, {result["governance_bodies"]} governance bodies, '
+                )
+                details += f'{result["spaces"]} spaces, {result["challenges"]} challenges, '
+                details += f'{result["initiatives"]} initiatives, {result["systems"]} systems, '
+                details += f'{result["kpis"]} KPIs, {result["contributions"]} contributions, '
+                details += f'{result["governance_body_links"]} GB links'
+                flash(details, "info")
+
+                if result["errors"]:
+                    flash(f'⚠ {len(result["errors"])} warnings:', "warning")
+                    for error in result["errors"][:5]:
+                        flash(f"  • {error}", "warning")
+            else:
+                flash("Restore failed", "danger")
+                for error in result.get("errors", []):
+                    flash(error, "danger")
+
+            return redirect(url_for("global_admin.backup_restore"))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error during restore: {str(e)}", "danger")
+            import traceback
+
+            traceback.print_exc()
+
+    return render_template(
+        "global_admin/full_backup_governance_mapping.html",
+        governance_bodies=gb_names,
+        existing_gbs=existing_gbs,
+        org=org,
+    )
 
 
 @bp.route("/organizations/<int:org_id>/clear-comments", methods=["POST"])
