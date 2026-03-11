@@ -34,7 +34,9 @@ class Space(db.Model):
 
     # Relationships
     organization = db.relationship("Organization", back_populates="spaces")
-    challenges = db.relationship("Challenge", back_populates="space", cascade="all, delete-orphan")
+    challenges = db.relationship(
+        "Challenge", back_populates="space", cascade="all, delete-orphan", order_by="Challenge.display_order"
+    )
 
     def get_rollup_value(self, value_type_id):
         """Get rolled-up value from challenges for this space"""

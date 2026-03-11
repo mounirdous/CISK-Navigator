@@ -56,7 +56,9 @@ class InitiativeSystemLink(db.Model):
     # Relationships
     initiative = db.relationship("Initiative", back_populates="system_links")
     system = db.relationship("System", back_populates="initiative_links")
-    kpis = db.relationship("KPI", back_populates="initiative_system_link", cascade="all, delete-orphan")
+    kpis = db.relationship(
+        "KPI", back_populates="initiative_system_link", cascade="all, delete-orphan", order_by="KPI.display_order"
+    )
     rollup_rules = db.relationship(
         "RollupRule",
         foreign_keys="RollupRule.source_id",

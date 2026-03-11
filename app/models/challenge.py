@@ -30,7 +30,10 @@ class Challenge(db.Model):
     organization = db.relationship("Organization", back_populates="challenges")
     space = db.relationship("Space", back_populates="challenges")
     initiative_links = db.relationship(
-        "ChallengeInitiativeLink", back_populates="challenge", cascade="all, delete-orphan"
+        "ChallengeInitiativeLink",
+        back_populates="challenge",
+        cascade="all, delete-orphan",
+        order_by="ChallengeInitiativeLink.display_order",
     )
     rollup_rules = db.relationship(
         "RollupRule",

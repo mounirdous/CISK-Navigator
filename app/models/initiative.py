@@ -30,7 +30,12 @@ class Initiative(db.Model):
     challenge_links = db.relationship(
         "ChallengeInitiativeLink", back_populates="initiative", cascade="all, delete-orphan"
     )
-    system_links = db.relationship("InitiativeSystemLink", back_populates="initiative", cascade="all, delete-orphan")
+    system_links = db.relationship(
+        "InitiativeSystemLink",
+        back_populates="initiative",
+        cascade="all, delete-orphan",
+        order_by="InitiativeSystemLink.display_order",
+    )
 
     def get_rollup_value(self, value_type_id):
         """Get rolled-up value from systems for this initiative"""
