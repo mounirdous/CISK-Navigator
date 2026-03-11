@@ -1980,6 +1980,31 @@ document.addEventListener('DOMContentLoaded', function() {
     const draggableRows = document.querySelectorAll('.draggable-row');
     let draggedRow = null;
 
+    // Helper function to get all descendants of a row (children, grandchildren, etc.)
+    // Simple approach: all rows after parent until we hit next sibling are descendants
+    function getDescendants(parentRow) {
+        const descendants = [];
+        const parentLevel = parentRow.dataset.level;
+        const allRows = Array.from(document.querySelectorAll('tr[data-level]'));
+        const startIndex = allRows.indexOf(parentRow);
+
+        // Walk through rows after parent
+        for (let i = startIndex + 1; i < allRows.length; i++) {
+            const row = allRows[i];
+            const rowLevel = row.dataset.level;
+
+            // Stop if we hit a sibling (same level as parent)
+            if (rowLevel === parentLevel) {
+                break;
+            }
+
+            // This row is a descendant (child, grandchild, etc.)
+            descendants.push(row);
+        }
+
+        return descendants;
+    }
+
     draggableRows.forEach(row => {
         row.addEventListener('dragstart', function(e) {
             draggedRow = this;
@@ -2040,11 +2065,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const dragIndex = siblings.indexOf(draggedRow);
             const dropIndex = siblings.indexOf(this);
 
-            // Reorder in DOM
+            // Get all descendants of the dragged row (children, grandchildren, etc.)
+            const descendants = getDescendants(draggedRow);
+
+            // Move dragged row and all its descendants as a unit
             if (dragIndex < dropIndex) {
-                this.parentNode.insertBefore(draggedRow, this.nextSibling);
+                // Moving down: insert after target
+                const insertAfter = this.nextSibling;
+                this.parentNode.insertBefore(draggedRow, insertAfter);
+                // Move descendants right after their parent
+                descendants.forEach(desc => {
+                    draggedRow.parentNode.insertBefore(desc, draggedRow.nextSibling);
+                });
             } else {
+                // Moving up: insert before target
                 this.parentNode.insertBefore(draggedRow, this);
+                // Move descendants right after their parent
+                descendants.forEach(desc => {
+                    draggedRow.parentNode.insertBefore(desc, draggedRow.nextSibling);
+                });
             }
 
             // Save new order to backend
