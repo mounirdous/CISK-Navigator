@@ -509,6 +509,8 @@ tr[data-level="kpi"] td {
                                     <span>Archived KPIs</span>
                                 </label>
                                 <label class="filter-pill {% if show_all_columns %}active{% endif %}" title="Show all value type columns, even if empty">
+                                    <!-- Hidden input ensures show_all_columns=0 is sent when unchecked -->
+                                    <input type="hidden" name="show_all_columns" value="0">
                                     <input type="checkbox" name="show_all_columns" value="1" id="filter_show_all_columns"
                                            {% if show_all_columns %}checked{% endif %} hidden>
                                     <i class="bi bi-columns-gap"></i>
@@ -918,17 +920,17 @@ tr[data-level="kpi"] td {
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
                                             {% if target_dir == 'minimize' %}
-                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                                {% set progress = (((config.target_value|float) / (consensus.value|float)) * 100)|int if consensus.value != 0 else 100 %}
                                             {% elif target_dir == 'exact' %}
-                                                {% set tolerance = config.target_value * ((config.target_tolerance_pct or 10) / 100) %}
-                                                {% set diff = (consensus.value - config.target_value)|abs %}
+                                                {% set tolerance = (config.target_value|float) * (config.target_tolerance_pct or 10) / 100 %}
+                                                {% set diff = ((consensus.value|float) - (config.target_value|float))|abs %}
                                                 {% if diff <= tolerance %}
                                                     {% set progress = 100 %}
                                                 {% else %}
-                                                    {% set progress = ([0, (100 - ((diff - tolerance) / config.target_value * 100))]|max)|int %}
+                                                    {% set progress = ([0, (100 - ((diff - tolerance) / (config.target_value|float) * 100))]|max)|int %}
                                                 {% endif %}
                                             {% else %}
-                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                                {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
                                             <br><small style="color: #6c757d;" title="Target: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
@@ -939,11 +941,11 @@ tr[data-level="kpi"] td {
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
                                             {% if target_dir == 'minimize' %}
-                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                                {% set progress = (((config.target_value|float) / (consensus.value|float)) * 100)|int if consensus.value != 0 else 100 %}
                                             {% elif target_dir == 'exact' %}
                                                 {% set progress = 100 if consensus.value == config.target_value else 50 %}
                                             {% else %}
-                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                                {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
@@ -954,11 +956,11 @@ tr[data-level="kpi"] td {
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
                                             {% if target_dir == 'minimize' %}
-                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                                {% set progress = (((config.target_value|float) / (consensus.value|float)) * 100)|int if consensus.value != 0 else 100 %}
                                             {% elif target_dir == 'exact' %}
                                                 {% set progress = 100 if consensus.value == config.target_value else 50 %}
                                             {% else %}
-                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                                {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
@@ -969,11 +971,11 @@ tr[data-level="kpi"] td {
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
                                             {% if target_dir == 'minimize' %}
-                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                                {% set progress = (((config.target_value|float) / (consensus.value|float)) * 100)|int if consensus.value != 0 else 100 %}
                                             {% elif target_dir == 'exact' %}
                                                 {% set progress = 100 if consensus.value == config.target_value else 50 %}
                                             {% else %}
-                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                                {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
@@ -984,11 +986,11 @@ tr[data-level="kpi"] td {
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
                                             {% if target_dir == 'minimize' %}
-                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                                {% set progress = (((config.target_value|float) / (consensus.value|float)) * 100)|int if consensus.value != 0 else 100 %}
                                             {% elif target_dir == 'exact' %}
                                                 {% set progress = 100 if consensus.value == config.target_value else 50 %}
                                             {% else %}
-                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                                {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
@@ -999,11 +1001,11 @@ tr[data-level="kpi"] td {
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
                                             {% if target_dir == 'minimize' %}
-                                                {% set progress = ((config.target_value / consensus.value) * 100)|int if consensus.value != 0 else 100 %}
+                                                {% set progress = (((config.target_value|float) / (consensus.value|float)) * 100)|int if consensus.value != 0 else 100 %}
                                             {% elif target_dir == 'exact' %}
                                                 {% set progress = 100 if consensus.value == config.target_value else 50 %}
                                             {% else %}
-                                                {% set progress = ((consensus.value / config.target_value) * 100)|int %}
+                                                {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
@@ -1386,15 +1388,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (checkbox) checkbox.checked = true;
             }
 
-            // Restore show_all_columns
-            if (filters.show_all_columns) {
-                const checkbox = filterForm.querySelector('input[name="show_all_columns"]');
-                if (checkbox) checkbox.checked = true;
+            // Restore show_all_columns (defaults to true if not in localStorage)
+            const checkbox = filterForm.querySelector('input[name="show_all_columns"]');
+            if (checkbox) {
+                checkbox.checked = filters.show_all_columns !== false; // Default to true
             }
         } catch (e) {
             console.error('Error restoring filters from localStorage:', e);
         }
+    } else {
+        // First visit (no localStorage) - ensure show_all_columns defaults to checked
+        const checkbox = filterForm.querySelector('input[name="show_all_columns"]');
+        if (checkbox && !checkbox.checked) {
+            checkbox.checked = true;
+        }
     }
+
+    // Sync pill active states with checkbox states after restoration
+    filterForm.querySelectorAll('.filter-pill input[type="checkbox"]').forEach(checkbox => {
+        const pill = checkbox.closest('.filter-pill');
+        if (pill) {
+            pill.classList.toggle('active', checkbox.checked);
+        }
+    });
 
     // Level visibility controls (checkboxes with names starting with "show_" except show_archived and show_all_columns)
     const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
@@ -1468,7 +1484,7 @@ document.addEventListener('DOMContentLoaded', function() {
             gb: Array.from(filterForm.querySelectorAll('input[name="gb"]:checked')).map(cb => cb.value),
             space_type: filterForm.querySelector('input[name="space_type"]:checked')?.value || 'all',
             show_archived: filterForm.querySelector('input[name="show_archived"]')?.checked || false,
-            show_all_columns: filterForm.querySelector('input[name="show_all_columns"]')?.checked || false
+            show_all_columns: filterForm.querySelector('input[name="show_all_columns"]')?.checked !== false // Default to true
         };
         localStorage.setItem('workspaceFilters', JSON.stringify(filters));
         console.log('Saved filters to localStorage:', filters);

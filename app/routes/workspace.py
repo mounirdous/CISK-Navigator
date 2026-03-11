@@ -124,7 +124,8 @@ def index():
     private_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=True).count()
 
     # Get show_all_columns flag (override smart column filtering)
-    show_all_columns = request.args.get("show_all_columns") == "1"
+    # Default to True (show all columns by default)
+    show_all_columns = request.args.get("show_all_columns", "1") == "1"
 
     # Get active governance bodies for filter
     from app.models import GovernanceBody
@@ -389,7 +390,7 @@ def kpi_cell_detail(kpi_id, vt_id):
                 db.session.commit()
 
                 flash(f"Previous value saved in snapshot. New value entered by {contributor_name}", "success")
-                return redirect(url_for("workspace.kpi_cell_detail", kpi_id=kpi_id, vt_id=vt_id))
+                return redirect(url_for("workspace.index", show_all_columns=1))
 
             except Exception as e:
                 db.session.rollback()
@@ -426,7 +427,7 @@ def kpi_cell_detail(kpi_id, vt_id):
             flash(f"Contribution from {contributor_name} added", "success")
 
         db.session.commit()
-        return redirect(url_for("workspace.kpi_cell_detail", kpi_id=kpi_id, vt_id=vt_id))
+        return redirect(url_for("workspace.index", show_all_columns=1))
 
     # Build breadcrumb
     system = is_link.system

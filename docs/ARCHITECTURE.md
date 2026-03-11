@@ -427,8 +427,12 @@ Organization (multi-tenant)
 **Purpose:** Actual value measurements (the "cells" in the KPI grid)
 
 **Model:** `app/models/contribution.py`
-**Routes:** `app/routes/workspace.py` (inline AJAX endpoints)
-**Templates:** Inline in `workspace/index.html`
+**Routes:** `app/routes/workspace.py`
+- `kpi_cell_detail(kpi_id, vt_id)` - View/add contributions (line ~270)
+- `delete_contribution(kpi_id, vt_id)` - Delete contribution (line ~459)
+**Templates:**
+- `workspace/kpi_cell_detail.html` - Contribution form/list
+- Inline grid cells in `workspace/index.html`
 
 **Database Table:** `contributions`
 

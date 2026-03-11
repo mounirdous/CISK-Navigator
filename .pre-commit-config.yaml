@@ -52,7 +52,7 @@ repos:
         stages: [pre-commit]
       - id: pytest-check
         name: pytest-check
-        entry: bash -c 'pytest tests/unit/ tests/integration/test_auth.py -x --tb=short'
+        entry: bash -c './venv/bin/pytest tests/unit/ tests/integration/test_auth.py -x --tb=short'
         language: system
         pass_filenames: false
         always_run: true
