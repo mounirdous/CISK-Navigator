@@ -583,8 +583,6 @@ def restore_backup():
         return redirect(url_for("super_admin.backup"))
 
     try:
-        backup_data = json.load(file)
-
         # Get target organization ID from form
         target_org_id = request.form.get("target_org_id", type=int)
 
@@ -592,17 +590,126 @@ def restore_backup():
             flash("Please select a target organization", "danger")
             return redirect(url_for("super_admin.backup"))
 
-        # Restore the backup
-        result = FullRestoreService.restore_full_backup(target_org_id, backup_data)
+        # Read JSON content
+        json_content = file.read().decode("utf-8")
+
+        # Restore the backup (no governance body mapping - create all new)
+        result = FullRestoreService.restore_from_json(json_content, target_org_id)
 
         if result.get("success"):
-            flash(f"Backup restored successfully: {result.get('summary', '')}", "success")
+            stats = result.get("stats", {})
+            summary = (
+                f"Restored: {stats.get('spaces', 0)} spaces, {stats.get('kpis', 0)} KPIs, "
+                f"{stats.get('contributions', 0)} contributions"
+            )
+            flash(f"✅ Backup restored successfully: {summary}", "success")
         else:
-            flash(f"Restore failed: {result.get('error', 'Unknown error')}", "danger")
+            flash(f"❌ Restore failed: {result.get('error', 'Unknown error')}", "danger")
 
     except json.JSONDecodeError:
         flash("Invalid JSON file", "danger")
     except Exception as e:
         flash(f"Restore error: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.backup"))
+
+
+@bp.route("/backup/restore_full_instance", methods=["POST"])
+@super_admin_required
+def restore_full_instance():
+    """Restore full instance from ZIP backup file"""
+    import io
+    import json
+    import zipfile
+
+    from app.services.full_restore_service import FullRestoreService
+
+    if "backup_file" not in request.files:
+        flash("No backup file provided", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    file = request.files["backup_file"]
+
+    if file.filename == "":
+        flash("No file selected", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    if not file.filename.endswith(".zip"):
+        flash("Full instance backup must be a ZIP file", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    try:
+        # Read ZIP file
+        zip_data = io.BytesIO(file.read())
+
+        with zipfile.ZipFile(zip_data, "r") as zf:
+            # Get all JSON files from ZIP
+            json_files = [f for f in zf.namelist() if f.endswith(".json")]
+
+            if not json_files:
+                flash("No JSON backup files found in ZIP", "danger")
+                return redirect(url_for("super_admin.backup"))
+
+            # Delete ALL existing organizations
+            existing_orgs = Organization.query.all()
+            for org in existing_orgs:
+                db.session.delete(org)
+            db.session.commit()
+            flash(f"⚠️ Deleted {len(existing_orgs)} existing organization(s)", "warning")
+
+            # Restore each organization from backup
+            restored_count = 0
+            failed_count = 0
+
+            for json_file in json_files:
+                try:
+                    # Read JSON content
+                    json_content = zf.read(json_file).decode("utf-8")
+                    backup_data = json.loads(json_content)
+
+                    # Get organization name from backup
+                    org_name = backup_data.get("organization", {}).get("name", "Unknown Organization")
+
+                    # Create new organization
+                    new_org = Organization(
+                        name=org_name,
+                        description=backup_data.get("organization", {}).get("description"),
+                        is_active=True,
+                    )
+                    db.session.add(new_org)
+                    db.session.flush()  # Get the ID
+
+                    # Restore data into this organization
+                    result = FullRestoreService.restore_from_json(json_content, new_org.id)
+
+                    if result.get("success"):
+                        restored_count += 1
+                        db.session.commit()
+                    else:
+                        failed_count += 1
+                        db.session.rollback()
+                        flash(
+                            f"Failed to restore {org_name}: {result.get('error', 'Unknown error')}",
+                            "warning",
+                        )
+
+                except Exception as e:
+                    failed_count += 1
+                    db.session.rollback()
+                    flash(f"Error restoring {json_file}: {str(e)}", "warning")
+
+            if restored_count > 0:
+                flash(
+                    f"✅ Full instance restore complete: {restored_count} organization(s) restored, {failed_count} failed",
+                    "success",
+                )
+            else:
+                flash("❌ Full instance restore failed: No organizations were restored", "danger")
+
+    except zipfile.BadZipFile:
+        flash("Invalid ZIP file", "danger")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Full instance restore error: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.backup"))

@@ -107,15 +107,15 @@
         </div>
 
         <div class="card-body" style="padding: 2.5rem;">
-            <!-- Create Backup Section -->
+            <!-- SECTION 1: Single/Selected Organization Backup -->
             <div class="backup-section">
                 <div class="backup-section-title">
                     <i class="bi bi-download"></i>
-                    Create Backup
+                    Single Organization Backup
                 </div>
 
                 <p class="text-muted mb-3">
-                    Download complete backups of selected organizations. Each organization will be saved as a separate JSON file.
+                    Download backups of selected organizations. Each organization will be saved as a separate JSON file.
                 </p>
 
                 <div class="org-select-card">
@@ -154,11 +154,33 @@
                 </button>
             </div>
 
-            <!-- Restore Backup Section -->
+            <!-- SECTION 2: Full Instance Backup -->
+            <div class="backup-section" style="border: 2px solid #0d6efd;">
+                <div class="backup-section-title">
+                    <i class="bi bi-cloud-arrow-down-fill"></i>
+                    Full Instance Backup
+                </div>
+
+                <p class="text-muted mb-3">
+                    Download a complete backup of <strong>ALL {{ organizations|length }} organizations</strong> in one click.
+                    This creates a single ZIP file containing all organization data.
+                </p>
+
+                <div class="alert alert-primary d-flex align-items-center mb-3">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <span>Use this for full instance backups before major system changes or migrations.</span>
+                </div>
+
+                <button type="button" id="backup-all-btn" class="btn btn-primary btn-lg">
+                    <i class="bi bi-cloud-arrow-down-fill"></i> Backup All Organizations
+                </button>
+            </div>
+
+            <!-- SECTION 3: Single Organization Restore -->
             <div class="backup-section">
                 <div class="backup-section-title">
                     <i class="bi bi-upload"></i>
-                    Restore Backup
+                    Single Organization Restore
                 </div>
 
                 <div class="warning-box mb-3">
@@ -199,6 +221,37 @@
                 </form>
             </div>
 
+            <!-- SECTION 4: Full Instance Restore -->
+            <div class="backup-section" style="border: 2px solid #dc3545;">
+                <div class="backup-section-title text-danger">
+                    <i class="bi bi-cloud-arrow-up-fill"></i>
+                    Full Instance Restore
+                </div>
+
+                <div class="warning-box mb-3" style="background: rgba(220, 53, 69, 0.1); border-left-color: #dc3545;">
+                    <i class="bi bi-exclamation-octagon-fill"></i>
+                    <strong>DANGER:</strong> This will REPLACE ALL DATA in the entire instance.
+                    All existing organizations and their data will be permanently deleted.
+                    This action is IRREVERSIBLE.
+                </div>
+
+                <form method="POST" action="{{ url_for('super_admin.restore_full_instance') }}" enctype="multipart/form-data" id="restore-all-form">
+                    <div class="file-upload-area mb-3" id="file-upload-area-all">
+                        <i class="bi bi-cloud-upload" style="font-size: 3rem; color: var(--text-muted);"></i>
+                        <p class="mb-2" style="color: var(--text-primary);">
+                            <strong>Click to select full instance backup</strong> or drag and drop
+                        </p>
+                        <p class="text-muted" style="font-size: 0.9rem;">ZIP file containing all organization backups</p>
+                        <input type="file" id="backup_file_all" name="backup_file" accept=".zip" required>
+                        <div id="file-name-all" class="mt-2" style="color: var(--accent-primary); font-weight: 600;"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger btn-lg" id="restore-all-btn" disabled>
+                        <i class="bi bi-exclamation-triangle-fill"></i> Restore Full Instance
+                    </button>
+                </form>
+            </div>
+
             <div class="alert alert-info d-flex align-items-start">
                 <i class="bi bi-info-circle me-3" style="font-size: 1.5rem;"></i>
                 <div>
@@ -226,6 +279,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const createBackupBtn = document.getElementById('create-backup-btn');
+    const backupAllBtn = document.getElementById('backup-all-btn');
     const backupCheckboxes = document.querySelectorAll('.backup-org-checkbox');
     const selectAllBtn = document.getElementById('select-all-orgs');
     const deselectAllBtn = document.getElementById('deselect-all-orgs');
@@ -236,6 +290,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const targetOrgSelect = document.getElementById('target_org_id');
     const restoreBtn = document.getElementById('restore-btn');
     const restoreForm = document.getElementById('restore-form');
+
+    // Full instance restore elements
+    const fileUploadAreaAll = document.getElementById('file-upload-area-all');
+    const fileInputAll = document.getElementById('backup_file_all');
+    const fileNameAll = document.getElementById('file-name-all');
+    const restoreAllBtn = document.getElementById('restore-all-btn');
+    const restoreAllForm = document.getElementById('restore-all-form');
 
     // Update selected count and button state
     function updateBackupSelection() {
@@ -306,7 +367,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Drag and drop
+    // Drag and drop (single org restore)
     fileUploadArea.addEventListener('dragover', function(e) {
         e.preventDefault();
         this.style.borderColor = 'var(--accent-primary)';
@@ -328,6 +389,67 @@ document.addEventListener('DOMContentLoaded', function() {
             fileInput.files = e.dataTransfer.files;
             fileName.textContent = `Selected: ${e.dataTransfer.files[0].name}`;
             checkRestoreReady();
+        }
+    });
+
+    // ===== FULL INSTANCE BACKUP =====
+    backupAllBtn.addEventListener('click', function() {
+        if (confirm('⚠️ Create full instance backup?\n\nThis will backup ALL {{ organizations|length }} organizations.')) {
+            const allOrgIds = Array.from(backupCheckboxes).map(cb => cb.value).join(',');
+            window.location.href = `{{ url_for('super_admin.create_backup', org_id=0) }}`.replace('0', allOrgIds);
+        }
+    });
+
+    // ===== FULL INSTANCE RESTORE =====
+    // File upload area click
+    fileUploadAreaAll.addEventListener('click', function() {
+        fileInputAll.click();
+    });
+
+    // File input change
+    fileInputAll.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileNameAll.textContent = `Selected: ${this.files[0].name}`;
+            restoreAllBtn.disabled = false;
+        }
+    });
+
+    // Confirm full instance restore
+    restoreAllForm.addEventListener('submit', function(e) {
+        if (!confirm('🚨 DANGER: FULL INSTANCE RESTORE 🚨\n\nThis will DELETE ALL EXISTING DATA and replace it with the backup.\n\n⚠️ ALL {{ organizations|length }} organizations will be PERMANENTLY DELETED.\n⚠️ This action is IRREVERSIBLE.\n⚠️ Make sure you have a current backup before proceeding.\n\nType "DELETE ALL DATA" in the next prompt to confirm.')) {
+            e.preventDefault();
+            return;
+        }
+
+        const confirmation = prompt('Type "DELETE ALL DATA" to confirm full instance restore:');
+        if (confirmation !== 'DELETE ALL DATA') {
+            e.preventDefault();
+            alert('Confirmation text did not match. Restore cancelled.');
+        }
+    });
+
+    // Drag and drop (full instance restore)
+    fileUploadAreaAll.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'var(--accent-primary)';
+        this.style.backgroundColor = 'var(--bg-secondary)';
+    });
+
+    fileUploadAreaAll.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'var(--border-color)';
+        this.style.backgroundColor = 'var(--bg-tertiary)';
+    });
+
+    fileUploadAreaAll.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'var(--border-color)';
+        this.style.backgroundColor = 'var(--bg-tertiary)';
+
+        if (e.dataTransfer.files.length > 0) {
+            fileInputAll.files = e.dataTransfer.files;
+            fileNameAll.textContent = `Selected: ${e.dataTransfer.files[0].name}`;
+            restoreAllBtn.disabled = false;
         }
     });
 });
