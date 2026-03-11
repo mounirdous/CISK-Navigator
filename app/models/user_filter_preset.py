@@ -30,9 +30,6 @@ class UserFilterPreset(db.Model):
 
     # Preset metadata
     name = db.Column(db.String(100), nullable=False, comment="User-defined name for this filter preset")
-    is_default = db.Column(
-        db.Boolean, default=False, nullable=False, comment="Auto-load this preset when entering workspace"
-    )
 
     # Filter configuration (JSON)
     filters = db.Column(
@@ -50,10 +47,7 @@ class UserFilterPreset(db.Model):
     organization = db.relationship("Organization", backref="filter_presets")
 
     # Constraints and indexes
-    __table_args__ = (
-        db.Index("idx_user_org_default", "user_id", "organization_id", "is_default"),
-        db.UniqueConstraint("user_id", "organization_id", "name", name="uq_user_org_preset_name"),
-    )
+    __table_args__ = (db.UniqueConstraint("user_id", "organization_id", "name", name="uq_user_org_preset_name"),)
 
     def __repr__(self):
         return f"<UserFilterPreset {self.id} user={self.user_id} org={self.organization_id} name='{self.name}'>"
@@ -63,7 +57,6 @@ class UserFilterPreset(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "is_default": self.is_default,
             "filters": self.filters,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,

@@ -617,11 +617,6 @@ tr[data-level="kpi"] td {
                         <div class="d-flex gap-2 flex-wrap">
                             {% for preset in filter_presets %}
                             <div class="badge bg-secondary d-flex align-items-center gap-2" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
-                                {% if preset.is_default %}
-                                <i class="bi bi-star-fill text-warning" title="Default preset"></i>
-                                {% else %}
-                                <i class="bi bi-star" title="Set as default"></i>
-                                {% endif %}
                                 <span class="filter-preset-name" style="cursor: pointer;" data-preset-id="{{ preset.id }}" title="Click to load this preset">{{ preset.name }}</span>
                                 <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" data-delete-preset="{{ preset.id }}" title="Delete preset"></button>
                             </div>
@@ -2178,42 +2173,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Clear all filters (Option B: clear governance + reset level visibility to all visible)
     if (clearFiltersBtn) {
-        clearFiltersBtn.addEventListener('click', function() {
-            // Uncheck all data filter checkboxes (governance bodies, archive, show_all_columns)
-            dataFilterCheckboxes.forEach(cb => {
-                cb.checked = false;
-                const pill = cb.closest('.filter-pill');
-                if (pill) pill.classList.remove('active');
-            });
-
-            // Reset space type to "all"
-            const allSpacesRadio = filterForm.querySelector('input[name="space_type"][value="all"]');
-            if (allSpacesRadio) {
-                allSpacesRadio.checked = true;
-                spaceTypeRadios.forEach(r => {
-                    const pill = r.closest('.filter-pill');
-                    if (pill) {
-                        pill.classList.toggle('active', r.checked);
-                    }
+        clearFiltersBtn.addEventListener('click', async function() {
+            // Clear the last used preset in the database
+            try {
+                await fetch('/workspace/api/clear-last-preset', {
+                    method: 'POST'
                 });
+            } catch (err) {
+                console.error('Failed to clear last preset:', err);
             }
-
-            // Reset all level checkboxes to checked (visible)
-            levelCheckboxes.forEach(cb => {
-                cb.checked = true;
-                const pill = cb.closest('.filter-pill');
-                if (pill) {
-                    pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
-                }
-            });
 
             // Clear localStorage
             localStorage.removeItem('workspaceFilters');
-            console.log('Cleared filters from localStorage');
 
-            // Don't add hidden inputs - all levels are now checked and will submit as =1
-            // Submit form
-            filterForm.submit();
+            // Redirect to clean view (skip_default=1 prevents auto-loading default preset)
+            window.location.href = '/workspace/?skip_default=1';
         });
     }
 
@@ -2981,14 +2955,13 @@ document.getElementById('save-preset-btn')?.addEventListener('click', async func
     const name = prompt('Enter a name for this filter preset:');
     if (!name || !name.trim()) return;
 
-    const isDefault = confirm('Set this as your default filter preset?');
     const filters = getCurrentFilters();
 
     try {
         const response = await fetch('/workspace/api/filter-presets', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({name: name.trim(), filters, is_default: isDefault})
+            body: JSON.stringify({name: name.trim(), filters})
         });
 
         if (response.ok) {
@@ -3067,38 +3040,14 @@ document.querySelectorAll('[data-delete-preset]').forEach(btn => {
     });
 });
 
-// Set as default (click on star)
-document.querySelectorAll('.filter-preset-name').forEach(el => {
-    const star = el.previousElementSibling;
-    if (star && star.classList.contains('bi-star')) {
-        star.style.cursor = 'pointer';
-        star.addEventListener('click', async function(e) {
-            e.stopPropagation();
-            const presetId = el.dataset.presetId;
-
-            try {
-                const response = await fetch(`/workspace/api/filter-presets/${presetId}/set-default`, {
-                    method: 'POST'
-                });
-
-                if (response.ok) {
-                    location.reload();
-                }
-            } catch (err) {
-                console.error('Error setting default:', err);
-            }
-        });
-    }
-});
-
 // Connect the top Clear All button
 const clearFiltersTopBtn = document.getElementById('clear-filters-top');
 if (clearFiltersTopBtn) {
     clearFiltersTopBtn.addEventListener('click', async function() {
-        if (confirm('Clear all filters and reset to default view?')) {
+        if (confirm('Clear all filters and show everything with no presets?')) {
             // Clear the last used preset in the database
             try {
-                const membership = await fetch('/workspace/api/clear-last-preset', {
+                await fetch('/workspace/api/clear-last-preset', {
                     method: 'POST'
                 });
             } catch (err) {
@@ -3107,7 +3056,8 @@ if (clearFiltersTopBtn) {
 
             // Clear localStorage filters
             localStorage.removeItem('workspaceFilters');
-            window.location.href = '/workspace/';
+            // Use skip_default=1 to prevent loading default preset
+            window.location.href = '/workspace/?skip_default=1';
         }
     });
 }

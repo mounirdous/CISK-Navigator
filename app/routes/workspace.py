@@ -155,10 +155,13 @@ def index():
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
-    # Check if user has a saved/default filter preset and no query params (first load)
-    # Priority: 1) Last used preset, 2) Default preset
-    if not request.args:
-        # First, check for last used preset (stored in membership)
+    # Check if user wants to skip auto-loading presets (e.g., after clicking "Clear All")
+    skip_default = request.args.get("skip_default") == "1"
+
+    # Check if user has a last-used filter preset and no query params (first load)
+    # Skip if user explicitly cleared all filters
+    if not skip_default and not request.args:
+        # Check for last used preset (stored in membership)
         membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
 
         last_preset = None
@@ -174,14 +177,6 @@ def index():
         # If we have a valid last preset, use it
         if last_preset and last_preset.filters:
             return redirect(url_for("workspace.index", **last_preset.filters))
-
-        # Otherwise, fall back to default preset
-        default_preset = UserFilterPreset.query.filter_by(
-            user_id=current_user.id, organization_id=org_id, is_default=True
-        ).first()
-
-        if default_preset and default_preset.filters:
-            return redirect(url_for("workspace.index", **default_preset.filters))
 
     # Get space type filter (all, private, public)
     space_type_filter = request.args.get("space_type", "all")
@@ -457,7 +452,7 @@ def index():
     # Get filter presets for this user
     filter_presets = (
         UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
-        .order_by(UserFilterPreset.is_default.desc(), UserFilterPreset.name)
+        .order_by(UserFilterPreset.name)
         .all()
     )
 
@@ -2140,7 +2135,7 @@ def get_filter_presets():
 
     presets = (
         UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
-        .order_by(UserFilterPreset.is_default.desc(), UserFilterPreset.name)
+        .order_by(UserFilterPreset.name)
         .all()
     )
 
@@ -2157,7 +2152,6 @@ def save_filter_preset():
     data = request.get_json()
     name = data.get("name", "").strip()
     filters = data.get("filters", {})
-    is_default = data.get("is_default", False)
 
     if not name:
         return jsonify({"error": "Preset name is required"}), 400
@@ -2168,16 +2162,8 @@ def save_filter_preset():
     if existing:
         return jsonify({"error": f"A preset named '{name}' already exists"}), 400
 
-    # If setting as default, unset any existing default
-    if is_default:
-        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, is_default=True).update(
-            {"is_default": False}
-        )
-
     # Create new preset
-    preset = UserFilterPreset(
-        user_id=current_user.id, organization_id=org_id, name=name, filters=filters, is_default=is_default
-    )
+    preset = UserFilterPreset(user_id=current_user.id, organization_id=org_id, name=name, filters=filters)
 
     db.session.add(preset)
     db.session.commit()
@@ -2224,18 +2210,6 @@ def update_filter_preset(preset_id):
     if "filters" in data:
         preset.filters = data["filters"]
 
-    # Update is_default if provided
-    if "is_default" in data:
-        is_default = data["is_default"]
-        if is_default and not preset.is_default:
-            # Unset any other default
-            UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, is_default=True).update(
-                {"is_default": False}
-            )
-            preset.is_default = True
-        elif not is_default:
-            preset.is_default = False
-
     db.session.commit()
 
     return jsonify(preset.to_dict())
@@ -2260,33 +2234,6 @@ def delete_filter_preset(preset_id):
     db.session.commit()
 
     return jsonify({"success": True, "message": f"Preset '{preset.name}' deleted"})
-
-
-@bp.route("/api/filter-presets/<int:preset_id>/set-default", methods=["POST"])
-@login_required
-@organization_required
-def set_default_filter_preset(preset_id):
-    """Set a filter preset as the default"""
-    org_id = session.get("organization_id")
-
-    preset = UserFilterPreset.query.get(preset_id)
-    if not preset:
-        return jsonify({"error": "Preset not found"}), 404
-
-    # Verify ownership
-    if preset.user_id != current_user.id or preset.organization_id != org_id:
-        return jsonify({"error": "Access denied"}), 403
-
-    # Unset any existing default
-    UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, is_default=True).update(
-        {"is_default": False}
-    )
-
-    # Set this one as default
-    preset.is_default = True
-    db.session.commit()
-
-    return jsonify(preset.to_dict())
 
 
 @bp.route("/api/filter-presets/<int:preset_id>/set-last-used", methods=["POST"])
