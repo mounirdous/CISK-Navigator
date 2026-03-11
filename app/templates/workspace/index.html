@@ -2005,6 +2005,41 @@ document.addEventListener('DOMContentLoaded', function() {
         return descendants;
     }
 
+    // Helper function to find the safe insertion boundary within a parent
+    function getParentBoundary(level, parentId) {
+        const allRows = Array.from(document.querySelectorAll('tr[data-level]'));
+
+        // Find the parent row itself (for non-space levels)
+        let parentRow = null;
+        if (level === 'challenge') {
+            parentRow = allRows.find(r => r.dataset.level === 'space' && r.dataset.id === parentId);
+        } else if (level === 'initiative') {
+            parentRow = allRows.find(r => r.dataset.level === 'challenge' && r.dataset.id === parentId);
+        } else if (level === 'system') {
+            parentRow = allRows.find(r => r.dataset.level === 'initiative' && r.dataset.id === parentId);
+        } else if (level === 'kpi') {
+            parentRow = allRows.find(r => r.dataset.level === 'system' && r.dataset.id === parentId);
+        }
+
+        if (!parentRow) {
+            return null; // No parent boundary for spaces
+        }
+
+        // Find the end of the parent's territory (next sibling of parent or end of table)
+        const parentIndex = allRows.indexOf(parentRow);
+        const parentLevel = parentRow.dataset.level;
+
+        for (let i = parentIndex + 1; i < allRows.length; i++) {
+            const row = allRows[i];
+            // If we hit another row at parent's level, that's the boundary
+            if (row.dataset.level === parentLevel) {
+                return row; // Return the row that marks the boundary
+            }
+        }
+
+        return null; // Parent is last, no boundary
+    }
+
     draggableRows.forEach(row => {
         row.addEventListener('dragstart', function(e) {
             draggedRow = this;
@@ -2081,12 +2116,30 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Get all descendants of the dragged row (children, grandchildren, etc.)
             const descendants = getDescendants(draggedRow);
+            const targetDescendants = getDescendants(this);
+
+            // Get parent boundary to ensure we don't move outside parent's territory
+            const boundary = getParentBoundary(dragLevel, dragParent);
 
             // Move dragged row and all its descendants as a unit
             if (dragIndex < dropIndex) {
-                // Moving down: insert after target
-                const insertAfter = this.nextSibling;
-                this.parentNode.insertBefore(draggedRow, insertAfter);
+                // Moving down: insert after target and all its descendants
+                let insertPoint;
+                if (targetDescendants.length > 0) {
+                    // Insert after the last descendant of target
+                    insertPoint = targetDescendants[targetDescendants.length - 1].nextSibling;
+                } else {
+                    // Target has no descendants, insert right after it
+                    insertPoint = this.nextSibling;
+                }
+
+                // Safety check: don't insert past the boundary
+                if (boundary && insertPoint === boundary) {
+                    console.log('Preventing insertion past parent boundary');
+                    return;
+                }
+
+                this.parentNode.insertBefore(draggedRow, insertPoint);
                 // Move descendants right after their parent in order
                 let lastInserted = draggedRow;
                 descendants.forEach(desc => {
