@@ -77,9 +77,12 @@ class FullRestoreService:
                         gb = GovernanceBody(
                             organization_id=organization_id,
                             name=gb_name,
+                            abbreviation=gb_data.get("abbreviation", gb_name[:20]),
                             description=gb_data.get("description"),
+                            color=gb_data.get("color", "#3498db"),
                             display_order=gb_data.get("display_order", 0),
                             is_active=gb_data.get("is_active", True),
+                            is_default=gb_data.get("is_default", False),
                         )
                         db.session.add(gb)
                         db.session.flush()

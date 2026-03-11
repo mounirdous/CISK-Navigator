@@ -87,8 +87,11 @@ class FullBackupService:
             result.append(
                 {
                     "name": gb.name,
+                    "abbreviation": gb.abbreviation,
                     "description": gb.description,
+                    "color": gb.color,
                     "is_active": gb.is_active,
+                    "is_default": gb.is_default,
                     "display_order": gb.display_order,
                 }
             )
