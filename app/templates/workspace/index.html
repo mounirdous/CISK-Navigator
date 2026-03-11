@@ -2090,8 +2090,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
+            // Re-collect siblings in NEW order (after DOM move)
+            const allRowsAfterMove = Array.from(document.querySelectorAll(`tr[data-level="${dragLevel}"]`));
+            const siblingsInNewOrder = allRowsAfterMove.filter(r => {
+                if (dragLevel === 'space') return true;
+                return r.dataset.parentId === dragParent;
+            });
+
             // Save new order to backend
-            saveRowOrder(dragLevel, dragParent, siblings);
+            saveRowOrder(dragLevel, dragParent, siblingsInNewOrder);
         });
     });
 
