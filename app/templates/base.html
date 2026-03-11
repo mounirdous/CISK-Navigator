@@ -709,8 +709,7 @@
                 const color = typeColors[result.type] || '#6c757d';
                 const label = typeLabels[result.type] || result.type;
 
-                html += `<a href="${result.url}" class="live-search-item" style="display: block; padding: 10px 12px; text-decoration: none; color: #212529; border-radius: 6px; margin: 2px 0; transition: background 0.15s;">`;
-                html += `<div style="display: flex; align-items: start; gap: 10px;">`;
+                html += `<div class="live-search-item" style="display: flex; align-items: start; gap: 8px; padding: 10px 12px; border-radius: 6px; margin: 2px 0; transition: background 0.15s; cursor: pointer;" onclick="window.location.href='${result.url}'">`;
                 html += `<i class="bi ${icon}" style="color: ${color}; font-size: 1.1rem; margin-top: 2px;"></i>`;
                 html += `<div style="flex: 1; min-width: 0;">`;
                 html += `<div style="font-weight: 500; margin-bottom: 2px;">${highlightQuery(escapeHtml(result.name), query)}</div>`;
@@ -728,9 +727,13 @@
                 }
 
                 html += `</div>`;
-                html += `<span style="font-size: 0.75rem; color: #6c757d; white-space: nowrap; margin-top: 2px;">${label}</span>`;
-                html += `</div>`;
+                html += `<div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">`;
+                html += `<span style="font-size: 0.75rem; color: #6c757d; white-space: nowrap;">${label}</span>`;
+                html += `<a href="${result.edit_url}" class="btn btn-sm btn-outline-primary" style="padding: 2px 8px; font-size: 0.75rem;" onclick="event.stopPropagation();">`;
+                html += `<i class="bi bi-pencil"></i> Edit`;
                 html += `</a>`;
+                html += `</div>`;
+                html += `</div>`;
             });
             html += '</div>';
 

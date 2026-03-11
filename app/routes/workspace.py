@@ -1469,6 +1469,7 @@ def live_search():
                 "name": s.name,
                 "description": s.description[:100] if s.description else None,
                 "url": url_for("workspace.index", _anchor=f"space-{s.id}"),
+                "edit_url": url_for("organization_admin.edit_space", space_id=s.id),
             }
         )
 
@@ -1492,6 +1493,7 @@ def live_search():
                 "description": c.description[:100] if c.description else None,
                 "space": c.space.name,
                 "url": url_for("workspace.index", _anchor=f"challenge-{c.id}"),
+                "edit_url": url_for("organization_admin.edit_challenge", challenge_id=c.id),
             }
         )
 
@@ -1513,6 +1515,7 @@ def live_search():
                 "name": i.name,
                 "description": i.description[:100] if i.description else None,
                 "url": url_for("workspace.index", _anchor=f"initiative-{i.id}"),
+                "edit_url": url_for("organization_admin.edit_initiative", initiative_id=i.id),
             }
         )
 
@@ -1534,6 +1537,7 @@ def live_search():
                 "name": s.name,
                 "description": s.description[:100] if s.description else None,
                 "url": url_for("workspace.index", _anchor=f"system-{s.id}"),
+                "edit_url": url_for("organization_admin.edit_system", system_id=s.id),
             }
         )
 
@@ -1560,6 +1564,7 @@ def live_search():
                 "initiative": k.initiative_system_link.initiative.name if k.initiative_system_link else None,
                 "system": k.initiative_system_link.system.name if k.initiative_system_link else None,
                 "url": url_for("workspace.index", _anchor=f"kpi-{k.id}"),
+                "edit_url": url_for("organization_admin.edit_kpi", kpi_id=k.id),
             }
         )
 
