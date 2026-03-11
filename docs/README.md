@@ -229,6 +229,7 @@ class MyService:
 
 ## Version History
 
+- **v1.17.0** (2026-03-11) - Full backup/restore with JSON format and governance body mapping
 - **v1.15.2** (2026-03-10) - SSO complete implementation, documentation overhaul
 - **v1.15.1** - Private spaces, smart column filtering
 - **v1.15.0** - Snapshot privacy and batching
@@ -321,7 +322,7 @@ For issues, questions, or suggestions about documentation:
 
 ---
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-11
 **Maintained By:** Development Team
 **Version:** 1.0
 

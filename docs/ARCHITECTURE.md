@@ -1,7 +1,7 @@
 # CISK Navigator - Architecture & Impact Analysis Documentation
 
-**Version:** v1.15.2
-**Last Updated:** 2026-03-10
+**Version:** v1.17.0
+**Last Updated:** 2026-03-11
 **Purpose:** Comprehensive documentation for impact analysis, maintenance, and development
 
 ---
@@ -94,7 +94,10 @@ CISK-Navigator/
 - `app/services/deletion_impact_service.py` - Cascade delete analysis
 - `app/services/comment_service.py` - Comment management
 - `app/services/excel_export_service.py` - Excel export
-- `app/services/yaml_import_service.py` - YAML import
+- `app/services/yaml_import_service.py` - YAML structure import (no data)
+- `app/services/yaml_export_service.py` - YAML structure export (no data)
+- `app/services/full_backup_service.py` - JSON full backup (structure + all data)
+- `app/services/full_restore_service.py` - JSON full restore with governance body mapping
 - `app/services/organization_clone_service.py` - Organization cloning
 
 ### 3. **Data Access Layer** (Models)
@@ -810,8 +813,10 @@ DELETE ValueType
 | `deletion_impact_service.py` | Cascade analysis |
 | `comment_service.py` | Comment CRUD, mentions |
 | `excel_export_service.py` | Export to Excel |
-| `yaml_import_service.py` | Import from YAML |
-| `yaml_export_service.py` | Export to YAML |
+| `yaml_import_service.py` | Import structure from YAML (no data) |
+| `yaml_export_service.py` | Export structure to YAML (no data) |
+| `full_backup_service.py` | Full backup to JSON (structure + all data) |
+| `full_restore_service.py` | Full restore from JSON with GB mapping |
 | `organization_clone_service.py` | Deep copy org structure |
 | `value_type_usage_service.py` | Check value type usage |
 | `consensus_service.py` | Agreement tracking |
@@ -938,6 +943,135 @@ templates/
    - Configure in IdP
    - Test login
    - Verify JIT provisioning
+
+### Backup and Restore
+
+CISK Navigator provides two distinct backup/restore systems with different purposes:
+
+#### 1. **YAML Export/Import** - Structure Only (Templates)
+
+**Purpose:** Share organization structure as templates without data
+
+**Format:** YAML
+
+**Includes:**
+- Value types (definitions only)
+- Organization structure (spaces, challenges, initiatives, systems, KPIs)
+- KPI configurations (colors, targets, display settings)
+
+**Does NOT include:**
+- ❌ Contributions (KPI values)
+- ❌ Governance bodies
+- ❌ Comments
+- ❌ User data
+
+**Use Cases:**
+- Create organization templates
+- Share structure between organizations
+- Quick structure duplication without data
+
+**How to Use:**
+- **Export:** Organization Admin → YAML Import → Export Structure
+- **Import:** Organization Admin → YAML Import → Upload .yaml file
+- **Note:** Import CLEARS existing data before importing structure
+
+**Files:**
+- `app/services/yaml_export_service.py` - Structure export
+- `app/services/yaml_import_service.py` - Structure import
+- `app/routes/organization_admin.py` - YAML import/export routes
+- `app/templates/organization_admin/yaml_import.html` - UI
+
+#### 2. **Full Backup/Restore** - Complete Data (Disaster Recovery)
+
+**Purpose:** Complete organization backup for disaster recovery
+
+**Format:** JSON
+
+**Includes:**
+- ✅ Complete organization structure
+- ✅ **ALL KPI contributions (actual values!)**
+- ✅ Governance bodies (with mapping during restore)
+- ✅ KPI configurations & targets
+- ✅ Value type configurations
+
+**Does NOT include:**
+- ❌ User memberships
+- ❌ Comments
+- ❌ Snapshots
+- ❌ Audit logs
+
+**Use Cases:**
+- Disaster recovery
+- Production → staging data sync
+- Organization migration
+- Pre-migration safety backups
+
+**How to Use:**
+
+**Create Backup:**
+1. Go to Global Admin → Backup & Restore (Super Admin only)
+2. Select organization
+3. Click "Download Backup" (JSON format)
+4. Optional: Use "Compressed" for large organizations
+
+**Restore Backup:**
+1. Go to Global Admin → Backup & Restore
+2. Select target organization (⚠️ ALL DATA WILL BE DELETED)
+3. Upload JSON backup file
+4. **Governance Body Mapping:** Choose action for each governance body:
+   - Create new governance body
+   - Map to existing governance body (if names differ)
+   - Auto-selected if exact name match exists
+5. Confirm restore (⚠️ irreversible)
+
+**Files:**
+- `app/services/full_backup_service.py` - JSON export with all data
+- `app/services/full_restore_service.py` - JSON restore with GB mapping
+- `app/routes/global_admin.py` - Backup/restore routes
+- `app/templates/global_admin/backup_restore.html` - Main UI
+- `app/templates/global_admin/full_backup_governance_mapping.html` - GB mapping UI
+
+**Governance Body Mapping:**
+During restore, governance bodies require user mapping because:
+- Target org may already have governance bodies with different names
+- Prevents automatic creation of duplicates
+- Allows flexibility in mapping backup GBs to existing ones
+
+Example mapping scenarios:
+```
+Backup has: "Board of Directors"
+Target has: "BOD"
+→ User maps "Board of Directors" to existing "BOD"
+
+Backup has: "Executive Committee"
+Target has: (none)
+→ User chooses "Create new"
+```
+
+**Automated Backups (CLI):**
+```bash
+# Backup single organization
+python scripts/backup_org.py --org-id 1 --compress
+
+# Backup all organizations
+python scripts/backup_all_orgs.py --compress
+
+# Schedule with cron
+0 2 * * * /path/to/venv/bin/python /path/to/scripts/backup_all_orgs.py --compress
+```
+
+#### Decision Matrix: Which Backup Method to Use?
+
+| Scenario | Use YAML | Use JSON Full Backup |
+|----------|----------|----------------------|
+| Share org template | ✅ | ❌ |
+| Create empty org with structure | ✅ | ❌ |
+| Backup before major changes | ❌ | ✅ |
+| Disaster recovery | ❌ | ✅ |
+| Prod → Staging sync | ❌ | ✅ |
+| Migrate org to new instance | ❌ | ✅ |
+| Preserve KPI values | ❌ | ✅ |
+| Quick structure copy | ✅ | ❌ |
 
 ---
 
