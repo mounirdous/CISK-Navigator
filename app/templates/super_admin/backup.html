@@ -115,24 +115,42 @@
                 </div>
 
                 <p class="text-muted mb-3">
-                    Download a complete backup of an organization including all spaces, challenges, initiatives,
-                    systems, KPIs, value types, governance bodies, and contributions.
+                    Download complete backups of selected organizations. Each organization will be saved as a separate JSON file.
                 </p>
 
                 <div class="org-select-card">
-                    <label for="backup-org-select" class="form-label fw-semibold">
-                        <i class="bi bi-building"></i> Select Organization
-                    </label>
-                    <select class="form-select" id="backup-org-select">
-                        <option value="">-- Choose Organization --</option>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="form-label fw-semibold mb-0">
+                            <i class="bi bi-building"></i> Select Organizations
+                        </label>
+                        <div>
+                            <button type="button" id="select-all-orgs" class="btn btn-sm btn-outline-primary me-2">
+                                Select All
+                            </button>
+                            <button type="button" id="deselect-all-orgs" class="btn btn-sm btn-outline-secondary">
+                                Deselect All
+                            </button>
+                        </div>
+                    </div>
+                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem;">
                         {% for org in organizations %}
-                        <option value="{{ org.id }}">{{ org.name }}</option>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input backup-org-checkbox" type="checkbox" value="{{ org.id }}" id="backup_org_{{ org.id }}">
+                            <label class="form-check-label" for="backup_org_{{ org.id }}" style="cursor: pointer;">
+                                {{ org.name }}
+                            </label>
+                        </div>
                         {% endfor %}
-                    </select>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">
+                            <span id="selected-count">0</span> organization(s) selected
+                        </small>
+                    </div>
                 </div>
 
                 <button type="button" id="create-backup-btn" class="btn btn-primary btn-lg" disabled>
-                    <i class="bi bi-download"></i> Download Backup
+                    <i class="bi bi-download"></i> Download Selected Backups
                 </button>
             </div>
 
@@ -184,12 +202,15 @@
             <div class="alert alert-info d-flex align-items-start">
                 <i class="bi bi-info-circle me-3" style="font-size: 1.5rem;"></i>
                 <div>
-                    <strong>Backup Format:</strong> JSON files containing complete organization data.
-                    <br>
+                    <strong>Backup Format:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li><strong>Single org:</strong> Downloads as JSON file</li>
+                        <li><strong>Multiple orgs:</strong> Downloads as ZIP file containing multiple JSON files</li>
+                    </ul>
                     <strong>What's included:</strong> All hierarchical data (spaces → challenges → initiatives → systems → KPIs),
                     value types, governance bodies, KPI configurations, and all contributions.
                     <br>
-                    <strong>Best Practice:</strong> Create regular backups before major changes or migrations.
+                    <strong>Best Practice:</strong> Create regular backups before major changes or migrations. Use "Select All" to backup the entire instance.
                 </div>
             </div>
 
@@ -204,8 +225,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const backupOrgSelect = document.getElementById('backup-org-select');
     const createBackupBtn = document.getElementById('create-backup-btn');
+    const backupCheckboxes = document.querySelectorAll('.backup-org-checkbox');
+    const selectAllBtn = document.getElementById('select-all-orgs');
+    const deselectAllBtn = document.getElementById('deselect-all-orgs');
+    const selectedCount = document.getElementById('selected-count');
     const fileUploadArea = document.getElementById('file-upload-area');
     const fileInput = document.getElementById('backup_file');
     const fileName = document.getElementById('file-name');
@@ -213,16 +237,39 @@ document.addEventListener('DOMContentLoaded', function() {
     const restoreBtn = document.getElementById('restore-btn');
     const restoreForm = document.getElementById('restore-form');
 
-    // Enable backup button when org is selected
-    backupOrgSelect.addEventListener('change', function() {
-        createBackupBtn.disabled = !this.value;
+    // Update selected count and button state
+    function updateBackupSelection() {
+        const selectedOrgs = Array.from(backupCheckboxes).filter(cb => cb.checked);
+        selectedCount.textContent = selectedOrgs.length;
+        createBackupBtn.disabled = selectedOrgs.length === 0;
+    }
+
+    // Select all organizations
+    selectAllBtn.addEventListener('click', function() {
+        backupCheckboxes.forEach(cb => cb.checked = true);
+        updateBackupSelection();
+    });
+
+    // Deselect all organizations
+    deselectAllBtn.addEventListener('click', function() {
+        backupCheckboxes.forEach(cb => cb.checked = false);
+        updateBackupSelection();
+    });
+
+    // Listen to checkbox changes
+    backupCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateBackupSelection);
     });
 
     // Handle backup download
     createBackupBtn.addEventListener('click', function() {
-        const orgId = backupOrgSelect.value;
-        if (orgId) {
-            window.location.href = `{{ url_for('super_admin.create_backup', org_id=0) }}`.replace('0', orgId);
+        const selectedOrgs = Array.from(backupCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        if (selectedOrgs.length > 0) {
+            const orgIds = selectedOrgs.join(',');
+            window.location.href = `{{ url_for('super_admin.create_backup', org_id=0) }}`.replace('0', orgIds);
         }
     });
 

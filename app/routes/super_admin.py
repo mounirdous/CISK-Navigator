@@ -502,33 +502,62 @@ def backup():
     return render_template("super_admin/backup.html", organizations=organizations)
 
 
-@bp.route("/backup/create/<int:org_id>")
+@bp.route("/backup/create/<path:org_id>")
 @super_admin_required
 def create_backup(org_id):
-    """Create full backup for an organization"""
+    """Create full backup for one or more organizations"""
+    import io
     import json
+    import zipfile
 
-    from flask import make_response
+    from flask import make_response, send_file
 
     from app.services.full_backup_service import FullBackupService
 
-    org = Organization.query.get_or_404(org_id)
+    # Handle comma-separated org IDs
+    org_ids = [int(id.strip()) for id in org_id.split(",")]
 
-    backup_data = FullBackupService.create_full_backup(org_id)
+    if len(org_ids) == 1:
+        # Single org - return JSON file
+        org = Organization.query.get_or_404(org_ids[0])
+        backup_data = FullBackupService.create_full_backup(org_ids[0])
 
-    if not backup_data:
-        flash("Failed to create backup", "danger")
-        return redirect(url_for("super_admin.backup"))
+        if not backup_data:
+            flash("Failed to create backup", "danger")
+            return redirect(url_for("super_admin.backup"))
 
-    # Create JSON response
-    response = make_response(json.dumps(backup_data, indent=2))
-    response.headers["Content-Type"] = "application/json"
-    response.headers["Content-Disposition"] = (
-        f"attachment; filename=backup_{org.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    )
+        response = make_response(json.dumps(backup_data, indent=2))
+        response.headers["Content-Type"] = "application/json"
+        response.headers["Content-Disposition"] = (
+            f"attachment; filename=backup_{org.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
+        return response
 
-    flash(f"Backup created for {org.name}", "success")
-    return response
+    else:
+        # Multiple orgs - create ZIP file
+        memory_file = io.BytesIO()
+
+        with zipfile.ZipFile(memory_file, "w", zipfile.ZIP_DEFLATED) as zf:
+            for org_id_single in org_ids:
+                org = Organization.query.get(org_id_single)
+                if not org:
+                    continue
+
+                backup_data = FullBackupService.create_full_backup(org_id_single)
+                if backup_data:
+                    filename = f"backup_{org.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+                    zf.writestr(filename, json.dumps(backup_data, indent=2))
+
+        memory_file.seek(0)
+
+        flash(f"Backup created for {len(org_ids)} organization(s)", "success")
+
+        return send_file(
+            memory_file,
+            mimetype="application/zip",
+            as_attachment=True,
+            download_name=f"backups_all_orgs_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
+        )
 
 
 @bp.route("/backup/restore", methods=["POST"])
