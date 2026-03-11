@@ -671,7 +671,19 @@ tr[data-level="kpi"] td {
                         {% set color_config = space.get_color_config(vt.id) %}
                         <td class="text-center" style="background-color: #d6e9f7; font-weight: bold;">
                             {% if rollup %}
+                                {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
+                                {% elif rollup.formula == 'max' %}
+                                <span class="rollup-indicator">↑</span>
+                                {% elif rollup.formula == 'min' %}
+                                <span class="rollup-indicator">↓</span>
+                                {% elif rollup.formula == 'avg' %}
+                                <span class="rollup-indicator">≈</span>
+                                {% elif rollup.formula == 'median' %}
+                                <span class="rollup-indicator">m</span>
+                                {% elif rollup.formula == 'count' %}
+                                <span class="rollup-indicator">#</span>
+                                {% endif %}
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
                                     <span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
@@ -727,6 +739,19 @@ tr[data-level="kpi"] td {
                         {% set color_config = challenge.get_color_config(vt.id) %}
                         <td class="text-center" style="background-color: #f0f4f8;">
                             {% if rollup %}
+                                {% if rollup.formula == 'sum' %}
+                                <span class="rollup-indicator">Σ</span>
+                                {% elif rollup.formula == 'max' %}
+                                <span class="rollup-indicator">↑</span>
+                                {% elif rollup.formula == 'min' %}
+                                <span class="rollup-indicator">↓</span>
+                                {% elif rollup.formula == 'avg' %}
+                                <span class="rollup-indicator">≈</span>
+                                {% elif rollup.formula == 'median' %}
+                                <span class="rollup-indicator">m</span>
+                                {% elif rollup.formula == 'count' %}
+                                <span class="rollup-indicator">#</span>
+                                {% endif %}
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
                                     <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
@@ -783,6 +808,19 @@ tr[data-level="kpi"] td {
                         {% set color_config = initiative.get_color_config(vt.id) %}
                         <td class="text-center" style="background-color: #eff6f9;">
                             {% if rollup %}
+                                {% if rollup.formula == 'sum' %}
+                                <span class="rollup-indicator">Σ</span>
+                                {% elif rollup.formula == 'max' %}
+                                <span class="rollup-indicator">↑</span>
+                                {% elif rollup.formula == 'min' %}
+                                <span class="rollup-indicator">↓</span>
+                                {% elif rollup.formula == 'avg' %}
+                                <span class="rollup-indicator">≈</span>
+                                {% elif rollup.formula == 'median' %}
+                                <span class="rollup-indicator">m</span>
+                                {% elif rollup.formula == 'count' %}
+                                <span class="rollup-indicator">#</span>
+                                {% endif %}
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
                                     <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
@@ -840,6 +878,19 @@ tr[data-level="kpi"] td {
                         <td class="text-center" style="background-color: #e8f4f8;">
                             {% if rollup %}
                                 <div>
+                                    {% if rollup.formula == 'sum' %}
+                                    <span class="rollup-indicator">Σ</span>
+                                    {% elif rollup.formula == 'max' %}
+                                    <span class="rollup-indicator">↑</span>
+                                    {% elif rollup.formula == 'min' %}
+                                    <span class="rollup-indicator">↓</span>
+                                    {% elif rollup.formula == 'avg' %}
+                                    <span class="rollup-indicator">≈</span>
+                                    {% elif rollup.formula == 'median' %}
+                                    <span class="rollup-indicator">m</span>
+                                    {% elif rollup.formula == 'count' %}
+                                    <span class="rollup-indicator">#</span>
+                                    {% endif %}
                                     {% if vt.kind == 'numeric' %}
                                         {% if color_config %}
                                         <strong><span style="color: {{ color_config.get_value_color(rollup.value) }};">{{ rollup.value|format_value(vt, color_config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>

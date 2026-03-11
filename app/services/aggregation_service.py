@@ -4,13 +4,9 @@ Aggregation Service
 Handles upward roll-up of values through the hierarchy.
 """
 
-from decimal import Decimal
 from statistics import median
 
-from sqlalchemy import and_
-
 from app.models import (
-    KPI,
     Challenge,
     ChallengeInitiativeLink,
     InitiativeSystemLink,
@@ -62,8 +58,9 @@ class AggregationService:
         elif formula == "avg":
             avg = sum(values) / len(values)
             if value_type.is_qualitative():
-                # For qualitative, store raw average but can be rounded for display
-                return avg
+                # For qualitative, round to nearest integer (1, 2, or 3)
+                # Example: 2.5 → 3 (round up), 2.4 → 2 (round down)
+                return round(avg)
             return avg
 
         elif formula == "median":
@@ -94,8 +91,6 @@ class AggregationService:
                 - count_included: KPIs in strong consensus included in aggregation
                 - is_complete: whether all KPIs contributed
         """
-        from app.extensions import db
-
         # Get all KPIs under this initiative-system link
         kpis = initiative_system_link.kpis
 
@@ -123,19 +118,27 @@ class AggregationService:
             if consensus["is_rollup_eligible"] and consensus["value"] is not None:
                 eligible_values.append(consensus["value"])
 
-        if not eligible_values:
-            return {"value": None, "count_total": total_with_type, "count_included": 0, "is_complete": False}
+        # Get formula (even if no values, for consistent return structure)
+        formula = value_type.default_aggregation_formula
 
-        # Aggregate using the value type's default formula
-        aggregated = AggregationService.aggregate_values(
-            eligible_values, value_type.default_aggregation_formula, value_type
-        )
+        if not eligible_values:
+            return {
+                "value": None,
+                "count_total": total_with_type,
+                "count_included": 0,
+                "is_complete": False,
+                "formula": formula,
+            }
+
+        # Aggregate using the formula
+        aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
             "value": aggregated,
             "count_total": total_with_type,
             "count_included": len(eligible_values),
             "is_complete": len(eligible_values) == total_with_type and total_with_type > 0,
+            "formula": formula,
         }
 
     @staticmethod
@@ -152,8 +155,6 @@ class AggregationService:
         Returns:
             dict with value, count_total, count_included, is_complete
         """
-        from app.extensions import db
-
         # Get all initiative-system links for this initiative
         links = InitiativeSystemLink.query.filter_by(initiative_id=initiative_id).all()
 
@@ -184,10 +185,7 @@ class AggregationService:
             if system_agg and system_agg["value"] is not None and system_agg["is_complete"]:
                 eligible_values.append(system_agg["value"])
 
-        if not eligible_values:
-            return {"value": None, "count_total": total_systems, "count_included": 0, "is_complete": False}
-
-        # Use the first rollup rule's formula (they should all be the same for this step)
+        # Determine formula (even if no values, for consistent return structure)
         formula = None
         rule = RollupRule.query.filter_by(
             source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM, value_type_id=value_type_id, rollup_enabled=True
@@ -198,6 +196,15 @@ class AggregationService:
         else:
             formula = value_type.default_aggregation_formula
 
+        if not eligible_values:
+            return {
+                "value": None,
+                "count_total": total_systems,
+                "count_included": 0,
+                "is_complete": False,
+                "formula": formula,
+            }
+
         aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
@@ -205,6 +212,7 @@ class AggregationService:
             "count_total": total_systems,
             "count_included": len(eligible_values),
             "is_complete": len(eligible_values) == total_systems and total_systems > 0,
+            "formula": formula,
         }
 
     @staticmethod
@@ -212,8 +220,6 @@ class AggregationService:
         """
         Aggregate Initiative values up to the Challenge level for a specific value type.
         """
-        from app.extensions import db
-
         # Get all challenge-initiative links for this challenge
         links = ChallengeInitiativeLink.query.filter_by(challenge_id=challenge_id).all()
 
@@ -243,10 +249,7 @@ class AggregationService:
             if initiative_agg and initiative_agg["value"] is not None and initiative_agg["is_complete"]:
                 eligible_values.append(initiative_agg["value"])
 
-        if not eligible_values:
-            return {"value": None, "count_total": total_initiatives, "count_included": 0, "is_complete": False}
-
-        # Get formula from rollup rule
+        # Determine formula (even if no values, for consistent return structure)
         formula = value_type.default_aggregation_formula
         rule = RollupRule.query.filter_by(
             source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE, value_type_id=value_type_id, rollup_enabled=True
@@ -255,6 +258,15 @@ class AggregationService:
         if rule:
             formula = rule.get_formula()
 
+        if not eligible_values:
+            return {
+                "value": None,
+                "count_total": total_initiatives,
+                "count_included": 0,
+                "is_complete": False,
+                "formula": formula,
+            }
+
         aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
@@ -262,6 +274,7 @@ class AggregationService:
             "count_total": total_initiatives,
             "count_included": len(eligible_values),
             "is_complete": len(eligible_values) == total_initiatives and total_initiatives > 0,
+            "formula": formula,
         }
 
     @staticmethod
@@ -269,8 +282,6 @@ class AggregationService:
         """
         Aggregate Challenge values up to the Space level for a specific value type.
         """
-        from app.extensions import db
-
         # Get all challenges in this space
         challenges = Challenge.query.filter_by(space_id=space_id).all()
 
@@ -300,10 +311,7 @@ class AggregationService:
             if challenge_agg and challenge_agg["value"] is not None and challenge_agg["is_complete"]:
                 eligible_values.append(challenge_agg["value"])
 
-        if not eligible_values:
-            return {"value": None, "count_total": total_challenges, "count_included": 0, "is_complete": False}
-
-        # Get formula
+        # Determine formula (even if no values, for consistent return structure)
         formula = value_type.default_aggregation_formula
         rule = RollupRule.query.filter_by(
             source_type=RollupRule.SOURCE_CHALLENGE, value_type_id=value_type_id, rollup_enabled=True
@@ -312,6 +320,15 @@ class AggregationService:
         if rule:
             formula = rule.get_formula()
 
+        if not eligible_values:
+            return {
+                "value": None,
+                "count_total": total_challenges,
+                "count_included": 0,
+                "is_complete": False,
+                "formula": formula,
+            }
+
         aggregated = AggregationService.aggregate_values(eligible_values, formula, value_type)
 
         return {
@@ -319,4 +336,5 @@ class AggregationService:
             "count_total": total_challenges,
             "count_included": len(eligible_values),
             "is_complete": len(eligible_values) == total_challenges and total_challenges > 0,
+            "formula": formula,
         }
