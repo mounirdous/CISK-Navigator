@@ -2045,6 +2045,12 @@ document.addEventListener('DOMContentLoaded', function() {
             draggedRow = this;
             this.classList.add('dragging');
             e.dataTransfer.effectAllowed = 'move';
+            console.log('DRAG START:', {
+                level: this.dataset.level,
+                id: this.dataset.id,
+                parentId: this.dataset.parentId,
+                name: this.textContent.trim().substring(0, 50)
+            });
         });
 
         row.addEventListener('dragend', function(e) {
@@ -2080,29 +2086,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (draggedRow === this) return;
 
+            console.log('DROP TARGET:', {
+                level: this.dataset.level,
+                id: this.dataset.id,
+                parentId: this.dataset.parentId,
+                name: this.textContent.trim().substring(0, 50)
+            });
+
             // Validate same level and same parent (STRICT)
             const dragLevel = draggedRow.dataset.level;
             const dropLevel = this.dataset.level;
             const dragParent = draggedRow.dataset.parentId;
             const dropParent = this.dataset.parentId;
 
+            console.log('VALIDATION:', {
+                dragLevel, dropLevel,
+                dragParent, dropParent,
+                levelMatch: dragLevel === dropLevel,
+                parentMatch: dragParent === dropParent
+            });
+
             // Must be same level
             if (dragLevel !== dropLevel) {
-                console.log('Drop rejected: different levels', dragLevel, dropLevel);
+                console.log('❌ Drop rejected: different levels', dragLevel, dropLevel);
                 return;
             }
 
             // Must be same parent (except spaces which have no parent)
             if (dragLevel !== 'space' && dragParent !== dropParent) {
-                console.log('Drop rejected: different parents', dragParent, dropParent);
+                console.log('❌ Drop rejected: different parents', dragParent, dropParent);
                 return;
             }
 
             // Extra safety: verify parentId is actually set
             if (dragLevel !== 'space' && (!dragParent || !dropParent)) {
-                console.log('Drop rejected: missing parent ID');
+                console.log('❌ Drop rejected: missing parent ID');
                 return;
             }
+
+            console.log('✅ Validation passed, proceeding with move');
 
             // Get all siblings of the same level and parent (regardless of visibility)
             const allRows = Array.from(document.querySelectorAll(`tr[data-level="${dragLevel}"]`));
@@ -2164,6 +2186,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 return r.dataset.parentId === dragParent;
             });
 
+            console.log('SIBLINGS IN NEW ORDER:', siblingsInNewOrder.map(r => ({
+                id: r.dataset.id,
+                parentId: r.dataset.parentId,
+                name: r.textContent.trim().substring(0, 30)
+            })));
+
             // Save new order to backend
             saveRowOrder(dragLevel, dragParent, siblingsInNewOrder);
         });
@@ -2188,6 +2216,12 @@ document.addEventListener('DOMContentLoaded', function() {
             payload.parent_id = parseInt(parentId);
         }
 
+        console.log('SAVING TO BACKEND:', {
+            endpoint,
+            payload,
+            siblingCount: siblings.length
+        });
+
         try {
             const response = await fetch(endpoint, {
                 method: 'POST',
@@ -2198,9 +2232,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save row order');
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                console.error('Backend rejected order save:', errorData);
+                throw new Error(`Failed to save row order: ${errorData.error || response.statusText}`);
             }
 
+            const result = await response.json();
+            console.log('Backend save successful:', result);
             showNotification(`${level.charAt(0).toUpperCase() + level.slice(1)} order updated`, 'success');
         } catch (error) {
             console.error('Error saving row order:', error);
