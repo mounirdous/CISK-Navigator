@@ -249,17 +249,31 @@ class KPIValueTypeConfig(db.Model):
             kpi_id=self.linked_source_kpi_id, value_type_id=self.linked_source_value_type_id
         ).first()
 
-    def get_consensus_value(self):
+    def get_consensus_value(self, _visited=None):
         """
         Get consensus calculation for this KPI cell.
         If linked to another KPI, read from the source instead.
+
+        Args:
+            _visited: Internal parameter to track visited configs and prevent circular references
         """
+        # Initialize visited set on first call
+        if _visited is None:
+            _visited = set()
+
+        # Detect circular reference
+        if self.id in _visited:
+            # Circular link detected - return None to break the cycle
+            return None
+
         # If this is a linked KPI, read from the source
         if self.is_linked():
             source_config = self.get_linked_source_config()
             if source_config:
+                # Add current config to visited set
+                _visited.add(self.id)
                 # Read value from the source config
-                return source_config.get_consensus_value()
+                return source_config.get_consensus_value(_visited=_visited)
             # If source not found, fall back to local value
             return None
 
