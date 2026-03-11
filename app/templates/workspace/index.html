@@ -2301,6 +2301,70 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ========================================
+// ANCHOR NAVIGATION FROM SEARCH
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    // If page loaded with anchor (e.g., from search results), expand parent rows and scroll
+    if (window.location.hash) {
+        const targetId = window.location.hash.substring(1); // Remove '#'
+
+        // Wait for page to fully load before expanding/scrolling
+        setTimeout(() => {
+            const targetRow = document.getElementById(targetId);
+
+            if (targetRow) {
+                console.log('Found target row:', targetId);
+
+                // Collect all parent rows that need to be expanded
+                const parentsToExpand = [];
+                let currentRow = targetRow;
+
+                while (currentRow) {
+                    // Find parent row by checking data-parent-id
+                    const parentType = currentRow.dataset.parentType;
+                    const parentId = currentRow.dataset.parentId;
+
+                    if (parentType && parentId) {
+                        const parentSelector = `tr[data-level="${parentType}"][data-id="${parentId}"]`;
+                        const parentRow = document.querySelector(parentSelector);
+                        if (parentRow) {
+                            parentsToExpand.unshift(parentRow); // Add to beginning
+                            currentRow = parentRow;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+
+                console.log('Parents to expand:', parentsToExpand.length);
+
+                // Expand each parent row by clicking its expand icon
+                parentsToExpand.forEach((parentRow, index) => {
+                    const expandIcon = parentRow.querySelector('.expand-icon');
+                    if (expandIcon && expandIcon.textContent === '▶') {
+                        setTimeout(() => {
+                            expandIcon.click();
+                        }, index * 50); // Stagger clicks slightly
+                    }
+                });
+
+                // Scroll to target after all parents are expanded
+                setTimeout(() => {
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Highlight the row briefly
+                    targetRow.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        targetRow.style.backgroundColor = '';
+                    }, 2000);
+                }, parentsToExpand.length * 50 + 300);
+            }
+        }, 500);
+    }
+});
+
+// ========================================
 // INLINE CRUD FUNCTIONS
 // ========================================
 

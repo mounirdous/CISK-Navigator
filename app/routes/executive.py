@@ -563,10 +563,10 @@ def export_excel():
         download_name=filename,
     )
 
-
-@bp.route("/export/pdf")
-@login_required
-def export_pdf():
+    # Removed PDF export - keeping only Excel
+    # @bp.route("/export/pdf")
+    # @login_required
+    # def export_pdf():
     """
     Export executive dashboard to PDF format.
 

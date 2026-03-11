@@ -479,16 +479,11 @@
     {% endif %}
 </div>
 
-<!-- Export Buttons -->
+<!-- Export Button -->
 <div class="export-button">
-    <div class="btn-group-vertical shadow-lg">
-        <a href="{{ url_for('executive.export_pdf', days=days) }}" class="btn btn-primary btn-lg" target="_blank">
-            <i class="bi bi-file-pdf"></i> Export PDF
-        </a>
-        <a href="{{ url_for('executive.export_excel', days=days) }}" class="btn btn-success">
-            <i class="bi bi-file-excel"></i> Excel
-        </a>
-    </div>
+    <a href="{{ url_for('executive.export_excel', days=days) }}" class="btn btn-success btn-lg shadow-lg">
+        <i class="bi bi-file-excel"></i> Export Excel
+    </a>
 </div>
 
 <!-- Chart.js for activity trend -->
