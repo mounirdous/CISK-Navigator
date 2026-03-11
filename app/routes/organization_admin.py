@@ -1335,27 +1335,114 @@ def configure_rollup(vt_id):
         return redirect(url_for("organization_admin.value_types"))
 
     if request.method == "POST":
-        # Get all form data for rollup configuration
-        # Format: rollup_enabled_<level> and formula_<level>
+        # Get form data for rollup configuration
+        # Note: This updates the default aggregation formula for the value type
+        # Actual rollup rules are per-entity (InitiativeSystemLink, ChallengeInitiativeLink, Challenge)
 
-        # System → Initiative rules (for all InitiativeSystemLinks)
-        # sys_enabled = request.form.get("rollup_enabled_system") == "on"
-        # sys_formula = request.form.get("formula_system", "default")
+        # System level formula
+        sys_enabled = request.form.get("rollup_enabled_system") == "on"
+        sys_formula = request.form.get("formula_system", "default")
 
-        # Initiative → Challenge rules (for all ChallengeInitiativeLinks)
-        # init_enabled = request.form.get("rollup_enabled_initiative") == "on"
-        # init_formula = request.form.get("formula_initiative", "default")
+        # Initiative level formula
+        init_enabled = request.form.get("rollup_enabled_initiative") == "on"
+        init_formula = request.form.get("formula_initiative", "default")
 
-        # Challenge → Space rules (for all Challenges)
-        # chal_enabled = request.form.get("rollup_enabled_challenge") == "on"
-        # chal_formula = request.form.get("formula_challenge", "default")
+        # Challenge level formula
+        chal_enabled = request.form.get("rollup_enabled_challenge") == "on"
+        chal_formula = request.form.get("formula_challenge", "default")
 
-        # Update or create default rules
-        # Note: These are organization-level defaults. Specific overrides can be added later.
+        # For now, update the ValueType's default aggregation formula
+        # This will be used when creating new rollup rules
+        if sys_formula != "default":
+            value_type.default_aggregation_formula = sys_formula
+        elif init_formula != "default":
+            value_type.default_aggregation_formula = init_formula
+        elif chal_formula != "default":
+            value_type.default_aggregation_formula = chal_formula
 
-        # Store in session for now (we'll create a more robust solution later)
-        flash(f"Rollup configuration updated for {value_type.name}", "success")
-        flash("Note: Full per-context rollup configuration coming soon!", "info")
+        # Create/update rollup rules for ALL existing entities
+        # This applies the configuration to all current links
+        try:
+            updated_count = 0
+
+            if sys_enabled:
+                # Apply to all InitiativeSystemLinks
+                links = InitiativeSystemLink.query.join(System).filter(System.organization_id == org_id).all()
+
+                for link in links:
+                    rule = RollupRule.query.filter_by(
+                        source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM, source_id=link.id, value_type_id=value_type.id
+                    ).first()
+
+                    if rule:
+                        rule.rollup_enabled = True
+                        rule.formula_override = sys_formula
+                    else:
+                        rule = RollupRule(
+                            source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
+                            source_id=link.id,
+                            value_type_id=value_type.id,
+                            rollup_enabled=True,
+                            formula_override=sys_formula,
+                        )
+                        db.session.add(rule)
+                    updated_count += 1
+
+            if init_enabled:
+                # Apply to all ChallengeInitiativeLinks
+                links = ChallengeInitiativeLink.query.join(Challenge).filter(Challenge.organization_id == org_id).all()
+
+                for link in links:
+                    rule = RollupRule.query.filter_by(
+                        source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
+                        source_id=link.id,
+                        value_type_id=value_type.id,
+                    ).first()
+
+                    if rule:
+                        rule.rollup_enabled = True
+                        rule.formula_override = init_formula
+                    else:
+                        rule = RollupRule(
+                            source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
+                            source_id=link.id,
+                            value_type_id=value_type.id,
+                            rollup_enabled=True,
+                            formula_override=init_formula,
+                        )
+                        db.session.add(rule)
+                    updated_count += 1
+
+            if chal_enabled:
+                # Apply to all Challenges
+                challenges = Challenge.query.filter_by(organization_id=org_id).all()
+
+                for challenge in challenges:
+                    rule = RollupRule.query.filter_by(
+                        source_type=RollupRule.SOURCE_CHALLENGE, source_id=challenge.id, value_type_id=value_type.id
+                    ).first()
+
+                    if rule:
+                        rule.rollup_enabled = True
+                        rule.formula_override = chal_formula
+                    else:
+                        rule = RollupRule(
+                            source_type=RollupRule.SOURCE_CHALLENGE,
+                            source_id=challenge.id,
+                            value_type_id=value_type.id,
+                            rollup_enabled=True,
+                            formula_override=chal_formula,
+                        )
+                        db.session.add(rule)
+                    updated_count += 1
+
+            db.session.commit()
+            flash(f"✓ Rollup configuration updated for {value_type.name}", "success")
+            flash(f"Applied to {updated_count} rollup rules", "info")
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error updating rollup configuration: {str(e)}", "danger")
 
         return redirect(url_for("organization_admin.value_types"))
 
@@ -1363,11 +1450,15 @@ def configure_rollup(vt_id):
     default_enabled = True  # By default, rollup is enabled
     default_formula = value_type.default_aggregation_formula
 
+    # Create form for CSRF token
+    form = FlaskForm()
+
     return render_template(
         "organization_admin/configure_rollup.html",
         value_type=value_type,
         default_enabled=default_enabled,
         default_formula=default_formula,
+        form=form,
     )
 
 

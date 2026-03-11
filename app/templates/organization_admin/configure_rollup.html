@@ -82,15 +82,16 @@
         <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
             <h6><i class="bi bi-info-circle-fill"></i> Roll-up Configuration</h6>
             <p class="mb-2">Control how <strong>{{ value_type.name }}</strong> values aggregate through the hierarchy:</p>
-            <ul class="mb-0">
+            <ul class="mb-2">
                 <li><strong>System → Initiative</strong>: Aggregate KPI values to System level</li>
                 <li><strong>Initiative → Challenge</strong>: Aggregate System values to Initiative level</li>
                 <li><strong>Challenge → Space</strong>: Aggregate Initiative values to Challenge level</li>
             </ul>
+            <p class="mb-0"><strong>Note:</strong> This will apply rollup rules to <strong>all existing</strong> links and challenges in this organization for {{ value_type.name }}.</p>
         </div>
 
         <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            {{ form.hidden_tag() }}
 
             <!-- System to Initiative -->
             <div class="rollup-card">
