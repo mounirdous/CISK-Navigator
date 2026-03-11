@@ -2073,16 +2073,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Moving down: insert after target
                 const insertAfter = this.nextSibling;
                 this.parentNode.insertBefore(draggedRow, insertAfter);
-                // Move descendants right after their parent
+                // Move descendants right after their parent in order
+                let lastInserted = draggedRow;
                 descendants.forEach(desc => {
-                    draggedRow.parentNode.insertBefore(desc, draggedRow.nextSibling);
+                    draggedRow.parentNode.insertBefore(desc, lastInserted.nextSibling);
+                    lastInserted = desc;
                 });
             } else {
                 // Moving up: insert before target
                 this.parentNode.insertBefore(draggedRow, this);
-                // Move descendants right after their parent
+                // Move descendants right after their parent in order
+                let lastInserted = draggedRow;
                 descendants.forEach(desc => {
-                    draggedRow.parentNode.insertBefore(desc, draggedRow.nextSibling);
+                    draggedRow.parentNode.insertBefore(desc, lastInserted.nextSibling);
+                    lastInserted = desc;
                 });
             }
 
