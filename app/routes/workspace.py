@@ -2166,6 +2166,13 @@ def save_filter_preset():
     preset = UserFilterPreset(user_id=current_user.id, organization_id=org_id, name=name, filters=filters)
 
     db.session.add(preset)
+    db.session.flush()  # Flush to get the preset.id
+
+    # Immediately set this as the last used preset
+    membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+    if membership:
+        membership.last_workspace_preset_id = preset.id
+
     db.session.commit()
 
     return jsonify(preset.to_dict()), 201
