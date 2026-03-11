@@ -766,6 +766,22 @@ def create_kpi(link_id):
                     except ValueError:
                         target_tolerance_pct = 10
 
+            # Handle linked KPI source (for same org or cross-org value linking)
+            linked_source_org_id = None
+            linked_source_kpi_id = None
+            linked_source_value_type_id = None
+
+            is_linked = request.form.get(f"is_linked_{vt_id}")
+            if is_linked:
+                linked_org_id = request.form.get(f"linked_org_{vt_id}")
+                linked_kpi_id = request.form.get(f"linked_kpi_{vt_id}")
+                linked_vt_id = request.form.get(f"linked_vt_{vt_id}")
+
+                if linked_org_id and linked_kpi_id and linked_vt_id:
+                    linked_source_org_id = int(linked_org_id)
+                    linked_source_kpi_id = int(linked_kpi_id)
+                    linked_source_value_type_id = int(linked_vt_id)
+
             config = KPIValueTypeConfig(
                 kpi_id=kpi.id,
                 value_type_id=vt_id_int,
@@ -779,6 +795,9 @@ def create_kpi(link_id):
                 target_date=target_date,
                 target_direction=target_direction,
                 target_tolerance_pct=target_tolerance_pct,
+                linked_source_org_id=linked_source_org_id,
+                linked_source_kpi_id=linked_source_kpi_id,
+                linked_source_value_type_id=linked_source_value_type_id,
             )
             db.session.add(config)
 

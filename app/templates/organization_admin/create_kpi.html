@@ -320,6 +320,48 @@
                                 </div>
                             </div>
                             {% endif %}
+
+                            {# Linked KPI Value (Cross-Org or Same-Org) #}
+                            <div class="color-config mt-3 border-top pt-3" id="linked_section_{{ choice_value }}" style="display: none;">
+                                <h6 class="mb-3"><i class="bi bi-link-45deg"></i> Linked Value Source</h6>
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input linked-checkbox" type="checkbox"
+                                           name="is_linked_{{ choice_value }}" id="is_linked_{{ choice_value }}">
+                                    <label class="form-check-label fw-semibold" for="is_linked_{{ choice_value }}">
+                                        <i class="bi bi-arrow-left-right"></i> Read values live from another KPI
+                                    </label>
+                                </div>
+                                <div class="linked-fields" id="linked_fields_{{ choice_value }}" style="display: none;">
+                                    <div class="alert alert-info small mb-3">
+                                        <i class="bi bi-info-circle"></i> Link to another KPI to automatically read its values (same org or different org).
+                                        You can still set your own target. The source KPI cannot be deleted while linked.
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Source Organization</label>
+                                            <select class="form-select linked-org-select" name="linked_org_{{ choice_value }}" id="linked_org_{{ choice_value }}"
+                                                    data-config-id="{{ choice_value }}">
+                                                <option value="">Select organization...</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Source KPI</label>
+                                            <select class="form-select linked-kpi-select" name="linked_kpi_{{ choice_value }}" id="linked_kpi_{{ choice_value }}"
+                                                    data-config-id="{{ choice_value }}" disabled>
+                                                <option value="">Select KPI...</option>
+                                            </select>
+                                            <small class="form-text text-muted" id="kpi_context_{{ choice_value }}"></small>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small fw-semibold">Value Type</label>
+                                            <select class="form-select linked-vt-select" name="linked_vt_{{ choice_value }}" id="linked_vt_{{ choice_value }}"
+                                                    data-config-id="{{ choice_value }}" disabled>
+                                                <option value="">Select value type...</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -438,6 +480,113 @@ document.addEventListener('DOMContentLoaded', function() {
         if (card) {
             card.classList.add('selected');
         }
+    });
+
+    // Toggle linked KPI fields visibility when checkbox is clicked
+    document.querySelectorAll('.linked-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const vtId = this.id.replace('is_linked_', '');
+            const linkedFields = document.getElementById('linked_fields_' + vtId);
+            if (linkedFields) {
+                linkedFields.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
+
+    // Load organizations for linking
+    document.querySelectorAll('.linked-org-select').forEach(select => {
+        fetch('{{ url_for("workspace.api_get_organizations_for_linking") }}')
+            .then(response => response.json())
+            .then(orgs => {
+                orgs.forEach(org => {
+                    const option = document.createElement('option');
+                    option.value = org.id;
+                    option.textContent = org.name;
+                    select.appendChild(option);
+                });
+            });
+    });
+
+    // Handle organization selection - load KPIs
+    document.querySelectorAll('.linked-org-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const vtId = this.dataset.configId;
+            const kpiSelect = document.getElementById('linked_kpi_' + vtId);
+            const vtSelect = document.getElementById('linked_vt_' + vtId);
+
+            // Clear and disable downstream selects
+            kpiSelect.innerHTML = '<option value="">Select KPI...</option>';
+            vtSelect.innerHTML = '<option value="">Select value type...</option>';
+            vtSelect.disabled = true;
+            document.getElementById('kpi_context_' + vtId).textContent = '';
+
+            if (!this.value) {
+                kpiSelect.disabled = true;
+                return;
+            }
+
+            kpiSelect.disabled = false;
+
+            fetch(`{{ url_for("workspace.api_get_kpis_for_linking", org_id=0) }}`.replace('/0', '/' + this.value))
+                .then(response => response.json())
+                .then(kpis => {
+                    kpis.forEach(kpi => {
+                        const option = document.createElement('option');
+                        option.value = kpi.id;
+                        option.textContent = kpi.name;
+                        option.dataset.fullPath = kpi.full_path;
+                        kpiSelect.appendChild(option);
+                    });
+                });
+        });
+    });
+
+    // Handle KPI selection - load value types
+    document.querySelectorAll('.linked-kpi-select').forEach(select => {
+        select.addEventListener('change', function() {
+            const vtId = this.dataset.configId;
+            const vtSelect = document.getElementById('linked_vt_' + vtId);
+            const contextDiv = document.getElementById('kpi_context_' + vtId);
+
+            // Clear value type select
+            vtSelect.innerHTML = '<option value="">Select value type...</option>';
+
+            if (!this.value) {
+                vtSelect.disabled = true;
+                contextDiv.textContent = '';
+                return;
+            }
+
+            // Show context
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption && selectedOption.dataset.fullPath) {
+                contextDiv.textContent = selectedOption.dataset.fullPath;
+            }
+
+            vtSelect.disabled = false;
+
+            fetch(`{{ url_for("workspace.api_get_value_types_for_linking", kpi_id=0) }}`.replace('/0', '/' + this.value))
+                .then(response => response.json())
+                .then(valueTypes => {
+                    valueTypes.forEach(vt => {
+                        const option = document.createElement('option');
+                        option.value = vt.id;
+                        option.textContent = vt.display;
+                        vtSelect.appendChild(option);
+                    });
+                });
+        });
+    });
+
+    // Show/hide linked section when value type is selected
+    document.querySelectorAll('.value-type-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const vtId = this.value;
+            const linkedSection = document.getElementById('linked_section_' + vtId);
+            if (linkedSection) {
+                linkedSection.style.display = this.checked ? 'block' : 'none';
+            }
+        });
     });
 });
 </script>
