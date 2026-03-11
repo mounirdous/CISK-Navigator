@@ -1804,7 +1804,7 @@ def api_get_kpis_for_linking(org_id):
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
-        .filter_by(is_archived=False)
+        .filter(~KPI.is_archived)
         .join(ChallengeInitiativeLink)
         .join(Challenge)
         .join(Space)
