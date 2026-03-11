@@ -2187,11 +2187,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 // Re-insert descendants right after their parent
+                // CRITICAL: Use a FIXED insertion point to avoid pushing siblings
                 console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
-                let insertAfter = draggedRow;
+                const fixedInsertPoint = draggedRow.nextSibling;
+                console.log('Fixed insertion point:', fixedInsertPoint ? fixedInsertPoint.textContent.trim().substring(0, 30) : 'null');
                 descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, insertAfter.nextSibling);
-                    insertAfter = desc;
+                    this.parentNode.insertBefore(desc, fixedInsertPoint);
                 });
             } else {
                 // Moving up: insert before target
@@ -2226,13 +2227,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.parentNode.insertBefore(draggedRow, insertPoint);
                 console.log('After inserting draggedRow, its nextSibling:', draggedRow.nextSibling ? draggedRow.nextSibling.textContent.trim().substring(0, 30) : 'null');
 
-                // Move descendants right after their parent in order
-                console.log('Moving ' + descendants.length + ' descendants...');
-                let lastInserted = draggedRow;
-                descendants.forEach((desc, idx) => {
-                    console.log(`Inserting descendant ${idx + 1} after lastInserted`);
-                    this.parentNode.insertBefore(desc, lastInserted.nextSibling);
-                    lastInserted = desc;
+                // Re-insert descendants right after their parent
+                // CRITICAL: Use a FIXED insertion point to avoid pushing siblings
+                console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
+                const fixedInsertPoint = draggedRow.nextSibling;
+                console.log('Fixed insertion point:', fixedInsertPoint ? fixedInsertPoint.textContent.trim().substring(0, 30) : 'null');
+                descendants.forEach(desc => {
+                    this.parentNode.insertBefore(desc, fixedInsertPoint);
                 });
             }
 
