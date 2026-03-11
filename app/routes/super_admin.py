@@ -761,8 +761,30 @@ def restore_full_instance():
                     json_content = zf.read(json_file).decode("utf-8")
                     backup_data = json.loads(json_content)
 
-                    # Get organization name from backup
-                    org_name = backup_data.get("organization", {}).get("name", "Unknown Organization")
+                    # Get organization name from backup (try multiple sources)
+                    org_name = None
+                    if "organization" in backup_data and backup_data["organization"].get("name"):
+                        org_name = backup_data["organization"]["name"]
+                    elif "metadata" in backup_data and backup_data["metadata"].get(
+                        "organization_name"
+                    ):
+                        org_name = backup_data["metadata"]["organization_name"]
+                    else:
+                        # Fallback: extract from filename
+                        import re
+
+                        match = re.search(r"backup_(.+?)_\d{8}_\d{6}\.json", json_file)
+                        if match:
+                            org_name = match.group(1)
+                        else:
+                            org_name = f"Restored_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+                    # Handle duplicate names by appending suffix
+                    original_name = org_name
+                    suffix = 1
+                    while Organization.query.filter_by(name=org_name).first():
+                        org_name = f"{original_name} ({suffix})"
+                        suffix += 1
 
                     # Create new organization
                     new_org = Organization(
