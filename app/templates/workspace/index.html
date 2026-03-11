@@ -77,6 +77,10 @@ body.edit-mode #toggle-edit-mode {
     color: #000 !important;
 }
 
+body.edit-mode .new-space-edit-mode-only {
+    display: inline-block !important;
+}
+
 /* Drag and Drop Styling */
 .value-type-header {
     user-select: none;
@@ -533,9 +537,9 @@ tr[data-level="kpi"] td {
                 </button>
                 {% endif %}
 
-                <!-- Create New Space -->
+                <!-- Create New Space (only show in edit mode) -->
                 {% if current_user.can_manage_spaces(org_id) %}
-                <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-success btn-sm btn-modern">
+                <a href="{{ url_for('organization_admin.create_space') }}" class="btn btn-success btn-sm btn-modern new-space-edit-mode-only" style="display: none;">
                     <i class="bi bi-plus-circle"></i> <span class="d-none d-md-inline">New Space</span>
                 </a>
                 {% endif %}
@@ -580,14 +584,54 @@ tr[data-level="kpi"] td {
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse"
                         style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
                     <i class="bi bi-funnel me-2"></i> <strong>Filters & Display Options</strong>
+                    {% if active_preset %}
+                    <span class="ms-2 badge bg-success">
+                        <i class="bi bi-bookmark-star"></i> {{ active_preset.name }}
+                    </span>
+                    {% else %}
                     <span class="ms-2 badge bg-primary">
                         {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) + (1 if show_all_columns else 0) %}
                         {{ active_filters }} active
                     </span>
+                    {% endif %}
                 </button>
             </h2>
             <div id="filtersCollapse" class="accordion-collapse collapse">
                 <div class="accordion-body" style="padding: 1.5rem; background-color: rgba(255,255,255,0.02); border-radius: 8px; margin-top: 0.5rem;">
+
+                    <!-- Filter Presets Manager -->
+                    <div class="mb-3 pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="mb-0"><i class="bi bi-bookmark-star me-2"></i>Saved Filter Presets</h6>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-danger" id="clear-filters-top" title="Clear all filters">
+                                    <i class="bi bi-x-circle"></i> Clear All
+                                </button>
+                                <button type="button" class="btn btn-sm btn-success" id="save-preset-btn" title="Save current filters as preset">
+                                    <i class="bi bi-save"></i> Save Current
+                                </button>
+                            </div>
+                        </div>
+
+                        {% if filter_presets %}
+                        <div class="d-flex gap-2 flex-wrap">
+                            {% for preset in filter_presets %}
+                            <div class="badge bg-secondary d-flex align-items-center gap-2" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+                                {% if preset.is_default %}
+                                <i class="bi bi-star-fill text-warning" title="Default preset"></i>
+                                {% else %}
+                                <i class="bi bi-star" title="Set as default"></i>
+                                {% endif %}
+                                <span class="filter-preset-name" style="cursor: pointer;" data-preset-id="{{ preset.id }}" title="Click to load this preset">{{ preset.name }}</span>
+                                <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" data-delete-preset="{{ preset.id }}" title="Delete preset"></button>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted mb-0 small">No saved presets yet. Click "Save Current Filters" to create one.</p>
+                        {% endif %}
+                    </div>
+
                     <form method="GET" id="filter-form">
                         <div class="row g-3">
                             <!-- LEFT COLUMN: Data Filters -->
@@ -609,6 +653,24 @@ tr[data-level="kpi"] td {
                                                        {% if gb.id|string in selected_governance_body_ids %}checked{% endif %} hidden>
                                                 <span class="pill-badge" style="background-color: {{ gb.color }};">{{ gb.abbreviation }}</span>
                                                 <span>{{ gb.name }}</span>
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ gb_kpi_counts.get(gb.id, 0) }}</span>
+                                            </label>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if all_spaces_for_filter %}
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-building"></i> Select Spaces
+                                        </div>
+                                        <div class="filter-pills">
+                                            {% for space in all_spaces_for_filter %}
+                                            <label class="filter-pill {% if space.id|string in selected_space_ids or not selected_space_ids %}active{% endif %}">
+                                                <input type="checkbox" name="space" value="{{ space.id }}" id="filter_space_{{ space.id }}"
+                                                       {% if space.id|string in selected_space_ids or not selected_space_ids %}checked{% endif %} hidden>
+                                                <span>{{ space.name }}</span>
                                             </label>
                                             {% endfor %}
                                         </div>
@@ -650,21 +712,25 @@ tr[data-level="kpi"] td {
                                                 <input type="checkbox" name="group" value="A" id="filter_group_A"
                                                        {% if 'A' in selected_group_labels %}checked{% endif %} hidden>
                                                 Group A
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ group_counts.get('A', 0) }}</span>
                                             </label>
                                             <label class="filter-pill {% if 'B' in selected_group_labels %}active{% endif %}">
                                                 <input type="checkbox" name="group" value="B" id="filter_group_B"
                                                        {% if 'B' in selected_group_labels %}checked{% endif %} hidden>
                                                 Group B
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ group_counts.get('B', 0) }}</span>
                                             </label>
                                             <label class="filter-pill {% if 'C' in selected_group_labels %}active{% endif %}">
                                                 <input type="checkbox" name="group" value="C" id="filter_group_C"
                                                        {% if 'C' in selected_group_labels %}checked{% endif %} hidden>
                                                 Group C
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ group_counts.get('C', 0) }}</span>
                                             </label>
                                             <label class="filter-pill {% if 'D' in selected_group_labels %}active{% endif %}">
                                                 <input type="checkbox" name="group" value="D" id="filter_group_D"
                                                        {% if 'D' in selected_group_labels %}checked{% endif %} hidden>
                                                 Group D
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ group_counts.get('D', 0) }}</span>
                                             </label>
                                         </div>
                                     </div>
@@ -687,26 +753,31 @@ tr[data-level="kpi"] td {
                                                 <input type="checkbox" name="show_spaces" value="1" id="show_spaces"
                                                        {% if show_levels.spaces %}checked{% endif %} hidden>
                                                 <i class="bi bi-building"></i> Spaces
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('spaces', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
                                                        {% if show_levels.challenges %}checked{% endif %} hidden>
                                                 <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('challenges', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
                                                        {% if show_levels.initiatives %}checked{% endif %} hidden>
                                                 <span style="font-weight: bold;">δ</span> Initiatives
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('initiatives', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_systems" value="1" id="show_systems"
                                                        {% if show_levels.systems %}checked{% endif %} hidden>
                                                 <span style="font-weight: bold;">Φ</span> Systems
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('systems', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
                                                        {% if show_levels.kpis %}checked{% endif %} hidden>
                                                 <span style="font-weight: bold;">Ψ</span> KPIs
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('kpis', 0) }}</span>
                                             </label>
                                         </div>
                                     </div>
@@ -744,12 +815,15 @@ tr[data-level="kpi"] td {
                                                 <input type="checkbox" name="show_archived" value="1" id="filter_show_archived"
                                                        {% if show_archived %}checked{% endif %} hidden>
                                                 <i class="bi bi-archive"></i> Archived KPIs
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ archived_kpis_count }}</span>
                                             </label>
-                                            <label class="filter-pill {% if show_all_columns %}active{% endif %}">
-                                                <input type="hidden" name="show_all_columns" value="0">
+                                            <label class="filter-pill {% if show_all_columns %}active{% endif %}" title="{% if show_all_columns %}Hide columns with no rollup data{% else %}Show all columns including empty ones{% endif %}">
                                                 <input type="checkbox" name="show_all_columns" value="1" id="filter_show_all_columns"
                                                        {% if show_all_columns %}checked{% endif %} hidden>
-                                                <i class="bi bi-columns-gap"></i> All Columns
+                                                <i class="bi bi-columns-gap"></i> {% if show_all_columns %}All Columns{% else %}With Data Only{% endif %}
+                                                {% if not show_all_columns and hidden_value_types|length > 0 %}
+                                                <span class="pill-badge" style="background-color: rgba(255,165,0,0.3);" title="{{ hidden_value_types|length }} columns hidden (no data)">+{{ hidden_value_types|length }}</span>
+                                                {% endif %}
                                             </label>
                                         </div>
                                     </div>
@@ -858,7 +932,7 @@ tr[data-level="kpi"] td {
                         {% set rollup = space.get_rollup_value(vt.id) %}
                         {% set color_config = space.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="space" style="background-color: #d6e9f7; font-weight: bold;">
-                            {% if rollup %}
+                            {% if rollup and rollup.value is not none %}
                                 {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
                                 {% elif rollup.formula == 'max' %}
@@ -927,7 +1001,7 @@ tr[data-level="kpi"] td {
                         {% set rollup = challenge.get_rollup_value(vt.id) %}
                         {% set color_config = challenge.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="challenge" style="background-color: #f0f4f8;">
-                            {% if rollup %}
+                            {% if rollup and rollup.value is not none %}
                                 {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
                                 {% elif rollup.formula == 'max' %}
@@ -1002,7 +1076,7 @@ tr[data-level="kpi"] td {
                         {% set rollup = initiative.get_rollup_value(vt.id) %}
                         {% set color_config = initiative.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="initiative" style="background-color: #eff6f9;">
-                            {% if rollup %}
+                            {% if rollup and rollup.value is not none %}
                                 {% if rollup.formula == 'sum' %}
                                 <span class="rollup-indicator">Σ</span>
                                 {% elif rollup.formula == 'max' %}
@@ -1072,7 +1146,7 @@ tr[data-level="kpi"] td {
                         {% set rollup = sys_link.get_rollup_value(vt.id) %}
                         {% set color_config = sys_link.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="system" style="background-color: #e8f4f8;">
-                            {% if rollup %}
+                            {% if rollup and rollup.value is not none %}
                                 <div>
                                     {% if rollup.formula == 'sum' %}
                                     <span class="rollup-indicator">Σ</span>
@@ -1699,6 +1773,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const filterPills = document.querySelectorAll('.filter-pill');
     const clearFiltersBtn = document.getElementById('clear-filters');
 
+    // If there's an active preset on page load, mark it as last used in the database
+    {% if active_preset %}
+    fetch('/workspace/api/filter-presets/{{ active_preset.id }}/set-last-used', {
+        method: 'POST'
+    }).catch(err => console.error('Failed to mark preset as last used:', err));
+    {% endif %}
+
     // Restore filter state from localStorage
     const savedFilters = localStorage.getItem('workspaceFilters');
     if (savedFilters) {
@@ -1884,8 +1965,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function addLevelVisibilityHiddenInputs() {
         console.log('addLevelVisibilityHiddenInputs() called');
 
-        // Remove any existing hidden level inputs
-        filterForm.querySelectorAll('input[name^="show_"][type="hidden"]').forEach(el => el.remove());
+        // Remove ONLY dynamically added hidden level inputs (NOT show_all_columns or show_archived)
+        filterForm.querySelectorAll('input[name^="show_"][type="hidden"]').forEach(el => {
+            // Keep show_all_columns and show_archived hidden inputs
+            if (el.name !== 'show_all_columns' && el.name !== 'show_archived') {
+                el.remove();
+            }
+        });
 
         // Add hidden input with value="0" for each unchecked level checkbox
         let addedCount = 0;
@@ -2848,6 +2934,184 @@ async function restoreKPI(kpiId, kpiName) {
     document.body.appendChild(form);
     form.submit();
 }
+
+// =============================================================================
+// FILTER PRESET MANAGEMENT
+// =============================================================================
+
+// Helper: Get current filter state from form
+function getCurrentFilters() {
+    const form = document.getElementById('filter-form');
+    const filters = {};
+
+    // Governance bodies
+    const gb = Array.from(form.querySelectorAll('input[name="gb"]:checked')).map(cb => cb.value);
+    if (gb.length > 0) filters.gb = gb;
+
+    // Spaces
+    const spaces = Array.from(form.querySelectorAll('input[name="space"]:checked')).map(cb => cb.value);
+    if (spaces.length > 0 && spaces.length < {{ all_spaces_for_filter|length }}) filters.space = spaces;
+
+    // Space type
+    const spaceType = form.querySelector('input[name="space_type"]:checked')?.value;
+    if (spaceType && spaceType !== 'all') filters.space_type = spaceType;
+
+    // Groups
+    const groups = Array.from(form.querySelectorAll('input[name="group"]:checked')).map(cb => cb.value);
+    if (groups.length > 0) filters.group = groups;
+
+    // Show archived
+    if (form.querySelector('input[name="show_archived"]')?.checked) filters.show_archived = '1';
+
+    // Show all columns
+    if (form.querySelector('input[name="show_all_columns"]')?.checked) filters.show_all_columns = '1';
+
+    // Show levels
+    if (form.querySelector('input[name="show_spaces"]')?.checked) filters.show_spaces = '1';
+    if (form.querySelector('input[name="show_challenges"]')?.checked) filters.show_challenges = '1';
+    if (form.querySelector('input[name="show_initiatives"]')?.checked) filters.show_initiatives = '1';
+    if (form.querySelector('input[name="show_systems"]')?.checked) filters.show_systems = '1';
+    if (form.querySelector('input[name="show_kpis"]')?.checked) filters.show_kpis = '1';
+
+    return filters;
+}
+
+// Save current filters as preset
+document.getElementById('save-preset-btn')?.addEventListener('click', async function() {
+    const name = prompt('Enter a name for this filter preset:');
+    if (!name || !name.trim()) return;
+
+    const isDefault = confirm('Set this as your default filter preset?');
+    const filters = getCurrentFilters();
+
+    try {
+        const response = await fetch('/workspace/api/filter-presets', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({name: name.trim(), filters, is_default: isDefault})
+        });
+
+        if (response.ok) {
+            alert(`Filter preset "${name}" saved successfully!`);
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.error || 'Failed to save preset'));
+        }
+    } catch (err) {
+        console.error('Error saving preset:', err);
+        alert('Failed to save preset');
+    }
+});
+
+// Load preset (click on name)
+document.querySelectorAll('.filter-preset-name').forEach(el => {
+    el.addEventListener('click', async function() {
+        const presetId = this.dataset.presetId;
+        if (confirm(`Load filter preset "${this.textContent}"?`)) {
+            try {
+                // Mark this preset as last used in the database
+                await fetch(`/workspace/api/filter-presets/${presetId}/set-last-used`, {
+                    method: 'POST'
+                });
+
+                // Fetch preset details and navigate
+                const response = await fetch(`/workspace/api/filter-presets`);
+                const presets = await response.json();
+                const preset = presets.find(p => p.id == presetId);
+
+                if (preset && preset.filters) {
+                    // Build query string from filters (handle arrays properly)
+                    const params = new URLSearchParams();
+                    for (const [key, value] of Object.entries(preset.filters)) {
+                        if (Array.isArray(value)) {
+                            value.forEach(v => params.append(key, v));
+                        } else {
+                            params.append(key, value);
+                        }
+                    }
+                    window.location.href = '/workspace/?' + params.toString();
+                }
+            } catch (err) {
+                console.error('Error loading preset:', err);
+                alert('Failed to load preset');
+            }
+        }
+    });
+});
+
+// Delete preset
+document.querySelectorAll('[data-delete-preset]').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        const presetId = this.dataset.deletePreset;
+        const presetName = this.previousElementSibling.textContent;
+
+        if (!confirm(`Delete filter preset "${presetName}"?`)) return;
+
+        try {
+            const response = await fetch(`/workspace/api/filter-presets/${presetId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert(`Preset "${presetName}" deleted`);
+                location.reload();
+            } else {
+                alert('Failed to delete preset');
+            }
+        } catch (err) {
+            console.error('Error deleting preset:', err);
+            alert('Failed to delete preset');
+        }
+    });
+});
+
+// Set as default (click on star)
+document.querySelectorAll('.filter-preset-name').forEach(el => {
+    const star = el.previousElementSibling;
+    if (star && star.classList.contains('bi-star')) {
+        star.style.cursor = 'pointer';
+        star.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            const presetId = el.dataset.presetId;
+
+            try {
+                const response = await fetch(`/workspace/api/filter-presets/${presetId}/set-default`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    location.reload();
+                }
+            } catch (err) {
+                console.error('Error setting default:', err);
+            }
+        });
+    }
+});
+
+// Connect the top Clear All button
+const clearFiltersTopBtn = document.getElementById('clear-filters-top');
+if (clearFiltersTopBtn) {
+    clearFiltersTopBtn.addEventListener('click', async function() {
+        if (confirm('Clear all filters and reset to default view?')) {
+            // Clear the last used preset in the database
+            try {
+                const membership = await fetch('/workspace/api/clear-last-preset', {
+                    method: 'POST'
+                });
+            } catch (err) {
+                console.error('Failed to clear last preset:', err);
+            }
+
+            // Clear localStorage filters
+            localStorage.removeItem('workspaceFilters');
+            window.location.href = '/workspace/';
+        }
+    });
+}
+
 </script>
 
 </div> <!-- Close workspace-container -->

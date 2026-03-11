@@ -83,6 +83,14 @@ class UserOrganizationMembership(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    # Last used workspace preset (for persistence across sessions)
+    last_workspace_preset_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user_filter_presets.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="Last workspace preset loaded by this user in this org",
+    )
+
     # Permissions (per organization)
     can_manage_spaces = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_value_types = db.Column(db.Boolean, default=True, nullable=False)

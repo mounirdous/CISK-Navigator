@@ -17,6 +17,7 @@ from .sso_config import SSOConfig
 from .system import InitiativeSystemLink, System
 from .system_setting import SystemSetting
 from .user import User
+from .user_filter_preset import UserFilterPreset
 from .value_type import KPIValueTypeConfig, ValueType
 
 __all__ = [
@@ -43,4 +44,5 @@ __all__ = [
     "CellComment",
     "MentionNotification",
     "SystemSetting",
+    "UserFilterPreset",
 ]

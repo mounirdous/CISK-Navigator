@@ -28,6 +28,7 @@ from app.models import (
     Space,
     System,
     User,
+    UserFilterPreset,
     UserOrganizationMembership,
     ValueType,
 )
@@ -51,6 +52,44 @@ def organization_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+def _filters_match(current, preset):
+    """Helper to compare current filters with preset filters"""
+
+    # Normalize both to have consistent format
+    def normalize_value(val):
+        if val is None:
+            return None
+        if isinstance(val, list):
+            if len(val) == 0:
+                return None
+            if len(val) == 1:
+                return str(val[0])
+            # Multiple values - return as sorted list of strings
+            return sorted([str(v) for v in val])
+        return str(val)
+
+    # Get all keys from both
+    all_keys = set(current.keys()) | set(preset.keys())
+
+    for key in all_keys:
+        current_norm = normalize_value(current.get(key))
+        preset_norm = normalize_value(preset.get(key))
+
+        # Both None/missing - match
+        if current_norm is None and preset_norm is None:
+            continue
+
+        # One missing - no match
+        if current_norm is None or preset_norm is None:
+            return False
+
+        # Compare (both are now either strings or sorted lists)
+        if current_norm != preset_norm:
+            return False
+
+    return True
 
 
 @bp.route("/dashboard")
@@ -116,6 +155,34 @@ def index():
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
+    # Check if user has a saved/default filter preset and no query params (first load)
+    # Priority: 1) Last used preset, 2) Default preset
+    if not request.args:
+        # First, check for last used preset (stored in membership)
+        membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+
+        last_preset = None
+        if membership and membership.last_workspace_preset_id:
+            last_preset = UserFilterPreset.query.get(membership.last_workspace_preset_id)
+            # Verify it still exists and belongs to this user/org
+            if last_preset and (last_preset.user_id != current_user.id or last_preset.organization_id != org_id):
+                last_preset = None
+                # Clear invalid reference
+                membership.last_workspace_preset_id = None
+                db.session.commit()
+
+        # If we have a valid last preset, use it
+        if last_preset and last_preset.filters:
+            return redirect(url_for("workspace.index", **last_preset.filters))
+
+        # Otherwise, fall back to default preset
+        default_preset = UserFilterPreset.query.filter_by(
+            user_id=current_user.id, organization_id=org_id, is_default=True
+        ).first()
+
+        if default_preset and default_preset.filters:
+            return redirect(url_for("workspace.index", **default_preset.filters))
+
     # Get space type filter (all, private, public)
     space_type_filter = request.args.get("space_type", "all")
 
@@ -125,8 +192,15 @@ def index():
     private_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=True).count()
 
     # Get show_all_columns flag (override smart column filtering)
-    # Default to True (show all columns by default)
-    show_all_columns = request.args.get("show_all_columns", "1") == "1"
+    # Check if parameter exists - if yes, use it; if no, default to False (smart filtering ON)
+    show_all_columns_param = request.args.get("show_all_columns")
+    if show_all_columns_param is not None:
+        # Parameter exists - check if it's "1" (checked)
+        show_all_columns = show_all_columns_param == "1"
+    else:
+        # No parameter - default to False (show only columns with data)
+        # This happens on first page load or when filter is reset
+        show_all_columns = False
 
     # Get active governance bodies for filter
     from app.models import GovernanceBody
@@ -151,13 +225,28 @@ def index():
     # Get show_archived flag
     show_archived = request.args.get("show_archived") == "1"
 
-    # Get spaces based on filter
+    # Get all spaces for space selector filter
+    all_spaces_for_filter = (
+        Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
+    )
+
+    # Get selected space IDs (new space filter)
+    selected_space_ids = request.args.getlist("space")
+
+    # Get spaces based on filters
     spaces_query = Space.query.filter_by(organization_id=org_id)
+
+    # Apply space type filter (all, private, public)
     if space_type_filter == "private":
         spaces_query = spaces_query.filter_by(is_private=True)
     elif space_type_filter == "public":
         spaces_query = spaces_query.filter_by(is_private=False)
-    # 'all' means no additional filter
+
+    # Apply individual space selection filter
+    if selected_space_ids:
+        space_ids_int = [int(sid) for sid in selected_space_ids]
+        spaces_query = spaces_query.filter(Space.id.in_(space_ids_int))
+
     spaces = spaces_query.order_by(Space.display_order, Space.name).all()
 
     # Filter initiatives by group in Python (cleaner than template logic)
@@ -174,21 +263,22 @@ def index():
     # Get space IDs for filtering value types
     space_ids = [space.id for space in spaces]
 
-    # Get active value types that have at least one contribution in the FILTERED spaces
-    # Join through the entire hierarchy: Space → Challenge → Initiative → System → KPI → Config → Contribution
+    # Get active value types that have displayable rollup values in the FILTERED spaces
+    # Check for value types with actual contribution data (what creates rollups)
     from app.models import Contribution, KPIGovernanceBodyLink
 
     if space_ids:
-        # Build query to find value types with data in filtered spaces
+        # Build query to find value types that have contributions in filtered spaces
+        # Only columns with actual data will create rollup values to display
         value_types_query = (
             db.session.query(ValueType.id)
             .join(KPIValueTypeConfig, ValueType.id == KPIValueTypeConfig.value_type_id)
+            .join(Contribution, KPIValueTypeConfig.id == Contribution.kpi_value_type_config_id)
             .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
             .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
             .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
             .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
             .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .join(Contribution, KPIValueTypeConfig.id == Contribution.kpi_value_type_config_id)
             .filter(
                 Challenge.space_id.in_(space_ids), ValueType.organization_id == org_id, ValueType.is_active.is_(True)
             )
@@ -224,17 +314,23 @@ def index():
 
     # Get value types - apply smart filtering unless show_all_columns is enabled
     if show_all_columns:
-        # Show all columns override
+        # Show all columns override - show everything
         value_types = all_value_types
         hidden_value_types = []
-    elif value_type_ids_with_data:
-        # Smart filtering: only show columns with data
-        value_types = [vt for vt in all_value_types if vt.id in value_type_ids_with_data]
-        hidden_value_types = [vt for vt in all_value_types if vt.id not in value_type_ids_with_data]
     else:
-        # If no contributions yet, show all active value types
-        value_types = all_value_types
-        hidden_value_types = []
+        # Smart filtering: only show columns with actual contribution data
+        if value_type_ids_with_data:
+            # Filter to show only columns with data
+            value_types = [vt for vt in all_value_types if vt.id in value_type_ids_with_data]
+            hidden_value_types = [vt for vt in all_value_types if vt.id not in value_type_ids_with_data]
+        elif not space_ids:
+            # No spaces at all - show all columns (nothing to filter)
+            value_types = all_value_types
+            hidden_value_types = []
+        else:
+            # Have spaces but no data - hide all columns
+            value_types = []
+            hidden_value_types = all_value_types
 
     # Get level visibility controls (default all visible)
     show_levels = {
@@ -244,6 +340,140 @@ def index():
         "systems": request.args.get("show_systems", "1") == "1",
         "kpis": request.args.get("show_kpis", "1") == "1",
     }
+
+    # Calculate counts for initiative groups (A, B, C, D)
+    group_counts = {}
+    if space_ids:
+        for group_label in ["A", "B", "C", "D"]:
+            count = (
+                db.session.query(Initiative.id)
+                .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+                .filter(Challenge.space_id.in_(space_ids), Initiative.group_label == group_label)
+                .distinct()
+                .count()
+            )
+            group_counts[group_label] = count
+    else:
+        group_counts = {"A": 0, "B": 0, "C": 0, "D": 0}
+
+    # Calculate KPI counts per governance body
+    gb_kpi_counts = {}
+    if space_ids:
+        from app.models import KPIGovernanceBodyLink
+
+        for gb in governance_bodies:
+            count = (
+                db.session.query(KPI.id)
+                .join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
+                .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+                .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+                .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+                .filter(Challenge.space_id.in_(space_ids), KPIGovernanceBodyLink.governance_body_id == gb.id)
+                .distinct()
+                .count()
+            )
+            gb_kpi_counts[gb.id] = count
+    else:
+        gb_kpi_counts = {gb.id: 0 for gb in governance_bodies}
+
+    # Calculate level counts (for Show Levels section)
+    level_counts = {}
+    if space_ids:
+        # Spaces count (already calculated)
+        level_counts["spaces"] = (
+            all_spaces_count
+            if space_type_filter == "all"
+            else (public_spaces_count if space_type_filter == "public" else private_spaces_count)
+        )
+
+        # Challenges count
+        level_counts["challenges"] = db.session.query(Challenge.id).filter(Challenge.space_id.in_(space_ids)).count()
+
+        # Initiatives count
+        initiatives_query = (
+            db.session.query(Initiative.id)
+            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .filter(Challenge.space_id.in_(space_ids))
+        )
+        if selected_group_labels:
+            initiatives_query = initiatives_query.filter(
+                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
+            )
+        level_counts["initiatives"] = initiatives_query.distinct().count()
+
+        # Systems count
+        level_counts["systems"] = (
+            db.session.query(System.id)
+            .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .filter(Challenge.space_id.in_(space_ids))
+            .distinct()
+            .count()
+        )
+
+        # KPIs count
+        kpis_query = (
+            db.session.query(KPI.id)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .filter(Challenge.space_id.in_(space_ids))
+        )
+        if selected_governance_body_ids:
+            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
+            kpis_query = kpis_query.join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id).filter(
+                KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int)
+            )
+        if not show_archived:
+            kpis_query = kpis_query.filter(KPI.is_archived.is_(False))
+        level_counts["kpis"] = kpis_query.distinct().count()
+    else:
+        level_counts = {"spaces": 0, "challenges": 0, "initiatives": 0, "systems": 0, "kpis": 0}
+
+    # Calculate archived KPIs count
+    archived_kpis_count = 0
+    if space_ids:
+        archived_query = (
+            db.session.query(KPI.id)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .filter(Challenge.space_id.in_(space_ids), KPI.is_archived.is_(True))
+        )
+        if selected_governance_body_ids:
+            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
+            archived_query = archived_query.join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id).filter(
+                KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int)
+            )
+        archived_kpis_count = archived_query.distinct().count()
+
+    # Get filter presets for this user
+    filter_presets = (
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
+        .order_by(UserFilterPreset.is_default.desc(), UserFilterPreset.name)
+        .all()
+    )
+
+    # Detect if current filters match a saved preset
+    active_preset = None
+    # Get all parameters as lists (preserves multiple values)
+    current_filters = request.args.to_dict(flat=False)
+
+    # Compare with each preset
+    for preset in filter_presets:
+        preset_filters = preset.filters.copy() if preset.filters else {}
+
+        # Check if they match (normalization happens in _filters_match)
+        if _filters_match(current_filters, preset_filters):
+            active_preset = preset
+            break
 
     return render_template(
         "workspace/index.html",
@@ -261,6 +491,14 @@ def index():
         public_spaces_count=public_spaces_count,
         private_spaces_count=private_spaces_count,
         show_all_columns=show_all_columns,
+        group_counts=group_counts,
+        gb_kpi_counts=gb_kpi_counts,
+        level_counts=level_counts,
+        archived_kpis_count=archived_kpis_count,
+        filter_presets=filter_presets,
+        active_preset=active_preset,
+        all_spaces_for_filter=all_spaces_for_filter,
+        selected_space_ids=selected_space_ids,
     )
 
 
@@ -1886,3 +2124,209 @@ def api_get_value_types_for_linking(kpi_id):
         )
 
     return jsonify(result)
+
+
+# =============================================================================
+# FILTER PRESET API ENDPOINTS
+# =============================================================================
+
+
+@bp.route("/api/filter-presets")
+@login_required
+@organization_required
+def get_filter_presets():
+    """Get all filter presets for current user in current organization"""
+    org_id = session.get("organization_id")
+
+    presets = (
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
+        .order_by(UserFilterPreset.is_default.desc(), UserFilterPreset.name)
+        .all()
+    )
+
+    return jsonify([preset.to_dict() for preset in presets])
+
+
+@bp.route("/api/filter-presets", methods=["POST"])
+@login_required
+@organization_required
+def save_filter_preset():
+    """Save a new filter preset"""
+    org_id = session.get("organization_id")
+
+    data = request.get_json()
+    name = data.get("name", "").strip()
+    filters = data.get("filters", {})
+    is_default = data.get("is_default", False)
+
+    if not name:
+        return jsonify({"error": "Preset name is required"}), 400
+
+    # Check if name already exists
+    existing = UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, name=name).first()
+
+    if existing:
+        return jsonify({"error": f"A preset named '{name}' already exists"}), 400
+
+    # If setting as default, unset any existing default
+    if is_default:
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, is_default=True).update(
+            {"is_default": False}
+        )
+
+    # Create new preset
+    preset = UserFilterPreset(
+        user_id=current_user.id, organization_id=org_id, name=name, filters=filters, is_default=is_default
+    )
+
+    db.session.add(preset)
+    db.session.commit()
+
+    return jsonify(preset.to_dict()), 201
+
+
+@bp.route("/api/filter-presets/<int:preset_id>", methods=["PUT"])
+@login_required
+@organization_required
+def update_filter_preset(preset_id):
+    """Update an existing filter preset"""
+    org_id = session.get("organization_id")
+
+    preset = UserFilterPreset.query.get(preset_id)
+    if not preset:
+        return jsonify({"error": "Preset not found"}), 404
+
+    # Verify ownership
+    if preset.user_id != current_user.id or preset.organization_id != org_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    data = request.get_json()
+
+    # Update name if provided
+    if "name" in data:
+        new_name = data["name"].strip()
+        if not new_name:
+            return jsonify({"error": "Preset name cannot be empty"}), 400
+
+        # Check if new name conflicts with another preset
+        existing = (
+            UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, name=new_name)
+            .filter(UserFilterPreset.id != preset_id)
+            .first()
+        )
+
+        if existing:
+            return jsonify({"error": f"A preset named '{new_name}' already exists"}), 400
+
+        preset.name = new_name
+
+    # Update filters if provided
+    if "filters" in data:
+        preset.filters = data["filters"]
+
+    # Update is_default if provided
+    if "is_default" in data:
+        is_default = data["is_default"]
+        if is_default and not preset.is_default:
+            # Unset any other default
+            UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, is_default=True).update(
+                {"is_default": False}
+            )
+            preset.is_default = True
+        elif not is_default:
+            preset.is_default = False
+
+    db.session.commit()
+
+    return jsonify(preset.to_dict())
+
+
+@bp.route("/api/filter-presets/<int:preset_id>", methods=["DELETE"])
+@login_required
+@organization_required
+def delete_filter_preset(preset_id):
+    """Delete a filter preset"""
+    org_id = session.get("organization_id")
+
+    preset = UserFilterPreset.query.get(preset_id)
+    if not preset:
+        return jsonify({"error": "Preset not found"}), 404
+
+    # Verify ownership
+    if preset.user_id != current_user.id or preset.organization_id != org_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    db.session.delete(preset)
+    db.session.commit()
+
+    return jsonify({"success": True, "message": f"Preset '{preset.name}' deleted"})
+
+
+@bp.route("/api/filter-presets/<int:preset_id>/set-default", methods=["POST"])
+@login_required
+@organization_required
+def set_default_filter_preset(preset_id):
+    """Set a filter preset as the default"""
+    org_id = session.get("organization_id")
+
+    preset = UserFilterPreset.query.get(preset_id)
+    if not preset:
+        return jsonify({"error": "Preset not found"}), 404
+
+    # Verify ownership
+    if preset.user_id != current_user.id or preset.organization_id != org_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Unset any existing default
+    UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, is_default=True).update(
+        {"is_default": False}
+    )
+
+    # Set this one as default
+    preset.is_default = True
+    db.session.commit()
+
+    return jsonify(preset.to_dict())
+
+
+@bp.route("/api/filter-presets/<int:preset_id>/set-last-used", methods=["POST"])
+@login_required
+@organization_required
+def set_last_used_filter_preset(preset_id):
+    """Mark this preset as the last one used by this user in this organization"""
+    org_id = session.get("organization_id")
+
+    # Verify the preset exists and belongs to this user/org
+    preset = UserFilterPreset.query.get(preset_id)
+    if not preset:
+        return jsonify({"error": "Preset not found"}), 404
+
+    if preset.user_id != current_user.id or preset.organization_id != org_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Update the user's membership to track this as the last used preset
+    membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+
+    if membership:
+        membership.last_workspace_preset_id = preset_id
+        db.session.commit()
+        return jsonify({"success": True, "preset_id": preset_id})
+    else:
+        return jsonify({"error": "Membership not found"}), 404
+
+
+@bp.route("/api/clear-last-preset", methods=["POST"])
+@login_required
+@organization_required
+def clear_last_preset():
+    """Clear the last used preset for this user in this organization"""
+    org_id = session.get("organization_id")
+
+    membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+
+    if membership:
+        membership.last_workspace_preset_id = None
+        db.session.commit()
+        return jsonify({"success": True})
+    else:
+        return jsonify({"error": "Membership not found"}), 404
