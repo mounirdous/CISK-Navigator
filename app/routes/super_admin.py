@@ -711,12 +711,11 @@ def restore_backup_execute():
 @bp.route("/backup/restore_full_instance", methods=["POST"])
 @super_admin_required
 def restore_full_instance():
-    """Restore full instance from ZIP backup file"""
+    """Step 1: Upload ZIP and show user mapping screen for full instance restore"""
+    import base64
     import io
     import json
     import zipfile
-
-    from app.services.full_restore_service import FullRestoreService
 
     if "backup_file" not in request.files:
         flash("No backup file provided", "danger")
@@ -733,8 +732,13 @@ def restore_full_instance():
         return redirect(url_for("super_admin.backup"))
 
     try:
-        # Read ZIP file
-        zip_data = io.BytesIO(file.read())
+        # Read ZIP file into memory
+        zip_bytes = file.read()
+        zip_data = io.BytesIO(zip_bytes)
+
+        # Extract all users from all backup files
+        all_users = {}  # login -> user_data (deduplicated)
+        org_count = 0
 
         with zipfile.ZipFile(zip_data, "r") as zf:
             # Get all JSON files from ZIP
@@ -743,6 +747,118 @@ def restore_full_instance():
             if not json_files:
                 flash("No JSON backup files found in ZIP", "danger")
                 return redirect(url_for("super_admin.backup"))
+
+            org_count = len(json_files)
+
+            # Collect all unique users from all organizations
+            for json_file in json_files:
+                json_content = zf.read(json_file).decode("utf-8")
+                backup_data = json.loads(json_content)
+
+                for user in backup_data.get("users", []):
+                    login = user["login"]
+                    # Keep first occurrence (in case same user in multiple orgs)
+                    if login not in all_users:
+                        all_users[login] = user
+
+        # Convert to list
+        backup_users = list(all_users.values())
+
+        if not backup_users:
+            flash(
+                f"⚠️ No users found in {org_count} organization(s). Proceeding without user mapping.",
+                "warning",
+            )
+            # Proceed without mapping - call execute directly with no user mapping
+            zip_data_reset = io.BytesIO(zip_bytes)
+            return _execute_full_instance_restore(zip_data_reset, user_mapping=None)
+
+        # Get all existing users across all organizations
+        all_existing_users = User.query.all()
+
+        # Encode ZIP data for next step (base64)
+        zip_base64 = base64.b64encode(zip_bytes).decode("utf-8")
+
+        # Show mapping screen
+        return render_template(
+            "super_admin/restore_full_instance_mapping.html",
+            backup_users=backup_users,
+            existing_users=all_existing_users,
+            org_count=org_count,
+            zip_base64=zip_base64,
+        )
+
+    except zipfile.BadZipFile:
+        flash("Invalid ZIP file", "danger")
+        return redirect(url_for("super_admin.backup"))
+    except Exception as e:
+        flash(f"Error analyzing backup: {str(e)}", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+
+@bp.route("/backup/restore_full_instance_execute", methods=["POST"])
+@super_admin_required
+def restore_full_instance_execute():
+    """Step 2: Execute full instance restore with user mappings"""
+    import base64
+    import io
+    import json
+    import zipfile
+
+    from app.services.full_restore_service import FullRestoreService
+
+    try:
+        # Get ZIP data from hidden field
+        zip_base64 = request.form.get("zip_data")
+
+        if not zip_base64:
+            flash("Missing restore data", "danger")
+            return redirect(url_for("super_admin.backup"))
+
+        # Decode ZIP
+        zip_bytes = base64.b64decode(zip_base64)
+        zip_data = io.BytesIO(zip_bytes)
+
+        # Build user mapping from form
+        user_mapping = {}
+
+        # Get all backup users from first pass through ZIP
+        with zipfile.ZipFile(io.BytesIO(zip_bytes), "r") as zf:
+            json_files = [f for f in zf.namelist() if f.endswith(".json")]
+            all_users = {}
+            for json_file in json_files:
+                json_content = zf.read(json_file).decode("utf-8")
+                backup_data = json.loads(json_content)
+                for user in backup_data.get("users", []):
+                    login = user["login"]
+                    if login not in all_users:
+                        all_users[login] = user
+
+        backup_users = list(all_users.values())
+
+        for idx, backup_user in enumerate(backup_users):
+            backup_login = backup_user["login"]
+            action = request.form.get(f"user_action_{idx}")
+
+            if action == "map":
+                # Map to existing user
+                mapped_user_id = request.form.get(f"map_to_user_{idx}", type=int)
+                if mapped_user_id:
+                    user_mapping[backup_login] = {"action": "map", "user_id": mapped_user_id}
+            elif action == "create":
+                # Create new user
+                user_mapping[backup_login] = {
+                    "action": "create",
+                    "login": backup_login,
+                    "email": backup_user["email"],
+                    "display_name": backup_user["display_name"],
+                    "permissions": backup_user["permissions"],
+                }
+            # If action == "skip", don't include in mapping
+
+        # Now perform the actual restore
+        with zipfile.ZipFile(zip_data, "r") as zf:
+            json_files = [f for f in zf.namelist() if f.endswith(".json")]
 
             # Delete ALL existing organizations
             existing_orgs = Organization.query.all()
@@ -795,8 +911,10 @@ def restore_full_instance():
                     db.session.add(new_org)
                     db.session.flush()  # Get the ID
 
-                    # Restore data into this organization
-                    result = FullRestoreService.restore_from_json(json_content, new_org.id)
+                    # Restore data into this organization WITH user mapping
+                    result = FullRestoreService.restore_from_json(
+                        json_content, new_org.id, user_mapping=user_mapping
+                    )
 
                     if result.get("success"):
                         restored_count += 1
@@ -815,10 +933,10 @@ def restore_full_instance():
                     flash(f"Error restoring {json_file}: {str(e)}", "warning")
 
             if restored_count > 0:
-                flash(
-                    f"✅ Full instance restore complete: {restored_count} organization(s) restored, {failed_count} failed",
-                    "success",
-                )
+                stats_msg = f"✅ Full instance restore complete: {restored_count} organization(s) restored"
+                if failed_count > 0:
+                    stats_msg += f", {failed_count} failed"
+                flash(stats_msg, "success")
             else:
                 flash("❌ Full instance restore failed: No organizations were restored", "danger")
 
