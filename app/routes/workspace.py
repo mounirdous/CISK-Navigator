@@ -1775,7 +1775,7 @@ def api_get_organizations_for_linking():
     from app.models import Organization
 
     # Get all orgs where user has membership
-    user_org_ids = [m.organization_id for m in current_user.memberships]
+    user_org_ids = [m.organization_id for m in current_user.organization_memberships]
     orgs = Organization.query.filter(Organization.id.in_(user_org_ids)).filter_by(is_deleted=False).all()
 
     return jsonify(
@@ -1794,7 +1794,7 @@ def api_get_organizations_for_linking():
 def api_get_kpis_for_linking(org_id):
     """Get list of KPIs from an organization for linking"""
     # Verify user has access to this org
-    has_access = any(m.organization_id == org_id for m in current_user.memberships)
+    has_access = any(m.organization_id == org_id for m in current_user.organization_memberships)
     if not has_access:
         return jsonify({"error": "Access denied"}), 403
 
@@ -1845,7 +1845,7 @@ def api_get_value_types_for_linking(kpi_id):
 
     # Verify user has access to this KPI's org
     org_id = kpi.initiative_system_link.initiative.organization_id
-    has_access = any(m.organization_id == org_id for m in current_user.memberships)
+    has_access = any(m.organization_id == org_id for m in current_user.organization_memberships)
     if not has_access:
         return jsonify({"error": "Access denied"}), 403
 
