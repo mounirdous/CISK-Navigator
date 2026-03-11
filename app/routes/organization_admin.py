@@ -1769,7 +1769,7 @@ def _delete_all_organization_data(org_id):
     mentions = (
         MentionNotification.query.join(CellComment)
         .join(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
@@ -1781,7 +1781,7 @@ def _delete_all_organization_data(org_id):
     # Then delete comments
     comments = (
         CellComment.query.join(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
@@ -1795,7 +1795,7 @@ def _delete_all_organization_data(org_id):
 
     kpi_snapshots = (
         KPISnapshot.query.join(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
@@ -1813,7 +1813,7 @@ def _delete_all_organization_data(org_id):
 
     contributions = (
         Contribution.query.join(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
@@ -1837,7 +1837,7 @@ def _delete_all_organization_data(org_id):
 
     # 5. Delete KPIValueTypeConfigs (depends on KPIs and ValueTypes)
     configs = (
-        KPIValueTypeConfig.query.join(KPI)
+        KPIValueTypeConfig.query.join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)

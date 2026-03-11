@@ -81,7 +81,7 @@ def dashboard():
     recent_comments = (
         db.session.query(CellComment)
         .join(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
@@ -729,7 +729,7 @@ def compare_snapshots():
     # Get all KPI configs for this organization
     configs = (
         db.session.query(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id)
@@ -1408,7 +1408,7 @@ def search_page():
     comments = (
         db.session.query(CellComment)
         .join(KPIValueTypeConfig)
-        .join(KPI)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id, CellComment.comment_text.ilike(search_pattern))

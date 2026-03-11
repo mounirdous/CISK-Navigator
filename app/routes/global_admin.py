@@ -911,7 +911,7 @@ def clear_organization_comments(org_id):
         # Get all KPI configs for this organization
         kpi_config_ids = (
             db.session.query(KPIValueTypeConfig.id)
-            .join(KPI)
+            .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
             .join(InitiativeSystemLink)
             .join(Initiative)
             .filter(Initiative.organization_id == org_id)
