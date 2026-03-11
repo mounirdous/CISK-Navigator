@@ -1513,3 +1513,32 @@ def get_all_kpi_statuses():
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/value-types/reorder", methods=["POST"])
+@login_required
+@organization_required
+def reorder_value_types():
+    """Update display order of value types via drag-and-drop"""
+    try:
+        org_id = session.get("organization_id")
+        data = request.get_json()
+
+        if not data or "value_type_ids" not in data:
+            return jsonify({"error": "Missing value_type_ids"}), 400
+
+        value_type_ids = data["value_type_ids"]
+
+        # Update display_order for each value type
+        for index, vt_id in enumerate(value_type_ids):
+            vt = ValueType.query.filter_by(id=vt_id, organization_id=org_id).first()
+            if vt:
+                vt.display_order = index
+
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Value type order updated"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

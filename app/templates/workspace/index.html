@@ -71,6 +71,25 @@ body.edit-mode #toggle-edit-mode {
     color: #000 !important;
 }
 
+/* Drag and Drop Styling */
+.value-type-header {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    transition: background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.value-type-header:hover {
+    background-color: var(--hover-bg);
+}
+
+.value-type-header.drag-over {
+    background-color: #e3f2fd;
+    border: 2px solid #2196f3;
+    box-shadow: inset 0 0 8px rgba(33, 150, 243, 0.3);
+}
+
 /* ========================================
    MOBILE OPTIMIZATION
    ======================================== */
@@ -598,7 +617,12 @@ tr[data-level="kpi"] td {
             <tr>
                 <th style="min-width: 400px;">Structure</th>
                 {% for vt in value_types %}
-                <th class="text-center" style="min-width: 120px;">
+                <th class="text-center value-type-header"
+                    style="min-width: 120px; cursor: move;"
+                    draggable="true"
+                    data-vt-id="{{ vt.id }}"
+                    title="Drag to reorder columns">
+                    <i class="bi bi-grip-vertical text-muted me-1" style="font-size: 0.8rem;"></i>
                     {{ vt.name }}
                     {% if vt.unit_label %}
                     <br><small class="text-muted">({{ vt.unit_label }})</small>
@@ -1717,6 +1741,150 @@ document.addEventListener('DOMContentLoaded', function() {
             // Clean up URL without reloading
             window.history.replaceState({}, '', window.location.pathname + window.location.hash);
         }
+    }
+});
+
+// ========================================
+// VALUE TYPE COLUMN DRAG AND DROP
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    const headers = document.querySelectorAll('.value-type-header');
+    let draggedElement = null;
+
+    headers.forEach(header => {
+        // Drag start
+        header.addEventListener('dragstart', function(e) {
+            draggedElement = this;
+            this.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+        });
+
+        // Drag end
+        header.addEventListener('dragend', function(e) {
+            this.style.opacity = '1';
+            headers.forEach(h => h.classList.remove('drag-over'));
+        });
+
+        // Drag over
+        header.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            if (draggedElement !== this) {
+                this.classList.add('drag-over');
+            }
+        });
+
+        // Drag enter
+        header.addEventListener('dragenter', function(e) {
+            if (draggedElement !== this) {
+                this.classList.add('drag-over');
+            }
+        });
+
+        // Drag leave
+        header.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+
+        // Drop
+        header.addEventListener('drop', function(e) {
+            e.stopPropagation();
+            e.preventDefault();
+
+            if (draggedElement !== this) {
+                // Swap positions
+                const allHeaders = Array.from(headers);
+                const draggedIndex = allHeaders.indexOf(draggedElement);
+                const targetIndex = allHeaders.indexOf(this);
+
+                // Get the parent row
+                const row = this.parentElement;
+
+                // Reorder in DOM
+                if (draggedIndex < targetIndex) {
+                    row.insertBefore(draggedElement, this.nextSibling);
+                } else {
+                    row.insertBefore(draggedElement, this);
+                }
+
+                // Reorder columns in all rows
+                reorderAllColumns(draggedIndex, targetIndex);
+
+                // Save new order to backend
+                saveColumnOrder();
+            }
+
+            this.classList.remove('drag-over');
+        });
+    });
+
+    function reorderAllColumns(draggedIndex, targetIndex) {
+        const table = document.getElementById('workspace-tree');
+        const rows = table.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            // Skip the first cell (Structure column), so offset by 1
+            const draggedCell = cells[draggedIndex + 1];
+            const targetCell = cells[targetIndex + 1];
+
+            if (draggedCell && targetCell) {
+                if (draggedIndex < targetIndex) {
+                    row.insertBefore(draggedCell, targetCell.nextSibling);
+                } else {
+                    row.insertBefore(draggedCell, targetCell);
+                }
+            }
+        });
+    }
+
+    async function saveColumnOrder() {
+        const headers = document.querySelectorAll('.value-type-header');
+        const valueTypeIds = Array.from(headers).map(h => parseInt(h.dataset.vtId));
+
+        try {
+            const response = await fetch('/workspace/api/value-types/reorder', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ value_type_ids: valueTypeIds })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save column order');
+            }
+
+            const result = await response.json();
+            console.log('Column order saved:', result);
+
+            // Show success feedback
+            showNotification('Column order updated', 'success');
+
+        } catch (error) {
+            console.error('Error saving column order:', error);
+            showNotification('Failed to save column order', 'error');
+        }
+    }
+
+    function showNotification(message, type) {
+        // Create toast notification
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type === 'success' ? 'success' : 'danger'} position-fixed`;
+        toast.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 250px;';
+        toast.innerHTML = `
+            <i class="bi bi-${type === 'success' ? 'check-circle' : 'x-circle'}"></i>
+            ${message}
+        `;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
     }
 });
 
