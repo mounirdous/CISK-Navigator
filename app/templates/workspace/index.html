@@ -2216,13 +2216,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
+                console.log('Inserting draggedRow before:', insertPoint.textContent.trim().substring(0, 30));
                 this.parentNode.insertBefore(draggedRow, insertPoint);
+                console.log('After inserting draggedRow, its nextSibling:', draggedRow.nextSibling ? draggedRow.nextSibling.textContent.trim().substring(0, 30) : 'null');
 
                 // Move descendants right after their parent in order
+                console.log('Moving ' + descendants.length + ' descendants...');
                 let lastInserted = draggedRow;
-                descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, lastInserted.nextSibling);
+                descendants.forEach((desc, idx) => {
+                    let nextInsertPoint = lastInserted.nextSibling;
+                    console.log(`Descendant ${idx + 1}: ${desc.textContent.trim().substring(0, 30)}`);
+                    console.log('  Will insert before:', nextInsertPoint ? nextInsertPoint.textContent.trim().substring(0, 30) + ' (level=' + nextInsertPoint.dataset.level + ', parentId=' + nextInsertPoint.dataset.parentId + ')' : 'null');
+
+                    // Safety check: ensure nextInsertPoint is not a sibling of draggedRow with different parent
+                    // This prevents pushing siblings past the parent boundary
+                    if (nextInsertPoint && nextInsertPoint.dataset.level === dragLevel) {
+                        console.log('  nextInsertPoint is a sibling (level=' + dragLevel + ')');
+                        if (nextInsertPoint.dataset.parentId !== dragParent) {
+                            console.log('⚠️ Descendant insertion would push sibling into wrong parent! Using boundary.');
+                            nextInsertPoint = getParentBoundary(dragLevel, dragParent);
+                            console.log('  Using boundary instead:', nextInsertPoint ? nextInsertPoint.textContent.trim().substring(0, 30) : 'null');
+                        } else {
+                            console.log('  Same parent, allowing insertion');
+                        }
+                    }
+
+                    this.parentNode.insertBefore(desc, nextInsertPoint);
                     lastInserted = desc;
+                    console.log('  After insertion, lastInserted.nextSibling:', lastInserted.nextSibling ? lastInserted.nextSibling.textContent.trim().substring(0, 30) : 'null');
                 });
             }
 
