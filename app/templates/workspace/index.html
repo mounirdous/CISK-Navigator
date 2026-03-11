@@ -2141,27 +2141,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Move dragged row and all its descendants as a unit
             if (dragIndex < dropIndex) {
-                // Moving down: insert after target
-                // Find the next sibling in our siblings list (not DOM nextSibling!)
-                const nextSiblingInList = siblings[dropIndex + 1];
+                // Moving down: insert after target (and all target's descendants!)
+                console.log('Moving down: dragIndex=' + dragIndex + ', dropIndex=' + dropIndex);
+                console.log('Target:', this.textContent.trim().substring(0, 30));
 
-                let insertPoint;
-                if (nextSiblingInList) {
-                    // Insert before the next sibling to stay within bounds
-                    insertPoint = nextSiblingInList;
-                    console.log('Inserting before next sibling:', nextSiblingInList.textContent.trim().substring(0, 30));
+                // Get target's descendants
+                const targetDescendants = getDescendants(this);
+                console.log('Target has ' + targetDescendants.length + ' descendants');
+
+                // Find where to insert: after target's last descendant
+                let insertAfterRow;
+                if (targetDescendants.length > 0) {
+                    insertAfterRow = targetDescendants[targetDescendants.length - 1];
                 } else {
-                    // Target is last sibling, find parent boundary
-                    const boundary = getParentBoundary(dragLevel, dragParent);
-                    insertPoint = boundary;
-                    console.log('Inserting before parent boundary');
+                    insertAfterRow = this; // Target itself
                 }
 
-                if (!insertPoint) {
-                    console.log('No valid insertion point found, appending to end');
-                    this.parentNode.appendChild(draggedRow);
-                } else {
+                console.log('Insert after:', insertAfterRow.textContent.trim().substring(0, 30));
+
+                // Now insert dragged row after insertAfterRow
+                let insertPoint = insertAfterRow.nextSibling;
+                console.log('Initial insert point:', insertPoint ? insertPoint.textContent.trim().substring(0, 30) : 'end of table');
+
+                // CRITICAL CHECK: Ensure insertPoint is still within our parent!
+                if (insertPoint && insertPoint.dataset.level === dragLevel) {
+                    // insertPoint is a sibling, check if same parent
+                    if (insertPoint.dataset.parentId !== dragParent) {
+                        console.log('⚠️ Insert point crossed parent boundary! Finding safe boundary...');
+                        // We've crossed into the next parent, find the boundary
+                        insertPoint = getParentBoundary(dragLevel, dragParent);
+                        console.log('Using parent boundary instead:', insertPoint ? insertPoint.textContent.trim().substring(0, 30) : 'end of table');
+                    }
+                }
+
+                if (insertPoint) {
                     this.parentNode.insertBefore(draggedRow, insertPoint);
+                } else {
+                    // No next sibling, append to parent
+                    this.parentNode.appendChild(draggedRow);
                 }
 
                 // Move descendants right after their parent in order
