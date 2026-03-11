@@ -75,7 +75,7 @@
         <div class="card hover-lift">
             <div class="page-header">
                 <div class="page-header-icon">
-                    <i class="bi bi-graph-up"></i>
+                    <span style="font-weight: bold;">Ψ</span>
                 </div>
                 <h2 class="mb-1">Create KPI</h2>
                 <p class="mb-0 opacity-75">{{ initiative.name }} → {{ system.name }}</p>
@@ -94,7 +94,7 @@
                         <div class="mb-3">
                             {{ form.name.label(class="form-label fw-semibold") }}
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-graph-up"></i></span>
+                                <span class="input-group-text"><span style="font-weight: bold;">Ψ</span></span>
                                 {{ form.name(class="form-control", placeholder="KPI name", autofocus=True) }}
                             </div>
                         </div>

@@ -648,13 +648,13 @@
         let debounceTimeout;
         let currentQuery = '';
 
-        // Icon mapping for different entity types
+        // Icon mapping for different entity types - Unicode symbols
         const typeIcons = {
             'space': 'bi-grid-3x3-gap-fill',
-            'challenge': 'bi-flag-fill',
-            'initiative': 'bi-lightbulb-fill',
-            'system': 'bi-diagram-3-fill',
-            'kpi': 'bi-bullseye'
+            'challenge': 'unicode-ƒ',
+            'initiative': 'unicode-δ',
+            'system': 'unicode-Φ',
+            'kpi': 'unicode-Ψ'
         };
 
         const typeColors = {
@@ -710,7 +710,14 @@
                 const label = typeLabels[result.type] || result.type;
 
                 html += `<div class="live-search-item" style="display: flex; align-items: start; gap: 8px; padding: 10px 12px; border-radius: 6px; margin: 2px 0; transition: background 0.15s; cursor: pointer;" onclick="window.location.href='${result.url}'">`;
-                html += `<i class="bi ${icon}" style="color: ${color}; font-size: 1.1rem; margin-top: 2px;"></i>`;
+                // Handle Unicode symbols vs Bootstrap icons
+                if (icon.startsWith('unicode-')) {
+                    const symbol = icon.replace('unicode-', '');
+                    const fontStyle = (result.type === 'challenge') ? 'font-style: italic;' : '';
+                    html += `<span style="color: ${color}; font-size: 1.1rem; margin-top: 2px; font-weight: bold; ${fontStyle}">${symbol}</span>`;
+                } else {
+                    html += `<i class="bi ${icon}" style="color: ${color}; font-size: 1.1rem; margin-top: 2px;"></i>`;
+                }
                 html += `<div style="flex: 1; min-width: 0;">`;
                 html += `<div style="font-weight: 500; margin-bottom: 2px;">${highlightQuery(escapeHtml(result.name), query)}</div>`;
 
