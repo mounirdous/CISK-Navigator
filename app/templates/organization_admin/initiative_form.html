@@ -362,24 +362,6 @@
                                 {{ initiative.name }}
                             </td>
                         </tr>
-                        <tr>
-                            <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa;">
-                                Group
-                            </td>
-                            <td style="padding: 0.5rem;">
-                                <input type="hidden" name="group_label" value="{{ initiative.group_label or '' }}">
-                                <div style="font-size: 0.85rem; color: #6c757d; font-style: italic;">
-                                    Use the Edit Initiative page to change the group assignment
-                                </div>
-                                {% if initiative.group_label %}
-                                    <span class="badge bg-secondary" style="font-size: 0.9rem; padding: 0.3rem 0.6rem; margin-top: 0.25rem; display: inline-block;">
-                                        Group {{ initiative.group_label }}
-                                    </span>
-                                {% else %}
-                                    <span style="color: #6c757d; font-style: italic;">No group assigned</span>
-                                {% endif %}
-                            </td>
-                        </tr>
 
                         <!-- WHAT Section -->
                         <tr>
@@ -484,20 +466,6 @@
                         </td>
                         <td style="font-weight: 600; font-size: 1rem; color: #2c3e50; padding: 0.5rem;">
                             {{ initiative.name }}
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa;">
-                            Group
-                        </td>
-                        <td style="padding: 0.5rem;">
-                            {% if initiative.group_label %}
-                                <span class="badge bg-secondary" style="font-size: 0.95rem; padding: 0.4rem 0.8rem;">
-                                    Group {{ initiative.group_label }}
-                                </span>
-                            {% else %}
-                                <span style="color: #6c757d; font-style: italic;">No group assigned</span>
-                            {% endif %}
                         </td>
                     </tr>
 
