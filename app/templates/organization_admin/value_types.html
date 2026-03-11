@@ -149,6 +149,11 @@
 
                     <div class="d-flex gap-2">
                         {% if current_user.can_manage_value_types(session.organization_id) %}
+                        <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id) }}"
+                           class="btn btn-outline-info btn-sm"
+                           title="Configure rollup rules">
+                            <i class="bi bi-diagram-3"></i> Rollup
+                        </a>
                         <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}"
                            class="btn btn-outline-primary btn-sm"
                            title="Edit value type">
