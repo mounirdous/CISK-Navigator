@@ -985,6 +985,9 @@ tr[data-level="kpi"] td {
                         {% endfor %}
                         {% if has_target_direction.value == 'minimize' %}⬇️{% elif has_target_direction.value == 'exact' %}🎯{% elif has_target_direction.value %}⬆️{% endif %}
                         {{ kpi.name }}
+                        {% if kpi.value_type_configs | selectattr('linked_source_kpi_id') | list | length > 0 %}
+                        <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; opacity: 0.7;" title="This KPI has linked values"></i>
+                        {% endif %}
                         {% if kpi.is_archived %}
                         <span class="badge bg-secondary ms-1" title="Archived on {{ kpi.archived_at.strftime('%Y-%m-%d') }}">
                             <i class="bi bi-archive"></i> Archived
@@ -1021,25 +1024,21 @@ tr[data-level="kpi"] td {
                             data-kpi-name="{{ kpi.name }}"
                             data-value-type-name="{{ vt.name }}">
                             <div style="position: relative;">
-                                {% if config.linked_source_kpi_id %}
-                                    {% set source_kpi = config.linked_source_kpi %}
-                                    {% set source_org = config.linked_source_org %}
-                                    {% set source_init = source_kpi.initiative_system_link.initiative %}
-                                    {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
-                                    {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
-                                    <div style="position: absolute; top: 2px; right: 2px; z-index: 5;">
-                                        <span class="badge bg-info" style="font-size: 0.65rem;"
-                                              title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}">
-                                            <i class="bi bi-link-45deg"></i>
-                                        </span>
-                                    </div>
-                                {% endif %}
                                 <div style="cursor: pointer;" onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'">
                                     {% if consensus.status == 'no_data' %}
                                         <span class="badge bg-secondary">Click to enter</span>
                                     {% elif consensus.value is not none %}
                                 <div>
                                     {% if vt.kind == 'numeric' %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         <strong><span style="color: {{ config.get_value_color(consensus.value) }};">{{ consensus.value|format_value(vt, config) }}</span>{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
                                         {% if config.target_value %}
                                             {% set target_dir = config.target_direction or 'maximize' %}
@@ -1059,6 +1058,15 @@ tr[data-level="kpi"] td {
                                             <br><small style="color: #6c757d;" title="Target: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'risk' %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>!!</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>!!!</strong>{% endif %}
@@ -1074,6 +1082,15 @@ tr[data-level="kpi"] td {
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'positive_impact' %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         {% if consensus.value == 1 %}<strong>★</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>★★</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>★★★</strong>{% endif %}
@@ -1089,6 +1106,15 @@ tr[data-level="kpi"] td {
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'negative_impact' %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         {% if consensus.value == 1 %}<strong>▼</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>▼▼</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>▼▼▼</strong>{% endif %}
@@ -1104,6 +1130,15 @@ tr[data-level="kpi"] td {
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'level' %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         {% if consensus.value == 1 %}<strong>●</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>●●</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>●●●</strong>{% endif %}
@@ -1119,6 +1154,15 @@ tr[data-level="kpi"] td {
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% elif vt.kind == 'sentiment' %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         {% if consensus.value == 1 %}<strong>☹️</strong>{% endif %}
                                         {% if consensus.value == 2 %}<strong>😐</strong>{% endif %}
                                         {% if consensus.value == 3 %}<strong>😊</strong>{% endif %}
@@ -1134,6 +1178,15 @@ tr[data-level="kpi"] td {
                                             <br><small style="color: #6c757d;" title="Target: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯 {{ progress }}%</small>
                                         {% endif %}
                                     {% else %}
+                                        {% if config.linked_source_kpi_id %}
+                                            {% set source_kpi = config.linked_source_kpi %}
+                                            {% set source_org = config.linked_source_org %}
+                                            {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                            {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                            {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                            <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; margin-right: 3px;"
+                                               title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}"></i>
+                                        {% endif %}
                                         <strong>{{ consensus.value }}</strong>
                                     {% endif %}
                                     </div>
