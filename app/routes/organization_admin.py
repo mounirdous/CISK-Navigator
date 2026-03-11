@@ -1351,6 +1351,28 @@ def configure_rollup(vt_id):
         chal_enabled = request.form.get("rollup_enabled_challenge") == "on"
         chal_formula = request.form.get("formula_challenge", "default")
 
+        # VALIDATION: Prevent SUM on qualitative value types
+        # If user somehow tries to use SUM on qualitative, convert to MAX (sensible default)
+        if value_type.is_qualitative():
+            if sys_formula == "sum":
+                sys_formula = "max"
+                flash(
+                    "⚠️ SUM formula not valid for qualitative types - changed to MAX",
+                    "warning",
+                )
+            if init_formula == "sum":
+                init_formula = "max"
+                flash(
+                    "⚠️ SUM formula not valid for qualitative types - changed to MAX",
+                    "warning",
+                )
+            if chal_formula == "sum":
+                chal_formula = "max"
+                flash(
+                    "⚠️ SUM formula not valid for qualitative types - changed to MAX",
+                    "warning",
+                )
+
         # For now, update the ValueType's default aggregation formula
         # This will be used when creating new rollup rules
         if sys_formula != "default":

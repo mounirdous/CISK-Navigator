@@ -131,7 +131,7 @@
                             <div class="col-md-6 mb-3">
                                 {{ form.default_aggregation_formula.label(class="form-label fw-semibold") }}
                                 {{ form.default_aggregation_formula(class="form-select") }}
-                                <small class="form-text text-muted">
+                                <small class="form-text text-muted" id="formula-help">
                                     <i class="bi bi-info-circle"></i> How to aggregate values
                                 </small>
                             </div>
@@ -169,6 +169,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     const kindSelect = document.querySelector('select[name="kind"]');
     const numericSection = document.getElementById('numeric-section');
+    const formulaSelect = document.querySelector('select[name="default_aggregation_formula"]');
+
+    // Smart defaults for each kind
+    const smartDefaults = {
+        'numeric': 'sum',
+        'risk': 'max',
+        'positive_impact': 'max',
+        'negative_impact': 'max',
+        'level': 'max',
+        'sentiment': 'avg'
+    };
 
     function toggleNumericSection() {
         // Show numeric settings only for 'numeric' kind
@@ -179,8 +190,53 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    kindSelect.addEventListener('change', toggleNumericSection);
+    function updateFormulaOptions() {
+        const kind = kindSelect.value;
+        const isNumeric = kind === 'numeric';
+        const formulaHelp = document.getElementById('formula-help');
+
+        // Get current value before updating
+        const currentValue = formulaSelect.value;
+
+        // Show/hide SUM option based on kind
+        Array.from(formulaSelect.options).forEach(option => {
+            if (option.value === 'sum') {
+                option.style.display = isNumeric ? 'block' : 'none';
+                option.disabled = !isNumeric;
+            }
+        });
+
+        // Update label for AVG
+        Array.from(formulaSelect.options).forEach(option => {
+            if (option.value === 'avg') {
+                option.textContent = isNumeric ? 'Average' : 'Average (rounded)';
+            }
+        });
+
+        // Update help text
+        if (isNumeric) {
+            formulaHelp.innerHTML = '<i class="bi bi-info-circle"></i> How to aggregate numeric values';
+        } else {
+            formulaHelp.innerHTML = '<i class="bi bi-info-circle"></i> How to aggregate qualitative values (SUM not available for ' + kind + ')';
+        }
+
+        // Set smart default if current value is invalid for qualitative
+        if (!isNumeric && currentValue === 'sum') {
+            formulaSelect.value = smartDefaults[kind] || 'max';
+        } else if (formulaSelect.value === '') {
+            // Set smart default on initial load
+            formulaSelect.value = smartDefaults[kind] || 'sum';
+        }
+    }
+
+    kindSelect.addEventListener('change', function() {
+        toggleNumericSection();
+        updateFormulaOptions();
+    });
+
+    // Initialize on page load
     toggleNumericSection();
+    updateFormulaOptions();
 });
 </script>
 {% endblock %}

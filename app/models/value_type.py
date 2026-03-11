@@ -78,6 +78,41 @@ class ValueType(db.Model):
             self.KIND_SENTIMENT,
         ]
 
+    @classmethod
+    def get_smart_default_formula(cls, kind):
+        """
+        Get the smart default aggregation formula based on value type kind.
+
+        For qualitative types, SUM doesn't make sense, so we use sensible defaults:
+        - risk: MAX (show worst case risk)
+        - positive_impact: MAX (show best case impact)
+        - negative_impact: MAX (show worst case harm)
+        - level: MAX (show highest level achieved)
+        - sentiment: AVG (average mood/sentiment)
+        - numeric: SUM (default)
+        """
+        qualitative_defaults = {
+            cls.KIND_RISK: cls.FORMULA_MAX,
+            cls.KIND_POSITIVE_IMPACT: cls.FORMULA_MAX,
+            cls.KIND_NEGATIVE_IMPACT: cls.FORMULA_MAX,
+            cls.KIND_LEVEL: cls.FORMULA_MAX,
+            cls.KIND_SENTIMENT: cls.FORMULA_AVG,
+        }
+        return qualitative_defaults.get(kind, cls.FORMULA_SUM)
+
+    def get_valid_formulas(self):
+        """
+        Get list of valid aggregation formulas for this value type.
+
+        For qualitative types, SUM is not valid (you can't sum risk levels).
+        """
+        if self.is_numeric():
+            # Numeric types can use all formulas
+            return [self.FORMULA_SUM, self.FORMULA_MIN, self.FORMULA_MAX, self.FORMULA_AVG]
+        else:
+            # Qualitative types cannot use SUM
+            return [self.FORMULA_MIN, self.FORMULA_MAX, self.FORMULA_AVG]
+
     def get_display_symbol(self, level):
         """Get display symbol for qualitative types"""
         if self.kind == self.KIND_RISK:

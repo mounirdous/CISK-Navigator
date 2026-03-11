@@ -111,13 +111,18 @@
                         <label for="formula_system" class="form-label fw-semibold">Aggregation Formula</label>
                         <select class="form-select" id="formula_system" name="formula_system">
                             <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            {% if value_type.is_numeric() %}
                             <option value="sum">Sum</option>
+                            {% endif %}
                             <option value="min">Minimum</option>
                             <option value="max">Maximum</option>
-                            <option value="avg">Average</option>
+                            <option value="avg">Average{% if value_type.is_qualitative() %} (rounded){% endif %}</option>
                         </select>
                         <small class="form-text text-muted">
                             <i class="bi bi-info-circle"></i> How to aggregate multiple KPI values into one System value
+                            {% if value_type.is_qualitative() %}
+                            <br><strong>Note:</strong> SUM is not available for qualitative types ({{ value_type.kind }})
+                            {% endif %}
                         </small>
                     </div>
                 </div>
@@ -141,10 +146,12 @@
                         <label for="formula_initiative" class="form-label fw-semibold">Aggregation Formula</label>
                         <select class="form-select" id="formula_initiative" name="formula_initiative">
                             <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            {% if value_type.is_numeric() %}
                             <option value="sum">Sum</option>
+                            {% endif %}
                             <option value="min">Minimum</option>
                             <option value="max">Maximum</option>
-                            <option value="avg">Average</option>
+                            <option value="avg">Average{% if value_type.is_qualitative() %} (rounded){% endif %}</option>
                         </select>
                         <small class="form-text text-muted">
                             <i class="bi bi-info-circle"></i> How to aggregate multiple System values into one Initiative value
@@ -171,10 +178,12 @@
                         <label for="formula_challenge" class="form-label fw-semibold">Aggregation Formula</label>
                         <select class="form-select" id="formula_challenge" name="formula_challenge">
                             <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            {% if value_type.is_numeric() %}
                             <option value="sum">Sum</option>
+                            {% endif %}
                             <option value="min">Minimum</option>
                             <option value="max">Maximum</option>
-                            <option value="avg">Average</option>
+                            <option value="avg">Average{% if value_type.is_qualitative() %} (rounded){% endif %}</option>
                         </select>
                         <small class="form-text text-muted">
                             <i class="bi bi-info-circle"></i> How to aggregate multiple Initiative values into one Challenge value
