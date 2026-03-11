@@ -396,3 +396,97 @@ def assign_organization(user_id):
 
     flash(f"✅ {user.display_name or user.login} has been added to {organization.name}", "success")
     return redirect(url_for("super_admin.pending_users"))
+
+
+@bp.route("/linked-kpis")
+@super_admin_required
+def linked_kpis():
+    """
+    View all linked KPIs across the platform.
+
+    Shows which KPIs are reading values from other KPIs (same org or cross-org).
+    Useful for understanding data dependencies and transparency.
+    """
+    from app.models import KPIValueTypeConfig
+
+    # Get all linked configs
+    linked_configs = (
+        KPIValueTypeConfig.query.filter(KPIValueTypeConfig.linked_source_kpi_id.isnot(None))
+        .order_by(KPIValueTypeConfig.id.desc())
+        .all()
+    )
+
+    # Build detailed list with full context
+    linked_data = []
+    for config in linked_configs:
+        # Consumer KPI info
+        consumer_kpi = config.kpi
+        consumer_is_link = consumer_kpi.initiative_system_link
+        consumer_initiative = consumer_is_link.initiative
+        consumer_org = consumer_initiative.organization
+        consumer_system = consumer_is_link.system
+        consumer_challenges = [ci_link.challenge.name for ci_link in consumer_initiative.challenge_links]
+        consumer_spaces = list(set([ci_link.challenge.space.name for ci_link in consumer_initiative.challenge_links]))
+
+        # Source KPI info
+        source_kpi = config.linked_source_kpi
+        source_is_link = source_kpi.initiative_system_link
+        source_initiative = source_is_link.initiative
+        source_org = source_initiative.organization
+        source_system = source_is_link.system
+        source_challenges = [ci_link.challenge.name for ci_link in source_initiative.challenge_links]
+        source_spaces = list(set([ci_link.challenge.space.name for ci_link in source_initiative.challenge_links]))
+
+        # Value type info
+        value_type = config.value_type
+
+        linked_data.append(
+            {
+                "config_id": config.id,
+                "consumer": {
+                    "org_name": consumer_org.name,
+                    "org_id": consumer_org.id,
+                    "spaces": ", ".join(consumer_spaces),
+                    "challenges": ", ".join(consumer_challenges),
+                    "initiative": consumer_initiative.name,
+                    "system": consumer_system.name,
+                    "kpi": consumer_kpi.name,
+                    "kpi_id": consumer_kpi.id,
+                },
+                "source": {
+                    "org_name": source_org.name,
+                    "org_id": source_org.id,
+                    "spaces": ", ".join(source_spaces),
+                    "challenges": ", ".join(source_challenges),
+                    "initiative": source_initiative.name,
+                    "system": source_system.name,
+                    "kpi": source_kpi.name,
+                    "kpi_id": source_kpi.id,
+                },
+                "value_type": {
+                    "name": value_type.name,
+                    "kind": value_type.kind,
+                    "unit_label": value_type.unit_label,
+                },
+                "is_cross_org": consumer_org.id != source_org.id,
+            }
+        )
+
+    # Get summary stats
+    total_linked = len(linked_data)
+    cross_org_count = sum(1 for link in linked_data if link["is_cross_org"])
+    same_org_count = total_linked - cross_org_count
+
+    # Count unique organizations involved
+    consumer_org_ids = set(link["consumer"]["org_id"] for link in linked_data)
+    source_org_ids = set(link["source"]["org_id"] for link in linked_data)
+    unique_orgs = len(consumer_org_ids | source_org_ids)
+
+    stats = {
+        "total_linked": total_linked,
+        "cross_org": cross_org_count,
+        "same_org": same_org_count,
+        "unique_orgs": unique_orgs,
+    }
+
+    return render_template("super_admin/linked_kpis.html", linked_data=linked_data, stats=stats)

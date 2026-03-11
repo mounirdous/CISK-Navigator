@@ -4,7 +4,7 @@ Value Type Usage Service
 Checks whether a value type is in use and where.
 """
 
-from app.models import Contribution, KPIValueTypeConfig, RollupRule, ValueType
+from app.models import KPIValueTypeConfig, RollupRule, ValueType
 
 
 class ValueTypeUsageService:
@@ -24,13 +24,27 @@ class ValueTypeUsageService:
                 - is_used: boolean
                 - usage: dict with detailed usage information
         """
-        from app.extensions import db
-
         value_type = ValueType.query.get(value_type_id)
         if not value_type:
             return None
 
-        usage = {"kpi_configs": [], "contributions_count": 0, "rollup_rules_count": 0}
+        usage = {"kpi_configs": [], "contributions_count": 0, "rollup_rules_count": 0, "linked_consumers": []}
+
+        # Check if this value type is being used as a linked source by other KPIs
+        linked_consumers = KPIValueTypeConfig.query.filter_by(linked_source_value_type_id=value_type_id).all()
+        for consumer_config in linked_consumers:
+            consumer_kpi = consumer_config.kpi
+            is_link = consumer_kpi.initiative_system_link
+            initiative = is_link.initiative
+            org = initiative.organization
+            usage["linked_consumers"].append(
+                {
+                    "kpi_id": consumer_kpi.id,
+                    "kpi_name": consumer_kpi.name,
+                    "org_name": org.name,
+                    "initiative_name": initiative.name,
+                }
+            )
 
         # Check KPI configurations
         kpi_configs = KPIValueTypeConfig.query.filter_by(value_type_id=value_type_id).all()
@@ -65,7 +79,12 @@ class ValueTypeUsageService:
         rollup_rules = RollupRule.query.filter_by(value_type_id=value_type_id).all()
         usage["rollup_rules_count"] = len(rollup_rules)
 
-        is_used = len(usage["kpi_configs"]) > 0 or usage["contributions_count"] > 0 or usage["rollup_rules_count"] > 0
+        is_used = (
+            len(usage["kpi_configs"]) > 0
+            or usage["contributions_count"] > 0
+            or usage["rollup_rules_count"] > 0
+            or len(usage["linked_consumers"]) > 0
+        )
 
         return {"is_used": is_used, "usage": usage}
 
@@ -94,6 +113,13 @@ class ValueTypeUsageService:
 
             if usage["rollup_rules_count"] > 0:
                 reasons.append(f"Referenced by {usage['rollup_rules_count']} roll-up rule(s)")
+
+            if len(usage["linked_consumers"]) > 0:
+                consumer_names = [f"{c['kpi_name']} ({c['org_name']})" for c in usage["linked_consumers"][:3]]
+                more = "..." if len(usage["linked_consumers"]) > 3 else ""
+                reasons.append(
+                    f"Being used as linked source by {len(usage['linked_consumers'])} KPI(s): {', '.join(consumer_names)}{more}"
+                )
 
             return False, "; ".join(reasons)
 

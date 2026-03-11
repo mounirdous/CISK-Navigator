@@ -36,7 +36,12 @@ class KPI(db.Model):
 
     # Relationships
     initiative_system_link = db.relationship("InitiativeSystemLink", back_populates="kpis")
-    value_type_configs = db.relationship("KPIValueTypeConfig", back_populates="kpi", cascade="all, delete-orphan")
+    value_type_configs = db.relationship(
+        "KPIValueTypeConfig",
+        foreign_keys="KPIValueTypeConfig.kpi_id",
+        back_populates="kpi",
+        cascade="all, delete-orphan",
+    )
     governance_body_links = db.relationship("KPIGovernanceBodyLink", back_populates="kpi", cascade="all, delete-orphan")
     archived_by = db.relationship("User", foreign_keys=[archived_by_user_id])
 

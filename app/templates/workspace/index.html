@@ -1021,6 +1021,19 @@ tr[data-level="kpi"] td {
                             data-kpi-name="{{ kpi.name }}"
                             data-value-type-name="{{ vt.name }}">
                             <div style="position: relative;">
+                                {% if config.linked_source_kpi_id %}
+                                    {% set source_kpi = config.linked_source_kpi %}
+                                    {% set source_org = config.linked_source_org %}
+                                    {% set source_init = source_kpi.initiative_system_link.initiative %}
+                                    {% set source_challenges = source_init.challenge_links | map(attribute='challenge.name') | list %}
+                                    {% set source_spaces = source_init.challenge_links | map(attribute='challenge.space.name') | unique | list %}
+                                    <div style="position: absolute; top: 2px; right: 2px; z-index: 5;">
+                                        <span class="badge bg-info" style="font-size: 0.65rem;"
+                                              title="Linked from: {{ source_org.name }} → {{ source_spaces | join(', ') }} → {{ source_challenges | join(', ') }} → {{ source_init.name }} → {{ source_kpi.initiative_system_link.system.name }} → {{ source_kpi.name }}">
+                                            <i class="bi bi-link-45deg"></i>
+                                        </span>
+                                    </div>
+                                {% endif %}
                                 <div style="cursor: pointer;" onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'">
                                     {% if consensus.status == 'no_data' %}
                                         <span class="badge bg-secondary">Click to enter</span>

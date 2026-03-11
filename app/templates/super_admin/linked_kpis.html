@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Linked KPIs{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="bi bi-link-45deg text-primary me-2"></i>
+                        Linked KPI Values
+                    </h1>
+                    <p class="text-muted mb-0">Platform-wide view of data dependencies and value sharing</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('super_admin.index') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Linked KPIs</p>
+                            <h3 class="mb-0">{{ stats.total_linked }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-link-45deg text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Cross-Org Links</p>
+                            <h3 class="mb-0">{{ stats.cross_org }}</h3>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-building text-info fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Same-Org Links</p>
+                            <h3 class="mb-0">{{ stats.same_org }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-arrow-repeat text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Organizations Involved</p>
+                            <h3 class="mb-0">{{ stats.unique_orgs }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-diagram-3 text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Linked KPIs Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-table"></i> Linked KPI Details
+                        </h5>
+                        <div>
+                            <span class="badge bg-primary">{{ linked_data|length }} Links</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if linked_data %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 10%;">Type</th>
+                                    <th style="width: 37.5%;">
+                                        <i class="bi bi-arrow-down-circle text-primary"></i> Consumer (Reading From)
+                                    </th>
+                                    <th style="width: 37.5%;">
+                                        <i class="bi bi-arrow-up-circle text-success"></i> Source (Providing Data)
+                                    </th>
+                                    <th style="width: 10%;">Value Type</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for link in linked_data %}
+                                <tr>
+                                    <td class="text-muted small">{{ loop.index }}</td>
+                                    <td>
+                                        {% if link.is_cross_org %}
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-building"></i> Cross-Org
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-arrow-repeat"></i> Same-Org
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="mb-1">
+                                            <strong class="text-primary">{{ link.consumer.org_name }}</strong>
+                                        </div>
+                                        <div class="small text-muted mb-1">
+                                            <i class="bi bi-folder"></i> {{ link.consumer.spaces }}
+                                            <i class="bi bi-chevron-right mx-1"></i>
+                                            {{ link.consumer.challenges }}
+                                        </div>
+                                        <div class="small">
+                                            <i class="bi bi-diagram-3"></i> {{ link.consumer.initiative }}
+                                            <i class="bi bi-chevron-right mx-1"></i>
+                                            {{ link.consumer.system }}
+                                            <i class="bi bi-chevron-right mx-1"></i>
+                                            <strong>{{ link.consumer.kpi }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="mb-1">
+                                            <strong class="text-success">{{ link.source.org_name }}</strong>
+                                        </div>
+                                        <div class="small text-muted mb-1">
+                                            <i class="bi bi-folder"></i> {{ link.source.spaces }}
+                                            <i class="bi bi-chevron-right mx-1"></i>
+                                            {{ link.source.challenges }}
+                                        </div>
+                                        <div class="small">
+                                            <i class="bi bi-diagram-3"></i> {{ link.source.initiative }}
+                                            <i class="bi bi-chevron-right mx-1"></i>
+                                            {{ link.source.system }}
+                                            <i class="bi bi-chevron-right mx-1"></i>
+                                            <strong>{{ link.source.kpi }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            <strong>{{ link.value_type.name }}</strong>
+                                        </div>
+                                        <div class="small text-muted">
+                                            <span class="badge bg-secondary">{{ link.value_type.kind }}</span>
+                                            {% if link.value_type.unit_label %}
+                                            <span class="badge bg-light text-dark">{{ link.value_type.unit_label }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-3">No linked KPIs found</p>
+                        <p class="small text-muted">When organizations link KPIs to share data, they will appear here.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if linked_data %}
+    <!-- Info Panel -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info border-0 shadow-sm">
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-info-circle me-3" style="font-size: 1.5rem;"></i>
+                    <div>
+                        <h6 class="alert-heading mb-2">About Linked KPI Values</h6>
+                        <p class="mb-2 small">
+                            <strong>Live Read-Through:</strong> Consumer KPIs automatically read values from their source KPIs in real-time.
+                            No data is copied or imported - values are always current.
+                        </p>
+                        <p class="mb-2 small">
+                            <strong>Deletion Protection:</strong> Source KPIs cannot be deleted while they have active consumers.
+                            The link must be removed first.
+                        </p>
+                        <p class="mb-0 small">
+                            <strong>Independent Targets:</strong> Consumer KPIs can set their own targets even though they read values from a source.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.fa-2x {
+    font-size: 2rem;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.badge {
+    font-weight: 500;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}

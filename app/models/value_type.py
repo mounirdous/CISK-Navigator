@@ -60,7 +60,12 @@ class ValueType(db.Model):
 
     # Relationships
     organization = db.relationship("Organization", back_populates="value_types")
-    kpi_configs = db.relationship("KPIValueTypeConfig", back_populates="value_type", cascade="all, delete-orphan")
+    kpi_configs = db.relationship(
+        "KPIValueTypeConfig",
+        foreign_keys="KPIValueTypeConfig.value_type_id",
+        back_populates="value_type",
+        cascade="all, delete-orphan",
+    )
     rollup_rules = db.relationship("RollupRule", back_populates="value_type", cascade="all, delete-orphan")
     rollup_snapshots = db.relationship("RollupSnapshot", back_populates="value_type", cascade="all, delete-orphan")
 
@@ -173,16 +178,45 @@ class KPIValueTypeConfig(db.Model):
         db.Integer, nullable=True, comment="Number of decimals when using display scale (overrides value_type decimals)"
     )
 
+    # Linked KPI Value Support (v1.18.0) - Live read from another org or same org
+    linked_source_org_id = db.Column(
+        db.Integer,
+        db.ForeignKey("organizations.id", ondelete="RESTRICT"),
+        nullable=True,
+        comment="Source organization for linked KPI values (can be same org or different org)",
+    )
+    linked_source_kpi_id = db.Column(
+        db.Integer,
+        db.ForeignKey("kpis.id", ondelete="RESTRICT"),
+        nullable=True,
+        comment="Source KPI to read values from (deletion blocked while linked)",
+    )
+    linked_source_value_type_id = db.Column(
+        db.Integer,
+        db.ForeignKey("value_types.id", ondelete="RESTRICT"),
+        nullable=True,
+        comment="Source value type to read from (must match type/unit)",
+    )
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    kpi = db.relationship("KPI", back_populates="value_type_configs")
-    value_type = db.relationship("ValueType", back_populates="kpi_configs")
+    kpi = db.relationship("KPI", foreign_keys=[kpi_id], back_populates="value_type_configs")
+    value_type = db.relationship("ValueType", foreign_keys=[value_type_id], back_populates="kpi_configs")
     contributions = db.relationship(
         "Contribution", back_populates="kpi_value_type_config", cascade="all, delete-orphan"
     )
     snapshots = db.relationship("KPISnapshot", back_populates="config", cascade="all, delete-orphan")
+
+    # Linked KPI relationships (for live value read-through)
+    linked_source_org = db.relationship(
+        "Organization", foreign_keys=[linked_source_org_id], backref="linked_kpi_consumers"
+    )
+    linked_source_kpi = db.relationship("KPI", foreign_keys=[linked_source_kpi_id], backref="linked_value_consumers")
+    linked_source_value_type = db.relationship(
+        "ValueType", foreign_keys=[linked_source_value_type_id], backref="linked_kpi_value_consumers"
+    )
 
     # Baseline snapshot for progress tracking (no FK constraint, just a reference)
     @property
@@ -194,8 +228,42 @@ class KPIValueTypeConfig(db.Model):
             return KPISnapshot.query.get(self.baseline_snapshot_id)
         return None
 
+    def is_linked(self):
+        """Check if this config is linked to read values from another KPI"""
+        return (
+            self.linked_source_org_id is not None
+            and self.linked_source_kpi_id is not None
+            and self.linked_source_value_type_id is not None
+        )
+
+    def get_linked_source_config(self):
+        """
+        Get the source KPIValueTypeConfig that this config is linked to.
+        Returns None if not linked.
+        """
+        if not self.is_linked():
+            return None
+
+        # Find the config on the source KPI with the matching value type
+        return KPIValueTypeConfig.query.filter_by(
+            kpi_id=self.linked_source_kpi_id, value_type_id=self.linked_source_value_type_id
+        ).first()
+
     def get_consensus_value(self):
-        """Get consensus calculation for this KPI cell"""
+        """
+        Get consensus calculation for this KPI cell.
+        If linked to another KPI, read from the source instead.
+        """
+        # If this is a linked KPI, read from the source
+        if self.is_linked():
+            source_config = self.get_linked_source_config()
+            if source_config:
+                # Read value from the source config
+                return source_config.get_consensus_value()
+            # If source not found, fall back to local value
+            return None
+
+        # Normal behavior: calculate consensus from local contributions
         from app.services import ConsensusService
 
         return ConsensusService.get_cell_value(self)

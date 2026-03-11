@@ -936,6 +936,28 @@ def edit_kpi(kpi_id):
                     config.target_direction = "maximize"
                     config.target_tolerance_pct = 10
 
+            # Handle linked KPI source (for same org or cross-org value linking)
+            is_linked = request.form.get(f"is_linked_{config.id}")
+            if is_linked:
+                linked_org_id = request.form.get(f"linked_org_{config.id}")
+                linked_kpi_id = request.form.get(f"linked_kpi_{config.id}")
+                linked_vt_id = request.form.get(f"linked_vt_{config.id}")
+
+                if linked_org_id and linked_kpi_id and linked_vt_id:
+                    config.linked_source_org_id = int(linked_org_id)
+                    config.linked_source_kpi_id = int(linked_kpi_id)
+                    config.linked_source_value_type_id = int(linked_vt_id)
+                else:
+                    # If not all fields filled, clear the link
+                    config.linked_source_org_id = None
+                    config.linked_source_kpi_id = None
+                    config.linked_source_value_type_id = None
+            else:
+                # Clear link if checkbox unchecked
+                config.linked_source_org_id = None
+                config.linked_source_kpi_id = None
+                config.linked_source_value_type_id = None
+
         # Update governance body links
         # Remove all existing links
         for link in kpi.governance_body_links:
@@ -978,6 +1000,23 @@ def delete_kpi(kpi_id):
     # Verify ownership
     if kpi.initiative_system_link.initiative.organization_id != org_id:
         flash("Access denied", "danger")
+        return redirect(url_for("workspace.index"))
+
+    # Check if any other KPI is reading values from this KPI (linked KPI protection)
+    from app.models import KPIValueTypeConfig
+
+    linked_consumers = KPIValueTypeConfig.query.filter_by(linked_source_kpi_id=kpi_id).all()
+    if linked_consumers:
+        consumer_info = []
+        for consumer in linked_consumers[:3]:  # Show up to 3 examples
+            consumer_kpi = consumer.kpi
+            org_name = consumer_kpi.initiative_system_link.initiative.organization.name
+            consumer_info.append(f"{consumer_kpi.name} (Org: {org_name})")
+
+        flash(
+            f'Cannot delete KPI "{kpi.name}" - it is being used as a linked source by {len(linked_consumers)} other KPI(s): {", ".join(consumer_info)}{"..." if len(linked_consumers) > 3 else ""}. Please contact those organizations to remove the link first.',
+            "danger",
+        )
         return redirect(url_for("workspace.index"))
 
     kpi_name = kpi.name

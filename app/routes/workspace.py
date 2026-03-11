@@ -1766,3 +1766,99 @@ def _reorder_kpis(org_id, kpi_ids, parent_link_id):
         kpi = KPI.query.filter_by(id=kpi_id, initiative_system_link_id=parent_link_id).first()
         if kpi:
             kpi.display_order = index
+
+
+@bp.route("/api/linked-kpi/organizations")
+@login_required
+def api_get_organizations_for_linking():
+    """Get list of organizations user has access to for linking KPIs"""
+    from app.models import Organization
+
+    # Get all orgs where user has membership
+    user_org_ids = [m.organization_id for m in current_user.memberships]
+    orgs = Organization.query.filter(Organization.id.in_(user_org_ids), Organization.is_deleted.is_(False)).all()
+
+    return jsonify(
+        [
+            {
+                "id": org.id,
+                "name": org.name,
+            }
+            for org in orgs
+        ]
+    )
+
+
+@bp.route("/api/linked-kpi/kpis/<int:org_id>")
+@login_required
+def api_get_kpis_for_linking(org_id):
+    """Get list of KPIs from an organization for linking"""
+    # Verify user has access to this org
+    has_access = any(m.organization_id == org_id for m in current_user.memberships)
+    if not has_access:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Get all KPIs from this org with full hierarchy context
+    kpis = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .join(ChallengeInitiativeLink)
+        .join(Challenge)
+        .join(Space)
+        .filter(Initiative.organization_id == org_id, Space.is_deleted.is_(False), KPI.is_archived.is_(False))
+        .all()
+    )
+
+    result = []
+    for kpi in kpis:
+        is_link = kpi.initiative_system_link
+        initiative = is_link.initiative
+        system = is_link.system
+
+        # Get challenges
+        challenges = [ci_link.challenge.name for ci_link in initiative.challenge_links]
+        # Get space
+        spaces = list(set([ci_link.challenge.space.name for ci_link in initiative.challenge_links]))
+
+        result.append(
+            {
+                "id": kpi.id,
+                "name": kpi.name,
+                "system": system.name,
+                "initiative": initiative.name,
+                "challenges": ", ".join(challenges),
+                "spaces": ", ".join(spaces),
+                "full_path": f"{', '.join(spaces)} → {', '.join(challenges)} → {initiative.name} → {system.name} → {kpi.name}",
+            }
+        )
+
+    return jsonify(result)
+
+
+@bp.route("/api/linked-kpi/value-types/<int:kpi_id>")
+@login_required
+def api_get_value_types_for_linking(kpi_id):
+    """Get list of value types from a KPI for linking"""
+    kpi = KPI.query.get_or_404(kpi_id)
+
+    # Verify user has access to this KPI's org
+    org_id = kpi.initiative_system_link.initiative.organization_id
+    has_access = any(m.organization_id == org_id for m in current_user.memberships)
+    if not has_access:
+        return jsonify({"error": "Access denied"}), 403
+
+    result = []
+    for config in kpi.value_type_configs:
+        vt = config.value_type
+        result.append(
+            {
+                "id": vt.id,
+                "name": vt.name,
+                "kind": vt.kind,
+                "unit_label": vt.unit_label,
+                "display": f"{vt.name}" + (f" ({vt.unit_label})" if vt.unit_label else ""),
+            }
+        )
+
+    return jsonify(result)
