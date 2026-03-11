@@ -1434,6 +1434,138 @@ def search_page():
     )
 
 
+@bp.route("/api/search/live")
+@login_required
+@organization_required
+def live_search():
+    """Live search API endpoint - returns JSON results as user types"""
+    org_id = session.get("organization_id")
+    query = request.args.get("q", "").strip()
+
+    if not query or len(query) < 2:
+        return jsonify({"results": []})
+
+    search_pattern = f"%{query}%"
+    results = []
+
+    # Limit to top 3 of each type for quick display
+    limit = 3
+
+    # Search Spaces
+    spaces = (
+        Space.query.filter(
+            Space.organization_id == org_id,
+            db.or_(Space.name.ilike(search_pattern), Space.description.ilike(search_pattern)),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    for s in spaces:
+        results.append(
+            {
+                "type": "space",
+                "id": s.id,
+                "name": s.name,
+                "description": s.description[:100] if s.description else None,
+                "url": url_for("workspace.index", _anchor=f"space-{s.id}"),
+            }
+        )
+
+    # Search Challenges
+    challenges = (
+        Challenge.query.join(Space)
+        .filter(
+            Space.organization_id == org_id,
+            db.or_(Challenge.name.ilike(search_pattern), Challenge.description.ilike(search_pattern)),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    for c in challenges:
+        results.append(
+            {
+                "type": "challenge",
+                "id": c.id,
+                "name": c.name,
+                "description": c.description[:100] if c.description else None,
+                "space": c.space.name,
+                "url": url_for("workspace.index", _anchor=f"challenge-{c.id}"),
+            }
+        )
+
+    # Search Initiatives
+    initiatives = (
+        Initiative.query.filter(
+            Initiative.organization_id == org_id,
+            db.or_(Initiative.name.ilike(search_pattern), Initiative.description.ilike(search_pattern)),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    for i in initiatives:
+        results.append(
+            {
+                "type": "initiative",
+                "id": i.id,
+                "name": i.name,
+                "description": i.description[:100] if i.description else None,
+                "url": url_for("workspace.index", _anchor=f"initiative-{i.id}"),
+            }
+        )
+
+    # Search Systems
+    systems = (
+        System.query.filter(
+            System.organization_id == org_id,
+            db.or_(System.name.ilike(search_pattern), System.description.ilike(search_pattern)),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    for s in systems:
+        results.append(
+            {
+                "type": "system",
+                "id": s.id,
+                "name": s.name,
+                "description": s.description[:100] if s.description else None,
+                "url": url_for("workspace.index", _anchor=f"system-{s.id}"),
+            }
+        )
+
+    # Search KPIs
+    kpis = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(
+            Initiative.organization_id == org_id,
+            db.or_(KPI.name.ilike(search_pattern), KPI.description.ilike(search_pattern)),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    for k in kpis:
+        results.append(
+            {
+                "type": "kpi",
+                "id": k.id,
+                "name": k.name,
+                "description": k.description[:100] if k.description else None,
+                "initiative": k.initiative_system_link.initiative.name if k.initiative_system_link else None,
+                "system": k.initiative_system_link.system.name if k.initiative_system_link else None,
+                "url": url_for("workspace.index", _anchor=f"kpi-{k.id}"),
+            }
+        )
+
+    return jsonify({"results": results, "total": len(results)})
+
+
 @bp.route("/api/kpi/<int:kpi_id>/status")
 @login_required
 @organization_required

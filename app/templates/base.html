@@ -386,15 +386,21 @@
                     {% endif %}
                 </ul>
                 {% if session.organization_id %}
-                <form class="d-flex me-3" method="GET" action="{{ url_for('workspace.search_page') }}">
-                    <div class="input-group" style="width: 280px;">
-                        <input class="form-control" type="search" name="q" placeholder="Search KPIs, Systems..."
-                               style="border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
-                        <button class="btn btn-outline-light" type="submit" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
-                            <i class="bi bi-search"></i>
-                        </button>
+                <div class="position-relative me-3">
+                    <form class="d-flex" method="GET" action="{{ url_for('workspace.search_page') }}" id="searchForm">
+                        <div class="input-group" style="width: 280px;">
+                            <input class="form-control" type="search" name="q" id="liveSearchInput" placeholder="Search KPIs, Systems..."
+                                   autocomplete="off"
+                                   style="border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
+                            <button class="btn btn-outline-light" type="submit" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <div id="liveSearchResults" class="position-absolute" style="display: none; top: 100%; left: 0; right: 0; z-index: 1050; margin-top: 4px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 70vh; overflow-y: auto;">
+                        <!-- Live search results will appear here -->
                     </div>
-                </form>
+                </div>
                 {% endif %}
                 <ul class="navbar-nav">
                     {% if session.organization_id and current_user.can_view_comments(session.organization_id) %}
@@ -629,6 +635,199 @@
     document.addEventListener('DOMContentLoaded', function() {
         loadUnreadMentionsCount();
     });
+    </script>
+    {% endif %}
+
+    <!-- Live Search JavaScript -->
+    {% if session.organization_id %}
+    <script>
+    (function() {
+        const searchInput = document.getElementById('liveSearchInput');
+        const searchResults = document.getElementById('liveSearchResults');
+        const searchForm = document.getElementById('searchForm');
+        let debounceTimeout;
+        let currentQuery = '';
+
+        // Icon mapping for different entity types
+        const typeIcons = {
+            'space': 'bi-grid-3x3-gap-fill',
+            'challenge': 'bi-flag-fill',
+            'initiative': 'bi-lightbulb-fill',
+            'system': 'bi-diagram-3-fill',
+            'kpi': 'bi-bullseye'
+        };
+
+        const typeColors = {
+            'space': '#0d6efd',
+            'challenge': '#dc3545',
+            'initiative': '#198754',
+            'system': '#0dcaf0',
+            'kpi': '#ffc107'
+        };
+
+        const typeLabels = {
+            'space': 'Space',
+            'challenge': 'Challenge',
+            'initiative': 'Initiative',
+            'system': 'System',
+            'kpi': 'KPI'
+        };
+
+        function performLiveSearch(query) {
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            currentQuery = query;
+
+            fetch(`{{ url_for('workspace.live_search') }}?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (currentQuery !== query) return; // Ignore stale results
+
+                    if (data.results && data.results.length > 0) {
+                        displayResults(data.results, query);
+                    } else {
+                        displayNoResults(query);
+                    }
+                })
+                .catch(error => {
+                    console.error('Live search error:', error);
+                    searchResults.style.display = 'none';
+                });
+        }
+
+        function displayResults(results, query) {
+            let html = '<div style="padding: 8px 12px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; font-size: 0.875rem; color: #6c757d;">';
+            html += `<i class="bi bi-search"></i> Found ${results.length} result${results.length !== 1 ? 's' : ''} for "<strong>${escapeHtml(query)}</strong>"`;
+            html += '</div>';
+
+            html += '<div style="padding: 4px;">';
+            results.forEach(result => {
+                const icon = typeIcons[result.type] || 'bi-circle';
+                const color = typeColors[result.type] || '#6c757d';
+                const label = typeLabels[result.type] || result.type;
+
+                html += `<a href="${result.url}" class="live-search-item" style="display: block; padding: 10px 12px; text-decoration: none; color: #212529; border-radius: 6px; margin: 2px 0; transition: background 0.15s;">`;
+                html += `<div style="display: flex; align-items: start; gap: 10px;">`;
+                html += `<i class="bi ${icon}" style="color: ${color}; font-size: 1.1rem; margin-top: 2px;"></i>`;
+                html += `<div style="flex: 1; min-width: 0;">`;
+                html += `<div style="font-weight: 500; margin-bottom: 2px;">${highlightQuery(escapeHtml(result.name), query)}</div>`;
+
+                if (result.space || result.initiative || result.system) {
+                    html += `<div style="font-size: 0.8rem; color: #6c757d; margin-bottom: 2px;">`;
+                    if (result.space) html += `<span>${escapeHtml(result.space)}</span>`;
+                    if (result.initiative) html += `<span> → ${escapeHtml(result.initiative)}</span>`;
+                    if (result.system) html += `<span> → ${escapeHtml(result.system)}</span>`;
+                    html += `</div>`;
+                }
+
+                if (result.description) {
+                    html += `<div style="font-size: 0.85rem; color: #6c757d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${highlightQuery(escapeHtml(result.description), query)}</div>`;
+                }
+
+                html += `</div>`;
+                html += `<span style="font-size: 0.75rem; color: #6c757d; white-space: nowrap; margin-top: 2px;">${label}</span>`;
+                html += `</div>`;
+                html += `</a>`;
+            });
+            html += '</div>';
+
+            html += '<div style="padding: 8px 12px; background: #f8f9fa; border-top: 1px solid #dee2e6; text-align: center; font-size: 0.875rem;">';
+            html += `<a href="{{ url_for('workspace.search_page') }}?q=${encodeURIComponent(query)}" style="color: #0d6efd; text-decoration: none;">`;
+            html += `<i class="bi bi-arrow-right-circle"></i> View all results`;
+            html += `</a>`;
+            html += '</div>';
+
+            searchResults.innerHTML = html;
+            searchResults.style.display = 'block';
+        }
+
+        function displayNoResults(query) {
+            let html = '<div style="padding: 20px; text-align: center; color: #6c757d;">';
+            html += '<i class="bi bi-search" style="font-size: 2rem; opacity: 0.5;"></i>';
+            html += `<div style="margin-top: 8px;">No results found for "<strong>${escapeHtml(query)}</strong>"</div>`;
+            html += '<div style="font-size: 0.875rem; margin-top: 4px;">Try different keywords</div>';
+            html += '</div>';
+
+            searchResults.innerHTML = html;
+            searchResults.style.display = 'block';
+        }
+
+        function highlightQuery(text, query) {
+            const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+            return text.replace(regex, '<mark style="background: #fff3cd; padding: 0 2px; border-radius: 2px;">$1</mark>');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+
+            clearTimeout(debounceTimeout);
+
+            if (query.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            debounceTimeout = setTimeout(() => performLiveSearch(query), 300);
+        });
+
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length >= 2 && searchResults.innerHTML) {
+                searchResults.style.display = 'block';
+            }
+        });
+
+        // Hide results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
+        });
+
+        // Prevent form submission if live results are showing (let user click on result)
+        searchForm.addEventListener('submit', function(e) {
+            // Allow form submission to go through to search page
+        });
+
+        // Add hover styles dynamically
+        const style = document.createElement('style');
+        style.textContent = `
+            .live-search-item:hover {
+                background-color: #f8f9fa !important;
+            }
+            #liveSearchResults mark {
+                font-weight: 600;
+            }
+            #liveSearchResults::-webkit-scrollbar {
+                width: 8px;
+            }
+            #liveSearchResults::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 4px;
+            }
+            #liveSearchResults::-webkit-scrollbar-thumb {
+                background: #888;
+                border-radius: 4px;
+            }
+            #liveSearchResults::-webkit-scrollbar-thumb:hover {
+                background: #555;
+            }
+        `;
+        document.head.appendChild(style);
+    })();
     </script>
     {% endif %}
 
