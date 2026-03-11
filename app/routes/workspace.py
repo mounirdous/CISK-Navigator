@@ -70,12 +70,16 @@ def _filters_match(current, preset):
             return sorted([str(v) for v in val])
         return str(val)
 
+    # Remove skip_default from comparison (it's a control parameter, not a filter)
+    current_clean = {k: v for k, v in current.items() if k != "skip_default"}
+    preset_clean = {k: v for k, v in preset.items() if k != "skip_default"}
+
     # Get all keys from both
-    all_keys = set(current.keys()) | set(preset.keys())
+    all_keys = set(current_clean.keys()) | set(preset_clean.keys())
 
     for key in all_keys:
-        current_norm = normalize_value(current.get(key))
-        preset_norm = normalize_value(preset.get(key))
+        current_norm = normalize_value(current_clean.get(key))
+        preset_norm = normalize_value(preset_clean.get(key))
 
         # Both None/missing - match
         if current_norm is None and preset_norm is None:

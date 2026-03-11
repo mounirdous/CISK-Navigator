@@ -2926,9 +2926,9 @@ function getCurrentFilters() {
     const spaces = Array.from(form.querySelectorAll('input[name="space"]:checked')).map(cb => cb.value);
     if (spaces.length > 0 && spaces.length < {{ all_spaces_for_filter|length }}) filters.space = spaces;
 
-    // Space type
+    // Space type - ALWAYS save it (including 'all')
     const spaceType = form.querySelector('input[name="space_type"]:checked')?.value;
-    if (spaceType && spaceType !== 'all') filters.space_type = spaceType;
+    if (spaceType) filters.space_type = spaceType;
 
     // Groups
     const groups = Array.from(form.querySelectorAll('input[name="group"]:checked')).map(cb => cb.value);
@@ -2940,7 +2940,7 @@ function getCurrentFilters() {
     // Show all columns
     if (form.querySelector('input[name="show_all_columns"]')?.checked) filters.show_all_columns = '1';
 
-    // Show levels
+    // Show levels - ALWAYS save them (including '1' for checked)
     if (form.querySelector('input[name="show_spaces"]')?.checked) filters.show_spaces = '1';
     if (form.querySelector('input[name="show_challenges"]')?.checked) filters.show_challenges = '1';
     if (form.querySelector('input[name="show_initiatives"]')?.checked) filters.show_initiatives = '1';
