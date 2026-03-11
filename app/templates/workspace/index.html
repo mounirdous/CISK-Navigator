@@ -2139,6 +2139,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get all descendants of the dragged row (children, grandchildren, etc.)
             const descendants = getDescendants(draggedRow);
 
+            // CRITICAL: Remove descendants from DOM FIRST to prevent them from pushing siblings
+            // When we insert draggedRow, we don't want its descendants to interfere with sibling positions
+            console.log('Removing ' + descendants.length + ' descendants from DOM temporarily...');
+            descendants.forEach(desc => desc.remove());
+
             // Move dragged row and all its descendants as a unit
             if (dragIndex < dropIndex) {
                 // Moving down: insert after target (and all target's descendants!)
@@ -2181,17 +2186,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.parentNode.appendChild(draggedRow);
                 }
 
-                // Move descendants right after their parent in order
-                // CRITICAL FIX: Check if descendants would be inserted between siblings
-                let safeInsertPoint = draggedRow.nextSibling;
-                if (safeInsertPoint && safeInsertPoint.dataset.level === dragLevel) {
-                    console.log('⚠️ CRITICAL: draggedRow.nextSibling is a sibling - descendants would break hierarchy');
-                    safeInsertPoint = getParentBoundary(dragLevel, dragParent);
-                }
-
-                console.log('Safe insertion point for descendants:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end');
+                // Re-insert descendants right after their parent
+                console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
+                let insertAfter = draggedRow;
                 descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, safeInsertPoint);
+                    this.parentNode.insertBefore(desc, insertAfter.nextSibling);
+                    insertAfter = desc;
                 });
             } else {
                 // Moving up: insert before target
