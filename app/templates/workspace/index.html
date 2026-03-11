@@ -2187,12 +2187,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 // Re-insert descendants right after their parent
-                // CRITICAL: Use a FIXED insertion point to avoid pushing siblings
+                // CRITICAL: Find a safe insertion point that won't push siblings past parent boundary
                 console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
-                const fixedInsertPoint = draggedRow.nextSibling;
-                console.log('Fixed insertion point:', fixedInsertPoint ? fixedInsertPoint.textContent.trim().substring(0, 30) : 'null');
+                let safeInsertPoint = draggedRow.nextSibling;
+                console.log('Initial insertion point:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'null');
+
+                // Check if inserting descendants before this point would push siblings out of parent territory
+                // Count how many siblings exist after draggedRow within the same parent
+                const siblingsAfterDrag = siblings.slice(siblings.indexOf(draggedRow) + 1);
+                console.log('Siblings after draggedRow:', siblingsAfterDrag.length);
+
+                // If there are siblings after draggedRow, we need to insert descendants at the parent boundary
+                // to avoid pushing those siblings into the next parent's territory
+                if (siblingsAfterDrag.length > 0) {
+                    console.log('⚠️ There are siblings after draggedRow - using parent boundary to avoid pushing them');
+                    safeInsertPoint = getParentBoundary(dragLevel, dragParent);
+                    console.log('Safe insertion point (parent boundary):', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end of parent');
+                }
+
                 descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, fixedInsertPoint);
+                    this.parentNode.insertBefore(desc, safeInsertPoint);
                 });
             } else {
                 // Moving up: insert before target
@@ -2228,12 +2242,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('After inserting draggedRow, its nextSibling:', draggedRow.nextSibling ? draggedRow.nextSibling.textContent.trim().substring(0, 30) : 'null');
 
                 // Re-insert descendants right after their parent
-                // CRITICAL: Use a FIXED insertion point to avoid pushing siblings
+                // CRITICAL: Find a safe insertion point that won't push siblings past parent boundary
                 console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
-                const fixedInsertPoint = draggedRow.nextSibling;
-                console.log('Fixed insertion point:', fixedInsertPoint ? fixedInsertPoint.textContent.trim().substring(0, 30) : 'null');
+                let safeInsertPoint = draggedRow.nextSibling;
+                console.log('Initial insertion point:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'null');
+
+                // Check if inserting descendants before this point would push siblings out of parent territory
+                // Count how many siblings exist after draggedRow within the same parent
+                const siblingsAfterDrag = siblings.slice(siblings.indexOf(draggedRow) + 1);
+                console.log('Siblings after draggedRow:', siblingsAfterDrag.length);
+
+                // If there are siblings after draggedRow, we need to insert descendants at the parent boundary
+                // to avoid pushing those siblings into the next parent's territory
+                if (siblingsAfterDrag.length > 0) {
+                    console.log('⚠️ There are siblings after draggedRow - using parent boundary to avoid pushing them');
+                    safeInsertPoint = getParentBoundary(dragLevel, dragParent);
+                    console.log('Safe insertion point (parent boundary):', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end of parent');
+                }
+
                 descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, fixedInsertPoint);
+                    this.parentNode.insertBefore(desc, safeInsertPoint);
                 });
             }
 
