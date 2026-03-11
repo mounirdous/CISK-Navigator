@@ -2192,15 +2192,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 let safeInsertPoint = draggedRow.nextSibling;
                 console.log('Initial insertion point:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'null');
 
-                // Check if inserting descendants before this point would push siblings out of parent territory
-                // Count how many siblings exist after draggedRow within the same parent
-                const siblingsAfterDrag = siblings.slice(siblings.indexOf(draggedRow) + 1);
-                console.log('Siblings after draggedRow:', siblingsAfterDrag.length);
-
-                // If there are siblings after draggedRow, we need to insert descendants at the parent boundary
-                // to avoid pushing those siblings into the next parent's territory
-                if (siblingsAfterDrag.length > 0) {
-                    console.log('⚠️ There are siblings after draggedRow - using parent boundary to avoid pushing them');
+                // Check if nextSibling is a sibling of draggedRow (same level, same parent)
+                // If yes, inserting descendants before it would push it out of parent territory
+                if (safeInsertPoint && safeInsertPoint.dataset.level === dragLevel &&
+                    safeInsertPoint.dataset.parentId === dragParent) {
+                    console.log('⚠️ nextSibling is a sibling at same level - using parent boundary to avoid pushing it');
+                    console.log('   nextSibling:', safeInsertPoint.textContent.trim().substring(0, 30), 'level:', safeInsertPoint.dataset.level, 'parentId:', safeInsertPoint.dataset.parentId);
                     safeInsertPoint = getParentBoundary(dragLevel, dragParent);
                     console.log('Safe insertion point (parent boundary):', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end of parent');
                 }
@@ -2247,15 +2244,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 let safeInsertPoint = draggedRow.nextSibling;
                 console.log('Initial insertion point:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'null');
 
-                // Check if inserting descendants before this point would push siblings out of parent territory
-                // Count how many siblings exist after draggedRow within the same parent
-                const siblingsAfterDrag = siblings.slice(siblings.indexOf(draggedRow) + 1);
-                console.log('Siblings after draggedRow:', siblingsAfterDrag.length);
-
-                // If there are siblings after draggedRow, we need to insert descendants at the parent boundary
-                // to avoid pushing those siblings into the next parent's territory
-                if (siblingsAfterDrag.length > 0) {
-                    console.log('⚠️ There are siblings after draggedRow - using parent boundary to avoid pushing them');
+                // Check if nextSibling is a sibling of draggedRow (same level, same parent)
+                // If yes, inserting descendants before it would push it out of parent territory
+                if (safeInsertPoint && safeInsertPoint.dataset.level === dragLevel &&
+                    safeInsertPoint.dataset.parentId === dragParent) {
+                    console.log('⚠️ nextSibling is a sibling at same level - using parent boundary to avoid pushing it');
+                    console.log('   nextSibling:', safeInsertPoint.textContent.trim().substring(0, 30), 'level:', safeInsertPoint.dataset.level, 'parentId:', safeInsertPoint.dataset.parentId);
                     safeInsertPoint = getParentBoundary(dragLevel, dragParent);
                     console.log('Safe insertion point (parent boundary):', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end of parent');
                 }
