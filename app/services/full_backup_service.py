@@ -153,6 +153,10 @@ class FullBackupService:
                 "space_label": space.space_label,
                 "is_private": space.is_private,
                 "display_order": space.display_order,
+                "swot_strengths": space.swot_strengths,
+                "swot_weaknesses": space.swot_weaknesses,
+                "swot_opportunities": space.swot_opportunities,
+                "swot_threats": space.swot_threats,
                 "challenges": [],
             }
 
@@ -179,6 +183,7 @@ class FullBackupService:
                     initiative_data = {
                         "name": initiative.name,
                         "description": initiative.description,
+                        "group_label": initiative.group_label,
                         "systems": [],
                     }
 

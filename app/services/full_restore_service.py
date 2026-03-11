@@ -258,6 +258,10 @@ class FullRestoreService:
             space_label=space_data.get("space_label"),
             is_private=space_data.get("is_private", False),
             display_order=space_data.get("display_order", 0),
+            swot_strengths=space_data.get("swot_strengths"),
+            swot_weaknesses=space_data.get("swot_weaknesses"),
+            swot_opportunities=space_data.get("swot_opportunities"),
+            swot_threats=space_data.get("swot_threats"),
         )
         db.session.add(space)
         db.session.flush()
@@ -289,6 +293,7 @@ class FullRestoreService:
                             organization_id=organization_id,
                             name=init_name,
                             description=initiative_data.get("description"),
+                            group_label=initiative_data.get("group_label"),
                         )
                         db.session.add(initiative)
                         db.session.flush()
