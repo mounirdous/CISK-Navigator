@@ -71,3 +71,5 @@ data/MCase_*.yaml
 requirements.new.txt
 requirements-*.txt
 !requirements.txt
+.local-pc-notes
+

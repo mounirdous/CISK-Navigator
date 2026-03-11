@@ -43,10 +43,10 @@ def upgrade():
         password_hash = generate_password_hash(initial_password)
         
         conn.execute(sa.text("""
-            INSERT INTO users 
-            (login, email, display_name, password_hash, is_active, is_super_admin, is_global_admin, created_at, updated_at, must_change_password)
-            VALUES 
-            (:login, :email, :display_name, :password_hash, :is_active, :is_super_admin, :is_global_admin, :created_at, :updated_at, :must_change_password)
+            INSERT INTO users
+            (login, email, display_name, password_hash, is_active, is_super_admin, is_global_admin, dark_mode, navbar_position, navbar_autohide, created_at, updated_at, must_change_password)
+            VALUES
+            (:login, :email, :display_name, :password_hash, :is_active, :is_super_admin, :is_global_admin, :dark_mode, :navbar_position, :navbar_autohide, :created_at, :updated_at, :must_change_password)
         """), {
             'login': 'admin',
             'email': 'admin@cisknavigator.com',
@@ -55,15 +55,18 @@ def upgrade():
             'is_active': True,
             'is_super_admin': True,
             'is_global_admin': True,
+            'dark_mode': False,
+            'navbar_position': 'top',
+            'navbar_autohide': False,
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow(),
             'must_change_password': True
         })
         
-        print("✓ Initial super admin created: 'admin'")
-        print("⚠️  SECURITY: Change password immediately after first login!")
+        print("[OK] Initial super admin created: 'admin'")
+        print("[WARN] SECURITY: Change password immediately after first login!")
     else:
-        print(f"✓ Super admin already exists (found {count}), skipping creation")
+        print(f"[OK] Super admin already exists (found {count}), skipping creation")
 
 
 def downgrade():
