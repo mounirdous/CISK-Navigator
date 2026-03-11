@@ -2947,6 +2947,12 @@ function getCurrentFilters() {
     if (form.querySelector('input[name="show_systems"]')?.checked) filters.show_systems = '1';
     if (form.querySelector('input[name="show_kpis"]')?.checked) filters.show_kpis = '1';
 
+    // Show aggregations - ALWAYS save them (including '1' for checked)
+    if (form.querySelector('input[name="show_space_aggs"]')?.checked) filters.show_space_aggs = '1';
+    if (form.querySelector('input[name="show_challenge_aggs"]')?.checked) filters.show_challenge_aggs = '1';
+    if (form.querySelector('input[name="show_initiative_aggs"]')?.checked) filters.show_initiative_aggs = '1';
+    if (form.querySelector('input[name="show_system_aggs"]')?.checked) filters.show_system_aggs = '1';
+
     return filters;
 }
 
