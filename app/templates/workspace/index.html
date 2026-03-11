@@ -2182,10 +2182,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 // Move descendants right after their parent in order
-                let lastInserted = draggedRow;
+                // CRITICAL FIX: Check if descendants would be inserted between siblings
+                let safeInsertPoint = draggedRow.nextSibling;
+                if (safeInsertPoint && safeInsertPoint.dataset.level === dragLevel) {
+                    console.log('⚠️ CRITICAL: draggedRow.nextSibling is a sibling - descendants would break hierarchy');
+                    safeInsertPoint = getParentBoundary(dragLevel, dragParent);
+                }
+
+                console.log('Safe insertion point for descendants:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end');
                 descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, lastInserted.nextSibling);
-                    lastInserted = desc;
+                    this.parentNode.insertBefore(desc, safeInsertPoint);
                 });
             } else {
                 // Moving up: insert before target
@@ -2224,28 +2230,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Moving ' + descendants.length + ' descendants...');
                 let lastInserted = draggedRow;
                 descendants.forEach((desc, idx) => {
-                    let nextInsertPoint = lastInserted.nextSibling;
-                    console.log(`Descendant ${idx + 1}: ${desc.textContent.trim().substring(0, 30)}`);
-                    console.log('  Will insert before:', nextInsertPoint ? nextInsertPoint.textContent.trim().substring(0, 30) + ' (level=' + nextInsertPoint.dataset.level + ', parentId=' + nextInsertPoint.dataset.parentId + ')' : 'null');
-
-                    // Safety check: ensure nextInsertPoint is not a sibling of draggedRow with different parent
-                    // This prevents pushing siblings past the parent boundary
-                    if (nextInsertPoint && nextInsertPoint.dataset.level === dragLevel) {
-                        console.log('  nextInsertPoint is a sibling (level=' + dragLevel + ')');
-                        if (nextInsertPoint.dataset.parentId !== dragParent) {
-                            console.log('⚠️ Descendant insertion would push sibling into wrong parent! Using boundary.');
-                            nextInsertPoint = getParentBoundary(dragLevel, dragParent);
-                            console.log('  Using boundary instead:', nextInsertPoint ? nextInsertPoint.textContent.trim().substring(0, 30) : 'null');
-                        } else {
-                            console.log('  Same parent, allowing insertion');
-                        }
-                    }
-
-                    this.parentNode.insertBefore(desc, nextInsertPoint);
+                    console.log(`Inserting descendant ${idx + 1} after lastInserted`);
+                    this.parentNode.insertBefore(desc, lastInserted.nextSibling);
                     lastInserted = desc;
-                    console.log('  After insertion, lastInserted.nextSibling:', lastInserted.nextSibling ? lastInserted.nextSibling.textContent.trim().substring(0, 30) : 'null');
                 });
             }
+
+            // Force visual refresh to recalculate CSS hierarchy rendering
+            // The DOM is correct, but CSS might be using stale calculations for indentation
+            console.log('Forcing visual refresh...');
+            const tbody = this.parentNode;
+            tbody.style.visibility = 'hidden';
+            // Force reflow
+            void tbody.offsetHeight;
+            tbody.style.visibility = 'visible';
 
             // Re-collect siblings in NEW order (after DOM move)
             const allRowsAfterMove = Array.from(document.querySelectorAll(`tr[data-level="${dragLevel}"]`));
