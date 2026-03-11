@@ -2,6 +2,8 @@
 Super Admin routes - System-wide settings and configuration
 """
 
+from datetime import datetime
+
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user
 
@@ -490,3 +492,88 @@ def linked_kpis():
     }
 
     return render_template("super_admin/linked_kpis.html", linked_data=linked_data, stats=stats)
+
+
+@bp.route("/backup")
+@super_admin_required
+def backup():
+    """Backup and restore page"""
+    organizations = Organization.query.order_by(Organization.name).all()
+    return render_template("super_admin/backup.html", organizations=organizations)
+
+
+@bp.route("/backup/create/<int:org_id>")
+@super_admin_required
+def create_backup(org_id):
+    """Create full backup for an organization"""
+    import json
+
+    from flask import make_response
+
+    from app.services.full_backup_service import FullBackupService
+
+    org = Organization.query.get_or_404(org_id)
+
+    backup_data = FullBackupService.create_full_backup(org_id)
+
+    if not backup_data:
+        flash("Failed to create backup", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    # Create JSON response
+    response = make_response(json.dumps(backup_data, indent=2))
+    response.headers["Content-Type"] = "application/json"
+    response.headers["Content-Disposition"] = (
+        f"attachment; filename=backup_{org.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    )
+
+    flash(f"Backup created for {org.name}", "success")
+    return response
+
+
+@bp.route("/backup/restore", methods=["POST"])
+@super_admin_required
+def restore_backup():
+    """Restore from backup file"""
+    import json
+
+    from app.services.full_restore_service import FullRestoreService
+
+    if "backup_file" not in request.files:
+        flash("No backup file provided", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    file = request.files["backup_file"]
+
+    if file.filename == "":
+        flash("No file selected", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    if not file.filename.endswith(".json"):
+        flash("Backup file must be a JSON file", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+    try:
+        backup_data = json.load(file)
+
+        # Get target organization ID from form
+        target_org_id = request.form.get("target_org_id", type=int)
+
+        if not target_org_id:
+            flash("Please select a target organization", "danger")
+            return redirect(url_for("super_admin.backup"))
+
+        # Restore the backup
+        result = FullRestoreService.restore_full_backup(target_org_id, backup_data)
+
+        if result.get("success"):
+            flash(f"Backup restored successfully: {result.get('summary', '')}", "success")
+        else:
+            flash(f"Restore failed: {result.get('error', 'Unknown error')}", "danger")
+
+    except json.JSONDecodeError:
+        flash("Invalid JSON file", "danger")
+    except Exception as e:
+        flash(f"Restore error: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.backup"))

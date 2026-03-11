@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Backup & Restore - Super Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+.backup-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.backup-header h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.backup-header p {
+    margin: 0.75rem 0 0 0;
+    opacity: 0.95;
+    font-size: 1rem;
+}
+
+.backup-section {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.backup-section:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.backup-section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.backup-section-title i {
+    font-size: 1.5rem;
+    color: var(--accent-primary);
+}
+
+.org-select-card {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.file-upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    background: var(--bg-tertiary);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.file-upload-area:hover {
+    border-color: var(--accent-primary);
+    background: var(--bg-secondary);
+}
+
+.file-upload-area input[type="file"] {
+    display: none;
+}
+
+.warning-box {
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 4px solid #ffc107;
+    padding: 1rem 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.warning-box strong {
+    color: #ffc107;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in" style="max-width: 1200px;">
+    <div class="card hover-lift" style="margin: 1rem;">
+        <div class="backup-header">
+            <h2>
+                <i class="bi bi-database"></i>
+                Backup & Restore
+            </h2>
+            <p>Create full organization backups or restore from backup files</p>
+        </div>
+
+        <div class="card-body" style="padding: 2.5rem;">
+            <!-- Create Backup Section -->
+            <div class="backup-section">
+                <div class="backup-section-title">
+                    <i class="bi bi-download"></i>
+                    Create Backup
+                </div>
+
+                <p class="text-muted mb-3">
+                    Download a complete backup of an organization including all spaces, challenges, initiatives,
+                    systems, KPIs, value types, governance bodies, and contributions.
+                </p>
+
+                <div class="org-select-card">
+                    <label for="backup-org-select" class="form-label fw-semibold">
+                        <i class="bi bi-building"></i> Select Organization
+                    </label>
+                    <select class="form-select" id="backup-org-select">
+                        <option value="">-- Choose Organization --</option>
+                        {% for org in organizations %}
+                        <option value="{{ org.id }}">{{ org.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button type="button" id="create-backup-btn" class="btn btn-primary btn-lg" disabled>
+                    <i class="bi bi-download"></i> Download Backup
+                </button>
+            </div>
+
+            <!-- Restore Backup Section -->
+            <div class="backup-section">
+                <div class="backup-section-title">
+                    <i class="bi bi-upload"></i>
+                    Restore Backup
+                </div>
+
+                <div class="warning-box mb-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Warning:</strong> Restoring a backup will REPLACE all data in the target organization.
+                    This action cannot be undone. Always create a backup before restoring.
+                </div>
+
+                <form method="POST" action="{{ url_for('super_admin.restore_backup') }}" enctype="multipart/form-data" id="restore-form">
+                    <div class="org-select-card">
+                        <label for="target_org_id" class="form-label fw-semibold">
+                            <i class="bi bi-building"></i> Target Organization
+                        </label>
+                        <select class="form-select" id="target_org_id" name="target_org_id" required>
+                            <option value="">-- Choose Organization --</option>
+                            {% for org in organizations %}
+                            <option value="{{ org.id }}">{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">
+                            All existing data in this organization will be replaced
+                        </small>
+                    </div>
+
+                    <div class="file-upload-area mb-3" id="file-upload-area">
+                        <i class="bi bi-cloud-upload" style="font-size: 3rem; color: var(--text-muted);"></i>
+                        <p class="mb-2" style="color: var(--text-primary);">
+                            <strong>Click to select backup file</strong> or drag and drop
+                        </p>
+                        <p class="text-muted" style="font-size: 0.9rem;">JSON files only</p>
+                        <input type="file" id="backup_file" name="backup_file" accept=".json" required>
+                        <div id="file-name" class="mt-2" style="color: var(--accent-primary); font-weight: 600;"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger btn-lg" id="restore-btn" disabled>
+                        <i class="bi bi-upload"></i> Restore Backup
+                    </button>
+                </form>
+            </div>
+
+            <div class="alert alert-info d-flex align-items-start">
+                <i class="bi bi-info-circle me-3" style="font-size: 1.5rem;"></i>
+                <div>
+                    <strong>Backup Format:</strong> JSON files containing complete organization data.
+                    <br>
+                    <strong>What's included:</strong> All hierarchical data (spaces → challenges → initiatives → systems → KPIs),
+                    value types, governance bodies, KPI configurations, and all contributions.
+                    <br>
+                    <strong>Best Practice:</strong> Create regular backups before major changes or migrations.
+                </div>
+            </div>
+
+            <div class="text-end mt-4">
+                <a href="{{ url_for('super_admin.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const backupOrgSelect = document.getElementById('backup-org-select');
+    const createBackupBtn = document.getElementById('create-backup-btn');
+    const fileUploadArea = document.getElementById('file-upload-area');
+    const fileInput = document.getElementById('backup_file');
+    const fileName = document.getElementById('file-name');
+    const targetOrgSelect = document.getElementById('target_org_id');
+    const restoreBtn = document.getElementById('restore-btn');
+    const restoreForm = document.getElementById('restore-form');
+
+    // Enable backup button when org is selected
+    backupOrgSelect.addEventListener('change', function() {
+        createBackupBtn.disabled = !this.value;
+    });
+
+    // Handle backup download
+    createBackupBtn.addEventListener('click', function() {
+        const orgId = backupOrgSelect.value;
+        if (orgId) {
+            window.location.href = `{{ url_for('super_admin.create_backup', org_id=0) }}`.replace('0', orgId);
+        }
+    });
+
+    // File upload area click
+    fileUploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // File input change
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            fileName.textContent = `Selected: ${this.files[0].name}`;
+            checkRestoreReady();
+        }
+    });
+
+    // Target org select change
+    targetOrgSelect.addEventListener('change', function() {
+        checkRestoreReady();
+    });
+
+    // Check if restore is ready
+    function checkRestoreReady() {
+        const hasFile = fileInput.files.length > 0;
+        const hasTarget = targetOrgSelect.value !== '';
+        restoreBtn.disabled = !(hasFile && hasTarget);
+    }
+
+    // Confirm restore
+    restoreForm.addEventListener('submit', function(e) {
+        const orgName = targetOrgSelect.options[targetOrgSelect.selectedIndex].text;
+        if (!confirm(`⚠️ WARNING: This will REPLACE ALL DATA in "${orgName}".\n\nAre you absolutely sure you want to continue?`)) {
+            e.preventDefault();
+        }
+    });
+
+    // Drag and drop
+    fileUploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'var(--accent-primary)';
+        this.style.backgroundColor = 'var(--bg-secondary)';
+    });
+
+    fileUploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'var(--border-color)';
+        this.style.backgroundColor = 'var(--bg-tertiary)';
+    });
+
+    fileUploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = 'var(--border-color)';
+        this.style.backgroundColor = 'var(--bg-tertiary)';
+
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            fileName.textContent = `Selected: ${e.dataTransfer.files[0].name}`;
+            checkRestoreReady();
+        }
+    });
+});
+</script>
+{% endblock %}
