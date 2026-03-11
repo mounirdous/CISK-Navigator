@@ -339,7 +339,7 @@
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('organization_admin.index') }}">
-                                        <i class="bi bi-building-gear"></i> Org Admin
+                                        <i class="bi bi-building-gear"></i> {{ session.get('organization_name', 'Organization') }} Administration
                                     </a>
                                 </li>
                                 {% if current_user.is_global_admin %}

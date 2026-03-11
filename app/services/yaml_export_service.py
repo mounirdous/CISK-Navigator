@@ -4,8 +4,6 @@ YAML Export Service
 Exports organizational structure to YAML files.
 """
 
-from io import StringIO
-
 import yaml
 
 from app.models import Space, ValueType
@@ -163,7 +161,7 @@ class YAMLExportService:
                 sys_data["description"] = system.description
 
             # Find the link to get KPIs for this specific initiative-system pair
-            link = next((l for l in system.initiative_links if l.initiative_id == initiative_id), None)
+            link = next((lnk for lnk in system.initiative_links if lnk.initiative_id == initiative_id), None)
             if link and link.kpis:
                 kpis = sorted(link.kpis, key=lambda k: k.name)
                 sys_data["kpis"] = YAMLExportService._export_kpis(kpis)
@@ -174,7 +172,7 @@ class YAMLExportService:
 
     @staticmethod
     def _export_kpis(kpis):
-        """Export KPIs with their value type configurations"""
+        """Export KPIs with their value type configurations, governance bodies, and contributions"""
         result = []
 
         for kpi in kpis:
@@ -184,6 +182,12 @@ class YAMLExportService:
 
             if kpi.description:
                 kpi_data["description"] = kpi.description
+
+            # Export governance bodies (by name)
+            if kpi.governance_body_links:
+                governance_bodies = [link.governance_body.name for link in kpi.governance_body_links]
+                if governance_bodies:
+                    kpi_data["governance_bodies"] = sorted(governance_bodies)
 
             # Export value type configurations
             if kpi.value_type_configs:
@@ -216,6 +220,29 @@ class YAMLExportService:
                             vt_config["target_value"] = float(config.target_value)
                         if config.target_date:
                             vt_config["target_date"] = config.target_date.strftime("%Y-%m-%d")
+                        if config.target_direction:
+                            vt_config["target_direction"] = config.target_direction
+                        if config.target_tolerance_pct:
+                            vt_config["target_tolerance_pct"] = config.target_tolerance_pct
+
+                    # Export contributions for this value type
+                    if config.contributions:
+                        contributions_data = []
+                        for contrib in config.contributions:
+                            contrib_data = {
+                                "contributor": contrib.contributor_name,
+                            }
+                            if contrib.numeric_value is not None:
+                                contrib_data["value"] = float(contrib.numeric_value)
+                            if contrib.qualitative_level is not None:
+                                contrib_data["level"] = contrib.qualitative_level
+                            if contrib.comment:
+                                contrib_data["comment"] = contrib.comment
+
+                            contributions_data.append(contrib_data)
+
+                        if contributions_data:
+                            vt_config["contributions"] = contributions_data
 
                     value_types_data.append(vt_config)
 

@@ -1,7 +1,7 @@
 # CISK Navigator - Architecture & Impact Analysis Documentation
 
-**Version:** v1.15.2
-**Last Updated:** 2026-03-10
+**Version:** v1.16.1
+**Last Updated:** 2026-03-11
 **Purpose:** Comprehensive documentation for impact analysis, maintenance, and development
 
 ---
@@ -15,7 +15,8 @@
 5. [Impact Analysis Guide](#impact-analysis-guide)
 6. [File Reference](#file-reference)
 7. [Common Operations](#common-operations)
-8. [Database Migrations](#database-migrations)
+8. [Backup and Restore](#backup-and-restore)
+9. [Database Migrations](#database-migrations)
 
 ---
 
@@ -938,6 +939,128 @@ templates/
    - Configure in IdP
    - Test login
    - Verify JIT provisioning
+
+---
+
+## Backup and Restore
+
+### ⚠️ CRITICAL: Understanding Backup Options
+
+CISK Navigator has **TWO DIFFERENT backup mechanisms** with very different purposes:
+
+#### 1. **YAML Export/Import** (STRUCTURE ONLY)
+
+**Purpose:** Template for creating new organizations with same structure
+
+**What IS exported:**
+- ✅ Value types (definitions)
+- ✅ Spaces, Challenges, Initiatives, Systems, KPIs (names and structure)
+- ✅ KPI configurations (colors, display settings, targets)
+- ✅ Rollup rules
+
+**What is NOT exported:**
+- ❌ **Contributions (actual KPI cell values)** ← THIS IS THE DATA!
+- ❌ **Cell Comments**
+- ❌ **Snapshots**
+- ❌ **User memberships**
+- ❌ **Governance body links to KPIs**
+- ❌ **Audit logs**
+
+**Use cases:**
+- Creating a template organization
+- Setting up a new organization with same structure
+- Sharing organizational framework (without sensitive data)
+
+**Routes:**
+- Export: `/org-admin/export/yaml`
+- Import: `/org-admin/import/yaml`
+
+**Code:**
+```python
+from app.services import YAMLExportService, YAMLImportService
+
+# Export structure only
+yaml_str = YAMLExportService.export_to_yaml(org_id)
+
+# Import structure
+result = YAMLImportService.import_yaml(yaml_content, org_id)
+```
+
+---
+
+#### 2. **PostgreSQL Database Dump** (FULL BACKUP)
+
+**Purpose:** Complete backup for disaster recovery, staging environments, or moving data
+
+**What IS backed up:**
+- ✅ **Everything** - complete database state
+- ✅ All organizations, users, memberships
+- ✅ All structural data (spaces, challenges, initiatives, systems, KPIs)
+- ✅ **All contributions (actual KPI values)**
+- ✅ **All comments**
+- ✅ **All snapshots**
+- ✅ **All governance body links**
+- ✅ **All audit logs**
+- ✅ SSO configurations (encrypted)
+
+**Production to Local Restore:**
+```bash
+# 1. On production (Render shell)
+pg_dump $DATABASE_URL > /tmp/backup_$(date +%Y%m%d_%H%M%S).sql
+
+# 2. Download from Render
+# (Use Render dashboard > Shell > download file)
+
+# 3. On local machine
+dropdb cisknavigator  # Drop existing
+createdb cisknavigator
+psql -d cisknavigator < backup_20260311_090000.sql
+
+# 4. Verify
+psql -d cisknavigator -c "SELECT COUNT(*) FROM contributions;"
+```
+
+**Local Backup:**
+```bash
+# Backup
+pg_dump -U postgres -d cisknavigator > backup_$(date +%Y%m%d).sql
+
+# Restore
+psql -U postgres -d cisknavigator_new < backup_20260311.sql
+```
+
+---
+
+#### 3. **Organization Clone Service** (STRUCTURE ONLY, same as YAML)
+
+**Purpose:** Duplicate an organization within the same database (e.g., for testing)
+
+**What IS cloned:** Same as YAML export (structure only)
+
+**What is NOT cloned:** Same as YAML export (no data, no comments, no snapshots)
+
+**Code:**
+```python
+from app.services import OrganizationCloneService
+
+result = OrganizationCloneService.clone_organization(
+    source_org_id=1,
+    new_name="Test Organization",
+    new_org_description="Clone for testing"
+)
+```
+
+---
+
+### Summary: Which Backup Method to Use?
+
+| Scenario | Use This |
+|----------|----------|
+| **Full data backup for disaster recovery** | PostgreSQL dump |
+| **Copy prod data to local for debugging** | PostgreSQL dump |
+| **Create template for new organizations** | YAML export/import |
+| **Share structure without sensitive data** | YAML export/import |
+| **Test new features with prod structure** | Organization clone + manual data entry |
 
 ---
 
