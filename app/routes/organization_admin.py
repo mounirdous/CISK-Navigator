@@ -1472,6 +1472,20 @@ def configure_rollup(vt_id):
     default_enabled = True  # By default, rollup is enabled
     default_formula = value_type.default_aggregation_formula
 
+    # FIX: If qualitative value type has invalid default (sum), auto-correct it
+    if value_type.is_qualitative() and default_formula == "sum":
+        # Update to smart default
+        smart_default = ValueType.get_smart_default_formula(value_type.kind)
+        value_type.default_aggregation_formula = smart_default
+        db.session.commit()
+
+        flash(
+            f"⚠️ Auto-corrected invalid default formula from SUM → {smart_default.upper()} "
+            f"(SUM not valid for {value_type.kind})",
+            "warning",
+        )
+        default_formula = smart_default
+
     # Create form for CSRF token
     form = FlaskForm()
 

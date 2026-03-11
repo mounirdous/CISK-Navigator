@@ -110,7 +110,7 @@
                     <div class="mb-3">
                         <label for="formula_system" class="form-label fw-semibold">Aggregation Formula</label>
                         <select class="form-select" id="formula_system" name="formula_system">
-                            <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            <option value="default" selected>Use Default ({{ default_formula|upper }})</option>
                             {% if value_type.is_numeric() %}
                             <option value="sum">Sum</option>
                             {% endif %}
@@ -145,7 +145,7 @@
                     <div class="mb-3">
                         <label for="formula_initiative" class="form-label fw-semibold">Aggregation Formula</label>
                         <select class="form-select" id="formula_initiative" name="formula_initiative">
-                            <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            <option value="default" selected>Use Default ({{ default_formula|upper }})</option>
                             {% if value_type.is_numeric() %}
                             <option value="sum">Sum</option>
                             {% endif %}
@@ -177,7 +177,7 @@
                     <div class="mb-3">
                         <label for="formula_challenge" class="form-label fw-semibold">Aggregation Formula</label>
                         <select class="form-select" id="formula_challenge" name="formula_challenge">
-                            <option value="default" selected>Use Default ({{ default_formula }})</option>
+                            <option value="default" selected>Use Default ({{ default_formula|upper }})</option>
                             {% if value_type.is_numeric() %}
                             <option value="sum">Sum</option>
                             {% endif %}
