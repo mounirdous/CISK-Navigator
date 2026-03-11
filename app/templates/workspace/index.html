@@ -2138,34 +2138,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Get all descendants of the dragged row (children, grandchildren, etc.)
             const descendants = getDescendants(draggedRow);
-            const targetDescendants = getDescendants(this);
-
-            // Get parent boundary to ensure we don't move outside parent's territory
-            const boundary = getParentBoundary(dragLevel, dragParent);
 
             // Move dragged row and all its descendants as a unit
             if (dragIndex < dropIndex) {
-                // Moving down: insert after target and all its descendants
+                // Moving down: insert after target
+                // Find the next sibling in our siblings list (not DOM nextSibling!)
+                const nextSiblingInList = siblings[dropIndex + 1];
+
                 let insertPoint;
-                if (targetDescendants.length > 0) {
-                    // Insert after the last descendant of target
-                    insertPoint = targetDescendants[targetDescendants.length - 1].nextSibling;
+                if (nextSiblingInList) {
+                    // Insert before the next sibling to stay within bounds
+                    insertPoint = nextSiblingInList;
+                    console.log('Inserting before next sibling:', nextSiblingInList.textContent.trim().substring(0, 30));
                 } else {
-                    // Target has no descendants, insert right after it
-                    insertPoint = this.nextSibling;
+                    // Target is last sibling, find parent boundary
+                    const boundary = getParentBoundary(dragLevel, dragParent);
+                    insertPoint = boundary;
+                    console.log('Inserting before parent boundary');
                 }
 
-                // Safety check: don't insert past the boundary
-                if (boundary && insertPoint === boundary) {
-                    console.log('Preventing insertion past parent boundary');
-                    return;
+                if (!insertPoint) {
+                    console.log('No valid insertion point found, appending to end');
+                    this.parentNode.appendChild(draggedRow);
+                } else {
+                    this.parentNode.insertBefore(draggedRow, insertPoint);
                 }
 
-                this.parentNode.insertBefore(draggedRow, insertPoint);
                 // Move descendants right after their parent in order
                 let lastInserted = draggedRow;
                 descendants.forEach(desc => {
-                    draggedRow.parentNode.insertBefore(desc, lastInserted.nextSibling);
+                    this.parentNode.insertBefore(desc, lastInserted.nextSibling);
                     lastInserted = desc;
                 });
             } else {
@@ -2174,7 +2176,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Move descendants right after their parent in order
                 let lastInserted = draggedRow;
                 descendants.forEach(desc => {
-                    draggedRow.parentNode.insertBefore(desc, lastInserted.nextSibling);
+                    this.parentNode.insertBefore(desc, lastInserted.nextSibling);
                     lastInserted = desc;
                 });
             }
