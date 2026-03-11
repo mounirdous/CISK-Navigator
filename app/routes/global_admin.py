@@ -623,11 +623,11 @@ def clone_organization(org_id):
 def backup_restore():
     """Backup and restore management page"""
     # Get organizations based on context
-    # If in Global Admin mode (no org context), show ALL organizations
+    # If in Global Admin mode (no org context), show ALL active organizations
     # If in organization context, show only user's organizations
     if session.get("organization_id") is None:
-        # Global Admin mode - show all organizations
-        orgs = Organization.query.order_by(Organization.name).all()
+        # Global Admin mode - show all active (non-archived) organizations
+        orgs = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
     else:
         # Organization context - show only user's organizations
         orgs = current_user.get_organizations()
