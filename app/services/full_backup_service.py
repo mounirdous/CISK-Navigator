@@ -42,12 +42,54 @@ class FullBackupService:
                 "organization_id": organization_id,
                 "backup_type": "full",
             },
+            "organization": {
+                "name": org.name,
+                "description": org.description,
+                "is_active": org.is_active,
+            },
+            "users": FullBackupService._export_users(organization_id),
             "value_types": FullBackupService._export_value_types(organization_id),
             "governance_bodies": FullBackupService._export_governance_bodies(organization_id),
             "spaces": FullBackupService._export_spaces(organization_id),
         }
 
         return backup
+
+    @staticmethod
+    def _export_users(organization_id):
+        """Export all users and their permissions for this organization"""
+        from app.models import OrganizationMembership, User
+
+        memberships = (
+            OrganizationMembership.query.filter_by(organization_id=organization_id)
+            .join(User)
+            .filter(User.is_active == True)
+            .all()
+        )
+
+        result = []
+        for membership in memberships:
+            user = membership.user
+            user_data = {
+                "login": user.login,
+                "email": user.email,
+                "display_name": user.display_name,
+                "is_active": user.is_active,
+                "permissions": {
+                    "is_organization_admin": membership.is_organization_admin,
+                    "can_manage_spaces": membership.can_manage_spaces,
+                    "can_manage_challenges": membership.can_manage_challenges,
+                    "can_manage_initiatives": membership.can_manage_initiatives,
+                    "can_manage_systems": membership.can_manage_systems,
+                    "can_manage_kpis": membership.can_manage_kpis,
+                    "can_contribute": membership.can_contribute,
+                    "can_comment": membership.can_comment,
+                    "can_view_analytics": membership.can_view_analytics,
+                },
+            }
+            result.append(user_data)
+
+        return result
 
     @staticmethod
     def _export_value_types(organization_id):

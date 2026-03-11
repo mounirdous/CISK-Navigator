@@ -29,7 +29,7 @@ class FullRestoreService:
     """Service for restoring full organization backup with data"""
 
     @staticmethod
-    def restore_from_json(json_string, organization_id, governance_body_mapping=None):
+    def restore_from_json(json_string, organization_id, governance_body_mapping=None, user_mapping=None):
         """
         Restore organization from JSON backup.
 
@@ -37,10 +37,15 @@ class FullRestoreService:
             json_string: JSON backup content
             organization_id: Target organization ID
             governance_body_mapping: Dict mapping backup GB names to target GB IDs or "create"
+            user_mapping: Dict mapping backup user logins to actions:
+                         {"login": {"action": "map", "user_id": 123}} or
+                         {"login": {"action": "create", "login": "...", "email": "...", "permissions": {...}}}
 
         Returns:
             dict with restore results and statistics
         """
+        from app.models import Organization, OrganizationMembership, User
+
         try:
             backup = json.loads(json_string)
         except json.JSONDecodeError as e:
@@ -56,6 +61,8 @@ class FullRestoreService:
             "kpis": 0,
             "contributions": 0,
             "governance_body_links": 0,
+            "users_created": 0,
+            "users_mapped": 0,
             "errors": [],
         }
 
@@ -65,6 +72,81 @@ class FullRestoreService:
             governance_body_map = {}  # backup name -> GovernanceBody object
             initiative_map = {}  # name -> Initiative
             system_map = {}  # name -> System
+            user_map = {}  # backup login -> User object
+
+            # Step 0: Handle user mapping/creation
+            if user_mapping:
+                for backup_login, mapping_info in user_mapping.items():
+                    action = mapping_info.get("action")
+
+                    if action == "map":
+                        # Map to existing user
+                        user_id = mapping_info.get("user_id")
+                        user = User.query.get(user_id)
+                        if user:
+                            user_map[backup_login] = user
+
+                            # Ensure user is a member of target organization
+                            membership = OrganizationMembership.query.filter_by(
+                                user_id=user.id, organization_id=organization_id
+                            ).first()
+
+                            if not membership:
+                                # Add user to organization with permissions from backup
+                                backup_user = next(
+                                    (u for u in backup.get("users", []) if u["login"] == backup_login), None
+                                )
+                                if backup_user:
+                                    membership = OrganizationMembership(
+                                        user_id=user.id,
+                                        organization_id=organization_id,
+                                        **backup_user["permissions"],
+                                    )
+                                    db.session.add(membership)
+                                    db.session.flush()
+
+                            stats["users_mapped"] += 1
+
+                    elif action == "create":
+                        # Create new user
+                        login = mapping_info.get("login")
+                        email = mapping_info.get("email")
+                        display_name = mapping_info.get("display_name")
+                        permissions = mapping_info.get("permissions", {})
+
+                        # Check if user already exists (by login or email)
+                        existing_user = User.query.filter(
+                            (User.login == login) | (User.email == email)
+                        ).first()
+
+                        if existing_user:
+                            # Use existing user instead
+                            user_map[backup_login] = existing_user
+                            stats["errors"].append(
+                                f"User {login} already exists, mapped to existing account"
+                            )
+                        else:
+                            # Create new user with default password
+                            new_user = User(
+                                login=login,
+                                email=email,
+                                display_name=display_name,
+                                is_active=True,
+                                must_change_password=True,
+                            )
+                            new_user.set_password("ChangeMe123!")
+                            db.session.add(new_user)
+                            db.session.flush()
+
+                            # Add to organization with permissions
+                            membership = OrganizationMembership(
+                                user_id=new_user.id, organization_id=organization_id, **permissions
+                            )
+                            db.session.add(membership)
+                            db.session.flush()
+
+                            user_map[backup_login] = new_user
+                            stats["users_created"] += 1
 
             # Step 1: Create/map governance bodies
             if governance_body_mapping:

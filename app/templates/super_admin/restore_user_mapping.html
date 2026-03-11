@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}User Mapping - Restore Backup{% endblock %}
+
+{% block extra_css %}
+<style>
+.mapping-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.mapping-header h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.mapping-header p {
+    margin: 0.75rem 0 0 0;
+    opacity: 0.95;
+    font-size: 1rem;
+}
+
+.user-mapping-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.2s ease;
+}
+
+.user-mapping-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.user-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: 1.3rem;
+}
+
+.user-details {
+    flex: 1;
+}
+
+.user-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.user-meta {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.permissions-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.permission-tag {
+    background: rgba(13, 110, 253, 0.1);
+    border: 1px solid rgba(13, 110, 253, 0.3);
+    color: #0d6efd;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.permission-tag.admin {
+    background: rgba(220, 53, 69, 0.1);
+    border-color: rgba(220, 53, 69, 0.3);
+    color: #dc3545;
+}
+
+.action-selector {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.action-option {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-option:hover {
+    background: var(--bg-secondary);
+}
+
+.action-option input[type="radio"] {
+    margin-right: 1rem;
+    width: 20px;
+    height: 20px;
+}
+
+.action-option label {
+    cursor: pointer;
+    margin: 0;
+    flex: 1;
+}
+
+.action-icon {
+    font-size: 1.5rem;
+    margin-right: 0.75rem;
+}
+
+.map-user-select {
+    margin-top: 0.5rem;
+    margin-left: 2.75rem;
+}
+
+.summary-box {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
+    border: 2px solid rgba(13, 110, 253, 0.3);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.summary-item {
+    text-align: center;
+}
+
+.summary-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+
+.summary-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.progress-indicator {
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.progress-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+}
+
+.progress-step::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(100% - 40px);
+    height: 2px;
+    background: var(--border-color);
+    z-index: -1;
+}
+
+.progress-step:last-child::after {
+    display: none;
+}
+
+.progress-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.progress-step.active .progress-circle {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.progress-step.completed .progress-circle {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in" style="max-width: 1400px;">
+    <div class="card hover-lift" style="margin: 1rem;">
+        <div class="mapping-header">
+            <h2>
+                <i class="bi bi-people-fill"></i>
+                User Mapping
+            </h2>
+            <p>Map backup users to existing users or create new accounts</p>
+        </div>
+
+        <div class="card-body" style="padding: 2.5rem;">
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <div class="progress-step completed">
+                    <div class="progress-circle"><i class="bi bi-check"></i></div>
+                    <div style="font-size: 0.85rem;">Upload Backup</div>
+                </div>
+                <div class="progress-step active">
+                    <div class="progress-circle">2</div>
+                    <div style="font-size: 0.85rem;">Map Users</div>
+                </div>
+                <div class="progress-step">
+                    <div class="progress-circle">3</div>
+                    <div style="font-size: 0.85rem;">Restore Data</div>
+                </div>
+            </div>
+
+            <!-- Summary Box -->
+            <div class="summary-box">
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <div class="summary-number">{{ backup_users|length }}</div>
+                        <div class="summary-label">Users in Backup</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-number">{{ existing_users|length }}</div>
+                        <div class="summary-label">Existing Users</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-number" id="create-count">0</div>
+                        <div class="summary-label">Will Create</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-number" id="map-count">0</div>
+                        <div class="summary-label">Will Map</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <form method="POST" action="{{ url_for('super_admin.restore_backup_execute') }}" id="mapping-form">
+                <input type="hidden" name="backup_data" value="{{ backup_base64 }}">
+                <input type="hidden" name="target_org_id" value="{{ target_org.id }}">
+
+                <h4 class="mb-4">
+                    <i class="bi bi-arrow-right-circle"></i>
+                    Restoring to: <strong>{{ target_org.name }}</strong>
+                </h4>
+
+                <!-- User Mapping Cards -->
+                {% for backup_user in backup_users %}
+                <div class="user-mapping-card">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            {{ backup_user.display_name[0].upper() if backup_user.display_name else backup_user.login[0].upper() }}
+                        </div>
+                        <div class="user-details">
+                            <div class="user-name">{{ backup_user.display_name }}</div>
+                            <div class="user-meta">
+                                <i class="bi bi-person-badge"></i> {{ backup_user.login }}
+                                <span class="ms-3"><i class="bi bi-envelope"></i> {{ backup_user.email }}</span>
+                            </div>
+                            <div class="permissions-tags">
+                                {% if backup_user.permissions.is_organization_admin %}
+                                <span class="permission-tag admin">
+                                    <i class="bi bi-shield-fill-check"></i> Org Admin
+                                </span>
+                                {% endif %}
+                                {% if backup_user.permissions.can_manage_spaces %}
+                                <span class="permission-tag">Manage Spaces</span>
+                                {% endif %}
+                                {% if backup_user.permissions.can_manage_kpis %}
+                                <span class="permission-tag">Manage KPIs</span>
+                                {% endif %}
+                                {% if backup_user.permissions.can_contribute %}
+                                <span class="permission-tag">Contribute</span>
+                                {% endif %}
+                                {% if backup_user.permissions.can_comment %}
+                                <span class="permission-tag">Comment</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-selector">
+                        <div class="action-option">
+                            <input type="radio" name="user_action_{{ loop.index0 }}" value="create" id="create_{{ loop.index0 }}" checked>
+                            <label for="create_{{ loop.index0 }}">
+                                <div class="d-flex align-items-center">
+                                    <span class="action-icon">✨</span>
+                                    <div>
+                                        <strong>Create New User</strong>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                            Create with login "<strong>{{ backup_user.login }}</strong>" and default password "<strong>ChangeMe123!</strong>"
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="action-option">
+                            <input type="radio" name="user_action_{{ loop.index0 }}" value="map" id="map_{{ loop.index0 }}">
+                            <label for="map_{{ loop.index0 }}">
+                                <div class="d-flex align-items-center">
+                                    <span class="action-icon">🔗</span>
+                                    <div>
+                                        <strong>Map to Existing User</strong>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                            Link this backup user to an existing account
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="map-user-select" id="map-select-{{ loop.index0 }}" style="display: none;">
+                            <select class="form-select" name="map_to_user_{{ loop.index0 }}">
+                                <option value="">-- Select User --</option>
+                                {% for existing_user in existing_users %}
+                                <option value="{{ existing_user.id }}" {% if existing_user.login == backup_user.login %}selected{% endif %}>
+                                    {{ existing_user.display_name }} ({{ existing_user.login }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="action-option">
+                            <input type="radio" name="user_action_{{ loop.index0 }}" value="skip" id="skip_{{ loop.index0 }}">
+                            <label for="skip_{{ loop.index0 }}">
+                                <div class="d-flex align-items-center">
+                                    <span class="action-icon">⏭️</span>
+                                    <div>
+                                        <strong>Skip This User</strong>
+                                        <div style="font-size: 0.85rem; color: var(--text-muted);">
+                                            Don't restore this user (contributions will be orphaned)
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Action Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('super_admin.backup') }}" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-arrow-left"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg" id="proceed-btn">
+                        <i class="bi bi-check-circle"></i> Proceed with Restore
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('mapping-form');
+    const createCountEl = document.getElementById('create-count');
+    const mapCountEl = document.getElementById('map-count');
+
+    // Show/hide map select when radio changes
+    {% for backup_user in backup_users %}
+    const mapRadio{{ loop.index0 }} = document.getElementById('map_{{ loop.index0 }}');
+    const mapSelect{{ loop.index0 }} = document.getElementById('map-select-{{ loop.index0 }}');
+
+    document.querySelectorAll('input[name="user_action_{{ loop.index0 }}"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (mapRadio{{ loop.index0 }}.checked) {
+                mapSelect{{ loop.index0 }}.style.display = 'block';
+            } else {
+                mapSelect{{ loop.index0 }}.style.display = 'none';
+            }
+            updateCounts();
+        });
+    });
+    {% endfor %}
+
+    // Update counts
+    function updateCounts() {
+        let createCount = 0;
+        let mapCount = 0;
+
+        document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
+            if (radio.value === 'create') createCount++;
+            if (radio.value === 'map') mapCount++;
+        });
+
+        createCountEl.textContent = createCount;
+        mapCountEl.textContent = mapCount;
+    }
+
+    // Initial count
+    updateCounts();
+
+    // Confirm before submit
+    form.addEventListener('submit', function(e) {
+        const createCount = parseInt(createCountEl.textContent);
+        const mapCount = parseInt(mapCountEl.textContent);
+
+        let message = `Ready to restore?\n\n`;
+        message += `• ${createCount} new user(s) will be created\n`;
+        message += `• ${mapCount} user(s) will be mapped to existing accounts\n\n`;
+        message += `New users will have default password: "ChangeMe123!" and must change it on first login.\n\n`;
+        message += `Continue?`;
+
+        if (!confirm(message)) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %}

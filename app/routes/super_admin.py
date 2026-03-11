@@ -563,10 +563,9 @@ def create_backup(org_id):
 @bp.route("/backup/restore", methods=["POST"])
 @super_admin_required
 def restore_backup():
-    """Restore from backup file"""
+    """Step 1: Upload backup file and show user mapping screen"""
+    import base64
     import json
-
-    from app.services.full_restore_service import FullRestoreService
 
     if "backup_file" not in request.files:
         flash("No backup file provided", "danger")
@@ -592,22 +591,119 @@ def restore_backup():
 
         # Read JSON content
         json_content = file.read().decode("utf-8")
+        backup_data = json.loads(json_content)
 
-        # Restore the backup (no governance body mapping - create all new)
-        result = FullRestoreService.restore_from_json(json_content, target_org_id)
+        # Extract users from backup
+        backup_users = backup_data.get("users", [])
 
-        if result.get("success"):
-            stats = result.get("stats", {})
-            summary = (
-                f"Restored: {stats.get('spaces', 0)} spaces, {stats.get('kpis', 0)} KPIs, "
-                f"{stats.get('contributions', 0)} contributions"
-            )
-            flash(f"✅ Backup restored successfully: {summary}", "success")
-        else:
-            flash(f"❌ Restore failed: {result.get('error', 'Unknown error')}", "danger")
+        if not backup_users:
+            flash("⚠️ No users found in backup. Proceeding without user mapping.", "warning")
+            # Restore without user mapping
+            from app.services.full_restore_service import FullRestoreService
+
+            result = FullRestoreService.restore_from_json(json_content, target_org_id)
+
+            if result.get("success"):
+                stats = result.get("stats", {})
+                flash(
+                    f"✅ Backup restored: {stats.get('spaces', 0)} spaces, {stats.get('kpis', 0)} KPIs",
+                    "success",
+                )
+            else:
+                flash(f"❌ Restore failed: {result.get('error', 'Unknown error')}", "danger")
+
+            return redirect(url_for("super_admin.backup"))
+
+        # Get existing users in target organization
+        from app.models import OrganizationMembership, User
+
+        target_org = Organization.query.get(target_org_id)
+        existing_users = (
+            User.query.join(OrganizationMembership)
+            .filter(OrganizationMembership.organization_id == target_org_id)
+            .all()
+        )
+
+        # Encode backup data for next step (base64 to pass through form)
+        backup_base64 = base64.b64encode(json_content.encode("utf-8")).decode("utf-8")
+
+        # Show mapping screen
+        return render_template(
+            "super_admin/restore_user_mapping.html",
+            backup_users=backup_users,
+            existing_users=existing_users,
+            target_org=target_org,
+            backup_base64=backup_base64,
+        )
 
     except json.JSONDecodeError:
         flash("Invalid JSON file", "danger")
+        return redirect(url_for("super_admin.backup"))
+    except Exception as e:
+        flash(f"Error reading backup: {str(e)}", "danger")
+        return redirect(url_for("super_admin.backup"))
+
+
+@bp.route("/backup/restore_execute", methods=["POST"])
+@super_admin_required
+def restore_backup_execute():
+    """Step 2: Execute restore with user mappings"""
+    import base64
+    import json
+
+    from app.services.full_restore_service import FullRestoreService
+
+    try:
+        # Get backup data from hidden field
+        backup_base64 = request.form.get("backup_data")
+        target_org_id = request.form.get("target_org_id", type=int)
+
+        if not backup_base64 or not target_org_id:
+            flash("Missing restore data", "danger")
+            return redirect(url_for("super_admin.backup"))
+
+        # Decode backup
+        json_content = base64.b64decode(backup_base64).decode("utf-8")
+        backup_data = json.loads(json_content)
+
+        # Build user mapping from form
+        user_mapping = {}
+        backup_users = backup_data.get("users", [])
+
+        for idx, backup_user in enumerate(backup_users):
+            backup_login = backup_user["login"]
+            action = request.form.get(f"user_action_{idx}")
+
+            if action == "map":
+                # Map to existing user
+                mapped_user_id = request.form.get(f"map_to_user_{idx}", type=int)
+                if mapped_user_id:
+                    user_mapping[backup_login] = {"action": "map", "user_id": mapped_user_id}
+            elif action == "create":
+                # Create new user
+                user_mapping[backup_login] = {
+                    "action": "create",
+                    "login": backup_login,
+                    "email": backup_user["email"],
+                    "display_name": backup_user["display_name"],
+                    "permissions": backup_user["permissions"],
+                }
+            # If action == "skip", don't include in mapping
+
+        # Restore with user mapping
+        result = FullRestoreService.restore_from_json(
+            json_content, target_org_id, user_mapping=user_mapping
+        )
+
+        if result.get("success"):
+            stats = result.get("stats", {})
+            flash(
+                f"✅ Restore complete: {stats.get('spaces', 0)} spaces, {stats.get('kpis', 0)} KPIs, {stats.get('users_created', 0)} users created",
+                "success",
+            )
+        else:
+            flash(f"❌ Restore failed: {result.get('error', 'Unknown error')}", "danger")
+
     except Exception as e:
         flash(f"Restore error: {str(e)}", "danger")
 
