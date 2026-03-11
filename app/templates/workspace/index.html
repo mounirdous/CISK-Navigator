@@ -2189,7 +2189,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } else {
                 // Moving up: insert before target
-                this.parentNode.insertBefore(draggedRow, this);
+                console.log('Moving up: dragIndex=' + dragIndex + ', dropIndex=' + dropIndex);
+                console.log('Target:', this.textContent.trim().substring(0, 30));
+
+                // CRITICAL CHECK: Ensure we're not crossing parent boundary when moving up
+                // If the drop target is the first child of its parent, we need to verify
+                // that inserting before it won't put us in a different parent's territory
+                let insertPoint = this;
+
+                // Check if there's a previous sibling and if it belongs to a different parent
+                const prevRow = this.previousSibling;
+                if (prevRow && prevRow.nodeType === 1 && prevRow.dataset.level) {
+                    // Previous row exists - check if it's our parent or a sibling
+                    if (prevRow.dataset.level !== dragLevel) {
+                        // Previous row is different level (could be parent or ancestor)
+                        // This is fine - we're at the top of our parent's territory
+                        console.log('✓ Inserting at top of parent territory (after parent row)');
+                    } else if (prevRow.dataset.parentId !== dragParent) {
+                        // Previous row is same level but different parent!
+                        // We're trying to cross boundary - find our parent boundary
+                        console.log('⚠️ Would cross parent boundary moving up! Finding safe position...');
+                        // Find the start of our parent's territory (first child)
+                        const firstChild = siblings[0]; // First sibling in our parent
+                        insertPoint = firstChild;
+                        console.log('Using first child of parent instead:', insertPoint.textContent.trim().substring(0, 30));
+                    }
+                }
+
+                this.parentNode.insertBefore(draggedRow, insertPoint);
+
                 // Move descendants right after their parent in order
                 let lastInserted = draggedRow;
                 descendants.forEach(desc => {
