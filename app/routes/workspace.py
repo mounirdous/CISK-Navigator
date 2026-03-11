@@ -1776,7 +1776,7 @@ def api_get_organizations_for_linking():
 
     # Get all orgs where user has membership
     user_org_ids = [m.organization_id for m in current_user.memberships]
-    orgs = Organization.query.filter(Organization.id.in_(user_org_ids), Organization.is_deleted.is_(False)).all()
+    orgs = Organization.query.filter(Organization.id.in_(user_org_ids)).filter_by(is_deleted=False).all()
 
     return jsonify(
         [
@@ -1798,15 +1798,16 @@ def api_get_kpis_for_linking(org_id):
     if not has_access:
         return jsonify({"error": "Access denied"}), 403
 
-    # Get all KPIs from this org with full hierarchy context
+    # Get all KPIs from this org with full hierarchy context (not archived)
     kpis = (
         db.session.query(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
+        .filter(Initiative.organization_id == org_id)
+        .filter_by(is_archived=False)
         .join(ChallengeInitiativeLink)
         .join(Challenge)
         .join(Space)
-        .filter(Initiative.organization_id == org_id, Space.is_deleted.is_(False), KPI.is_archived.is_(False))
         .all()
     )
 
