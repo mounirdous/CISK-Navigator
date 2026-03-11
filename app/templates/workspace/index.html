@@ -2045,21 +2045,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (draggedRow === this) return;
 
-            // Validate same level and same parent
+            // Validate same level and same parent (STRICT)
             const dragLevel = draggedRow.dataset.level;
             const dropLevel = this.dataset.level;
             const dragParent = draggedRow.dataset.parentId;
             const dropParent = this.dataset.parentId;
 
-            if (dragLevel !== dropLevel || (dragLevel !== 'space' && dragParent !== dropParent)) {
+            // Must be same level
+            if (dragLevel !== dropLevel) {
+                console.log('Drop rejected: different levels', dragLevel, dropLevel);
                 return;
             }
 
-            // Get all visible siblings of the same level and parent
+            // Must be same parent (except spaces which have no parent)
+            if (dragLevel !== 'space' && dragParent !== dropParent) {
+                console.log('Drop rejected: different parents', dragParent, dropParent);
+                return;
+            }
+
+            // Extra safety: verify parentId is actually set
+            if (dragLevel !== 'space' && (!dragParent || !dropParent)) {
+                console.log('Drop rejected: missing parent ID');
+                return;
+            }
+
+            // Get all siblings of the same level and parent (regardless of visibility)
             const allRows = Array.from(document.querySelectorAll(`tr[data-level="${dragLevel}"]`));
             const siblings = allRows.filter(r => {
                 if (dragLevel === 'space') return true;
-                return r.dataset.parentId === dragParent && r.style.display !== 'none';
+                return r.dataset.parentId === dragParent;
             });
 
             const dragIndex = siblings.indexOf(draggedRow);
