@@ -209,11 +209,17 @@ class YAMLExportService:
                         if config.display_decimals is not None:
                             vt_config["display_decimals"] = config.display_decimals
 
-                        # Add target tracking
+                        # Add target tracking (all target fields for complete restore)
                         if config.target_value is not None:
                             vt_config["target_value"] = float(config.target_value)
                         if config.target_date:
                             vt_config["target_date"] = config.target_date.strftime("%Y-%m-%d")
+                        if config.target_direction:
+                            vt_config["target_direction"] = config.target_direction
+                        if config.target_tolerance_pct is not None:
+                            vt_config["target_tolerance_pct"] = config.target_tolerance_pct
+                        if config.baseline_snapshot_id is not None:
+                            vt_config["baseline_snapshot_id"] = config.baseline_snapshot_id
 
                     value_types_data.append(vt_config)
 

@@ -352,6 +352,9 @@ class YAMLImportService:
                             display_decimals=vt_data.get("display_decimals"),
                             target_value=vt_data.get("target_value"),
                             target_date=target_date,
+                            target_direction=vt_data.get("target_direction"),
+                            target_tolerance_pct=vt_data.get("target_tolerance_pct"),
+                            baseline_snapshot_id=vt_data.get("baseline_snapshot_id"),
                         )
                         if not dry_run:
                             db.session.add(config)
