@@ -1524,107 +1524,25 @@ def yaml_upload():
             yaml_file = form.yaml_file.data
             yaml_content = yaml_file.read().decode("utf-8")
 
-            # Extract governance bodies from YAML
-            governance_bodies_in_yaml = YAMLImportService.extract_governance_bodies_from_yaml(yaml_content)
-
-            if governance_bodies_in_yaml:
-                # Store YAML in session for next step
-                session["pending_yaml_import"] = yaml_content
-                session["yaml_governance_bodies"] = governance_bodies_in_yaml
-
-                # Redirect to mapping page
-                return redirect(url_for("organization_admin.yaml_governance_mapping"))
-            else:
-                # No governance bodies, proceed directly
-                _delete_all_organization_data(org_id)
-                result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
-
-                if result.get("success"):
-                    flash("✓ Import successful!", "success")
-                    flash(
-                        f'Created: {result["spaces"]} spaces, {result["challenges"]} challenges, '
-                        f'{result["initiatives"]} initiatives, {result["systems"]} systems, '
-                        f'{result["kpis"]} KPIs, {result["value_types"]} value types, '
-                        f'{result["contributions"]} contributions',
-                        "info",
-                    )
-
-                    if result.get("errors"):
-                        flash(f'Warnings: {len(result["errors"])} issues encountered', "warning")
-                        for error in result["errors"][:5]:
-                            flash(f"⚠ {error}", "warning")
-
-                    return redirect(url_for("workspace.index"))
-                else:
-                    flash("Import failed", "danger")
-                    for error in result.get("errors", []):
-                        flash(error, "danger")
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error uploading YAML: {str(e)}", "danger")
-
-    return render_template("organization_admin/yaml_upload.html", form=form)
-
-
-@bp.route("/yaml-governance-mapping", methods=["GET", "POST"])
-@login_required
-@organization_required
-def yaml_governance_mapping():
-    """Map governance bodies from YAML to existing or create new"""
-    org_id = session.get("organization_id")
-
-    # Check if we have pending YAML import
-    yaml_content = session.get("pending_yaml_import")
-    yaml_governance_bodies = session.get("yaml_governance_bodies", [])
-
-    if not yaml_content or not yaml_governance_bodies:
-        flash("No pending YAML import found", "warning")
-        return redirect(url_for("organization_admin.yaml_upload"))
-
-    # Get existing governance bodies in this organization
-    existing_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).all()
-
-    if request.method == "POST":
-        try:
-            # Build governance body mapping from form
-            governance_body_mapping = {}
-
-            for yaml_gb_name in yaml_governance_bodies:
-                action = request.form.get(f"gb_action_{yaml_gb_name}")
-
-                if action == "create":
-                    governance_body_mapping[yaml_gb_name] = "create"
-                elif action and action.startswith("map_"):
-                    # Extract GB ID from "map_123"
-                    gb_id = int(action.split("_")[1])
-                    governance_body_mapping[yaml_gb_name] = gb_id
-
-            # Clear session data
-            session.pop("pending_yaml_import", None)
-            session.pop("yaml_governance_bodies", None)
-
             # Delete ALL existing organization data
+            # This is intentional and destructive - user was warned!
             _delete_all_organization_data(org_id)
 
-            # Import with governance body mapping
-            result = YAMLImportService.import_from_string(
-                yaml_content, org_id, dry_run=False, governance_body_mapping=governance_body_mapping
-            )
+            # Import from YAML
+            result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
 
             if result.get("success"):
                 flash("✓ Import successful!", "success")
                 flash(
                     f'Created: {result["spaces"]} spaces, {result["challenges"]} challenges, '
                     f'{result["initiatives"]} initiatives, {result["systems"]} systems, '
-                    f'{result["kpis"]} KPIs, {result["value_types"]} value types, '
-                    f'{result["contributions"]} contributions, {result["governance_body_links"]} GB links',
+                    f'{result["kpis"]} KPIs, {result["value_types"]} value types',
                     "info",
                 )
 
                 if result.get("errors"):
                     flash(f'Warnings: {len(result["errors"])} issues encountered', "warning")
-                    for error in result["errors"][:5]:
+                    for error in result["errors"][:5]:  # Show first 5 errors
                         flash(f"⚠ {error}", "warning")
 
                 return redirect(url_for("workspace.index"))
@@ -1635,13 +1553,9 @@ def yaml_governance_mapping():
 
         except Exception as e:
             db.session.rollback()
-            flash(f"Error during import: {str(e)}", "danger")
+            flash(f"Error uploading YAML: {str(e)}", "danger")
 
-    return render_template(
-        "organization_admin/yaml_governance_mapping.html",
-        yaml_governance_bodies=yaml_governance_bodies,
-        existing_gbs=existing_gbs,
-    )
+    return render_template("organization_admin/yaml_upload.html", form=form)
 
 
 @bp.route("/yaml-export")

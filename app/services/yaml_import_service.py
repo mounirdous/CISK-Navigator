@@ -11,11 +11,8 @@ from app.models import (
     KPI,
     Challenge,
     ChallengeInitiativeLink,
-    Contribution,
-    GovernanceBody,
     Initiative,
     InitiativeSystemLink,
-    KPIGovernanceBodyLink,
     KPIValueTypeConfig,
     Space,
     System,
@@ -27,35 +24,7 @@ class YAMLImportService:
     """Service for importing organizational structure from YAML"""
 
     @staticmethod
-    def extract_governance_bodies_from_yaml(yaml_string):
-        """
-        Extract all unique governance body names from YAML.
-
-        Args:
-            yaml_string: YAML content as string
-
-        Returns:
-            list: Sorted list of unique governance body names
-        """
-        try:
-            data = yaml.safe_load(yaml_string)
-            governance_bodies = set()
-
-            # Walk through the structure to find governance_bodies
-            for space in data.get("spaces", []):
-                for challenge in space.get("challenges", []):
-                    for initiative in challenge.get("initiatives", []):
-                        for system in initiative.get("systems", []):
-                            for kpi in system.get("kpis", []):
-                                for gb_name in kpi.get("governance_bodies", []):
-                                    governance_bodies.add(gb_name)
-
-            return sorted(list(governance_bodies))
-        except Exception:
-            return []
-
-    @staticmethod
-    def import_from_file(file_path, organization_id, dry_run=False, governance_body_mapping=None):
+    def import_from_file(file_path, organization_id, dry_run=False):
         """
         Import structure from YAML file.
 
@@ -63,7 +32,6 @@ class YAMLImportService:
             file_path: Path to YAML file
             organization_id: Target organization ID
             dry_run: If True, validate but don't save to database
-            governance_body_mapping: Dict mapping YAML GB names to target GB IDs or "create"
 
         Returns:
             dict with import results and statistics
@@ -71,10 +39,10 @@ class YAMLImportService:
         with open(file_path, "r") as f:
             data = yaml.safe_load(f)
 
-        return YAMLImportService.import_from_dict(data, organization_id, dry_run, governance_body_mapping)
+        return YAMLImportService.import_from_dict(data, organization_id, dry_run)
 
     @staticmethod
-    def import_from_string(yaml_string, organization_id, dry_run=False, governance_body_mapping=None):
+    def import_from_string(yaml_string, organization_id, dry_run=False):
         """
         Import structure from YAML string.
 
@@ -82,16 +50,15 @@ class YAMLImportService:
             yaml_string: YAML content as string
             organization_id: Target organization ID
             dry_run: If True, validate but don't save to database
-            governance_body_mapping: Dict mapping YAML GB names to target GB IDs or "create"
 
         Returns:
             dict with import results and statistics
         """
         data = yaml.safe_load(yaml_string)
-        return YAMLImportService.import_from_dict(data, organization_id, dry_run, governance_body_mapping)
+        return YAMLImportService.import_from_dict(data, organization_id, dry_run)
 
     @staticmethod
-    def import_from_dict(data, organization_id, dry_run=False, governance_body_mapping=None):
+    def import_from_dict(data, organization_id, dry_run=False):
         """
         Import structure from parsed YAML dictionary.
 
@@ -99,7 +66,6 @@ class YAMLImportService:
             data: Parsed YAML data
             organization_id: Target organization ID
             dry_run: If True, validate but don't save to database
-            governance_body_mapping: Dict mapping YAML GB names to target GB IDs or "create"
 
         Returns:
             dict with import results and statistics
@@ -111,8 +77,6 @@ class YAMLImportService:
             "initiatives": 0,
             "systems": 0,
             "kpis": 0,
-            "contributions": 0,
-            "governance_body_links": 0,
             "errors": [],
         }
 
@@ -122,30 +86,6 @@ class YAMLImportService:
             initiative_map = {}  # id -> Initiative
             system_map = {}  # id -> System
             link_map = {}  # (initiative_id, system_id) -> InitiativeSystemLink
-            governance_body_map = {}  # YAML name -> GovernanceBody object
-
-            # Process governance body mapping - create or map to existing
-            if governance_body_mapping:
-                for yaml_name, target_action in governance_body_mapping.items():
-                    if target_action == "create":
-                        # Create new governance body
-                        gb = GovernanceBody(
-                            organization_id=organization_id,
-                            name=yaml_name,
-                            display_order=0,
-                            is_active=True,
-                        )
-                        if not dry_run:
-                            db.session.add(gb)
-                            db.session.flush()
-                        governance_body_map[yaml_name] = gb
-                    elif isinstance(target_action, int):
-                        # Map to existing governance body by ID
-                        gb = GovernanceBody.query.get(target_action)
-                        if gb:
-                            governance_body_map[yaml_name] = gb
-                        else:
-                            stats["errors"].append(f"Governance body ID {target_action} not found for '{yaml_name}'")
 
             # Step 1: Import Value Types
             if "value_types" in data:
@@ -165,24 +105,9 @@ class YAMLImportService:
                 for space_data in data["spaces"]:
                     try:
                         space_stats = YAMLImportService._create_space_and_children(
-                            space_data,
-                            organization_id,
-                            value_type_map,
-                            initiative_map,
-                            system_map,
-                            link_map,
-                            governance_body_map,
-                            dry_run,
+                            space_data, organization_id, value_type_map, initiative_map, system_map, link_map, dry_run
                         )
-                        for key in [
-                            "spaces",
-                            "challenges",
-                            "initiatives",
-                            "systems",
-                            "kpis",
-                            "contributions",
-                            "governance_body_links",
-                        ]:
+                        for key in ["spaces", "challenges", "initiatives", "systems", "kpis"]:
                             stats[key] += space_stats.get(key, 0)
                         stats["errors"].extend(space_stats.get("errors", []))
                     except Exception as e:
@@ -221,19 +146,10 @@ class YAMLImportService:
 
     @staticmethod
     def _create_space_and_children(
-        space_data, organization_id, value_type_map, initiative_map, system_map, link_map, governance_body_map, dry_run
+        space_data, organization_id, value_type_map, initiative_map, system_map, link_map, dry_run
     ):
         """Create a Space and all its children recursively"""
-        stats = {
-            "spaces": 0,
-            "challenges": 0,
-            "initiatives": 0,
-            "systems": 0,
-            "kpis": 0,
-            "contributions": 0,
-            "governance_body_links": 0,
-            "errors": [],
-        }
+        stats = {"spaces": 0, "challenges": 0, "initiatives": 0, "systems": 0, "kpis": 0, "errors": []}
 
         # Create Space
         space = Space(
@@ -259,10 +175,9 @@ class YAMLImportService:
                     initiative_map,
                     system_map,
                     link_map,
-                    governance_body_map,
                     dry_run,
                 )
-                for key in ["challenges", "initiatives", "systems", "kpis", "contributions", "governance_body_links"]:
+                for key in ["challenges", "initiatives", "systems", "kpis"]:
                     stats[key] += challenge_stats.get(key, 0)
                 stats["errors"].extend(challenge_stats.get("errors", []))
             except Exception as e:
@@ -272,26 +187,10 @@ class YAMLImportService:
 
     @staticmethod
     def _create_challenge_and_children(
-        challenge_data,
-        space_id,
-        organization_id,
-        value_type_map,
-        initiative_map,
-        system_map,
-        link_map,
-        governance_body_map,
-        dry_run,
+        challenge_data, space_id, organization_id, value_type_map, initiative_map, system_map, link_map, dry_run
     ):
         """Create a Challenge and all its children"""
-        stats = {
-            "challenges": 0,
-            "initiatives": 0,
-            "systems": 0,
-            "kpis": 0,
-            "contributions": 0,
-            "governance_body_links": 0,
-            "errors": [],
-        }
+        stats = {"challenges": 0, "initiatives": 0, "systems": 0, "kpis": 0, "errors": []}
 
         # Create Challenge
         challenge = Challenge(
@@ -341,19 +240,10 @@ class YAMLImportService:
                 for system_data in initiative_data.get("systems", []):
                     try:
                         system_stats = YAMLImportService._create_system_and_kpis(
-                            system_data,
-                            initiative.id,
-                            organization_id,
-                            value_type_map,
-                            system_map,
-                            link_map,
-                            governance_body_map,
-                            dry_run,
+                            system_data, initiative.id, organization_id, value_type_map, system_map, link_map, dry_run
                         )
                         stats["systems"] += system_stats.get("systems", 0)
                         stats["kpis"] += system_stats.get("kpis", 0)
-                        stats["contributions"] += system_stats.get("contributions", 0)
-                        stats["governance_body_links"] += system_stats.get("governance_body_links", 0)
                         stats["errors"].extend(system_stats.get("errors", []))
                     except Exception as e:
                         stats["errors"].append(f"System '{system_data.get('name')}': {str(e)}")
@@ -365,10 +255,10 @@ class YAMLImportService:
 
     @staticmethod
     def _create_system_and_kpis(
-        system_data, initiative_id, organization_id, value_type_map, system_map, link_map, governance_body_map, dry_run
+        system_data, initiative_id, organization_id, value_type_map, system_map, link_map, dry_run
     ):
         """Create a System and all its KPIs"""
-        stats = {"systems": 0, "kpis": 0, "contributions": 0, "governance_body_links": 0, "errors": []}
+        stats = {"systems": 0, "kpis": 0, "errors": []}
 
         system_id = system_data.get("id")
 
@@ -433,19 +323,6 @@ class YAMLImportService:
                     db.session.flush()
                 stats["kpis"] += 1
 
-                # Create governance body links
-                for gb_name in kpi_data.get("governance_bodies", []):
-                    if gb_name in governance_body_map:
-                        gb = governance_body_map[gb_name]
-                        gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=gb.id)
-                        if not dry_run:
-                            db.session.add(gb_link)
-                        stats["governance_body_links"] += 1
-                    else:
-                        stats["errors"].append(
-                            f"KPI '{kpi_data['name']}': Governance body '{gb_name}' not mapped (skipped)"
-                        )
-
                 # Create KPI Value Type Configs
                 for vt_data in kpi_data.get("value_types", []):
                     vt_name = vt_data["name"]
@@ -475,26 +352,9 @@ class YAMLImportService:
                             display_decimals=vt_data.get("display_decimals"),
                             target_value=vt_data.get("target_value"),
                             target_date=target_date,
-                            target_direction=vt_data.get("target_direction"),
-                            target_tolerance_pct=vt_data.get("target_tolerance_pct"),
                         )
                         if not dry_run:
                             db.session.add(config)
-                            db.session.flush()  # Need ID for contributions
-
-                        # Import contributions for this value type
-                        for contrib_data in vt_data.get("contributions", []):
-                            contribution = Contribution(
-                                kpi_value_type_config_id=config.id,
-                                contributor_name=contrib_data["contributor"],
-                                numeric_value=contrib_data.get("value"),
-                                qualitative_level=contrib_data.get("level"),
-                                comment=contrib_data.get("comment"),
-                            )
-                            if not dry_run:
-                                db.session.add(contribution)
-                            stats["contributions"] += 1
-
                     else:
                         stats["errors"].append(f"KPI '{kpi_data['name']}': ValueType '{vt_name}' not found")
 

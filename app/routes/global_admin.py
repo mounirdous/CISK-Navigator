@@ -785,38 +785,21 @@ def restore_backup():
         else:
             yaml_content = file.read().decode("utf-8")
 
-        # Extract governance bodies from YAML
-        governance_bodies_in_yaml = YAMLImportService.extract_governance_bodies_from_yaml(yaml_content)
+        # Import from YAML
+        result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
 
-        if governance_bodies_in_yaml:
-            # Store YAML and org_id in session for mapping step
-            session["pending_global_yaml_import"] = yaml_content
-            session["global_yaml_org_id"] = org_id
-            session["global_yaml_governance_bodies"] = governance_bodies_in_yaml
+        # Build success message
+        msg = f'Restored to {org.name}: {result["value_types"]} value types, {result["spaces"]} spaces, '
+        msg += f'{result["challenges"]} challenges, {result["initiatives"]} initiatives, '
+        msg += f'{result["systems"]} systems, {result["kpis"]} KPIs'
 
-            # Redirect to mapping page
-            return redirect(url_for("global_admin.backup_governance_mapping"))
+        if result["errors"]:
+            msg += f' (with {len(result["errors"])} errors)'
+            flash(msg, "warning")
+            for error in result["errors"][:5]:  # Show first 5 errors
+                flash(f"  • {error}", "warning")
         else:
-            # No governance bodies, proceed directly
-            result = YAMLImportService.import_from_string(yaml_content, org_id, dry_run=False)
-
-            # Build success message
-            msg = f'Restored to {org.name}: {result["value_types"]} value types, {result["spaces"]} spaces, '
-            msg += f'{result["challenges"]} challenges, {result["initiatives"]} initiatives, '
-            msg += f'{result["systems"]} systems, {result["kpis"]} KPIs'
-
-            if result.get("contributions"):
-                msg += f', {result["contributions"]} contributions'
-            if result.get("governance_body_links"):
-                msg += f', {result["governance_body_links"]} GB links'
-
-            if result["errors"]:
-                msg += f' (with {len(result["errors"])} errors)'
-                flash(msg, "warning")
-                for error in result["errors"][:5]:  # Show first 5 errors
-                    flash(f"  • {error}", "warning")
-            else:
-                flash(msg, "success")
+            flash(msg, "success")
 
     except Exception as e:
         flash(f"Error restoring backup: {str(e)}", "danger")
@@ -825,97 +808,6 @@ def restore_backup():
         traceback.print_exc()
 
     return redirect(url_for("global_admin.backup_restore"))
-
-
-@bp.route("/backup-restore/governance-mapping", methods=["GET", "POST"])
-@login_required
-@global_admin_required
-def backup_governance_mapping():
-    """Map governance bodies from backup YAML to existing or create new"""
-    from app.services.yaml_import_service import YAMLImportService
-
-    # Check if we have pending YAML import
-    yaml_content = session.get("pending_global_yaml_import")
-    org_id = session.get("global_yaml_org_id")
-    yaml_governance_bodies = session.get("global_yaml_governance_bodies", [])
-
-    if not yaml_content or not yaml_governance_bodies or not org_id:
-        flash("No pending backup restore found", "warning")
-        return redirect(url_for("global_admin.backup_restore"))
-
-    org = db.session.get(Organization, org_id)
-    if not org:
-        flash("Organization not found", "danger")
-        return redirect(url_for("global_admin.backup_restore"))
-
-    # Get existing governance bodies in target organization
-    from app.models import GovernanceBody
-
-    existing_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).all()
-
-    if request.method == "POST":
-        try:
-            # Build governance body mapping from form
-            governance_body_mapping = {}
-
-            for yaml_gb_name in yaml_governance_bodies:
-                action = request.form.get(f"gb_action_{yaml_gb_name}")
-
-                if action == "create":
-                    governance_body_mapping[yaml_gb_name] = "create"
-                elif action and action.startswith("map_"):
-                    # Extract GB ID from "map_123"
-                    gb_id = int(action.split("_")[1])
-                    governance_body_mapping[yaml_gb_name] = gb_id
-
-            # Clear session data
-            session.pop("pending_global_yaml_import", None)
-            session.pop("global_yaml_org_id", None)
-            session.pop("global_yaml_governance_bodies", None)
-
-            # Import with governance body mapping
-            result = YAMLImportService.import_from_string(
-                yaml_content, org_id, dry_run=False, governance_body_mapping=governance_body_mapping
-            )
-
-            if result.get("success"):
-                # Build success message
-                msg = f'Restored to {org.name}: {result["value_types"]} value types, {result["spaces"]} spaces, '
-                msg += f'{result["challenges"]} challenges, {result["initiatives"]} initiatives, '
-                msg += f'{result["systems"]} systems, {result["kpis"]} KPIs'
-
-                if result.get("contributions"):
-                    msg += f', {result["contributions"]} contributions'
-                if result.get("governance_body_links"):
-                    msg += f', {result["governance_body_links"]} GB links'
-
-                if result["errors"]:
-                    msg += f' (with {len(result["errors"])} errors)'
-                    flash(msg, "warning")
-                    for error in result["errors"][:5]:  # Show first 5 errors
-                        flash(f"  • {error}", "warning")
-                else:
-                    flash(msg, "success")
-            else:
-                flash("Import failed", "danger")
-                for error in result.get("errors", []):
-                    flash(error, "danger")
-
-            return redirect(url_for("global_admin.backup_restore"))
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Error during restore: {str(e)}", "danger")
-            import traceback
-
-            traceback.print_exc()
-
-    return render_template(
-        "global_admin/backup_governance_mapping.html",
-        yaml_governance_bodies=yaml_governance_bodies,
-        existing_gbs=existing_gbs,
-        org=org,
-    )
 
 
 @bp.route("/organizations/<int:org_id>/clear-comments", methods=["POST"])
