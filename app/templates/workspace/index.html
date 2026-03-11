@@ -2139,10 +2139,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get all descendants of the dragged row (children, grandchildren, etc.)
             const descendants = getDescendants(draggedRow);
 
-            // CRITICAL: Remove descendants from DOM FIRST to prevent them from pushing siblings
-            // When we insert draggedRow, we don't want its descendants to interfere with sibling positions
-            console.log('Removing ' + descendants.length + ' descendants from DOM temporarily...');
-            descendants.forEach(desc => desc.remove());
+            // CRITICAL: Hide descendants during drag to avoid complex positioning issues
+            // They will reappear in correct position after backend save + page reload
+            console.log('Hiding ' + descendants.length + ' descendants during drag...');
+            descendants.forEach(desc => {
+                desc.style.display = 'none';
+            });
 
             // Move dragged row and all its descendants as a unit
             if (dragIndex < dropIndex) {
@@ -2186,25 +2188,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.parentNode.appendChild(draggedRow);
                 }
 
-                // Re-insert descendants right after their parent
-                // CRITICAL: Find a safe insertion point that won't push siblings past parent boundary
-                console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
-                let safeInsertPoint = draggedRow.nextSibling;
-                console.log('Initial insertion point:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'null');
-
-                // Check if nextSibling is a sibling of draggedRow (same level, same parent)
-                // If yes, inserting descendants before it would push it out of parent territory
-                if (safeInsertPoint && safeInsertPoint.dataset.level === dragLevel &&
-                    safeInsertPoint.dataset.parentId === dragParent) {
-                    console.log('⚠️ nextSibling is a sibling at same level - using parent boundary to avoid pushing it');
-                    console.log('   nextSibling:', safeInsertPoint.textContent.trim().substring(0, 30), 'level:', safeInsertPoint.dataset.level, 'parentId:', safeInsertPoint.dataset.parentId);
-                    safeInsertPoint = getParentBoundary(dragLevel, dragParent);
-                    console.log('Safe insertion point (parent boundary):', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end of parent');
-                }
-
-                descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, safeInsertPoint);
-                });
+                // Descendants remain hidden during the visual drag operation
+                // They will reappear in correct position after page reload
             } else {
                 // Moving up: insert before target
                 console.log('Moving up: dragIndex=' + dragIndex + ', dropIndex=' + dropIndex);
@@ -2238,35 +2223,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.parentNode.insertBefore(draggedRow, insertPoint);
                 console.log('After inserting draggedRow, its nextSibling:', draggedRow.nextSibling ? draggedRow.nextSibling.textContent.trim().substring(0, 30) : 'null');
 
-                // Re-insert descendants right after their parent
-                // CRITICAL: Find a safe insertion point that won't push siblings past parent boundary
-                console.log('Re-inserting ' + descendants.length + ' descendants after parent...');
-                let safeInsertPoint = draggedRow.nextSibling;
-                console.log('Initial insertion point:', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'null');
-
-                // Check if nextSibling is a sibling of draggedRow (same level, same parent)
-                // If yes, inserting descendants before it would push it out of parent territory
-                if (safeInsertPoint && safeInsertPoint.dataset.level === dragLevel &&
-                    safeInsertPoint.dataset.parentId === dragParent) {
-                    console.log('⚠️ nextSibling is a sibling at same level - using parent boundary to avoid pushing it');
-                    console.log('   nextSibling:', safeInsertPoint.textContent.trim().substring(0, 30), 'level:', safeInsertPoint.dataset.level, 'parentId:', safeInsertPoint.dataset.parentId);
-                    safeInsertPoint = getParentBoundary(dragLevel, dragParent);
-                    console.log('Safe insertion point (parent boundary):', safeInsertPoint ? safeInsertPoint.textContent.trim().substring(0, 30) : 'end of parent');
-                }
-
-                descendants.forEach(desc => {
-                    this.parentNode.insertBefore(desc, safeInsertPoint);
-                });
+                // Descendants remain hidden during the visual drag operation
+                // They will reappear in correct position after page reload
             }
-
-            // Force visual refresh to recalculate CSS hierarchy rendering
-            // The DOM is correct, but CSS might be using stale calculations for indentation
-            console.log('Forcing visual refresh...');
-            const tbody = this.parentNode;
-            tbody.style.visibility = 'hidden';
-            // Force reflow
-            void tbody.offsetHeight;
-            tbody.style.visibility = 'visible';
 
             // Re-collect siblings in NEW order (after DOM move)
             const allRowsAfterMove = Array.from(document.querySelectorAll(`tr[data-level="${dragLevel}"]`));
@@ -2330,6 +2289,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const result = await response.json();
             console.log('Backend save successful:', result);
             showNotification(`${level.charAt(0).toUpperCase() + level.slice(1)} order updated`, 'success');
+
+            // Reload page to show descendants in correct position
+            setTimeout(() => location.reload(), 500);
         } catch (error) {
             console.error('Error saving row order:', error);
             showNotification('Failed to save order', 'error');
