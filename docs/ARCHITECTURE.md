@@ -504,7 +504,83 @@ Organization (multi-tenant)
 
 ---
 
-### 10. **Governance Bodies**
+### 10. **Rollup Rules & Aggregation**
+
+**Purpose:** Define how values aggregate upward through the hierarchy
+
+**Model:** `app/models/rollup_rule.py`
+**Service:** `app/services/aggregation_service.py`
+**Routes:** `app/routes/organization_admin.py` - `configure_rollup()` (line 1328)
+**Templates:** `app/templates/organization_admin/configure_rollup.html`
+
+**Database Table:** `rollup_rules`
+
+**Key Fields:**
+- `id` (PK)
+- `source_type` - Where rollup originates:
+  - `initiative_system` - System → Initiative rollup
+  - `challenge_initiative` - Initiative → Challenge rollup
+  - `challenge` - Challenge → Space rollup
+- `source_id` - ID of InitiativeSystemLink, ChallengeInitiativeLink, or Challenge
+- `value_type_id` (FK) - Which value type rolls up
+- `rollup_enabled` (Boolean) - Whether rollup is active
+- `formula_override` - Aggregation formula:
+  - `default` - Use value type's default formula
+  - `sum` - Sum all child values
+  - `min` - Minimum of child values
+  - `max` - Maximum of child values
+  - `avg` - Average of child values
+
+**How It Works:**
+
+```
+KPI contributions (actual values)
+        ↓ (rollup via InitiativeSystemLink rule)
+System aggregated value
+        ↓ (rollup via ChallengeInitiativeLink rule)
+Initiative aggregated value
+        ↓ (rollup via Challenge rule)
+Challenge aggregated value
+        ↓
+Space aggregated value
+```
+
+**Relationships:**
+- N:1 with ValueType
+- Rules are entity-specific (not organization-wide defaults)
+
+**Current Implementation Status:**
+- ✅ **Model**: Fully implemented
+- ✅ **Service**: `AggregationService` uses rollup rules for calculations
+- ✅ **Database**: Table exists, relationships configured
+- ⚠️ **UI**: Route and template exist but backend is a stub
+  - Access: Organization Admin → Value Types → [Value Type] → "Rollup" button
+  - Shows form but doesn't save (lines 1337-1358 are placeholders)
+  - UI shows "Full per-context rollup configuration coming soon!"
+
+**Access Path:**
+1. Go to Organization Admin
+2. Click "Value Types"
+3. Click "Rollup" button next to any value type
+4. Configure rollup rules (UI exists but save functionality incomplete)
+
+**Design Note:**
+Rollup rules are **per-entity**, not organization-wide. Each InitiativeSystemLink, ChallengeInitiativeLink, and Challenge can have different rollup settings for the same value type.
+
+**Impact Analysis:**
+- **Creating/modifying rules:** Affects aggregated displays in workspace
+- **Deleting rules:** Rollup uses value type defaults
+- **Disabling rollup:** Aggregated values won't appear
+- **Formula changes:** Affects how child values combine
+
+**Related Services:**
+- `AggregationService.calculate_system_rollup()` - System → Initiative
+- `AggregationService.calculate_initiative_rollup()` - Initiative → Challenge
+- `AggregationService.calculate_challenge_rollup()` - Challenge → Space
+
+---
+
+### 11. **Governance Bodies**
 
 **Purpose:** Committees, boards, or teams responsible for KPIs
 
@@ -529,7 +605,7 @@ Organization (multi-tenant)
 
 ---
 
-### 11. **Cell Comments**
+### 12. **Cell Comments**
 
 **Purpose:** Discussion threads on KPI cells (contributions)
 
