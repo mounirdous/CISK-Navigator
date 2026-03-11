@@ -2190,6 +2190,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             console.log('SIBLINGS IN NEW ORDER:', siblingsInNewOrder.map(r => ({
                 id: r.dataset.id,
+                linkId: r.dataset.linkId,
                 parentId: r.dataset.parentId,
                 name: r.textContent.trim().substring(0, 30)
             })));
