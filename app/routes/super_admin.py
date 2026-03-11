@@ -615,12 +615,10 @@ def restore_backup():
             return redirect(url_for("super_admin.backup"))
 
         # Get existing users in target organization
-        from app.models import OrganizationMembership, User
-
         target_org = Organization.query.get(target_org_id)
         existing_users = (
-            User.query.join(OrganizationMembership)
-            .filter(OrganizationMembership.organization_id == target_org_id)
+            User.query.join(UserOrganizationMembership)
+            .filter(UserOrganizationMembership.organization_id == target_org_id)
             .all()
         )
 

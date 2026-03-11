@@ -58,10 +58,10 @@ class FullBackupService:
     @staticmethod
     def _export_users(organization_id):
         """Export all users and their permissions for this organization"""
-        from app.models import OrganizationMembership, User
+        from app.models import UserOrganizationMembership, User
 
         memberships = (
-            OrganizationMembership.query.filter_by(organization_id=organization_id)
+            UserOrganizationMembership.query.filter_by(organization_id=organization_id)
             .join(User)
             .filter(User.is_active == True)
             .all()

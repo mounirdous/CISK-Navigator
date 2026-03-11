@@ -44,7 +44,7 @@ class FullRestoreService:
         Returns:
             dict with restore results and statistics
         """
-        from app.models import Organization, OrganizationMembership, User
+        from app.models import Organization, UserOrganizationMembership, User
 
         try:
             backup = json.loads(json_string)
@@ -87,7 +87,7 @@ class FullRestoreService:
                             user_map[backup_login] = user
 
                             # Ensure user is a member of target organization
-                            membership = OrganizationMembership.query.filter_by(
+                            membership = UserOrganizationMembership.query.filter_by(
                                 user_id=user.id, organization_id=organization_id
                             ).first()
 
@@ -97,7 +97,7 @@ class FullRestoreService:
                                     (u for u in backup.get("users", []) if u["login"] == backup_login), None
                                 )
                                 if backup_user:
-                                    membership = OrganizationMembership(
+                                    membership = UserOrganizationMembership(
                                         user_id=user.id,
                                         organization_id=organization_id,
                                         **backup_user["permissions"],
@@ -139,7 +139,7 @@ class FullRestoreService:
                             db.session.flush()
 
                             # Add to organization with permissions
-                            membership = OrganizationMembership(
+                            membership = UserOrganizationMembership(
                                 user_id=new_user.id, organization_id=organization_id, **permissions
                             )
                             db.session.add(membership)
