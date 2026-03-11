@@ -1542,3 +1542,90 @@ def reorder_value_types():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/reorder/<entity_type>", methods=["POST"])
+@login_required
+@organization_required
+def reorder_rows(entity_type):
+    """Update display order of rows (spaces, challenges, initiatives, systems, KPIs) via drag-and-drop"""
+    try:
+        org_id = session.get("organization_id")
+        data = request.get_json()
+
+        if not data or "ids" not in data:
+            return jsonify({"error": "Missing ids"}), 400
+
+        ids = data["ids"]
+        parent_id = data.get("parent_id")
+
+        # Route to appropriate handler based on entity type
+        if entity_type == "space":
+            _reorder_spaces(org_id, ids)
+        elif entity_type == "challenge":
+            _reorder_challenges(org_id, ids, parent_id)
+        elif entity_type == "initiative":
+            _reorder_initiatives(org_id, ids, parent_id)
+        elif entity_type == "system":
+            _reorder_systems(org_id, ids, parent_id)
+        elif entity_type == "kpi":
+            _reorder_kpis(org_id, ids, parent_id)
+        else:
+            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
+
+        db.session.commit()
+        return jsonify({"success": True, "message": f"{entity_type.capitalize()} order updated"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def _reorder_spaces(org_id, space_ids):
+    """Reorder spaces within an organization"""
+    from app.models import Space
+
+    for index, space_id in enumerate(space_ids):
+        space = Space.query.filter_by(id=space_id, organization_id=org_id).first()
+        if space:
+            space.display_order = index
+
+
+def _reorder_challenges(org_id, challenge_ids, parent_space_id):
+    """Reorder challenges within a space"""
+    from app.models import Challenge
+
+    for index, challenge_id in enumerate(challenge_ids):
+        challenge = Challenge.query.filter_by(id=challenge_id, space_id=parent_space_id, organization_id=org_id).first()
+        if challenge:
+            challenge.display_order = index
+
+
+def _reorder_initiatives(org_id, link_ids, parent_challenge_id):
+    """Reorder initiatives within a challenge (by updating ChallengeInitiativeLink)"""
+    from app.models import ChallengeInitiativeLink
+
+    for index, link_id in enumerate(link_ids):
+        link = ChallengeInitiativeLink.query.filter_by(id=link_id, challenge_id=parent_challenge_id).first()
+        if link:
+            link.display_order = index
+
+
+def _reorder_systems(org_id, link_ids, parent_initiative_id):
+    """Reorder systems within an initiative (by updating InitiativeSystemLink)"""
+    from app.models import InitiativeSystemLink
+
+    for index, link_id in enumerate(link_ids):
+        link = InitiativeSystemLink.query.filter_by(id=link_id, initiative_id=parent_initiative_id).first()
+        if link:
+            link.display_order = index
+
+
+def _reorder_kpis(org_id, kpi_ids, parent_link_id):
+    """Reorder KPIs within a system (within an InitiativeSystemLink)"""
+    from app.models import KPI
+
+    for index, kpi_id in enumerate(kpi_ids):
+        kpi = KPI.query.filter_by(id=kpi_id, initiative_system_link_id=parent_link_id).first()
+        if kpi:
+            kpi.display_order = index

@@ -245,6 +245,37 @@ tr[data-level="kpi"] td {
 .level-border.system { border-left-color: #9b59b6; }
 .level-border.kpi { border-left-color: #e74c3c; }
 
+/* Drag handle for row reordering */
+.drag-handle {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    text-align: center;
+    cursor: grab;
+    color: var(--text-tertiary);
+    margin-right: 4px;
+    opacity: 0.4;
+    transition: opacity var(--transition-fast);
+}
+
+.drag-handle:hover {
+    opacity: 0.8;
+}
+
+.draggable-row:active .drag-handle {
+    cursor: grabbing;
+}
+
+.draggable-row.dragging {
+    opacity: 0.5;
+    background-color: var(--bg-tertiary) !important;
+}
+
+.draggable-row.drag-over {
+    border-top: 3px solid var(--accent-primary);
+}
+
 /* Modern expand icon */
 .expand-icon {
     display: inline-block;
@@ -635,8 +666,9 @@ tr[data-level="kpi"] td {
             {% if spaces %}
                 {% for space in spaces %}
                 <!-- SPACE ROW -->
-                <tr data-level="space" data-id="{{ space.id }}" class="table-primary" {% if not show_levels.spaces %}style="display: none;"{% endif %}>
+                <tr data-level="space" data-id="{{ space.id }}" class="table-primary draggable-row" draggable="true" {% if not show_levels.spaces %}style="display: none;"{% endif %}>
                     <td class="level-border space">
+                        <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🏢</span>
                         <strong>{{ space.name }}</strong>
@@ -711,8 +743,9 @@ tr[data-level="kpi"] td {
 
                 {% for challenge in space.challenges %}
                 <!-- CHALLENGE ROW -->
-                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light" style="display: none;" {% if not show_levels.challenges %}data-level-hidden="true"{% endif %}>
+                <tr data-level="challenge" data-id="{{ challenge.id }}" data-parent-type="space" data-parent-id="{{ space.id }}" class="table-light draggable-row" draggable="true" style="display: none;" {% if not show_levels.challenges %}data-level-hidden="true"{% endif %}>
                     <td class="level-border challenge" style="padding-left: 2.5rem !important;">
+                        <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🎯</span>
                         {{ challenge.name }}
@@ -780,8 +813,9 @@ tr[data-level="kpi"] td {
                 {% for link in challenge.initiative_links %}
                     {% set initiative = link.initiative %}
                 <!-- INITIATIVE ROW -->
-                <tr data-level="initiative" data-id="{{ initiative.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary" style="display: none;" {% if not show_levels.initiatives %}data-level-hidden="true"{% endif %}>
+                <tr data-level="initiative" data-id="{{ initiative.id }}" data-link-id="{{ link.id }}" data-parent-type="challenge" data-parent-id="{{ challenge.id }}" class="table-secondary draggable-row" draggable="true" style="display: none;" {% if not show_levels.initiatives %}data-level-hidden="true"{% endif %}>
                     <td class="level-border initiative" style="padding-left: 5rem !important;">
+                        <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">💡</span>
                         {{ initiative.name }}
@@ -849,8 +883,9 @@ tr[data-level="kpi"] td {
                 {% for sys_link in initiative.system_links %}
                     {% set system = sys_link.system %}
                 <!-- SYSTEM ROW -->
-                <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info" style="display: none;" {% if not show_levels.systems %}data-level-hidden="true"{% endif %}>
+                <tr data-level="system" data-id="{{ sys_link.id }}" data-parent-type="initiative" data-parent-id="{{ initiative.id }}" class="table-info draggable-row" draggable="true" style="display: none;" {% if not show_levels.systems %}data-level-hidden="true"{% endif %}>
                     <td class="level-border system" style="padding-left: 7.5rem !important;">
+                        <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">⚙️</span>
                         {{ system.name }}
@@ -938,8 +973,9 @@ tr[data-level="kpi"] td {
 
                 {% if show_kpi %}
                 <!-- KPI ROW -->
-                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %}" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}" {% if not show_levels.kpis %}data-level-hidden="true"{% endif %}>
+                <tr data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %} draggable-row" draggable="true" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}" {% if not show_levels.kpis %}data-level-hidden="true"{% endif %}>
                     <td class="level-border kpi" style="padding-left: 10rem !important;">
+                        <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="hierarchy-icon">📊</span>
                         {% set has_target_direction = namespace(value=none) %}
                         {% for config in kpi.value_type_configs %}
@@ -1936,6 +1972,124 @@ document.addEventListener('DOMContentLoaded', function() {
             toast.style.transition = 'opacity 0.3s';
             setTimeout(() => toast.remove(), 300);
         }, 2000);
+    }
+
+    // ========================================
+    // ROW DRAG-AND-DROP REORDERING
+    // ========================================
+    const draggableRows = document.querySelectorAll('.draggable-row');
+    let draggedRow = null;
+
+    draggableRows.forEach(row => {
+        row.addEventListener('dragstart', function(e) {
+            draggedRow = this;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        row.addEventListener('dragend', function(e) {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.draggable-row').forEach(r => r.classList.remove('drag-over'));
+        });
+
+        row.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            if (draggedRow === this) return;
+
+            // Only allow drop if same level and same parent
+            const dragLevel = draggedRow.dataset.level;
+            const dropLevel = this.dataset.level;
+            const dragParent = draggedRow.dataset.parentId;
+            const dropParent = this.dataset.parentId;
+
+            if (dragLevel === dropLevel && (dragLevel === 'space' || dragParent === dropParent)) {
+                e.dataTransfer.dropEffect = 'move';
+                this.classList.add('drag-over');
+            } else {
+                e.dataTransfer.dropEffect = 'none';
+            }
+        });
+
+        row.addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+
+        row.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            if (draggedRow === this) return;
+
+            // Validate same level and same parent
+            const dragLevel = draggedRow.dataset.level;
+            const dropLevel = this.dataset.level;
+            const dragParent = draggedRow.dataset.parentId;
+            const dropParent = this.dataset.parentId;
+
+            if (dragLevel !== dropLevel || (dragLevel !== 'space' && dragParent !== dropParent)) {
+                return;
+            }
+
+            // Get all visible siblings of the same level and parent
+            const allRows = Array.from(document.querySelectorAll(`tr[data-level="${dragLevel}"]`));
+            const siblings = allRows.filter(r => {
+                if (dragLevel === 'space') return true;
+                return r.dataset.parentId === dragParent && r.style.display !== 'none';
+            });
+
+            const dragIndex = siblings.indexOf(draggedRow);
+            const dropIndex = siblings.indexOf(this);
+
+            // Reorder in DOM
+            if (dragIndex < dropIndex) {
+                this.parentNode.insertBefore(draggedRow, this.nextSibling);
+            } else {
+                this.parentNode.insertBefore(draggedRow, this);
+            }
+
+            // Save new order to backend
+            saveRowOrder(dragLevel, dragParent, siblings);
+        });
+    });
+
+    async function saveRowOrder(level, parentId, siblings) {
+        // Collect IDs in new order
+        const ids = siblings.map(row => {
+            if (level === 'initiative') {
+                return parseInt(row.dataset.linkId); // ChallengeInitiativeLink ID
+            } else if (level === 'system') {
+                return parseInt(row.dataset.id); // InitiativeSystemLink ID
+            } else {
+                return parseInt(row.dataset.id); // Entity ID
+            }
+        });
+
+        const endpoint = `/workspace/api/reorder/${level}`;
+        const payload = { ids: ids };
+
+        if (parentId) {
+            payload.parent_id = parseInt(parentId);
+        }
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save row order');
+            }
+
+            showNotification(`${level.charAt(0).toUpperCase() + level.slice(1)} order updated`, 'success');
+        } catch (error) {
+            console.error('Error saving row order:', error);
+            showNotification('Failed to save order', 'error');
+            location.reload(); // Reload to restore original order
+        }
     }
 });
 
