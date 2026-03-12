@@ -2415,18 +2415,19 @@ def get_kpis_for_formula(org_id):
 
     result = []
     for kpi, config, value_type, initiative, system, organization in kpis:
+        # ONLY include numeric value types - formulas can't work with qualitative types
+        if not value_type.is_numeric():
+            continue
+
         # Get current consensus value
         consensus = ConsensusService.get_cell_value(config)
         current_value = consensus.get("value") if consensus else None
 
         # Format display value
         if current_value is not None:
-            if value_type.is_numeric():
-                try:
-                    display_value = f"{float(current_value):.2f} {value_type.unit_label or ''}".strip()
-                except (ValueError, TypeError):
-                    display_value = str(current_value)
-            else:
+            try:
+                display_value = f"{float(current_value):.2f} {value_type.unit_label or ''}".strip()
+            except (ValueError, TypeError):
                 display_value = str(current_value)
         else:
             display_value = "—"
@@ -2440,16 +2441,13 @@ def get_kpis_for_formula(org_id):
                 "name": f"{kpi.name} - {value_type.name}",
                 "kpi_name": kpi.name,
                 "value_type_name": value_type.name,
+                "value_type_kind": value_type.kind,
                 "organization_name": organization.name,
                 "organization_id": organization.id,
                 "is_current_org": is_current_org,
                 "path": f"{initiative.name} › {system.name}",
                 "currentValue": display_value,
-                "icon": (
-                    "💶"
-                    if value_type.unit_label in ["€", "$", "USD"]
-                    else "📊" if value_type.kind == "numeric" else "⚠️" if value_type.kind == "risk" else "📈"
-                ),
+                "icon": "💶" if value_type.unit_label in ["€", "$", "USD"] else "📊",
             }
         )
 
@@ -2505,6 +2503,18 @@ def update_calculation_config(config_id):
         # Check for circular dependencies (simple check)
         if config_id in source_ids:
             return jsonify({"error": "Cannot reference self in formula"}), 400
+
+        # Validate that all source KPIs are numeric (formulas can't use qualitative values)
+        for source_config in source_configs:
+            if not source_config.value_type.is_numeric():
+                return (
+                    jsonify(
+                        {
+                            "error": f"Formula cannot use qualitative value type '{source_config.value_type.name}' ({source_config.value_type.kind}). Only numeric value types can be used in formulas."
+                        }
+                    ),
+                    400,
+                )
 
         # Validate based on mode
         mode = calculation_config.get("mode", "simple")
