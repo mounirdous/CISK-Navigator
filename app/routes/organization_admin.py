@@ -216,7 +216,6 @@ def onboarding():
                     "numeric_format": "decimal",
                     "decimal_places": 2,
                     "unit_label": "€",
-                    "description": "Financial cost in Euros",
                 },
                 {
                     "name": "Revenue",
@@ -224,12 +223,10 @@ def onboarding():
                     "numeric_format": "decimal",
                     "decimal_places": 2,
                     "unit_label": "€",
-                    "description": "Financial revenue in Euros",
                 },
                 {
                     "name": "User Satisfaction",
                     "kind": "sentiment",
-                    "description": "User feedback sentiment",
                 },
             ]
 
