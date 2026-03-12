@@ -605,6 +605,66 @@ body.dark-mode .card.border-primary {
         </div>
     </div>
 </div>
+
+<!-- Historical Snapshots (Manual KPIs only) -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-archive"></i> Historical Snapshots ({{ snapshots|length if snapshots else 0 }})</h5>
+            </div>
+            <div class="card-body">
+                {% if snapshots %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                                <th>Contributors</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for snapshot in snapshots %}
+                            <tr>
+                                <td><i class="bi bi-calendar"></i> {{ snapshot.snapshot_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if snapshot.consensus_value is not none %}
+                                        <span class="fw-bold">{{ snapshot.consensus_value|format_value(value_type, config) }}</span>
+                                        {% if value_type.unit_label %}{{ value_type.unit_label }}{% endif %}
+                                    {% elif snapshot.qualitative_level is not none %}
+                                        Level {{ snapshot.qualitative_level }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge bg-{{ 'success' if snapshot.consensus_status == 'strong' else 'warning' }}">{{ snapshot.consensus_status }}</span></td>
+                                <td>{{ snapshot.contributor_count or 0 }}</td>
+                                <td class="small text-muted">{{ snapshot.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-danger delete-snapshot"
+                                            data-snapshot-id="{{ snapshot.id }}"
+                                            data-date="{{ snapshot.snapshot_date.strftime('%Y-%m-%d') }}">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle"></i> No historical snapshots yet. Choose "NEW data (time evolved)" when entering values to create snapshots.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endif %}
 
 <!-- Entry Mode Modal -->
@@ -847,8 +907,8 @@ async function loadTrendChart() {
 
         // Prepare data for Chart.js
         let dates = data.history.map(h => h.date);
-        // Apply scale divisor for display (except for qualitative values)
-        let values = data.history.map(h => isQualitative ? h.value : (h.value / scaleDivisor));
+        // Use ABSOLUTE values (no scaling) - scale is only for display formatting
+        let values = data.history.map(h => h.value);
 
         // For single data point, duplicate it so Chart.js can draw lines
         // (Chart.js needs at least 2 points to render lines and fill areas)
@@ -894,13 +954,13 @@ async function loadTrendChart() {
 
         // Add target line and tolerance band if target is set (numeric only)
         {% if config.target_value and value_type.kind == 'numeric' %}
-        const targetValue = {{ config.target_value }} / scaleDivisor;
-        const targetValueFormatted = formatNumber(targetValue, decimalPlaces);
+        const targetValue = {{ config.target_value }};  // Use absolute value
+        const targetValueFormatted = formatNumber(targetValue / scaleDivisor, decimalPlaces);  // Format for display only
         const targetDirection = '{{ config.target_direction or "maximize" }}';
         const directionIcon = targetDirection === 'minimize' ? '⬇️' : (targetDirection === 'exact' ? '🎯' : '⬆️');
         const directionLabel = targetDirection === 'minimize' ? 'At or Below' : (targetDirection === 'exact' ? 'At' : 'At or Above');
 
-        // Calculate tolerance band
+        // Calculate tolerance band (using absolute values)
         const tolerancePct = {{ config.target_tolerance_pct or 10 }};
         const tolerance = targetValue * (tolerancePct / 100);
         const upperBound = targetValue + tolerance;
@@ -983,7 +1043,7 @@ async function loadTrendChart() {
                         } : {
                             label: function(context) {
                                 const value = context.parsed.y;
-                                const formattedValue = formatNumber(value, decimalPlaces);
+                                const formattedValue = formatNumber(value / scaleDivisor, decimalPlaces);
                                 return `{{ value_type.name }}: ${formattedValue}${scaleSuffix}${unitLabel ? ' ' + unitLabel : ''}`;
                             }
                         }
@@ -1008,8 +1068,8 @@ async function loadTrendChart() {
                         if (values.length === 1) {
                             const value = values[0];
                             {% if config.target_value and value_type.kind == 'numeric' %}
-                            // If target exists, show value and full tolerance band with padding
-                            const targetValue = {{ config.target_value }} / scaleDivisor;
+                            // If target exists, show value and full tolerance band with padding (absolute values)
+                            const targetValue = {{ config.target_value }};
                             const tolerancePct = {{ config.target_tolerance_pct or 10 }};
                             const tolerance = targetValue * (tolerancePct / 100);
                             const upperBound = targetValue + tolerance;
@@ -1026,7 +1086,7 @@ async function loadTrendChart() {
                                 max: maxVal + padding,
                                 ticks: {
                                     callback: function(value) {
-                                        return formatNumber(value, decimalPlaces) + scaleSuffix;
+                                        return formatNumber(value / scaleDivisor, decimalPlaces) + scaleSuffix;
                                     }
                                 }
                             };
@@ -1038,7 +1098,7 @@ async function loadTrendChart() {
                                 max: value + range,
                                 ticks: {
                                     callback: function(value) {
-                                        return formatNumber(value, decimalPlaces) + scaleSuffix;
+                                        return formatNumber(value / scaleDivisor, decimalPlaces) + scaleSuffix;
                                     }
                                 }
                             };
@@ -1050,7 +1110,7 @@ async function loadTrendChart() {
                             beginAtZero: false,
                             ticks: {
                                 callback: function(value) {
-                                    return formatNumber(value, decimalPlaces) + scaleSuffix;
+                                    return formatNumber(value / scaleDivisor, decimalPlaces) + scaleSuffix;
                                 }
                             }
                         };
