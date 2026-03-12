@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Announcement Stats - {{ announcement.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-bar-chart"></i> Announcement Statistics</h2>
+                    <p class="text-muted">{{ announcement.title }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('super_admin.edit_announcement', announcement_id=announcement.id) }}" class="btn btn-primary me-2">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    <a href="{{ url_for('super_admin.list_announcements') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ stats.total_acknowledgments }}</h3>
+                    <p class="text-muted mb-0">Acknowledged</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ stats.target_count }}</h3>
+                    <p class="text-muted mb-0">Target Audience</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">
+                        {% if stats.target_count > 0 %}
+                        {{ (stats.total_acknowledgments / stats.target_count * 100)|int }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </h3>
+                    <p class="text-muted mb-0">Acknowledgment Rate</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">
+                        {% if announcement.is_active and stats.is_visible %}
+                        <span class="badge bg-success">Active</span>
+                        {% elif announcement.is_active %}
+                        <span class="badge bg-warning">Scheduled</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Draft</span>
+                        {% endif %}
+                    </h3>
+                    <p class="text-muted mb-0">Status</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Announcement Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Title:</strong> {{ announcement.title }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Type:</strong>
+                            {% if announcement.banner_type == 'info' %}
+                            <span class="badge bg-primary">Info</span>
+                            {% elif announcement.banner_type == 'success' %}
+                            <span class="badge bg-success">Success</span>
+                            {% elif announcement.banner_type == 'warning' %}
+                            <span class="badge bg-warning text-dark">Warning</span>
+                            {% elif announcement.banner_type == 'alert' %}
+                            <span class="badge bg-danger">Alert</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <strong>Message:</strong><br>
+                            {{ announcement.message }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Target:</strong>
+                            {% if announcement.target_type == 'all' %}
+                            All Users
+                            {% elif announcement.target_type == 'organization' %}
+                            Organization: {{ announcement.target_organization.name if announcement.target_organization else 'N/A' }}
+                            {% elif announcement.target_type == 'users' %}
+                            Specific Users ({{ announcement.target_users|length }})
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Dismissible:</strong> {{ "Yes" if announcement.is_dismissible else "No" }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Start Date:</strong> {{ announcement.start_date.strftime('%Y-%m-%d %H:%M') if announcement.start_date else 'Immediate' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>End Date:</strong> {{ announcement.end_date.strftime('%Y-%m-%d %H:%M') if announcement.end_date else 'No expiration' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if acknowledgments %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Users Who Acknowledged ({{ acknowledgments|length }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                    <th>Acknowledged At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ack, user in acknowledgments %}
+                                <tr>
+                                    <td>{{ user.username }}</td>
+                                    <td>{{ user.email }}</td>
+                                    <td>{{ ack.acknowledged_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No acknowledgments yet.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

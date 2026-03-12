@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Create Announcement{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-megaphone"></i> Create System Announcement</h2>
+            <p class="text-muted">Create a banner message to display to users</p>
+        </div>
+    </div>
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Announcement Content</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.title.label(class="form-label") }}
+                            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else "")) }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback">{{ form.title.errors[0] }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.title.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.message.label(class="form-label") }}
+                            {{ form.message(class="form-control" + (" is-invalid" if form.message.errors else ""), rows=4) }}
+                            {% if form.message.errors %}
+                                <div class="invalid-feedback">{{ form.message.errors[0] }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.message.description }}</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.banner_type.label(class="form-label") }}
+                                {{ form.banner_type(class="form-select" + (" is-invalid" if form.banner_type.errors else "")) }}
+                                {% if form.banner_type.errors %}
+                                    <div class="invalid-feedback">{{ form.banner_type.errors[0] }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4 pt-2">
+                                    {{ form.is_dismissible(class="form-check-input") }}
+                                    {{ form.is_dismissible.label(class="form-check-label") }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Target Audience</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.target_type.label(class="form-label") }}
+                            {{ form.target_type(class="form-select", id="target_type") }}
+                        </div>
+
+                        <div class="mb-3" id="org_selector" style="display: none;">
+                            {{ form.target_organization_id.label(class="form-label") }}
+                            {{ form.target_organization_id(class="form-select") }}
+                        </div>
+
+                        <div class="mb-3" id="users_selector" style="display: none;">
+                            {{ form.target_user_ids.label(class="form-label") }}
+                            {{ form.target_user_ids(class="form-select", multiple=True, size=10) }}
+                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple users</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">Schedule (Optional)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.start_date.label(class="form-label") }}
+                                {{ form.start_date(class="form-control", type="datetime-local") }}
+                                <small class="form-text text-muted">Leave empty to start immediately</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.end_date.label(class="form-label") }}
+                                {{ form.end_date(class="form-control", type="datetime-local") }}
+                                <small class="form-text text-muted">Leave empty for no expiration</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-4 position-sticky" style="top: 20px;">
+                    <div class="card-header">
+                        <h5 class="mb-0">Preview</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="preview" class="alert mb-3" role="alert">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-info-circle-fill me-2" id="preview-icon"></i>
+                                <div class="flex-grow-1">
+                                    <h6 class="alert-heading mb-1" id="preview-title">Your Title Here</h6>
+                                    <p class="mb-0" id="preview-message">Your message will appear here...</p>
+                                </div>
+                                <button type="button" class="btn-close ms-2" id="preview-close" style="display: none;"></button>
+                            </div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                            <small class="form-text text-muted d-block">{{ form.is_active.description }}</small>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('super_admin.list_announcements') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Target type selector
+const targetType = document.getElementById('target_type');
+const orgSelector = document.getElementById('org_selector');
+const usersSelector = document.getElementById('users_selector');
+
+function updateTargetVisibility() {
+    const type = targetType.value;
+    orgSelector.style.display = type === 'organization' ? 'block' : 'none';
+    usersSelector.style.display = type === 'users' ? 'block' : 'none';
+}
+
+targetType.addEventListener('change', updateTargetVisibility);
+updateTargetVisibility();
+
+// Preview
+const bannerTypes = {
+    'info': { class: 'alert-primary', icon: 'bi-info-circle-fill' },
+    'success': { class: 'alert-success', icon: 'bi-check-circle-fill' },
+    'warning': { class: 'alert-warning', icon: 'bi-exclamation-triangle-fill' },
+    'alert': { class: 'alert-danger', icon: 'bi-exclamation-octagon-fill' }
+};
+
+function updatePreview() {
+    const title = document.getElementById('title').value || 'Your Title Here';
+    const message = document.getElementById('message').value || 'Your message will appear here...';
+    const bannerType = document.getElementById('banner_type').value;
+    const isDismissible = document.getElementById('is_dismissible').checked;
+
+    const preview = document.getElementById('preview');
+    const previewIcon = document.getElementById('preview-icon');
+    const previewTitle = document.getElementById('preview-title');
+    const previewMessage = document.getElementById('preview-message');
+    const previewClose = document.getElementById('preview-close');
+
+    // Update classes
+    preview.className = 'alert mb-3 ' + bannerTypes[bannerType].class;
+    previewIcon.className = 'bi ' + bannerTypes[bannerType].icon + ' me-2';
+
+    // Update content
+    previewTitle.textContent = title;
+    previewMessage.textContent = message;
+
+    // Show/hide close button
+    previewClose.style.display = isDismissible ? 'block' : 'none';
+}
+
+// Attach listeners
+['title', 'message', 'banner_type', 'is_dismissible'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) {
+        element.addEventListener('input', updatePreview);
+        element.addEventListener('change', updatePreview);
+    }
+});
+
+// Initial preview
+updatePreview();
+</script>
+{% endblock %}

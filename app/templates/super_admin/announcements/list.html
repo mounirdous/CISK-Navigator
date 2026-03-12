@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}System Announcements{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-megaphone"></i> System Announcements</h2>
+                    <p class="text-muted">Manage banners and notifications for users</p>
+                </div>
+                <a href="{{ url_for('super_admin.create_announcement') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create Announcement
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if announcement_stats %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Status</th>
+                                    <th>Title</th>
+                                    <th>Type</th>
+                                    <th>Target</th>
+                                    <th>Audience</th>
+                                    <th>Acknowledged</th>
+                                    <th>Schedule</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in announcement_stats %}
+                                {% set ann = item.announcement %}
+                                <tr>
+                                    <td>
+                                        {% if ann.is_active and item.is_visible %}
+                                        <span class="badge bg-success">Active</span>
+                                        {% elif ann.is_active %}
+                                        <span class="badge bg-warning">Scheduled</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Draft</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <strong>{{ ann.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ ann.message[:80] }}{% if ann.message|length > 80 %}...{% endif %}</small>
+                                    </td>
+                                    <td>
+                                        {% if ann.banner_type == 'info' %}
+                                        <span class="badge" style="background-color: #0d6efd;">Info</span>
+                                        {% elif ann.banner_type == 'success' %}
+                                        <span class="badge" style="background-color: #198754;">Success</span>
+                                        {% elif ann.banner_type == 'warning' %}
+                                        <span class="badge" style="background-color: #ffc107; color: #000;">Warning</span>
+                                        {% elif ann.banner_type == 'alert' %}
+                                        <span class="badge" style="background-color: #dc3545;">Alert</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if ann.target_type == 'all' %}
+                                        <i class="bi bi-globe"></i> All Users
+                                        {% elif ann.target_type == 'organization' %}
+                                        <i class="bi bi-building"></i> {{ ann.target_organization.name if ann.target_organization else 'N/A' }}
+                                        {% elif ann.target_type == 'users' %}
+                                        <i class="bi bi-people"></i> Specific Users
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ item.target_count }} users</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('super_admin.announcement_stats', announcement_id=ann.id) }}" class="text-decoration-none">
+                                            {{ item.acknowledgment_count }} / {{ item.target_count }}
+                                            {% if item.target_count > 0 %}
+                                            ({{ (item.acknowledgment_count / item.target_count * 100)|int }}%)
+                                            {% endif %}
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {% if ann.start_date or ann.end_date %}
+                                        <small>
+                                            {% if ann.start_date %}
+                                            <i class="bi bi-calendar-check"></i> {{ ann.start_date.strftime('%Y-%m-%d %H:%M') }}<br>
+                                            {% endif %}
+                                            {% if ann.end_date %}
+                                            <i class="bi bi-calendar-x"></i> {{ ann.end_date.strftime('%Y-%m-%d %H:%M') }}
+                                            {% endif %}
+                                        </small>
+                                        {% else %}
+                                        <span class="text-muted">Always</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('super_admin.edit_announcement', announcement_id=ann.id) }}"
+                                               class="btn btn-outline-primary" title="Edit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('super_admin.announcement_stats', announcement_id=ann.id) }}"
+                                               class="btn btn-outline-info" title="View Stats">
+                                                <i class="bi bi-bar-chart"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger"
+                                                    onclick="deleteAnnouncement({{ ann.id }}, '{{ ann.title|replace("'", "\\'") }}')"
+                                                    title="Delete">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="bi bi-info-circle"></i> No announcements yet. Create your first announcement to communicate with users.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Delete confirmation modal -->
+<form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+</form>
+
+<script>
+function deleteAnnouncement(id, title) {
+    if (confirm('Are you sure you want to delete the announcement "' + title + '"?\n\nThis action cannot be undone.')) {
+        const form = document.getElementById('deleteForm');
+        form.action = "{{ url_for('super_admin.delete_announcement', announcement_id=0) }}".replace('/0/', '/' + id + '/');
+        form.submit();
+    }
+}
+</script>
+
+<style>
+.table td {
+    vertical-align: middle;
+}
+</style>
+{% endblock %}

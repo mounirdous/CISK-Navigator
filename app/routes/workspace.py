@@ -28,7 +28,9 @@ from app.models import (
     RollupSnapshot,
     Space,
     System,
+    SystemAnnouncement,
     User,
+    UserAnnouncementAcknowledgment,
     UserFilterPreset,
     UserOrganizationMembership,
     ValueType,
@@ -144,6 +146,16 @@ def dashboard():
     # Get unread mentions count
     unread_mentions = CommentService.get_unread_mentions_count(current_user.id)
 
+    # Get active announcements for current user
+    active_announcements = []
+    all_announcements = SystemAnnouncement.query.filter_by(is_active=True).all()
+    for ann in all_announcements:
+        if ann.is_visible_for_user(current_user.id, org_id):
+            # Check if user has already acknowledged (if dismissible)
+            if ann.is_dismissible and ann.has_been_acknowledged_by(current_user.id):
+                continue
+            active_announcements.append(ann)
+
     return render_template(
         "workspace/dashboard.html",
         org_name=org_name,
@@ -152,6 +164,7 @@ def dashboard():
         recent_comments=recent_comments,
         unread_mentions=unread_mentions,
         needs_onboarding=needs_onboarding,
+        active_announcements=active_announcements,
     )
 
 
@@ -2715,3 +2728,20 @@ def kpi_value_types(kpi_id):
         for config in configs
     ]
     return jsonify({"value_types": result})
+
+
+@bp.route("/api/announcement/<int:announcement_id>/acknowledge", methods=["POST"])
+@login_required
+def acknowledge_announcement(announcement_id):
+    """Acknowledge an announcement (mark as dismissed/read)"""
+    # Check if already acknowledged
+    existing = UserAnnouncementAcknowledgment.query.filter_by(
+        announcement_id=announcement_id, user_id=current_user.id
+    ).first()
+
+    if not existing:
+        acknowledgment = UserAnnouncementAcknowledgment(announcement_id=announcement_id, user_id=current_user.id)
+        db.session.add(acknowledgment)
+        db.session.commit()
+
+    return jsonify({"success": True})

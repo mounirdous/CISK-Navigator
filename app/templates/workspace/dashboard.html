@@ -126,6 +126,30 @@
     <p class="text-muted mb-0">Welcome back! Here's your overview.</p>
 </div>
 
+<!-- System Announcements -->
+{% if active_announcements %}
+{% for announcement in active_announcements %}
+{% set config = announcement.get_banner_config() %}
+<div class="alert alert-dismissible fade show mb-3"
+     style="background: {{ config.bg }}; border-left: 4px solid {{ config.border }}; border-radius: 8px;"
+     role="alert"
+     id="announcement-{{ announcement.id }}">
+    <div class="d-flex align-items-start">
+        <i class="bi {{ config.icon }} me-3" style="color: {{ config.text }}; font-size: 1.5rem;"></i>
+        <div class="flex-grow-1">
+            <h5 class="alert-heading mb-1" style="color: {{ config.text }};">{{ announcement.title }}</h5>
+            <p class="mb-0" style="color: {{ config.text }};">{{ announcement.message }}</p>
+        </div>
+        {% if announcement.is_dismissible %}
+        <button type="button" class="btn-close"
+                onclick="acknowledgeAnnouncement({{ announcement.id }})"
+                aria-label="Close"></button>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+
 {% if needs_onboarding %}
 <!-- Onboarding Welcome Card -->
 <div class="row mb-4">
@@ -526,5 +550,30 @@ document.addEventListener('DOMContentLoaded', function() {
         dateInput.valueAsDate = new Date();
     }
 });
+
+function acknowledgeAnnouncement(announcementId) {
+    fetch(`{{ url_for('workspace.acknowledge_announcement', announcement_id=0) }}`.replace('/0/', '/' + announcementId + '/'), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Fade out and remove the announcement
+            const element = document.getElementById('announcement-' + announcementId);
+            element.style.transition = 'opacity 0.3s ease';
+            element.style.opacity = '0';
+            setTimeout(() => {
+                element.remove();
+            }, 300);
+        }
+    })
+    .catch(error => {
+        console.error('Error acknowledging announcement:', error);
+    });
+}
 </script>
 {% endblock %}

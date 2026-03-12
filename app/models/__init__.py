@@ -2,6 +2,7 @@
 Database models
 """
 
+from .announcement import AnnouncementTargetUser, SystemAnnouncement, UserAnnouncementAcknowledgment
 from .audit_log import AuditLog
 from .cell_comment import CellComment, MentionNotification
 from .challenge import Challenge
@@ -45,4 +46,7 @@ __all__ = [
     "MentionNotification",
     "SystemSetting",
     "UserFilterPreset",
+    "SystemAnnouncement",
+    "UserAnnouncementAcknowledgment",
+    "AnnouncementTargetUser",
 ]

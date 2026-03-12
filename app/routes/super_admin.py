@@ -5,12 +5,22 @@ Super Admin routes - System-wide settings and configuration
 from datetime import datetime
 
 from flask import Blueprint, flash, redirect, render_template, request, url_for
-from flask_login import current_user
+from flask_login import current_user, login_required
 
 from app.decorators import super_admin_required
 from app.extensions import db
 from app.forms import OrganizationSSOConfigForm
-from app.models import AuditLog, Organization, SSOConfig, SystemSetting, User, UserOrganizationMembership
+from app.models import (
+    AnnouncementTargetUser,
+    AuditLog,
+    Organization,
+    SSOConfig,
+    SystemAnnouncement,
+    SystemSetting,
+    User,
+    UserAnnouncementAcknowledgment,
+    UserOrganizationMembership,
+)
 
 bp = Blueprint("super_admin", __name__, url_prefix="/super-admin")
 
@@ -689,9 +699,7 @@ def restore_backup_execute():
             # If action == "skip", don't include in mapping
 
         # Restore with user mapping
-        result = FullRestoreService.restore_from_json(
-            json_content, target_org_id, user_mapping=user_mapping
-        )
+        result = FullRestoreService.restore_from_json(json_content, target_org_id, user_mapping=user_mapping)
 
         if result.get("success"):
             stats = result.get("stats", {})
@@ -765,13 +773,82 @@ def restore_full_instance():
         backup_users = list(all_users.values())
 
         if not backup_users:
+            from app.services.full_restore_service import FullRestoreService
+
             flash(
                 f"⚠️ No users found in {org_count} organization(s). Proceeding without user mapping.",
                 "warning",
             )
-            # Proceed without mapping - call execute directly with no user mapping
+            # Proceed without mapping - perform restore directly
             zip_data_reset = io.BytesIO(zip_bytes)
-            return _execute_full_instance_restore(zip_data_reset, user_mapping=None)
+
+            # Perform restore with no user mapping
+            with zipfile.ZipFile(zip_data_reset, "r") as zf:
+                json_files = [f for f in zf.namelist() if f.endswith(".json")]
+
+                # Delete ALL existing organizations
+                existing_orgs = Organization.query.all()
+                for org in existing_orgs:
+                    db.session.delete(org)
+                db.session.commit()
+                flash(f"⚠️ Deleted {len(existing_orgs)} existing organization(s)", "warning")
+
+                # Restore each organization from backup
+                restored_count = 0
+                failed_count = 0
+
+                for json_file in json_files:
+                    try:
+                        json_content = zf.read(json_file).decode("utf-8")
+                        backup_data = json.loads(json_content)
+
+                        # Get organization name
+                        org_name = None
+                        if "organization" in backup_data and backup_data["organization"].get("name"):
+                            org_name = backup_data["organization"]["name"]
+                        elif "metadata" in backup_data and backup_data["metadata"].get("organization_name"):
+                            org_name = backup_data["metadata"]["organization_name"]
+                        else:
+                            org_name = f"Restored_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+                        # Handle duplicate names
+                        original_name = org_name
+                        suffix = 1
+                        while Organization.query.filter_by(name=org_name).first():
+                            org_name = f"{original_name} ({suffix})"
+                            suffix += 1
+
+                        # Create new organization
+                        new_org = Organization(
+                            name=org_name,
+                            description=backup_data.get("organization", {}).get("description"),
+                            is_active=True,
+                        )
+                        db.session.add(new_org)
+                        db.session.flush()
+
+                        # Restore data without user mapping
+                        result = FullRestoreService.restore_from_json(json_content, new_org.id, user_mapping=None)
+
+                        if result.get("success"):
+                            restored_count += 1
+                            db.session.commit()
+                        else:
+                            failed_count += 1
+                            db.session.rollback()
+                            flash(f"Failed to restore {org_name}: {result.get('error', 'Unknown error')}", "warning")
+
+                    except Exception as e:
+                        failed_count += 1
+                        db.session.rollback()
+                        flash(f"Error restoring {json_file}: {str(e)}", "warning")
+
+                if restored_count > 0:
+                    flash(f"✅ Restore complete: {restored_count} organization(s) restored", "success")
+                else:
+                    flash("❌ Restore failed: No organizations were restored", "danger")
+
+            return redirect(url_for("super_admin.backup"))
 
         # Get all existing users across all organizations
         all_existing_users = User.query.all()
@@ -881,9 +958,7 @@ def restore_full_instance_execute():
                     org_name = None
                     if "organization" in backup_data and backup_data["organization"].get("name"):
                         org_name = backup_data["organization"]["name"]
-                    elif "metadata" in backup_data and backup_data["metadata"].get(
-                        "organization_name"
-                    ):
+                    elif "metadata" in backup_data and backup_data["metadata"].get("organization_name"):
                         org_name = backup_data["metadata"]["organization_name"]
                     else:
                         # Fallback: extract from filename
@@ -912,9 +987,7 @@ def restore_full_instance_execute():
                     db.session.flush()  # Get the ID
 
                     # Restore data into this organization WITH user mapping
-                    result = FullRestoreService.restore_from_json(
-                        json_content, new_org.id, user_mapping=user_mapping
-                    )
+                    result = FullRestoreService.restore_from_json(json_content, new_org.id, user_mapping=user_mapping)
 
                     if result.get("success"):
                         restored_count += 1
@@ -947,3 +1020,196 @@ def restore_full_instance_execute():
         flash(f"Full instance restore error: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.backup"))
+
+
+# ==================== SYSTEM ANNOUNCEMENTS ====================
+
+
+@bp.route("/announcements")
+@login_required
+@super_admin_required
+def list_announcements():
+    """List all system announcements with stats"""
+    announcements = SystemAnnouncement.query.order_by(SystemAnnouncement.created_at.desc()).all()
+
+    # Add stats to each announcement
+    announcement_stats = []
+    for ann in announcements:
+        stats = {
+            "announcement": ann,
+            "acknowledgment_count": ann.get_acknowledgment_count(),
+            "is_visible": ann.is_visible_now(),
+            "target_count": 0,
+        }
+
+        # Calculate target count
+        if ann.target_type == "all":
+            stats["target_count"] = User.query.filter_by(is_active=True).count()
+        elif ann.target_type == "organization" and ann.target_organization:
+            stats["target_count"] = UserOrganizationMembership.query.filter_by(
+                organization_id=ann.target_organization_id
+            ).count()
+        elif ann.target_type == "users":
+            stats["target_count"] = len(ann.target_users)
+
+        announcement_stats.append(stats)
+
+    return render_template("super_admin/announcements/list.html", announcement_stats=announcement_stats)
+
+
+@bp.route("/announcements/create", methods=["GET", "POST"])
+@login_required
+@super_admin_required
+def create_announcement():
+    """Create a new system announcement"""
+    from app.forms.announcement_forms import AnnouncementCreateForm
+
+    form = AnnouncementCreateForm()
+
+    # Populate organization choices
+    organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
+    form.target_organization_id.choices = [(0, "Select Organization...")] + [
+        (org.id, org.name) for org in organizations
+    ]
+
+    # Populate user choices
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    form.target_user_ids.choices = [(user.id, f"{user.username} ({user.email})") for user in users]
+
+    if form.validate_on_submit():
+        announcement = SystemAnnouncement(
+            title=form.title.data,
+            message=form.message.data,
+            banner_type=form.banner_type.data,
+            is_dismissible=form.is_dismissible.data,
+            target_type=form.target_type.data,
+            target_organization_id=(
+                form.target_organization_id.data if form.target_type.data == "organization" else None
+            ),
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            is_active=form.is_active.data,
+            created_by=current_user.id,
+        )
+
+        db.session.add(announcement)
+        db.session.flush()  # Get ID for target users
+
+        # Add specific target users if needed
+        if form.target_type.data == "users" and form.target_user_ids.data:
+            for user_id in form.target_user_ids.data:
+                target = AnnouncementTargetUser(announcement_id=announcement.id, user_id=user_id)
+                db.session.add(target)
+
+        db.session.commit()
+        flash(f"Announcement '{announcement.title}' created successfully", "success")
+        return redirect(url_for("super_admin.list_announcements"))
+
+    return render_template("super_admin/announcements/create.html", form=form)
+
+
+@bp.route("/announcements/<int:announcement_id>/edit", methods=["GET", "POST"])
+@login_required
+@super_admin_required
+def edit_announcement(announcement_id):
+    """Edit an existing system announcement"""
+    from app.forms.announcement_forms import AnnouncementEditForm
+
+    announcement = SystemAnnouncement.query.get_or_404(announcement_id)
+    form = AnnouncementEditForm(obj=announcement)
+
+    # Populate organization choices
+    organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
+    form.target_organization_id.choices = [(0, "Select Organization...")] + [
+        (org.id, org.name) for org in organizations
+    ]
+
+    # Populate user choices
+    users = User.query.filter_by(is_active=True).order_by(User.username).all()
+    form.target_user_ids.choices = [(user.id, f"{user.username} ({user.email})") for user in users]
+
+    # Pre-select current target users
+    if request.method == "GET":
+        form.target_user_ids.data = [target.user_id for target in announcement.target_users]
+
+    if form.validate_on_submit():
+        announcement.title = form.title.data
+        announcement.message = form.message.data
+        announcement.banner_type = form.banner_type.data
+        announcement.is_dismissible = form.is_dismissible.data
+        announcement.target_type = form.target_type.data
+        announcement.target_organization_id = (
+            form.target_organization_id.data if form.target_type.data == "organization" else None
+        )
+        announcement.start_date = form.start_date.data
+        announcement.end_date = form.end_date.data
+        announcement.is_active = form.is_active.data
+
+        # Update target users
+        AnnouncementTargetUser.query.filter_by(announcement_id=announcement.id).delete()
+        if form.target_type.data == "users" and form.target_user_ids.data:
+            for user_id in form.target_user_ids.data:
+                target = AnnouncementTargetUser(announcement_id=announcement.id, user_id=user_id)
+                db.session.add(target)
+
+        db.session.commit()
+        flash(f"Announcement '{announcement.title}' updated successfully", "success")
+        return redirect(url_for("super_admin.list_announcements"))
+
+    return render_template("super_admin/announcements/edit.html", form=form, announcement=announcement)
+
+
+@bp.route("/announcements/<int:announcement_id>/delete", methods=["POST"])
+@login_required
+@super_admin_required
+def delete_announcement(announcement_id):
+    """Delete a system announcement"""
+    announcement = SystemAnnouncement.query.get_or_404(announcement_id)
+    title = announcement.title
+
+    db.session.delete(announcement)
+    db.session.commit()
+
+    flash(f"Announcement '{title}' deleted successfully", "success")
+    return redirect(url_for("super_admin.list_announcements"))
+
+
+@bp.route("/announcements/<int:announcement_id>/stats")
+@login_required
+@super_admin_required
+def announcement_stats(announcement_id):
+    """View detailed stats for an announcement"""
+    announcement = SystemAnnouncement.query.get_or_404(announcement_id)
+
+    # Get all acknowledgments with user info
+    acknowledgments = (
+        db.session.query(UserAnnouncementAcknowledgment, User)
+        .join(User, UserAnnouncementAcknowledgment.user_id == User.id)
+        .filter(UserAnnouncementAcknowledgment.announcement_id == announcement_id)
+        .order_by(UserAnnouncementAcknowledgment.acknowledged_at.desc())
+        .all()
+    )
+
+    # Calculate stats
+    stats = {
+        "total_acknowledgments": len(acknowledgments),
+        "is_visible": announcement.is_visible_now(),
+        "target_count": 0,
+    }
+
+    # Calculate target count
+    if announcement.target_type == "all":
+        stats["target_count"] = User.query.filter_by(is_active=True).count()
+    elif announcement.target_type == "organization" and announcement.target_organization:
+        stats["target_count"] = UserOrganizationMembership.query.filter_by(
+            organization_id=announcement.target_organization_id
+        ).count()
+    elif announcement.target_type == "users":
+        stats["target_count"] = len(announcement.target_users)
+
+    return render_template(
+        "super_admin/announcements/stats.html",
+        announcement=announcement,
+        acknowledgments=acknowledgments,
+        stats=stats,
+    )
