@@ -131,7 +131,7 @@ def index():
     return render_template("organization_admin/index.html", org_name=org_name, stats=stats, form=form)
 
 
-@bp.route("/onboarding")
+@bp.route("/onboarding", methods=["GET", "POST"])
 @login_required
 @organization_required
 def onboarding():
