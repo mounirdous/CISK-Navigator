@@ -97,9 +97,44 @@ def permission_required(permission_method_name):
     return decorator
 
 
+def any_org_admin_permission_required(f):
+    """Decorator to check if user has ANY management permission for the organization"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        org_id = session.get("organization_id")
+        if not org_id:
+            flash("No organization context", "danger")
+            return redirect(url_for("auth.login"))
+
+        # Global admins bypass all permission checks
+        if current_user.is_global_admin or current_user.is_super_admin:
+            return f(*args, **kwargs)
+
+        # Check if user has at least one management permission
+        has_any_permission = (
+            current_user.can_manage_spaces(org_id)
+            or current_user.can_manage_value_types(org_id)
+            or current_user.can_manage_governance_bodies(org_id)
+            or current_user.can_manage_challenges(org_id)
+            or current_user.can_manage_initiatives(org_id)
+            or current_user.can_manage_systems(org_id)
+            or current_user.can_manage_kpis(org_id)
+        )
+
+        if not has_any_permission:
+            flash("You do not have permission to access organization administration", "danger")
+            return redirect(url_for("workspace.dashboard"))
+
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 @bp.route("/")
 @login_required
 @organization_required
+@any_org_admin_permission_required
 def index():
     """Organization administration dashboard"""
     org_id = session.get("organization_id")

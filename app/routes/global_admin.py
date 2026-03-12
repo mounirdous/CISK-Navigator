@@ -204,6 +204,7 @@ def create_user():
                 can_manage_kpis=request.form.get(f"perm_kpis_{org_id}") == "on",
                 can_view_comments=request.form.get(f"perm_view_comments_{org_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{org_id}") == "on",
+                can_contribute=request.form.get(f"perm_contribute_{org_id}") == "on",
             )
             db.session.add(membership)
 
@@ -290,6 +291,7 @@ def edit_user(user_id):
                 can_manage_kpis=request.form.get(f"perm_kpis_{org_id}") == "on",
                 can_view_comments=request.form.get(f"perm_view_comments_{org_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{org_id}") == "on",
+                can_contribute=request.form.get(f"perm_contribute_{org_id}") == "on",
             )
             db.session.add(membership)
 

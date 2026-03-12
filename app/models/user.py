@@ -152,6 +152,13 @@ class User(UserMixin, db.Model):
         membership = self.get_membership(organization_id)
         return bool(membership and membership.can_add_comments)
 
+    def can_contribute(self, organization_id):
+        """Check if user can contribute values (enter KPI data) in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and membership.can_contribute)
+
     def has_permission(self, organization_id, permission_name):
         """Generic permission checker - delegates to specific permission methods"""
         if self.is_super_admin or self.is_global_admin:

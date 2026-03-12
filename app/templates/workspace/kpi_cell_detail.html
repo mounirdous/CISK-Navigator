@@ -385,7 +385,7 @@ body.dark-mode .card.border-primary {
 </div>
 
 <!-- Add/Update Contribution Form (Manual KPIs only) -->
-{% if config.calculation_type == 'manual' %}
+{% if config.calculation_type == 'manual' and can_contribute %}
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">

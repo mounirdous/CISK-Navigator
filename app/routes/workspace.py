@@ -647,6 +647,13 @@ def kpi_cell_detail(kpi_id, vt_id):
         )
         return redirect(url_for("workspace.index"))
 
+    # Check if user has permission to contribute
+    if not current_user.can_contribute(org_id):
+        if request.method == "POST":
+            flash("You do not have permission to contribute values", "danger")
+            return redirect(url_for("workspace.index"))
+        # If GET request, still allow viewing but disable form
+
     if form.validate_on_submit():
         contributor_name = form.contributor_name.data
         entry_mode = request.form.get("entry_mode", "contributing")  # 'new_data' or 'contributing'
@@ -803,6 +810,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         form=form,
         breadcrumb=breadcrumb,
         formula_details=formula_details,
+        can_contribute=current_user.can_contribute(org_id),
     )
 
 

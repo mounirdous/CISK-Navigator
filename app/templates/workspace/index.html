@@ -590,7 +590,7 @@ tr[data-level="kpi"] td {
                     </span>
                     {% else %}
                     <span class="ms-2 badge bg-primary">
-                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) %}
+                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) + (selected_space_ids|length if selected_space_ids else 0) %}
                         {{ active_filters }} active
                     </span>
                     {% endif %}
@@ -1246,9 +1246,13 @@ tr[data-level="kpi"] td {
                                     <span class="badge bg-info badge-sm" style="position: absolute; top: -5px; left: -5px; font-size: 0.65rem; z-index: 10;" title="Linked KPI">🔗</span>
                                 {% endif %}
 
-                                <div style="cursor: pointer;" onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'">
+                                <div style="{% if current_user.can_contribute(org_id) %}cursor: pointer;{% else %}cursor: default;{% endif %}" {% if current_user.can_contribute(org_id) %}onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'"{% endif %}>
                                     {% if consensus.status == 'no_data' %}
-                                        <span class="badge bg-secondary">Click to enter</span>
+                                        {% if current_user.can_contribute(org_id) %}
+                                            <span class="badge bg-secondary">Click to enter</span>
+                                        {% else %}
+                                            <span class="badge bg-light text-muted">No data</span>
+                                        {% endif %}
                                     {% elif consensus.value is not none %}
                                 <div>
                                     {% if vt.kind == 'numeric' %}

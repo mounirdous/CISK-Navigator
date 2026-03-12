@@ -364,16 +364,21 @@
                                 </li>
                             </ul>
                         </li>
+                        {% set org_id = session.get('organization_id') %}
+                        {% set has_org_admin_access = current_user.is_global_admin or current_user.is_super_admin or (org_id and (current_user.can_manage_spaces(org_id) or current_user.can_manage_value_types(org_id) or current_user.can_manage_governance_bodies(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id))) %}
+                        {% if has_org_admin_access %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-gear-fill"></i> Admin
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                                {% if org_id and (current_user.is_global_admin or current_user.is_super_admin or current_user.can_manage_spaces(org_id) or current_user.can_manage_value_types(org_id) or current_user.can_manage_governance_bodies(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id)) %}
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('organization_admin.index') }}">
                                         <i class="bi bi-building-gear"></i> {{ session.get('organization_name', 'Organization') }} Administration
                                     </a>
                                 </li>
+                                {% endif %}
                                 {% if current_user.is_global_admin %}
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('auth.switch_to_global_admin') }}">
@@ -391,6 +396,7 @@
                                 {% endif %}
                             </ul>
                         </li>
+                        {% endif %}
                     {% elif current_user.is_global_admin or current_user.is_super_admin %}
                         {% if current_user.is_super_admin %}
                         <li class="nav-item">

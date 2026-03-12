@@ -18,20 +18,112 @@
     position: relative;
     height: 300px;
 }
+
+/* Modern Dashboard Styles */
+.hero-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 16px;
+    padding: 2.5rem;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hero-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+}
+
+.stat-compact {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+.stat-compact:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.stat-compact-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+}
+.stat-compact-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+.stat-compact-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.action-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.action-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.action-card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+}
+.action-card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+.action-card-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    flex-grow: 1;
+}
+.action-card-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="bi bi-speedometer2"></i> Dashboard: {{ org_name }}</h2>
-    <div>
-        <a href="{{ url_for('workspace.index') }}" class="btn btn-primary">
-            <i class="bi bi-grid-3x3"></i> Workspace
-        </a>
-        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">
-            <i class="bi bi-gear"></i> Administration
-        </a>
-    </div>
+<div class="mb-4">
+    <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">
+        <i class="bi bi-speedometer2" style="color: var(--accent-primary);"></i> {{ org_name }}
+    </h1>
+    <p class="text-muted mb-0">Welcome back! Here's your overview.</p>
 </div>
 
 {% if needs_onboarding %}
@@ -63,95 +155,192 @@
 </div>
 {% endif %}
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-2">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="bi bi-grid-3x3-gap" style="font-size: 1.5rem; color: var(--accent-primary); opacity: 0.8;"></i>
-                <div class="stat-value">{{ stats.spaces }}</div>
-                <div class="stat-label">Spaces</div>
+<!-- Compact Statistics Bar -->
+<div class="row g-2 mb-4">
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(102, 126, 234, 0.1);">
+                <i class="bi bi-grid-3x3-gap" style="color: #667eea;"></i>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.spaces }}</div>
+                <div class="stat-compact-label">Spaces</div>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <span style="font-size: 1.5rem; color: var(--text-secondary); opacity: 0.8; font-weight: bold; font-style: italic;">ƒ</span>
-                <div class="stat-value">{{ stats.challenges }}</div>
-                <div class="stat-label">Challenges</div>
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(108, 117, 125, 0.1);">
+                <span style="color: #6c757d; font-weight: bold; font-style: italic; font-size: 1.5rem;">ƒ</span>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.challenges }}</div>
+                <div class="stat-compact-label">Challenges</div>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <span style="font-size: 1.5rem; color: var(--accent-info); opacity: 0.8; font-weight: bold;">δ</span>
-                <div class="stat-value">{{ stats.initiatives }}</div>
-                <div class="stat-label">Initiatives</div>
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(13, 202, 240, 0.1);">
+                <span style="color: #0dcaf0; font-weight: bold; font-size: 1.5rem;">δ</span>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.initiatives }}</div>
+                <div class="stat-compact-label">Initiatives</div>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <span style="font-size: 1.5rem; color: var(--accent-success); opacity: 0.8; font-weight: bold;">Φ</span>
-                <div class="stat-value">{{ stats.systems }}</div>
-                <div class="stat-label">Systems</div>
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(25, 135, 84, 0.1);">
+                <span style="color: #198754; font-weight: bold; font-size: 1.5rem;">Φ</span>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.systems }}</div>
+                <div class="stat-compact-label">Systems</div>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <span style="font-size: 1.5rem; color: var(--accent-warning); opacity: 0.8; font-weight: bold;">Ψ</span>
-                <div class="stat-value">{{ stats.kpis }}</div>
-                <div class="stat-label">KPIs</div>
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(255, 193, 7, 0.1);">
+                <span style="color: #ffc107; font-weight: bold; font-size: 1.5rem;">Ψ</span>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.kpis }}</div>
+                <div class="stat-compact-label">KPIs</div>
             </div>
         </div>
     </div>
-    <div class="col-md-2">
-        <div class="card stat-card">
-            <div class="card-body text-center">
-                <i class="bi bi-hash" style="font-size: 1.5rem; color: var(--accent-danger); opacity: 0.8;"></i>
-                <div class="stat-value">{{ stats.value_types }}</div>
-                <div class="stat-label">Value Types</div>
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(220, 53, 69, 0.1);">
+                <i class="bi bi-hash" style="color: #dc3545;"></i>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.value_types }}</div>
+                <div class="stat-compact-label">Value Types</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg col-md-6 col-sm-6">
+        <div class="stat-compact">
+            <div class="stat-compact-icon" style="background: rgba(25, 135, 84, 0.1);">
+                <i class="bi bi-people-fill" style="color: #198754;"></i>
+            </div>
+            <div>
+                <div class="stat-compact-value">{{ stats.governance_bodies }}</div>
+                <div class="stat-compact-label">Governance</div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-lightning-fill"></i> Quick Actions</h5>
+<!-- Unread Mentions Alert -->
+{% if current_user.can_view_comments(session.organization_id) and unread_mentions > 0 %}
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="alert alert-danger d-flex justify-content-between align-items-center" style="border-radius: 12px; border: 2px solid #dc3545;">
+            <div>
+                <i class="bi bi-bell-fill me-2"></i>
+                <strong>You have {{ unread_mentions }} unread mention{{ 's' if unread_mentions != 1 }}</strong>
             </div>
-            <div class="card-body">
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-grid-3x3"></i> Open Workspace
-                    </a>
-                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal">
-                        <i class="bi bi-camera-fill"></i> Create Snapshot
-                    </button>
-                    <a href="{{ url_for('workspace.list_snapshots') }}" class="btn btn-outline-info">
-                        <i class="bi bi-clock-history"></i> View Snapshots
-                    </a>
-                    <a href="{{ url_for('workspace.export_excel') }}" class="btn btn-outline-success">
-                        <i class="bi bi-file-earmark-excel"></i> Export Excel
-                    </a>
-                    {% if current_user.can_view_comments(session.organization_id) and unread_mentions > 0 %}
-                    <button class="btn btn-danger" onclick="showMentions()">
-                        <i class="bi bi-bell-fill"></i> {{ unread_mentions }} Unread Mention{{ 's' if unread_mentions != 1 }}
-                    </button>
-                    {% endif %}
+            <button class="btn btn-sm btn-danger" onclick="showMentions()">
+                View Mentions
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
 
-                    <!-- Admin Actions (shown if user has permissions) -->
+<!-- Primary Action Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <a href="{{ url_for('workspace.index') }}" style="text-decoration: none; color: inherit;">
+            <div class="hero-card">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h3 class="mb-2" style="font-size: 1.75rem; font-weight: 700;">
+                            <i class="bi bi-grid-3x3-gap me-2"></i> Open Workspace
+                        </h3>
+                        <p class="mb-0" style="opacity: 0.9; font-size: 1.05rem;">
+                            View and manage your KPIs, enter values, and track progress
+                        </p>
+                    </div>
+                    <div>
+                        <i class="bi bi-arrow-right-circle" style="font-size: 3rem; opacity: 0.7;"></i>
+                    </div>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Action Cards Grid -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-4 col-md-6">
+        <div class="action-card">
+            <div class="action-card-icon" style="background: rgba(25, 135, 84, 0.1);">
+                <i class="bi bi-camera-fill" style="color: #198754;"></i>
+            </div>
+            <div class="action-card-title">Create Snapshot</div>
+            <div class="action-card-desc">Capture current KPI values to track changes over time</div>
+            <button class="action-card-btn btn btn-success" data-bs-toggle="modal" data-bs-target="#quickSnapshotModal">
+                <i class="bi bi-camera-fill"></i> Take Snapshot
+            </button>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="action-card">
+            <div class="action-card-icon" style="background: rgba(13, 202, 240, 0.1);">
+                <i class="bi bi-clock-history" style="color: #0dcaf0;"></i>
+            </div>
+            <div class="action-card-title">View Snapshots</div>
+            <div class="action-card-desc">Browse historical snapshots and compare progress</div>
+            <a href="{{ url_for('workspace.list_snapshots') }}" class="action-card-btn btn btn-info">
+                <i class="bi bi-clock-history"></i> Browse History
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <div class="action-card">
+            <div class="action-card-icon" style="background: rgba(25, 135, 84, 0.1);">
+                <i class="bi bi-file-earmark-excel" style="color: #198754;"></i>
+            </div>
+            <div class="action-card-title">Export Excel</div>
+            <div class="action-card-desc">Download your workspace data as a spreadsheet</div>
+            <a href="{{ url_for('workspace.export_excel') }}" class="action-card-btn btn btn-outline-success">
+                <i class="bi bi-download"></i> Download Excel
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Actions (if user has permissions) -->
+{% set has_admin_actions = current_user.can_manage_value_types(session.organization_id) or current_user.can_manage_governance_bodies(session.organization_id) or current_user.is_global_admin or current_user.is_super_admin %}
+{% if has_admin_actions %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
+            <div class="card-body">
+                <h6 class="mb-3" style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);">
+                    <i class="bi bi-gear-fill me-2"></i> Administration
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
                     {% if current_user.can_manage_value_types(session.organization_id) %}
-                    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-hash"></i> Manage Value Types
+                    </a>
+                    {% endif %}
+                    {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.governance_bodies') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-people-fill"></i> Manage Governance Bodies
+                    </a>
+                    {% endif %}
+                    {% set has_any_admin = current_user.is_global_admin or current_user.is_super_admin or current_user.can_manage_spaces(session.organization_id) or current_user.can_manage_challenges(session.organization_id) or current_user.can_manage_initiatives(session.organization_id) or current_user.can_manage_systems(session.organization_id) or current_user.can_manage_kpis(session.organization_id) %}
+                    {% if has_any_admin %}
+                    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-building-gear"></i> Organization Settings
                     </a>
                     {% endif %}
                 </div>
@@ -159,14 +348,17 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- Two Column Layout -->
-<div class="row">
+<div class="row g-3">
     <!-- Left Column: Recent Snapshots -->
-    <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-camera"></i> Recent Snapshots</h5>
+    <div class="col-lg-6">
+        <div class="card mb-4" style="border: 1px solid var(--border-color); border-radius: 12px;">
+            <div class="card-header" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0" style="font-weight: 600;">
+                    <i class="bi bi-camera me-2" style="color: var(--accent-info);"></i>Recent Snapshots
+                </h6>
             </div>
             <div class="card-body">
                 {% if recent_snapshots %}
@@ -216,10 +408,12 @@
 
     <!-- Right Column: Recent Comments -->
     {% if current_user.can_view_comments(session.organization_id) %}
-    <div class="col-md-6">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-chat-dots"></i> Recent Comments</h5>
+    <div class="col-lg-6">
+        <div class="card mb-4" style="border: 1px solid var(--border-color); border-radius: 12px;">
+            <div class="card-header" style="background: var(--bg-secondary); border-bottom: 1px solid var(--border-color);">
+                <h6 class="mb-0" style="font-weight: 600;">
+                    <i class="bi bi-chat-dots me-2" style="color: var(--accent-success);"></i>Recent Comments
+                </h6>
             </div>
             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                 {% if recent_comments %}
@@ -248,21 +442,48 @@
 
 <!-- Info Section -->
 <div class="row">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-body">
-                <h6><i class="bi bi-lightbulb"></i> Getting Started</h6>
-                <ul class="mb-0">
-                    <li><strong>Workspace</strong>: View and enter KPI data in the tree/grid view</li>
-                    <li><strong>Snapshots</strong>: Capture current state to track progress over time</li>
+    <div class="col-12">
+        <div class="card" style="border: 1px solid var(--border-color); border-radius: 12px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);">
+            <div class="card-body" style="padding: 1.5rem;">
+                <h6 class="mb-3" style="font-weight: 600;">
+                    <i class="bi bi-lightbulb me-2" style="color: #ffc107;"></i>Quick Tips
+                </h6>
+                <div class="row g-3">
+                    <div class="col-md-6 col-lg-3">
+                        <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                <i class="bi bi-grid-3x3 me-1" style="color: var(--accent-primary);"></i> Workspace
+                            </div>
+                            <small class="text-muted">View and enter KPI data in tree/grid</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-lg-3">
+                        <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                <i class="bi bi-camera me-1" style="color: var(--accent-success);"></i> Snapshots
+                            </div>
+                            <small class="text-muted">Track progress over time</small>
+                        </div>
+                    </div>
                     {% if current_user.can_view_comments(session.organization_id) %}
-                    <li><strong>Comments</strong>: Click 💬 on any KPI cell to discuss values with your team</li>
+                    <div class="col-md-6 col-lg-3">
+                        <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                <i class="bi bi-chat-dots me-1" style="color: var(--accent-info);"></i> Comments
+                            </div>
+                            <small class="text-muted">Discuss values on KPI cells</small>
+                        </div>
+                    </div>
                     {% endif %}
-                    {% if current_user.can_add_comments(session.organization_id) %}
-                    <li><strong>Mentions</strong>: Use @username in comments to notify team members</li>
-                    {% endif %}
-                    <li><strong>Trends</strong>: Create multiple snapshots to see ↗️↘️→ trend indicators</li>
-                </ul>
+                    <div class="col-md-6 col-lg-3">
+                        <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div style="font-weight: 600; margin-bottom: 0.25rem; font-size: 0.9rem;">
+                                <i class="bi bi-graph-up-arrow me-1" style="color: var(--accent-warning);"></i> Trends
+                            </div>
+                            <small class="text-muted">See ↗️↘️→ indicators</small>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
