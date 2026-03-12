@@ -654,26 +654,64 @@ async function loadTrendChart() {
             pointBorderColor: isQualitative ? values.map(v => {
                 const colors = qualitativeColorMap[valueTypeKind];
                 return colors ? colors[v] : '#6c757d';
-            }) : '#0d6efd'
+            }) : '#0d6efd',
+            order: 1 // Draw on top of all other lines
         }];
 
-        // Add target line if target is set (numeric only)
+        // Add target line and tolerance band if target is set (numeric only)
         {% if config.target_value and value_type.kind == 'numeric' %}
         const targetValue = {{ config.target_value }} / scaleDivisor;
         const targetValueFormatted = formatNumber(targetValue, decimalPlaces);
         const targetDirection = '{{ config.target_direction or "maximize" }}';
         const directionIcon = targetDirection === 'minimize' ? '⬇️' : (targetDirection === 'exact' ? '🎯' : '⬆️');
         const directionLabel = targetDirection === 'minimize' ? 'At or Below' : (targetDirection === 'exact' ? 'At' : 'At or Above');
+
+        // Calculate tolerance band
+        const tolerancePct = {{ config.target_tolerance_pct or 10 }};
+        const tolerance = targetValue * (tolerancePct / 100);
+        const upperBound = targetValue + tolerance;
+        const lowerBound = targetValue - tolerance;
+
+        // Add tolerance band (shaded area) - add first so it appears behind other lines
+        datasets.push({
+            label: 'Tolerance Band (±' + tolerancePct + '%)',
+            data: dates.map(() => upperBound),
+            borderColor: 'rgba(220, 53, 69, 0.2)',
+            backgroundColor: 'rgba(220, 53, 69, 0.15)',
+            borderWidth: 1,
+            borderDash: [2, 2],
+            fill: '+1', // Fill to the next dataset (lower bound)
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0,
+            order: 10 // Draw behind other lines
+        });
+
+        datasets.push({
+            label: false, // Hide from legend
+            data: dates.map(() => lowerBound),
+            borderColor: 'rgba(220, 53, 69, 0.2)',
+            backgroundColor: 'rgba(220, 53, 69, 0.15)',
+            borderWidth: 1,
+            borderDash: [2, 2],
+            fill: false,
+            pointRadius: 0,
+            pointHoverRadius: 0,
+            tension: 0,
+            order: 10 // Draw behind other lines
+        });
+
+        // Add target line (solid)
         datasets.push({
             label: directionIcon + ' Target ' + directionLabel + ' (' + targetValueFormatted + scaleSuffix + (unitLabel ? ' ' + unitLabel : '') + '{% if config.target_date %} by {{ config.target_date.strftime("%Y-%m-%d") }}{% endif %})',
             data: dates.map(() => targetValue),
             borderColor: '#dc3545',
             borderWidth: 2,
-            borderDash: [5, 5],
             fill: false,
             pointRadius: 0,
             pointHoverRadius: 0,
-            tension: 0
+            tension: 0,
+            order: 5 // Draw on top of band but behind actual values
         });
         {% endif %}
 
@@ -690,7 +728,13 @@ async function loadTrendChart() {
                 plugins: {
                     legend: {
                         display: true,
-                        position: 'top'
+                        position: 'top',
+                        labels: {
+                            filter: function(item, chart) {
+                                // Hide datasets with label: false
+                                return item.text !== false && item.text !== 'false';
+                            }
+                        }
                     },
                     tooltip: {
                         mode: 'index',

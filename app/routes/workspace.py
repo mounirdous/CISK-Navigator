@@ -190,16 +190,9 @@ def index():
     public_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=False).count()
     private_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=True).count()
 
-    # Get show_all_columns flag (override smart column filtering)
-    # Check if parameter exists - if yes, use it; if no, default to False (smart filtering ON)
-    show_all_columns_param = request.args.get("show_all_columns")
-    if show_all_columns_param is not None:
-        # Parameter exists - check if it's "1" (checked)
-        show_all_columns = show_all_columns_param == "1"
-    else:
-        # No parameter - default to False (show only columns with data)
-        # This happens on first page load or when filter is reset
-        show_all_columns = False
+    # ALWAYS show all columns - user requested removal of column hiding feature
+    # Keeping parameter for backwards compatibility but always defaulting to True
+    show_all_columns = True
 
     # Get active governance bodies for filter
     from app.models import GovernanceBody

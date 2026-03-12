@@ -590,7 +590,7 @@ tr[data-level="kpi"] td {
                     </span>
                     {% else %}
                     <span class="ms-2 badge bg-primary">
-                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) + (1 if show_all_columns else 0) %}
+                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) %}
                         {{ active_filters }} active
                     </span>
                     {% endif %}
@@ -812,14 +812,7 @@ tr[data-level="kpi"] td {
                                                 <i class="bi bi-archive"></i> Archived KPIs
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ archived_kpis_count }}</span>
                                             </label>
-                                            <label class="filter-pill {% if show_all_columns %}active{% endif %}" title="{% if show_all_columns %}Hide columns with no rollup data{% else %}Show all columns including empty ones{% endif %}">
-                                                <input type="checkbox" name="show_all_columns" value="1" id="filter_show_all_columns"
-                                                       {% if show_all_columns %}checked{% endif %} hidden>
-                                                <i class="bi bi-columns-gap"></i> {% if show_all_columns %}All Columns{% else %}With Data Only{% endif %}
-                                                {% if not show_all_columns and hidden_value_types|length > 0 %}
-                                                <span class="pill-badge" style="background-color: rgba(255,165,0,0.3);" title="{{ hidden_value_types|length }} columns hidden (no data)">+{{ hidden_value_types|length }}</span>
-                                                {% endif %}
-                                            </label>
+                                            {# Column hiding feature removed per user request - always show all columns #}
                                         </div>
                                     </div>
                                 </div>
@@ -851,15 +844,7 @@ tr[data-level="kpi"] td {
         {% endif %}
         {% if show_archived %} • Including Archived{% endif %}
     </small>
-    {% if hidden_value_types %}
-    <small class="text-muted ms-3" style="opacity: 0.8;">
-        <i class="bi bi-eye-slash"></i>
-        <strong>Hidden columns</strong> (no data):
-        {% for vt in hidden_value_types %}
-            {{ vt.name }}{% if not loop.last %}, {% endif %}
-        {% endfor %}
-    </small>
-    {% endif %}
+    {# Hidden columns message removed - always show all columns now #}
 </div>
 
 <div class="table-responsive">
@@ -1810,12 +1795,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (checkbox) checkbox.checked = true;
             }
 
-            // Restore show_all_columns (defaults to true if not in localStorage)
-            const showAllColumnsCheckbox = filterForm.querySelector('input[name="show_all_columns"]');
-            if (showAllColumnsCheckbox) {
-                showAllColumnsCheckbox.checked = filters.show_all_columns !== false; // Default to true
-            }
-
             // Restore level visibility (defaults to true if not in localStorage)
             const levelNames = ['show_spaces', 'show_challenges', 'show_initiatives', 'show_systems', 'show_kpis'];
             levelNames.forEach(levelName => {
@@ -1837,11 +1816,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error restoring filters from localStorage:', e);
         }
     } else {
-        // First visit (no localStorage) - ensure show_all_columns defaults to checked
-        const showAllColumnsCheckbox = filterForm.querySelector('input[name="show_all_columns"]');
-        if (showAllColumnsCheckbox && !showAllColumnsCheckbox.checked) {
-            showAllColumnsCheckbox.checked = true;
-        }
+        // First visit (no localStorage) - no special defaults needed
     }
 
     // Sync pill active states with checkbox/radio states after restoration
@@ -1849,7 +1824,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pill = input.closest('.filter-pill');
         if (pill) {
             // Level visibility pills need special setAttribute treatment
-            if (input.name.startsWith('show_') && input.name !== 'show_archived' && input.name !== 'show_all_columns') {
+            if (input.name.startsWith('show_') && input.name !== 'show_archived') {
                 if (input.checked) {
                     pill.setAttribute('style', 'background-color: #0d6efd !important; color: white !important; border-color: #0d6efd !important; display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.75rem; border-radius: 16px; cursor: pointer; border-width: 1px; border-style: solid;');
                 } else {
@@ -1862,15 +1837,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Level visibility controls (checkboxes with names starting with "show_" except show_archived and show_all_columns)
+    // Level visibility controls (checkboxes with names starting with "show_" except show_archived)
     const levelCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
-        cb.name.startsWith('show_') && cb.name !== 'show_archived' && cb.name !== 'show_all_columns'
+        cb.name.startsWith('show_') && cb.name !== 'show_archived'
     );
     console.log('Level checkboxes:', levelCheckboxes.map(cb => cb.name));
 
-    // Governance body, archive, and show_all_columns checkboxes (data filters that trigger reload)
+    // Governance body, archive checkboxes (data filters that trigger reload)
     const dataFilterCheckboxes = Array.from(filterForm.querySelectorAll('input[type="checkbox"]')).filter(cb =>
-        !cb.name.startsWith('show_') || cb.name === 'show_archived' || cb.name === 'show_all_columns'
+        !cb.name.startsWith('show_') || cb.name === 'show_archived'
     );
     console.log('Data filter checkboxes:', dataFilterCheckboxes.map(cb => cb.name));
 
@@ -1941,7 +1916,6 @@ document.addEventListener('DOMContentLoaded', function() {
             space_type: filterForm.querySelector('input[name="space_type"]:checked')?.value || 'all',
             group: Array.from(filterForm.querySelectorAll('input[name="group"]:checked')).map(cb => cb.value),
             show_archived: filterForm.querySelector('input[name="show_archived"]')?.checked || false,
-            show_all_columns: filterForm.querySelector('input[name="show_all_columns"]')?.checked !== false, // Default to true
             show_spaces: filterForm.querySelector('input[name="show_spaces"]')?.checked !== false,
             show_challenges: filterForm.querySelector('input[name="show_challenges"]')?.checked !== false,
             show_initiatives: filterForm.querySelector('input[name="show_initiatives"]')?.checked !== false,
@@ -1960,10 +1934,10 @@ document.addEventListener('DOMContentLoaded', function() {
     function addLevelVisibilityHiddenInputs() {
         console.log('addLevelVisibilityHiddenInputs() called');
 
-        // Remove ONLY dynamically added hidden level inputs (NOT show_all_columns or show_archived)
+        // Remove ONLY dynamically added hidden level inputs (NOT show_archived)
         filterForm.querySelectorAll('input[name^="show_"][type="hidden"]').forEach(el => {
-            // Keep show_all_columns and show_archived hidden inputs
-            if (el.name !== 'show_all_columns' && el.name !== 'show_archived') {
+            // Keep show_archived hidden input
+            if (el.name !== 'show_archived') {
                 el.remove();
             }
         });
@@ -1996,7 +1970,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800); // Wait 800ms after last change
     }
 
-    // Handle data filter checkbox changes (governance bodies, groups, archive, show_all_columns) - these DO submit form
+    // Handle data filter checkbox changes (governance bodies, groups, archive) - these DO submit form
     dataFilterCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', function() {
             console.log(`Filter changed: ${this.name}=${this.value}, checked=${this.checked}`);
@@ -2936,9 +2910,6 @@ function getCurrentFilters() {
 
     // Show archived
     if (form.querySelector('input[name="show_archived"]')?.checked) filters.show_archived = '1';
-
-    // Show all columns
-    if (form.querySelector('input[name="show_all_columns"]')?.checked) filters.show_all_columns = '1';
 
     // Show levels - ALWAYS save them (including '1' for checked)
     if (form.querySelector('input[name="show_spaces"]')?.checked) filters.show_spaces = '1';
