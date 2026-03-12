@@ -235,6 +235,12 @@ function calculationBuilder() {
         linkedValueTypes: [],
 
         async init() {
+            // Check if we should auto-switch to formula mode (from KPI creation)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('open_formula') === '1') {
+                this.mode = 'formula';
+            }
+
             await this.loadAvailableKPIs();
             {% if config.calculation_type == 'formula' and config.calculation_config %}
             await this.loadExistingFormula();

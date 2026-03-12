@@ -1017,7 +1017,7 @@ async function loadTrendChart() {
 document.addEventListener('DOMContentLoaded', function() {
     loadTrendChart();
 
-    // Auto-open formula modal if coming from "Switch to Formula"
+    // Auto-open formula modal if coming from "Switch to Formula" or KPI creation
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('open_formula') === '1') {
         const calcModal = document.getElementById('calcConfigModal');
