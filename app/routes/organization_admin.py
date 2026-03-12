@@ -106,10 +106,6 @@ def index():
     value_types_count = ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
     governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count()
 
-    # Redirect to onboarding if organization is empty
-    if spaces_count == 0 and governance_bodies_count == 0 and value_types_count == 0:
-        return redirect(url_for("organization_admin.onboarding"))
-
     # Count KPIs
     kpis_count = (
         db.session.query(KPI)
@@ -163,7 +159,6 @@ def onboarding():
             space = Space(
                 name=form.name.data,
                 description=form.description.data,
-                space_type=form.space_type.data,
                 organization_id=org_id,
             )
             db.session.add(space)
@@ -172,7 +167,7 @@ def onboarding():
                 "Space",
                 space.id if space.id else 0,
                 space.name,
-                {"space_type": space.space_type},
+                {"description": space.description},
             )
 
             db.session.commit()
