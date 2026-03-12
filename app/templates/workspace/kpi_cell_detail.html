@@ -993,14 +993,58 @@ async function loadTrendChart() {
                                 return '';
                             }
                         }
-                    } : {
-                        beginAtZero: false,
-                        ticks: {
-                            callback: function(value) {
-                                return formatNumber(value, decimalPlaces) + scaleSuffix;
-                            }
+                    } : (() => {
+                        // For single data point, center the chart around the value
+                        if (values.length === 1) {
+                            const value = values[0];
+                            {% if config.target_value and value_type.kind == 'numeric' %}
+                            // If target exists, show value and full tolerance band with padding
+                            const targetValue = {{ config.target_value }} / scaleDivisor;
+                            const tolerancePct = {{ config.target_tolerance_pct or 10 }};
+                            const tolerance = targetValue * (tolerancePct / 100);
+                            const upperBound = targetValue + tolerance;
+                            const lowerBound = targetValue - tolerance;
+
+                            // Include both value and tolerance band, with 20% padding
+                            const minVal = Math.min(value, lowerBound);
+                            const maxVal = Math.max(value, upperBound);
+                            const range = maxVal - minVal;
+                            const padding = range * 0.2;
+
+                            return {
+                                min: minVal - padding,
+                                max: maxVal + padding,
+                                ticks: {
+                                    callback: function(value) {
+                                        return formatNumber(value, decimalPlaces) + scaleSuffix;
+                                    }
+                                }
+                            };
+                            {% else %}
+                            // No target: center around the value with ±30% range
+                            const range = value * 0.3;
+                            return {
+                                min: value - range,
+                                max: value + range,
+                                ticks: {
+                                    callback: function(value) {
+                                        return formatNumber(value, decimalPlaces) + scaleSuffix;
+                                    }
+                                }
+                            };
+                            {% endif %}
                         }
-                    }
+
+                        // Multiple data points: use default behavior
+                        return {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatNumber(value, decimalPlaces) + scaleSuffix;
+                                }
+                            }
+                        };
+                    })()
                 }
             }
         };
