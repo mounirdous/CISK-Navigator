@@ -226,13 +226,17 @@ function calculationBuilder() {
         loadError: null,
         showSearch: false,
 
-        // Linked mode data
-        linkedOrgId: {{ config.linked_source_org_id|tojson if config.linked_source_org_id else '""' }},
-        linkedKPIId: {{ config.linked_source_kpi_id|tojson if config.linked_source_kpi_id else '""' }},
-        linkedValueTypeId: {{ config.linked_source_value_type_id|tojson if config.linked_source_value_type_id else '""' }},
+        // Linked mode data (initialized as empty, set after data loads)
+        linkedOrgId: '',
+        linkedKPIId: '',
+        linkedValueTypeId: '',
         availableOrgs: [],
         linkedKPIs: [],
         linkedValueTypes: [],
+        // Store the target IDs to restore after loading
+        _targetOrgId: {{ config.linked_source_org_id|tojson if config.linked_source_org_id else 'null' }},
+        _targetKPIId: {{ config.linked_source_kpi_id|tojson if config.linked_source_kpi_id else 'null' }},
+        _targetValueTypeId: {{ config.linked_source_value_type_id|tojson if config.linked_source_value_type_id else 'null' }},
 
         async init() {
             console.log('Modal init - calculation type:', '{{ config.calculation_type }}');
@@ -396,10 +400,10 @@ function calculationBuilder() {
 
         // Linked mode methods
         async loadLinkedData() {
-            console.log('Loading linked data, current IDs:', {
-                orgId: this.linkedOrgId,
-                kpiId: this.linkedKPIId,
-                vtId: this.linkedValueTypeId
+            console.log('Loading linked data, target IDs:', {
+                orgId: this._targetOrgId,
+                kpiId: this._targetKPIId,
+                vtId: this._targetValueTypeId
             });
 
             try {
@@ -409,18 +413,34 @@ function calculationBuilder() {
                     this.availableOrgs = data.organizations || [];
                     console.log('Loaded organizations:', this.availableOrgs);
 
-                    // Use nextTick to ensure Alpine has updated the DOM
+                    // Wait for Alpine to render the options
                     await this.$nextTick();
 
-                    if (this.linkedOrgId) {
-                        console.log('Loading KPIs for org:', this.linkedOrgId);
-                        await this.loadLinkedKPIs();
-
+                    // Now restore the target org ID
+                    if (this._targetOrgId) {
+                        this.linkedOrgId = this._targetOrgId;
+                        console.log('Set linkedOrgId to:', this.linkedOrgId);
                         await this.$nextTick();
 
-                        if (this.linkedKPIId) {
-                            console.log('Loading value types for KPI:', this.linkedKPIId);
+                        // Load KPIs for this org
+                        await this.loadLinkedKPIs();
+                        await this.$nextTick();
+
+                        // Restore target KPI ID
+                        if (this._targetKPIId) {
+                            this.linkedKPIId = this._targetKPIId;
+                            console.log('Set linkedKPIId to:', this.linkedKPIId);
+                            await this.$nextTick();
+
+                            // Load value types
                             await this.loadLinkedValueTypes();
+                            await this.$nextTick();
+
+                            // Restore target value type ID
+                            if (this._targetValueTypeId) {
+                                this.linkedValueTypeId = this._targetValueTypeId;
+                                console.log('Set linkedValueTypeId to:', this.linkedValueTypeId);
+                            }
                         }
                     }
                 }
@@ -430,16 +450,17 @@ function calculationBuilder() {
         },
 
         async loadLinkedKPIs() {
-            if (!this.linkedOrgId) {
+            const orgId = this.linkedOrgId || this._targetOrgId;
+            if (!orgId) {
                 console.log('No org ID, skipping KPI load');
                 return;
             }
             try {
-                const response = await fetch(`/workspace/api/kpis-for-linking/${this.linkedOrgId}`);
+                const response = await fetch(`/workspace/api/kpis-for-linking/${orgId}`);
                 if (response.ok) {
                     const data = await response.json();
                     this.linkedKPIs = data.kpis || [];
-                    console.log('Loaded KPIs:', this.linkedKPIs);
+                    console.log('Loaded KPIs:', this.linkedKPIs.length, 'items');
                 }
             } catch (error) {
                 console.error('Error loading KPIs:', error);
@@ -447,16 +468,17 @@ function calculationBuilder() {
         },
 
         async loadLinkedValueTypes() {
-            if (!this.linkedKPIId) {
+            const kpiId = this.linkedKPIId || this._targetKPIId;
+            if (!kpiId) {
                 console.log('No KPI ID, skipping value types load');
                 return;
             }
             try {
-                const response = await fetch(`/workspace/api/kpi/${this.linkedKPIId}/value-types`);
+                const response = await fetch(`/workspace/api/kpi/${kpiId}/value-types`);
                 if (response.ok) {
                     const data = await response.json();
                     this.linkedValueTypes = data.value_types || [];
-                    console.log('Loaded value types:', this.linkedValueTypes);
+                    console.log('Loaded value types:', this.linkedValueTypes.length, 'items');
                 }
             } catch (error) {
                 console.error('Error loading value types:', error);
