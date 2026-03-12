@@ -360,9 +360,16 @@
                                         </button>
                                     </div>
                                     <div class="col-4">
+                                        {% if vt.kind == 'numeric' %}
                                         <button type="button" class="calc-type-btn w-100" data-vt="{{ choice_value }}" data-type="formula">
                                             <i class="bi bi-calculator"></i><br>Formula
                                         </button>
+                                        {% else %}
+                                        <button type="button" class="calc-type-btn w-100" disabled title="Formulas only work with numeric value types">
+                                            <i class="bi bi-calculator"></i><br>Formula
+                                            <br><small class="text-muted">(Numeric only)</small>
+                                        </button>
+                                        {% endif %}
                                     </div>
                                     <div class="col-4">
                                         <button type="button" class="calc-type-btn w-100" data-vt="{{ choice_value }}" data-type="linked">
@@ -599,8 +606,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const url = `{{ url_for("workspace.kpis_for_linking", org_id=0) }}`.replace('/0', '/' + this.value) +
                         (currentKind ? `?kind=${currentKind}` : '');
 
+            console.log('Loading KPIs from:', url, 'currentKind:', currentKind);
+
             fetch(url)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     const kpis = data.kpis || data;
                     if (kpis.length === 0) {
@@ -619,6 +633,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         option.dataset.fullPath = kpi.full_path;
                         kpiSelect.appendChild(option);
                     });
+                })
+                .catch(error => {
+                    console.error('Error loading KPIs:', error);
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = `Error loading KPIs: ${error.message}`;
+                    kpiSelect.appendChild(option);
+                    kpiSelect.disabled = true;
                 });
         });
     });
