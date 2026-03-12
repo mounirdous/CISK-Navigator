@@ -34,6 +34,35 @@
     </div>
 </div>
 
+{% if needs_onboarding %}
+<!-- Onboarding Welcome Card -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-primary" style="border-width: 3px; box-shadow: 0 8px 16px rgba(13, 110, 253, 0.15);">
+            <div class="card-body text-center py-5">
+                <div style="width: 100px; height: 100px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; font-size: 3rem; color: white;">
+                    <i class="bi bi-rocket-takeoff"></i>
+                </div>
+                <h2 class="mb-3">Welcome to {{ org_name }}!</h2>
+                <p class="lead text-muted mb-4">
+                    This organization is brand new and needs some setup before you can start tracking KPIs.
+                </p>
+                <p class="text-muted mb-4">
+                    Don't worry - we'll guide you through creating the essentials in just a few minutes.
+                </p>
+                <a href="{{ url_for('organization_admin.onboarding') }}" class="btn btn-primary btn-lg px-5">
+                    <i class="bi bi-play-circle"></i> Start Onboarding
+                </a>
+                <br>
+                <small class="text-muted d-block mt-3">
+                    <i class="bi bi-clock"></i> Takes about 2-3 minutes
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-md-2">

@@ -17,6 +17,127 @@
 
 ---
 
+## Journey 0: ORGANIZATION ONBOARDING (NEW!)
+
+### Overview
+**Entry Points:**
+1. User logs in and selects an empty organization
+2. User lands on workspace dashboard with empty org
+
+**Purpose:** Guide users through essential setup before they can work
+
+**Trigger:** Dashboard shows welcome card when organization has:
+- 0 spaces AND
+- 0 governance bodies AND
+- 0 value types
+
+**Flow:**
+- Admin creates empty organization (assigns users/permissions only)
+- User logs in, selects org, lands on dashboard
+- Dashboard shows welcome card: "Start Onboarding"
+- User clicks → enters onboarding wizard
+
+### Step 0.1: Welcome Screen
+**Page:** `/org-admin/onboarding?step=1`
+
+```
+User Journey:
+1. User clicks "Start Onboarding" from dashboard welcome card
+2. Lands on onboarding wizard step 1
+3. Welcome screen explains what's needed:
+   - Spaces (organize work by domain)
+   - Governance Bodies (oversight committees)
+   - Value Types (measurement dimensions)
+4. Click "Get Started"
+
+Current State: 🟢 NEW - Clear explanation before setup
+Pain Points: None - fresh implementation
+Visual: Progress bar (4 steps), friendly rocket icon
+```
+
+### Step 0.2: Create First Space
+**Page:** `/org-admin/onboarding?step=2`
+
+```
+User Journey:
+1. Enter space name (e.g., "Digital Transformation")
+2. Select space type (determines challenges/frameworks)
+3. Add description
+4. Click "Continue"
+   → Creates space
+   → Advances to step 3
+
+Current State: 🟢 NEW - Focused single-purpose form
+Pain Points: None - streamlined flow
+Visual: Progress bar shows 50% complete
+```
+
+### Step 0.3: Create Governance Body
+**Page:** `/org-admin/onboarding?step=3`
+
+```
+User Journey:
+1. Enter governance body name (e.g., "Steering Committee")
+2. Enter abbreviation (e.g., "SC")
+3. Add description
+4. Click "Continue"
+   → Creates governance body
+   → Advances to step 4
+
+Current State: 🟢 NEW - Same form as regular creation but in-flow
+Pain Points: None - reuses existing form logic
+Visual: Progress bar shows 75% complete
+```
+
+### Step 0.4: Create Value Types
+**Page:** `/org-admin/onboarding?step=4`
+
+```
+User Journey:
+1. Page explains we'll create 3 essentials:
+   - Cost (€)
+   - Revenue (€)
+   - User Satisfaction (sentiment)
+2. Click "Create Value Types"
+   → Creates all 3 default value types
+   → Advances to completion
+
+Current State: 🟢 NEW - Opinionated defaults, no form needed
+Pain Points: None - fastest path forward
+Note: Users can create more value types later
+```
+
+### Step 0.5: Complete & Next Steps
+**Page:** `/org-admin/onboarding?step=5`
+
+```
+User Journey:
+1. Success message: "You're All Set!"
+2. Shows clear next steps card:
+   1. Create Challenges
+   2. Create Initiatives
+   3. Add Systems
+   4. Create KPIs
+   5. View Workspace
+3. Click "Go to Organization Dashboard"
+   → Redirects to /org-admin
+
+Current State: 🟢 NEW - Clear guidance on what to do next
+Pain Points: None - provides roadmap
+Visual: Success checkmark, clickable next steps
+```
+
+### Onboarding Exit Conditions
+**User can skip/exit if:**
+- Organization already has spaces, gov bodies, AND value types
+  → Automatically skips to step 5 (completion)
+
+**User CANNOT skip:**
+- All 3 essentials are required before normal operation
+- This prevents "lost" users who don't know what to create first
+
+---
+
 ## Journey 1: FIRST TIME USER - Setting Up Organization
 
 ### Step 1.1: Create Value Types

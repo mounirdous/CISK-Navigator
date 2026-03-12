@@ -106,6 +106,10 @@ def index():
     value_types_count = ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
     governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count()
 
+    # Redirect to onboarding if organization is empty
+    if spaces_count == 0 and governance_bodies_count == 0 and value_types_count == 0:
+        return redirect(url_for("organization_admin.onboarding"))
+
     # Count KPIs
     kpis_count = (
         db.session.query(KPI)
@@ -129,6 +133,122 @@ def index():
     form = FlaskForm()
 
     return render_template("organization_admin/index.html", org_name=org_name, stats=stats, form=form)
+
+
+@bp.route("/onboarding")
+@login_required
+@organization_required
+def onboarding():
+    """Organization onboarding wizard"""
+    org_id = session.get("organization_id")
+    org_name = session.get("organization_name")
+
+    # Get step from query parameter (default to 1)
+    step = request.args.get("step", 1, type=int)
+
+    # Check what's already been created
+    spaces_count = Space.query.filter_by(organization_id=org_id).count()
+    governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id).count()
+    value_types_count = ValueType.query.filter_by(organization_id=org_id).count()
+
+    # If everything is set up, skip to completion
+    if spaces_count > 0 and governance_bodies_count > 0 and value_types_count > 0:
+        step = 5
+
+    # Initialize forms based on step
+    form = None
+    if step == 2:
+        form = SpaceCreateForm()
+        if form.validate_on_submit():
+            space = Space(
+                name=form.name.data,
+                description=form.description.data,
+                space_type=form.space_type.data,
+                organization_id=org_id,
+            )
+            db.session.add(space)
+
+            AuditService.log_create(
+                "Space",
+                space.id if space.id else 0,
+                space.name,
+                {"space_type": space.space_type},
+            )
+
+            db.session.commit()
+            flash(f"Space '{space.name}' created successfully", "success")
+            return redirect(url_for("organization_admin.onboarding", step=3))
+
+    elif step == 3:
+        form = GovernanceBodyCreateForm()
+        if form.validate_on_submit():
+            gov_body = GovernanceBody(
+                name=form.name.data,
+                abbreviation=form.abbreviation.data,
+                description=form.description.data,
+                color=form.color.data,
+                is_active=True,
+                organization_id=org_id,
+            )
+            db.session.add(gov_body)
+
+            AuditService.log_create(
+                "GovernanceBody",
+                gov_body.id if gov_body.id else 0,
+                gov_body.name,
+                {"abbreviation": gov_body.abbreviation},
+            )
+
+            db.session.commit()
+            flash(f"Governance body '{gov_body.name}' created successfully", "success")
+            return redirect(url_for("organization_admin.onboarding", step=4))
+
+    elif step == 4:
+        form = FlaskForm()
+        if form.validate_on_submit():
+            # Create default value types
+            default_value_types = [
+                {
+                    "name": "Cost",
+                    "kind": "numeric",
+                    "numeric_format": "decimal",
+                    "decimal_places": 2,
+                    "unit_label": "€",
+                    "description": "Financial cost in Euros",
+                },
+                {
+                    "name": "Revenue",
+                    "kind": "numeric",
+                    "numeric_format": "decimal",
+                    "decimal_places": 2,
+                    "unit_label": "€",
+                    "description": "Financial revenue in Euros",
+                },
+                {
+                    "name": "User Satisfaction",
+                    "kind": "sentiment",
+                    "description": "User feedback sentiment",
+                },
+            ]
+
+            for vt_data in default_value_types:
+                vt = ValueType(organization_id=org_id, **vt_data)
+                db.session.add(vt)
+                AuditService.log_create(
+                    "ValueType",
+                    vt.id if vt.id else 0,
+                    vt.name,
+                    {"kind": vt.kind},
+                )
+
+            db.session.commit()
+            flash(f"Created {len(default_value_types)} default value types", "success")
+            return redirect(url_for("organization_admin.onboarding", step=5))
+
+    if form is None:
+        form = FlaskForm()
+
+    return render_template("organization_admin/onboarding.html", org_name=org_name, step=step, form=form)
 
 
 # Space Management

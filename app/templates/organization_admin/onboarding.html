@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %}Welcome to {{ org_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.onboarding-container {
+    max-width: 900px;
+    margin: 2rem auto;
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    position: relative;
+}
+
+.progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: #e9ecef;
+    z-index: 0;
+}
+
+.progress-bar-fill {
+    position: absolute;
+    top: 20px;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #0d6efd 0%, #0b5ed7 100%);
+    z-index: 1;
+    transition: width 0.3s ease;
+}
+
+.step {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    flex: 1;
+}
+
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #e9ecef;
+    margin: 0 auto 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.step.active .step-circle {
+    border-color: #0d6efd;
+    background: #0d6efd;
+    color: white;
+    box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.1);
+}
+
+.step.completed .step-circle {
+    border-color: #198754;
+    background: #198754;
+    color: white;
+}
+
+.step-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.step.active .step-label {
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+.step.completed .step-label {
+    color: #198754;
+}
+
+.onboarding-card {
+    background: white;
+    border-radius: 16px;
+    padding: 3rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e9ecef;
+}
+
+.welcome-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    font-size: 2rem;
+    color: white;
+}
+
+.checklist {
+    list-style: none;
+    padding: 0;
+}
+
+.checklist li {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    align-items: start;
+    gap: 1rem;
+}
+
+.checklist li i {
+    font-size: 1.5rem;
+    margin-top: 0.25rem;
+}
+
+.quick-form-group {
+    margin-bottom: 1.5rem;
+}
+
+.quick-form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.success-icon {
+    width: 120px;
+    height: 120px;
+    background: linear-gradient(135deg, #198754 0%, #146c43 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    font-size: 3rem;
+    color: white;
+}
+
+.next-steps-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.next-steps-card h6 {
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.next-steps-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.next-steps-list li {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.next-steps-list li:last-child {
+    border-bottom: none;
+}
+
+.next-steps-list a {
+    text-decoration: none;
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.next-steps-list a:hover {
+    color: #0b5ed7;
+    text-decoration: underline;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onboarding-container fade-in">
+    <!-- Progress Steps -->
+    <div class="progress-steps">
+        <div class="progress-bar-fill" style="width: {{ (step / 4 * 100)|int }}%;"></div>
+        <div class="step {{ 'completed' if step > 1 else ('active' if step == 1 else '') }}">
+            <div class="step-circle">
+                {% if step > 1 %}<i class="bi bi-check"></i>{% else %}1{% endif %}
+            </div>
+            <div class="step-label">Welcome</div>
+        </div>
+        <div class="step {{ 'completed' if step > 2 else ('active' if step == 2 else '') }}">
+            <div class="step-circle">
+                {% if step > 2 %}<i class="bi bi-check"></i>{% else %}2{% endif %}
+            </div>
+            <div class="step-label">Space</div>
+        </div>
+        <div class="step {{ 'completed' if step > 3 else ('active' if step == 3 else '') }}">
+            <div class="step-circle">
+                {% if step > 3 %}<i class="bi bi-check"></i>{% else %}3{% endif %}
+            </div>
+            <div class="step-label">Governance</div>
+        </div>
+        <div class="step {{ 'completed' if step > 4 else ('active' if step == 4 else '') }}">
+            <div class="step-circle">
+                {% if step > 4 %}<i class="bi bi-check"></i>{% else %}4{% endif %}
+            </div>
+            <div class="step-label">Value Types</div>
+        </div>
+    </div>
+
+    <!-- Step Content -->
+    {% if step == 1 %}
+    <!-- Welcome Step -->
+    <div class="onboarding-card">
+        <div class="welcome-icon">
+            <i class="bi bi-rocket-takeoff"></i>
+        </div>
+        <h1 class="text-center mb-3">Welcome to {{ org_name }}!</h1>
+        <p class="text-center text-muted mb-4">Let's set up the essentials to get you started</p>
+
+        <div class="alert alert-info mb-4">
+            <i class="bi bi-info-circle-fill"></i>
+            <strong>Why this setup?</strong> Before you can create initiatives and track KPIs, you need these foundational elements.
+        </div>
+
+        <ul class="checklist">
+            <li>
+                <i class="bi bi-grid-3x3 text-primary"></i>
+                <div>
+                    <strong>Spaces</strong><br>
+                    <small class="text-muted">Organize your work by domain (e.g., "Digital Transformation", "Customer Experience")</small>
+                </div>
+            </li>
+            <li>
+                <i class="bi bi-people text-success"></i>
+                <div>
+                    <strong>Governance Bodies</strong><br>
+                    <small class="text-muted">Define oversight committees (e.g., "Steering Committee", "Executive Board")</small>
+                </div>
+            </li>
+            <li>
+                <i class="bi bi-hash text-info"></i>
+                <div>
+                    <strong>Value Types</strong><br>
+                    <small class="text-muted">Set up measurement dimensions (e.g., "Cost", "Revenue", "User Satisfaction")</small>
+                </div>
+            </li>
+        </ul>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{{ url_for('organization_admin.onboarding', step=2) }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-arrow-right"></i> Get Started
+            </a>
+        </div>
+    </div>
+
+    {% elif step == 2 %}
+    <!-- Create Space Step -->
+    <div class="onboarding-card">
+        <h2 class="mb-1"><i class="bi bi-grid-3x3 text-primary"></i> Create Your First Space</h2>
+        <p class="text-muted mb-4">Spaces organize your initiatives into logical domains</p>
+
+        <form method="POST" action="{{ url_for('organization_admin.onboarding', step=2) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="quick-form-group">
+                {{ form.name.label }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-grid"></i></span>
+                    {{ form.name(class="form-control form-control-lg", placeholder="e.g., Digital Transformation", autofocus=True) }}
+                </div>
+                {% if form.name.errors %}
+                    <div class="invalid-feedback d-block">{% for error in form.name.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="quick-form-group">
+                {{ form.space_type.label }}
+                {{ form.space_type(class="form-select form-select-lg") }}
+                <small class="form-text text-muted">
+                    <i class="bi bi-info-circle"></i> Determines available challenges and frameworks
+                </small>
+            </div>
+
+            <div class="quick-form-group">
+                {{ form.description.label }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                    {{ form.description(class="form-control", rows=3, placeholder="Describe this space...") }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <a href="{{ url_for('organization_admin.onboarding', step=1) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
+    </div>
+
+    {% elif step == 3 %}
+    <!-- Create Governance Body Step -->
+    <div class="onboarding-card">
+        <h2 class="mb-1"><i class="bi bi-people text-success"></i> Create a Governance Body</h2>
+        <p class="text-muted mb-4">Define who oversees and approves initiatives</p>
+
+        <form method="POST" action="{{ url_for('organization_admin.onboarding', step=3) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="quick-form-group">
+                {{ form.name.label }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-bank"></i></span>
+                    {{ form.name(class="form-control form-control-lg", placeholder="e.g., Steering Committee", autofocus=True) }}
+                </div>
+                {% if form.name.errors %}
+                    <div class="invalid-feedback d-block">{% for error in form.name.errors %}{{ error }}{% endfor %}</div>
+                {% endif %}
+            </div>
+
+            <div class="quick-form-group">
+                {{ form.abbreviation.label }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-tag"></i></span>
+                    {{ form.abbreviation(class="form-control form-control-lg", placeholder="e.g., SC", maxlength="20") }}
+                </div>
+                <small class="form-text text-muted">
+                    <i class="bi bi-info-circle"></i> Short label for workspace display
+                </small>
+            </div>
+
+            <div class="quick-form-group">
+                {{ form.description.label }}
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-text-paragraph"></i></span>
+                    {{ form.description(class="form-control", rows=3, placeholder="Describe responsibilities...") }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <a href="{{ url_for('organization_admin.onboarding', step=2) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                {{ form.submit(class="btn btn-primary btn-lg") }}
+            </div>
+        </form>
+    </div>
+
+    {% elif step == 4 %}
+    <!-- Create Value Types Step -->
+    <div class="onboarding-card">
+        <h2 class="mb-1"><i class="bi bi-hash text-info"></i> Create Value Types</h2>
+        <p class="text-muted mb-4">Define how you'll measure success</p>
+
+        <div class="alert alert-success mb-4">
+            <i class="bi bi-lightbulb-fill"></i>
+            <strong>Quick Start:</strong> We'll create 3 essential value types for you (Cost, Revenue, User Satisfaction). You can add more later.
+        </div>
+
+        <form method="POST" action="{{ url_for('organization_admin.onboarding', step=4) }}">
+            {{ form.hidden_tag() }}
+
+            <div class="table-responsive">
+                <table class="table table-borderless">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong><i class="bi bi-currency-euro text-danger"></i> Cost</strong></td>
+                            <td><span class="badge bg-primary">Numeric</span></td>
+                            <td>€ (Euros)</td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="bi bi-graph-up-arrow text-success"></i> Revenue</strong></td>
+                            <td><span class="badge bg-primary">Numeric</span></td>
+                            <td>€ (Euros)</td>
+                        </tr>
+                        <tr>
+                            <td><strong><i class="bi bi-star text-warning"></i> User Satisfaction</strong></td>
+                            <td><span class="badge bg-info">Sentiment</span></td>
+                            <td>Negative / Neutral / Positive</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="d-flex justify-content-between gap-2 mt-4">
+                <a href="{{ url_for('organization_admin.onboarding', step=3) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+                {{ form.submit(class="btn btn-primary btn-lg", value="Create Value Types") }}
+            </div>
+        </form>
+    </div>
+
+    {% elif step == 5 %}
+    <!-- Complete Step -->
+    <div class="onboarding-card text-center">
+        <div class="success-icon">
+            <i class="bi bi-check-lg"></i>
+        </div>
+        <h1 class="mb-3">You're All Set!</h1>
+        <p class="text-muted mb-4">Your organization is ready to start tracking initiatives and KPIs</p>
+
+        <div class="next-steps-card text-start">
+            <h6><i class="bi bi-signpost-2"></i> What's Next?</h6>
+            <ul class="next-steps-list">
+                <li>
+                    <i class="bi bi-1-circle text-primary me-2"></i>
+                    <a href="{{ url_for('organization_admin.challenges') }}">Create Challenges</a>
+                    <small class="text-muted d-block ms-4">Define strategic challenges within your space</small>
+                </li>
+                <li>
+                    <i class="bi bi-2-circle text-primary me-2"></i>
+                    <a href="{{ url_for('organization_admin.initiatives') }}">Create Initiatives</a>
+                    <small class="text-muted d-block ms-4">Add projects and programs to address challenges</small>
+                </li>
+                <li>
+                    <i class="bi bi-3-circle text-primary me-2"></i>
+                    <a href="{{ url_for('organization_admin.systems') }}">Add Systems</a>
+                    <small class="text-muted d-block ms-4">Link initiatives to technical systems</small>
+                </li>
+                <li>
+                    <i class="bi bi-4-circle text-primary me-2"></i>
+                    <a href="{{ url_for('organization_admin.kpis') }}">Create KPIs</a>
+                    <small class="text-muted d-block ms-4">Track progress with key performance indicators</small>
+                </li>
+                <li>
+                    <i class="bi bi-5-circle text-primary me-2"></i>
+                    <a href="{{ url_for('workspace.index') }}">View Workspace</a>
+                    <small class="text-muted d-block ms-4">See your KPIs in the grid and start entering data</small>
+                </li>
+            </ul>
+        </div>
+
+        <div class="d-flex justify-content-center gap-2 mt-4">
+            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-primary btn-lg">
+                <i class="bi bi-house"></i> Go to Organization Dashboard
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

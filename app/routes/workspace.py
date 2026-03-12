@@ -117,7 +117,11 @@ def dashboard():
         .filter(Initiative.organization_id == org_id)
         .count(),
         "value_types": ValueType.query.filter_by(organization_id=org_id, is_active=True).count(),
+        "governance_bodies": GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count(),
     }
+
+    # Check if organization needs onboarding (empty org)
+    needs_onboarding = stats["spaces"] == 0 and stats["governance_bodies"] == 0 and stats["value_types"] == 0
 
     # Get recent snapshots (last 5) - now with full snapshot info
     recent_snapshots = SnapshotService.get_all_snapshots(org_id, user_id=current_user.id, limit=5)
@@ -145,6 +149,7 @@ def dashboard():
         recent_snapshots=recent_snapshots,
         recent_comments=recent_comments,
         unread_mentions=unread_mentions,
+        needs_onboarding=needs_onboarding,
     )
 
 
