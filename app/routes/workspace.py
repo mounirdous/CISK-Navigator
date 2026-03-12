@@ -2480,6 +2480,7 @@ def update_calculation_config(config_id):
     data = request.get_json()
     calculation_type = data.get("calculation_type")
     calculation_config = data.get("calculation_config")
+    clear_contributions = data.get("clear_contributions", False)
 
     # Validate calculation type
     if calculation_type not in [
@@ -2547,6 +2548,14 @@ def update_calculation_config(config_id):
         config.linked_source_org_id = None
         config.linked_source_kpi_id = None
         config.linked_source_value_type_id = None
+
+    # Clear contributions if requested
+    if clear_contributions:
+        from app.models.contribution import Contribution
+
+        deleted_count = Contribution.query.filter_by(kpi_value_type_config_id=config.id).delete()
+        if deleted_count > 0:
+            flash(f"Cleared {deleted_count} old contribution{'s' if deleted_count > 1 else ''}", "info")
 
     db.session.commit()
 

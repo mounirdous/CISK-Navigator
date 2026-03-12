@@ -433,6 +433,7 @@ body.dark-mode .card.border-primary {
     </div>
 </div>
 {% endif %}
+{% endif %}
 
 <!-- Historical Trend Chart - Shown for ALL calculation types -->
 <div class="row mb-4">
@@ -718,9 +719,9 @@ body.dark-mode .card.border-primary {
 {% endif %}
 
 <script>
+{% if config.calculation_type == 'manual' %}
 document.addEventListener('DOMContentLoaded', function() {
-    // Edit contribution buttons (Manual KPIs only)
-    {% if config.calculation_type == 'manual' %}
+    // Edit contribution buttons
     document.querySelectorAll('.edit-contrib').forEach(button => {
         button.addEventListener('click', function() {
             const name = this.dataset.name;

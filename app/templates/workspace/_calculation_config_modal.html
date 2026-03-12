@@ -222,6 +222,8 @@
 function calculationBuilder() {
     return {
         mode: '{{ config.calculation_type or "manual" }}',
+        originalMode: '{{ config.calculation_type or "manual" }}',  // Track original mode
+        contributionCount: {{ contributions|length }},  // Track contribution count
         formulaMode: 'simple',
         searchQuery: '',
         selectedKPIs: [],
@@ -509,6 +511,46 @@ function calculationBuilder() {
         },
 
         async saveConfiguration() {
+            // Check if we need to show warning about contributions
+            const switchingFromManual = this.originalMode === 'manual' && this.mode !== 'manual';
+            const switchingToManual = this.originalMode !== 'manual' && this.mode === 'manual';
+
+            // Switching FROM manual with existing contributions
+            if (switchingFromManual && this.contributionCount > 0) {
+                const message = `⚠️ This KPI has ${this.contributionCount} contribution${this.contributionCount > 1 ? 's' : ''}.\n\n` +
+                    `${this.mode === 'formula' ? 'Formula' : 'Linked'} KPIs don't use contributions.\n\n` +
+                    `What should happen to existing contributions?\n\n` +
+                    `OK = Keep them (hidden, can restore if you switch back)\n` +
+                    `Cancel = Don't switch calculation type`;
+
+                if (!confirm(message)) {
+                    return;  // User cancelled
+                }
+                // User confirmed - contributions will be kept but ignored
+            }
+
+            // Switching TO manual with existing contributions
+            if (switchingToManual && this.contributionCount > 0) {
+                const message = `⚠️ This KPI has ${this.contributionCount} old contribution${this.contributionCount > 1 ? 's' : ''} from when it was previously manual.\n\n` +
+                    `These contributions will become active again.\n\n` +
+                    `Do you want to:\n` +
+                    `OK = Keep old contributions (current value will be restored)\n` +
+                    `Cancel = Clear contributions and start fresh`;
+
+                const keepContributions = confirm(message);
+                if (!keepContributions) {
+                    // User wants to clear contributions
+                    await this.performSave(true);  // Pass true to clear contributions
+                    return;
+                }
+                // User wants to keep contributions
+            }
+
+            // Perform normal save
+            await this.performSave(false);
+        },
+
+        async performSave(clearContributions = false) {
             if (this.mode === 'manual') {
                 try {
                     const response = await fetch(`/workspace/kpi-config/{{ config.id }}/calculation`, {
@@ -516,7 +558,8 @@ function calculationBuilder() {
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
                             calculation_type: 'manual',
-                            calculation_config: null
+                            calculation_config: null,
+                            clear_contributions: clearContributions
                         })
                     });
                     if (response.ok) {
@@ -553,7 +596,8 @@ function calculationBuilder() {
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
                             calculation_type: 'formula',
-                            calculation_config: config
+                            calculation_config: config,
+                            clear_contributions: clearContributions
                         })
                     });
                     if (response.ok) {
@@ -583,7 +627,8 @@ function calculationBuilder() {
                                 linked_org_id: parseInt(this.linkedOrgId),
                                 linked_kpi_id: parseInt(this.linkedKPIId),
                                 linked_value_type_id: parseInt(this.linkedValueTypeId)
-                            }
+                            },
+                            clear_contributions: clearContributions
                         })
                     });
                     if (response.ok) {
