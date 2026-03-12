@@ -336,148 +336,51 @@
                             </div>
                             {% endif %}
 
-                            {# Value Source Configuration #}
+                            {# Calculation Type - Simplified Display #}
                             <div class="color-config mt-3 border-top pt-3">
                                 <h6 class="mb-3"><i class="bi bi-gear"></i> Calculation Type</h6>
 
-                                {# Current Calculation Type Display #}
-                                {% if config.calculation_type == 'formula' %}
-                                    {# Formula KPI #}
-                                    <div class="alert alert-success border-success" style="border-width: 2px;">
-                                        <div class="d-flex align-items-start justify-content-between">
-                                            <div class="d-flex align-items-start">
-                                                <i class="bi bi-calculator fs-4 me-3 text-success"></i>
-                                                <div>
-                                                    <h6 class="mb-1"><i class="bi bi-check-circle-fill text-success"></i> Formula Calculation Active</h6>
-                                                    <p class="mb-0">This KPI automatically calculates from other KPIs</p>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                {% if config.calculation_type == 'formula' %}
+                                                    <h6 class="mb-2">
+                                                        <i class="bi bi-calculator text-success"></i> Formula Calculation
+                                                    </h6>
+                                                    <p class="text-muted mb-1 small">Automatically calculates from other KPIs</p>
                                                     {% if config.calculation_config %}
                                                         {% if config.calculation_config.get('mode') == 'advanced' %}
-                                                            <small class="text-muted">Mode: Advanced (Python Expression)</small>
+                                                            <span class="badge bg-secondary">Advanced Expression</span>
                                                         {% else %}
-                                                            <small class="text-muted">Mode: Simple (Operation: {{ config.calculation_config.get('operation', 'sum')|upper }})</small>
+                                                            <span class="badge bg-secondary">{{ config.calculation_config.get('operation', 'sum')|upper }}</span>
                                                         {% endif %}
                                                     {% endif %}
-                                                </div>
+                                                {% elif config.calculation_type == 'linked' %}
+                                                    <h6 class="mb-2">
+                                                        <i class="bi bi-link-45deg text-info"></i> Linked KPI
+                                                    </h6>
+                                                    <p class="text-muted mb-1 small">Syncs values from another organization's KPI</p>
+                                                    {% if config.linked_source_org_id %}
+                                                        <span class="badge bg-info">Source configured</span>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <h6 class="mb-2">
+                                                        <i class="bi bi-pencil-square text-primary"></i> Manual Entry
+                                                    </h6>
+                                                    <p class="text-muted mb-0 small">Values entered through contributions</p>
+                                                {% endif %}
                                             </div>
                                             <a href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=config.value_type_id) }}"
-                                               class="btn btn-success">
-                                                <i class="bi bi-pencil"></i> Edit Formula
+                                               class="btn btn-primary btn-sm">
+                                                <i class="bi bi-gear"></i> Configure
                                             </a>
                                         </div>
                                     </div>
-
-                                {% elif config.calculation_type == 'linked' %}
-                                    {# Linked KPI #}
-                                    <div class="alert alert-info border-info" style="border-width: 2px;" id="linked-config-{{ config.id }}">
-                                        <div class="d-flex align-items-start justify-content-between mb-3">
-                                            <div class="d-flex align-items-start flex-grow-1">
-                                                <i class="bi bi-link-45deg fs-4 me-3 text-info"></i>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="mb-1"><i class="bi bi-check-circle-fill text-info"></i> Linked KPI Active</h6>
-                                                    <p class="mb-3">This KPI reads values from another organization's KPI</p>
-
-                                                    {# Linked Source Configuration #}
-                                                    <div class="bg-white p-3 rounded">
-                                                        <div class="row g-3">
-                                                            <div class="col-md-4">
-                                                                <label class="form-label small fw-semibold">Source Organization</label>
-                                                                <select class="form-select linked-org-select" name="linked_org_{{ config.id }}" id="linked_org_{{ config.id }}"
-                                                                        data-config-id="{{ config.id }}">
-                                                                    <option value="">Select organization...</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-4">
-                                                                <label class="form-label small fw-semibold">Source KPI</label>
-                                                                <select class="form-select linked-kpi-select" name="linked_kpi_{{ config.id }}" id="linked_kpi_{{ config.id }}"
-                                                                        data-config-id="{{ config.id }}" disabled>
-                                                                    <option value="">Select KPI...</option>
-                                                                </select>
-                                                                <small class="form-text text-muted" id="kpi_context_{{ config.id }}"></small>
-                                                            </div>
-                                                            <div class="col-md-4">
-                                                                <label class="form-label small fw-semibold">Value Type</label>
-                                                                <select class="form-select linked-vt-select" name="linked_vt_{{ config.id }}" id="linked_vt_{{ config.id }}"
-                                                                        data-config-id="{{ config.id }}" disabled>
-                                                                    <option value="">Select value type...</option>
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex justify-content-end">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary me-2"
-                                                    onclick="if(confirm('Switch to Manual Entry? This will disconnect the link.')) { document.getElementById('switch_to_manual_{{ config.id }}').value = 'true'; this.closest('form').submit(); }">
-                                                <i class="bi bi-pencil"></i> Switch to Manual
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    onclick="if(confirm('Switch to Formula? This will disconnect the link and open formula configuration.')) { window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=config.value_type_id, open_formula=1) }}'; }">
-                                                <i class="bi bi-calculator"></i> Switch to Formula
-                                            </button>
-                                        </div>
-                                        <input type="hidden" name="switch_to_manual_{{ config.id }}" id="switch_to_manual_{{ config.id }}" value="">
-                                    </div>
-
-                                {% else %}
-                                    {# Manual Entry #}
-                                    <div class="alert alert-primary border-primary" style="border-width: 2px;">
-                                        <div class="d-flex align-items-start">
-                                            <i class="bi bi-pencil-square fs-4 me-3 text-primary"></i>
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1"><i class="bi bi-check-circle-fill text-primary"></i> Manual Entry Active</h6>
-                                                <p class="mb-3">Values are entered through contributions. Multiple contributors can provide input and consensus is calculated automatically.</p>
-
-                                                <div class="d-flex gap-2">
-                                                    <a href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=config.value_type_id, open_formula=1) }}"
-                                                       class="btn btn-sm btn-success">
-                                                        <i class="bi bi-calculator"></i> Switch to Formula
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-info"
-                                                            onclick="document.getElementById('enable_linked_{{ config.id }}').style.display = 'block'; this.style.display = 'none';">
-                                                        <i class="bi bi-link-45deg"></i> Switch to Linked KPI
-                                                    </button>
-                                                </div>
-
-                                                {# Hidden Linked Configuration (shown when button clicked) #}
-                                                <div id="enable_linked_{{ config.id }}" style="display: none;" class="mt-3 bg-light p-3 rounded">
-                                                    <h6 class="mb-3">Configure Linked Source:</h6>
-                                                    <div class="form-check mb-3">
-                                                        <input class="form-check-input linked-checkbox" type="checkbox"
-                                                               name="is_linked_{{ config.id }}" id="is_linked_{{ config.id }}">
-                                                        <label class="form-check-label fw-semibold" for="is_linked_{{ config.id }}">
-                                                            <i class="bi bi-arrow-left-right"></i> Enable linked KPI mode
-                                                        </label>
-                                                    </div>
-                                                    <div class="row g-3">
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-semibold">Source Organization</label>
-                                                            <select class="form-select linked-org-select" name="linked_org_{{ config.id }}" id="linked_org_new_{{ config.id }}"
-                                                                    data-config-id="{{ config.id }}">
-                                                                <option value="">Select organization...</option>
-                                                            </select>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-semibold">Source KPI</label>
-                                                            <select class="form-select linked-kpi-select" name="linked_kpi_{{ config.id }}" id="linked_kpi_new_{{ config.id }}"
-                                                                    data-config-id="{{ config.id }}" disabled>
-                                                                <option value="">Select KPI...</option>
-                                                            </select>
-                                                            <small class="form-text text-muted" id="kpi_context_new_{{ config.id }}"></small>
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label small fw-semibold">Value Type</label>
-                                                            <select class="form-select linked-vt-select" name="linked_vt_{{ config.id }}" id="linked_vt_new_{{ config.id }}"
-                                                                    data-config-id="{{ config.id }}" disabled>
-                                                                <option value="">Select value type...</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endif %}
+                                </div>
+                                <small class="text-muted d-block mt-2">
+                                    <i class="bi bi-info-circle"></i> Click Configure to change calculation type or edit settings
+                                </small>
                             </div>
                         </div>
                         {% endfor %}
@@ -563,138 +466,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Toggle linked KPI fields visibility when checkbox is clicked
-    document.querySelectorAll('.linked-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const configId = this.id.replace('is_linked_', '');
-            const linkedFields = document.getElementById('linked_fields_' + configId);
-            if (linkedFields) {
-                linkedFields.style.display = this.checked ? 'block' : 'none';
-            }
-        });
-    });
-
-    // Load organizations for linking
-    document.querySelectorAll('.linked-org-select').forEach(select => {
-        fetch('{{ url_for("workspace.api_get_organizations_for_linking") }}')
-            .then(response => response.json())
-            .then(orgs => {
-                orgs.forEach(org => {
-                    const option = document.createElement('option');
-                    option.value = org.id;
-                    option.textContent = org.name;
-                    select.appendChild(option);
-                });
-                // Pre-select if already linked
-                const configId = select.dataset.configId;
-                {% for config in kpi.value_type_configs %}
-                if (configId == '{{ config.id }}' && {{ config.linked_source_org_id or 'null' }}) {
-                    select.value = {{ config.linked_source_org_id }};
-                    select.dispatchEvent(new Event('change'));
-                }
-                {% endfor %}
-            });
-    });
-
-    // Handle organization selection - load KPIs
-    document.querySelectorAll('.linked-org-select').forEach(select => {
-        select.addEventListener('change', function() {
-            const configId = this.dataset.configId;
-            const kpiSelect = document.getElementById('linked_kpi_' + configId);
-            const vtSelect = document.getElementById('linked_vt_' + configId);
-
-            // Clear and disable downstream selects
-            kpiSelect.innerHTML = '<option value="">Select KPI...</option>';
-            vtSelect.innerHTML = '<option value="">Select value type...</option>';
-            vtSelect.disabled = true;
-            document.getElementById('kpi_context_' + configId).textContent = '';
-
-            if (!this.value) {
-                kpiSelect.disabled = true;
-                return;
-            }
-
-            kpiSelect.disabled = false;
-
-            fetch(`{{ url_for("workspace.api_get_kpis_for_linking", org_id=0) }}`.replace('/0', '/' + this.value))
-                .then(response => response.json())
-                .then(kpis => {
-                    kpis.forEach(kpi => {
-                        const option = document.createElement('option');
-                        option.value = kpi.id;
-                        option.textContent = kpi.name;
-                        option.dataset.fullPath = kpi.full_path;
-                        kpiSelect.appendChild(option);
-                    });
-                    // Pre-select if already linked
-                    {% for config in kpi.value_type_configs %}
-                    if (configId == '{{ config.id }}' && {{ config.linked_source_kpi_id or 'null' }}) {
-                        kpiSelect.value = {{ config.linked_source_kpi_id }};
-                        kpiSelect.dispatchEvent(new Event('change'));
-                    }
-                    {% endfor %}
-                });
-        });
-    });
-
-    // Handle KPI selection - load value types
-    document.querySelectorAll('.linked-kpi-select').forEach(select => {
-        select.addEventListener('change', function() {
-            const configId = this.dataset.configId;
-            const vtSelect = document.getElementById('linked_vt_' + configId);
-            const contextDiv = document.getElementById('kpi_context_' + configId);
-
-            // Clear value type select
-            vtSelect.innerHTML = '<option value="">Select value type...</option>';
-
-            if (!this.value) {
-                vtSelect.disabled = true;
-                contextDiv.textContent = '';
-                return;
-            }
-
-            // Show context
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption && selectedOption.dataset.fullPath) {
-                contextDiv.textContent = selectedOption.dataset.fullPath;
-            }
-
-            vtSelect.disabled = false;
-
-            fetch(`{{ url_for("workspace.api_get_value_types_for_linking", kpi_id=0) }}`.replace('/0', '/' + this.value))
-                .then(response => response.json())
-                .then(valueTypes => {
-                    valueTypes.forEach(vt => {
-                        const option = document.createElement('option');
-                        option.value = vt.id;
-                        option.textContent = vt.display;
-                        vtSelect.appendChild(option);
-                    });
-                    // Pre-select if already linked
-                    {% for config in kpi.value_type_configs %}
-                    if (configId == '{{ config.id }}' && {{ config.linked_source_value_type_id or 'null' }}) {
-                        vtSelect.value = {{ config.linked_source_value_type_id }};
-                    }
-                    {% endfor %}
-                });
-        });
-    });
-
-    // Smooth scroll to linked config section if URL has anchor
-    if (window.location.hash) {
-        setTimeout(() => {
-            const element = document.querySelector(window.location.hash);
-            if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Add brief highlight to draw attention
-                element.style.transition = 'box-shadow 0.3s ease';
-                element.style.boxShadow = '0 0 0 4px rgba(13, 202, 240, 0.4)';
-                setTimeout(() => {
-                    element.style.boxShadow = '';
-                }, 2000);
-            }
-        }, 100);
-    }
 });
 </script>
 {% endblock %}
