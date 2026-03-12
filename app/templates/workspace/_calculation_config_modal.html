@@ -347,8 +347,21 @@ function calculationBuilder() {
                 if (this.operation === 'multiply') return values.reduce((a, b) => a * b, 1);
                 if (this.operation === 'subtract') return values.reduce((a, b) => a - b);
             } else {
-                // Advanced mode - show placeholder
-                return this.expression ? '...' : null;
+                // Advanced mode - evaluate expression
+                if (!this.expression) return null;
+                try {
+                    // Build context with kpi_<id> variables
+                    const context = {};
+                    this.selectedKPIs.forEach(kpi => {
+                        context[`kpi_${kpi.id}`] = parseFloat(kpi.currentValue.replace(/[^0-9.-]/g, '')) || 0;
+                    });
+
+                    // Evaluate expression safely
+                    const func = new Function(...Object.keys(context), `return ${this.expression}`);
+                    return func(...Object.values(context));
+                } catch (e) {
+                    return 'Error';
+                }
             }
             return null;
         },
@@ -356,8 +369,11 @@ function calculationBuilder() {
         getResultDisplay() {
             const result = this.calculateResult();
             if (result === null || result === undefined) return '—';
-            if (result === '...') return 'Enter expression';
-            return result.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            if (result === 'Error') return '⚠️ Invalid expression';
+            if (typeof result === 'number') {
+                return result.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            return String(result);
         },
 
         updateExpressionPreview() {
@@ -412,7 +428,7 @@ function calculationBuilder() {
         async saveConfiguration() {
             if (this.mode === 'manual') {
                 try {
-                    const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
+                    const response = await fetch(`/workspace/kpi-config/{{ config.id }}/calculation`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -446,7 +462,7 @@ function calculationBuilder() {
                         }
                         config.expression = this.expression;
                     }
-                    const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
+                    const response = await fetch(`/workspace/kpi-config/{{ config.id }}/calculation`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
@@ -469,7 +485,7 @@ function calculationBuilder() {
                     return;
                 }
                 try {
-                    const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
+                    const response = await fetch(`/workspace/kpi-config/{{ config.id }}/calculation`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({
