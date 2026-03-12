@@ -66,6 +66,33 @@
     border-radius: 8px;
     margin-top: 1rem;
 }
+
+.calc-type-btn {
+    background: #fff;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem 0.5rem;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.calc-type-btn:hover {
+    border-color: #0d6efd;
+}
+
+.calc-type-btn.active {
+    border-color: #0d6efd;
+    background: #e7f1ff;
+    font-weight: 600;
+}
+
+.calc-type-btn i {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
 </style>
 {% endblock %}
 
@@ -325,34 +352,43 @@
                             <div class="color-config mt-3 border-top pt-3" id="linked_section_{{ choice_value }}" style="display: none;">
                                 <h6 class="mb-3"><i class="bi bi-gear"></i> Value Source Configuration</h6>
 
-                                {# Formula Calculation Option #}
-                                <div class="alert alert-success mb-3">
-                                    <div class="d-flex align-items-start">
-                                        <i class="bi bi-calculator fs-4 me-2"></i>
-                                        <div>
-                                            <strong>✨ NEW: Formula Calculations</strong>
-                                            <p class="mb-2">Calculate this KPI automatically from other KPIs (sum, average, min, max, etc.)</p>
-                                            <small class="text-muted">
-                                                <i class="bi bi-info-circle"></i> Create the KPI first, then click "Configure Calculation" on the KPI detail page to set up your formula.
-                                            </small>
-                                        </div>
+                                {# Calculation Type Selection - 3 Buttons #}
+                                <div class="row g-2 mb-3">
+                                    <div class="col-4">
+                                        <button type="button" class="calc-type-btn w-100 active" data-vt="{{ choice_value }}" data-type="manual">
+                                            <i class="bi bi-pencil-square"></i><br>Manual Entry
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button type="button" class="calc-type-btn w-100" data-vt="{{ choice_value }}" data-type="formula">
+                                            <i class="bi bi-calculator"></i><br>Formula
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button type="button" class="calc-type-btn w-100" data-vt="{{ choice_value }}" data-type="linked">
+                                            <i class="bi bi-link-45deg"></i><br>Linked KPI
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="hidden" name="calc_type_{{ choice_value }}" id="calc_type_{{ choice_value }}" value="manual">
+
+                                {# Manual Mode Info #}
+                                <div class="calc-type-content manual-content-{{ choice_value }}">
+                                    <div class="alert alert-info small">
+                                        <i class="bi bi-info-circle"></i> Values entered through contributions. Multiple contributors can provide input.
                                     </div>
                                 </div>
 
-                                {# Linked Value Source #}
-                                <h6 class="mb-3 mt-4"><i class="bi bi-link-45deg"></i> OR: Linked Value Source</h6>
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input linked-checkbox" type="checkbox"
-                                           name="is_linked_{{ choice_value }}" id="is_linked_{{ choice_value }}">
-                                    <label class="form-check-label fw-semibold" for="is_linked_{{ choice_value }}">
-                                        <i class="bi bi-arrow-left-right"></i> Read values live from another KPI
-                                    </label>
-                                </div>
-                                <div class="linked-fields" id="linked_fields_{{ choice_value }}" style="display: none;">
-                                    <div class="alert alert-info small mb-3">
-                                        <i class="bi bi-info-circle"></i> Link to another KPI to automatically read its values (same org or different org).
-                                        You can still set your own target. The source KPI cannot be deleted while linked.
+                                {# Formula Mode Info #}
+                                <div class="calc-type-content formula-content-{{ choice_value }}" style="display: none;">
+                                    <div class="alert alert-success small">
+                                        <i class="bi bi-calculator"></i> <strong>Formula Mode:</strong> You'll configure the formula on the next page after creating the KPI.
+                                        The formula modal will open automatically.
                                     </div>
+                                </div>
+
+                                {# Linked Mode Fields #}
+                                <div class="calc-type-content linked-content-{{ choice_value }}" style="display: none;">
                                     <div class="row g-3">
                                         <div class="col-md-4">
                                             <label class="form-label small fw-semibold">Source Organization</label>
@@ -379,6 +415,7 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -499,14 +536,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Toggle linked KPI fields visibility when checkbox is clicked
-    document.querySelectorAll('.linked-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const vtId = this.id.replace('is_linked_', '');
-            const linkedFields = document.getElementById('linked_fields_' + vtId);
-            if (linkedFields) {
-                linkedFields.style.display = this.checked ? 'block' : 'none';
-            }
+    // Handle calculation type button clicks
+    document.querySelectorAll('.calc-type-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const vtId = this.dataset.vt;
+            const type = this.dataset.type;
+
+            // Update active state
+            document.querySelectorAll(`.calc-type-btn[data-vt="${vtId}"]`).forEach(b => {
+                b.classList.remove('active');
+            });
+            this.classList.add('active');
+
+            // Update hidden field
+            document.getElementById(`calc_type_${vtId}`).value = type;
+
+            // Show/hide appropriate content
+            document.querySelector(`.manual-content-${vtId}`).style.display = type === 'manual' ? 'block' : 'none';
+            document.querySelector(`.formula-content-${vtId}`).style.display = type === 'formula' ? 'block' : 'none';
+            document.querySelector(`.linked-content-${vtId}`).style.display = type === 'linked' ? 'block' : 'none';
         });
     });
 

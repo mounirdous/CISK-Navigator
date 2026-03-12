@@ -887,8 +887,14 @@ def create_kpi(link_id):
 
         # Link selected value types with colors
         selected_vt_ids = request.form.getlist("value_type_ids")
+        first_formula_config_id = None
+        first_config_vt_id = None
+
         for vt_id in selected_vt_ids:
             vt_id_int = int(vt_id)
+
+            # Get calculation type choice
+            calc_type = request.form.get(f"calc_type_{vt_id}", "manual")
 
             # Get color values from form
             color_positive = request.form.get(f"color_positive_{vt_id}", "#28a745")
@@ -944,9 +950,9 @@ def create_kpi(link_id):
             linked_source_org_id = None
             linked_source_kpi_id = None
             linked_source_value_type_id = None
+            calculation_type = "manual"  # default
 
-            is_linked = request.form.get(f"is_linked_{vt_id}")
-            if is_linked:
+            if calc_type == "linked":
                 linked_org_id = request.form.get(f"linked_org_{vt_id}")
                 linked_kpi_id = request.form.get(f"linked_kpi_{vt_id}")
                 linked_vt_id = request.form.get(f"linked_vt_{vt_id}")
@@ -955,6 +961,7 @@ def create_kpi(link_id):
                     linked_source_org_id = int(linked_org_id)
                     linked_source_kpi_id = int(linked_kpi_id)
                     linked_source_value_type_id = int(linked_vt_id)
+                    calculation_type = "linked"
 
             config = KPIValueTypeConfig(
                 kpi_id=kpi.id,
@@ -972,8 +979,15 @@ def create_kpi(link_id):
                 linked_source_org_id=linked_source_org_id,
                 linked_source_kpi_id=linked_source_kpi_id,
                 linked_source_value_type_id=linked_source_value_type_id,
+                calculation_type=calculation_type,
             )
             db.session.add(config)
+            db.session.flush()  # Get the config ID
+
+            # Track if formula was selected (for redirect)
+            if calc_type == "formula" and first_formula_config_id is None:
+                first_formula_config_id = config.id
+                first_config_vt_id = vt_id_int
 
         # Audit log
         AuditService.log_create(
@@ -992,6 +1006,11 @@ def create_kpi(link_id):
 
         db.session.commit()
         flash(f"KPI {kpi.name} created successfully", "success")
+
+        # If formula was selected, redirect to KPI detail page with formula modal open
+        if first_formula_config_id and first_config_vt_id:
+            return redirect(url_for("workspace.kpi_cell_detail", kpi_id=kpi.id, vt_id=first_config_vt_id, open_formula=1))
+
         return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get preselected items from session (if returning from creation flow)
