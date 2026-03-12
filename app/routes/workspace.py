@@ -2677,8 +2677,8 @@ def kpis_for_linking(org_id):
     # If kind filter specified, only get KPIs that have at least one matching value type
     if required_kind:
         query = (
-            query.join(KPIValueTypeConfig)
-            .join(ValueType)
+            query.join(KPIValueTypeConfig, KPIValueTypeConfig.kpi_id == KPI.id)
+            .join(ValueType, ValueType.id == KPIValueTypeConfig.value_type_id)
             .filter((ValueType.kind == "numeric" if required_kind == "numeric" else ValueType.kind == required_kind))
         )
 
