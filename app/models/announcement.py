@@ -22,8 +22,7 @@ class SystemAnnouncement(db.Model):
     message = db.Column(db.Text, nullable=False)
     banner_type = db.Column(db.String(20), nullable=False)  # info, warning, success, alert
     is_dismissible = db.Column(db.Boolean, default=True, nullable=False)
-    target_type = db.Column(db.String(20), nullable=False)  # all, organization, users
-    target_organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id"), nullable=True)
+    target_type = db.Column(db.String(20), nullable=False)  # all, organizations, users
     start_date = db.Column(db.DateTime, nullable=True)
     end_date = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False, index=True)
@@ -33,12 +32,14 @@ class SystemAnnouncement(db.Model):
 
     # Relationships
     creator = db.relationship("User", foreign_keys=[created_by])
-    target_organization = db.relationship("Organization", foreign_keys=[target_organization_id])
     acknowledgments = db.relationship(
         "UserAnnouncementAcknowledgment", back_populates="announcement", cascade="all, delete-orphan"
     )
     target_users = db.relationship(
         "AnnouncementTargetUser", back_populates="announcement", cascade="all, delete-orphan"
+    )
+    target_organizations = db.relationship(
+        "AnnouncementTargetOrganization", back_populates="announcement", cascade="all, delete-orphan"
     )
 
     def is_visible_now(self):
@@ -58,8 +59,8 @@ class SystemAnnouncement(db.Model):
         # Check targeting
         if self.target_type == "all":
             return True
-        elif self.target_type == "organization" and org_id:
-            return self.target_organization_id == org_id
+        elif self.target_type == "organizations" and org_id:
+            return any(target.organization_id == org_id for target in self.target_organizations)
         elif self.target_type == "users":
             # Check if user is in target list
             return any(target.user_id == user_id for target in self.target_users)
@@ -148,3 +149,24 @@ class AnnouncementTargetUser(db.Model):
 
     def __repr__(self):
         return f"<AnnouncementTarget ann_id={self.announcement_id} user_id={self.user_id}>"
+
+
+class AnnouncementTargetOrganization(db.Model):
+    """Target specific organizations for an announcement"""
+
+    __tablename__ = "announcement_target_organizations"
+
+    id = db.Column(db.Integer, primary_key=True)
+    announcement_id = db.Column(
+        db.Integer, db.ForeignKey("system_announcements.id", ondelete="CASCADE"), nullable=False
+    )
+    organization_id = db.Column(
+        db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Relationships
+    announcement = db.relationship("SystemAnnouncement", back_populates="target_organizations")
+    organization = db.relationship("Organization")
+
+    def __repr__(self):
+        return f"<AnnouncementTargetOrg ann_id={self.announcement_id} org_id={self.organization_id}>"

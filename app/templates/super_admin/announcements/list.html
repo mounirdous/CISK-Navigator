@@ -69,8 +69,18 @@
                                     <td>
                                         {% if ann.target_type == 'all' %}
                                         <i class="bi bi-globe"></i> All Users
-                                        {% elif ann.target_type == 'organization' %}
-                                        <i class="bi bi-building"></i> {{ ann.target_organization.name if ann.target_organization else 'N/A' }}
+                                        {% elif ann.target_type == 'organizations' %}
+                                        <i class="bi bi-building"></i>
+                                        {% if ann.target_organizations %}
+                                            {% for target_org in ann.target_organizations[:2] %}
+                                                {{ target_org.organization.name }}{% if not loop.last %}, {% endif %}
+                                            {% endfor %}
+                                            {% if ann.target_organizations|length > 2 %}
+                                                <span class="text-muted">+{{ ann.target_organizations|length - 2 }} more</span>
+                                            {% endif %}
+                                        {% else %}
+                                            N/A
+                                        {% endif %}
                                         {% elif ann.target_type == 'users' %}
                                         <i class="bi bi-people"></i> Specific Users
                                         {% endif %}

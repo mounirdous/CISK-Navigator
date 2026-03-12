@@ -2,7 +2,12 @@
 Database models
 """
 
-from .announcement import AnnouncementTargetUser, SystemAnnouncement, UserAnnouncementAcknowledgment
+from .announcement import (
+    AnnouncementTargetOrganization,
+    AnnouncementTargetUser,
+    SystemAnnouncement,
+    UserAnnouncementAcknowledgment,
+)
 from .audit_log import AuditLog
 from .cell_comment import CellComment, MentionNotification
 from .challenge import Challenge
@@ -49,4 +54,5 @@ __all__ = [
     "SystemAnnouncement",
     "UserAnnouncementAcknowledgment",
     "AnnouncementTargetUser",
+    "AnnouncementTargetOrganization",
 ]

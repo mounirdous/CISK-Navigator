@@ -68,8 +68,9 @@
                         </div>
 
                         <div class="mb-3" id="org_selector" style="display: none;">
-                            {{ form.target_organization_id.label(class="form-label") }}
-                            {{ form.target_organization_id(class="form-select") }}
+                            {{ form.target_organization_ids.label(class="form-label") }}
+                            {{ form.target_organization_ids(class="form-select", multiple=True, size=8) }}
+                            <small class="form-text text-muted">Hold Ctrl/Cmd to select multiple organizations</small>
                         </div>
 
                         <div class="mb-3" id="users_selector" style="display: none;">
@@ -143,7 +144,7 @@ const usersSelector = document.getElementById('users_selector');
 
 function updateTargetVisibility() {
     const type = targetType.value;
-    orgSelector.style.display = type === 'organization' ? 'block' : 'none';
+    orgSelector.style.display = type === 'organizations' ? 'block' : 'none';
     usersSelector.style.display = type === 'users' ? 'block' : 'none';
 }
 

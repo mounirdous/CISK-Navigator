@@ -43,13 +43,13 @@ class AnnouncementCreateForm(FlaskForm):
         "Target Audience",
         choices=[
             ("all", "All Users"),
-            ("organization", "Specific Organization"),
+            ("organizations", "Specific Organizations"),
             ("users", "Specific Users"),
         ],
         default="all",
         validators=[DataRequired()],
     )
-    target_organization_id = SelectField("Target Organization", coerce=int, validators=[Optional()])
+    target_organization_ids = SelectMultipleField("Target Organizations", coerce=int, validators=[Optional()])
     target_user_ids = SelectMultipleField("Target Users", coerce=int, validators=[Optional()])
 
     start_date = DateTimeField("Start Date (optional)", format="%Y-%m-%d %H:%M", validators=[Optional()])
@@ -81,12 +81,12 @@ class AnnouncementEditForm(FlaskForm):
         "Target Audience",
         choices=[
             ("all", "All Users"),
-            ("organization", "Specific Organization"),
+            ("organizations", "Specific Organizations"),
             ("users", "Specific Users"),
         ],
         validators=[DataRequired()],
     )
-    target_organization_id = SelectField("Target Organization", coerce=int, validators=[Optional()])
+    target_organization_ids = SelectMultipleField("Target Organizations", coerce=int, validators=[Optional()])
     target_user_ids = SelectMultipleField("Target Users", coerce=int, validators=[Optional()])
 
     start_date = DateTimeField("Start Date (optional)", format="%Y-%m-%d %H:%M", validators=[Optional()])

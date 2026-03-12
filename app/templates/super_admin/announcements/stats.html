@@ -107,8 +107,17 @@
                             <strong>Target:</strong>
                             {% if announcement.target_type == 'all' %}
                             All Users
-                            {% elif announcement.target_type == 'organization' %}
-                            Organization: {{ announcement.target_organization.name if announcement.target_organization else 'N/A' }}
+                            {% elif announcement.target_type == 'organizations' %}
+                            Organizations:
+                            {% if announcement.target_organizations %}
+                                <ul class="mb-0">
+                                {% for target_org in announcement.target_organizations %}
+                                    <li>{{ target_org.organization.name }}</li>
+                                {% endfor %}
+                                </ul>
+                            {% else %}
+                                N/A
+                            {% endif %}
                             {% elif announcement.target_type == 'users' %}
                             Specific Users ({{ announcement.target_users|length }})
                             {% endif %}

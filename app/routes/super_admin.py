@@ -11,6 +11,7 @@ from app.decorators import super_admin_required
 from app.extensions import db
 from app.forms import OrganizationSSOConfigForm
 from app.models import (
+    AnnouncementTargetOrganization,
     AnnouncementTargetUser,
     AuditLog,
     Organization,
@@ -1045,10 +1046,14 @@ def list_announcements():
         # Calculate target count
         if ann.target_type == "all":
             stats["target_count"] = User.query.filter_by(is_active=True).count()
-        elif ann.target_type == "organization" and ann.target_organization:
-            stats["target_count"] = UserOrganizationMembership.query.filter_by(
-                organization_id=ann.target_organization_id
-            ).count()
+        elif ann.target_type == "organizations":
+            # Count users across all target organizations
+            total_users = 0
+            for target_org in ann.target_organizations:
+                total_users += UserOrganizationMembership.query.filter_by(
+                    organization_id=target_org.organization_id
+                ).count()
+            stats["target_count"] = total_users
         elif ann.target_type == "users":
             stats["target_count"] = len(ann.target_users)
 
@@ -1068,9 +1073,7 @@ def create_announcement():
 
     # Populate organization choices
     organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
-    form.target_organization_id.choices = [(0, "Select Organization...")] + [
-        (org.id, org.name) for org in organizations
-    ]
+    form.target_organization_ids.choices = [(org.id, org.name) for org in organizations]
 
     # Populate user choices
     users = User.query.filter_by(is_active=True).order_by(User.login).all()
@@ -1083,9 +1086,6 @@ def create_announcement():
             banner_type=form.banner_type.data,
             is_dismissible=form.is_dismissible.data,
             target_type=form.target_type.data,
-            target_organization_id=(
-                form.target_organization_id.data if form.target_type.data == "organization" else None
-            ),
             start_date=form.start_date.data,
             end_date=form.end_date.data,
             is_active=form.is_active.data,
@@ -1093,7 +1093,13 @@ def create_announcement():
         )
 
         db.session.add(announcement)
-        db.session.flush()  # Get ID for target users
+        db.session.flush()  # Get ID for target users/organizations
+
+        # Add specific target organizations if needed
+        if form.target_type.data == "organizations" and form.target_organization_ids.data:
+            for org_id in form.target_organization_ids.data:
+                target = AnnouncementTargetOrganization(announcement_id=announcement.id, organization_id=org_id)
+                db.session.add(target)
 
         # Add specific target users if needed
         if form.target_type.data == "users" and form.target_user_ids.data:
@@ -1120,17 +1126,16 @@ def edit_announcement(announcement_id):
 
     # Populate organization choices
     organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
-    form.target_organization_id.choices = [(0, "Select Organization...")] + [
-        (org.id, org.name) for org in organizations
-    ]
+    form.target_organization_ids.choices = [(org.id, org.name) for org in organizations]
 
     # Populate user choices
     users = User.query.filter_by(is_active=True).order_by(User.login).all()
     form.target_user_ids.choices = [(user.id, f"{user.login} ({user.email})") for user in users]
 
-    # Pre-select current target users
+    # Pre-select current target users and organizations
     if request.method == "GET":
         form.target_user_ids.data = [target.user_id for target in announcement.target_users]
+        form.target_organization_ids.data = [target.organization_id for target in announcement.target_organizations]
 
     if form.validate_on_submit():
         announcement.title = form.title.data
@@ -1138,12 +1143,16 @@ def edit_announcement(announcement_id):
         announcement.banner_type = form.banner_type.data
         announcement.is_dismissible = form.is_dismissible.data
         announcement.target_type = form.target_type.data
-        announcement.target_organization_id = (
-            form.target_organization_id.data if form.target_type.data == "organization" else None
-        )
         announcement.start_date = form.start_date.data
         announcement.end_date = form.end_date.data
         announcement.is_active = form.is_active.data
+
+        # Update target organizations
+        AnnouncementTargetOrganization.query.filter_by(announcement_id=announcement.id).delete()
+        if form.target_type.data == "organizations" and form.target_organization_ids.data:
+            for org_id in form.target_organization_ids.data:
+                target = AnnouncementTargetOrganization(announcement_id=announcement.id, organization_id=org_id)
+                db.session.add(target)
 
         # Update target users
         AnnouncementTargetUser.query.filter_by(announcement_id=announcement.id).delete()
@@ -1200,10 +1209,14 @@ def announcement_stats(announcement_id):
     # Calculate target count
     if announcement.target_type == "all":
         stats["target_count"] = User.query.filter_by(is_active=True).count()
-    elif announcement.target_type == "organization" and announcement.target_organization:
-        stats["target_count"] = UserOrganizationMembership.query.filter_by(
-            organization_id=announcement.target_organization_id
-        ).count()
+    elif announcement.target_type == "organizations":
+        # Count users across all target organizations
+        total_users = 0
+        for target_org in announcement.target_organizations:
+            total_users += UserOrganizationMembership.query.filter_by(
+                organization_id=target_org.organization_id
+            ).count()
+        stats["target_count"] = total_users
     elif announcement.target_type == "users":
         stats["target_count"] = len(announcement.target_users)
 
