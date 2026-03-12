@@ -9,6 +9,7 @@ from functools import wraps
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
+from wtforms import SubmitField
 
 from app.extensions import db
 from app.forms import (
@@ -45,6 +46,12 @@ from app.models import (
 from app.services import AuditService, ValueTypeUsageService, YAMLExportService, YAMLImportService
 
 bp = Blueprint("organization_admin", __name__, url_prefix="/org-admin")
+
+
+class OnboardingConfirmForm(FlaskForm):
+    """Simple form for onboarding confirmation steps"""
+
+    submit = SubmitField("Continue")
 
 
 def organization_required(f):
@@ -199,7 +206,7 @@ def onboarding():
             return redirect(url_for("organization_admin.onboarding", step=4))
 
     elif step == 4:
-        form = FlaskForm()
+        form = OnboardingConfirmForm()
         if form.validate_on_submit():
             # Create default value types
             default_value_types = [
@@ -241,7 +248,7 @@ def onboarding():
             return redirect(url_for("organization_admin.onboarding", step=5))
 
     if form is None:
-        form = FlaskForm()
+        form = OnboardingConfirmForm()
 
     return render_template("organization_admin/onboarding.html", org_name=org_name, step=step, form=form)
 
