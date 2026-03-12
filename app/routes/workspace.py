@@ -509,6 +509,7 @@ def index():
 
     return render_template(
         "workspace/index.html",
+        org_id=org_id,
         org_name=org_name,
         spaces=spaces,
         value_types=value_types,
