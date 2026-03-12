@@ -356,10 +356,18 @@ function calculationBuilder() {
                         context[`kpi_${kpi.id}`] = parseFloat(kpi.currentValue.replace(/[^0-9.-]/g, '')) || 0;
                     });
 
+                    console.log('Expression:', this.expression);
+                    console.log('Context:', context);
+                    console.log('Context keys:', Object.keys(context));
+                    console.log('Context values:', Object.values(context));
+
                     // Evaluate expression safely
                     const func = new Function(...Object.keys(context), `return ${this.expression}`);
-                    return func(...Object.values(context));
+                    const result = func(...Object.values(context));
+                    console.log('Result:', result);
+                    return result;
                 } catch (e) {
+                    console.error('Expression error:', e);
                     return 'Error';
                 }
             }

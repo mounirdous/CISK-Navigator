@@ -408,7 +408,7 @@
                                         </div>
                                         <div class="d-flex justify-content-end">
                                             <button type="button" class="btn btn-sm btn-outline-secondary me-2"
-                                                    onclick="if(confirm('Switch to Manual Entry? This will disconnect the link.')) { document.getElementById('switch_to_manual_{{ config.id }}').value = 'true'; }">
+                                                    onclick="if(confirm('Switch to Manual Entry? This will disconnect the link.')) { document.getElementById('switch_to_manual_{{ config.id }}').value = 'true'; this.closest('form').submit(); }">
                                                 <i class="bi bi-pencil"></i> Switch to Manual
                                             </button>
                                             <button type="button" class="btn btn-sm btn-outline-secondary"

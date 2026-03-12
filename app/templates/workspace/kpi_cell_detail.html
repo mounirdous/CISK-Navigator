@@ -152,11 +152,11 @@ body.dark-mode .card.border-primary {
     <div class="d-flex gap-2">
         {% if current_user.can_manage_kpis(session.organization_id) %}
             {% if config.calculation_type == 'linked' %}
-                {# Linked KPIs: Only show Advanced Settings button #}
-                <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#linked-config-{{ config.id }}" class="btn btn-primary"
-                   title="Configure linked KPI source">
+                {# Linked KPIs: Show modal to configure link source #}
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#calcConfigModal"
+                        title="Configure linked KPI source">
                     <i class="bi bi-link-45deg"></i> Configure Link Source
-                </a>
+                </button>
             {% elif config.calculation_type == 'formula' %}
                 {# Formula KPIs: Show formula configuration button #}
                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#calcConfigModal"
@@ -320,7 +320,7 @@ body.dark-mode .card.border-primary {
                 </p>
                 <p class="text-muted mb-0">
                     <i class="bi bi-info-circle"></i> This KPI pulls its value from another organization.
-                    Use the <strong>"Configure Link Source"</strong> button above to change the source.
+                    Click <strong>"Configure Link Source"</strong> to change the source or switch calculation mode.
                 </p>
             </div>
         </div>
@@ -433,7 +433,29 @@ body.dark-mode .card.border-primary {
 </div>
 {% endif %}
 
-<!-- Info Cards, Historical Trend, and Contributions (Manual KPIs only) -->
+<!-- Historical Trend Chart - Shown for ALL calculation types -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><span style="font-weight: bold;">Ψ</span> Historical Trend</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadTrendChart()">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+                <div id="noDataMessage" class="alert alert-info mt-3" style="display: none;">
+                    <i class="bi bi-info-circle"></i> No historical data available. Create snapshots to track trends over time.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Info Cards and Contributions (Manual KPIs only) -->
 {% if config.calculation_type == 'manual' %}
 <div class="row mb-4">
     <div class="col-md-6">
@@ -492,28 +514,6 @@ body.dark-mode .card.border-primary {
                 {% endif %}
                 <p class="mb-2"><i class="bi bi-people"></i> <strong>Contributions:</strong> {{ consensus.count }}</p>
                 <p class="mb-0"><i class="bi bi-arrow-up-circle"></i> <strong>Roll-up Eligible:</strong> {{ 'Yes' if consensus.is_rollup_eligible else 'No' }}</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Trend Chart -->
-<div class="row mb-4">
-    <div class="col-md-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><span style="font-weight: bold;">Ψ</span> Historical Trend</h5>
-                <button class="btn btn-sm btn-outline-primary" onclick="loadTrendChart()">
-                    <i class="bi bi-arrow-clockwise"></i> Refresh
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="trendChart"></canvas>
-                </div>
-                <div id="noDataMessage" class="alert alert-info mt-3" style="display: none;">
-                    <i class="bi bi-info-circle"></i> No historical data available. Create snapshots to track trends over time.
-                </div>
             </div>
         </div>
     </div>
