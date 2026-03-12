@@ -9,6 +9,7 @@ from functools import wraps
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
+from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
 
 from app.extensions import db
@@ -165,6 +166,7 @@ def dashboard():
         unread_mentions=unread_mentions,
         needs_onboarding=needs_onboarding,
         active_announcements=active_announcements,
+        csrf_token=generate_csrf,
     )
 
 
