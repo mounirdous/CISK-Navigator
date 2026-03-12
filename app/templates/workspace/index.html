@@ -2790,7 +2790,9 @@ async function archiveKPI(kpiId, kpiName) {
 
     const form = document.createElement('form');
     form.method = 'POST';
-    form.action = `/org-admin/kpis/${kpiId}/archive`;
+    // Preserve edit mode if active
+    const isEditMode = document.body.classList.contains('edit-mode');
+    form.action = isEditMode ? `/org-admin/kpis/${kpiId}/archive?edit_mode=1` : `/org-admin/kpis/${kpiId}/archive`;
 
     const csrfToken = document.querySelector('input[name="csrf_token"]')?.value;
     if (csrfToken) {

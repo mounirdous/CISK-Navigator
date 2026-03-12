@@ -1272,6 +1272,11 @@ def archive_kpi(kpi_id):
         db.session.commit()
         flash(f'KPI "{kpi.name}" archived successfully', "success")
 
+    # Preserve edit mode if it was active
+    edit_mode = request.args.get("edit_mode") or request.args.get("auto_edit")
+    if edit_mode:
+        return redirect(url_for("workspace.index", auto_edit=1))
+
     return redirect(url_for("workspace.index"))
 
 
@@ -1297,6 +1302,11 @@ def unarchive_kpi(kpi_id):
         kpi.archived_by_user_id = None
         db.session.commit()
         flash(f'KPI "{kpi.name}" unarchived successfully', "success")
+
+    # Preserve edit mode if it was active
+    edit_mode = request.args.get("edit_mode") or request.args.get("auto_edit")
+    if edit_mode:
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     return redirect(url_for("workspace.index"))
 
