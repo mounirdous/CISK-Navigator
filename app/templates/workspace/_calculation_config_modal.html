@@ -227,9 +227,9 @@ function calculationBuilder() {
         showSearch: false,
 
         // Linked mode data
-        linkedOrgId: '{{ config.linked_source_org_id or "" }}',
-        linkedKPIId: '{{ config.linked_source_kpi_id or "" }}',
-        linkedValueTypeId: '{{ config.linked_source_value_type_id or "" }}',
+        linkedOrgId: {{ config.linked_source_org_id|tojson if config.linked_source_org_id else '""' }},
+        linkedKPIId: {{ config.linked_source_kpi_id|tojson if config.linked_source_kpi_id else '""' }},
+        linkedValueTypeId: {{ config.linked_source_value_type_id|tojson if config.linked_source_value_type_id else '""' }},
         availableOrgs: [],
         linkedKPIs: [],
         linkedValueTypes: [],
