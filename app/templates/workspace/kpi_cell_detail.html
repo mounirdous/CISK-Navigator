@@ -846,9 +846,19 @@ async function loadTrendChart() {
         document.getElementById('trendChart').style.display = 'block';
 
         // Prepare data for Chart.js
-        const dates = data.history.map(h => h.date);
+        let dates = data.history.map(h => h.date);
         // Apply scale divisor for display (except for qualitative values)
-        const values = data.history.map(h => isQualitative ? h.value : (h.value / scaleDivisor));
+        let values = data.history.map(h => isQualitative ? h.value : (h.value / scaleDivisor));
+
+        // For single data point, duplicate it so Chart.js can draw lines
+        // (Chart.js needs at least 2 points to render lines and fill areas)
+        if (dates.length === 1) {
+            const originalDate = new Date(dates[0]);
+            const futureDate = new Date(originalDate);
+            futureDate.setSeconds(futureDate.getSeconds() + 1); // 1 second later
+            dates = [dates[0], futureDate.toISOString().split('T')[0] + ' ' + futureDate.toTimeString().split(' ')[0]];
+            values = [values[0], values[0]]; // Same value
+        }
 
         // Destroy existing chart if any
         if (trendChart) {
