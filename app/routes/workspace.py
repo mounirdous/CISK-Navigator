@@ -2128,8 +2128,6 @@ def api_get_organizations_for_linking():
     Query params:
         kind: Value type kind to filter by (numeric, sentiment, risk, etc.)
     """
-    from app.models import Organization
-
     # Get optional kind filter
     required_kind = request.args.get("kind")
 
