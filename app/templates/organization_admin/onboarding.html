@@ -384,11 +384,27 @@
     <!-- Create Value Types Step -->
     <div class="onboarding-card">
         <h2 class="mb-1"><i class="bi bi-hash text-info"></i> Create Value Types</h2>
-        <p class="text-muted mb-4">Define how you'll measure success</p>
+        <p class="text-muted mb-4">Define what you measure across all your initiatives</p>
+
+        <div class="alert alert-info mb-4">
+            <div class="d-flex align-items-start">
+                <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                <div>
+                    <strong class="d-block mb-2">Why Value Types Matter</strong>
+                    <p class="mb-2">Value types let you measure the same thing across different KPIs and automatically roll-up the totals:</p>
+                    <ul class="mb-0">
+                        <li><strong>Example:</strong> Track <strong>Cost</strong> in multiple initiatives → See total cost across all initiatives</li>
+                        <li><strong>Example:</strong> Track <strong>CO2 Impact</strong> per system → See total environmental impact</li>
+                        <li><strong>Example:</strong> Track <strong>User Satisfaction</strong> → Aggregate feedback across products</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
         <div class="alert alert-success mb-4">
             <i class="bi bi-lightbulb-fill"></i>
-            <strong>Quick Start:</strong> We'll create 3 essential value types for you (Cost, Revenue, User Satisfaction). You can add more later.
+            <strong>Quick Start Option:</strong> We can create 3 common value types for you (Cost, Revenue, User Satisfaction).
+            <br>You can always add more later like CO2 emissions, headcount, downtime, etc.
         </div>
 
         <form method="POST" action="{{ url_for('organization_admin.onboarding', step=4) }}">
@@ -424,15 +440,15 @@
             </div>
 
             <div class="d-flex justify-content-between gap-2 mt-4">
+                <a href="{{ url_for('organization_admin.onboarding', step=3) }}" class="btn btn-outline-secondary btn-lg">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
                 <div class="d-flex gap-2">
-                    <a href="{{ url_for('organization_admin.onboarding', step=3) }}" class="btn btn-outline-secondary btn-lg">
-                        <i class="bi bi-arrow-left"></i> Back
+                    <a href="{{ url_for('organization_admin.onboarding', step=5) }}" class="btn btn-outline-info btn-lg">
+                        <i class="bi bi-forward"></i> Skip - Create Later
                     </a>
-                    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary btn-lg">
-                        <i class="bi bi-x-circle"></i> Skip
-                    </a>
+                    {{ form.submit(class="btn btn-primary btn-lg", value="Create Default Value Types") }}
                 </div>
-                {{ form.submit(class="btn btn-primary btn-lg", value="Create Value Types") }}
             </div>
         </form>
     </div>
@@ -449,6 +465,11 @@
         <div class="next-steps-card text-start">
             <h6><i class="bi bi-signpost-2"></i> What's Next?</h6>
             <ul class="next-steps-list">
+                <li>
+                    <i class="bi bi-hash text-info me-2"></i>
+                    <a href="{{ url_for('organization_admin.value_types') }}">Create Value Types</a>
+                    <small class="text-muted d-block ms-4">Add measurements like Cost, CO2, Headcount, Downtime (needed before KPIs)</small>
+                </li>
                 <li>
                     <i class="bi bi-1-circle text-primary me-2"></i>
                     <a href="{{ url_for('organization_admin.challenges') }}">Create Challenges</a>
