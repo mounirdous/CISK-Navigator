@@ -408,14 +408,16 @@
                                         <div class="col-md-4">
                                             <label class="form-label small fw-semibold">Value Type</label>
                                             <select class="form-select linked-vt-select" name="linked_vt_{{ choice_value }}" id="linked_vt_{{ choice_value }}"
-                                                    data-config-id="{{ choice_value }}" disabled>
+                                                    data-config-id="{{ choice_value }}" data-current-kind="{{ vt.kind }}" disabled>
                                                 <option value="">Select value type...</option>
                                             </select>
+                                            <small class="form-text text-muted" id="vt_compat_{{ choice_value }}" style="display: none;">
+                                                ⚠️ Only {{ vt.kind }} types shown
+                                            </small>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -630,10 +632,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             vtSelect.disabled = false;
 
+            // Get current value type's kind for compatibility filtering
+            const currentKind = vtSelect.dataset.currentKind;
+            const compatMsg = document.getElementById('vt_compat_' + vtId);
+
             fetch(`{{ url_for("workspace.api_get_value_types_for_linking", kpi_id=0) }}`.replace('/0', '/' + this.value))
                 .then(response => response.json())
                 .then(valueTypes => {
-                    valueTypes.forEach(vt => {
+                    // Filter to only show compatible value types
+                    const compatibleValueTypes = valueTypes.filter(vt => {
+                        if (currentKind === 'numeric') {
+                            return vt.kind === 'numeric';
+                        } else {
+                            // Qualitative types must match exactly
+                            return vt.kind === currentKind;
+                        }
+                    });
+
+                    if (compatibleValueTypes.length === 0) {
+                        vtSelect.innerHTML = '<option value="">No compatible value types found</option>';
+                        vtSelect.disabled = true;
+                        if (compatMsg) compatMsg.style.display = 'block';
+                        return;
+                    }
+
+                    if (compatMsg) compatMsg.style.display = 'block';
+
+                    compatibleValueTypes.forEach(vt => {
                         const option = document.createElement('option');
                         option.value = vt.id;
                         option.textContent = vt.display;
