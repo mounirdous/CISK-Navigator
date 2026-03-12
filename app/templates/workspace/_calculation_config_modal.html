@@ -182,9 +182,12 @@
                         <select class="form-select" x-model="linkedValueTypeId">
                             <option value="">-- Select Value Type --</option>
                             <template x-for="vt in linkedValueTypes" :key="vt.id">
-                                <option :value="vt.id" x-text="vt.name + ' (' + vt.unit_label + ')'"></option>
+                                <option :value="vt.id" x-text="vt.display || vt.name"></option>
                             </template>
                         </select>
+                        <small class="text-muted" x-show="linkedValueTypes.length === 0 && linkedKPIId">
+                            ⚠️ No compatible value types found. Only {{ '{{ value_type.kind }}' }} types can be linked here.
+                        </small>
                     </div>
 
                     <!-- Preview -->
@@ -499,11 +502,29 @@ function calculationBuilder() {
                 return;
             }
             try {
-                const response = await fetch(`/workspace/api/kpi/${kpiId}/value-types`);
+                const response = await fetch(`/workspace/api/linked-kpi/value-types/${kpiId}`);
                 if (response.ok) {
                     const data = await response.json();
-                    this.linkedValueTypes = data.value_types || [];
-                    console.log('Loaded value types:', this.linkedValueTypes.length, 'items');
+
+                    // Filter to only show compatible value types
+                    const currentKind = '{{ value_type.kind }}';  // Current KPI's value type kind
+
+                    // Compatible: numeric to numeric, or same qualitative type to same qualitative type
+                    const compatibleValueTypes = data.filter(vt => {
+                        if (currentKind === 'numeric') {
+                            return vt.kind === 'numeric';
+                        } else {
+                            // Qualitative types must match exactly (risk to risk, sentiment to sentiment, etc.)
+                            return vt.kind === currentKind;
+                        }
+                    });
+
+                    this.linkedValueTypes = compatibleValueTypes;
+                    console.log('Loaded compatible value types:', this.linkedValueTypes.length, 'of', data.length, 'total');
+
+                    if (compatibleValueTypes.length === 0) {
+                        console.warn('No compatible value types found for linking');
+                    }
                 }
             } catch (error) {
                 console.error('Error loading value types:', error);

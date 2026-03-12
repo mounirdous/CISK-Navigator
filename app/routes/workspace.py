@@ -2534,6 +2534,39 @@ def update_calculation_config(config_id):
         else:
             return jsonify({"error": "Invalid mode. Must be 'simple' or 'advanced'"}), 400
 
+    # For linked type, validate compatibility
+    if calculation_type == KPIValueTypeConfig.CALC_TYPE_LINKED and calculation_config:
+        source_value_type_id = calculation_config.get("linked_value_type_id")
+        if source_value_type_id:
+            source_vt = ValueType.query.get(source_value_type_id)
+            current_vt = config.value_type
+
+            if not source_vt:
+                return jsonify({"error": "Source value type not found"}), 404
+
+            # Check compatibility: numeric to numeric, or same qualitative type
+            if current_vt.kind == "numeric":
+                if source_vt.kind != "numeric":
+                    return (
+                        jsonify(
+                            {
+                                "error": f"Cannot link numeric value type to {source_vt.kind}. Only numeric to numeric is allowed."
+                            }
+                        ),
+                        400,
+                    )
+            else:
+                # Qualitative types must match exactly
+                if source_vt.kind != current_vt.kind:
+                    return (
+                        jsonify(
+                            {
+                                "error": f"Cannot link {current_vt.kind} to {source_vt.kind}. Qualitative types must match exactly."
+                            }
+                        ),
+                        400,
+                    )
+
     # Update the configuration
     config.calculation_type = calculation_type
     config.calculation_config = calculation_config

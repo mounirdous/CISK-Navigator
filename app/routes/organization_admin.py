@@ -958,6 +958,25 @@ def create_kpi(link_id):
                 linked_vt_id = request.form.get(f"linked_vt_{vt_id}")
 
                 if linked_org_id and linked_kpi_id and linked_vt_id:
+                    # Validate value type compatibility
+                    source_vt = ValueType.query.get(int(linked_vt_id))
+                    current_vt = ValueType.query.get(vt_id_int)
+
+                    if source_vt and current_vt:
+                        # Check compatibility: numeric to numeric, or same qualitative type
+                        if current_vt.kind == "numeric" and source_vt.kind != "numeric":
+                            flash(
+                                f"Cannot link numeric '{current_vt.name}' to {source_vt.kind} '{source_vt.name}'. Only numeric to numeric allowed.",
+                                "danger",
+                            )
+                            return redirect(url_for("organization_admin.create_kpi", link_id=link_id))
+                        elif current_vt.kind != "numeric" and source_vt.kind != current_vt.kind:
+                            flash(
+                                f"Cannot link {current_vt.kind} '{current_vt.name}' to {source_vt.kind} '{source_vt.name}'. Types must match.",
+                                "danger",
+                            )
+                            return redirect(url_for("organization_admin.create_kpi", link_id=link_id))
+
                     linked_source_org_id = int(linked_org_id)
                     linked_source_kpi_id = int(linked_kpi_id)
                     linked_source_value_type_id = int(linked_vt_id)
@@ -1009,7 +1028,9 @@ def create_kpi(link_id):
 
         # If formula was selected, redirect to KPI detail page with formula modal open
         if first_formula_config_id and first_config_vt_id:
-            return redirect(url_for("workspace.kpi_cell_detail", kpi_id=kpi.id, vt_id=first_config_vt_id, open_formula=1))
+            return redirect(
+                url_for("workspace.kpi_cell_detail", kpi_id=kpi.id, vt_id=first_config_vt_id, open_formula=1)
+            )
 
         return redirect(url_for("workspace.index", auto_edit=1))
 
