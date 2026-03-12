@@ -2141,8 +2141,8 @@ def api_get_organizations_for_linking():
             db.session.query(Initiative.organization_id)
             .join(InitiativeSystemLink)
             .join(KPI)
-            .join(KPIValueTypeConfig)
-            .join(ValueType)
+            .join(KPIValueTypeConfig, KPIValueTypeConfig.kpi_id == KPI.id)
+            .join(ValueType, ValueType.id == KPIValueTypeConfig.value_type_id)
             .filter(
                 Initiative.organization_id.in_(user_org_ids),
                 KPI.is_archived.is_(False),
