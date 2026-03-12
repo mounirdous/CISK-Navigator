@@ -1206,23 +1206,42 @@ def announcement_stats(announcement_id):
         "target_count": 0,
     }
 
-    # Calculate target count
+    # Get users who have NOT acknowledged
+    acknowledged_user_ids = [ack.user_id for ack, user in acknowledgments]
+    not_acknowledged = []
+
     if announcement.target_type == "all":
         stats["target_count"] = User.query.filter_by(is_active=True).count()
+        # Get all active users who haven't acknowledged
+        not_acknowledged = (
+            User.query.filter(User.is_active, User.id.notin_(acknowledged_user_ids)).order_by(User.login).all()
+        )
     elif announcement.target_type == "organizations":
-        # Count users across all target organizations
-        total_users = 0
-        for target_org in announcement.target_organizations:
-            total_users += UserOrganizationMembership.query.filter_by(
-                organization_id=target_org.organization_id
-            ).count()
-        stats["target_count"] = total_users
+        # Get all users in target organizations
+        target_org_ids = [target_org.organization_id for target_org in announcement.target_organizations]
+        target_user_ids = (
+            db.session.query(UserOrganizationMembership.user_id)
+            .filter(UserOrganizationMembership.organization_id.in_(target_org_ids))
+            .distinct()
+            .all()
+        )
+        target_user_ids = [uid[0] for uid in target_user_ids]
+        stats["target_count"] = len(target_user_ids)
+
+        # Get users who haven't acknowledged
+        not_acknowledged_ids = [uid for uid in target_user_ids if uid not in acknowledged_user_ids]
+        not_acknowledged = User.query.filter(User.id.in_(not_acknowledged_ids)).order_by(User.login).all()
     elif announcement.target_type == "users":
         stats["target_count"] = len(announcement.target_users)
+        # Get target users who haven't acknowledged
+        target_user_ids = [target.user_id for target in announcement.target_users]
+        not_acknowledged_ids = [uid for uid in target_user_ids if uid not in acknowledged_user_ids]
+        not_acknowledged = User.query.filter(User.id.in_(not_acknowledged_ids)).order_by(User.login).all()
 
     return render_template(
         "super_admin/announcements/stats.html",
         announcement=announcement,
         acknowledgments=acknowledgments,
+        not_acknowledged=not_acknowledged,
         stats=stats,
     )

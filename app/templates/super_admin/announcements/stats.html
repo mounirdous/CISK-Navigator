@@ -139,16 +139,16 @@
         </div>
     </div>
 
-    {% if acknowledgments %}
     <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Users Who Acknowledged ({{ acknowledgments|length }})</h5>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Users Who Acknowledged ({{ acknowledgments|length }})</h5>
                 </div>
                 <div class="card-body">
+                    {% if acknowledgments %}
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover table-sm">
                             <thead>
                                 <tr>
                                     <th>User</th>
@@ -167,18 +167,44 @@
                             </tbody>
                         </table>
                     </div>
+                    {% else %}
+                    <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> No acknowledgments yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-circle"></i> Users Who Have Not Acknowledged ({{ not_acknowledged|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if not_acknowledged %}
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Email</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in not_acknowledged %}
+                                <tr>
+                                    <td>{{ user.login }}</td>
+                                    <td>{{ user.email }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0"><i class="bi bi-check-circle"></i> All target users have acknowledged!</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
-    {% else %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="alert alert-info">
-                <i class="bi bi-info-circle"></i> No acknowledgments yet.
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
