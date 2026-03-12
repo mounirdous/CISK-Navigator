@@ -59,8 +59,16 @@ class SystemAnnouncement(db.Model):
         # Check targeting
         if self.target_type == "all":
             return True
-        elif self.target_type == "organizations" and org_id:
-            return any(target.organization_id == org_id for target in self.target_organizations)
+        elif self.target_type == "organizations":
+            # Check if user is a member of ANY of the target organizations
+            from app.models.organization import UserOrganizationMembership
+
+            target_org_ids = [target.organization_id for target in self.target_organizations]
+            user_membership = UserOrganizationMembership.query.filter(
+                UserOrganizationMembership.user_id == user_id,
+                UserOrganizationMembership.organization_id.in_(target_org_ids),
+            ).first()
+            return user_membership is not None
         elif self.target_type == "users":
             # Check if user is in target list
             return any(target.user_id == user_id for target in self.target_users)
