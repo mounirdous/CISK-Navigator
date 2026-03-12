@@ -235,6 +235,9 @@ function calculationBuilder() {
         linkedValueTypes: [],
 
         async init() {
+            console.log('Modal init - calculation type:', '{{ config.calculation_type }}');
+            console.log('Initial mode:', this.mode);
+
             // Check if we should auto-switch to formula mode (from KPI creation)
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('open_formula') === '1') {
@@ -246,9 +249,12 @@ function calculationBuilder() {
             await this.loadExistingFormula();
             {% endif %}
             {% if config.calculation_type == 'linked' %}
+            console.log('Will load linked data...');
             await this.loadLinkedData();
             {% endif %}
             if (this.mode === 'formula') { this.showAllKPIs(); }
+
+            console.log('Modal init complete');
         },
 
         async loadAvailableKPIs() {
@@ -390,14 +396,30 @@ function calculationBuilder() {
 
         // Linked mode methods
         async loadLinkedData() {
+            console.log('Loading linked data, current IDs:', {
+                orgId: this.linkedOrgId,
+                kpiId: this.linkedKPIId,
+                vtId: this.linkedValueTypeId
+            });
+
             try {
                 const response = await fetch('/workspace/api/organizations-for-linking');
                 if (response.ok) {
                     const data = await response.json();
                     this.availableOrgs = data.organizations || [];
+                    console.log('Loaded organizations:', this.availableOrgs);
+
+                    // Use nextTick to ensure Alpine has updated the DOM
+                    await this.$nextTick();
+
                     if (this.linkedOrgId) {
+                        console.log('Loading KPIs for org:', this.linkedOrgId);
                         await this.loadLinkedKPIs();
+
+                        await this.$nextTick();
+
                         if (this.linkedKPIId) {
+                            console.log('Loading value types for KPI:', this.linkedKPIId);
                             await this.loadLinkedValueTypes();
                         }
                     }
@@ -408,12 +430,16 @@ function calculationBuilder() {
         },
 
         async loadLinkedKPIs() {
-            if (!this.linkedOrgId) return;
+            if (!this.linkedOrgId) {
+                console.log('No org ID, skipping KPI load');
+                return;
+            }
             try {
                 const response = await fetch(`/workspace/api/kpis-for-linking/${this.linkedOrgId}`);
                 if (response.ok) {
                     const data = await response.json();
                     this.linkedKPIs = data.kpis || [];
+                    console.log('Loaded KPIs:', this.linkedKPIs);
                 }
             } catch (error) {
                 console.error('Error loading KPIs:', error);
@@ -421,12 +447,16 @@ function calculationBuilder() {
         },
 
         async loadLinkedValueTypes() {
-            if (!this.linkedKPIId) return;
+            if (!this.linkedKPIId) {
+                console.log('No KPI ID, skipping value types load');
+                return;
+            }
             try {
                 const response = await fetch(`/workspace/api/kpi/${this.linkedKPIId}/value-types`);
                 if (response.ok) {
                     const data = await response.json();
                     this.linkedValueTypes = data.value_types || [];
+                    console.log('Loaded value types:', this.linkedValueTypes);
                 }
             } catch (error) {
                 console.error('Error loading value types:', error);
