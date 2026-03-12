@@ -1073,8 +1073,8 @@ def create_announcement():
     ]
 
     # Populate user choices
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    form.target_user_ids.choices = [(user.id, f"{user.username} ({user.email})") for user in users]
+    users = User.query.filter_by(is_active=True).order_by(User.login).all()
+    form.target_user_ids.choices = [(user.id, f"{user.login} ({user.email})") for user in users]
 
     if form.validate_on_submit():
         announcement = SystemAnnouncement(
@@ -1125,8 +1125,8 @@ def edit_announcement(announcement_id):
     ]
 
     # Populate user choices
-    users = User.query.filter_by(is_active=True).order_by(User.username).all()
-    form.target_user_ids.choices = [(user.id, f"{user.username} ({user.email})") for user in users]
+    users = User.query.filter_by(is_active=True).order_by(User.login).all()
+    form.target_user_ids.choices = [(user.id, f"{user.login} ({user.email})") for user in users]
 
     # Pre-select current target users
     if request.method == "GET":
