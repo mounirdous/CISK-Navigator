@@ -1,0 +1,354 @@
+<!-- Calculation Configuration Modal - SIMPLIFIED v1.19 -->
+<div class="modal fade" id="calcConfigModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" x-data="calculationBuilder()">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-calculator"></i> Configure KPI Calculation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Mode Selection -->
+                <div class="mb-3">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button type="button" class="mode-card w-100" :class="{'active': mode === 'manual'}" @click="mode = 'manual'">
+                                <i class="bi bi-pencil-square"></i> Manual Entry
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="mode-card w-100" :class="{'active': mode === 'formula'}" @click="mode = 'formula'; showAllKPIs()">
+                                <i class="bi bi-calculator"></i> Formula
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-2 mb-0 small">
+                        <i class="bi bi-info-circle"></i> To link from another org's KPI, use <strong>Settings</strong> button above.
+                    </div>
+                </div>
+
+                <!-- FORMULA MODE -->
+                <div x-show="mode === 'formula'" x-transition>
+                    <!-- RESULT FIRST! -->
+                    <div class="result-card mb-3">
+                        <div class="text-center p-3 bg-success bg-opacity-10 border border-success rounded">
+                            <div class="mb-1"><strong>🎯 RESULT</strong></div>
+                            <div class="display-4 text-success fw-bold" x-text="getResultDisplay()"></div>
+                            <small class="text-muted">✓ Auto-updates when sources change</small>
+                        </div>
+                    </div>
+
+                    <!-- Loading/Error -->
+                    <div x-show="loading" class="alert alert-info">Loading KPIs...</div>
+                    <div x-show="loadError" class="alert alert-danger" x-text="loadError"></div>
+
+                    <!-- Selected KPIs - COMPACT -->
+                    <div class="mb-3">
+                        <strong>Selected KPIs (<span x-text="selectedKPIs.length"></span>):</strong>
+                        <div x-show="selectedKPIs.length === 0" class="text-muted small">No KPIs selected yet</div>
+                        <template x-for="(kpi, index) in selectedKPIs" :key="kpi.id">
+                            <div class="d-flex align-items-center gap-2 p-2 bg-light rounded mb-1">
+                                <span class="flex-grow-1">
+                                    <strong x-text="kpi.kpi_name"></strong> →
+                                    <span class="text-primary" x-text="kpi.currentValue"></span>
+                                </span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" @click="removeKPI(index)">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Add KPI - COLLAPSIBLE -->
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-outline-primary btn-sm" @click="showSearch = !showSearch">
+                            <i class="bi bi-plus-circle"></i> Add KPI
+                        </button>
+
+                        <div x-show="showSearch" x-transition class="mt-2">
+                            <input type="text" class="form-control mb-2" placeholder="🔍 Search KPIs..."
+                                   x-model="searchQuery" @input.debounce.300ms="filterKPIs()">
+
+                            <div style="max-height: 200px; overflow-y: auto;">
+                                <template x-for="kpi in filteredKPIs.slice(0, 10)" :key="kpi.id">
+                                    <div class="p-2 border-bottom" style="cursor: pointer;" @click="addKPI(kpi); showSearch=false">
+                                        <strong x-text="kpi.kpi_name"></strong> - <span x-text="kpi.value_type_name"></span>
+                                        <div class="small text-muted" x-text="kpi.currentValue"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formula Mode Toggle -->
+                    <div class="mb-3">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn" :class="formulaMode === 'simple' ? 'btn-primary' : 'btn-outline-secondary'" @click="formulaMode = 'simple'">Simple</button>
+                            <button type="button" class="btn" :class="formulaMode === 'advanced' ? 'btn-primary' : 'btn-outline-secondary'" @click="formulaMode = 'advanced'">Advanced</button>
+                        </div>
+                    </div>
+
+                    <!-- Simple Mode -->
+                    <div x-show="formulaMode === 'simple'" class="mb-3">
+                        <label class="form-label small">Operation:</label>
+                        <select class="form-select" x-model="operation">
+                            <option value="sum">➕ Sum</option>
+                            <option value="avg">📊 Average</option>
+                            <option value="min">⬇️ Minimum</option>
+                            <option value="max">⬆️ Maximum</option>
+                            <option value="multiply">✖️ Multiply</option>
+                            <option value="subtract">➖ Subtract</option>
+                        </select>
+                    </div>
+
+                    <!-- Advanced Mode -->
+                    <div x-show="formulaMode === 'advanced'" class="mb-3">
+                        <label class="form-label small">Python Expression:</label>
+                        <div class="mb-2">
+                            <template x-for="kpi in selectedKPIs" :key="kpi.id">
+                                <span class="badge bg-secondary me-1" style="cursor: pointer;" @click="insertVariable(kpi.id)" title="Click to insert">
+                                    <code class="text-white" x-text="'kpi_' + kpi.id"></code>
+                                </span>
+                            </template>
+                        </div>
+                        <textarea class="form-control font-monospace" rows="2" x-model="expression" @input="updateExpressionPreview()"
+                                  placeholder="kpi_123 + kpi_456"></textarea>
+                    </div>
+
+                    <!-- Help - COLLAPSIBLE -->
+                    <details class="mb-3">
+                        <summary class="btn btn-sm btn-outline-info">📖 Help & Examples</summary>
+                        <div class="mt-2 p-3 bg-light rounded small">
+                            <strong>Operators:</strong> + - * / ** () <br>
+                            <strong>Functions:</strong> abs() round() max() min() sum()<br>
+                            <strong>Examples:</strong><br>
+                            • <code>round((kpi_1 / kpi_2) * 100, 1)</code> - Percentage<br>
+                            • <code>abs(kpi_1 - kpi_2)</code> - Difference<br>
+                            • <code>max(kpi_1, kpi_2, kpi_3)</code> - Best case
+                        </div>
+                    </details>
+                </div>
+
+                <!-- MANUAL MODE -->
+                <div x-show="mode === 'manual'" x-transition>
+                    <div class="alert alert-info">
+                        <strong>Manual Entry Mode:</strong> Values entered through contributions.
+                        Multiple contributors can provide input and consensus is calculated automatically.
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @click="saveConfiguration()">
+                    <i class="bi bi-check-lg"></i> Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.mode-card {
+    background: #fff;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.mode-card:hover { border-color: #0d6efd; }
+.mode-card.active { border-color: #0d6efd; background: #e7f1ff; }
+</style>
+
+<script>
+function calculationBuilder() {
+    return {
+        mode: '{{ config.calculation_type or "manual" }}',
+        formulaMode: 'simple',
+        searchQuery: '',
+        selectedKPIs: [],
+        filteredKPIs: [],
+        operation: 'sum',
+        expression: '',
+        availableKPIs: [],
+        loading: false,
+        loadError: null,
+        showSearch: false,
+
+        async init() {
+            await this.loadAvailableKPIs();
+            {% if config.calculation_type == 'formula' and config.calculation_config %}
+            await this.loadExistingFormula();
+            {% endif %}
+            if (this.mode === 'formula') { this.showAllKPIs(); }
+        },
+
+        async loadAvailableKPIs() {
+            if (this.loading) return;
+            this.loading = true;
+            try {
+                const response = await fetch('/workspace/api/kpis-for-formula/{{ session.organization_id }}');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                this.availableKPIs = data.kpis || [];
+            } catch (error) {
+                this.loadError = 'Error loading KPIs: ' + error.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async loadExistingFormula() {
+            const config = {{ config.calculation_config|tojson if config.calculation_config else '{}' }};
+            if (config.mode) {
+                this.formulaMode = config.mode;
+                if (config.mode === 'simple') {
+                    this.operation = config.operation || 'sum';
+                } else {
+                    this.expression = config.expression || '';
+                }
+            }
+            const sourceConfigIds = config.source_config_ids || [];
+            for (const id of sourceConfigIds) {
+                const kpi = this.availableKPIs.find(k => k.id === id);
+                if (kpi && !this.selectedKPIs.some(s => s.id === kpi.id)) {
+                    this.selectedKPIs.push({...kpi});
+                }
+            }
+        },
+
+        showAllKPIs() {
+            if (!this.searchQuery) {
+                this.filteredKPIs = this.availableKPIs.filter(kpi =>
+                    !this.selectedKPIs.some(s => s.id === kpi.id) && kpi.id !== {{ config.id }}
+                ).slice(0, 20);
+            }
+        },
+
+        filterKPIs() {
+            if (!this.searchQuery) { this.showAllKPIs(); return; }
+            const query = this.searchQuery.toLowerCase();
+            this.filteredKPIs = this.availableKPIs.filter(kpi =>
+                !this.selectedKPIs.some(s => s.id === kpi.id) &&
+                kpi.id !== {{ config.id }} &&
+                (kpi.kpi_name.toLowerCase().includes(query) ||
+                 kpi.value_type_name.toLowerCase().includes(query))
+            ).slice(0, 20);
+        },
+
+        addKPI(kpi) {
+            if (!this.selectedKPIs.some(s => s.id === kpi.id)) {
+                this.selectedKPIs.push({...kpi});
+            }
+            this.searchQuery = '';
+            this.filteredKPIs = [];
+        },
+
+        removeKPI(index) {
+            this.selectedKPIs.splice(index, 1);
+        },
+
+        insertVariable(kpiId) {
+            const varName = `kpi_${kpiId}`;
+            const textarea = document.querySelector('textarea[x-model="expression"]');
+            if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = this.expression;
+                this.expression = text.substring(0, start) + varName + text.substring(end);
+                this.$nextTick(() => {
+                    textarea.focus();
+                    const newPos = start + varName.length;
+                    textarea.setSelectionRange(newPos, newPos);
+                });
+            } else {
+                this.expression += varName;
+            }
+            this.updateExpressionPreview();
+        },
+
+        calculateResult() {
+            if (this.selectedKPIs.length === 0) return null;
+            const values = this.selectedKPIs.map(k => parseFloat(k.currentValue.replace(/[^0-9.-]/g, '')) || 0);
+
+            if (this.formulaMode === 'simple') {
+                if (this.operation === 'sum') return values.reduce((a, b) => a + b, 0);
+                if (this.operation === 'avg') return values.reduce((a, b) => a + b, 0) / values.length;
+                if (this.operation === 'min') return Math.min(...values);
+                if (this.operation === 'max') return Math.max(...values);
+                if (this.operation === 'multiply') return values.reduce((a, b) => a * b, 1);
+                if (this.operation === 'subtract') return values.reduce((a, b) => a - b);
+            } else {
+                // Advanced mode - show placeholder
+                return this.expression ? '...' : null;
+            }
+            return null;
+        },
+
+        getResultDisplay() {
+            const result = this.calculateResult();
+            if (result === null || result === undefined) return '—';
+            if (result === '...') return 'Enter expression';
+            return result.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        },
+
+        updateExpressionPreview() {
+            // Trigger recalculation
+        },
+
+        async saveConfiguration() {
+            if (this.mode === 'manual') {
+                try {
+                    const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({mode: 'manual'})
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    }
+                } catch (error) {
+                    alert('Error saving: ' + error.message);
+                }
+            } else if (this.mode === 'formula') {
+                if (this.selectedKPIs.length === 0) {
+                    alert('Please select at least one KPI for your formula');
+                    return;
+                }
+                try {
+                    const payload = {
+                        mode: 'formula',
+                        formula_mode: this.formulaMode,
+                        source_config_ids: this.selectedKPIs.map(k => k.id)
+                    };
+                    if (this.formulaMode === 'simple') {
+                        payload.operation = this.operation;
+                    } else {
+                        if (!this.expression) {
+                            alert('Please enter a Python expression');
+                            return;
+                        }
+                        payload.expression = this.expression;
+                    }
+                    const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        const data = await response.json();
+                        alert('Error: ' + (data.error || 'Failed to save'));
+                    }
+                } catch (error) {
+                    alert('Error saving: ' + error.message);
+                }
+            }
+        }
+    };
+}
+</script>

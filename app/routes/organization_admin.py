@@ -737,6 +737,8 @@ def create_kpi(link_id):
         selected_gb_ids = request.form.getlist("governance_body_ids")
         if not selected_gb_ids:
             flash("Please select at least one governance body", "danger")
+            # Preserve form data on error - extract submitted data
+            submitted_vt_ids = request.form.getlist("value_type_ids")
             return render_template(
                 "organization_admin/create_kpi.html",
                 form=form,
@@ -745,6 +747,8 @@ def create_kpi(link_id):
                 system=link.system,
                 value_types=value_types,
                 governance_bodies=governance_bodies,
+                preselect_value_types=submitted_vt_ids,  # Preserve value type selection
+                preserve_form_data=True,  # Flag to preserve other form data
             )
 
         # Create the KPI
@@ -874,6 +878,10 @@ def create_kpi(link_id):
     # Get preselected items from session (if returning from creation flow)
     preselect_value_types = session.pop("preselect_value_types", [])
     preselect_governance_bodies = session.pop("preselect_governance_bodies", [])
+
+    # Auto-select governance body if only one exists
+    if len(governance_bodies) == 1 and not preselect_governance_bodies:
+        preselect_governance_bodies = [governance_bodies[0].id]
 
     return render_template(
         "organization_admin/create_kpi.html",

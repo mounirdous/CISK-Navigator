@@ -321,9 +321,26 @@
                             </div>
                             {% endif %}
 
-                            {# Linked KPI Value (Cross-Org or Same-Org) #}
+                            {# Value Source Type Selection #}
                             <div class="color-config mt-3 border-top pt-3" id="linked_section_{{ choice_value }}" style="display: none;">
-                                <h6 class="mb-3"><i class="bi bi-link-45deg"></i> Linked Value Source</h6>
+                                <h6 class="mb-3"><i class="bi bi-gear"></i> Value Source Configuration</h6>
+
+                                {# Formula Calculation Option #}
+                                <div class="alert alert-success mb-3">
+                                    <div class="d-flex align-items-start">
+                                        <i class="bi bi-calculator fs-4 me-2"></i>
+                                        <div>
+                                            <strong>✨ NEW: Formula Calculations</strong>
+                                            <p class="mb-2">Calculate this KPI automatically from other KPIs (sum, average, min, max, etc.)</p>
+                                            <small class="text-muted">
+                                                <i class="bi bi-info-circle"></i> Create the KPI first, then click "Configure Calculation" on the KPI detail page to set up your formula.
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Linked Value Source #}
+                                <h6 class="mb-3 mt-4"><i class="bi bi-link-45deg"></i> OR: Linked Value Source</h6>
                                 <div class="form-check mb-3">
                                     <input class="form-check-input linked-checkbox" type="checkbox"
                                            name="is_linked_{{ choice_value }}" id="is_linked_{{ choice_value }}">

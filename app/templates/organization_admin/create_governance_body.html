@@ -41,6 +41,15 @@
             </div>
 
             <div class="card-body" style="padding: 2.5rem;">
+                {% if session.get('return_to_kpi_creation') %}
+                <div class="alert alert-warning mb-4">
+                    <i class="bi bi-info-circle-fill"></i>
+                    <strong>Why am I here?</strong> KPIs require governance oversight to ensure accountability.
+                    Please create a governance body first (e.g., "Steering Committee"), then you'll automatically
+                    return to creating your KPI.
+                </div>
+                {% endif %}
+
                 <form method="POST">
                     {{ form.hidden_tag() }}
 

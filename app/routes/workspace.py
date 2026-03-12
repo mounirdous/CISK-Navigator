@@ -24,6 +24,7 @@ from app.models import (
     InitiativeSystemLink,
     KPISnapshot,
     KPIValueTypeConfig,
+    Organization,
     RollupSnapshot,
     Space,
     System,
@@ -260,9 +261,11 @@ def index():
     from app.models import Contribution, KPIGovernanceBodyLink
 
     if space_ids:
-        # Build query to find value types that have contributions in filtered spaces
-        # Only columns with actual data will create rollup values to display
-        value_types_query = (
+        # Build query to find value types that have data in filtered spaces
+        # This includes both manual KPIs (with contributions) and formula KPIs (calculated values)
+
+        # Query 1: Value types with contributions (manual KPIs)
+        value_types_with_contributions = (
             db.session.query(ValueType.id)
             .join(KPIValueTypeConfig, ValueType.id == KPIValueTypeConfig.value_type_id)
             .join(Contribution, KPIValueTypeConfig.id == Contribution.kpi_value_type_config_id)
@@ -276,23 +279,55 @@ def index():
             )
         )
 
-        # Apply governance body filter if selected
+        # Apply filters to contributions query
         if selected_governance_body_ids:
             gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
-            value_types_query = value_types_query.join(
+            value_types_with_contributions = value_types_with_contributions.join(
                 KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id
             ).filter(KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int))
 
-        # Apply initiative group filter if selected
-        # Always include initiatives with no group assigned
         if selected_group_labels:
-            value_types_query = value_types_query.filter(
+            value_types_with_contributions = value_types_with_contributions.filter(
                 or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
             )
 
-        # Apply archived filter
         if not show_archived:
-            value_types_query = value_types_query.filter(KPI.is_archived.is_(False))
+            value_types_with_contributions = value_types_with_contributions.filter(KPI.is_archived.is_(False))
+
+        # Query 2: Value types with formula KPIs (calculated values)
+        value_types_with_formulas = (
+            db.session.query(ValueType.id)
+            .join(KPIValueTypeConfig, ValueType.id == KPIValueTypeConfig.value_type_id)
+            .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .filter(
+                Challenge.space_id.in_(space_ids),
+                ValueType.organization_id == org_id,
+                ValueType.is_active.is_(True),
+                KPIValueTypeConfig.calculation_type.in_(["formula", "linked"]),
+            )
+        )
+
+        # Apply filters to formulas query
+        if selected_governance_body_ids:
+            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
+            value_types_with_formulas = value_types_with_formulas.join(
+                KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id
+            ).filter(KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int))
+
+        if selected_group_labels:
+            value_types_with_formulas = value_types_with_formulas.filter(
+                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
+            )
+
+        if not show_archived:
+            value_types_with_formulas = value_types_with_formulas.filter(KPI.is_archived.is_(False))
+
+        # Combine both queries with UNION
+        value_types_query = value_types_with_contributions.union(value_types_with_formulas)
 
         value_types_with_data = value_types_query.distinct().all()
         value_type_ids_with_data = {vt_id for (vt_id,) in value_types_with_data}
@@ -549,8 +584,8 @@ def kpi_cell_detail(kpi_id, vt_id):
         flash("This KPI does not use this value type", "warning")
         return redirect(url_for("workspace.index"))
 
-    # Get consensus status
-    consensus = ConsensusService.get_cell_value(config)
+    # Get consensus status (handles manual, linked, and formula KPIs)
+    consensus = config.get_consensus_value()
 
     # Get all contributions
     contributions = config.contributions
@@ -697,6 +732,59 @@ def kpi_cell_detail(kpi_id, vt_id):
         "value_type": value_type.name,
     }
 
+    # Get formula details if this is a formula KPI
+    formula_details = None
+    if config.is_formula():
+        source_configs = config.get_formula_source_configs()
+        mode = config.calculation_config.get("mode", "simple")
+
+        formula_details = {
+            "mode": mode,
+            "operation": config.calculation_config.get("operation", "sum"),
+            "expression": config.calculation_config.get("expression"),
+            "expression_evaluated": None,
+            "sources": [],
+            "values": [],
+        }
+
+        # Build namespace for expression evaluation
+        namespace = {}
+
+        for source_config in source_configs:
+            source_kpi = source_config.kpi
+            source_vt = source_config.value_type
+            source_initiative = source_kpi.initiative_system_link.initiative
+            source_system = source_kpi.initiative_system_link.system
+            source_org = source_initiative.organization
+
+            # Get current value
+            source_consensus = ConsensusService.get_cell_value(source_config)
+            source_value = source_consensus.get("value") if source_consensus else None
+
+            formula_details["sources"].append(
+                {
+                    "kpi_name": source_kpi.name,
+                    "value_type_name": source_vt.name,
+                    "organization_name": source_org.name,
+                    "path": f"{source_initiative.name} › {source_system.name}",
+                    "current_value": source_value,
+                    "unit": source_vt.unit_label,
+                }
+            )
+
+            if source_value is not None:
+                float_value = float(source_value)
+                formula_details["values"].append(float_value)
+                namespace[f"kpi_{source_config.id}"] = float_value
+
+        # For advanced mode, show evaluated expression
+        if mode == "advanced" and formula_details["expression"]:
+            expr = formula_details["expression"]
+            # Replace variables with values for display
+            for config_id, value in namespace.items():
+                expr = expr.replace(config_id, str(value))
+            formula_details["expression_evaluated"] = expr
+
     return render_template(
         "workspace/kpi_cell_detail.html",
         kpi=kpi,
@@ -706,6 +794,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         contributions=contributions,
         form=form,
         breadcrumb=breadcrumb,
+        formula_details=formula_details,
     )
 
 
@@ -2281,3 +2370,166 @@ def clear_last_preset():
         return jsonify({"success": True})
     else:
         return jsonify({"error": "Membership not found"}), 404
+
+
+@bp.route("/api/kpis-for-formula/<int:org_id>")
+@login_required
+@organization_required
+def get_kpis_for_formula(org_id):
+    """
+    Get all available KPIs that can be used in formula calculations.
+    Returns KPI configs with their current values from all accessible organizations.
+    """
+    # Verify access to organization
+    if session.get("organization_id") != org_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    from app.services import ConsensusService
+
+    # Get all organizations the user has access to
+    user_org_ids = [membership.organization_id for membership in current_user.organization_memberships]
+
+    # Get all KPIs from ALL accessible organizations with their value type configs
+    kpis = (
+        db.session.query(KPI, KPIValueTypeConfig, ValueType, Initiative, System, Organization)
+        .join(KPIValueTypeConfig, KPI.id == KPIValueTypeConfig.kpi_id)
+        .join(ValueType, KPIValueTypeConfig.value_type_id == ValueType.id)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .join(System, InitiativeSystemLink.system_id == System.id)
+        .join(Organization, Initiative.organization_id == Organization.id)
+        .filter(Initiative.organization_id.in_(user_org_ids))
+        .filter(KPI.is_archived.is_(False))
+        .filter(ValueType.is_active.is_(True))
+        .order_by(Organization.name, Initiative.name, System.name, KPI.name, ValueType.name)
+        .all()
+    )
+
+    result = []
+    for kpi, config, value_type, initiative, system, organization in kpis:
+        # Get current consensus value
+        consensus = ConsensusService.get_cell_value(config)
+        current_value = consensus.get("value") if consensus else None
+
+        # Format display value
+        if current_value is not None:
+            if value_type.is_numeric():
+                try:
+                    display_value = f"{float(current_value):.2f} {value_type.unit_label or ''}".strip()
+                except (ValueError, TypeError):
+                    display_value = str(current_value)
+            else:
+                display_value = str(current_value)
+        else:
+            display_value = "—"
+
+        # Highlight if from current org
+        is_current_org = organization.id == org_id
+
+        result.append(
+            {
+                "id": config.id,
+                "name": f"{kpi.name} - {value_type.name}",
+                "kpi_name": kpi.name,
+                "value_type_name": value_type.name,
+                "organization_name": organization.name,
+                "organization_id": organization.id,
+                "is_current_org": is_current_org,
+                "path": f"{initiative.name} › {system.name}",
+                "currentValue": display_value,
+                "icon": (
+                    "💶"
+                    if value_type.unit_label in ["€", "$", "USD"]
+                    else "📊" if value_type.kind == "numeric" else "⚠️" if value_type.kind == "risk" else "📈"
+                ),
+            }
+        )
+
+    return jsonify({"kpis": result})
+
+
+@bp.route("/kpi-config/<int:config_id>/calculation", methods=["POST"])
+@login_required
+@organization_required
+def update_calculation_config(config_id):
+    """
+    Update the calculation configuration for a KPI config.
+    Supports manual, linked, and formula calculation types.
+    """
+    org_id = session.get("organization_id")
+
+    # Get the config and verify access
+    config = KPIValueTypeConfig.query.get_or_404(config_id)
+    # Get organization through KPI -> InitiativeSystemLink -> Initiative
+    kpi_org_id = config.kpi.initiative_system_link.initiative.organization_id
+    if kpi_org_id != org_id:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Check permissions
+    if not current_user.can_manage_kpis(org_id):
+        return jsonify({"error": "Permission denied"}), 403
+
+    data = request.get_json()
+    calculation_type = data.get("calculation_type")
+    calculation_config = data.get("calculation_config")
+
+    # Validate calculation type
+    if calculation_type not in [
+        KPIValueTypeConfig.CALC_TYPE_MANUAL,
+        KPIValueTypeConfig.CALC_TYPE_LINKED,
+        KPIValueTypeConfig.CALC_TYPE_FORMULA,
+    ]:
+        return jsonify({"error": "Invalid calculation type"}), 400
+
+    # For formula type, validate the configuration
+    if calculation_type == KPIValueTypeConfig.CALC_TYPE_FORMULA:
+        if not calculation_config or not calculation_config.get("kpi_config_ids"):
+            return jsonify({"error": "Formula configuration must include kpi_config_ids"}), 400
+
+        # Validate that source configs exist and are accessible
+        source_ids = calculation_config.get("kpi_config_ids", [])
+        source_configs = KPIValueTypeConfig.query.filter(KPIValueTypeConfig.id.in_(source_ids)).all()
+
+        if len(source_configs) != len(source_ids):
+            return jsonify({"error": "Some source KPIs not found"}), 404
+
+        # Check for circular dependencies (simple check)
+        if config_id in source_ids:
+            return jsonify({"error": "Cannot reference self in formula"}), 400
+
+        # Validate based on mode
+        mode = calculation_config.get("mode", "simple")
+
+        if mode == "simple":
+            # Validate operation for simple mode
+            valid_operations = ["sum", "avg", "min", "max", "multiply", "subtract", "divide"]
+            if calculation_config.get("operation") not in valid_operations:
+                return jsonify({"error": f"Invalid operation. Must be one of: {', '.join(valid_operations)}"}), 400
+        elif mode == "advanced":
+            # Validate expression exists for advanced mode
+            if not calculation_config.get("expression"):
+                return jsonify({"error": "Advanced mode requires an expression"}), 400
+
+            # Basic validation: check that expression only contains valid KPI references
+            expression = calculation_config.get("expression")
+            import re
+
+            # Find all kpi_* references in expression
+            kpi_refs = re.findall(r"kpi_(\d+)", expression)
+            referenced_ids = [int(ref) for ref in kpi_refs]
+
+            # Ensure all referenced KPIs are in the source list
+            for ref_id in referenced_ids:
+                if ref_id not in source_ids:
+                    return jsonify({"error": f"Expression references kpi_{ref_id} which is not in selected KPIs"}), 400
+        else:
+            return jsonify({"error": "Invalid mode. Must be 'simple' or 'advanced'"}), 400
+
+    # Update the configuration
+    config.calculation_type = calculation_type
+    config.calculation_config = calculation_config
+
+    db.session.commit()
+
+    flash("Calculation configuration updated successfully", "success")
+    return jsonify({"success": True, "message": "Configuration updated"})

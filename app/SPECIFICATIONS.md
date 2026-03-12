@@ -38,6 +38,68 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
 - **Context-specific KPIs**: KPIs belong to initiative-system pairs, not master systems
 - **Organization isolation**: Each organization has completely separate data
 
+## What's New in v1.19 (March 2026)
+
+### Three Calculation Types
+**Revolutionary expansion of how KPI values are determined:**
+
+1. **Manual Entry** (traditional contribution-based consensus)
+   - Multiple contributors provide values
+   - System calculates consensus automatically
+   - Perfect for collaborative data collection
+
+2. **Linked KPI** (cross-organizational data sharing)
+   - Pull values from another organization's KPI
+   - Auto-sync when source changes
+   - Enables shared services and dependencies
+
+3. **Formula Calculation** (automatic computation)
+   - **Simple Mode**: Basic operations (sum, avg, min, max, multiply, subtract)
+   - **Advanced Mode**: Full Python expressions with functions
+   - Auto-updates when source KPIs change
+
+### Advanced Formula Engine
+**Powerful Python expression support:**
+- Mathematical operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`
+- Functions: `abs()`, `round()`, `max()`, `min()`, `sum()`
+- Click-to-insert variable badges
+- Real-time preview with current values
+- Comprehensive in-app help documentation with examples
+
+**Real-World Use Cases:**
+```python
+# Percentage calculation
+round((kpi_actual / kpi_target) * 100, 1)
+
+# ROI calculation
+round((kpi_revenue - kpi_cost) / kpi_cost * 100)
+
+# Weighted average
+(kpi_1 * 0.7 + kpi_2 * 0.3)
+
+# Complex formula
+(kpi_1 + kpi_2) / (kpi_3 + kpi_4)
+```
+
+### Context-Aware Interface Redesign
+**Major UX improvements focusing user attention:**
+- **Prominent Value Display**: Large, centered value cards (3rem font) with color-coded badges
+- **Adaptive UI**: Interface shows only relevant sections based on calculation type
+  - Manual: Contribution form, consensus status, trend charts, contributions table
+  - Formula: Source KPIs, expression display, auto-update indicator
+  - Linked: Sync status, source configuration, read-only display
+- **Smart Action Buttons**: Context-aware buttons adapt to KPI type
+  - Manual: "Configure Calculation" → modal with formula builder
+  - Formula: "Edit Formula" → direct to formula configuration
+  - Linked: "Configure Link Source" → settings page
+- **Reduced Clutter**: Hides irrelevant UI (no trend charts for formulas, no contribution forms for linked KPIs)
+
+### Developer Experience
+- **Python 3.14 Compatibility**: Upgraded simpleeval library (0.9.13 → 1.0.4)
+- **Better Error Handling**: Division by zero, invalid expressions gracefully handled
+- **Safe Execution**: Sandboxed Python evaluation with limited function set
+- **Debug Logging**: Comprehensive logging for formula calculation troubleshooting
+
 ## What's New in v2.1
 
 ### Dashboard & Overview
@@ -294,7 +356,14 @@ Shows:
 
 ## Data Entry & Consensus Model
 
-### Contribution Process
+### Three Calculation Types
+
+Every KPI can be configured with one of three calculation types:
+
+#### 1. Manual Entry (Contribution-Based)
+The default mode where team members provide input and the system calculates consensus.
+
+**Process:**
 1. User navigates to KPI cell
 2. Enters contributor name (free text, no account required)
 3. Provides value:
@@ -303,15 +372,13 @@ Shows:
 4. Optional comment
 5. Submits
 
-### Contribution Rules
+**Contribution Rules:**
 - One contribution per contributor name per KPI cell
 - Subsequent submissions with same name update existing contribution
 - No user account binding - allows flexible contributor identification
 - Contributors can be teams, roles, or individuals
 
-### Consensus Calculation
-
-**Algorithm:**
+**Consensus Calculation Algorithm:**
 ```
 IF no contributions:
     status = NO_DATA
@@ -340,11 +407,127 @@ ELSE:
 
 **Key Rule**: Strong Consensus (single contribution OR unanimous agreement) participates in upward roll-ups.
 
-### Editing Contributions
+**Editing Contributions:**
 - Click "Edit" button next to any contribution
 - Form pre-populates with existing values
 - Change values and submit to update
 - Uses same contributor name to identify which contribution to update
+
+#### 2. Linked KPI
+Pull values from another organization's KPI, enabling data sharing across organizational boundaries.
+
+**Configuration:**
+- Set via KPI Advanced Settings page
+- Select source organization and source KPI
+- Values sync automatically from source
+- Read-only in destination organization
+
+**Use Cases:**
+- Shared services consuming data from provider organizations
+- Cross-organizational dependencies
+- Central data sources feeding multiple consumers
+
+**Display:**
+- Large centered value card with "LINKED KPI" badge (info blue)
+- Shows current synced value
+- "Configure Link Source" button for changing source
+- No contribution form (read-only)
+
+#### 3. Formula Calculation
+Auto-calculate values from other KPIs using mathematical operations or Python expressions.
+
+**Two Formula Modes:**
+
+**Simple Mode** - Basic operations:
+- **Sum**: Add all source KPI values
+- **Average**: Calculate mean of source values
+- **Minimum**: Take lowest value
+- **Maximum**: Take highest value
+- **Multiply**: Multiply all values together
+- **Subtract**: Subtract subsequent values from first
+
+**Advanced Mode** - Python expressions:
+- Write custom formulas using Python syntax
+- Use variable names like `kpi_123` for each source KPI
+- Supports operators: `+`, `-`, `*`, `/`, `//`, `%`, `**`, `()`
+- Available functions:
+  - `abs(x)` - Absolute value
+  - `round(x)` or `round(x, decimals)` - Rounding
+  - `max(a, b, c)` - Maximum
+  - `min(a, b, c)` - Minimum
+  - `sum([a, b, c])` - Sum of list
+
+**Example Formulas:**
+```python
+# Percentage calculation
+round((kpi_1 / kpi_2) * 100, 1)
+
+# ROI calculation
+round((kpi_revenue - kpi_cost) / kpi_cost * 100)
+
+# Weighted average
+(kpi_1 * 0.7 + kpi_2 * 0.3)
+
+# Absolute difference
+abs(kpi_target - kpi_actual)
+
+# Best case scenario
+max(kpi_1, kpi_2, kpi_3)
+
+# Complex calculation
+(kpi_1 + kpi_2) / (kpi_3 + kpi_4)
+```
+
+**Configuration Interface:**
+- Search and select source KPIs from any organization
+- Click variable badges to insert into expression
+- Real-time preview of current values
+- Comprehensive help documentation with examples
+- Formula details displayed on KPI cell page
+
+**Auto-Update:**
+- Formulas recalculate automatically when source KPIs change
+- No manual intervention required
+- Always shows current calculated value
+
+**Display:**
+- Large centered value card with "FORMULA" badge (success green)
+- Shows mode (Simple or Advanced Python)
+- Lists source KPIs with current values
+- Displays Python expression for advanced mode
+- "Edit Formula" button for modifications
+
+### Context-Aware Interface
+
+The KPI detail page adapts based on calculation type:
+
+**Manual KPIs show:**
+- Current consensus value (large, centered)
+- Consensus status badge (strong/weak/no consensus)
+- Contribution count
+- Add/Update contribution form
+- Historical trend chart
+- Contributions table with edit/delete actions
+- Value type and consensus status cards
+
+**Formula KPIs show:**
+- Current calculated value (large, centered)
+- Formula mode badge
+- Source KPIs list with current values
+- Python expression (advanced mode)
+- Formula configuration details
+- "Edit Formula" button
+- Hides: contribution form, trend charts, contributions table
+
+**Linked KPIs show:**
+- Current synced value (large, centered)
+- "Linked KPI" badge
+- Sync status
+- Link configuration info
+- "Configure Link Source" button
+- Hides: contribution form, trend charts, contributions table
+
+**Design Principle**: Show only relevant information for each calculation type, reducing cognitive load and focusing user attention on what matters.
 
 ## Value Types
 

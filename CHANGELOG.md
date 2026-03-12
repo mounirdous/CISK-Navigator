@@ -5,6 +5,88 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.19.0] - 2026-03-12
+
+### Added
+- **🔗 Three Calculation Types**: Revolutionary expansion of how KPI values are determined
+  - **Manual Entry**: Traditional contribution-based consensus (existing functionality)
+  - **Linked KPI**: Pull values from another organization's KPI (cross-org data sharing)
+  - **Formula Calculation**: Auto-calculate from other KPIs using operations or Python expressions
+- **🧮 Advanced Formula Engine**: Full Python expression support for complex calculations
+  - Simple Mode: Basic operations (sum, avg, min, max, multiply, subtract)
+  - Advanced Mode: Python expressions with `+`, `-`, `*`, `/`, `//`, `%`, `**`, `()`
+  - Available functions: `abs()`, `round()`, `max()`, `min()`, `sum()`
+  - Click-to-insert variable badges for easier formula writing
+  - Real-time preview with current source KPI values
+  - Auto-updates when source KPIs change
+- **📚 Comprehensive Formula Help**: In-app documentation with examples
+  - Mathematical operators reference table
+  - Available functions with descriptions
+  - Real-world examples: percentages, ROI, weighted averages, complex calculations
+  - Quick template buttons for common patterns
+  - Expandable help panel in calculation modal
+- **🎨 Context-Aware Interface Redesign**: Major UX improvements
+  - Prominent value display (3rem font, centered, color-coded badges)
+  - Adaptive UI showing only relevant sections per calculation type:
+    - Manual: Contribution form, consensus status, charts, contributions table
+    - Formula: Source KPIs list, expression display, auto-update indicator
+    - Linked: Sync status, source config, read-only display
+  - Smart action buttons that adapt to KPI type:
+    - Manual: "Configure Calculation" button → formula builder modal
+    - Formula: "Edit Formula" button → direct to configuration
+    - Linked: "Configure Link Source" button → settings page
+  - Removed clutter: Hidden irrelevant UI sections (no charts for formulas, no forms for linked)
+
+### Changed
+- **KPI Detail Page**: Complete redesign focusing on value prominence and context-awareness
+  - Large centered value cards with calculation type badges
+  - Separate displays for manual/formula/linked with tailored information
+  - Color-coded badges: green (formula), blue (linked), primary (manual)
+  - Historical trend charts and contributions only shown for manual KPIs
+  - Formula details show source KPIs with live values
+  - Linked KPIs show sync status and source configuration
+- **Calculation Configuration Modal**: Simplified and streamlined
+  - Reduced from 3 modes to 2 (Manual, Formula) - Linked moved to Settings
+  - Informational alert explaining how to configure linked KPIs
+  - Better visual hierarchy with mode toggle buttons
+  - Improved KPI search with organization badges
+  - Formula mode selector: Simple vs Advanced
+- **Formula Details Display**: Enhanced presentation
+  - Python expressions shown in code-styled boxes
+  - Source KPIs displayed with current values inline
+  - Clear mode badges (Simple or Advanced Python)
+  - Removed redundant calculation preview text
+
+### Fixed
+- **Python 3.14 Compatibility**: Upgraded simpleeval library (0.9.13 → 1.0.4)
+  - Fixed `module 'ast' has no attribute 'Num'` error
+  - Formula calculations now work on Python 3.14+
+- **Formula Persistence**: Selected KPIs now properly reload when editing formulas
+  - Made `init()` async to properly await KPI loading
+  - Fixed race condition causing empty selected KPIs list
+- **Consensus Value Retrieval**: Fixed formula KPIs showing "Not calculated yet"
+  - Changed from `ConsensusService.get_cell_value()` to `config.get_consensus_value()`
+  - Now correctly retrieves calculated values for formula KPIs
+
+### Database
+- Migration `6a27bd82c5e5_add_formula_calculation_support_to_kpi_.py`:
+  - Added `calculation_type` column to `kpi_value_type_configs` (manual/linked/formula)
+  - Added `calculation_config` JSONB column for formula/link configuration
+  - Migrated existing data: manual by default, linked if `linked_kpi_config_id` exists
+
+### Technical
+- **Dependencies**: Upgraded simpleeval from 0.9.13 to 1.0.4
+- **Safe Execution**: Sandboxed Python evaluation with limited function set
+- **Error Handling**: Graceful handling of division by zero and invalid expressions
+- **Debug Logging**: Added comprehensive logging for formula calculation troubleshooting
+- **Code Organization**: Created `_calculation_config_modal.html` partial template
+
+### Documentation
+- Updated SPECIFICATIONS.md with three calculation types section
+- Added advanced formula documentation with operators, functions, and examples
+- Documented context-aware interface design principles
+- Added real-world formula use cases
+
 ## [1.14.6] - 2026-03-09
 
 ### Added

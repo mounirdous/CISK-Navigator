@@ -151,11 +151,30 @@ body.dark-mode .card.border-primary {
     </div>
     <div class="d-flex gap-2">
         {% if current_user.can_manage_kpis(session.organization_id) %}
-        <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="btn btn-outline-primary"
-           title="Configure targets, colors, display scale, and success criteria">
-            <i class="bi bi-sliders"></i> Advanced Settings
-            <small class="d-none d-lg-inline text-muted ms-1">(Targets, Colors, Scale)</small>
-        </a>
+            {% if config.calculation_type == 'linked' %}
+                {# Linked KPIs: Only show Advanced Settings button #}
+                <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#linked-config-{{ config.id }}" class="btn btn-primary"
+                   title="Configure linked KPI source">
+                    <i class="bi bi-link-45deg"></i> Configure Link Source
+                </a>
+            {% elif config.calculation_type == 'formula' %}
+                {# Formula KPIs: Show formula configuration button #}
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#calcConfigModal"
+                        title="Edit formula calculation">
+                    <i class="bi bi-calculator"></i> Edit Formula
+                </button>
+            {% else %}
+                {# Manual KPIs: Show calculation configuration #}
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#calcConfigModal"
+                        title="Configure how this KPI value is calculated">
+                    <i class="bi bi-calculator"></i> Configure Calculation
+                </button>
+            {% endif %}
+            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="btn btn-outline-primary"
+               title="Configure targets, colors, display scale">
+                <i class="bi bi-sliders"></i> Settings
+                <small class="d-none d-lg-inline text-muted ms-1">(Targets, Colors, Scale)</small>
+            </a>
         {% endif %}
         <a href="{{ url_for('workspace.index') }}" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Back to Organization
@@ -163,12 +182,214 @@ body.dark-mode .card.border-primary {
     </div>
 </div>
 
-<!-- Add/Update Contribution Form - NOW AT TOP -->
+<!-- Formula KPI: Current Value and Details -->
+{% if config.calculation_type == 'formula' and formula_details %}
+<!-- Prominent Result Card -->
 <div class="row mb-4">
     <div class="col-md-12">
-        <div class="card border-primary">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Add/Update Contribution</h5>
+        <div class="card border-success" style="border-width: 2px;">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-success fs-6">
+                        <i class="bi bi-calculator"></i>
+                        {% if formula_details['mode'] == 'advanced' %}
+                        FORMULA (Advanced Python)
+                        {% else %}
+                        FORMULA ({{ formula_details['operation']|upper }})
+                        {% endif %}
+                    </span>
+                </div>
+                <h3 class="text-muted mb-1">Current Value</h3>
+                {% if consensus and consensus.value is not none %}
+                <div style="font-size: 3rem; font-weight: 700; color: #198754;">
+                    {{ "{:,.2f}".format(consensus.value) }}
+                    <span style="font-size: 1.5rem; color: #6c757d;">{{ value_type.unit_label or '' }}</span>
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-arrow-repeat"></i> Auto-updates when source KPIs change
+                </small>
+                {% else %}
+                <div style="font-size: 2rem; color: #6c757d;">
+                    <i class="bi bi-hourglass-split"></i> Not calculated yet
+                </div>
+                <small class="text-muted">Waiting for source KPI values</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formula Details -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Formula Configuration</h5>
+            </div>
+            <div class="card-body">
+                <!-- Python Expression (Advanced Mode) -->
+                {% if formula_details['mode'] == 'advanced' %}
+                <div class="mb-3">
+                    <strong><i class="bi bi-code-slash"></i> Python Expression:</strong>
+                    <div class="alert alert-light border mt-2 mb-0">
+                        <code class="text-dark" style="font-size: 1.1em;">{{ formula_details['expression'] }}</code>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Source KPIs -->
+                <div class="mb-0">
+                    <strong><i class="bi bi-list-ul"></i> Source KPIs ({{ formula_details['sources']|length }}):</strong>
+                    <div class="mt-2">
+                        {% for source in formula_details['sources'] %}
+                        <div class="card mb-2 bg-light">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="flex-grow-1">
+                                        <div>
+                                            <strong>{{ source.kpi_name }}</strong>
+                                            <span class="text-muted">→ {{ source.value_type_name }}</span>
+                                            {% if source.organization_name != session.organization_name %}
+                                            <span class="badge bg-info ms-2">{{ source.organization_name }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">{{ source.path }}</small>
+                                    </div>
+                                    <div class="text-end ms-3">
+                                        {% if source.current_value is not none %}
+                                        <strong class="text-primary fs-5">{{ "{:,.2f}".format(source.current_value) }}</strong>
+                                        <small class="text-muted">{{ source.unit or '' }}</small>
+                                        {% else %}
+                                        <span class="text-muted"><i class="bi bi-dash-circle"></i> No value</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% elif config.calculation_type == 'linked' %}
+<!-- Linked KPI: Current Value Display -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-info" style="border-width: 2px;">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-info fs-6">
+                        <i class="bi bi-link-45deg"></i> LINKED KPI
+                    </span>
+                </div>
+                <h3 class="text-muted mb-1">Current Value</h3>
+                {% if consensus and consensus.value is not none %}
+                <div style="font-size: 3rem; font-weight: 700; color: #0dcaf0;">
+                    {{ "{:,.2f}".format(consensus.value) }}
+                    <span style="font-size: 1.5rem; color: #6c757d;">{{ value_type.unit_label or '' }}</span>
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-arrow-repeat"></i> Synced from source KPI
+                </small>
+                {% else %}
+                <div style="font-size: 2rem; color: #6c757d;">
+                    <i class="bi bi-hourglass-split"></i> No value
+                </div>
+                <small class="text-muted">Source KPI has no value yet</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Linked Source Info -->
+{% if config.linked_kpi_config %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Link Configuration</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong><i class="bi bi-link-45deg"></i> Linked to:</strong>
+                    <span class="badge bg-secondary ms-2">Source organization's KPI</span>
+                </p>
+                <p class="text-muted mb-0">
+                    <i class="bi bi-info-circle"></i> This KPI pulls its value from another organization.
+                    Use the <strong>"Configure Link Source"</strong> button above to change the source.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<!-- Manual KPI: Current Value Display -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-primary" style="border-width: 2px;">
+            <div class="card-body text-center py-4">
+                <div class="mb-2">
+                    <span class="badge bg-primary fs-6">
+                        <i class="bi bi-people"></i> MANUAL ENTRY
+                    </span>
+                    <span class="badge consensus-{{ consensus.status }} fs-6 ms-2">{{ consensus.status|upper }}</span>
+                </div>
+                <h3 class="text-muted mb-1">Current Consensus Value</h3>
+                {% if consensus.value is not none %}
+                <div style="font-size: 3rem; font-weight: 700; color: #0d6efd;">
+                    {% if value_type.kind == 'numeric' %}
+                        {{ consensus.value|format_value(value_type, config) }}
+                        <span style="font-size: 1.5rem; color: #6c757d;">{{ value_type.unit_label or '' }}</span>
+                    {% elif value_type.kind == 'risk' %}
+                        {% if consensus.value == 1 %}! <span style="font-size: 1.5rem;">(Low)</span>{% endif %}
+                        {% if consensus.value == 2 %}!! <span style="font-size: 1.5rem;">(Medium)</span>{% endif %}
+                        {% if consensus.value == 3 %}!!! <span style="font-size: 1.5rem;">(High)</span>{% endif %}
+                    {% elif value_type.kind == 'positive_impact' %}
+                        {% if consensus.value == 1 %}★ <span style="font-size: 1.5rem;">(Low)</span>{% endif %}
+                        {% if consensus.value == 2 %}★★ <span style="font-size: 1.5rem;">(Medium)</span>{% endif %}
+                        {% if consensus.value == 3 %}★★★ <span style="font-size: 1.5rem;">(High)</span>{% endif %}
+                    {% elif value_type.kind == 'negative_impact' %}
+                        {% if consensus.value == 1 %}▼ <span style="font-size: 1.5rem;">(Low)</span>{% endif %}
+                        {% if consensus.value == 2 %}▼▼ <span style="font-size: 1.5rem;">(Medium)</span>{% endif %}
+                        {% if consensus.value == 3 %}▼▼▼ <span style="font-size: 1.5rem;">(High)</span>{% endif %}
+                    {% elif value_type.kind == 'level' %}
+                        {% if consensus.value == 1 %}● <span style="font-size: 1.5rem;">(Low)</span>{% endif %}
+                        {% if consensus.value == 2 %}●● <span style="font-size: 1.5rem;">(Medium)</span>{% endif %}
+                        {% if consensus.value == 3 %}●●● <span style="font-size: 1.5rem;">(High)</span>{% endif %}
+                    {% elif value_type.kind == 'sentiment' %}
+                        {% if consensus.value == 1 %}<span style="font-size: 2.5rem;">☹️</span> <span style="font-size: 1.5rem;">(Negative)</span>{% endif %}
+                        {% if consensus.value == 2 %}<span style="font-size: 2.5rem;">😐</span> <span style="font-size: 1.5rem;">(Neutral)</span>{% endif %}
+                        {% if consensus.value == 3 %}<span style="font-size: 2.5rem;">😊</span> <span style="font-size: 1.5rem;">(Positive)</span>{% endif %}
+                    {% else %}
+                        {{ consensus.value }}
+                    {% endif %}
+                </div>
+                <small class="text-muted">
+                    <i class="bi bi-people"></i> Based on {{ consensus.count }} contribution{{ 's' if consensus.count != 1 else '' }}
+                </small>
+                {% else %}
+                <div style="font-size: 2rem; color: #6c757d;">
+                    <i class="bi bi-pencil-square"></i> No contributions yet
+                </div>
+                <small class="text-muted">Add your first contribution below</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Update Contribution Form -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Add or Update Your Contribution</h5>
             </div>
             <div class="card-body">
                 <form method="POST" id="contributionForm">
@@ -202,7 +423,7 @@ body.dark-mode .card.border-primary {
                         </div>
                     </div>
                     <div class="d-flex gap-2">
-                        {{ form.submit(class="btn btn-primary", id="submitBtn") }}
+                        {{ form.submit(class="btn btn-primary btn-lg", id="submitBtn") }}
                         <button type="reset" class="btn btn-outline-secondary">Clear</button>
                     </div>
                 </form>
@@ -210,8 +431,10 @@ body.dark-mode .card.border-primary {
         </div>
     </div>
 </div>
+{% endif %}
 
-<!-- Info Cards -->
+<!-- Info Cards, Historical Trend, and Contributions (Manual KPIs only) -->
+{% if config.calculation_type == 'manual' %}
 <div class="row mb-4">
     <div class="col-md-6">
         <div class="card h-100">
@@ -274,7 +497,7 @@ body.dark-mode .card.border-primary {
     </div>
 </div>
 
-<!-- Trend Chart (for all value types) -->
+<!-- Trend Chart -->
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
@@ -382,6 +605,7 @@ body.dark-mode .card.border-primary {
         </div>
     </div>
 </div>
+{% endif %}
 
 <!-- Entry Mode Modal -->
 <div class="modal fade" id="entryModeModal" tabindex="-1" aria-hidden="true">
@@ -792,10 +1016,23 @@ async function loadTrendChart() {
 // Load chart on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadTrendChart();
+
+    // Auto-open formula modal if coming from "Switch to Formula"
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('open_formula') === '1') {
+        const calcModal = document.getElementById('calcConfigModal');
+        if (calcModal) {
+            const modal = new bootstrap.Modal(calcModal);
+            modal.show();
+        }
+    }
 });
 </script>
 
 <!-- Load Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<!-- Calculation Configuration Modal -->
+{% include 'workspace/_calculation_config_modal.html' %}
 
 {% endblock %}

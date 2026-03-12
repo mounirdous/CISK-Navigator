@@ -1,0 +1,918 @@
+<!-- Calculation Configuration Modal -->
+<div class="modal fade" id="calcConfigModal" tabindex="-1" aria-labelledby="calcConfigModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content" x-data="calculationBuilder()">
+            <div class="modal-header">
+                <h5 class="modal-title" id="calcConfigModalLabel">
+                    <i class="bi bi-calculator"></i> Configure KPI Calculation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Mode Selection -->
+                <div class="mb-4">
+                    <h6 class="text-muted mb-3">How should this KPI value be determined?</h6>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <button
+                                type="button"
+                                class="mode-card w-100"
+                                :class="{'active': mode === 'manual'}"
+                                @click="mode = 'manual'">
+                                <i class="bi bi-pencil-square mode-icon"></i>
+                                <h5>Manual Entry</h5>
+                                <p class="text-muted small mb-0">Enter values through contributions</p>
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <button
+                                type="button"
+                                class="mode-card w-100"
+                                :class="{'active': mode === 'formula'}"
+                                @click="mode = 'formula'; showAllKPIs()">
+                                <i class="bi bi-calculator mode-icon"></i>
+                                <h5>Formula</h5>
+                                <p class="text-muted small mb-0">Auto-calculate from other KPIs</p>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> To link values from another organization's KPI, use the <strong>"Advanced Settings"</strong> button above.
+                    </div>
+                </div>
+
+                <!-- Formula Builder (shown when mode === 'formula') -->
+                <div x-show="mode === 'formula'" x-transition>
+                    <div class="formula-panel p-4 border rounded">
+                        <!-- Loading/Error State -->
+                        <div x-show="loading" class="alert alert-info mb-3">
+                            <i class="bi bi-hourglass-split"></i> Loading available KPIs...
+                        </div>
+
+                        <div x-show="loadError" class="alert alert-danger mb-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span x-text="loadError"></span>
+                        </div>
+
+                        <!-- Formula Mode Toggle (MOVED TO TOP) -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <label class="form-label mb-0">Formula Mode:</label>
+                                <div class="btn-group" role="group">
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm"
+                                        :class="formulaMode === 'simple' ? 'btn-primary' : 'btn-outline-secondary'"
+                                        @click="formulaMode = 'simple'">
+                                        Simple
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm"
+                                        :class="formulaMode === 'advanced' ? 'btn-primary' : 'btn-outline-secondary'"
+                                        @click="formulaMode = 'advanced'">
+                                        Advanced (Python)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Simple Mode: Operations -->
+                            <div x-show="formulaMode === 'simple'" x-transition>
+                                <label class="form-label">Apply operation:</label>
+                                <div class="operations-grid">
+                                    <button
+                                        type="button"
+                                        class="op-btn"
+                                        :class="{'active': operation === 'sum'}"
+                                        @click="operation = 'sum'"
+                                        title="Add all values together">
+                                        <span class="op-icon">➕</span>
+                                        <span class="fw-semibold">Sum</span>
+                                        <small class="d-block text-muted" style="font-size: 0.7rem;">A + B + C</small>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="op-btn"
+                                        :class="{'active': operation === 'avg'}"
+                                        @click="operation = 'avg'"
+                                        title="Calculate average of all values">
+                                        <span class="op-icon">📊</span>
+                                        <span class="fw-semibold">Average</span>
+                                        <small class="d-block text-muted" style="font-size: 0.7rem;">(A+B+C)/3</small>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="op-btn"
+                                        :class="{'active': operation === 'min'}"
+                                        @click="operation = 'min'"
+                                        title="Get the smallest value">
+                                        <span class="op-icon">⬇️</span>
+                                        <span class="fw-semibold">Minimum</span>
+                                        <small class="d-block text-muted" style="font-size: 0.7rem;">Lowest</small>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="op-btn"
+                                        :class="{'active': operation === 'max'}"
+                                        @click="operation = 'max'"
+                                        title="Get the largest value">
+                                        <span class="op-icon">⬆️</span>
+                                        <span class="fw-semibold">Maximum</span>
+                                        <small class="d-block text-muted" style="font-size: 0.7rem;">Highest</small>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="op-btn"
+                                        :class="{'active': operation === 'multiply'}"
+                                        @click="operation = 'multiply'"
+                                        title="Multiply all values">
+                                        <span class="op-icon">✖️</span>
+                                        <span class="fw-semibold">Multiply</span>
+                                        <small class="d-block text-muted" style="font-size: 0.7rem;">A × B × C</small>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="op-btn"
+                                        :class="{'active': operation === 'subtract'}"
+                                        @click="operation = 'subtract'"
+                                        title="Subtract from first value">
+                                        <span class="op-icon">➖</span>
+                                        <span class="fw-semibold">Subtract</span>
+                                        <small class="d-block text-muted" style="font-size: 0.7rem;">A - B - C</small>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Advanced Mode: Python Expression -->
+                            <div x-show="formulaMode === 'advanced'" x-transition>
+                                <div class="alert alert-success mb-3" x-data="{ showHelp: false }">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <strong><i class="bi bi-lightbulb"></i> Advanced Python Formulas</strong>
+                                            <p class="mb-2 mt-1 small">
+                                                Write Python expressions using selected KPI variables.
+                                                Click the button to see full documentation →
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-outline-success"
+                                            @click="showHelp = !showHelp">
+                                            <i class="bi" :class="showHelp ? 'bi-chevron-up' : 'bi-book'"></i>
+                                            <span x-text="showHelp ? 'Hide' : 'Help'"></span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Expandable Help Documentation -->
+                                    <div x-show="showHelp" x-collapse class="mt-3 pt-3 border-top">
+                                        <div class="row g-3">
+                                            <!-- Operators -->
+                                            <div class="col-md-6">
+                                                <h6 class="text-success"><i class="bi bi-calculator"></i> Mathematical Operators</h6>
+                                                <table class="table table-sm table-bordered mb-0 bg-white">
+                                                    <tbody>
+                                                        <tr><td><code>+</code></td><td>Addition</td><td><code>kpi_1 + kpi_2</code></td></tr>
+                                                        <tr><td><code>-</code></td><td>Subtraction</td><td><code>kpi_1 - kpi_2</code></td></tr>
+                                                        <tr><td><code>*</code></td><td>Multiplication</td><td><code>kpi_1 * kpi_2</code></td></tr>
+                                                        <tr><td><code>/</code></td><td>Division</td><td><code>kpi_1 / kpi_2</code></td></tr>
+                                                        <tr><td><code>//</code></td><td>Integer Division</td><td><code>kpi_1 // kpi_2</code></td></tr>
+                                                        <tr><td><code>%</code></td><td>Modulo (remainder)</td><td><code>kpi_1 % kpi_2</code></td></tr>
+                                                        <tr><td><code>**</code></td><td>Power</td><td><code>kpi_1 ** 2</code></td></tr>
+                                                        <tr><td><code>()</code></td><td>Grouping</td><td><code>(kpi_1 + kpi_2) / 2</code></td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Functions -->
+                                            <div class="col-md-6">
+                                                <h6 class="text-success"><i class="bi bi-code-square"></i> Available Functions</h6>
+                                                <table class="table table-sm table-bordered mb-0 bg-white">
+                                                    <tbody>
+                                                        <tr><td><code>abs(x)</code></td><td>Absolute value</td></tr>
+                                                        <tr><td><code>round(x)</code></td><td>Round to nearest integer</td></tr>
+                                                        <tr><td><code>round(x, 2)</code></td><td>Round to 2 decimals</td></tr>
+                                                        <tr><td><code>max(a, b, c)</code></td><td>Maximum value</td></tr>
+                                                        <tr><td><code>min(a, b, c)</code></td><td>Minimum value</td></tr>
+                                                        <tr><td><code>sum([a, b, c])</code></td><td>Sum of list</td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            <!-- Examples -->
+                                            <div class="col-12">
+                                                <h6 class="text-success"><i class="bi bi-star"></i> Real-World Examples</h6>
+                                                <div class="bg-white p-2 rounded border">
+                                                    <div class="row g-2 small">
+                                                        <div class="col-md-6">
+                                                            <strong>Percentage:</strong>
+                                                            <div class="font-monospace text-muted">round((kpi_1 / kpi_2) * 100, 1)</div>
+                                                            <small class="text-muted">Calculate % and round to 1 decimal</small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <strong>Weighted Average:</strong>
+                                                            <div class="font-monospace text-muted">(kpi_1 * 0.7 + kpi_2 * 0.3)</div>
+                                                            <small class="text-muted">70% of A, 30% of B</small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <strong>Absolute Difference:</strong>
+                                                            <div class="font-monospace text-muted">abs(kpi_1 - kpi_2)</div>
+                                                            <small class="text-muted">Always positive result</small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <strong>ROI Calculation:</strong>
+                                                            <div class="font-monospace text-muted">round((kpi_1 - kpi_2) / kpi_2 * 100)</div>
+                                                            <small class="text-muted">(Revenue - Cost) / Cost × 100</small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <strong>Best Case Scenario:</strong>
+                                                            <div class="font-monospace text-muted">max(kpi_1, kpi_2, kpi_3)</div>
+                                                            <small class="text-muted">Pick highest value</small>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <strong>Complex Formula:</strong>
+                                                            <div class="font-monospace text-muted">(kpi_1 + kpi_2) / (kpi_3 + kpi_4)</div>
+                                                            <small class="text-muted">Multi-KPI calculation</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Tips -->
+                                            <div class="col-12">
+                                                <div class="alert alert-warning mb-0 small">
+                                                    <strong><i class="bi bi-exclamation-triangle"></i> Tips:</strong>
+                                                    <ul class="mb-0 mt-1">
+                                                        <li>Use parentheses <code>()</code> to control order of operations</li>
+                                                        <li>Division by zero will result in "Not calculated"</li>
+                                                        <li>Click on variable badges above to insert them into your formula</li>
+                                                        <li>Test your formula with current KPI values to verify it works</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Variable Reference -->
+                                <div class="mb-3">
+                                    <label class="form-label small">Available Variables (click to insert):</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <template x-for="kpi in selectedKPIs" :key="kpi.id">
+                                            <span
+                                                class="badge bg-secondary py-2 px-3 variable-badge"
+                                                style="font-size: 0.85rem; cursor: pointer;"
+                                                @click="insertVariable(kpi.id)"
+                                                title="Click to insert into expression">
+                                                <code class="text-white" x-text="'kpi_' + kpi.id"></code> =
+                                                <span x-text="kpi.kpi_name"></span>
+                                                (<span x-text="kpi.currentValue"></span>)
+                                            </span>
+                                        </template>
+                                        <span x-show="selectedKPIs.length === 0" class="text-muted small">
+                                            Select KPIs above to see variables
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Expression Input -->
+                                <div class="mb-2">
+                                    <label class="form-label">Python Expression:</label>
+                                    <textarea
+                                        class="form-control font-monospace"
+                                        rows="3"
+                                        placeholder="Example: (kpi_123 + kpi_456) / kpi_789"
+                                        x-model="expression"
+                                        @input="updateExpressionPreview()"
+                                        style="font-size: 0.95rem;"></textarea>
+                                </div>
+
+                                <!-- Example Templates -->
+                                <div class="mb-3">
+                                    <small class="text-muted">Quick templates:</small>
+                                    <div class="d-flex flex-wrap gap-2 mt-1">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="setExpressionTemplate('sum')">
+                                            Sum: kpi_A + kpi_B + kpi_C
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="setExpressionTemplate('avg')">
+                                            Average: (kpi_A + kpi_B) / 2
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="setExpressionTemplate('percent')">
+                                            Percent: (kpi_A / kpi_B) * 100
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" @click="setExpressionTemplate('complex')">
+                                            Complex: (kpi_A + kpi_B) / (kpi_C + kpi_D)
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- Live Preview -->
+                        <div class="preview-panel">
+                            <label class="form-label">
+                                <i class="bi bi-eye"></i> Live Preview
+                            </label>
+                            <div class="preview-display p-3 bg-white border border-2 rounded shadow-sm">
+                                <div class="mb-2">
+                                    <small class="text-muted text-uppercase fw-semibold">Formula:</small>
+                                    <div class="formula-text" x-text="getFormulaText()"></div>
+                                </div>
+                                <div class="mb-2" x-show="selectedKPIs.length > 0">
+                                    <small class="text-muted text-uppercase fw-semibold">Calculation:</small>
+                                    <div class="calculation-text text-muted" x-text="getCalculationText()"></div>
+                                </div>
+                                <div class="pt-2 border-top">
+                                    <small class="text-muted text-uppercase fw-semibold">Result:</small>
+                                    <div class="result-text">
+                                        <span class="text-primary fw-bold" style="font-size: 1.5rem;" x-text="getResultDisplay()"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div x-show="selectedKPIs.length > 0" class="alert alert-success mt-3 mb-0">
+                                <i class="bi bi-lightning-charge-fill"></i>
+                                <strong>Auto-update enabled:</strong> This KPI will recalculate automatically when source KPIs change.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Mode Info -->
+                <div x-show="mode === 'manual'" x-transition>
+                    <div class="alert alert-info">
+                        <i class="bi bi-check-circle"></i>
+                        <strong>Manual Entry Mode:</strong> Values will be entered through the contribution form. Multiple contributors can provide their values, and consensus is calculated automatically.
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @click="saveConfiguration()">
+                    <i class="bi bi-check-lg"></i> Save Configuration
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Mode Selection Cards */
+.mode-card {
+    background: #fff;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    padding: 2rem 1rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.mode-card:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+}
+
+.mode-card.active {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #0d6efd15, #0d6efd05);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+}
+
+.mode-icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+}
+
+.mode-card.active .mode-icon {
+    color: #0d6efd;
+}
+
+.mode-card h5 {
+    margin-bottom: 0.5rem;
+    color: #212529;
+}
+
+/* Formula Panel */
+.formula-panel {
+    background: #f8f9fa;
+}
+
+/* KPI Search Results */
+.available-kpis {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.5rem;
+    background: #f8f9fa;
+}
+
+.kpi-search-result {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.kpi-search-result:hover {
+    border-color: #0d6efd;
+    background: #f0f7ff;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+    transform: translateX(2px);
+}
+
+.kpi-search-result:last-child {
+    margin-bottom: 0;
+}
+
+/* Selected KPIs */
+.kpi-card {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-left: 3px solid #dee2e6;
+}
+
+.kpi-card.current-org {
+    border-left-color: #198754;
+    background: #f0fff4;
+}
+
+.kpi-search-result.current-org {
+    border-left: 3px solid #198754;
+}
+
+/* Operations Grid */
+.operations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+}
+
+.op-btn {
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.op-btn:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.2);
+}
+
+.op-btn.active {
+    border-color: #0d6efd;
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+    color: white;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+.op-btn.active small {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.op-icon {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+/* Preview Panel */
+.preview-display {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+}
+
+.formula-text {
+    font-family: 'Courier New', monospace;
+    color: #212529;
+    font-size: 0.95rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+    border-left: 3px solid #0d6efd;
+}
+
+.calculation-text {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    background: white;
+    border-radius: 4px;
+}
+
+.result-text {
+    font-size: 1.1rem;
+}
+
+/* Variable Badge - Clickable */
+.variable-badge {
+    transition: all 0.2s ease;
+}
+
+.variable-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    background-color: #5a6268 !important;
+}
+
+.variable-badge:active {
+    transform: translateY(0);
+}
+</style>
+
+<script>
+function calculationBuilder() {
+    return {
+        mode: '{{ config.calculation_type or "manual" }}',
+        formulaMode: 'simple',  // 'simple' or 'advanced'
+        searchQuery: '',
+        selectedKPIs: [],
+        filteredKPIs: [],
+        operation: 'sum',
+        expression: '',
+        expressionResult: null,
+        expressionError: null,
+        availableKPIs: [],
+        loading: false,
+        loadError: null,
+
+        async init() {
+            // Load available KPIs from server first
+            await this.loadAvailableKPIs();
+
+            // Load existing configuration if formula mode (after KPIs are loaded)
+            {% if config.calculation_type == 'formula' and config.calculation_config %}
+            await this.loadExistingFormula();
+            {% endif %}
+
+            // Show initial results after loading
+            if (this.mode === 'formula') {
+                this.showAllKPIs();
+            }
+        },
+
+        async loadAvailableKPIs() {
+            if (this.loading) return; // Prevent duplicate loads
+
+            this.loading = true;
+            this.loadError = null;
+
+            try {
+                const url = '/workspace/api/kpis-for-formula/{{ session.organization_id }}';
+                console.log('Fetching KPIs from:', url);
+
+                const response = await fetch(url);
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Loaded KPIs:', data.kpis?.length || 0, 'KPIs');
+                console.log('Sample KPIs:', data.kpis?.slice(0, 3));
+
+                this.availableKPIs = data.kpis || [];
+
+                if (this.availableKPIs.length === 0) {
+                    this.loadError = 'No KPIs found in accessible organizations';
+                }
+            } catch (error) {
+                console.error('Error loading KPIs:', error);
+                this.loadError = 'Error loading KPIs: ' + error.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        showAllKPIs() {
+            // Show top 10 KPIs when focusing on search without query
+            if (!this.searchQuery) {
+                this.filteredKPIs = this.availableKPIs.filter(kpi => {
+                    // Don't show already selected KPIs
+                    if (this.selectedKPIs.some(s => s.id === kpi.id)) return false;
+                    // Don't show current KPI (prevent self-reference)
+                    if (kpi.id === {{ config.id }}) return false;
+                    return true;
+                }).slice(0, 10);
+            }
+        },
+
+        filterKPIs() {
+            if (!this.searchQuery) {
+                this.showAllKPIs();
+                return;
+            }
+
+            const query = this.searchQuery.toLowerCase();
+            this.filteredKPIs = this.availableKPIs.filter(kpi => {
+                // Don't show already selected KPIs
+                if (this.selectedKPIs.some(s => s.id === kpi.id)) return false;
+                // Don't show current KPI (prevent self-reference)
+                if (kpi.id === {{ config.id }}) return false;
+
+                // Search in KPI name, value type name, and path
+                return kpi.kpi_name.toLowerCase().includes(query) ||
+                       kpi.value_type_name.toLowerCase().includes(query) ||
+                       kpi.path.toLowerCase().includes(query);
+            }).slice(0, 20);  // Show up to 20 results
+        },
+
+        addKPI(kpi) {
+            if (!this.selectedKPIs.some(s => s.id === kpi.id)) {
+                this.selectedKPIs.push({...kpi});
+            }
+            this.searchQuery = '';
+            this.filteredKPIs = [];
+        },
+
+        removeKPI(index) {
+            this.selectedKPIs.splice(index, 1);
+        },
+
+        getFormulaText() {
+            if (this.selectedKPIs.length === 0) {
+                return 'No KPIs selected';
+            }
+
+            const opSymbol = {
+                'sum': ' + ',
+                'avg': ' + ',
+                'min': ', ',
+                'max': ', ',
+                'multiply': ' × ',
+                'subtract': ' - '
+            }[this.operation] || ' + ';
+
+            const opPrefix = {
+                'avg': 'AVG(',
+                'min': 'MIN(',
+                'max': 'MAX('
+            }[this.operation] || '';
+
+            const opSuffix = opPrefix ? ')' : '';
+
+            // Use kpi_name and include org if external
+            const kpiNames = this.selectedKPIs.map(k => {
+                let name = k.kpi_name + ' (' + k.value_type_name + ')';
+                if (!k.is_current_org) {
+                    name += ' [' + k.organization_name + ']';
+                }
+                return name;
+            });
+            return opPrefix + kpiNames.join(opSymbol) + opSuffix;
+        },
+
+        getCalculationText() {
+            if (this.selectedKPIs.length === 0) return '';
+
+            const values = this.selectedKPIs.map(k => k.currentValue || '0');
+            const opSymbol = {
+                'sum': ' + ',
+                'avg': ' + ',
+                'min': ', ',
+                'max': ', ',
+                'multiply': ' × ',
+                'subtract': ' - '
+            }[this.operation] || ' + ';
+
+            return values.join(opSymbol);
+        },
+
+        calculateResult() {
+            if (this.selectedKPIs.length === 0) return null;
+
+            const values = this.selectedKPIs.map(k => parseFloat(k.currentValue) || 0);
+
+            if (this.operation === 'sum') {
+                return values.reduce((a, b) => a + b, 0);
+            } else if (this.operation === 'avg') {
+                return values.reduce((a, b) => a + b, 0) / values.length;
+            } else if (this.operation === 'min') {
+                return Math.min(...values);
+            } else if (this.operation === 'max') {
+                return Math.max(...values);
+            } else if (this.operation === 'multiply') {
+                return values.reduce((a, b) => a * b, 1);
+            } else if (this.operation === 'subtract') {
+                return values.reduce((a, b) => a - b);
+            }
+
+            return 0;
+        },
+
+        getResultDisplay() {
+            if (this.selectedKPIs.length === 0) {
+                return '—';
+            }
+
+            if (this.formulaMode === 'advanced') {
+                if (this.expressionError) {
+                    return '❌ ' + this.expressionError;
+                }
+                if (this.expressionResult !== null) {
+                    return this.expressionResult.toFixed(2) + ' {{ value_type.unit_label or "" }}';
+                }
+                return '—';
+            }
+
+            const result = this.calculateResult();
+            return result !== null ? result.toFixed(2) + ' {{ value_type.unit_label or "" }}' : '—';
+        },
+
+        setExpressionTemplate(type) {
+            const ids = this.selectedKPIs.map(k => `kpi_${k.id}`);
+
+            if (ids.length === 0) {
+                alert('Please select some KPIs first');
+                return;
+            }
+
+            if (type === 'sum') {
+                this.expression = ids.join(' + ');
+            } else if (type === 'avg') {
+                this.expression = `(${ids.join(' + ')}) / ${ids.length}`;
+            } else if (type === 'percent') {
+                if (ids.length >= 2) {
+                    this.expression = `(${ids[0]} / ${ids[1]}) * 100`;
+                } else {
+                    alert('Need at least 2 KPIs for percentage calculation');
+                }
+            } else if (type === 'complex') {
+                const half = Math.ceil(ids.length / 2);
+                const first = ids.slice(0, half).join(' + ');
+                const second = ids.slice(half).join(' + ');
+                this.expression = `(${first}) / (${second})`;
+            }
+
+            this.updateExpressionPreview();
+        },
+
+        insertVariable(kpiId) {
+            const varName = `kpi_${kpiId}`;
+            const textarea = document.querySelector('textarea[x-model="expression"]');
+
+            if (textarea) {
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const text = this.expression;
+
+                // Insert variable at cursor position
+                this.expression = text.substring(0, start) + varName + text.substring(end);
+
+                // Move cursor after inserted text
+                this.$nextTick(() => {
+                    textarea.focus();
+                    const newPos = start + varName.length;
+                    textarea.setSelectionRange(newPos, newPos);
+                });
+
+                this.updateExpressionPreview();
+            }
+        },
+
+        updateExpressionPreview() {
+            if (!this.expression || this.selectedKPIs.length === 0) {
+                this.expressionResult = null;
+                this.expressionError = null;
+                return;
+            }
+
+            try {
+                // Build namespace with KPI values
+                const namespace = {};
+                this.selectedKPIs.forEach(kpi => {
+                    namespace[`kpi_${kpi.id}`] = parseFloat(kpi.currentValue) || 0;
+                });
+
+                // Try to evaluate (client-side preview only)
+                // Replace kpi_* variables with their values
+                let evalExpression = this.expression;
+                Object.keys(namespace).forEach(key => {
+                    evalExpression = evalExpression.replace(new RegExp(key, 'g'), namespace[key]);
+                });
+
+                // Basic safety check - only allow numbers, operators, and functions
+                if (!/^[0-9+\-*/(). ]+$/.test(evalExpression)) {
+                    throw new Error('Invalid characters in expression');
+                }
+
+                // Evaluate
+                const result = eval(evalExpression);
+
+                if (isNaN(result) || !isFinite(result)) {
+                    throw new Error('Result is not a valid number');
+                }
+
+                this.expressionResult = result;
+                this.expressionError = null;
+            } catch (error) {
+                this.expressionResult = null;
+                this.expressionError = error.message || 'Invalid expression';
+            }
+        },
+
+        async saveConfiguration() {
+            const config = {
+                calculation_type: this.mode,
+                calculation_config: null
+            };
+
+            if (this.mode === 'formula') {
+                if (this.formulaMode === 'simple') {
+                    config.calculation_config = {
+                        mode: 'simple',
+                        operation: this.operation,
+                        kpi_config_ids: this.selectedKPIs.map(k => k.id)
+                    };
+                } else {
+                    // Advanced mode
+                    if (!this.expression || this.selectedKPIs.length === 0) {
+                        alert('Please enter an expression and select KPIs');
+                        return;
+                    }
+
+                    config.calculation_config = {
+                        mode: 'advanced',
+                        expression: this.expression,
+                        kpi_config_ids: this.selectedKPIs.map(k => k.id)
+                    };
+                }
+            }
+
+            // Get CSRF token from the page
+            const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
+            try {
+                const response = await fetch('/workspace/kpi-config/{{ config.id }}/calculation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify(config)
+                });
+
+                if (response.ok) {
+                    window.location.reload();
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.message || 'Failed to save configuration'));
+                }
+            } catch (error) {
+                console.error('Error saving configuration:', error);
+                alert('Error saving configuration');
+            }
+        },
+
+        async loadExistingFormula() {
+            {% if config.calculation_config %}
+            // Load mode and operation
+            const mode = '{{ config.calculation_config.get("mode", "simple") }}';
+            this.formulaMode = mode;
+
+            {% if config.calculation_config.get("operation") %}
+            this.operation = '{{ config.calculation_config.get("operation", "sum") }}';
+            {% endif %}
+
+            {% if config.calculation_config.get("expression") %}
+            this.expression = {{ config.calculation_config.get("expression")|tojson }};
+            this.updateExpressionPreview();
+            {% endif %}
+
+            // Load selected KPIs
+            {% if config.calculation_config.get("kpi_config_ids") %}
+            const configIds = {{ config.calculation_config.get("kpi_config_ids")|tojson }};
+
+            // Wait for available KPIs to load
+            await this.loadAvailableKPIs();
+
+            // Find and select the KPIs
+            for (const configId of configIds) {
+                const kpi = this.availableKPIs.find(k => k.id === configId);
+                if (kpi && !this.selectedKPIs.some(s => s.id === kpi.id)) {
+                    this.selectedKPIs.push({...kpi});
+                }
+            }
+            {% endif %}
+            {% endif %}
+        }
+    }
+}
+</script>

@@ -142,6 +142,11 @@ class KPIValueTypeConfig(db.Model):
 
     __tablename__ = "kpi_value_type_configs"
 
+    # Calculation types
+    CALC_TYPE_MANUAL = "manual"
+    CALC_TYPE_LINKED = "linked"
+    CALC_TYPE_FORMULA = "formula"
+
     id = db.Column(db.Integer, primary_key=True)
     kpi_id = db.Column(db.Integer, db.ForeignKey("kpis.id", ondelete="CASCADE"), nullable=False)
     value_type_id = db.Column(db.Integer, db.ForeignKey("value_types.id", ondelete="CASCADE"), nullable=False)
@@ -198,6 +203,19 @@ class KPIValueTypeConfig(db.Model):
         comment="Source value type to read from (must match type/unit)",
     )
 
+    # Formula calculation support (v1.20.0)
+    calculation_type = db.Column(
+        db.String(20),
+        nullable=False,
+        default=CALC_TYPE_MANUAL,
+        comment="How value is determined: manual (contributions), linked (from another KPI), formula (calculated)",
+    )
+    calculation_config = db.Column(
+        db.JSON,
+        nullable=True,
+        comment="Configuration for formula calculations: {operation: sum, kpi_config_ids: [1, 2, 3]}",
+    )
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -230,11 +248,30 @@ class KPIValueTypeConfig(db.Model):
 
     def is_linked(self):
         """Check if this config is linked to read values from another KPI"""
-        return (
+        return self.calculation_type == self.CALC_TYPE_LINKED or (
             self.linked_source_org_id is not None
             and self.linked_source_kpi_id is not None
             and self.linked_source_value_type_id is not None
         )
+
+    def is_formula(self):
+        """Check if this config uses formula calculation"""
+        return self.calculation_type == self.CALC_TYPE_FORMULA and self.calculation_config is not None
+
+    def get_formula_source_configs(self):
+        """
+        Get the list of source KPIValueTypeConfig objects referenced in the formula.
+        Returns empty list if not a formula or config is invalid.
+        """
+        if not self.is_formula():
+            return []
+
+        config_ids = self.calculation_config.get("kpi_config_ids", [])
+        if not config_ids:
+            return []
+
+        # Fetch all configs in one query
+        return KPIValueTypeConfig.query.filter(KPIValueTypeConfig.id.in_(config_ids)).all()
 
     def get_linked_source_config(self):
         """
@@ -252,10 +289,14 @@ class KPIValueTypeConfig(db.Model):
     def get_consensus_value(self, _visited=None):
         """
         Get consensus calculation for this KPI cell.
-        If linked to another KPI, read from the source instead.
+        Handles manual contributions, linked KPIs, and formula calculations.
 
         Args:
             _visited: Internal parameter to track visited configs and prevent circular references
+
+        Returns:
+            dict with keys: status, value, count, is_rollup_eligible
+            OR just the raw value if called recursively within formula calculation
         """
         # Initialize visited set on first call
         if _visited is None:
@@ -266,21 +307,205 @@ class KPIValueTypeConfig(db.Model):
             # Circular link detected - return None to break the cycle
             return None
 
+        # Add current config to visited set
+        _visited.add(self.id)
+
+        # If this is a formula KPI, calculate from other KPIs
+        if self.is_formula():
+            calculated_value = self._calculate_formula_value(_visited=_visited)
+            # Wrap in consensus-like dict for consistency
+            if calculated_value is not None:
+                return {
+                    "status": "strong",
+                    "value": calculated_value,
+                    "count": 1,
+                    "is_rollup_eligible": True,
+                }
+            else:
+                return {
+                    "status": "no_data",
+                    "value": None,
+                    "count": 0,
+                    "is_rollup_eligible": False,
+                }
+
         # If this is a linked KPI, read from the source
         if self.is_linked():
             source_config = self.get_linked_source_config()
             if source_config:
-                # Add current config to visited set
-                _visited.add(self.id)
                 # Read value from the source config
                 return source_config.get_consensus_value(_visited=_visited)
-            # If source not found, fall back to local value
-            return None
+            # If source not found, return no data dict
+            return {
+                "status": "no_data",
+                "value": None,
+                "count": 0,
+                "is_rollup_eligible": False,
+            }
 
         # Normal behavior: calculate consensus from local contributions
         from app.services import ConsensusService
 
         return ConsensusService.get_cell_value(self)
+
+    def _calculate_formula_value(self, _visited=None):
+        """
+        Calculate value based on formula configuration.
+        Supports two modes:
+        1. Simple mode: operation-based (sum, avg, min, max, multiply, subtract, divide)
+        2. Advanced mode: Python expression with safe evaluation
+
+        Args:
+            _visited: Set of visited config IDs to prevent circular dependencies
+
+        Returns:
+            Calculated numeric value or None if calculation fails
+        """
+        if not self.is_formula():
+            return None
+
+        # Get source configs
+        source_configs = self.get_formula_source_configs()
+        if not source_configs:
+            return None
+
+        # Get mode (default to simple for backwards compatibility)
+        mode = self.calculation_config.get("mode", "simple")
+
+        import logging
+
+        logging.info(f"Formula config {self.id}: mode={mode}, source_configs={len(source_configs)}")
+
+        # Build namespace with KPI values
+        namespace = {}
+        values = []  # For simple mode
+
+        for source_config in source_configs:
+            consensus_result = source_config.get_consensus_value(_visited=_visited)
+
+            # Handle both dict and raw value returns for backwards compatibility
+            if isinstance(consensus_result, dict):
+                value = consensus_result.get("value")
+            else:
+                value = consensus_result
+
+            logging.info(f"Formula config {self.id}: source_config={source_config.id}, value={value}")
+
+            if value is not None:
+                try:
+                    float_value = float(value)
+                    values.append(float_value)
+                    # Make available as kpi_<id> for expression mode
+                    namespace[f"kpi_{source_config.id}"] = float_value
+                except (ValueError, TypeError):
+                    # Skip non-numeric values
+                    pass
+
+        if not values:
+            logging.warning(f"Formula config {self.id}: No values retrieved from source KPIs")
+            return None
+
+        # Advanced mode: Python expression
+        if mode == "advanced":
+            expression = self.calculation_config.get("expression")
+            if not expression:
+                import logging
+
+                logging.warning(f"Formula config {self.id}: mode=advanced but no expression")
+                return None
+
+            try:
+                import logging
+
+                from simpleeval import FunctionNotDefined, InvalidExpression, simple_eval
+
+                logging.info(
+                    f"Formula config {self.id}: Evaluating expression '{expression}' with namespace {namespace}"
+                )
+
+                # Safe evaluation with math functions
+                result = simple_eval(
+                    expression,
+                    names=namespace,
+                    functions={
+                        "abs": abs,
+                        "round": round,
+                        "max": max,
+                        "min": min,
+                        "sum": sum,
+                    },
+                )
+
+                logging.info(f"Formula config {self.id}: Result = {result}")
+                return float(result) if result is not None else None
+
+            except ZeroDivisionError:
+                import logging
+
+                logging.error(f"Division by zero in formula for config {self.id}: {expression}")
+                return None
+
+            except (ValueError, TypeError) as e:
+                import logging
+
+                logging.error(f"Invalid value in formula for config {self.id}: {e}")
+                return None
+
+            except (InvalidExpression, FunctionNotDefined) as e:
+                import logging
+
+                logging.error(f"Invalid expression in formula for config {self.id}: {e}")
+                return None
+
+            except Exception as e:
+                import logging
+
+                logging.error(f"Formula calculation error for config {self.id}: {e}")
+                return None
+
+        # Simple mode: operation-based (backwards compatible)
+        operation = self.calculation_config.get("operation", "sum")
+
+        try:
+            if operation == "sum":
+                return sum(values)
+            elif operation == "avg":
+                return sum(values) / len(values)
+            elif operation == "min":
+                return min(values)
+            elif operation == "max":
+                return max(values)
+            elif operation == "multiply":
+                result = 1
+                for v in values:
+                    result *= v
+                return result
+            elif operation == "subtract":
+                # Subtract all subsequent values from first
+                if len(values) < 2:
+                    return values[0] if values else None
+                result = values[0]
+                for v in values[1:]:
+                    result -= v
+                return result
+            elif operation == "divide":
+                # Divide first value by all subsequent values
+                if len(values) < 2:
+                    return values[0] if values else None
+                result = values[0]
+                for v in values[1:]:
+                    if v == 0:
+                        return None  # Division by zero
+                    result /= v
+                return result
+
+            # Default to sum if operation not recognized
+            return sum(values)
+
+        except ZeroDivisionError:
+            return None
+        except Exception:
+            return None
 
     def get_value_color(self, value):
         """Get color for a numeric value based on its sign"""
