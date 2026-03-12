@@ -2621,20 +2621,39 @@ def organizations_for_linking():
 @bp.route("/api/kpis-for-linking/<int:org_id>")
 @login_required
 def kpis_for_linking(org_id):
-    """Get list of KPIs from a specific organization for linking"""
+    """Get list of KPIs from a specific organization for linking.
+
+    Optionally filters by value type kind - only returns KPIs that have at least one
+    value type matching the required kind (for linking compatibility).
+
+    Query params:
+        kind: Value type kind to filter by (numeric, sentiment, risk, etc.)
+    """
     # Verify user has access to this organization
     membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
     if not membership:
         return jsonify({"error": "Access denied"}), 403
 
-    # Get all KPIs in this organization
-    kpis = (
+    # Get optional kind filter
+    required_kind = request.args.get("kind")
+
+    # Get all KPIs in this organization with their value type configs
+    query = (
         db.session.query(KPI)
         .join(InitiativeSystemLink)
         .join(Initiative)
         .filter(Initiative.organization_id == org_id, KPI.is_archived.is_(False))
-        .all()
     )
+
+    # If kind filter specified, only get KPIs that have at least one matching value type
+    if required_kind:
+        query = (
+            query.join(KPIValueTypeConfig)
+            .join(ValueType)
+            .filter((ValueType.kind == "numeric" if required_kind == "numeric" else ValueType.kind == required_kind))
+        )
+
+    kpis = query.distinct().all()
 
     result = [{"id": kpi.id, "name": kpi.name} for kpi in kpis]
     return jsonify({"kpis": result})

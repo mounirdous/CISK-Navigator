@@ -580,6 +580,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const vtId = this.dataset.configId;
             const kpiSelect = document.getElementById('linked_kpi_' + vtId);
             const vtSelect = document.getElementById('linked_vt_' + vtId);
+            const currentKind = vtSelect.dataset.currentKind;  // Get the required value type kind
 
             // Clear and disable downstream selects
             kpiSelect.innerHTML = '<option value="">Select KPI...</option>';
@@ -594,9 +595,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
             kpiSelect.disabled = false;
 
-            fetch(`{{ url_for("workspace.api_get_kpis_for_linking", org_id=0) }}`.replace('/0', '/' + this.value))
+            // Pass kind parameter to only get KPIs with compatible value types
+            const url = `{{ url_for("workspace.kpis_for_linking", org_id=0) }}`.replace('/0', '/' + this.value) +
+                        (currentKind ? `?kind=${currentKind}` : '');
+
+            fetch(url)
                 .then(response => response.json())
-                .then(kpis => {
+                .then(data => {
+                    const kpis = data.kpis || data;
+                    if (kpis.length === 0) {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = `No KPIs with ${currentKind} value types found`;
+                        kpiSelect.appendChild(option);
+                        kpiSelect.disabled = true;
+                        return;
+                    }
+
                     kpis.forEach(kpi => {
                         const option = document.createElement('option');
                         option.value = kpi.id;
