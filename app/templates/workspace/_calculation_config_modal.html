@@ -122,12 +122,19 @@
                     <details class="mb-3">
                         <summary class="btn btn-sm btn-outline-info">📖 Help & Examples</summary>
                         <div class="mt-2 p-3 bg-light rounded small">
-                            <strong>Operators:</strong> + - * / ** () <br>
-                            <strong>Functions:</strong> abs() round() max() min() sum()<br>
+                            <strong>Operators:</strong> <code>+ - * / ** ()</code><br>
+                            <strong>Functions:</strong><br>
+                            • <code>round(num, decimals)</code> - Round to decimal places (default 0)<br>
+                            • <code>abs(num)</code> - Absolute value<br>
+                            • <code>max(...nums)</code> - Maximum value<br>
+                            • <code>min(...nums)</code> - Minimum value<br>
+                            • <code>sum(...nums)</code> - Sum of all values<br>
+                            • <code>floor(num)</code>, <code>ceil(num)</code>, <code>sqrt(num)</code>, <code>pow(base, exp)</code><br>
                             <strong>Examples:</strong><br>
-                            • <code>round((kpi_1 / kpi_2) * 100, 1)</code> - Percentage<br>
+                            • <code>round(kpi_284 / 2)</code> - Half the value<br>
+                            • <code>round((kpi_1 / kpi_2) * 100, 1)</code> - Percentage with 1 decimal<br>
                             • <code>abs(kpi_1 - kpi_2)</code> - Difference<br>
-                            • <code>max(kpi_1, kpi_2, kpi_3)</code> - Best case
+                            • <code>max(kpi_1, kpi_2, kpi_3)</code> - Best of three
                         </div>
                     </details>
                 </div>
@@ -360,8 +367,24 @@ function calculationBuilder() {
                 // Advanced mode - evaluate expression
                 if (!this.expression) return null;
                 try {
-                    // Build context with kpi_<id> variables
-                    const context = {};
+                    // Build context with kpi_<id> variables AND Math functions
+                    const context = {
+                        // Math functions as standalone (not Math.round, just round)
+                        round: (num, decimals = 0) => {
+                            const factor = Math.pow(10, decimals);
+                            return Math.round(num * factor) / factor;
+                        },
+                        abs: Math.abs,
+                        max: Math.max,
+                        min: Math.min,
+                        floor: Math.floor,
+                        ceil: Math.ceil,
+                        sqrt: Math.sqrt,
+                        pow: Math.pow,
+                        sum: (...args) => args.reduce((a, b) => a + b, 0),
+                    };
+
+                    // Add KPI values
                     this.selectedKPIs.forEach(kpi => {
                         context[`kpi_${kpi.id}`] = parseFloat(kpi.currentValue.replace(/[^0-9.-]/g, '')) || 0;
                     });
