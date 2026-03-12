@@ -384,7 +384,8 @@ body.dark-mode .card.border-primary {
     </div>
 </div>
 
-<!-- Add/Update Contribution Form -->
+<!-- Add/Update Contribution Form (Manual KPIs only) -->
+{% if config.calculation_type == 'manual' %}
 <div class="row mb-4">
     <div class="col-md-12">
         <div class="card">
@@ -667,7 +668,8 @@ body.dark-mode .card.border-primary {
 </div>
 {% endif %}
 
-<!-- Entry Mode Modal -->
+<!-- Entry Mode Modal (Manual KPIs only) -->
+{% if config.calculation_type == 'manual' %}
 <div class="modal fade" id="entryModeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -713,10 +715,12 @@ body.dark-mode .card.border-primary {
         </div>
     </div>
 </div>
+{% endif %}
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Edit contribution buttons
+    // Edit contribution buttons (Manual KPIs only)
+    {% if config.calculation_type == 'manual' %}
     document.querySelectorAll('.edit-contrib').forEach(button => {
         button.addEventListener('click', function() {
             const name = this.dataset.name;
@@ -847,6 +851,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 400);
     });
 });
+{% endif %}
 
 // Chart.js for trend visualization
 let trendChart = null;

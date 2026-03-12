@@ -1368,7 +1368,7 @@ def get_kpi_history(config_id):
 
         # Get the config and current consensus value
         config = KPIValueTypeConfig.query.get_or_404(config_id)
-        consensus = ConsensusService.get_cell_value(config)
+        consensus = config.get_consensus_value()  # Use model method that handles formula/linked/manual
 
         # Format for chart: array of {date, value} objects
         # Reverse so oldest is first (better for chart display)
