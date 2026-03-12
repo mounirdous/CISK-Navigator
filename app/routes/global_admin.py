@@ -373,6 +373,26 @@ def create_organization():
     form.users.choices = [(u.id, u.display_name or u.login) for u in all_users]
 
     if form.validate_on_submit():
+        # Check if an organization with this name already exists (including deleted ones)
+        existing_org = Organization.query.filter_by(name=form.name.data).first()
+
+        if existing_org:
+            if existing_org.is_deleted:
+                # Archived organization with same name exists
+                flash(
+                    f"An archived organization named '{form.name.data}' already exists. "
+                    f"Please restore it from the Organizations list or choose a different name.",
+                    "warning",
+                )
+                return render_template("global_admin/create_organization.html", form=form, all_users=all_users)
+            else:
+                # Active organization with same name exists
+                flash(
+                    f"An organization named '{form.name.data}' already exists. Please choose a different name.",
+                    "danger",
+                )
+                return render_template("global_admin/create_organization.html", form=form, all_users=all_users)
+
         org = Organization(name=form.name.data, description=form.description.data, is_active=form.is_active.data)
         db.session.add(org)
         db.session.flush()  # Get org.id before audit log
