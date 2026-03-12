@@ -437,7 +437,10 @@ function calculationBuilder() {
                         })
                     });
                     if (response.ok) {
-                        window.location.reload();
+                        // Remove open_formula parameter and reload
+                        const url = new URL(window.location);
+                        url.searchParams.delete('open_formula');
+                        window.location.href = url.toString();
                     }
                 } catch (error) {
                     alert('Error saving: ' + error.message);
@@ -471,7 +474,10 @@ function calculationBuilder() {
                         })
                     });
                     if (response.ok) {
-                        window.location.reload();
+                        // Remove open_formula parameter and reload
+                        const url = new URL(window.location);
+                        url.searchParams.delete('open_formula');
+                        window.location.href = url.toString();
                     } else {
                         const data = await response.json();
                         alert('Error: ' + (data.error || 'Failed to save'));
@@ -498,7 +504,10 @@ function calculationBuilder() {
                         })
                     });
                     if (response.ok) {
-                        window.location.reload();
+                        // Remove open_formula parameter and reload
+                        const url = new URL(window.location);
+                        url.searchParams.delete('open_formula');
+                        window.location.href = url.toString();
                     } else {
                         const data = await response.json();
                         alert('Error: ' + (data.error || 'Failed to save'));
