@@ -147,6 +147,18 @@
                         <i class="bi bi-bell-fill"></i> {{ unread_mentions }} Unread Mention{{ 's' if unread_mentions != 1 }}
                     </button>
                     {% endif %}
+
+                    <!-- Admin Actions (shown if user has permissions) -->
+                    {% if current_user.can_manage_value_types(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-hash"></i> Manage Value Types
+                    </a>
+                    {% endif %}
+                    {% if current_user.can_manage_challenges(session.organization_id) and stats.spaces > 0 %}
+                    <a href="{{ url_for('organization_admin.challenges') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-1-circle"></i> Manage Challenges
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
