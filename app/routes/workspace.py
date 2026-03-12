@@ -2535,7 +2535,73 @@ def update_calculation_config(config_id):
     config.calculation_type = calculation_type
     config.calculation_config = calculation_config
 
+    # For linked type, also set the linked_source_* fields
+    if calculation_type == KPIValueTypeConfig.CALC_TYPE_LINKED and calculation_config:
+        config.linked_source_org_id = calculation_config.get("linked_org_id")
+        config.linked_source_kpi_id = calculation_config.get("linked_kpi_id")
+        config.linked_source_value_type_id = calculation_config.get("linked_value_type_id")
+    elif calculation_type != KPIValueTypeConfig.CALC_TYPE_LINKED:
+        # Clear linked fields if switching away from linked mode
+        config.linked_source_org_id = None
+        config.linked_source_kpi_id = None
+        config.linked_source_value_type_id = None
+
     db.session.commit()
 
     flash("Calculation configuration updated successfully", "success")
     return jsonify({"success": True, "message": "Configuration updated"})
+
+
+@bp.route("/api/organizations-for-linking")
+@login_required
+def organizations_for_linking():
+    """Get list of organizations user has access to for linking KPIs"""
+    # Get all organizations the user is a member of
+    orgs = []
+    for membership in current_user.organization_memberships:
+        if membership.organization.is_active:
+            orgs.append({"id": membership.organization_id, "name": membership.organization.name})
+    return jsonify({"organizations": orgs})
+
+
+@bp.route("/api/kpis-for-linking/<int:org_id>")
+@login_required
+def kpis_for_linking(org_id):
+    """Get list of KPIs from a specific organization for linking"""
+    # Verify user has access to this organization
+    membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+    if not membership:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Get all KPIs in this organization
+    kpis = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink)
+        .join(Initiative)
+        .filter(Initiative.organization_id == org_id, KPI.is_archived.is_(False))
+        .all()
+    )
+
+    result = [{"id": kpi.id, "name": kpi.name} for kpi in kpis]
+    return jsonify({"kpis": result})
+
+
+@bp.route("/api/kpi/<int:kpi_id>/value-types")
+@login_required
+def kpi_value_types(kpi_id):
+    """Get value types configured for a specific KPI"""
+    kpi = KPI.query.get_or_404(kpi_id)
+
+    # Verify user has access (through organization membership)
+    org_id = kpi.initiative_system_link.initiative.organization_id
+    membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+    if not membership:
+        return jsonify({"error": "Access denied"}), 403
+
+    # Get value types for this KPI
+    configs = KPIValueTypeConfig.query.filter_by(kpi_id=kpi_id).all()
+    result = [
+        {"id": config.value_type_id, "name": config.value_type.name, "unit_label": config.value_type.unit_label or ""}
+        for config in configs
+    ]
+    return jsonify({"value_types": result})

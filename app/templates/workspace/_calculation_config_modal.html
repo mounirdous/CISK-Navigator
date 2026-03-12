@@ -12,19 +12,21 @@
                 <!-- Mode Selection -->
                 <div class="mb-3">
                     <div class="row g-2">
-                        <div class="col-6">
+                        <div class="col-4">
                             <button type="button" class="mode-card w-100" :class="{'active': mode === 'manual'}" @click="mode = 'manual'">
                                 <i class="bi bi-pencil-square"></i> Manual Entry
                             </button>
                         </div>
-                        <div class="col-6">
+                        <div class="col-4">
                             <button type="button" class="mode-card w-100" :class="{'active': mode === 'formula'}" @click="mode = 'formula'; showAllKPIs()">
                                 <i class="bi bi-calculator"></i> Formula
                             </button>
                         </div>
-                    </div>
-                    <div class="alert alert-info mt-2 mb-0 small">
-                        <i class="bi bi-info-circle"></i> To link from another org's KPI, use <strong>Settings</strong> button above.
+                        <div class="col-4">
+                            <button type="button" class="mode-card w-100" :class="{'active': mode === 'linked'}" @click="mode = 'linked'; loadLinkedData()">
+                                <i class="bi bi-link-45deg"></i> Linked KPI
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -137,6 +139,52 @@
                         Multiple contributors can provide input and consensus is calculated automatically.
                     </div>
                 </div>
+
+                <!-- LINKED MODE -->
+                <div x-show="mode === 'linked'" x-transition>
+                    <div class="alert alert-info mb-3">
+                        <strong>Linked KPI Mode:</strong> Read values live from another KPI (same or different organization).
+                        The value updates automatically when the source KPI changes.
+                    </div>
+
+                    <!-- Source Organization -->
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Source Organization</strong></label>
+                        <select class="form-select" x-model="linkedOrgId" @change="loadLinkedKPIs()">
+                            <option value="">-- Select Organization --</option>
+                            <template x-for="org in availableOrgs" :key="org.id">
+                                <option :value="org.id" x-text="org.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Source KPI -->
+                    <div class="mb-3" x-show="linkedOrgId">
+                        <label class="form-label"><strong>Source KPI</strong></label>
+                        <select class="form-select" x-model="linkedKPIId" @change="loadLinkedValueTypes()">
+                            <option value="">-- Select KPI --</option>
+                            <template x-for="kpi in linkedKPIs" :key="kpi.id">
+                                <option :value="kpi.id" x-text="kpi.name"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Source Value Type -->
+                    <div class="mb-3" x-show="linkedKPIId">
+                        <label class="form-label"><strong>Source Value Type</strong></label>
+                        <select class="form-select" x-model="linkedValueTypeId">
+                            <option value="">-- Select Value Type --</option>
+                            <template x-for="vt in linkedValueTypes" :key="vt.id">
+                                <option :value="vt.id" x-text="vt.name + ' (' + vt.unit_label + ')'"></option>
+                            </template>
+                        </select>
+                    </div>
+
+                    <!-- Preview -->
+                    <div x-show="linkedValueTypeId" class="alert alert-success">
+                        <i class="bi bi-check-circle"></i> This KPI will automatically sync values from the selected source.
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -178,10 +226,21 @@ function calculationBuilder() {
         loadError: null,
         showSearch: false,
 
+        // Linked mode data
+        linkedOrgId: '{{ config.linked_source_org_id or "" }}',
+        linkedKPIId: '{{ config.linked_source_kpi_id or "" }}',
+        linkedValueTypeId: '{{ config.linked_source_value_type_id or "" }}',
+        availableOrgs: [],
+        linkedKPIs: [],
+        linkedValueTypes: [],
+
         async init() {
             await this.loadAvailableKPIs();
             {% if config.calculation_type == 'formula' and config.calculation_config %}
             await this.loadExistingFormula();
+            {% endif %}
+            {% if config.calculation_type == 'linked' %}
+            await this.loadLinkedData();
             {% endif %}
             if (this.mode === 'formula') { this.showAllKPIs(); }
         },
@@ -299,13 +358,61 @@ function calculationBuilder() {
             // Trigger recalculation
         },
 
+        // Linked mode methods
+        async loadLinkedData() {
+            try {
+                const response = await fetch('/workspace/api/organizations-for-linking');
+                if (response.ok) {
+                    const data = await response.json();
+                    this.availableOrgs = data.organizations || [];
+                    if (this.linkedOrgId) {
+                        await this.loadLinkedKPIs();
+                        if (this.linkedKPIId) {
+                            await this.loadLinkedValueTypes();
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading linked data:', error);
+            }
+        },
+
+        async loadLinkedKPIs() {
+            if (!this.linkedOrgId) return;
+            try {
+                const response = await fetch(`/workspace/api/kpis-for-linking/${this.linkedOrgId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.linkedKPIs = data.kpis || [];
+                }
+            } catch (error) {
+                console.error('Error loading KPIs:', error);
+            }
+        },
+
+        async loadLinkedValueTypes() {
+            if (!this.linkedKPIId) return;
+            try {
+                const response = await fetch(`/workspace/api/kpi/${this.linkedKPIId}/value-types`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.linkedValueTypes = data.value_types || [];
+                }
+            } catch (error) {
+                console.error('Error loading value types:', error);
+            }
+        },
+
         async saveConfiguration() {
             if (this.mode === 'manual') {
                 try {
                     const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({mode: 'manual'})
+                        body: JSON.stringify({
+                            calculation_type: 'manual',
+                            calculation_config: null
+                        })
                     });
                     if (response.ok) {
                         window.location.reload();
@@ -319,24 +426,54 @@ function calculationBuilder() {
                     return;
                 }
                 try {
-                    const payload = {
-                        mode: 'formula',
-                        formula_mode: this.formulaMode,
+                    const config = {
+                        mode: this.formulaMode,
+                        kpi_config_ids: this.selectedKPIs.map(k => k.id),
                         source_config_ids: this.selectedKPIs.map(k => k.id)
                     };
                     if (this.formulaMode === 'simple') {
-                        payload.operation = this.operation;
+                        config.operation = this.operation;
                     } else {
                         if (!this.expression) {
                             alert('Please enter a Python expression');
                             return;
                         }
-                        payload.expression = this.expression;
+                        config.expression = this.expression;
                     }
                     const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({
+                            calculation_type: 'formula',
+                            calculation_config: config
+                        })
+                    });
+                    if (response.ok) {
+                        window.location.reload();
+                    } else {
+                        const data = await response.json();
+                        alert('Error: ' + (data.error || 'Failed to save'));
+                    }
+                } catch (error) {
+                    alert('Error saving: ' + error.message);
+                }
+            } else if (this.mode === 'linked') {
+                if (!this.linkedOrgId || !this.linkedKPIId || !this.linkedValueTypeId) {
+                    alert('Please select organization, KPI, and value type');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/workspace/api/kpi-config/{{ config.id }}/calculation`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            calculation_type: 'linked',
+                            calculation_config: {
+                                linked_org_id: parseInt(this.linkedOrgId),
+                                linked_kpi_id: parseInt(this.linkedKPIId),
+                                linked_value_type_id: parseInt(this.linkedValueTypeId)
+                            }
+                        })
                     });
                     if (response.ok) {
                         window.location.reload();
