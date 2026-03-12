@@ -2121,12 +2121,43 @@ def _reorder_kpis(org_id, kpi_ids, parent_link_id):
 @bp.route("/api/linked-kpi/organizations")
 @login_required
 def api_get_organizations_for_linking():
-    """Get list of organizations user has access to for linking KPIs"""
+    """Get list of organizations user has access to for linking KPIs.
+
+    Optionally filters to only organizations that have KPIs with specific value type kind.
+
+    Query params:
+        kind: Value type kind to filter by (numeric, sentiment, risk, etc.)
+    """
     from app.models import Organization
+
+    # Get optional kind filter
+    required_kind = request.args.get("kind")
 
     # Get all orgs where user has membership
     user_org_ids = [m.organization_id for m in current_user.organization_memberships]
-    orgs = Organization.query.filter(Organization.id.in_(user_org_ids)).filter_by(is_deleted=False).all()
+
+    # If kind filter specified, only get orgs that have KPIs with that kind
+    if required_kind:
+        # Query for org IDs that have at least one KPI with the required kind
+        org_ids_with_kind = (
+            db.session.query(Initiative.organization_id)
+            .join(InitiativeSystemLink)
+            .join(KPI)
+            .join(KPIValueTypeConfig)
+            .join(ValueType)
+            .filter(
+                Initiative.organization_id.in_(user_org_ids),
+                KPI.is_archived.is_(False),
+                (ValueType.kind == "numeric" if required_kind == "numeric" else ValueType.kind == required_kind),
+            )
+            .distinct()
+            .all()
+        )
+        # Extract org IDs from query result tuples
+        filtered_org_ids = [org_id for (org_id,) in org_ids_with_kind]
+        orgs = Organization.query.filter(Organization.id.in_(filtered_org_ids)).filter_by(is_deleted=False).all()
+    else:
+        orgs = Organization.query.filter(Organization.id.in_(user_org_ids)).filter_by(is_deleted=False).all()
 
     return jsonify(
         [

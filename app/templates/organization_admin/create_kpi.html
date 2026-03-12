@@ -569,15 +569,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load organizations for linking
     document.querySelectorAll('.linked-org-select').forEach(select => {
-        fetch('{{ url_for("workspace.api_get_organizations_for_linking") }}')
+        const vtId = select.dataset.configId;
+        const vtSelect = document.getElementById('linked_vt_' + vtId);
+        const currentKind = vtSelect ? vtSelect.dataset.currentKind : null;
+
+        // Build URL with optional kind parameter to only show orgs with compatible KPIs
+        const url = '{{ url_for("workspace.api_get_organizations_for_linking") }}' +
+                    (currentKind ? `?kind=${currentKind}` : '');
+
+        console.log('Loading organizations with kind filter:', currentKind);
+
+        fetch(url)
             .then(response => response.json())
             .then(orgs => {
+                if (orgs.length === 0 && currentKind) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = `No organizations with ${currentKind} KPIs found`;
+                    select.appendChild(option);
+                    select.disabled = true;
+                    return;
+                }
+
                 orgs.forEach(org => {
                     const option = document.createElement('option');
                     option.value = org.id;
                     option.textContent = org.name;
                     select.appendChild(option);
                 });
+            })
+            .catch(error => {
+                console.error('Error loading organizations:', error);
+                const option = document.createElement('option');
+                option.value = '';
+                option.textContent = `Error loading organizations`;
+                select.appendChild(option);
+                select.disabled = true;
             });
     });
 
