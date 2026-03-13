@@ -1089,14 +1089,18 @@ tr[data-level="kpi"] td {
                 {% if vt.kind in ['sentiment', 'risk', 'positive_impact', 'negative_impact', 'level'] %}
                     {% set col_width = '60px' %}
                     {% set is_narrow = true %}
-                {% elif vt.unit_label and vt.unit_label|length > 5 %}
-                    {% set col_width = '110px' %}
-                    {% set is_narrow = false %}
                 {% elif vt.unit_label %}
-                    {% set col_width = '95px' %}
+                    {# Smart width based on actual unit length #}
+                    {% if vt.unit_label|length <= 2 %}
+                        {% set col_width = '75px' %}  {# €, $, £, %, etc #}
+                    {% elif vt.unit_label|length <= 5 %}
+                        {% set col_width = '90px' %}  {# Days, EUR, USD, etc #}
+                    {% else %}
+                        {% set col_width = '105px' %}  {# Longer units #}
+                    {% endif %}
                     {% set is_narrow = false %}
                 {% else %}
-                    {% set col_width = '90px' %}
+                    {% set col_width = '85px' %}  {# No unit, pure number #}
                     {% set is_narrow = false %}
                 {% endif %}
                 <th class="text-center value-type-header"
