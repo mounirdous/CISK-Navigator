@@ -1061,7 +1061,7 @@ tr[data-level="kpi"] td {
     <table class="table table-bordered table-hover" id="workspace-tree">
         <thead class="table-light">
             <tr>
-                <th style="min-width: 250px; max-width: 350px; width: 280px;">Structure</th>
+                <th style="min-width: 320px; max-width: 380px;">Structure</th>
                 {% for vt in value_types %}
                 {% if vt.kind in ['sentiment', 'risk', 'positive_impact', 'negative_impact', 'level'] %}
                     {% set col_width = '60px' %}
@@ -1077,7 +1077,7 @@ tr[data-level="kpi"] td {
                     {% set is_narrow = false %}
                 {% endif %}
                 <th class="text-center value-type-header"
-                    style="min-width: {{ col_width }}; max-width: {{ col_width }}; cursor: move;{% if is_narrow %} font-size: 0.7rem; padding: 0.35rem 0.25rem; word-wrap: break-word; white-space: normal; line-height: 1.1;{% endif %}"
+                    style="min-width: {{ col_width }}; max-width: {{ col_width }}; width: {{ col_width }}; cursor: move; word-wrap: break-word; white-space: normal;{% if is_narrow %} font-size: 0.7rem; padding: 0.35rem 0.25rem; line-height: 1.1;{% else %} font-size: 0.8rem; padding: 0.4rem 0.3rem; line-height: 1.2;{% endif %}"
                     draggable="true"
                     data-vt-id="{{ vt.id }}"
                     data-vt-index="{{ loop.index0 }}"
