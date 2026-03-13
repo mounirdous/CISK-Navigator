@@ -441,6 +441,14 @@
                                 {% if kpi.config.target_date %}
                                 <br><small class="text-muted">by {{ kpi.config.target_date.strftime('%b %Y') }}</small>
                                 {% endif %}
+                                <br>
+                                {% if kpi.config.target_direction == 'maximize' %}
+                                <span class="badge bg-success">↑ At or Above</span>
+                                {% elif kpi.config.target_direction == 'minimize' %}
+                                <span class="badge bg-info">↓ At or Below</span>
+                                {% elif kpi.config.target_direction == 'exact' %}
+                                <span class="badge bg-warning text-dark">± {{kpi.config.target_tolerance_pct}}% Band</span>
+                                {% endif %}
                                 {% else %}
                                 <span class="text-muted">-</span>
                                 {% endif %}

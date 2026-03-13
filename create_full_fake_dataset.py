@@ -128,8 +128,9 @@ def create_full_dataset():
         print(f"✅ Found value types: Cost (ID: {cost_vt.id}), Time (ID: {time_vt.id})")
         print()
 
-        # Define 10 KPIs with realistic values
+        # Define 10 KPIs with realistic values - demonstrating all 3 target types
         kpi_definitions = [
+            # MAXIMIZE targets (at or above)
             {
                 "name": "Revenue",
                 "vt": cost_vt,
@@ -138,18 +139,29 @@ def create_full_dataset():
                 "volatility": 0.05,
                 "target": 750000,
                 "target_date": date(2026, 12, 31),
+                "target_direction": "maximize",
             },
-            {"name": "Operating Costs", "vt": cost_vt, "base": 350000, "trend": "stable", "volatility": 0.03},
             {
-                "name": "Marketing Spend",
+                "name": "Customer Satisfaction Score",
                 "vt": cost_vt,
-                "base": 80000,
+                "base": 85,
                 "trend": "up",
-                "volatility": 0.08,
-                "target": 120000,
+                "volatility": 0.03,
+                "target": 90,
                 "target_date": date(2026, 6, 30),
+                "target_direction": "maximize",
             },
-            {"name": "R&D Budget", "vt": cost_vt, "base": 120000, "trend": "up", "volatility": 0.04},
+            # MINIMIZE targets (at or below)
+            {
+                "name": "Operating Costs",
+                "vt": cost_vt,
+                "base": 350000,
+                "trend": "down",
+                "volatility": 0.03,
+                "target": 300000,
+                "target_date": date(2026, 12, 31),
+                "target_direction": "minimize",
+            },
             {
                 "name": "Customer Acquisition Cost",
                 "vt": cost_vt,
@@ -158,28 +170,45 @@ def create_full_dataset():
                 "volatility": 0.06,
                 "target": 35000,
                 "target_date": date(2026, 12, 31),
+                "target_direction": "minimize",
             },
-            {"name": "Infrastructure Costs", "vt": cost_vt, "base": 95000, "trend": "stable", "volatility": 0.02},
+            {
+                "name": "Support Response Time",
+                "vt": time_vt,
+                "base": 24,
+                "trend": "down",
+                "volatility": 0.12,
+                "target": 12,
+                "target_date": date(2026, 9, 30),
+                "target_direction": "minimize",
+            },
+            # EXACT targets (at with band)
             {
                 "name": "Product Development Time",
                 "vt": time_vt,
                 "base": 120,
-                "trend": "down",
+                "trend": "stable",
                 "volatility": 0.10,
                 "target": 90,
                 "target_date": date(2026, 9, 30),
+                "target_direction": "exact",
+                "target_tolerance_pct": 15,
             },
             {
-                "name": "Order Fulfillment Time",
+                "name": "Inventory Turnover Days",
                 "vt": time_vt,
-                "base": 72,
-                "trend": "down",
+                "base": 45,
+                "trend": "stable",
                 "volatility": 0.08,
-                "target": 48,
-                "target_date": date(2026, 6, 30),
+                "target": 45,
+                "target_date": date(2026, 12, 31),
+                "target_direction": "exact",
+                "target_tolerance_pct": 10,
             },
-            {"name": "Customer Onboarding Time", "vt": time_vt, "base": 48, "trend": "stable", "volatility": 0.05},
-            {"name": "Support Response Time", "vt": time_vt, "base": 24, "trend": "down", "volatility": 0.12},
+            # NO TARGET examples
+            {"name": "Marketing Spend", "vt": cost_vt, "base": 80000, "trend": "up", "volatility": 0.08},
+            {"name": "R&D Budget", "vt": cost_vt, "base": 120000, "trend": "up", "volatility": 0.04},
+            {"name": "Infrastructure Costs", "vt": cost_vt, "base": 95000, "trend": "stable", "volatility": 0.02},
         ]
 
         print("📊 Creating 10 KPIs with configurations...")
@@ -215,7 +244,12 @@ def create_full_dataset():
             if "target" in kpi_def:
                 config.target_value = Decimal(str(kpi_def["target"]))
                 config.target_date = kpi_def.get("target_date")
-                print(f"    🎯 Set target: {config.target_value} by {config.target_date}")
+                config.target_direction = kpi_def.get("target_direction", "maximize")
+                config.target_tolerance_pct = kpi_def.get("target_tolerance_pct", 10)
+                direction_label = config.target_direction
+                if config.target_direction == "exact":
+                    direction_label = f"exact ±{config.target_tolerance_pct}%"
+                print(f"    🎯 Set target: {config.target_value} by {config.target_date} ({direction_label})")
 
             configs.append({"config": config, "kpi": kpi, "definition": kpi_def})
 

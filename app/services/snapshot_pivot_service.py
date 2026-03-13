@@ -293,10 +293,20 @@ class SnapshotPivotService:
             if show_targets and kpi.get("config") and kpi["config"].target_value:
                 target_value = float(kpi["config"].target_value)
                 target_data = [target_value] * len(pivot["periods"])
+                target_direction = kpi["config"].target_direction or "maximize"
+                tolerance_pct = kpi["config"].target_tolerance_pct or 10
+
+                # Target direction indicators
+                if target_direction == "maximize":
+                    label_suffix = "↑"  # Arrow up for maximize
+                elif target_direction == "minimize":
+                    label_suffix = "↓"  # Arrow down for minimize
+                else:  # exact
+                    label_suffix = f"±{tolerance_pct}%"
 
                 datasets.append(
                     {
-                        "label": f"{kpi['kpi_name']} - Target",
+                        "label": f"{kpi['kpi_name']} - Target {label_suffix}",
                         "data": target_data,
                         "borderColor": color,
                         "backgroundColor": "transparent",
@@ -307,5 +317,42 @@ class SnapshotPivotService:
                         "fill": False,
                     }
                 )
+
+                # Add band for "exact" targets
+                if target_direction == "exact":
+                    # Calculate upper and lower bounds
+                    upper_bound = target_value * (1 + tolerance_pct / 100)
+                    lower_bound = target_value * (1 - tolerance_pct / 100)
+
+                    upper_data = [upper_bound] * len(pivot["periods"])
+                    lower_data = [lower_bound] * len(pivot["periods"])
+
+                    # Add upper bound (invisible line)
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Upper Bound",
+                            "data": upper_data,
+                            "borderColor": "transparent",
+                            "backgroundColor": f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.15)",
+                            "borderWidth": 0,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": False,
+                        }
+                    )
+
+                    # Add lower bound with fill to upper
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Lower Bound",
+                            "data": lower_data,
+                            "borderColor": "transparent",
+                            "backgroundColor": f"rgba({int(color[1:3], 16)}, {int(color[3:5], 16)}, {int(color[5:7], 16)}, 0.15)",
+                            "borderWidth": 0,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": "-1",  # Fill to previous dataset (upper bound)
+                        }
+                    )
 
         return {"labels": pivot["periods"], "datasets": datasets}

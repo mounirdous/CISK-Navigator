@@ -1277,31 +1277,93 @@ def export_pivot_excel():
     header_font = Font(bold=True, color="FFFFFF")
     header_alignment = Alignment(horizontal="center", vertical="center")
 
-    # Write headers
-    ws["A1"] = "KPI"
-    ws["B1"] = "Value Type"
-    ws["A1"].fill = header_fill
-    ws["A1"].font = header_font
-    ws["A1"].alignment = header_alignment
-    ws["B1"].fill = header_fill
-    ws["B1"].font = header_font
-    ws["B1"].alignment = header_alignment
+    # Write headers - metadata + target info + periods
+    headers = [
+        "Organization",
+        "Space",
+        "Challenge",
+        "Initiative",
+        "System",
+        "KPI",
+        "Value Type",
+        "Target Value",
+        "Target Date",
+        "Target Direction",
+        "Target Tolerance %",
+    ]
+    for col_idx, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
 
-    # Period headers
-    for idx, period in enumerate(pivot_data["periods"], start=3):
+    # Period headers start after the metadata columns
+    for idx, period in enumerate(pivot_data["periods"], start=len(headers) + 1):
         cell = ws.cell(row=1, column=idx)
         cell.value = period
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = header_alignment
 
+    # Get organization name
+    from app.models import Organization
+    org = Organization.query.get(org_id)
+    org_name = org.name if org else "Unknown"
+
     # Write data
     row_num = 2
     for kpi in pivot_data["kpis"]:
-        ws.cell(row=row_num, column=1, value=kpi["kpi_name"])
-        ws.cell(row=row_num, column=2, value=kpi["value_type_name"])
+        # Get KPI relationships for metadata
+        from app.models import Challenge, Initiative, System
+        kpi_obj = KPI.query.get(kpi["kpi_id"])
+        if not kpi_obj:
+            continue
 
-        for idx, period in enumerate(pivot_data["periods"], start=3):
+        # Get Initiative and System through InitiativeSystemLink
+        init_sys_link = InitiativeSystemLink.query.get(kpi_obj.initiative_system_link_id)
+        if not init_sys_link:
+            continue
+
+        initiative = Initiative.query.get(init_sys_link.initiative_id)
+        system = System.query.get(init_sys_link.system_id)
+
+        # Get Challenge(s) through ChallengeInitiativeLink
+        from app.models import ChallengeInitiativeLink
+        challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative.id).all()
+        challenges = [Challenge.query.get(link.challenge_id) for link in challenge_links if link]
+        challenge_names = ", ".join([c.name for c in challenges if c])
+
+        # Get Space(s) from challenges
+        spaces = list(set([c.space for c in challenges if c and c.space]))
+        space_names = ", ".join([s.name for s in spaces if s])
+
+        # Get config for target info
+        config = kpi.get("config")
+
+        # Write row data
+        ws.cell(row=row_num, column=1, value=org_name)
+        ws.cell(row=row_num, column=2, value=space_names)
+        ws.cell(row=row_num, column=3, value=challenge_names)
+        ws.cell(row=row_num, column=4, value=initiative.name if initiative else "")
+        ws.cell(row=row_num, column=5, value=system.name if system else "")
+        ws.cell(row=row_num, column=6, value=kpi["kpi_name"])
+        ws.cell(row=row_num, column=7, value=kpi["value_type_name"])
+
+        # Target information
+        if config and config.target_value:
+            ws.cell(row=row_num, column=8, value=float(config.target_value))
+            ws.cell(row=row_num, column=9, value=config.target_date.strftime("%Y-%m-%d") if config.target_date else "")
+            ws.cell(row=row_num, column=10, value=config.target_direction or "maximize")
+            ws.cell(row=row_num, column=11, value=config.target_tolerance_pct if config.target_direction == "exact" else "")
+        else:
+            ws.cell(row=row_num, column=8, value="")
+            ws.cell(row=row_num, column=9, value="")
+            ws.cell(row=row_num, column=10, value="")
+            ws.cell(row=row_num, column=11, value="")
+
+        # Write period values starting from column 12
+        for idx, period in enumerate(pivot_data["periods"], start=12):
             if period in kpi["values"]:
                 value_data = kpi["values"][period]
                 if value_data["value"] is not None:
