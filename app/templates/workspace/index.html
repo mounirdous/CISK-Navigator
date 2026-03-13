@@ -1071,7 +1071,8 @@ tr[data-level="kpi"] td {
                     <i class="bi bi-building"></i> {{ org_name }}
                     {% if organization %}
                         {% set porters_completion = organization.get_porters_completion() %}
-                        <a href="{{ url_for('organization_admin.organization_porters') }}" style="text-decoration: none; margin-left: 0.5rem;" title="Porter's Five Forces Analysis">
+                        <a href="{{ url_for('organization_admin.organization_porters') }}" style="text-decoration: none; margin-left: 0.75rem;" title="Porter's Five Forces Analysis">
+                            <i class="bi bi-diagram-3" style="font-size: 0.95rem; opacity: 0.8;"></i>
                             {% if porters_completion[2] == 'empty' %}
                                 <span class="completion-badge badge-empty">!</span>
                             {% elif porters_completion[2] == 'partial' %}
