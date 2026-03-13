@@ -1061,7 +1061,15 @@ tr[data-level="kpi"] td {
     <table class="table table-bordered table-hover" id="workspace-tree">
         <thead class="table-light">
             <tr>
-                <th style="min-width: 320px; max-width: 380px;">Structure</th>
+                {# Calculate Structure column width based on deepest visible level #}
+                {% set deepest_indent = 0 %}
+                {% if show_levels.kpis %}{% set deepest_indent = 160 %}{% endif %}
+                {% if show_levels.systems and deepest_indent < 120 %}{% set deepest_indent = 120 %}{% endif %}
+                {% if show_levels.initiatives and deepest_indent < 80 %}{% set deepest_indent = 80 %}{% endif %}
+                {% if show_levels.challenges and deepest_indent < 40 %}{% set deepest_indent = 40 %}{% endif %}
+                {% if show_levels.spaces and deepest_indent < 10 %}{% set deepest_indent = 10 %}{% endif %}
+                {% set structure_width = deepest_indent + 180 %}
+                <th style="min-width: {{ structure_width }}px; max-width: {{ structure_width + 40 }}px;">Structure</th>
                 {% for vt in value_types %}
                 {% if vt.kind in ['sentiment', 'risk', 'positive_impact', 'negative_impact', 'level'] %}
                     {% set col_width = '60px' %}
