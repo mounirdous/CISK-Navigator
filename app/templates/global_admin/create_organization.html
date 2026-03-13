@@ -90,6 +90,32 @@
                             <i class="bi bi-info-circle"></i> Select users and configure their access rights
                         </small>
 
+                        <!-- Permission Templates -->
+                        <div class="alert alert-info mb-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <strong><i class="bi bi-lightning-fill"></i> Quick Apply Template:</strong>
+                                    <small class="d-block text-muted">Apply same permissions to all selected users</small>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-primary" onclick="applyTemplate('administrator')">
+                                            <i class="bi bi-shield-fill-check"></i> Administrator
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="applyTemplate('editor')">
+                                            <i class="bi bi-pencil-fill"></i> Editor
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="applyTemplate('viewer')">
+                                            <i class="bi bi-eye-fill"></i> Viewer
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyTemplate('clear')">
+                                            <i class="bi bi-x-circle"></i> Clear All
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 8px; padding: 1rem;">
                             {% for user in all_users %}
                             <div class="card mb-2" id="card_{{ user.id }}" style="border: 2px solid #e0e0e0;">
@@ -292,6 +318,100 @@ function toggleAddComments(userId) {
     } else {
         addCheckbox.disabled = false;
     }
+}
+
+function applyTemplate(template) {
+    // Get all selected user checkboxes
+    const selectedUsers = document.querySelectorAll('[id^="user_"]:checked');
+
+    if (selectedUsers.length === 0) {
+        alert('Please select at least one user first');
+        return;
+    }
+
+    selectedUsers.forEach(userCheckbox => {
+        const userId = userCheckbox.id.replace('user_', '');
+
+        // Define template permissions
+        const templates = {
+            'administrator': {
+                is_org_admin: true,
+                spaces: true,
+                challenges: true,
+                initiatives: true,
+                systems: true,
+                kpis: true,
+                value_types: true,
+                governance_bodies: true,
+                view_comments: true,
+                add_comments: true
+            },
+            'editor': {
+                is_org_admin: false,
+                spaces: true,
+                challenges: true,
+                initiatives: true,
+                systems: true,
+                kpis: true,
+                value_types: true,
+                governance_bodies: true,
+                view_comments: true,
+                add_comments: true
+            },
+            'viewer': {
+                is_org_admin: false,
+                spaces: false,
+                challenges: false,
+                initiatives: false,
+                systems: false,
+                kpis: false,
+                value_types: false,
+                governance_bodies: false,
+                view_comments: true,
+                add_comments: true
+            },
+            'clear': {
+                is_org_admin: false,
+                spaces: false,
+                challenges: false,
+                initiatives: false,
+                systems: false,
+                kpis: false,
+                value_types: false,
+                governance_bodies: false,
+                view_comments: false,
+                add_comments: false
+            }
+        };
+
+        const perms = templates[template];
+        if (!perms) return;
+
+        // Apply permissions
+        document.getElementById(`perm_is_org_admin_${userId}`).checked = perms.is_org_admin;
+        document.getElementById(`perm_spaces_${userId}`).checked = perms.spaces;
+        document.getElementById(`perm_challenges_${userId}`).checked = perms.challenges;
+        document.getElementById(`perm_initiatives_${userId}`).checked = perms.initiatives;
+        document.getElementById(`perm_systems_${userId}`).checked = perms.systems;
+        document.getElementById(`perm_kpis_${userId}`).checked = perms.kpis;
+        document.getElementById(`perm_value_types_${userId}`).checked = perms.value_types;
+        document.getElementById(`perm_governance_bodies_${userId}`).checked = perms.governance_bodies;
+        document.getElementById(`perm_view_comments_${userId}`).checked = perms.view_comments;
+        document.getElementById(`perm_add_comments_${userId}`).checked = perms.add_comments;
+
+        // Trigger org admin toggle if needed
+        toggleOrgAdminPerms(userId);
+        toggleAddComments(userId);
+    });
+
+    // Show feedback
+    const templateNames = {
+        'administrator': 'Administrator',
+        'editor': 'Editor',
+        'viewer': 'Viewer',
+        'clear': 'cleared'
+    };
+    alert(`${templateNames[template]} permissions applied to ${selectedUsers.length} user(s)`);
 }
 </script>
 {% endblock %}
