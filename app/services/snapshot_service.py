@@ -6,7 +6,6 @@ Creates and retrieves historical snapshots of KPI values for time-series trackin
 
 import uuid
 from datetime import date, datetime
-from decimal import Decimal
 from typing import Dict, List, Optional
 
 from app.extensions import db
@@ -21,7 +20,6 @@ from app.models import (
     Space,
     ValueType,
 )
-from app.services.aggregation_service import AggregationService
 from app.services.consensus_service import ConsensusService
 
 
@@ -73,6 +71,11 @@ class SnapshotService:
         if batch_id is None:
             batch_id = str(uuid.uuid4())
 
+        # Extract period tags from snapshot date
+        year = snapshot_date.year
+        quarter = (snapshot_date.month - 1) // 3 + 1
+        month = snapshot_date.month
+
         # Skip deduplication check if allow_duplicates is True (for auto-snapshots)
         if not allow_duplicates:
             existing = KPISnapshot.query.filter_by(
@@ -92,6 +95,9 @@ class SnapshotService:
                 existing.snapshot_batch_id = batch_id
                 existing.is_public = is_public
                 existing.owner_user_id = user_id
+                existing.year = year
+                existing.quarter = quarter
+                existing.month = month
                 db.session.commit()
                 return existing
 
@@ -110,6 +116,9 @@ class SnapshotService:
             snapshot_batch_id=batch_id,
             is_public=is_public,
             owner_user_id=user_id,
+            year=year,
+            quarter=quarter,
+            month=month,
         )
 
         db.session.add(snapshot)
@@ -327,6 +336,11 @@ class SnapshotService:
         if batch_id is None:
             batch_id = str(uuid.uuid4())
 
+        # Extract period tags from snapshot date
+        year = snapshot_date.year
+        quarter = (snapshot_date.month - 1) // 3 + 1
+        month = snapshot_date.month
+
         # Skip deduplication check if allow_duplicates is True
         if not allow_duplicates:
             # Check if exists
@@ -344,6 +358,9 @@ class SnapshotService:
                 existing.snapshot_batch_id = batch_id
                 existing.is_public = is_public
                 existing.owner_user_id = user_id
+                existing.year = year
+                existing.quarter = quarter
+                existing.month = month
                 db.session.commit()
                 return existing
 
@@ -360,6 +377,9 @@ class SnapshotService:
             snapshot_batch_id=batch_id,
             is_public=is_public,
             owner_user_id=user_id,
+            year=year,
+            quarter=quarter,
+            month=month,
         )
 
         db.session.add(snapshot)
@@ -513,9 +533,9 @@ class SnapshotService:
         # Build privacy filter
         privacy_filters = []
         if show_public:
-            privacy_filters.append(KPISnapshot.is_public == True)
+            privacy_filters.append(KPISnapshot.is_public.is_(True))
         if show_private and user_id:
-            privacy_filters.append(and_(KPISnapshot.is_public == False, KPISnapshot.owner_user_id == user_id))
+            privacy_filters.append(and_(KPISnapshot.is_public.is_(False), KPISnapshot.owner_user_id == user_id))
 
         if not privacy_filters:
             return []

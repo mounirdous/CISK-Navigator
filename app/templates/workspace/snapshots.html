@@ -60,8 +60,11 @@
             <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#createSnapshotModal">
                 <i class="bi bi-camera"></i> Create Snapshot
             </button>
+            <a href="{{ url_for('workspace.snapshot_pivot') }}" class="btn btn-light btn-lg">
+                <i class="bi bi-graph-up"></i> Pivot Analysis
+            </a>
             <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light btn-lg">
-                <i class="bi bi-arrow-left"></i> Back to Organization
+                <i class="bi bi-arrow-left"></i> Back to Workspace
             </a>
         </div>
     </div>

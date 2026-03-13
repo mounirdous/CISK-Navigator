@@ -4,8 +4,7 @@ KPI Snapshot Model
 Stores historical snapshots of KPI consensus values for time-series tracking.
 """
 
-from datetime import date, datetime
-from decimal import Decimal
+from datetime import datetime
 
 from app.extensions import db
 
@@ -32,6 +31,11 @@ class KPISnapshot(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     snapshot_label = db.Column(db.String(100))  # Optional: "Q1 2026", "Baseline", "End of Season 1"
+
+    # Period tags for time-series analysis
+    year = db.Column(db.Integer, index=True)  # 2026
+    quarter = db.Column(db.Integer)  # 1, 2, 3, 4
+    month = db.Column(db.Integer)  # 1-12
 
     # Batch tracking - groups all KPIs/rollups created in same snapshot operation
     snapshot_batch_id = db.Column(db.String(36), nullable=False, index=True)
@@ -89,6 +93,9 @@ class KPISnapshot(db.Model):
             "snapshot_batch_id": self.snapshot_batch_id,
             "is_public": self.is_public,
             "owner_user_id": self.owner_user_id,
+            "year": self.year,
+            "quarter": self.quarter,
+            "month": self.month,
         }
 
 
@@ -110,6 +117,11 @@ class RollupSnapshot(db.Model):
 
     # Batch tracking - groups all KPIs/rollups created in same snapshot operation
     snapshot_batch_id = db.Column(db.String(36), nullable=False, index=True)
+
+    # Period tags for time-series analysis
+    year = db.Column(db.Integer, index=True)  # 2026
+    quarter = db.Column(db.Integer)  # 1, 2, 3, 4
+    month = db.Column(db.Integer)  # 1-12
 
     # Privacy and ownership
     is_public = db.Column(db.Boolean, default=True, nullable=False, index=True)
@@ -162,4 +174,7 @@ class RollupSnapshot(db.Model):
             "snapshot_batch_id": self.snapshot_batch_id,
             "is_public": self.is_public,
             "owner_user_id": self.owner_user_id,
+            "year": self.year,
+            "quarter": self.quarter,
+            "month": self.month,
         }

@@ -38,6 +38,7 @@ from app.models import (
 )
 from app.services import AggregationService, ConsensusService, ExcelExportService
 from app.services.comment_service import CommentService
+from app.services.snapshot_pivot_service import SnapshotPivotService
 from app.services.snapshot_service import SnapshotService
 
 bp = Blueprint("workspace", __name__, url_prefix="/workspace")
@@ -213,7 +214,7 @@ def index():
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
         # Regular user: only count spaces they can see
         base_spaces_query = base_spaces_query.filter(
-            or_(Space.is_private == False, Space.created_by == current_user.id)
+            or_(Space.is_private.is_(False), Space.created_by == current_user.id)
         )
     all_spaces_count = base_spaces_query.count()
     public_spaces_count = base_spaces_query.filter_by(is_private=False).count()
@@ -251,7 +252,7 @@ def index():
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
         # Regular user: only show spaces they can see
         filter_spaces_query = filter_spaces_query.filter(
-            or_(Space.is_private == False, Space.created_by == current_user.id)
+            or_(Space.is_private.is_(False), Space.created_by == current_user.id)
         )
     all_spaces_for_filter = filter_spaces_query.order_by(Space.display_order, Space.name).all()
 
@@ -269,9 +270,7 @@ def index():
     # 4. Super admins
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
         # Regular user: only show public spaces OR private spaces they created
-        spaces_query = spaces_query.filter(
-            or_(Space.is_private == False, Space.created_by == current_user.id)
-        )
+        spaces_query = spaces_query.filter(or_(Space.is_private.is_(False), Space.created_by == current_user.id))
 
     # Apply space type filter (all, private, public)
     if space_type_filter == "private":
@@ -930,6 +929,78 @@ def api_rollup(entity_type, entity_id, value_type_id):
 # ============================================================================
 # SNAPSHOT MANAGEMENT ROUTES (Time-Series Tracking)
 # ============================================================================
+
+
+@bp.route("/snapshots/pivot")
+@login_required
+@organization_required
+def snapshot_pivot():
+    """
+    Pivot table view of snapshots: KPIs as rows, time periods as columns.
+
+    Allows filtering by year, view type (monthly/quarterly/yearly), space, and value type.
+    """
+    org_id = session.get("organization_id")
+
+    # Get available years
+    available_years = SnapshotPivotService.get_available_years(org_id)
+
+    if not available_years:
+        flash("No snapshots found. Create your first snapshot to start time-series analysis.", "info")
+        return redirect(url_for("workspace.list_snapshots"))
+
+    # Get filter parameters
+    year = request.args.get("year", type=int) or available_years[0]
+    view_type = request.args.get("view_type", "quarterly")
+    space_id = request.args.get("space_id", type=int)
+    value_type_id = request.args.get("value_type_id", type=int)
+
+    # Get pivot data
+    pivot_data = SnapshotPivotService.get_pivot_data(
+        org_id, year, view_type, space_id=space_id, value_type_id=value_type_id
+    )
+
+    # Get spaces and value types for filters
+    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
+    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.name).all()
+
+    return render_template(
+        "workspace/snapshot_pivot.html",
+        pivot_data=pivot_data,
+        available_years=available_years,
+        current_year=year,
+        view_type=view_type,
+        spaces=spaces,
+        value_types=value_types,
+        selected_space_id=space_id,
+        selected_value_type_id=value_type_id,
+    )
+
+
+@bp.route("/snapshots/chart-data")
+@login_required
+@organization_required
+def snapshot_chart_data():
+    """
+    API endpoint to get chart data for selected KPIs.
+
+    Returns JSON formatted for Chart.js.
+    """
+    org_id = session.get("organization_id")
+
+    # Get parameters
+    year = request.args.get("year", type=int)
+    view_type = request.args.get("view_type", "quarterly")
+    config_ids = request.args.getlist("config_ids", type=int)
+
+    if not year or not config_ids:
+        return jsonify({"error": "Missing required parameters"}), 400
+
+    try:
+        chart_data = SnapshotPivotService.get_chart_data(org_id, year, config_ids, view_type)
+        return jsonify(chart_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @bp.route("/snapshots/create", methods=["POST"])
