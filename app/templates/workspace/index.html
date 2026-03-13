@@ -1061,26 +1061,30 @@ tr[data-level="kpi"] td {
     <table class="table table-bordered table-hover" id="workspace-tree">
         <thead class="table-light">
             <tr>
-                <th style="min-width: 400px;">Structure</th>
+                <th style="min-width: 250px; max-width: 350px; width: 280px;">Structure</th>
                 {% for vt in value_types %}
                 {% if vt.kind in ['sentiment', 'risk', 'positive_impact', 'negative_impact', 'level'] %}
                     {% set col_width = '60px' %}
+                    {% set is_narrow = true %}
                 {% elif vt.unit_label and vt.unit_label|length > 5 %}
                     {% set col_width = '110px' %}
+                    {% set is_narrow = false %}
                 {% elif vt.unit_label %}
                     {% set col_width = '95px' %}
+                    {% set is_narrow = false %}
                 {% else %}
                     {% set col_width = '90px' %}
+                    {% set is_narrow = false %}
                 {% endif %}
                 <th class="text-center value-type-header"
-                    style="min-width: {{ col_width }}; cursor: move;"
+                    style="min-width: {{ col_width }}; max-width: {{ col_width }}; cursor: move;{% if is_narrow %} font-size: 0.7rem; padding: 0.35rem 0.25rem; word-wrap: break-word; white-space: normal; line-height: 1.1;{% endif %}"
                     draggable="true"
                     data-vt-id="{{ vt.id }}"
                     data-vt-index="{{ loop.index0 }}"
                     data-vt-name="{{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}"
                     title="Drag to reorder">
-                    <span class="collapse-column-icon" title="Click to collapse/expand: {{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});">⇄</span>
-                    <i class="bi bi-grip-vertical text-muted me-1" style="font-size: 0.8rem;"></i>
+                    <span class="collapse-column-icon" title="Click to collapse/expand: {{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});" style="{% if is_narrow %}font-size: 0.85rem; top: 2px; right: 2px;{% endif %}">⇄</span>
+                    <i class="bi bi-grip-vertical text-muted me-1" style="font-size: {% if is_narrow %}0.65rem{% else %}0.8rem{% endif %};"></i>
                     <span class="column-content">
                         {{ vt.name }}
                         {% if vt.unit_label %}
