@@ -599,14 +599,15 @@ def initiatives():
     return render_template("organization_admin/initiatives.html", initiatives=initiatives)
 
 
-@bp.route("/systems")
-@login_required
-@organization_required
-def systems():
-    """List all systems"""
-    org_id = session.get("organization_id")
-    systems = System.query.filter_by(organization_id=org_id).all()
-    return render_template("organization_admin/systems.html", systems=systems)
+# REMOVED: /systems route - structure is managed in workspace Edit Structure mode
+# @bp.route("/systems")
+# @login_required
+# @organization_required
+# def systems():
+#     """List all systems"""
+#     org_id = session.get("organization_id")
+#     systems = System.query.filter_by(organization_id=org_id).all()
+#     return render_template("organization_admin/systems.html", systems=systems)
 
 
 @bp.route("/spaces/<int:space_id>/challenges/create", methods=["GET", "POST"])
