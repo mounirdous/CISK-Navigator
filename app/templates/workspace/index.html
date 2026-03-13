@@ -236,13 +236,73 @@ tr[data-level="kpi"] td {
 
 /* Hierarchy icons and visual guides */
 .hierarchy-icon {
-    display: inline-block;
-    width: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
     height: 24px;
+    padding: 0 6px;
     margin-right: var(--spacing-sm);
     text-align: center;
-    vertical-align: middle;
     font-weight: bold;
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.hierarchy-icon.space-icon {
+    background-color: rgba(52, 152, 219, 0.2);
+    color: #3498db;
+    border: 1px solid rgba(52, 152, 219, 0.4);
+}
+
+.hierarchy-icon.challenge-icon {
+    background-color: rgba(46, 204, 113, 0.2);
+    color: #2ecc71;
+    border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.hierarchy-icon.initiative-icon {
+    background-color: rgba(243, 156, 18, 0.2);
+    color: #f39c12;
+    border: 1px solid rgba(243, 156, 18, 0.4);
+}
+
+.hierarchy-icon.system-icon {
+    background-color: rgba(155, 89, 182, 0.2);
+    color: #9b59b6;
+    border: 1px solid rgba(155, 89, 182, 0.4);
+}
+
+.hierarchy-icon.kpi-icon {
+    background-color: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+}
+
+/* Dark mode hierarchy badges */
+.dark-mode .hierarchy-icon.space-icon {
+    background-color: rgba(52, 152, 219, 0.3);
+    border-color: rgba(52, 152, 219, 0.5);
+}
+
+.dark-mode .hierarchy-icon.challenge-icon {
+    background-color: rgba(46, 204, 113, 0.3);
+    border-color: rgba(46, 204, 113, 0.5);
+}
+
+.dark-mode .hierarchy-icon.initiative-icon {
+    background-color: rgba(243, 156, 18, 0.3);
+    border-color: rgba(243, 156, 18, 0.5);
+}
+
+.dark-mode .hierarchy-icon.system-icon {
+    background-color: rgba(155, 89, 182, 0.3);
+    border-color: rgba(155, 89, 182, 0.5);
+}
+
+.dark-mode .hierarchy-icon.kpi-icon {
+    background-color: rgba(231, 76, 60, 0.3);
+    border-color: rgba(231, 76, 60, 0.5);
 }
 
 .level-border {
@@ -931,7 +991,7 @@ tr[data-level="kpi"] td {
                     <td class="level-border space">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">🏢</span>
+                        <span class="hierarchy-icon space-icon">🏢</span>
                         <span class="form-view-icon me-2">
                             <a href="{{ url_for('organization_admin.space_swot', space_id=space.id) }}" class="text-info" title="View SWOT Analysis">
                                 <i class="bi bi-grid-3x3"></i>
@@ -1021,7 +1081,7 @@ tr[data-level="kpi"] td {
                     <td class="level-border challenge" style="padding-left: 2.5rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon" style="font-style: italic;">ƒ</span>
+                        <span class="hierarchy-icon challenge-icon" style="font-style: italic;">ƒ</span>
                         {{ challenge.name }}
                         {% if current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) %}
                         <span class="action-icons ms-2">
@@ -1091,7 +1151,7 @@ tr[data-level="kpi"] td {
                     <td class="level-border initiative" style="padding-left: 5rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">δ</span>
+                        <span class="hierarchy-icon initiative-icon">δ</span>
                         <span class="form-view-icon me-2">
                             <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="text-info" title="View Initiative Form">
                                 <i class="bi bi-file-text"></i>
@@ -1174,7 +1234,7 @@ tr[data-level="kpi"] td {
                     <td class="level-border system" style="padding-left: 7.5rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon">Φ</span>
+                        <span class="hierarchy-icon system-icon">Φ</span>
                         {{ system.name }}
                         {% if current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
@@ -1263,7 +1323,7 @@ tr[data-level="kpi"] td {
                 <tr id="kpi-{{ kpi.id }}" data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %} draggable-row" draggable="true" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}" {% if not show_levels.kpis %}data-level-hidden="true"{% endif %}>
                     <td class="level-border kpi" style="padding-left: 10rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
-                        <span class="hierarchy-icon">Ψ</span>
+                        <span class="hierarchy-icon kpi-icon">Ψ</span>
                         {% set has_target_direction = namespace(value=none) %}
                         {% for config in kpi.value_type_configs %}
                             {% if config.target_value is not none and has_target_direction.value is none %}
