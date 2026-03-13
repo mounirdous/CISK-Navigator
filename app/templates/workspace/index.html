@@ -660,13 +660,6 @@ tr[data-level="kpi"] td {
                 </a>
                 {% endif %}
 
-                <!-- Quick Create KPI -->
-                {% if current_user.can_manage_kpis(org_id) %}
-                <a href="{{ url_for('organization_admin.quick_create_kpi') }}" class="btn btn-primary btn-sm btn-modern" title="Quick create KPI with auto-hierarchy">
-                    <i class="bi bi-lightning-fill"></i> <span class="d-none d-md-inline">Quick KPI</span>
-                </a>
-                {% endif %}
-
                 <!-- Tree Controls -->
                 <div class="btn-group btn-group-sm">
                     <button id="expand-all" class="btn btn-outline-primary btn-modern" title="Expand All">
