@@ -408,7 +408,13 @@ function calculationBuilder() {
 
                     // Add KPI values
                     this.selectedKPIs.forEach(kpi => {
-                        context[`kpi_${kpi.id}`] = parseFloat(kpi.currentValue.replace(/[^0-9.-]/g, '')) || 0;
+                        const value = parseFloat(kpi.currentValue.replace(/[^0-9.-]/g, '')) || 0;
+                        // Old format for backwards compatibility
+                        context[`kpi_${kpi.id}`] = value;
+                        // New readable format
+                        if (kpi.variable_name) {
+                            context[kpi.variable_name] = value;
+                        }
                     });
 
                     console.log('Expression:', this.expression);
