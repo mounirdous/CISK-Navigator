@@ -1414,6 +1414,7 @@ def quick_create_kpi():
         existing_spaces=existing_spaces,
         existing_challenges=existing_challenges,
         existing_initiatives=existing_initiatives,
+        existing_systems=existing_systems,
         csrf_token=generate_csrf,
     )
 
