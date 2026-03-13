@@ -341,7 +341,14 @@ class KPIValueTypeConfig(db.Model):
             source_config = self.get_linked_source_config()
             if source_config:
                 # Read value from the source config
-                return source_config.get_consensus_value(_visited=_visited)
+                source_result = source_config.get_consensus_value(_visited=_visited)
+                # Normalize numeric values to float to prevent Decimal/float mixing
+                if isinstance(source_result, dict) and source_result.get("value") is not None:
+                    try:
+                        source_result["value"] = float(source_result["value"])
+                    except (ValueError, TypeError):
+                        pass  # Keep original if conversion fails
+                return source_result
             # If source not found, return no data dict
             return {
                 "status": "no_data",
@@ -478,39 +485,39 @@ class KPIValueTypeConfig(db.Model):
 
         try:
             if operation == "sum":
-                return sum(values)
+                return float(sum(values))
             elif operation == "avg":
-                return sum(values) / len(values)
+                return float(sum(values) / len(values))
             elif operation == "min":
-                return min(values)
+                return float(min(values))
             elif operation == "max":
-                return max(values)
+                return float(max(values))
             elif operation == "multiply":
-                result = 1
+                result = 1.0
                 for v in values:
                     result *= v
-                return result
+                return float(result)
             elif operation == "subtract":
                 # Subtract all subsequent values from first
                 if len(values) < 2:
-                    return values[0] if values else None
+                    return float(values[0]) if values else None
                 result = values[0]
                 for v in values[1:]:
                     result -= v
-                return result
+                return float(result)
             elif operation == "divide":
                 # Divide first value by all subsequent values
                 if len(values) < 2:
-                    return values[0] if values else None
+                    return float(values[0]) if values else None
                 result = values[0]
                 for v in values[1:]:
                     if v == 0:
                         return None  # Division by zero
                     result /= v
-                return result
+                return float(result)
 
             # Default to sum if operation not recognized
-            return sum(values)
+            return float(sum(values))
 
         except ZeroDivisionError:
             return None

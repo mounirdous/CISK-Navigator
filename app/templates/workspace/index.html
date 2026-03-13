@@ -1220,7 +1220,7 @@ tr[data-level="kpi"] td {
                                 {% elif vt.kind == 'sentiment' %}
                                     {% if rollup.value == 1 %}☹️{% elif rollup.value == 2 %}😐{% elif rollup.value == 3 %}😊{% endif %}
                                 {% endif %}
-                                <br><small>{{ '✓' if rollup.is_complete else '⚠' }}</small>
+                                <small class="ms-1">{{ '✓' if rollup.is_complete else '⚠' }}</small>
                             {% else %}
                                 <small class="text-muted">—</small>
                             {% endif %}
@@ -1444,7 +1444,7 @@ tr[data-level="kpi"] td {
                                         {% if rollup.value == 1 %}<strong>☹️</strong>{% elif rollup.value == 2 %}<strong>😐</strong>{% elif rollup.value == 3 %}<strong>😊</strong>{% endif %}
                                     {% endif %}
                                 </div>
-                                <small class="text-muted">{{ '✓' if rollup.is_complete else '⚠' }} Rollup</small>
+                                <small class="text-muted ms-1">{{ '✓' if rollup.is_complete else '⚠' }}</small>
                             {% else %}
                                 <small class="text-muted">—</small>
                             {% endif %}

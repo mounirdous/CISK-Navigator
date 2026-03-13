@@ -5,7 +5,6 @@ Calculates consensus status for KPI cells based on contributor opinions.
 """
 
 from collections import Counter
-from decimal import Decimal
 
 
 class ConsensusService:
@@ -105,10 +104,18 @@ class ConsensusService:
         """
         Get the consensus value for a KPI cell.
 
+        Handles formula and linked KPIs by delegating to the config's own method.
+
         Args:
             kpi_value_type_config: KPIValueTypeConfig object with contributions loaded
 
         Returns:
-            consensus dict from calculate_consensus
+            consensus dict from calculate_consensus or formula calculation
         """
+        # If this is a formula or linked KPI, use the config's method
+        # which handles the calculation/linking logic
+        if kpi_value_type_config.is_formula() or kpi_value_type_config.is_linked():
+            return kpi_value_type_config.get_consensus_value()
+
+        # Otherwise, calculate consensus from contributions
         return ConsensusService.calculate_consensus(kpi_value_type_config.contributions)
