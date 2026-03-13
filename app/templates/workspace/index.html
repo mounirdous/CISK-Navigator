@@ -251,23 +251,27 @@ body.hide-gb-badges .gb-badge {
     width: 35px !important;
     padding: 0.5rem 0.25rem !important;
     vertical-align: middle;
+    background-color: rgba(108, 117, 125, 0.1) !important;
+    cursor: pointer;
 }
 
 .value-type-header.column-collapsed .column-content {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    white-space: nowrap;
-    display: inline-block;
-    transform: rotate(180deg);
-    font-size: 0.75rem;
+    display: none !important;
 }
 
 .value-type-header.column-collapsed .bi-grip-vertical {
     display: none;
 }
 
-.value-type-header.column-collapsed small {
-    display: none;
+/* Show expand icon in collapsed header */
+.value-type-header.column-collapsed .collapse-column-icon {
+    position: static;
+    opacity: 0.6;
+    font-size: 1.2rem;
+}
+
+.value-type-header.column-collapsed:hover .collapse-column-icon {
+    opacity: 1;
 }
 
 td.column-collapsed {
@@ -276,15 +280,21 @@ td.column-collapsed {
     width: 35px !important;
     padding: 0.25rem !important;
     overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.7rem;
+    background-color: rgba(108, 117, 125, 0.05) !important;
 }
 
-td.column-collapsed > div {
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    white-space: nowrap;
+/* Hide all content in collapsed cells */
+td.column-collapsed > * {
+    display: none !important;
+}
+
+/* Show only a subtle dot indicator if there's data */
+td.column-collapsed:not(:empty)::before {
+    content: '•';
+    color: rgba(108, 117, 125, 0.4);
+    font-size: 1rem;
+    display: block;
+    text-align: center;
 }
 
 /* Level-specific colors for hierarchy (both light & dark mode) */
@@ -806,9 +816,6 @@ tr[data-level="kpi"] td {
                         </span>
                         {% endif %}
                     </div>
-                    <small class="text-muted" style="font-size: 0.75rem; margin-left: auto; padding-left: 1rem;">
-                        {{ spaces|length }} spaces, {{ total_kpis }} KPIs
-                    </small>
                 </button>
             </h2>
             <div id="filtersCollapse" class="accordion-collapse collapse">
@@ -1061,8 +1068,9 @@ tr[data-level="kpi"] td {
                     draggable="true"
                     data-vt-id="{{ vt.id }}"
                     data-vt-index="{{ loop.index0 }}"
+                    data-vt-name="{{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}"
                     title="Drag to reorder">
-                    <span class="collapse-column-icon" title="Collapse column" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});">⇄</span>
+                    <span class="collapse-column-icon" title="Click to collapse/expand: {{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});">⇄</span>
                     <i class="bi bi-grip-vertical text-muted me-1" style="font-size: 0.8rem;"></i>
                     <span class="column-content">
                         {{ vt.name }}
@@ -3080,9 +3088,19 @@ function toggleColumnCollapse(columnIndex) {
 
     const isCollapsed = header.classList.contains('column-collapsed');
     const vtId = header.dataset.vtId;
+    const vtName = header.dataset.vtName || 'Column';
 
     // Toggle header
     header.classList.toggle('column-collapsed');
+
+    // Update header title for tooltip
+    if (isCollapsed) {
+        // Expanding
+        header.title = 'Drag to reorder';
+    } else {
+        // Collapsing
+        header.title = vtName + ' (collapsed - click ⇄ to expand)';
+    }
 
     // Toggle all cells in this column (find by position, not by vt_id since aggregations don't have it)
     const rows = document.querySelectorAll('#workspace-tree tbody tr');
