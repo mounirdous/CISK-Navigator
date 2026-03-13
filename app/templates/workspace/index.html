@@ -1459,13 +1459,18 @@ tr[data-level="kpi"] td {
                 {% else %}
                     {# Filter KPIs by governance body if filter is active #}
                     {% if selected_governance_body_ids %}
-                        {% set show_kpi = namespace(value=false) %}
-                        {% for gb_link in kpi.governance_body_links %}
-                            {% if gb_link.governance_body_id|string in selected_governance_body_ids %}
-                                {% set show_kpi.value = true %}
-                            {% endif %}
-                        {% endfor %}
-                        {% set show_kpi = show_kpi.value %}
+                        {# Show KPI if it has no governance bodies (always visible) OR matches selected governance bodies #}
+                        {% if kpi.governance_body_links | length == 0 %}
+                            {% set show_kpi = true %}
+                        {% else %}
+                            {% set show_kpi = namespace(value=false) %}
+                            {% for gb_link in kpi.governance_body_links %}
+                                {% if gb_link.governance_body_id|string in selected_governance_body_ids %}
+                                    {% set show_kpi.value = true %}
+                                {% endif %}
+                            {% endfor %}
+                            {% set show_kpi = show_kpi.value %}
+                        {% endif %}
                     {% else %}
                         {% set show_kpi = true %}
                     {% endif %}
