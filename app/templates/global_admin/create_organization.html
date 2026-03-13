@@ -105,82 +105,118 @@
                                     </div>
 
                                     <div id="permissions_{{ user.id }}" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
+                                        <!-- Organization Administrator -->
+                                        <div class="alert alert-info py-2 mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="perm_is_org_admin_{{ user.id }}" id="perm_is_org_admin_{{ user.id }}"
+                                                       onchange="toggleOrgAdminPerms({{ user.id }})">
+                                                <label class="form-check-label fw-bold" for="perm_is_org_admin_{{ user.id }}">
+                                                    <i class="bi bi-shield-fill-check text-primary"></i> Organization Administrator
+                                                </label>
+                                                <small class="d-block text-muted ms-4">Grants full control (bypasses all permissions below)</small>
+                                            </div>
+                                        </div>
+
                                         <small class="text-muted d-block mb-2">
-                                            <strong>Permissions:</strong> User can create, edit, and delete:
+                                            <strong>Individual Permissions:</strong> Select specific capabilities:
                                         </small>
 
-                                        <div class="row g-2">
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_spaces_{{ user.id }}" id="perm_spaces_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_spaces_{{ user.id }}">
-                                                        <i class="bi bi-grid-3x3"></i> Spaces
-                                                    </label>
+                                        <!-- Structure Management -->
+                                        <div class="mb-3">
+                                            <div class="fw-semibold text-primary mb-2" style="font-size: 0.9rem;">
+                                                <i class="bi bi-diagram-3"></i> Structure Management
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_spaces_{{ user.id }}" id="perm_spaces_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_spaces_{{ user.id }}">
+                                                            <i class="bi bi-grid-3x3"></i> Spaces
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_challenges_{{ user.id }}" id="perm_challenges_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_challenges_{{ user.id }}">
+                                                            <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ user.id }}" id="perm_initiatives_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_initiatives_{{ user.id }}">
+                                                            <span style="font-weight: bold;">δ</span> Initiatives
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_systems_{{ user.id }}" id="perm_systems_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_systems_{{ user.id }}">
+                                                            <i class="bi bi-cpu"></i> Systems
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_kpis_{{ user.id }}" id="perm_kpis_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_kpis_{{ user.id }}">
+                                                            <span style="font-weight: bold;">Ψ</span> KPIs
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_value_types_{{ user.id }}" id="perm_value_types_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_value_types_{{ user.id }}">
-                                                        <i class="bi bi-hash"></i> Value Types
-                                                    </label>
+                                        </div>
+
+                                        <!-- Configuration -->
+                                        <div class="mb-3">
+                                            <div class="fw-semibold text-success mb-2" style="font-size: 0.9rem;">
+                                                <i class="bi bi-gear"></i> Configuration
+                                            </div>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_value_types_{{ user.id }}" id="perm_value_types_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_value_types_{{ user.id }}">
+                                                            <i class="bi bi-hash"></i> Value Types
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ user.id }}" id="perm_governance_bodies_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_governance_bodies_{{ user.id }}">
+                                                            <i class="bi bi-bank"></i> Governance Bodies
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_challenges_{{ user.id }}" id="perm_challenges_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_challenges_{{ user.id }}">
-                                                        <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
-                                                    </label>
-                                                </div>
+                                        </div>
+
+                                        <!-- Collaboration -->
+                                        <div class="mb-2">
+                                            <div class="fw-semibold text-warning mb-2" style="font-size: 0.9rem;">
+                                                <i class="bi bi-chat-dots"></i> Collaboration
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ user.id }}" id="perm_initiatives_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_initiatives_{{ user.id }}">
-                                                        <span style="font-weight: bold;">δ</span> Initiatives
-                                                    </label>
+                                            <div class="row g-2">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ user.id }}" id="perm_view_comments_{{ user.id }}"
+                                                               onchange="toggleAddComments({{ user.id }})" checked>
+                                                        <label class="form-check-label" for="perm_view_comments_{{ user.id }}">
+                                                            <i class="bi bi-eye"></i> View Comments
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_systems_{{ user.id }}" id="perm_systems_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_systems_{{ user.id }}">
-                                                        <i class="bi bi-cpu"></i> Systems
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_kpis_{{ user.id }}" id="perm_kpis_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_kpis_{{ user.id }}">
-                                                        <span style="font-weight: bold;">Ψ</span> KPIs
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ user.id }}" id="perm_governance_bodies_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_governance_bodies_{{ user.id }}">
-                                                        <i class="bi bi-bank"></i> Governance Bodies
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ user.id }}" id="perm_view_comments_{{ user.id }}"
-                                                           onchange="toggleAddComments({{ user.id }})" checked>
-                                                    <label class="form-check-label" for="perm_view_comments_{{ user.id }}">
-                                                        <i class="bi bi-eye"></i> View Comments
-                                                    </label>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-check">
-                                                    <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ user.id }}" id="perm_add_comments_{{ user.id }}" checked>
-                                                    <label class="form-check-label" for="perm_add_comments_{{ user.id }}">
-                                                        <i class="bi bi-chat-left-text"></i> Add Comments
-                                                    </label>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ user.id }}" id="perm_add_comments_{{ user.id }}" checked>
+                                                        <label class="form-check-label" for="perm_add_comments_{{ user.id }}">
+                                                            <i class="bi bi-chat-left-text"></i> Add Comments
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -218,6 +254,22 @@ function togglePermissions(userId) {
         card.style.borderColor = '#e0e0e0';
         card.style.backgroundColor = 'white';
     }
+}
+
+function toggleOrgAdminPerms(userId) {
+    const orgAdminCheckbox = document.getElementById('perm_is_org_admin_' + userId);
+    const permCheckboxes = document.querySelectorAll(`[id^="perm_"][id*="_${userId}"]:not(#perm_is_org_admin_${userId})`);
+
+    permCheckboxes.forEach(checkbox => {
+        if (orgAdminCheckbox.checked) {
+            checkbox.checked = true;
+            checkbox.disabled = true;
+            checkbox.style.opacity = '0.5';
+        } else {
+            checkbox.disabled = false;
+            checkbox.style.opacity = '1';
+        }
+    });
 }
 
 function toggleAddComments(userId) {
