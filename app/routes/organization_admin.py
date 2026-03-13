@@ -80,8 +80,12 @@ def permission_required(permission_method_name):
                 flash("No organization context", "danger")
                 return redirect(url_for("auth.login"))
 
-            # Global admins bypass all permission checks
-            if current_user.is_global_admin:
+            # Global admins and super admins bypass all permission checks
+            if current_user.is_global_admin or current_user.is_super_admin:
+                return f(*args, **kwargs)
+
+            # Organization admins bypass all permission checks for their org
+            if current_user.is_org_admin(org_id):
                 return f(*args, **kwargs)
 
             # Check specific permission
@@ -107,8 +111,12 @@ def any_org_admin_permission_required(f):
             flash("No organization context", "danger")
             return redirect(url_for("auth.login"))
 
-        # Global admins bypass all permission checks
+        # Global admins and super admins bypass all permission checks
         if current_user.is_global_admin or current_user.is_super_admin:
+            return f(*args, **kwargs)
+
+        # Organization admins have full access
+        if current_user.is_org_admin(org_id):
             return f(*args, **kwargs)
 
         # Check if user has at least one management permission
