@@ -364,13 +364,13 @@ def onboarding():
                 # Link System to Initiative
                 sys_link = InitiativeSystemLink(initiative_id=initiative.id, system_id=system.id)
                 db.session.add(sys_link)
+                db.session.flush()  # Need sys_link.id for KPI
 
                 # Create KPI
                 kpi = KPI(
                     name=form.kpi_name.data,
                     description=form.kpi_desc.data,
-                    system_id=system.id,
-                    organization_id=org_id,
+                    initiative_system_link_id=sys_link.id,
                 )
                 db.session.add(kpi)
                 db.session.flush()
