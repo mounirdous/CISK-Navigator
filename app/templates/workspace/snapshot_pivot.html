@@ -1066,6 +1066,11 @@
     const kpiSearchResults = document.getElementById('kpi-search-results');
     let searchTimeout = null;
 
+    console.log('KPI Search initialized:', {
+        searchInput: kpiSearchInput,
+        searchResults: kpiSearchResults
+    }); // Debug
+
     // Build searchable KPI data from table
     function getAvailableKPIs() {
         const kpis = [];
@@ -1074,29 +1079,22 @@
             const kpiName = checkbox.dataset.kpiName;
             const row = checkbox.closest('tr');
 
-            // Check if KPI has target (look for bullseye icon)
-            const hasTarget = row.querySelector('.bi-bullseye') !== null;
+            // Check if KPI has target (look for bullseye icon in KPI name cell)
+            const kpiCell = row.cells[0]; // First cell has KPI name
+            const hasTarget = kpiCell ? kpiCell.querySelector('.bi-bullseye') !== null : false;
             let targetIcon = '';
-            let targetDirection = '';
 
             if (hasTarget) {
-                const bullseye = row.querySelector('.bi-bullseye');
-                const targetTitle = bullseye.getAttribute('title');
-                // Try to determine direction from target column badges
-                const targetCell = row.cells[2]; // Target column (if show_targets is on)
-                if (targetCell) {
-                    if (targetCell.textContent.includes('↑') || targetCell.textContent.includes('At or Above')) {
-                        targetIcon = '🎯↑';
-                        targetDirection = 'maximize';
-                    } else if (targetCell.textContent.includes('↓') || targetCell.textContent.includes('At or Below')) {
-                        targetIcon = '🎯↓';
-                        targetDirection = 'minimize';
-                    } else if (targetCell.textContent.includes('±') || targetCell.textContent.includes('Band')) {
-                        targetIcon = '🎯±';
-                        targetDirection = 'exact';
-                    } else {
-                        targetIcon = '🎯';
-                    }
+                // Look for target badges in the row to determine direction
+                const rowText = row.textContent;
+                if (rowText.includes('↑') || rowText.includes('At or Above')) {
+                    targetIcon = '🎯↑';
+                } else if (rowText.includes('↓') || rowText.includes('At or Below')) {
+                    targetIcon = '🎯↓';
+                } else if (rowText.includes('±') || rowText.includes('Band')) {
+                    targetIcon = '🎯±';
+                } else {
+                    targetIcon = '🎯';
                 }
             }
 
@@ -1106,17 +1104,21 @@
                 checkbox: checkbox,
                 hasTarget: hasTarget,
                 targetIcon: targetIcon,
-                targetDirection: targetDirection,
                 isSelected: checkbox.checked
             });
         });
+
+        console.log('Available KPIs:', kpis); // Debug log
         return kpis;
     }
 
     // Perform search
     function performKPISearch(query) {
+        console.log('performKPISearch called with query:', query); // Debug
         const availableKPIs = getAvailableKPIs();
         const lowerQuery = query.toLowerCase().trim();
+
+        console.log('Available KPIs count:', availableKPIs.length); // Debug
 
         if (lowerQuery.length === 0) {
             kpiSearchResults.style.display = 'none';
@@ -1127,6 +1129,8 @@
         const matches = availableKPIs.filter(kpi =>
             kpi.name.toLowerCase().includes(lowerQuery)
         );
+
+        console.log('Matches found:', matches.length); // Debug
 
         if (matches.length === 0) {
             kpiSearchResults.innerHTML = '<div style="padding: 12px; color: #6c757d; text-align: center;"><i class="bi bi-search"></i> No matching KPIs found</div>';
@@ -1186,6 +1190,7 @@
 
     // Search input event
     kpiSearchInput.addEventListener('input', function() {
+        console.log('Search input event fired, value:', this.value); // Debug
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(() => {
             performKPISearch(this.value);
