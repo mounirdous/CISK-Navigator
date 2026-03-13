@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Porter's Five Forces - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.porters-edit-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2.5rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    text-align: center;
+}
+
+.porters-edit-header h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.porters-edit-header p {
+    margin: 0.75rem 0 0 0;
+    opacity: 0.95;
+    font-size: 1.1rem;
+}
+
+.porters-section {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.porters-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.porters-section-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.porters-section-icon {
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+}
+
+.porters-new-entrants .porters-section-icon {
+    background: linear-gradient(135deg, #007bff 0%, #0dcaf0 100%);
+}
+
+.porters-suppliers .porters-section-icon {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.porters-buyers .porters-section-icon {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.porters-substitutes .porters-section-icon {
+    background: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+}
+
+.porters-rivalry .porters-section-icon {
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+}
+
+.porters-textarea {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 8px;
+    padding: 1rem;
+    width: 100%;
+    min-height: 150px;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+.porters-textarea:focus {
+    outline: none;
+    border-color: var(--border-hover);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.porters-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-lg-10">
+        <div class="card hover-lift">
+            <div class="porters-edit-header">
+                <h2>
+                    <i class="bi bi-building"></i>
+                    Edit Porter's Five Forces Analysis
+                </h2>
+                <p>{{ organization.name }}</p>
+            </div>
+
+            <div class="card-body" style="padding: 2.5rem;">
+                <div class="alert alert-info d-flex align-items-center mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <div>
+                        <strong>Porter's Five Forces:</strong>
+                        Analyze the competitive forces that shape your industry and determine strategic positioning.
+                        Use bullet points or paragraphs to organize your analysis.
+                    </div>
+                </div>
+
+                <form method="POST" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+
+                    <!-- Threat of New Entrants -->
+                    <div class="porters-section porters-new-entrants">
+                        <div class="porters-section-header">
+                            <div class="porters-section-icon">
+                                <i class="bi bi-door-open-fill" style="color: white;"></i>
+                            </div>
+                            <h3>Threat of New Entrants</h3>
+                        </div>
+                        <label for="porters_new_entrants" class="form-label fw-semibold">Barriers to Entry & New Competition</label>
+                        <textarea
+                            class="porters-textarea"
+                            id="porters_new_entrants"
+                            name="porters_new_entrants"
+                            placeholder="How easy is it for new competitors to enter the market?&#10;What barriers exist (capital requirements, regulations, brand loyalty)?&#10;How likely are new entrants to disrupt the market?"
+                        >{{ organization.porters_new_entrants or '' }}</textarea>
+                        <div class="porters-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: high capital requirements, strong brand loyalty, economies of scale, regulatory barriers
+                        </div>
+                    </div>
+
+                    <!-- Bargaining Power of Suppliers -->
+                    <div class="porters-section porters-suppliers">
+                        <div class="porters-section-header">
+                            <div class="porters-section-icon">
+                                <i class="bi bi-truck" style="color: white;"></i>
+                            </div>
+                            <h3>Bargaining Power of Suppliers</h3>
+                        </div>
+                        <label for="porters_suppliers" class="form-label fw-semibold">Supplier Influence & Control</label>
+                        <textarea
+                            class="porters-textarea"
+                            id="porters_suppliers"
+                            name="porters_suppliers"
+                            placeholder="How much power do suppliers have over pricing and terms?&#10;How many alternative suppliers exist?&#10;What is the cost of switching suppliers?"
+                        >{{ organization.porters_suppliers or '' }}</textarea>
+                        <div class="porters-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: few alternative suppliers, high switching costs, unique inputs, supplier concentration
+                        </div>
+                    </div>
+
+                    <!-- Bargaining Power of Buyers -->
+                    <div class="porters-section porters-buyers">
+                        <div class="porters-section-header">
+                            <div class="porters-section-icon">
+                                <i class="bi bi-people-fill" style="color: white;"></i>
+                            </div>
+                            <h3>Bargaining Power of Buyers</h3>
+                        </div>
+                        <label for="porters_buyers" class="form-label fw-semibold">Customer Influence & Pressure</label>
+                        <textarea
+                            class="porters-textarea"
+                            id="porters_buyers"
+                            name="porters_buyers"
+                            placeholder="How much power do buyers have over pricing?&#10;How price-sensitive are customers?&#10;Can customers easily switch to competitors?"
+                        >{{ organization.porters_buyers or '' }}</textarea>
+                        <div class="porters-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: large buyers, low switching costs, price sensitivity, standardized products
+                        </div>
+                    </div>
+
+                    <!-- Threat of Substitutes -->
+                    <div class="porters-section porters-substitutes">
+                        <div class="porters-section-header">
+                            <div class="porters-section-icon">
+                                <i class="bi bi-arrow-repeat" style="color: white;"></i>
+                            </div>
+                            <h3>Threat of Substitutes</h3>
+                        </div>
+                        <label for="porters_substitutes" class="form-label fw-semibold">Alternative Products & Services</label>
+                        <textarea
+                            class="porters-textarea"
+                            id="porters_substitutes"
+                            name="porters_substitutes"
+                            placeholder="What alternative solutions exist for customers?&#10;How easy is it for customers to switch to substitutes?&#10;How do substitutes compare in price and performance?"
+                        >{{ organization.porters_substitutes or '' }}</textarea>
+                        <div class="porters-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: alternative technologies, different approaches to same need, price-performance trade-offs
+                        </div>
+                    </div>
+
+                    <!-- Competitive Rivalry -->
+                    <div class="porters-section porters-rivalry">
+                        <div class="porters-section-header">
+                            <div class="porters-section-icon">
+                                <i class="bi bi-lightning-fill" style="color: white;"></i>
+                            </div>
+                            <h3>Competitive Rivalry</h3>
+                        </div>
+                        <label for="porters_rivalry" class="form-label fw-semibold">Competition Intensity & Dynamics</label>
+                        <textarea
+                            class="porters-textarea"
+                            id="porters_rivalry"
+                            name="porters_rivalry"
+                            placeholder="How intense is competition among existing rivals?&#10;How many competitors exist and how similar are they?&#10;What are the competitive strategies being used?"
+                        >{{ organization.porters_rivalry or '' }}</textarea>
+                        <div class="porters-hint">
+                            <i class="bi bi-arrow-return-right"></i> Examples: many competitors, slow market growth, high exit barriers, price wars, innovation battles
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Save Porter's Five Forces Analysis
+                        </button>
+                        <a href="{{ url_for('organization_admin.organization_porters') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

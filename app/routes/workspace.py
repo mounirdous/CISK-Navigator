@@ -524,10 +524,14 @@ def index():
             active_preset = preset
             break
 
+    # Get organization object for Porter's completion
+    organization = Organization.query.get(org_id)
+
     return render_template(
         "workspace/index.html",
         org_id=org_id,
         org_name=org_name,
+        organization=organization,
         spaces=spaces,
         value_types=value_types,
         hidden_value_types=hidden_value_types,

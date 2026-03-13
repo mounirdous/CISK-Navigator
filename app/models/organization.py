@@ -29,6 +29,13 @@ class Organization(db.Model):
     deleted_at = db.Column(db.DateTime, nullable=True)
     deleted_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
+    # Porter's Five Forces Analysis
+    porters_new_entrants = db.Column(db.Text, nullable=True, comment="Porter's: Threat of new entrants")
+    porters_suppliers = db.Column(db.Text, nullable=True, comment="Porter's: Bargaining power of suppliers")
+    porters_buyers = db.Column(db.Text, nullable=True, comment="Porter's: Bargaining power of buyers")
+    porters_substitutes = db.Column(db.Text, nullable=True, comment="Porter's: Threat of substitutes")
+    porters_rivalry = db.Column(db.Text, nullable=True, comment="Porter's: Competitive rivalry")
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -64,6 +71,32 @@ class Organization(db.Model):
         from app.models import Organization
 
         return Organization.query.filter_by(is_deleted=False)
+
+    def get_porters_completion(self):
+        """Get Porter's Five Forces completion status
+
+        Returns:
+            tuple: (filled_count, total_count, completion_status)
+            completion_status: 'empty', 'partial', 'complete'
+        """
+        porters_fields = [
+            self.porters_new_entrants,
+            self.porters_suppliers,
+            self.porters_buyers,
+            self.porters_substitutes,
+            self.porters_rivalry,
+        ]
+        filled = sum(1 for field in porters_fields if field and field.strip())
+        total = len(porters_fields)
+
+        if filled == 0:
+            status = "empty"
+        elif filled == total:
+            status = "complete"
+        else:
+            status = "partial"
+
+        return (filled, total, status)
 
     def __repr__(self):
         return f"<Organization {self.name}>"

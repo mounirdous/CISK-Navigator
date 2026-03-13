@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Porter's Five Forces - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.porters-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem 2.5rem;
+    border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.porters-header-title h2 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.porters-header-title p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.95;
+    font-size: 1.1rem;
+}
+
+.porters-header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.porters-info {
+    background: rgba(102, 126, 234, 0.1);
+    border-left: 4px solid #667eea;
+    padding: 1rem 1.25rem;
+    margin: 1.5rem 2rem;
+    border-radius: 8px;
+}
+
+.porters-info small {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.porters-layout {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, auto);
+    gap: 2rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.porters-card {
+    background: var(--bg-secondary);
+    border: 3px solid var(--border-color);
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    min-height: 250px;
+}
+
+.porters-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.2);
+}
+
+/* Position cards in cross/+ pattern */
+.porters-new-entrants {
+    grid-column: 2;
+    grid-row: 1;
+    border-color: #007bff;
+}
+
+.porters-suppliers {
+    grid-column: 1;
+    grid-row: 2;
+    border-color: #28a745;
+}
+
+.porters-rivalry {
+    grid-column: 2;
+    grid-row: 2;
+    border-color: #dc3545;
+    min-height: 300px;
+}
+
+.porters-buyers {
+    grid-column: 3;
+    grid-row: 2;
+    border-color: #ffc107;
+}
+
+.porters-substitutes {
+    grid-column: 2;
+    grid-row: 3;
+    border-color: #6f42c1;
+}
+
+.porters-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    margin: 0;
+    border-bottom: none;
+}
+
+.porters-new-entrants .porters-card-header {
+    background: linear-gradient(135deg, #007bff 0%, #0dcaf0 100%);
+}
+
+.porters-suppliers .porters-card-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.porters-buyers .porters-card-header {
+    background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.porters-substitutes .porters-card-header {
+    background: linear-gradient(135deg, #6f42c1 0%, #d63384 100%);
+}
+
+.porters-rivalry .porters-card-header {
+    background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+}
+
+.porters-card-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: white;
+    line-height: 1.3;
+}
+
+.porters-icon {
+    font-size: 1.8rem;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.porters-content {
+    flex: 1;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+.porters-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.porters-content ul li {
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+    padding-left: 1.75rem;
+    position: relative;
+}
+
+.porters-content ul li:last-child {
+    margin-bottom: 0;
+}
+
+.porters-new-entrants .porters-content ul li:before {
+    content: "→";
+    position: absolute;
+    left: 0;
+    color: #007bff;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.porters-suppliers .porters-content ul li:before {
+    content: "◀";
+    position: absolute;
+    left: 0;
+    color: #28a745;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.porters-buyers .porters-content ul li:before {
+    content: "▶";
+    position: absolute;
+    left: 0;
+    color: #ffc107;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.porters-substitutes .porters-content ul li:before {
+    content: "⟳";
+    position: absolute;
+    left: 0;
+    color: #6f42c1;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.porters-rivalry .porters-content ul li:before {
+    content: "⚡";
+    position: absolute;
+    left: 0;
+    color: #dc3545;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.porters-empty {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: 2rem 1rem;
+    font-size: 1rem;
+}
+
+@media (max-width: 1200px) {
+    .porters-layout {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto;
+    }
+
+    .porters-new-entrants {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .porters-suppliers {
+        grid-column: 2;
+        grid-row: 1;
+    }
+
+    .porters-rivalry {
+        grid-column: 1 / 3;
+        grid-row: 2;
+    }
+
+    .porters-buyers {
+        grid-column: 1;
+        grid-row: 3;
+    }
+
+    .porters-substitutes {
+        grid-column: 2;
+        grid-row: 3;
+    }
+}
+
+@media (max-width: 768px) {
+    .porters-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.5rem;
+    }
+
+    .porters-layout {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .porters-new-entrants,
+    .porters-suppliers,
+    .porters-rivalry,
+    .porters-buyers,
+    .porters-substitutes {
+        grid-column: 1;
+        grid-row: auto;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in" style="max-width: 1600px;">
+    <div class="card hover-lift" style="margin: 1rem;">
+        <div class="porters-header">
+            <div class="porters-header-title">
+                <h2>
+                    <i class="bi bi-building"></i>
+                    Porter's Five Forces Analysis
+                </h2>
+                <p>{{ organization.name }}</p>
+            </div>
+            <div class="porters-header-actions">
+                {% if current_user.is_global_admin or current_user.is_org_admin(organization.id) %}
+                <a href="{{ url_for('organization_admin.edit_organization_porters') }}" class="btn btn-light">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                {% endif %}
+                <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
+        </div>
+
+        <div class="porters-info">
+            <small>
+                <i class="bi bi-info-circle"></i>
+                <strong>Competitive Forces Framework:</strong> Analyze five forces that shape industry competition and profitability.
+                The central rivalry is influenced by four surrounding forces.
+            </small>
+        </div>
+
+        <div class="porters-layout">
+            <!-- Threat of New Entrants (Top) -->
+            <div class="porters-card porters-new-entrants">
+                <div class="porters-card-header">
+                    <div class="porters-icon">
+                        <i class="bi bi-door-open-fill"></i>
+                    </div>
+                    <h3>Threat of<br>New Entrants</h3>
+                </div>
+                <div class="porters-content">
+                    {% if organization.porters_new_entrants %}
+                        <ul>
+                        {% for line in organization.porters_new_entrants.split('\n') %}
+                            {% set clean_line = line.strip() %}
+                            {% if clean_line %}
+                                {% if clean_line.startswith('-') or clean_line.startswith('•') or clean_line.startswith('*') %}
+                                    <li>{{ clean_line[1:].strip() }}</li>
+                                {% else %}
+                                    <li>{{ clean_line }}</li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="porters-empty">Not yet analyzed</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bargaining Power of Suppliers (Left) -->
+            <div class="porters-card porters-suppliers">
+                <div class="porters-card-header">
+                    <div class="porters-icon">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                    <h3>Bargaining Power<br>of Suppliers</h3>
+                </div>
+                <div class="porters-content">
+                    {% if organization.porters_suppliers %}
+                        <ul>
+                        {% for line in organization.porters_suppliers.split('\n') %}
+                            {% set clean_line = line.strip() %}
+                            {% if clean_line %}
+                                {% if clean_line.startswith('-') or clean_line.startswith('•') or clean_line.startswith('*') %}
+                                    <li>{{ clean_line[1:].strip() }}</li>
+                                {% else %}
+                                    <li>{{ clean_line }}</li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="porters-empty">Not yet analyzed</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Competitive Rivalry (Center - highlighted) -->
+            <div class="porters-card porters-rivalry">
+                <div class="porters-card-header">
+                    <div class="porters-icon">
+                        <i class="bi bi-lightning-fill"></i>
+                    </div>
+                    <h3>Competitive<br>Rivalry</h3>
+                </div>
+                <div class="porters-content">
+                    {% if organization.porters_rivalry %}
+                        <ul>
+                        {% for line in organization.porters_rivalry.split('\n') %}
+                            {% set clean_line = line.strip() %}
+                            {% if clean_line %}
+                                {% if clean_line.startswith('-') or clean_line.startswith('•') or clean_line.startswith('*') %}
+                                    <li>{{ clean_line[1:].strip() }}</li>
+                                {% else %}
+                                    <li>{{ clean_line }}</li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="porters-empty">Not yet analyzed</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Bargaining Power of Buyers (Right) -->
+            <div class="porters-card porters-buyers">
+                <div class="porters-card-header">
+                    <div class="porters-icon">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h3>Bargaining Power<br>of Buyers</h3>
+                </div>
+                <div class="porters-content">
+                    {% if organization.porters_buyers %}
+                        <ul>
+                        {% for line in organization.porters_buyers.split('\n') %}
+                            {% set clean_line = line.strip() %}
+                            {% if clean_line %}
+                                {% if clean_line.startswith('-') or clean_line.startswith('•') or clean_line.startswith('*') %}
+                                    <li>{{ clean_line[1:].strip() }}</li>
+                                {% else %}
+                                    <li>{{ clean_line }}</li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="porters-empty">Not yet analyzed</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Threat of Substitutes (Bottom) -->
+            <div class="porters-card porters-substitutes">
+                <div class="porters-card-header">
+                    <div class="porters-icon">
+                        <i class="bi bi-arrow-repeat"></i>
+                    </div>
+                    <h3>Threat of<br>Substitutes</h3>
+                </div>
+                <div class="porters-content">
+                    {% if organization.porters_substitutes %}
+                        <ul>
+                        {% for line in organization.porters_substitutes.split('\n') %}
+                            {% set clean_line = line.strip() %}
+                            {% if clean_line %}
+                                {% if clean_line.startswith('-') or clean_line.startswith('•') or clean_line.startswith('*') %}
+                                    <li>{{ clean_line[1:].strip() }}</li>
+                                {% else %}
+                                    <li>{{ clean_line }}</li>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="porters-empty">Not yet analyzed</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -40,6 +40,7 @@ from app.models import (
     InitiativeSystemLink,
     KPIGovernanceBodyLink,
     KPIValueTypeConfig,
+    Organization,
     RollupRule,
     Space,
     System,
@@ -167,6 +168,44 @@ def any_org_admin_permission_required(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+# Porter's Five Forces Analysis (Organization Level)
+
+
+@bp.route("/porters")
+@login_required
+@organization_required
+def organization_porters():
+    """View Porter's Five Forces analysis for the organization"""
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+    return render_template("organization_admin/organization_porters.html", organization=org)
+
+
+@bp.route("/porters/edit", methods=["GET", "POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def edit_organization_porters():
+    """Edit Porter's Five Forces analysis for the organization"""
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+
+    if request.method == "POST":
+        org.porters_new_entrants = request.form.get("porters_new_entrants", "").strip() or None
+        org.porters_suppliers = request.form.get("porters_suppliers", "").strip() or None
+        org.porters_buyers = request.form.get("porters_buyers", "").strip() or None
+        org.porters_substitutes = request.form.get("porters_substitutes", "").strip() or None
+        org.porters_rivalry = request.form.get("porters_rivalry", "").strip() or None
+
+        db.session.commit()
+        flash(f"Porter's Five Forces analysis for {org.name} updated successfully", "success")
+        return redirect(url_for("organization_admin.organization_porters"))
+
+    return render_template(
+        "organization_admin/edit_organization_porters.html", organization=org, csrf_token=generate_csrf()
+    )
 
 
 @bp.route("/")
@@ -1227,6 +1266,8 @@ def create_kpi(link_id):
         preselect_value_types=preselect_value_types,
         preselect_governance_bodies=preselect_governance_bodies,
     )
+
+
 @bp.route("/kpis/<int:kpi_id>/edit", methods=["GET", "POST"])
 @login_required
 @organization_required
