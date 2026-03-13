@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Quick Create KPI{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-lightning-fill"></i>
+                        Quick Create KPI
+                    </h4>
+                    <p class="mb-0 small opacity-75">One form to create everything - hierarchy auto-created!</p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>Smart Creation:</strong> Fill in the fields below. If spaces/challenges/initiatives don't exist, they'll be created automatically!
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                        <!-- KPI Name -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-tag"></i> KPI Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-lg" name="kpi_name"
+                                   placeholder="e.g., Security Budget, Energy Consumption, Customer Satisfaction"
+                                   required>
+                        </div>
+
+                        <!-- Location Path -->
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-building"></i> Space
+                                </label>
+                                <input type="text" class="form-control" name="space_name"
+                                       placeholder="e.g., IT Department"
+                                       list="existing-spaces">
+                                <datalist id="existing-spaces">
+                                    {% for space in existing_spaces %}
+                                    <option value="{{ space.name }}">
+                                    {% endfor %}
+                                </datalist>
+                                <small class="form-text text-muted">Created if doesn't exist</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-flag"></i> Challenge
+                                </label>
+                                <input type="text" class="form-control" name="challenge_name"
+                                       placeholder="e.g., Infrastructure"
+                                       list="existing-challenges">
+                                <datalist id="existing-challenges">
+                                    {% for challenge in existing_challenges %}
+                                    <option value="{{ challenge.name }}">
+                                    {% endfor %}
+                                </datalist>
+                                <small class="form-text text-muted">Created if doesn't exist</small>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-rocket"></i> Initiative
+                                </label>
+                                <input type="text" class="form-control" name="initiative_name"
+                                       placeholder="e.g., Security"
+                                       list="existing-initiatives">
+                                <datalist id="existing-initiatives">
+                                    {% for initiative in existing_initiatives %}
+                                    <option value="{{ initiative.name }}">
+                                    {% endfor %}
+                                </datalist>
+                                <small class="form-text text-muted">Created if doesn't exist</small>
+                            </div>
+                        </div>
+
+                        <!-- System Name -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-gear"></i> System
+                            </label>
+                            <input type="text" class="form-control" name="system_name"
+                                   value="General"
+                                   placeholder="e.g., Office Buildings">
+                            <small class="form-text text-muted">Default: "General"</small>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-file-text"></i> Description (Optional)
+                            </label>
+                            <textarea class="form-control" name="kpi_description" rows="2"
+                                      placeholder="Brief description of what this KPI tracks..."></textarea>
+                        </div>
+
+                        <!-- Value Types -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-hash"></i> Value Types <span class="text-danger">*</span>
+                            </label>
+                            <div class="card border">
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for vt in value_types %}
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="value_type_ids"
+                                                       value="{{ vt.id }}" id="vt_{{ vt.id }}">
+                                                <label class="form-check-label" for="vt_{{ vt.id }}">
+                                                    <strong>{{ vt.name }}</strong>
+                                                    <span class="badge bg-info">{{ vt.kind }}</span>
+                                                    {% if vt.unit_label %}
+                                                    <small class="text-muted">({{ vt.unit_label }})</small>
+                                                    {% endif %}
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Select what metrics this KPI tracks</small>
+                        </div>
+
+                        <!-- Governance Bodies -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">
+                                <i class="bi bi-people"></i> Governance Body <span class="text-danger">*</span>
+                            </label>
+                            <div class="card border">
+                                <div class="card-body">
+                                    {% for gb in governance_bodies %}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="governance_body_ids"
+                                               value="{{ gb.id }}" id="gb_{{ gb.id }}"
+                                               {% if governance_bodies|length == 1 %}checked{% endif %}>
+                                        <label class="form-check-label" for="gb_{{ gb.id }}">
+                                            <strong>{{ gb.name }}</strong>
+                                            {% if gb.description %}
+                                            <br><small class="text-muted">{{ gb.description }}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="form-text text-muted">Who oversees this KPI?</small>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-lightning-fill"></i> Create KPI + Hierarchy
+                            </button>
+                            <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-secondary btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Example -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Example</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Input:</strong></p>
+                    <ul class="small mb-3">
+                        <li>KPI Name: "Energy Consumption"</li>
+                        <li>Space: "Corporate" → Challenge: "Sustainability" → Initiative: "Green Buildings"</li>
+                        <li>System: "Office Buildings"</li>
+                        <li>Value Types: Cost €, CO2 Emissions</li>
+                    </ul>
+                    <p class="mb-2"><strong>Result:</strong></p>
+                    <p class="small text-success mb-0">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Full hierarchy created automatically! Navigate to workspace to see your KPI with smart rollup defaults already configured.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
