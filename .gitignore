@@ -43,6 +43,8 @@ nohup.out
 !app/SPECIFICATIONS.md
 !app/ARCHITECTURE.md
 !scripts/README.md
+!docs/**/*.md
+!USER_GUIDE*.md
 START_HERE_README.txt
 
 # Database files (local only)
@@ -72,4 +74,3 @@ requirements.new.txt
 requirements-*.txt
 !requirements.txt
 .local-pc-notes
-
