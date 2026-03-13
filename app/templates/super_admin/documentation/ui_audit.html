@@ -88,12 +88,21 @@
                     {% for category, icons in audit_data.icons.items() %}
                     <h6>{{ category|replace('_', ' ')|title }}</h6>
                     <div class="row">
-                        {% for icon_name, icon_class in icons.items() %}
-                        <div class="col-md-3 mb-2">
-                            <i class="{{ icon_class }} me-2"></i>
-                            <strong>{{ icon_name|replace('_', ' ')|title }}</strong>
-                        </div>
-                        {% endfor %}
+                        {% if icons is mapping %}
+                            {% for icon_name, icon_class in icons.items() %}
+                            <div class="col-md-3 mb-2">
+                                {% if icon_name not in ['usage', 'locations'] %}
+                                <strong>{{ icon_name|replace('_', ' ')|title }}:</strong> {{ icon_class }}
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            {% for icon in icons %}
+                            <div class="col-md-4 mb-2">
+                                <strong>{{ icon.name }}</strong>: {{ icon.usage }}
+                            </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
                     <hr>
                     {% endfor %}
@@ -115,13 +124,27 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    {% for category, buttons in audit_data.buttons.items() %}
+                    {% for category, button_data in audit_data.buttons.items() %}
                     <h6>{{ category|replace('_', ' ')|title }}</h6>
                     <div class="mb-3">
-                        {% for button in buttons %}
-                        <p><strong>{{ button.name }}:</strong> {{ button.description }}</p>
-                        {% endfor %}
+                        {% if button_data is mapping %}
+                            <p><strong>Class:</strong> <code>{{ button_data.class }}</code></p>
+                            {% if button_data.color %}
+                            <p><strong>Color:</strong> <span style="color: {{ button_data.color }}">{{ button_data.color }}</span></p>
+                            {% endif %}
+                            {% if button_data.usage %}
+                            <p><strong>Usage:</strong> {{ button_data.usage|join(', ') }}</p>
+                            {% endif %}
+                            {% if button_data.consistency %}
+                            <p><strong>Consistency:</strong> {{ button_data.consistency }}</p>
+                            {% endif %}
+                        {% else %}
+                            {% for button in button_data %}
+                            <p><strong>{{ button.name }}:</strong> {{ button.description }}</p>
+                            {% endfor %}
+                        {% endif %}
                     </div>
+                    <hr class="my-3">
                     {% endfor %}
                 </div>
             </div>
