@@ -1064,7 +1064,7 @@
     // KPI Quick Add Search
     const kpiSearchInput = document.getElementById('kpi-search-input');
     const kpiSearchResults = document.getElementById('kpi-search-results');
-    let searchTimeout = null;
+    let kpiSearchTimeout = null;
 
     console.log('KPI Search initialized:', {
         searchInput: kpiSearchInput,
@@ -1191,8 +1191,8 @@
     // Search input event
     kpiSearchInput.addEventListener('input', function() {
         console.log('Search input event fired, value:', this.value); // Debug
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
+        clearTimeout(kpiSearchTimeout);
+        kpiSearchTimeout = setTimeout(() => {
             performKPISearch(this.value);
         }, 200); // 200ms debounce
     });
