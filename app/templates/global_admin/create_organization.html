@@ -109,7 +109,8 @@
                                         <div class="alert alert-info py-2 mb-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" name="perm_is_org_admin_{{ user.id }}" id="perm_is_org_admin_{{ user.id }}"
-                                                       onchange="toggleOrgAdminPerms({{ user.id }})">
+                                                       onchange="toggleOrgAdminPerms({{ user.id }})"
+                                                       {% if preserved_permissions and preserved_permissions.get(user.id, {}).get('is_org_admin') %}checked{% endif %}>
                                                 <label class="form-check-label fw-bold" for="perm_is_org_admin_{{ user.id }}">
                                                     <i class="bi bi-shield-fill-check text-primary"></i> Organization Administrator
                                                 </label>
@@ -129,7 +130,8 @@
                                             <div class="row g-2">
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_spaces_{{ user.id }}" id="perm_spaces_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_spaces_{{ user.id }}" id="perm_spaces_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('spaces', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_spaces_{{ user.id }}">
                                                             <i class="bi bi-grid-3x3"></i> Spaces
                                                         </label>
@@ -137,7 +139,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_challenges_{{ user.id }}" id="perm_challenges_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_challenges_{{ user.id }}" id="perm_challenges_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('challenges', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_challenges_{{ user.id }}">
                                                             <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
                                                         </label>
@@ -145,7 +148,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ user.id }}" id="perm_initiatives_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_initiatives_{{ user.id }}" id="perm_initiatives_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('initiatives', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_initiatives_{{ user.id }}">
                                                             <span style="font-weight: bold;">δ</span> Initiatives
                                                         </label>
@@ -153,7 +157,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_systems_{{ user.id }}" id="perm_systems_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_systems_{{ user.id }}" id="perm_systems_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('systems', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_systems_{{ user.id }}">
                                                             <i class="bi bi-cpu"></i> Systems
                                                         </label>
@@ -161,7 +166,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_kpis_{{ user.id }}" id="perm_kpis_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_kpis_{{ user.id }}" id="perm_kpis_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('kpis', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_kpis_{{ user.id }}">
                                                             <span style="font-weight: bold;">Ψ</span> KPIs
                                                         </label>
@@ -178,7 +184,8 @@
                                             <div class="row g-2">
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_value_types_{{ user.id }}" id="perm_value_types_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_value_types_{{ user.id }}" id="perm_value_types_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('value_types', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_value_types_{{ user.id }}">
                                                             <i class="bi bi-hash"></i> Value Types
                                                         </label>
@@ -186,7 +193,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ user.id }}" id="perm_governance_bodies_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_governance_bodies_{{ user.id }}" id="perm_governance_bodies_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('governance_bodies', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_governance_bodies_{{ user.id }}">
                                                             <i class="bi bi-bank"></i> Governance Bodies
                                                         </label>
@@ -204,7 +212,8 @@
                                                 <div class="col-md-6">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" name="perm_view_comments_{{ user.id }}" id="perm_view_comments_{{ user.id }}"
-                                                               onchange="toggleAddComments({{ user.id }})" checked>
+                                                               onchange="toggleAddComments({{ user.id }})"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('view_comments', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_view_comments_{{ user.id }}">
                                                             <i class="bi bi-eye"></i> View Comments
                                                         </label>
@@ -212,7 +221,8 @@
                                                 </div>
                                                 <div class="col-md-6">
                                                     <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ user.id }}" id="perm_add_comments_{{ user.id }}" checked>
+                                                        <input class="form-check-input" type="checkbox" name="perm_add_comments_{{ user.id }}" id="perm_add_comments_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('add_comments', True) %}checked{% endif %}>
                                                         <label class="form-check-label" for="perm_add_comments_{{ user.id }}">
                                                             <i class="bi bi-chat-left-text"></i> Add Comments
                                                         </label>

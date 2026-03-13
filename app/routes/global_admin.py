@@ -376,6 +376,23 @@ def create_organization():
     all_users = User.query.filter_by(is_active=True).order_by(User.display_name, User.login).all()
     form.users.choices = [(u.id, u.display_name or u.login) for u in all_users]
 
+    # Preserve permission checkboxes on validation failure
+    preserved_permissions = {}
+    if request.method == "POST":
+        for user in all_users:
+            preserved_permissions[user.id] = {
+                "is_org_admin": request.form.get(f"perm_is_org_admin_{user.id}") == "on",
+                "spaces": request.form.get(f"perm_spaces_{user.id}") == "on",
+                "value_types": request.form.get(f"perm_value_types_{user.id}") == "on",
+                "governance_bodies": request.form.get(f"perm_governance_bodies_{user.id}") == "on",
+                "challenges": request.form.get(f"perm_challenges_{user.id}") == "on",
+                "initiatives": request.form.get(f"perm_initiatives_{user.id}") == "on",
+                "systems": request.form.get(f"perm_systems_{user.id}") == "on",
+                "kpis": request.form.get(f"perm_kpis_{user.id}") == "on",
+                "view_comments": request.form.get(f"perm_view_comments_{user.id}") == "on",
+                "add_comments": request.form.get(f"perm_add_comments_{user.id}") == "on",
+            }
+
     if form.validate_on_submit():
         # Check if an organization with this name already exists (including deleted ones)
         existing_org = Organization.query.filter_by(name=form.name.data).first()
@@ -388,14 +405,24 @@ def create_organization():
                     f"Please restore it from the Organizations list or choose a different name.",
                     "warning",
                 )
-                return render_template("global_admin/create_organization.html", form=form, all_users=all_users)
+                return render_template(
+                    "global_admin/create_organization.html",
+                    form=form,
+                    all_users=all_users,
+                    preserved_permissions=preserved_permissions,
+                )
             else:
                 # Active organization with same name exists
                 flash(
                     f"An organization named '{form.name.data}' already exists. Please choose a different name.",
                     "danger",
                 )
-                return render_template("global_admin/create_organization.html", form=form, all_users=all_users)
+                return render_template(
+                    "global_admin/create_organization.html",
+                    form=form,
+                    all_users=all_users,
+                    preserved_permissions=preserved_permissions,
+                )
 
         org = Organization(name=form.name.data, description=form.description.data, is_active=form.is_active.data)
         db.session.add(org)
@@ -431,7 +458,12 @@ def create_organization():
         flash(f"Organization {org.name} created successfully with {len(form.users.data)} user(s)", "success")
         return redirect(url_for("global_admin.organizations"))
 
-    return render_template("global_admin/create_organization.html", form=form, all_users=all_users)
+    return render_template(
+        "global_admin/create_organization.html",
+        form=form,
+        all_users=all_users,
+        preserved_permissions=preserved_permissions if request.method == "POST" else {},
+    )
 
 
 @bp.route("/organizations/<int:org_id>/edit", methods=["GET", "POST"])
