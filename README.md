@@ -1,12 +1,58 @@
-# 🧭 CISK Navigator v1.27.1
+# 🧭 CISK Navigator v1.28.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.27.1-blue)
+![Version](https://img.shields.io/badge/version-1.28.0-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-![Tests](https://img.shields.io/badge/tests-192%20passing-success)
+![Tests](https://img.shields.io/badge/tests-96%20passing-success)
+
+## ✨ What's New in v1.28.0 (March 2026)
+
+### 🎯 **Complete Target System with Visual Zones**
+- **Three Target Types**:
+  - **↑ Maximize** (at or above): Green zone ABOVE target line on charts
+  - **↓ Minimize** (at or below): Green zone BELOW target line on charts
+  - **± Exact** (at with tolerance band): Colored band (e.g., ±10%) on charts
+- **Visual Indicators**: Target badges in tables (🎯↑ 🎯↓ 🎯±)
+- **Chart Integration**: Dashed target lines with shaded acceptable zones
+- **Pivot Table**: Show Targets toggle displays target value, date, type, and tolerance
+- **Hover Tooltips**: Target details on bullseye icon (🎯)
+
+### 📊 **Enhanced Snapshot Pivot Analysis**
+- **Show Targets Column**: Toggle to display/hide target information
+- **Target Badges**: Color-coded badges showing target type and tolerance
+- **Target Date Display**: Shows deadline for each target
+- **Smart Filtering**: Targets respect space/challenge/value type filters
+- **Most Recent Snapshot**: Automatically uses latest snapshot when multiple exist per period
+
+### 📥 **Comprehensive Excel Export**
+- **Metadata Columns**: Organization, Space, Challenge, Initiative, System (before KPI)
+- **Target Columns**: Target Value, Target Date, Target Direction, Tolerance %
+- **Complete Hierarchy**: Full organizational context for each KPI
+- **Filtered Export**: Respects all active filters (space, challenge, value type, date range)
+- **Analysis Ready**: Import directly into BI tools with proper structure
+
+### 🔍 **Live KPI Search for Quick Chart Building**
+- **Instant Search**: Type to find KPIs from filtered results (200ms debounce)
+- **Target Badges**: Shows 🎯↑ (maximize), 🎯↓ (minimize), 🎯± (exact) in results
+- **One-Click Add**: Click result to add KPI to chart (auto-checks checkbox)
+- **Already Selected Indicator**: Dimmed results with "Selected" badge
+- **Toast Notifications**: Confirms KPI addition
+- **No Scrolling**: Find KPIs without scrolling through large tables
+- **Filter Aware**: Only searches within current space/challenge/value type filters
+
+### 🧪 **Test Data Generator**
+- **Comprehensive Script**: `create_full_fake_dataset.py`
+- **10 Sample KPIs**: Examples of all target types:
+  - 2 maximize (Revenue, Customer Satisfaction)
+  - 3 minimize (Operating Costs, CAC, Support Response Time)
+  - 2 exact with bands (Product Dev Time ±15%, Inventory ±10%)
+  - 3 without targets (Marketing, R&D, Infrastructure)
+- **36 Months of Data**: January 2024 - December 2026
+- **Realistic Trends**: Trending up, down, or stable with volatility
+- **Complete Hierarchy**: Space → Challenge → Initiative → System → KPIs
 
 ## ✨ What's New in v1.27.1 (March 2026)
 

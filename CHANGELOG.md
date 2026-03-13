@@ -5,6 +5,79 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.28.0] - 2026-03-13
+
+### Added
+- **🎯 Complete Target System**: Three target types with visual indicators
+  - **↑ Maximize** (at or above): Shows green zone above target line on charts
+  - **↓ Minimize** (at or below): Shows green zone below target line on charts
+  - **± Exact** (at with tolerance band): Shows tolerance band (e.g., ±10%) on charts
+  - Target badges in pivot table showing type and tolerance
+  - Target indicator (🎯) next to KPI names in table
+  - Tooltip on hover showing target value and date
+- **📊 Enhanced Pivot Table**: Show targets column toggle
+  - Displays target value, date, and type badge for each KPI
+  - Works with all three target types
+  - Respects filters (space, challenge, value type, date range)
+- **📈 Target Lines on Charts**: Visual target representation
+  - Dashed target line for all target types
+  - Green shaded zones for maximize/minimize targets
+  - Colored tolerance bands for exact targets
+  - Chart legend shows target direction (↑, ↓, ±)
+- **📥 Enhanced Excel Export**: Comprehensive metadata columns
+  - Added columns: Organization, Space, Challenge, Initiative, System (before KPI)
+  - Added target columns: Target Value, Target Date, Target Direction, Target Tolerance %
+  - All filters applied to export (space, challenge, value type, date range)
+  - Hierarchical organization for better data analysis
+- **🔍 Live KPI Search**: Quick add KPIs to charts
+  - Search input in Chart Builder section
+  - Instant results as you type (200ms debounce)
+  - Searches only within filtered KPIs (respects space/challenge/value type filters)
+  - Shows target badges in search results (🎯↑ 🎯↓ 🎯±)
+  - Indicates already-selected KPIs with badge
+  - One-click to add KPI to chart (auto-checks checkbox)
+  - Toast notification on successful add
+  - No scrolling needed through large KPI tables
+- **🧪 Test Data Generator**: Comprehensive fake dataset script
+  - Script: `create_full_fake_dataset.py`
+  - Creates 10 KPIs with all target type examples:
+    - 2 maximize targets (Revenue, Customer Satisfaction)
+    - 3 minimize targets (Operating Costs, CAC, Support Response Time)
+    - 2 exact targets with bands (Product Dev Time ±15%, Inventory ±10%)
+    - 3 KPIs with no targets (Marketing, R&D, Infrastructure)
+  - 36 months of data (Jan 2024 - Dec 2026)
+  - Realistic trends and volatility
+  - Two value types: Cost and Time to Deliver
+  - Creates complete hierarchy: Space → Challenge → Initiative → System → KPIs
+
+### Fixed
+- **✅ Show Targets Toggle**: Fixed checkbox not submitting value
+  - Added explicit `value="on"` attribute
+  - Target column now appears/disappears correctly when toggled
+- **📅 Multiple Snapshots Per Period**: Uses most recent snapshot
+  - Fixed issue where multiple snapshots in same month/quarter/year could overwrite each other
+  - Now orders by `snapshot_date DESC` to get most recent first
+  - Only stores first (most recent) snapshot per period for each KPI
+  - Predictable and correct behavior when multiple snapshots exist
+
+### Changed
+- **🎨 Pivot Table UI**: Improved target display
+  - Target column has yellow background (#fff3cd) for visibility
+  - Target badges color-coded: green (maximize), blue (minimize), yellow (exact)
+  - Selected KPIs info text updated to mention "Quick Add search"
+- **📊 Chart Builder Layout**: Added Quick Add section
+  - New search input above "Selected KPIs" section
+  - Helper text explains search is within filtered results
+  - Improved workflow for building charts with many KPIs
+
+### Database Changes
+- **🗄️ New Table: `saved_charts`**
+  - Migration: `6dbe28a58429_add_savedchart_model_for_persistent_.py`
+  - Stores user-saved chart configurations (filters, KPIs, colors)
+  - Columns: name, description, year range, view type, chart type, space filter, value type filter, period filter, KPI config IDs with colors (JSON), sharing status
+  - Foreign keys: organization_id, created_by_user_id, space_id (optional), value_type_id (optional)
+  - Supports private/public charts within organization
+
 ## [1.27.1] - 2026-03-13
 
 ### Added

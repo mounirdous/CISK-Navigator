@@ -508,6 +508,178 @@ Pain Points: None identified
 
 ---
 
+## Journey 8: SNAPSHOT PIVOT ANALYSIS & CHARTING (v1.28.0)
+
+### Step 8.1: Access Pivot Analysis
+**Page:** `/workspace/snapshots/pivot`
+**Entry:** Navigate to Workspace → "Snapshot Analysis"
+
+```
+User Journey:
+1. Click "Snapshot Analysis" from main navigation
+2. Land on pivot table view
+3. See filters at top:
+   - View Type (Monthly/Quarterly/Yearly)
+   - Space dropdown
+   - Challenge dropdown (smart: updates based on space)
+   - Value Type dropdown
+   - Show Targets toggle
+   - Time Range (Simple or Custom Dates)
+
+4. Apply filters to narrow down KPIs
+
+Current State: ✅ EXCELLENT - Comprehensive filtering
+Pain Points: None identified
+Visual: Clean filter cards with gradient headers
+```
+
+### Step 8.2: Apply Filters
+**Page:** Same pivot page
+
+```
+User Journey:
+1. Select Space → Challenge dropdown updates automatically
+   Shows: "Challenge (5 in this space)"
+
+2. Select Challenge → Space auto-selects
+
+3. Toggle "Show Targets" → Apply
+   - Table shows new TARGET column
+   - Displays target value, date, type badge (↑↓±), tolerance %
+
+4. Choose date range:
+   - Simple mode: year range + period toggles
+   - Custom mode: month/year pickers for precise range
+
+5. Click "Apply Filters" → Table refreshes
+
+Current State: ✅ EXCELLENT - Smart bidirectional filtering
+Pain Points: None identified
+Note: Private spaces hidden unless user is owner
+```
+
+### Step 8.3: Build Chart with Quick Add
+**Page:** Chart Builder section (below table)
+
+```
+User Journey:
+1. See "Quick Add KPIs" search box
+2. Type "revenue" → Instant results appear:
+   ┌────────────────────────────────┐
+   │ Revenue 🎯↑         Selected   │
+   │ Revenue Growth 🎯↑             │
+   └────────────────────────────────┘
+
+3. Click result → Auto-checks checkbox
+   - Toast notification: "Added Revenue to chart"
+   - Search box clears
+
+4. Alternative: Check boxes directly in table above
+   - Both methods work together
+
+5. Selected KPIs appear with color pickers:
+   ┌────────────────────────────────┐
+   │ ✓ Revenue [🎨 #007bff]        │
+   │ ✓ Operating Costs [🎨 #28a745]│
+   └────────────────────────────────┘
+
+Current State: ✅ EXCELLENT - Two selection methods
+Pain Points: None identified
+Note: Search respects current filters (only searches visible KPIs)
+```
+
+### Step 8.4: View Chart with Targets
+**Page:** Same page, chart renders below
+
+```
+User Journey:
+1. Select chart type: Line or Bar
+2. Click "Update Chart" → Chart appears
+
+3. Chart shows:
+   - KPI lines in selected colors
+   - IF Show Targets enabled:
+     • ↑ Maximize: Green zone ABOVE target line
+     • ↓ Minimize: Green zone BELOW target line
+     • ± Exact: Colored tolerance band
+   - Legend shows target type (↑ At or Above, etc.)
+
+4. Visual zones make targets instantly clear:
+   ┌────────────────────────────────┐
+   │        (green shaded)          │ ← Good zone
+   │ ........target line........... │ ← Target
+   │        (unshaded)              │ ← Below target
+   └────────────────────────────────┘
+
+Current State: ✅ EXCELLENT - Visual target zones
+Pain Points: None identified
+```
+
+### Step 8.5: Save Chart for Later
+**Page:** Click "Save This Chart" button below chart
+
+```
+User Journey:
+1. Click "Save This Chart" → Modal opens
+2. Enter chart name (required)
+3. Add description (optional)
+4. Toggle "Make public" (share with org or keep private)
+5. Click "Save Chart"
+   → Toast: "Chart saved successfully!"
+
+6. Chart saved with:
+   - All selected KPIs + colors
+   - All filters (space, challenge, value type, date range)
+   - Chart type (line/bar)
+   - View type (monthly/quarterly/yearly)
+
+Current State: ✅ EXCELLENT - Saves everything
+Pain Points: None identified
+```
+
+### Step 8.6: Load Saved Chart
+**Page:** Top of page, "Load Saved Chart" section
+
+```
+User Journey:
+1. Click in search box → See all charts instantly
+2. Type to filter (e.g., "revenue")
+3. Results show:
+   ┌────────────────────────────────┐
+   │ Q1 Revenue Analysis            │
+   │ By: You | 3 KPIs | Private     │
+   └────────────────────────────────┘
+
+4. Click chart → Everything loads:
+   - Filters applied
+   - KPIs selected with colors
+   - Chart rendered
+   - Ready to view/modify
+
+Current State: ✅ EXCELLENT - Instant search + load
+Pain Points: None identified
+```
+
+### Step 8.7: Export to Excel
+**Page:** Click "Export Excel" button (top right)
+
+```
+User Journey:
+1. Click "Export Excel" → Download starts
+2. Excel file includes:
+   - Columns: Org, Space, Challenge, Initiative, System, KPI, Value Type
+   - Target columns: Target Value, Date, Direction, Tolerance %
+   - Period columns: All filtered periods with values
+   - Respects all active filters
+
+3. Use in Excel/BI tools for further analysis
+
+Current State: ✅ EXCELLENT - Complete hierarchy + targets
+Pain Points: None identified
+```
+
+---
+
 ## 🎯 SUMMARY: PAIN POINTS BY SEVERITY
 
 ### 🔴 CRITICAL (Must fix immediately):
