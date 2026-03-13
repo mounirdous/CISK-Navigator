@@ -1067,23 +1067,8 @@ def create_kpi(link_id):
     form.value_type_ids.choices = [(vt.id, vt.name) for vt in value_types]
 
     if form.validate_on_submit():
-        # Validate governance body selection
+        # Get governance body selection (optional - allows global KPIs)
         selected_gb_ids = request.form.getlist("governance_body_ids")
-        if not selected_gb_ids:
-            flash("Please select at least one governance body", "danger")
-            # Preserve form data on error - extract submitted data
-            submitted_vt_ids = request.form.getlist("value_type_ids")
-            return render_template(
-                "organization_admin/create_kpi.html",
-                form=form,
-                link=link,
-                initiative=link.initiative,
-                system=link.system,
-                value_types=value_types,
-                governance_bodies=governance_bodies,
-                preselect_value_types=submitted_vt_ids,  # Preserve value type selection
-                preserve_form_data=True,  # Flag to preserve other form data
-            )
 
         # Create the KPI
         kpi = KPI(
@@ -1303,17 +1288,9 @@ def edit_kpi(kpi_id):
             "governance_bodies_count": len(kpi.governance_body_links),
         }
 
-        # Validate governance body selection
+        # Get governance body selection (optional - allows global KPIs)
         selected_gb_ids = request.form.getlist("governance_body_ids")
-        if not selected_gb_ids:
-            flash("Please select at least one governance body", "danger")
-            return render_template(
-                "organization_admin/edit_kpi.html",
-                form=form,
-                kpi=kpi,
-                governance_bodies=governance_bodies,
-                current_gb_ids=current_gb_ids,
-            )
+
         kpi.name = form.name.data
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data

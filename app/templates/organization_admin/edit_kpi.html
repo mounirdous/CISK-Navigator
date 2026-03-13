@@ -389,9 +389,12 @@
                     <div class="form-section">
                         <div class="form-section-title">
                             <i class="bi bi-bank"></i>
-                            Governance Bodies <span class="text-danger">*</span>
+                            Governance Bodies <span class="text-muted">(optional)</span>
                         </div>
-                        <p class="text-muted mb-3">Select at least one governance body that oversees this KPI</p>
+                        <p class="text-muted mb-3">
+                            <strong>💡 Tip:</strong> Leave unselected to create a <strong>Global KPI</strong> visible to all governance bodies regardless of filters.<br>
+                            Or select specific governance bodies to limit visibility when filters are active.
+                        </p>
 
                         <div class="row">
                             {% for gb in governance_bodies %}
