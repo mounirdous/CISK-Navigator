@@ -80,6 +80,33 @@ class Initiative(db.Model):
 
         return best_config
 
+    def get_form_completion(self):
+        """Get initiative form completion status
+
+        Returns:
+            tuple: (filled_count, total_count, completion_status)
+            completion_status: 'empty', 'partial', 'complete'
+        """
+        form_fields = [
+            self.mission,
+            self.success_criteria,
+            self.responsible_person,
+            self.team_members,
+            self.handover_organization,
+            self.deliverables,
+        ]
+        filled = sum(1 for field in form_fields if field and field.strip())
+        total = len(form_fields)
+
+        if filled == 0:
+            status = "empty"
+        elif filled == total:
+            status = "complete"
+        else:
+            status = "partial"
+
+        return (filled, total, status)
+
     def __repr__(self):
         return f"<Initiative {self.name}>"
 

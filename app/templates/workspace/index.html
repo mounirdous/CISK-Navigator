@@ -511,6 +511,62 @@ tr[data-level="kpi"] td {
     opacity: 0.7;
     vertical-align: super;
 }
+
+/* Completion badges for SWOT/Forms */
+.completion-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 18px;
+    padding: 0 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 10px;
+    margin-left: 4px;
+    line-height: 1;
+}
+
+.badge-empty {
+    background-color: #dc3545;
+    color: white;
+    animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.badge-partial {
+    background-color: #ffc107;
+    color: #000;
+}
+
+.badge-complete {
+    background-color: #28a745;
+    color: white;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.05);
+    }
+}
+
+/* Dark mode adjustments */
+.dark-mode .badge-empty {
+    background-color: #e74c3c;
+}
+
+.dark-mode .badge-partial {
+    background-color: #f39c12;
+    color: #000;
+}
+
+.dark-mode .badge-complete {
+    background-color: #27ae60;
+}
 </style>
 {% endblock %}
 
@@ -889,6 +945,14 @@ tr[data-level="kpi"] td {
                             <a href="{{ url_for('organization_admin.space_swot', space_id=space.id) }}" class="text-info" title="View SWOT Analysis">
                                 <i class="bi bi-grid-3x3"></i>
                             </a>
+                            {% set swot_completion = space.get_swot_completion() %}
+                            {% if swot_completion[2] == 'empty' %}
+                                <span class="completion-badge badge-empty" title="SWOT not filled">!</span>
+                            {% elif swot_completion[2] == 'partial' %}
+                                <span class="completion-badge badge-partial" title="SWOT partially filled">{{ swot_completion[0] }}/{{ swot_completion[1] }}</span>
+                            {% elif swot_completion[2] == 'complete' %}
+                                <span class="completion-badge badge-complete" title="SWOT complete"><i class="bi bi-check-lg"></i></span>
+                            {% endif %}
                         </span>
                         {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) %}
                         <span class="action-icons ms-1">
@@ -1033,6 +1097,14 @@ tr[data-level="kpi"] td {
                             <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="text-info" title="View Initiative Form">
                                 <i class="bi bi-file-text"></i>
                             </a>
+                            {% set form_completion = initiative.get_form_completion() %}
+                            {% if form_completion[2] == 'empty' %}
+                                <span class="completion-badge badge-empty" title="Form not filled">!</span>
+                            {% elif form_completion[2] == 'partial' %}
+                                <span class="completion-badge badge-partial" title="Form partially filled">{{ form_completion[0] }}/{{ form_completion[1] }}</span>
+                            {% elif form_completion[2] == 'complete' %}
+                                <span class="completion-badge badge-complete" title="Form complete"><i class="bi bi-check-lg"></i></span>
+                            {% endif %}
                         </span>
                         {% if current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) %}
                         <span class="action-icons ms-1">

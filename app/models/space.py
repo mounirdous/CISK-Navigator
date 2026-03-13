@@ -80,5 +80,30 @@ class Space(db.Model):
 
         return best_config
 
+    def get_swot_completion(self):
+        """Get SWOT completion status
+
+        Returns:
+            tuple: (filled_count, total_count, completion_status)
+            completion_status: 'empty', 'partial', 'complete'
+        """
+        swot_fields = [
+            self.swot_strengths,
+            self.swot_weaknesses,
+            self.swot_opportunities,
+            self.swot_threats,
+        ]
+        filled = sum(1 for field in swot_fields if field and field.strip())
+        total = len(swot_fields)
+
+        if filled == 0:
+            status = "empty"
+        elif filled == total:
+            status = "complete"
+        else:
+            status = "partial"
+
+        return (filled, total, status)
+
     def __repr__(self):
         return f"<Space {self.name}>"
