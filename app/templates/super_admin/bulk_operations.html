@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Operations - Testing{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="bi bi-trash text-danger me-2"></i>
+                        Bulk Operations - Testing & Cleanup
+                    </h1>
+                    <p class="text-muted mb-0">Multi-select delete for testing purposes</p>
+                </div>
+                <a href="{{ url_for('super_admin.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>Testing Tool:</strong> This page is designed for testing and cleanup. Use with caution!
+    </div>
+
+    <div class="row g-4">
+        <!-- Bulk Delete Organizations -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-building"></i> Bulk Delete Organizations</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Select multiple organizations to delete (including all their data)</p>
+
+                    <form method="POST" action="{{ url_for('super_admin.bulk_delete_organizations') }}"
+                          onsubmit="return confirm('Are you SURE? This will permanently delete selected organizations and ALL their data (Spaces, Challenges, Initiatives, Systems, KPIs, Contributions, Comments). This cannot be undone!');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 1rem;">
+                            {% if organizations %}
+                                {% for org in organizations %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="org_ids" value="{{ org.id }}" id="org_{{ org.id }}">
+                                    <label class="form-check-label" for="org_{{ org.id }}">
+                                        <strong>{{ org.name }}</strong>
+                                        {% if org.is_deleted %}<span class="badge bg-secondary">Archived</span>{% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ org.description or 'No description' }}</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No organizations found</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Delete Selected Organizations
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllOrgs()">
+                                Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllOrgs()">
+                                Deselect All
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Delete Users -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> Bulk Delete Users</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Select multiple users to delete</p>
+
+                    <form method="POST" action="{{ url_for('super_admin.bulk_delete_users') }}"
+                          onsubmit="return confirm('Are you SURE? This will permanently delete selected users and all their data. This cannot be undone!');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 4px; padding: 1rem;">
+                            {% if users %}
+                                {% for user in users %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="user_ids" value="{{ user.id }}" id="user_{{ user.id }}"
+                                           {% if user.is_super_admin %}disabled{% endif %}>
+                                    <label class="form-check-label" for="user_{{ user.id }}"
+                                           {% if user.is_super_admin %}style="opacity: 0.5"{% endif %}>
+                                        <strong>{{ user.display_name or user.login }}</strong>
+                                        {% if user.is_super_admin %}<span class="badge bg-danger">Super Admin</span>{% endif %}
+                                        {% if user.is_global_admin %}<span class="badge bg-warning">Instance Admin</span>{% endif %}
+                                        <br>
+                                        <small class="text-muted">{{ user.email }}</small>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted">No users found</p>
+                            {% endif %}
+                        </div>
+
+                        <div class="alert alert-info mt-3 mb-3">
+                            <small><i class="bi bi-info-circle"></i> Super Admins cannot be deleted (protected)</small>
+                        </div>
+
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="bi bi-trash"></i> Delete Selected Users
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectAllUsers()">
+                                Select All
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAllUsers()">
+                                Deselect All
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectAllOrgs() {
+    document.querySelectorAll('[name="org_ids"]').forEach(cb => cb.checked = true);
+}
+
+function deselectAllOrgs() {
+    document.querySelectorAll('[name="org_ids"]').forEach(cb => cb.checked = false);
+}
+
+function selectAllUsers() {
+    document.querySelectorAll('[name="user_ids"]:not(:disabled)').forEach(cb => cb.checked = true);
+}
+
+function deselectAllUsers() {
+    document.querySelectorAll('[name="user_ids"]').forEach(cb => cb.checked = false);
+}
+</script>
+{% endblock %}

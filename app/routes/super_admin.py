@@ -1355,3 +1355,116 @@ def documentation_analysis():
         analysis_content = f.read()
 
     return render_template("super_admin/documentation/analysis.html", analysis_content=analysis_content)
+
+
+# ============================================================================
+# BULK OPERATIONS - FOR TESTING & CLEANUP
+# ============================================================================
+
+
+@bp.route("/bulk-operations")
+@login_required
+@super_admin_required
+def bulk_operations():
+    """Bulk delete page for testing"""
+    from flask_wtf.csrf import generate_csrf
+
+    from app.models import Organization, User
+
+    # Get all organizations (including deleted/archived)
+    organizations = Organization.query.order_by(Organization.name).all()
+
+    # Get all users (except current user)
+    users = User.query.filter(User.id != current_user.id).order_by(User.display_name, User.login).all()
+
+    return render_template(
+        "super_admin/bulk_operations.html",
+        organizations=organizations,
+        users=users,
+        csrf_token=generate_csrf,  # Pass function, not result (template calls it)
+    )
+
+
+@bp.route("/bulk-operations/delete-organizations", methods=["POST"])
+@login_required
+@super_admin_required
+def bulk_delete_organizations():
+    """Bulk delete selected organizations"""
+    from app.models import Organization
+
+    org_ids = request.form.getlist("org_ids")
+
+    if not org_ids:
+        flash("No organizations selected", "warning")
+        return redirect(url_for("super_admin.bulk_operations"))
+
+    deleted_count = 0
+    for org_id in org_ids:
+        try:
+            org = Organization.query.get(int(org_id))
+            if org:
+                org_name = org.name
+                # CASCADE delete will handle all related data
+                db.session.delete(org)
+                deleted_count += 1
+                print(f"[BULK DELETE] Deleted organization: {org_name} (ID: {org_id})")
+        except Exception as e:
+            flash(f"Error deleting organization ID {org_id}: {str(e)}", "danger")
+            db.session.rollback()
+            continue
+
+    try:
+        db.session.commit()
+        flash(f"Successfully deleted {deleted_count} organization(s) and all their data", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error committing bulk delete: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.bulk_operations"))
+
+
+@bp.route("/bulk-operations/delete-users", methods=["POST"])
+@login_required
+@super_admin_required
+def bulk_delete_users():
+    """Bulk delete selected users"""
+    from app.models import User
+
+    user_ids = request.form.getlist("user_ids")
+
+    if not user_ids:
+        flash("No users selected", "warning")
+        return redirect(url_for("super_admin.bulk_operations"))
+
+    deleted_count = 0
+    for user_id in user_ids:
+        try:
+            user = User.query.get(int(user_id))
+            if user:
+                # Protect super admins
+                if user.is_super_admin:
+                    flash(f"Cannot delete super admin: {user.display_name or user.login}", "warning")
+                    continue
+
+                # Protect current user
+                if user.id == current_user.id:
+                    flash("Cannot delete your own account", "warning")
+                    continue
+
+                user_name = user.display_name or user.login
+                db.session.delete(user)
+                deleted_count += 1
+                print(f"[BULK DELETE] Deleted user: {user_name} (ID: {user_id})")
+        except Exception as e:
+            flash(f"Error deleting user ID {user_id}: {str(e)}", "danger")
+            db.session.rollback()
+            continue
+
+    try:
+        db.session.commit()
+        flash(f"Successfully deleted {deleted_count} user(s)", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error committing bulk delete: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.bulk_operations"))
