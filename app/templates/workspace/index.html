@@ -1447,7 +1447,14 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
-                                            <small style="color: #6c757d; margin-left: 0.5rem;" title="Target: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯{{ progress }}%</small>
+                                            {% if progress >= 90 %}
+                                                {% set target_color = '#28a745' %}
+                                            {% elif progress >= 60 %}
+                                                {% set target_color = '#ffc107' %}
+                                            {% else %}
+                                                {% set target_color = '#dc3545' %}
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %})">🎯</span>
                                         {% endif %}
                                     {% elif vt.kind == 'risk' %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
@@ -1462,7 +1469,14 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
-                                            <small style="color: #6c757d; margin-left: 0.5rem;" title="Target: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯{{ progress }}%</small>
+                                            {% if progress >= 90 %}
+                                                {% set target_color = '#28a745' %}
+                                            {% elif progress >= 60 %}
+                                                {% set target_color = '#ffc107' %}
+                                            {% else %}
+                                                {% set target_color = '#dc3545' %}
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
                                         {% endif %}
                                     {% elif vt.kind == 'positive_impact' %}
                                         {% if consensus.value == 1 %}<strong>★</strong>{% endif %}
@@ -1477,7 +1491,14 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
-                                            <small style="color: #6c757d; margin-left: 0.5rem;" title="Target: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯{{ progress }}%</small>
+                                            {% if progress >= 90 %}
+                                                {% set target_color = '#28a745' %}
+                                            {% elif progress >= 60 %}
+                                                {% set target_color = '#ffc107' %}
+                                            {% else %}
+                                                {% set target_color = '#dc3545' %}
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
                                         {% endif %}
                                     {% elif vt.kind == 'negative_impact' %}
                                         {% if consensus.value == 1 %}<strong>▼</strong>{% endif %}
@@ -1492,7 +1513,14 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
-                                            <small style="color: #6c757d; margin-left: 0.5rem;" title="Target: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯{{ progress }}%</small>
+                                            {% if progress >= 90 %}
+                                                {% set target_color = '#28a745' %}
+                                            {% elif progress >= 60 %}
+                                                {% set target_color = '#ffc107' %}
+                                            {% else %}
+                                                {% set target_color = '#dc3545' %}
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
                                         {% endif %}
                                     {% elif vt.kind == 'level' %}
                                         {% if consensus.value == 1 %}<strong>●</strong>{% endif %}
@@ -1507,7 +1535,14 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
-                                            <small style="color: #6c757d; margin-left: 0.5rem;" title="Target: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯{{ progress }}%</small>
+                                            {% if progress >= 90 %}
+                                                {% set target_color = '#28a745' %}
+                                            {% elif progress >= 60 %}
+                                                {% set target_color = '#ffc107' %}
+                                            {% else %}
+                                                {% set target_color = '#dc3545' %}
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
                                         {% endif %}
                                     {% elif vt.kind == 'sentiment' %}
                                         {% if consensus.value == 1 %}<strong>☹️</strong>{% endif %}
@@ -1522,7 +1557,14 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set progress = (((consensus.value|float) / (config.target_value|float)) * 100)|int %}
                                             {% endif %}
-                                            <small style="color: #6c757d; margin-left: 0.5rem;" title="Target: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} ({{ 'At or Below' if target_dir == 'minimize' else ('At' if target_dir == 'exact' else 'At or Above') }})">🎯{{ progress }}%</small>
+                                            {% if progress >= 90 %}
+                                                {% set target_color = '#28a745' %}
+                                            {% elif progress >= 60 %}
+                                                {% set target_color = '#ffc107' %}
+                                            {% else %}
+                                                {% set target_color = '#dc3545' %}
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
                                         {% endif %}
                                     {% else %}
                                         <strong>{{ consensus.value }}</strong>
