@@ -89,75 +89,82 @@ class User(UserMixin, db.Model):
             # During migrations, schema might not match
             return None
 
+    def is_org_admin(self, organization_id):
+        """Check if user is an organization administrator"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and membership.is_org_admin)
+
     def can_manage_spaces(self, organization_id):
         """Check if user can manage spaces in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_spaces)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_spaces))
 
     def can_manage_value_types(self, organization_id):
         """Check if user can manage value types in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_value_types)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_value_types))
 
     def can_manage_governance_bodies(self, organization_id):
         """Check if user can manage governance bodies in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_governance_bodies)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_governance_bodies))
 
     def can_manage_challenges(self, organization_id):
         """Check if user can manage challenges in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_challenges)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_challenges))
 
     def can_manage_initiatives(self, organization_id):
         """Check if user can manage initiatives in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_initiatives)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_initiatives))
 
     def can_manage_systems(self, organization_id):
         """Check if user can manage systems in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_systems)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_systems))
 
     def can_manage_kpis(self, organization_id):
         """Check if user can manage KPIs in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_manage_kpis)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_kpis))
 
     def can_view_comments(self, organization_id):
         """Check if user can view comments in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_view_comments)
+        return bool(membership and (membership.is_org_admin or membership.can_view_comments))
 
     def can_add_comments(self, organization_id):
         """Check if user can add comments in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_add_comments)
+        return bool(membership and (membership.is_org_admin or membership.can_add_comments))
 
     def can_contribute(self, organization_id):
         """Check if user can contribute values (enter KPI data) in an organization"""
         if self.is_super_admin or self.is_global_admin:
             return True
         membership = self.get_membership(organization_id)
-        return bool(membership and membership.can_contribute)
+        return bool(membership and (membership.is_org_admin or membership.can_contribute))
 
     def has_permission(self, organization_id, permission_name):
         """Generic permission checker - delegates to specific permission methods"""

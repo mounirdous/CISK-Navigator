@@ -195,6 +195,7 @@ def create_user():
             membership = UserOrganizationMembership(
                 user_id=user.id,
                 organization_id=org_id,
+                is_org_admin=request.form.get(f"perm_is_org_admin_{org_id}") == "on",
                 can_manage_spaces=request.form.get(f"perm_spaces_{org_id}") == "on",
                 can_manage_value_types=request.form.get(f"perm_value_types_{org_id}") == "on",
                 can_manage_governance_bodies=request.form.get(f"perm_governance_bodies_{org_id}") == "on",
@@ -282,6 +283,7 @@ def edit_user(user_id):
             membership = UserOrganizationMembership(
                 user_id=user.id,
                 organization_id=org_id,
+                is_org_admin=request.form.get(f"perm_is_org_admin_{org_id}") == "on",
                 can_manage_spaces=request.form.get(f"perm_spaces_{org_id}") == "on",
                 can_manage_value_types=request.form.get(f"perm_value_types_{org_id}") == "on",
                 can_manage_governance_bodies=request.form.get(f"perm_governance_bodies_{org_id}") == "on",
@@ -404,6 +406,7 @@ def create_organization():
             membership = UserOrganizationMembership(
                 user_id=user_id,
                 organization_id=org.id,
+                is_org_admin=request.form.get(f"perm_is_org_admin_{user_id}") == "on",
                 can_manage_spaces=request.form.get(f"perm_spaces_{user_id}") == "on",
                 can_manage_value_types=request.form.get(f"perm_value_types_{user_id}") == "on",
                 can_manage_governance_bodies=request.form.get(f"perm_governance_bodies_{user_id}") == "on",
@@ -470,6 +473,7 @@ def edit_organization(org_id):
             membership = UserOrganizationMembership(
                 user_id=user_id,
                 organization_id=org.id,
+                is_org_admin=request.form.get(f"perm_is_org_admin_{user_id}") == "on",
                 can_manage_spaces=request.form.get(f"perm_spaces_{user_id}") == "on",
                 can_manage_value_types=request.form.get(f"perm_value_types_{user_id}") == "on",
                 can_manage_governance_bodies=request.form.get(f"perm_governance_bodies_{user_id}") == "on",

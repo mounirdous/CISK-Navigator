@@ -91,6 +91,11 @@ class UserOrganizationMembership(db.Model):
         comment="Last workspace preset loaded by this user in this org",
     )
 
+    # Organization Admin Flag
+    is_org_admin = db.Column(
+        db.Boolean, default=False, nullable=False, comment="Organization administrator with full permissions"
+    )
+
     # Permissions (per organization)
     can_manage_spaces = db.Column(db.Boolean, default=True, nullable=False)
     can_manage_value_types = db.Column(db.Boolean, default=True, nullable=False)
