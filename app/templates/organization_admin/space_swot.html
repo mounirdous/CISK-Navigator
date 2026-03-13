@@ -241,12 +241,12 @@
             </div>
             <div class="swot-header-actions">
                 {% if current_user.can_manage_spaces(session.organization_id) %}
-                <a href="{{ url_for('organization_admin.edit_space_swot', space_id=space.id) }}" class="btn btn-light">
+                <a href="{{ url_for('organization_admin.edit_space_swot', space_id=space.id) }}" class="btn btn-outline-light">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
                 {% endif %}
                 <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left"></i> Back
+                    <i class="bi bi-arrow-left"></i> Back to Workspace
                 </a>
             </div>
         </div>

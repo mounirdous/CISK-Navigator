@@ -114,36 +114,6 @@
         font-style: italic;
     }
 
-    .btn-submit {
-        background: linear-gradient(135deg, var(--primary-blue) 0%, #0a58ca 100%);
-        border: none;
-        padding: 1rem 3rem;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 8px;
-        transition: all 0.3s;
-    }
-
-    .btn-submit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-    }
-
-    .btn-cancel {
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-        font-weight: 500;
-        border-radius: 8px;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
-        margin-top: 3rem;
-        padding-top: 2rem;
-        border-top: 2px solid var(--light-bg);
-    }
 
     /* KPI Overview Section */
     .kpi-overview {
@@ -316,13 +286,6 @@
             padding: 1.5rem;
         }
 
-        .action-buttons {
-            flex-direction: column;
-        }
-
-        .btn-submit, .btn-cancel {
-            width: 100%;
-        }
 
         .kpi-grid {
             grid-template-columns: 1fr;
@@ -344,12 +307,12 @@
             </div>
             <div class="form-header-actions">
                 {% if can_edit and not edit_mode %}
-                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-light">
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-outline-light">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
                 {% endif %}
                 <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light">
-                    <i class="bi bi-arrow-left"></i> Back
+                    <i class="bi bi-arrow-left"></i> Back to Workspace
                 </a>
             </div>
         </div>
@@ -452,13 +415,13 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="action-buttons">
-                    <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="btn btn-outline-secondary btn-cancel">
-                        <i class="bi bi-x-circle"></i> Cancel
-                    </a>
-                    <button type="submit" class="btn btn-primary btn-submit">
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-check-circle"></i> Save Initiative Form
                     </button>
+                    <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
                 </div>
             </form>
 
@@ -661,9 +624,10 @@
         </div>
 
         <!-- Bottom Navigation -->
+        {% if not edit_mode %}
         <div style="padding: 2rem; border-top: 2px solid var(--border-color); background: var(--light-bg);">
             <div style="display: flex; gap: 1rem; justify-content: center;">
-                {% if can_edit and not edit_mode %}
+                {% if can_edit %}
                 <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Edit Initiative Form
                 </a>
@@ -673,6 +637,7 @@
                 </a>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
