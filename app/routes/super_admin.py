@@ -185,9 +185,33 @@ def toggle_maintenance():
 @super_admin_required
 def users():
     """View all users with admin levels"""
-    all_users = User.query.order_by(User.is_super_admin.desc(), User.is_global_admin.desc(), User.login).all()
+    # Get filter parameter
+    role_filter = request.args.get("role", "")
 
-    return render_template("super_admin/users.html", users=all_users)
+    # Build query
+    query = User.query
+
+    if role_filter == "super_admin":
+        query = query.filter_by(is_super_admin=True)
+    elif role_filter == "instance_admin":
+        query = query.filter_by(is_global_admin=True)
+    elif role_filter == "org_admin":
+        # Users who have org_admin role in at least one organization
+        query = query.join(UserOrganizationMembership).filter(UserOrganizationMembership.is_org_admin.is_(True))
+    elif role_filter == "regular":
+        # Users who are neither super nor instance admin and don't have org_admin role
+        query = (
+            query.filter(User.is_super_admin.is_(False), User.is_global_admin.is_(False))
+            .outerjoin(
+                UserOrganizationMembership,
+                (UserOrganizationMembership.user_id == User.id) & (UserOrganizationMembership.is_org_admin.is_(True)),
+            )
+            .filter(UserOrganizationMembership.id.is_(None))
+        )
+
+    all_users = query.order_by(User.is_super_admin.desc(), User.is_global_admin.desc(), User.login).all()
+
+    return render_template("super_admin/users.html", users=all_users, current_role_filter=role_filter)
 
 
 @bp.route("/logs")
