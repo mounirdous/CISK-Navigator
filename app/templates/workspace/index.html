@@ -975,20 +975,15 @@ tr[data-level="kpi"] td {
     </div>
 </div>
 
-<!-- Quick Stats -->
-<div class="stats-bar">
-    <i class="bi bi-bar-chart-line"></i>
-    <strong>Organization Structure</strong>
-    <small class="text-muted ms-3">
-        Filters:
-        {% if selected_governance_body_ids|length > 0 and selected_governance_body_ids|length < governance_bodies|length %}
-            {{ selected_governance_body_ids|length }}/{{ governance_bodies|length }} Governance Bodies
-        {% else %}
-            All Governance Bodies
-        {% endif %}
-        {% if show_archived %} • Including Archived{% endif %}
-    </small>
-    {# Hidden columns message removed - always show all columns now #}
+<!-- Quick Stats - Compact -->
+<div class="stats-bar" style="display: flex; align-items: center; gap: 1rem; font-size: 0.8rem;">
+    <span title="Organization Structure View"><i class="bi bi-diagram-3"></i> {{ spaces|length }} spaces, {{ total_kpis }} KPIs</span>
+    {% if selected_governance_body_ids|length > 0 and selected_governance_body_ids|length < governance_bodies|length %}
+        <span class="text-muted" title="Filtered Governance Bodies"><i class="bi bi-funnel"></i> {{ selected_governance_body_ids|length }}/{{ governance_bodies|length }} GBs</span>
+    {% endif %}
+    {% if show_archived %}
+        <span class="text-muted" title="Including Archived Items"><i class="bi bi-archive"></i> Archived</span>
+    {% endif %}
 </div>
 
 <div class="table-responsive">
