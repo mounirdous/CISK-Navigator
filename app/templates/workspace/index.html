@@ -220,6 +220,11 @@ body.edit-mode .new-space-edit-mode-only {
     background-color: transparent !important;
 }
 
+/* Governance Body badges visibility toggle */
+body.hide-gb-badges .gb-badge {
+    display: none !important;
+}
+
 /* Level-specific colors for hierarchy (both light & dark mode) */
 tr[data-level="space"] td {
     background-color: rgba(52, 152, 219, 0.08) !important;
@@ -956,6 +961,10 @@ tr[data-level="kpi"] td {
                                                 <i class="bi bi-archive"></i> Archived KPIs
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ archived_kpis_count }}</span>
                                             </label>
+                                            <label class="filter-pill active" id="show-gb-badges-pill">
+                                                <input type="checkbox" id="show_gb_badges" checked hidden>
+                                                <i class="bi bi-people"></i> GB Badges
+                                            </label>
                                             {# Column hiding feature removed per user request - always show all columns #}
                                         </div>
                                     </div>
@@ -1364,7 +1373,7 @@ tr[data-level="kpi"] td {
                         </span>
                         {% endif %}
                         {% for gb_link in kpi.governance_body_links %}
-                        <span class="badge ms-1" style="background-color: {{ gb_link.governance_body.color }}; padding: 0.25rem 0.6rem; border-radius: 12px;" title="{{ gb_link.governance_body.name }}">
+                        <span class="badge ms-1 gb-badge" style="background-color: {{ gb_link.governance_body.color }}; padding: 0.25rem 0.6rem; border-radius: 12px;" title="{{ gb_link.governance_body.name }}">
                             {{ gb_link.governance_body.abbreviation }}
                         </span>
                         {% endfor %}
@@ -1578,22 +1587,25 @@ tr[data-level="kpi"] td {
                                 </div>
                                 {% if current_user.can_add_comments(session.organization_id) %}
                                 {# Users who can add: always show icon #}
-                                <div style="position: absolute; top: 2px; right: 2px;">
+                                <div style="position: absolute; bottom: 2px; right: 2px; opacity: 0.6; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
                                     <span class="comment-icon"
                                           onclick="event.stopPropagation(); commentsManager.openCommentModal({{ config.id }}, '{{ kpi.name }}', '{{ vt.name }}');"
-                                          title="Comments">
+                                          title="Add/View Comments"
+                                          style="font-size: 0.9rem; cursor: pointer;">
                                         💬
                                         <span class="comment-count" style="display: none;">0</span>
                                     </span>
                                 </div>
                                 {% elif current_user.can_view_comments(session.organization_id) %}
                                 {# Users who can only view: show icon only if there are comments #}
-                                <div style="position: absolute; top: 2px; right: 2px; display: none;"
+                                <div style="position: absolute; bottom: 2px; right: 2px; display: none; opacity: 0.6; transition: opacity 0.2s;"
                                      class="comment-icon-container-view-only"
-                                     data-config-id="{{ config.id }}">
+                                     data-config-id="{{ config.id }}"
+                                     onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'">
                                     <span class="comment-icon"
                                           onclick="event.stopPropagation(); commentsManager.openCommentModal({{ config.id }}, '{{ kpi.name }}', '{{ vt.name }}');"
-                                          title="Comments">
+                                          title="View Comments"
+                                          style="font-size: 0.9rem; cursor: pointer;">
                                         💬
                                         <span class="comment-count" style="display: none;">0</span>
                                     </span>
@@ -1958,6 +1970,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (checkbox) checkbox.checked = true;
             }
 
+            // Restore GB badges visibility (defaults to true if not in localStorage)
+            if (filters.show_gb_badges !== undefined) {
+                const checkbox = document.getElementById('show_gb_badges');
+                if (checkbox) {
+                    checkbox.checked = filters.show_gb_badges;
+                    if (!filters.show_gb_badges) {
+                        document.body.classList.add('hide-gb-badges');
+                        document.getElementById('show-gb-badges-pill')?.classList.remove('active');
+                    }
+                }
+            }
+
             // Restore level visibility (defaults to true if not in localStorage)
             const levelNames = ['show_spaces', 'show_challenges', 'show_initiatives', 'show_systems', 'show_kpis'];
             levelNames.forEach(levelName => {
@@ -2079,6 +2103,7 @@ document.addEventListener('DOMContentLoaded', function() {
             space_type: filterForm.querySelector('input[name="space_type"]:checked')?.value || 'all',
             group: Array.from(filterForm.querySelectorAll('input[name="group"]:checked')).map(cb => cb.value),
             show_archived: filterForm.querySelector('input[name="show_archived"]')?.checked || false,
+            show_gb_badges: document.getElementById('show_gb_badges')?.checked !== false,
             show_spaces: filterForm.querySelector('input[name="show_spaces"]')?.checked !== false,
             show_challenges: filterForm.querySelector('input[name="show_challenges"]')?.checked !== false,
             show_initiatives: filterForm.querySelector('input[name="show_initiatives"]')?.checked !== false,
@@ -2207,6 +2232,35 @@ document.addEventListener('DOMContentLoaded', function() {
             debouncedSubmit();
         });
     });
+
+    // Handle Governance Body badges visibility toggle (client-side only, no reload)
+    const showGbBadgesCheckbox = document.getElementById('show_gb_badges');
+    const showGbBadgesPill = document.getElementById('show-gb-badges-pill');
+
+    if (showGbBadgesCheckbox && showGbBadgesPill) {
+        // Restore state from localStorage
+        const savedGbBadgesState = localStorage.getItem('showGbBadges');
+        if (savedGbBadgesState === 'false') {
+            showGbBadgesCheckbox.checked = false;
+            showGbBadgesPill.classList.remove('active');
+            document.body.classList.add('hide-gb-badges');
+        }
+
+        showGbBadgesCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            showGbBadgesPill.classList.toggle('active', isChecked);
+
+            if (isChecked) {
+                document.body.classList.remove('hide-gb-badges');
+                localStorage.setItem('showGbBadges', 'true');
+            } else {
+                document.body.classList.add('hide-gb-badges');
+                localStorage.setItem('showGbBadges', 'false');
+            }
+
+            console.log('GB badges visibility:', isChecked ? 'shown' : 'hidden');
+        });
+    }
 
     // Function to update row visibility based on level checkboxes
     function updateLevelVisibility() {
