@@ -225,6 +225,68 @@ body.hide-gb-badges .gb-badge {
     display: none !important;
 }
 
+/* Collapsible columns */
+.value-type-header {
+    position: relative;
+    transition: width 0.3s ease;
+}
+
+.value-type-header .collapse-column-icon {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    font-size: 0.9rem;
+}
+
+.value-type-header:hover .collapse-column-icon {
+    opacity: 1;
+}
+
+.value-type-header.column-collapsed {
+    min-width: 35px !important;
+    max-width: 35px !important;
+    width: 35px !important;
+    padding: 0.5rem 0.25rem !important;
+    vertical-align: middle;
+}
+
+.value-type-header.column-collapsed .column-content {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+    display: inline-block;
+    transform: rotate(180deg);
+    font-size: 0.75rem;
+}
+
+.value-type-header.column-collapsed .bi-grip-vertical {
+    display: none;
+}
+
+.value-type-header.column-collapsed small {
+    display: none;
+}
+
+td.column-collapsed {
+    min-width: 35px !important;
+    max-width: 35px !important;
+    width: 35px !important;
+    padding: 0.25rem !important;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.7rem;
+}
+
+td.column-collapsed > div {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    white-space: nowrap;
+}
+
 /* Level-specific colors for hierarchy (both light & dark mode) */
 tr[data-level="space"] td {
     background-color: rgba(52, 152, 219, 0.08) !important;
@@ -998,12 +1060,16 @@ tr[data-level="kpi"] td {
                     style="min-width: 120px; cursor: move;"
                     draggable="true"
                     data-vt-id="{{ vt.id }}"
-                    title="Drag to reorder columns">
+                    data-vt-index="{{ loop.index0 }}"
+                    title="Drag to reorder">
+                    <span class="collapse-column-icon" title="Collapse column" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});">⇄</span>
                     <i class="bi bi-grip-vertical text-muted me-1" style="font-size: 0.8rem;"></i>
-                    {{ vt.name }}
-                    {% if vt.unit_label %}
-                    <br><small class="text-muted">({{ vt.unit_label }})</small>
-                    {% endif %}
+                    <span class="column-content">
+                        {{ vt.name }}
+                        {% if vt.unit_label %}
+                        <br><small class="text-muted">({{ vt.unit_label }})</small>
+                        {% endif %}
+                    </span>
                 </th>
                 {% endfor %}
             </tr>
@@ -2997,6 +3063,82 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         sessionStorage.removeItem('workspaceFiltersOpen'); // Clear after use
+    }
+});
+
+// ========================================
+// COLLAPSIBLE COLUMNS
+// ========================================
+function toggleColumnCollapse(columnIndex) {
+    const headers = document.querySelectorAll('.value-type-header');
+    const header = headers[columnIndex];
+
+    if (!header) {
+        console.error('Header not found for column index:', columnIndex);
+        return;
+    }
+
+    const isCollapsed = header.classList.contains('column-collapsed');
+    const vtId = header.dataset.vtId;
+
+    // Toggle header
+    header.classList.toggle('column-collapsed');
+
+    // Toggle all cells in this column (find by position, not by vt_id since aggregations don't have it)
+    const rows = document.querySelectorAll('#workspace-tree tbody tr');
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        // +1 because first cell is Structure column
+        const cell = cells[columnIndex + 1];
+        if (cell) {
+            cell.classList.toggle('column-collapsed');
+        }
+    });
+
+    // Save state to localStorage
+    const collapsedColumns = JSON.parse(localStorage.getItem('collapsedColumns') || '[]');
+    if (isCollapsed) {
+        // Remove from collapsed list
+        const index = collapsedColumns.indexOf(vtId);
+        if (index > -1) {
+            collapsedColumns.splice(index, 1);
+        }
+    } else {
+        // Add to collapsed list
+        if (!collapsedColumns.includes(vtId)) {
+            collapsedColumns.push(vtId);
+        }
+    }
+    localStorage.setItem('collapsedColumns', JSON.stringify(collapsedColumns));
+
+    console.log('Column', columnIndex, isCollapsed ? 'expanded' : 'collapsed');
+}
+
+// Restore collapsed columns on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const collapsedColumns = JSON.parse(localStorage.getItem('collapsedColumns') || '[]');
+
+    if (collapsedColumns.length > 0) {
+        console.log('Restoring collapsed columns:', collapsedColumns);
+
+        const headers = document.querySelectorAll('.value-type-header');
+        headers.forEach((header, index) => {
+            const vtId = header.dataset.vtId;
+            if (collapsedColumns.includes(vtId)) {
+                // Collapse this column
+                header.classList.add('column-collapsed');
+
+                // Collapse all cells in this column
+                const rows = document.querySelectorAll('#workspace-tree tbody tr');
+                rows.forEach(row => {
+                    const cells = row.querySelectorAll('td');
+                    const cell = cells[index + 1]; // +1 for Structure column
+                    if (cell) {
+                        cell.classList.add('column-collapsed');
+                    }
+                });
+            }
+        });
     }
 });
 
