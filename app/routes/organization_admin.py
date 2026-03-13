@@ -225,7 +225,13 @@ def onboarding():
     spaces_count = Space.query.filter_by(organization_id=org_id).count()
     governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id).count()
     value_types_count = ValueType.query.filter_by(organization_id=org_id).count()
-    kpis_count = KPI.query.filter_by(organization_id=org_id).count()
+    kpis_count = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id)
+        .count()
+    )
 
     # If everything is set up, skip to completion
     if spaces_count > 0 and governance_bodies_count > 0 and value_types_count > 0 and kpis_count > 0:
