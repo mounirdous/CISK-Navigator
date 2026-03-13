@@ -4,10 +4,12 @@
 
 role:
   name: "Global Administrator"
+  also_known_as: "Instance Admin (in UI)"
   db_field: "users.is_global_admin"
   access_level: "Manages users and organizations across the platform"
   cannot_access: "System settings, SSO config (Super Admin only)"
   typical_count: "1-5 per instance"
+  note: "UI refers to this role as 'Instance Admin', database uses 'is_global_admin'"
 
 permissions:
   special_flag:
@@ -22,6 +24,26 @@ permissions:
       - "SSO configuration (Super Admin only)"
       - "System settings (Super Admin only)"
       - "Announcements (Super Admin only)"
+
+# CRITICAL UX ISSUE - Navigation Lockout
+navigation_pain_point:
+  issue: "NO WAY TO RETURN TO WORKSPACE FROM INSTANCE ADMIN MODE"
+  severity: "CRITICAL"
+  description: "When switching to Instance Admin mode, navbar changes completely"
+  current_navbar:
+    - "Super Admin"
+    - "Users"
+    - "Organizations"
+    - "Backups"
+    - "Health"
+  missing_links:
+    - "Workspace (NO link back!)"
+    - "Dashboard"
+    - "Organization switcher"
+  impact: "Users are LOCKED into admin interface - must manually type URL to escape"
+  workaround: "Type /workspace in URL bar"
+  proposed_fix: "Add 'Back to Workspace' button in navbar when in admin mode"
+  user_frustration: "HIGH - discovered by user during documentation review"
 
 # JOURNEYS: 8 major areas, 35+ steps
 journeys:

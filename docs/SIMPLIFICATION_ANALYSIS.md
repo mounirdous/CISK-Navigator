@@ -22,6 +22,52 @@
 
 ---
 
+## 🚨 BLOCKING ISSUES - FIX IMMEDIATELY
+
+### ⛔ **Navigation Lockout in Instance Admin Mode**
+
+**Severity:** CRITICAL 🔴
+**Discovered:** During documentation review (user feedback)
+
+**The Issue:**
+When users switch to "Instance Admin" (Global Admin) mode, the navbar **completely changes** and removes ALL workspace navigation:
+
+**Current Navbar in Admin Mode:**
+- Super Admin
+- Users
+- Organizations
+- Backups
+- Health
+
+**MISSING:**
+- ❌ Workspace link
+- ❌ Dashboard link
+- ❌ Organization switcher
+- ❌ Any way back to regular work!
+
+**Impact:**
+- **Users are LOCKED into admin interface**
+- Must manually type `/workspace` in URL bar to escape
+- Discovered immediately by user: "impossible to get back to the workspace!!"
+- Creates confusion and frustration
+- Makes admin tools feel disconnected from main app
+
+**Fix (URGENT):**
+Add "Back to Workspace" button in admin navbar
+```html
+<nav>
+  <a href="{{ url_for('workspace.index') }}">
+    <i class="bi bi-grid"></i> Back to Workspace
+  </a>
+  <!-- existing admin links -->
+</nav>
+```
+
+**Effort:** 2 hours maximum
+**Priority:** FIX BEFORE NEXT RELEASE
+
+---
+
 ## 🔴 CRITICAL: Top 5 Simplification Opportunities
 
 ### 1. **Organization Onboarding Wizard** (Org Admin)
