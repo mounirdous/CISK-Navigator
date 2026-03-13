@@ -25,25 +25,30 @@ permissions:
       - "System settings (Super Admin only)"
       - "Announcements (Super Admin only)"
 
-# CRITICAL UX ISSUE - Navigation Lockout
+# CRITICAL UX ISSUE - Navigation Lockout [FIXED IN v1.23.1]
 navigation_pain_point:
   issue: "NO WAY TO RETURN TO WORKSPACE FROM INSTANCE ADMIN MODE"
-  severity: "CRITICAL"
+  status: "✅ FIXED"
+  fixed_in: "v1.23.1 (2026-03-13)"
+  severity_was: "CRITICAL"
   description: "When switching to Instance Admin mode, navbar changes completely"
-  current_navbar:
-    - "Super Admin"
-    - "Users"
-    - "Organizations"
-    - "Backups"
-    - "Health"
-  missing_links:
-    - "Workspace (NO link back!)"
-    - "Dashboard"
-    - "Organization switcher"
-  impact: "Users are LOCKED into admin interface - must manually type URL to escape"
-  workaround: "Type /workspace in URL bar"
-  proposed_fix: "Add 'Back to Workspace' button in navbar when in admin mode"
-  user_frustration: "HIGH - discovered by user during documentation review"
+
+  previous_state:
+    navbar: ["Super Admin", "Users", "Organizations", "Backups", "Health"]
+    missing: ["Workspace link", "Organization switcher"]
+    impact: "Users LOCKED in admin interface - manual URL typing required"
+
+  fix_implemented:
+    added: '"Back to Workspace" dropdown in Instance Admin navbar'
+    behavior: "Shows list of user's organizations - clicking returns to that org's workspace"
+    location: "First item in navbar when in admin mode"
+    styling: "Consistent with existing org switcher"
+    file: "app/templates/base.html (lines 400-424)"
+
+  new_flow:
+    - "Workspace → Instance Admin → 'Back to Workspace' → Select Org → Workspace"
+    - "Bidirectional navigation restored ✓"
+    - "No more manual URL typing"
 
 # JOURNEYS: 8 major areas, 35+ steps
 journeys:

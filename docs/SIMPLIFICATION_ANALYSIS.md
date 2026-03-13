@@ -22,49 +22,39 @@
 
 ---
 
-## 🚨 BLOCKING ISSUES - FIX IMMEDIATELY
+## ✅ RECENTLY FIXED
 
-### ⛔ **Navigation Lockout in Instance Admin Mode**
+### ✓ **Navigation Lockout in Instance Admin Mode** [FIXED v1.23.1]
 
-**Severity:** CRITICAL 🔴
+**Status:** ✅ RESOLVED
+**Fixed:** 2026-03-13
+**Severity Was:** CRITICAL 🔴
 **Discovered:** During documentation review (user feedback)
 
 **The Issue:**
-When users switch to "Instance Admin" (Global Admin) mode, the navbar **completely changes** and removes ALL workspace navigation:
+Users were **trapped** in Instance Admin mode with no way back to workspace.
 
-**Current Navbar in Admin Mode:**
-- Super Admin
-- Users
-- Organizations
-- Backups
-- Health
-
-**MISSING:**
-- ❌ Workspace link
-- ❌ Dashboard link
-- ❌ Organization switcher
-- ❌ Any way back to regular work!
+**Solution Implemented:**
+Added "Back to Workspace" dropdown in Instance Admin navbar:
+- Dropdown shows user's organizations
+- Clicking an org returns to that org's workspace
+- Same styling as existing org switcher
+- Bidirectional navigation restored
 
 **Impact:**
-- **Users are LOCKED into admin interface**
-- Must manually type `/workspace` in URL bar to escape
-- Discovered immediately by user: "impossible to get back to the workspace!!"
-- Creates confusion and frustration
-- Makes admin tools feel disconnected from main app
+- ✅ No more manual URL typing
+- ✅ Users can freely switch between admin and workspace
+- ✅ Admin interface feels connected to main app
+- ✅ User frustration eliminated
 
-**Fix (URGENT):**
-Add "Back to Workspace" button in admin navbar
-```html
-<nav>
-  <a href="{{ url_for('workspace.index') }}">
-    <i class="bi bi-grid"></i> Back to Workspace
-  </a>
-  <!-- existing admin links -->
-</nav>
-```
+**Effort:** 2 hours (as estimated)
+**File:** `app/templates/base.html` (lines 400-424)
 
-**Effort:** 2 hours maximum
-**Priority:** FIX BEFORE NEXT RELEASE
+---
+
+## 🚨 BLOCKING ISSUES - FIX IMMEDIATELY
+
+**None remaining** - All critical blockers resolved! ✓
 
 ---
 

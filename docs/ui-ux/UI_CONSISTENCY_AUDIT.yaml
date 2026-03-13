@@ -825,13 +825,14 @@ inconsistencies_priority:
 
   high:
     - issue: "NO WAY BACK TO WORKSPACE FROM INSTANCE ADMIN MODE"
-      severity: "CRITICAL"
-      impact: "Users LOCKED in admin interface - cannot return to workspace"
-      current_state: "Navbar changes when switching to Instance Admin (no workspace link)"
-      workaround: "Must manually type /workspace in URL"
-      fix: "Add 'Back to Workspace' button in admin navbar"
-      effort: "2 hours"
+      status: "✅ FIXED in v1.23.1"
+      severity_was: "CRITICAL"
+      impact_was: "Users LOCKED in admin interface - cannot return to workspace"
+      fix_implemented: "'Back to Workspace' dropdown added to admin navbar"
+      actual_effort: "2 hours"
+      fixed_date: "2026-03-13"
       discovered: "During documentation review by user"
+      lesson_learned: "Test all navigation paths, not just happy path"
 
     - issue: "Permission matrix too complex"
       impact: "Checkbox hell for multi-org users"
