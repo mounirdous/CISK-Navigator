@@ -1063,8 +1063,17 @@ tr[data-level="kpi"] td {
             <tr>
                 <th style="min-width: 400px;">Structure</th>
                 {% for vt in value_types %}
+                {% if vt.kind in ['sentiment', 'risk', 'positive_impact', 'negative_impact', 'level'] %}
+                    {% set col_width = '60px' %}
+                {% elif vt.unit_label and vt.unit_label|length > 5 %}
+                    {% set col_width = '110px' %}
+                {% elif vt.unit_label %}
+                    {% set col_width = '95px' %}
+                {% else %}
+                    {% set col_width = '90px' %}
+                {% endif %}
                 <th class="text-center value-type-header"
-                    style="min-width: 120px; cursor: move;"
+                    style="min-width: {{ col_width }}; cursor: move;"
                     draggable="true"
                     data-vt-id="{{ vt.id }}"
                     data-vt-index="{{ loop.index0 }}"
