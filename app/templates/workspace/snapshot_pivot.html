@@ -496,12 +496,33 @@
         </div>
         <div class="card-body">
             <div id="chart-controls" class="mb-3">
+                <!-- Quick Add KPI Search -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label"><i class="bi bi-search"></i> Quick Add KPIs</label>
+                        <div style="position: relative;">
+                            <input type="text"
+                                   id="kpi-search-input"
+                                   class="form-control"
+                                   placeholder="Type to search KPIs from filtered results..."
+                                   style="border-radius: 8px;"
+                                   autocomplete="off">
+                            <div id="kpi-search-results"
+                                 style="position: absolute; z-index: 1000; width: 100%; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none; margin-top: 2px;">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-lightbulb"></i> Searches within your current filtered KPIs. Click a result to add it to your chart.
+                        </small>
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-md-12 mb-3">
                         <label class="form-label">Selected KPIs:</label>
                         <div id="selected-kpis-display" class="alert alert-info">
                             <i class="bi bi-info-circle"></i>
-                            Select KPIs from the table above to display them here.
+                            Select KPIs from the table above or use Quick Add search.
                         </div>
                         <div id="kpi-color-pickers" style="display: none;"></div>
                     </div>
@@ -1038,6 +1059,166 @@
             spaceSelect.value = selectedOption.dataset.spaceId;
             spaceSelect.dispatchEvent(new Event('change'));
         }
+    }
+
+    // KPI Quick Add Search
+    const kpiSearchInput = document.getElementById('kpi-search-input');
+    const kpiSearchResults = document.getElementById('kpi-search-results');
+    let searchTimeout = null;
+
+    // Build searchable KPI data from table
+    function getAvailableKPIs() {
+        const kpis = [];
+        document.querySelectorAll('.kpi-checkbox').forEach(checkbox => {
+            const configId = parseInt(checkbox.dataset.configId);
+            const kpiName = checkbox.dataset.kpiName;
+            const row = checkbox.closest('tr');
+
+            // Check if KPI has target (look for bullseye icon)
+            const hasTarget = row.querySelector('.bi-bullseye') !== null;
+            let targetIcon = '';
+            let targetDirection = '';
+
+            if (hasTarget) {
+                const bullseye = row.querySelector('.bi-bullseye');
+                const targetTitle = bullseye.getAttribute('title');
+                // Try to determine direction from target column badges
+                const targetCell = row.cells[2]; // Target column (if show_targets is on)
+                if (targetCell) {
+                    if (targetCell.textContent.includes('↑') || targetCell.textContent.includes('At or Above')) {
+                        targetIcon = '🎯↑';
+                        targetDirection = 'maximize';
+                    } else if (targetCell.textContent.includes('↓') || targetCell.textContent.includes('At or Below')) {
+                        targetIcon = '🎯↓';
+                        targetDirection = 'minimize';
+                    } else if (targetCell.textContent.includes('±') || targetCell.textContent.includes('Band')) {
+                        targetIcon = '🎯±';
+                        targetDirection = 'exact';
+                    } else {
+                        targetIcon = '🎯';
+                    }
+                }
+            }
+
+            kpis.push({
+                configId: configId,
+                name: kpiName,
+                checkbox: checkbox,
+                hasTarget: hasTarget,
+                targetIcon: targetIcon,
+                targetDirection: targetDirection,
+                isSelected: checkbox.checked
+            });
+        });
+        return kpis;
+    }
+
+    // Perform search
+    function performKPISearch(query) {
+        const availableKPIs = getAvailableKPIs();
+        const lowerQuery = query.toLowerCase().trim();
+
+        if (lowerQuery.length === 0) {
+            kpiSearchResults.style.display = 'none';
+            return;
+        }
+
+        // Filter KPIs
+        const matches = availableKPIs.filter(kpi =>
+            kpi.name.toLowerCase().includes(lowerQuery)
+        );
+
+        if (matches.length === 0) {
+            kpiSearchResults.innerHTML = '<div style="padding: 12px; color: #6c757d; text-align: center;"><i class="bi bi-search"></i> No matching KPIs found</div>';
+            kpiSearchResults.style.display = 'block';
+            return;
+        }
+
+        // Build results HTML
+        let html = '<div style="padding: 8px 0;">';
+        matches.forEach(kpi => {
+            const selectedBadge = kpi.isSelected ? '<span class="badge bg-primary ms-2">Selected</span>' : '';
+            const targetBadge = kpi.targetIcon ? `<span class="ms-2">${kpi.targetIcon}</span>` : '';
+            const opacity = kpi.isSelected ? 'opacity: 0.6;' : '';
+
+            html += `
+                <div class="kpi-search-result-item"
+                     data-config-id="${kpi.configId}"
+                     style="padding: 10px 16px; cursor: pointer; ${opacity} border-bottom: 1px solid #f0f0f0;"
+                     onmouseover="this.style.backgroundColor='#f8f9fa'"
+                     onmouseout="this.style.backgroundColor='white'">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <strong>${kpi.name}</strong>
+                            ${targetBadge}
+                        </div>
+                        ${selectedBadge}
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+
+        kpiSearchResults.innerHTML = html;
+        kpiSearchResults.style.display = 'block';
+
+        // Add click handlers
+        document.querySelectorAll('.kpi-search-result-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const configId = parseInt(this.dataset.configId);
+                const kpi = availableKPIs.find(k => k.configId === configId);
+
+                if (kpi && !kpi.isSelected) {
+                    // Check the checkbox
+                    kpi.checkbox.checked = true;
+                    kpi.checkbox.dispatchEvent(new Event('change'));
+
+                    // Clear search
+                    kpiSearchInput.value = '';
+                    kpiSearchResults.style.display = 'none';
+
+                    // Show toast notification
+                    showToast(`Added ${kpi.name} to chart`, 'success');
+                }
+            });
+        });
+    }
+
+    // Search input event
+    kpiSearchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            performKPISearch(this.value);
+        }, 200); // 200ms debounce
+    });
+
+    // Close search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!kpiSearchInput.contains(e.target) && !kpiSearchResults.contains(e.target)) {
+            kpiSearchResults.style.display = 'none';
+        }
+    });
+
+    // Focus on search input opens it
+    kpiSearchInput.addEventListener('focus', function() {
+        if (this.value.trim().length > 0) {
+            performKPISearch(this.value);
+        }
+    });
+
+    // Simple toast notification function
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+        toast.innerHTML = `<i class="bi bi-check-circle"></i> ${message}`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
     }
 </script>
 {% endblock %}
