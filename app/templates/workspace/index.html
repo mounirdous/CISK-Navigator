@@ -194,6 +194,20 @@ body.edit-mode .new-space-edit-mode-only {
     line-height: 1.4;          /* Tighter line spacing */
 }
 
+/* Force table cells to respect column widths set on headers */
+#workspace-tree {
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* Value cells should wrap if content is too long */
+#workspace-tree tbody td.text-center {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-wrap: break-word;
+    max-width: 0;
+}
+
 /* Consensus strength visual indicators - Option E */
 .kpi-cell.consensus-strong {
     border-left: 4px solid #28a745 !important;
