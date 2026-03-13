@@ -1,0 +1,745 @@
+# MASTER INVENTORY - Complete CISK Navigator System Coverage
+# This file catalogs EVERY feature, model, service, route, and concept
+# Use this as a checklist to ensure complete documentation coverage
+
+metadata:
+  created: "2026-03-13"
+  purpose: "Comprehensive inventory of entire CISK Navigator system"
+  completeness: "100% coverage required"
+  update_frequency: "After every major feature addition"
+
+# DATABASE MODELS (28 total)
+database_models:
+  - name: "User"
+    file: "app/models/user.py"
+    table: "users"
+    concept_mapping: "concept_user_management.yaml"
+    criticality: "CRITICAL"
+
+  - name: "Organization"
+    file: "app/models/organization.py"
+    table: "organizations"
+    concept_mapping: "concept_organization_management.yaml"
+    criticality: "CRITICAL"
+
+  - name: "UserOrganizationMembership"
+    file: "app/models/organization.py"
+    table: "user_organization_memberships"
+    concept_mapping: "concept_permissions.yaml"
+    criticality: "CRITICAL"
+
+  - name: "Space"
+    file: "app/models/space.py"
+    table: "spaces"
+    concept_mapping: "concept_spaces.yaml"
+    criticality: "HIGH"
+
+  - name: "Challenge"
+    file: "app/models/challenge.py"
+    table: "challenges"
+    concept_mapping: "concept_challenges.yaml"
+    criticality: "HIGH"
+
+  - name: "Initiative"
+    file: "app/models/initiative.py"
+    table: "initiatives"
+    concept_mapping: "concept_initiatives.yaml"
+    criticality: "HIGH"
+
+  - name: "ChallengeInitiativeLink"
+    file: "app/models/initiative.py"
+    table: "challenge_initiative_links"
+    concept_mapping: "concept_challenges.yaml"
+    criticality: "MEDIUM"
+
+  - name: "System"
+    file: "app/models/system.py"
+    table: "systems"
+    concept_mapping: "concept_systems.yaml"
+    criticality: "HIGH"
+
+  - name: "InitiativeSystemLink"
+    file: "app/models/system.py"
+    table: "initiative_system_links"
+    concept_mapping: "concept_systems.yaml"
+    criticality: "HIGH"
+
+  - name: "KPI"
+    file: "app/models/kpi.py"
+    table: "kpis"
+    concept_mapping: "concept_kpi_core.yaml"
+    criticality: "CRITICAL"
+
+  - name: "ValueType"
+    file: "app/models/value_type.py"
+    table: "value_types"
+    concept_mapping: "concept_value_types.yaml"
+    criticality: "CRITICAL"
+
+  - name: "KPIValueTypeConfig"
+    file: "app/models/value_type.py"
+    table: "kpi_value_type_configs"
+    concept_mapping: "concept_calculation_type.yaml"
+    criticality: "CRITICAL"
+
+  - name: "Contribution"
+    file: "app/models/contribution.py"
+    table: "contributions"
+    concept_mapping: "concept_contributions.yaml"
+    criticality: "HIGH"
+
+  - name: "KPISnapshot"
+    file: "app/models/kpi_snapshot.py"
+    table: "kpi_snapshots"
+    concept_mapping: "concept_snapshots.yaml"
+    criticality: "HIGH"
+
+  - name: "RollupSnapshot"
+    file: "app/models/kpi_snapshot.py"
+    table: "rollup_snapshots"
+    concept_mapping: "concept_rollups.yaml"
+    criticality: "MEDIUM"
+
+  - name: "RollupRule"
+    file: "app/models/rollup_rule.py"
+    table: "rollup_rules"
+    concept_mapping: "concept_rollups.yaml"
+    criticality: "MEDIUM"
+
+  - name: "GovernanceBody"
+    file: "app/models/governance_body.py"
+    table: "governance_bodies"
+    concept_mapping: "concept_governance_bodies.yaml"
+    criticality: "HIGH"
+
+  - name: "KPIGovernanceBodyLink"
+    file: "app/models/governance_body.py"
+    table: "kpi_governance_body_links"
+    concept_mapping: "concept_governance_bodies.yaml"
+    criticality: "HIGH"
+
+  - name: "CellComment"
+    file: "app/models/cell_comment.py"
+    table: "cell_comments"
+    concept_mapping: "concept_comments.yaml"
+    criticality: "MEDIUM"
+
+  - name: "MentionNotification"
+    file: "app/models/cell_comment.py"
+    table: "mention_notifications"
+    concept_mapping: "concept_comments.yaml"
+    criticality: "MEDIUM"
+
+  - name: "UserFilterPreset"
+    file: "app/models/user_filter_preset.py"
+    table: "user_filter_presets"
+    concept_mapping: "concept_filter_presets.yaml"
+    criticality: "LOW"
+
+  - name: "AuditLog"
+    file: "app/models/audit_log.py"
+    table: "audit_logs"
+    concept_mapping: "concept_audit_logs.yaml"
+    criticality: "HIGH"
+
+  - name: "SystemAnnouncement"
+    file: "app/models/announcement.py"
+    table: "system_announcements"
+    concept_mapping: "concept_announcements.yaml"
+    criticality: "MEDIUM"
+
+  - name: "UserAnnouncementAcknowledgment"
+    file: "app/models/announcement.py"
+    table: "user_announcement_acknowledgments"
+    concept_mapping: "concept_announcements.yaml"
+    criticality: "LOW"
+
+  - name: "AnnouncementTargetUser"
+    file: "app/models/announcement.py"
+    table: "announcement_target_users"
+    concept_mapping: "concept_announcements.yaml"
+    criticality: "LOW"
+
+  - name: "AnnouncementTargetOrganization"
+    file: "app/models/announcement.py"
+    table: "announcement_target_organizations"
+    concept_mapping: "concept_announcements.yaml"
+    criticality: "LOW"
+
+  - name: "SSOConfig"
+    file: "app/models/sso_config.py"
+    table: "sso_configs"
+    concept_mapping: "concept_sso.yaml"
+    criticality: "CRITICAL"
+
+  - name: "SystemSetting"
+    file: "app/models/system_setting.py"
+    table: "system_settings"
+    concept_mapping: "concept_system_settings.yaml"
+    criticality: "HIGH"
+
+# SERVICES (17 files)
+services:
+  - name: "ConsensusService"
+    file: "app/services/consensus_service.py"
+    concept: "Consensus Calculation"
+    mapping: "concept_consensus.yaml"
+    criticality: "CRITICAL"
+
+  - name: "SnapshotService"
+    file: "app/services/snapshot_service.py"
+    concept: "Time-Series Snapshots"
+    mapping: "concept_snapshots.yaml"
+    criticality: "HIGH"
+
+  - name: "AggregationService"
+    file: "app/services/aggregation_service.py"
+    concept: "Rollups and Aggregation"
+    mapping: "concept_rollups.yaml"
+    criticality: "MEDIUM"
+
+  - name: "AuditService"
+    file: "app/services/audit_service.py"
+    concept: "Audit Logging"
+    mapping: "concept_audit_logs.yaml"
+    criticality: "HIGH"
+
+  - name: "CommentService"
+    file: "app/services/comment_service.py"
+    concept: "Cell Comments and Mentions"
+    mapping: "concept_comments.yaml"
+    criticality: "MEDIUM"
+
+  - name: "DeletionImpactService"
+    file: "app/services/deletion_impact_service.py"
+    concept: "Deletion Impact Analysis"
+    mapping: "concept_deletion_safety.yaml"
+    criticality: "HIGH"
+
+  - name: "ExcelExportService"
+    file: "app/services/excel_export_service.py"
+    concept: "Excel Export"
+    mapping: "concept_export_import.yaml"
+    criticality: "MEDIUM"
+
+  - name: "YAMLExportService"
+    file: "app/services/yaml_export_service.py"
+    concept: "YAML Backup"
+    mapping: "concept_backup_restore.yaml"
+    criticality: "CRITICAL"
+
+  - name: "YAMLImportService"
+    file: "app/services/yaml_import_service.py"
+    concept: "YAML Restore"
+    mapping: "concept_backup_restore.yaml"
+    criticality: "CRITICAL"
+
+  - name: "FullBackupService"
+    file: "app/services/full_backup_service.py"
+    concept: "Full System Backup"
+    mapping: "concept_backup_restore.yaml"
+    criticality: "CRITICAL"
+
+  - name: "FullRestoreService"
+    file: "app/services/full_restore_service.py"
+    concept: "Full System Restore"
+    mapping: "concept_backup_restore.yaml"
+    criticality: "CRITICAL"
+
+  - name: "OrganizationCloneService"
+    file: "app/services/organization_clone_service.py"
+    concept: "Organization Cloning"
+    mapping: "concept_organization_management.yaml"
+    criticality: "MEDIUM"
+
+  - name: "ValueTypeUsageService"
+    file: "app/services/value_type_usage_service.py"
+    concept: "Value Type Usage Analysis"
+    mapping: "concept_value_types.yaml"
+    criticality: "LOW"
+
+  - name: "SSOService"
+    file: "app/services/sso_service.py"
+    concept: "Single Sign-On"
+    mapping: "concept_sso.yaml"
+    criticality: "CRITICAL"
+
+# ROUTES (8 files)
+routes:
+  - name: "auth"
+    file: "app/routes/auth.py"
+    concepts:
+      - "Login/Logout"
+      - "Profile Management"
+      - "Organization Selection"
+    mapping: "concept_authentication.yaml"
+    criticality: "CRITICAL"
+
+  - name: "workspace"
+    file: "app/routes/workspace.py"
+    concepts:
+      - "Workspace Grid"
+      - "KPI Detail"
+      - "Contributions"
+      - "Calculation Config"
+      - "API Endpoints"
+    mapping: "concept_workspace.yaml"
+    criticality: "CRITICAL"
+
+  - name: "organization_admin"
+    file: "app/routes/organization_admin.py"
+    concepts:
+      - "Organization Onboarding"
+      - "Structure Management"
+      - "Backup/Restore"
+      - "Governance Bodies"
+      - "Value Types"
+    mapping: "concept_org_admin.yaml"
+    criticality: "HIGH"
+
+  - name: "global_admin"
+    file: "app/routes/global_admin.py"
+    concepts:
+      - "User Management"
+      - "Organization Management"
+      - "Cross-org Operations"
+    mapping: "concept_global_admin.yaml"
+    criticality: "HIGH"
+
+  - name: "super_admin"
+    file: "app/routes/super_admin.py"
+    concepts:
+      - "System Backup"
+      - "System Settings"
+      - "Announcements"
+      - "SSO Configuration"
+    mapping: "concept_super_admin.yaml"
+    criticality: "CRITICAL"
+
+  - name: "analytics"
+    file: "app/routes/analytics.py"
+    concepts:
+      - "Health Monitoring"
+      - "Statistics"
+      - "System Insights"
+    mapping: "concept_analytics.yaml"
+    criticality: "MEDIUM"
+
+  - name: "executive"
+    file: "app/routes/executive.py"
+    concepts:
+      - "Executive Dashboard"
+      - "High-level Views"
+    mapping: "concept_executive.yaml"
+    criticality: "LOW"
+
+  - name: "test_errors"
+    file: "app/routes/test_errors.py"
+    concepts:
+      - "Error Testing"
+      - "Development Only"
+    mapping: null
+    criticality: "LOW"
+
+# FORMS (13 files)
+forms:
+  - file: "app/forms/auth_forms.py"
+    forms: ["LoginForm", "RegistrationForm", "ProfileForm"]
+    concept: "Authentication"
+
+  - file: "app/forms/user_forms.py"
+    forms: ["UserForm", "EditUserForm"]
+    concept: "User Management"
+
+  - file: "app/forms/organization_forms.py"
+    forms: ["OrganizationForm"]
+    concept: "Organization Management"
+
+  - file: "app/forms/space_forms.py"
+    forms: ["SpaceForm"]
+    concept: "Spaces"
+
+  - file: "app/forms/challenge_forms.py"
+    forms: ["ChallengeForm"]
+    concept: "Challenges"
+
+  - file: "app/forms/initiative_forms.py"
+    forms: ["InitiativeForm"]
+    concept: "Initiatives"
+
+  - file: "app/forms/system_forms.py"
+    forms: ["SystemForm"]
+    concept: "Systems"
+
+  - file: "app/forms/kpi_forms.py"
+    forms: ["KPIForm", "ContributionForm"]
+    concept: "KPIs and Contributions"
+
+  - file: "app/forms/value_type_forms.py"
+    forms: ["ValueTypeForm"]
+    concept: "Value Types"
+
+  - file: "app/forms/governance_body_forms.py"
+    forms: ["GovernanceBodyForm"]
+    concept: "Governance Bodies"
+
+  - file: "app/forms/contribution_forms.py"
+    forms: ["ContributionForm"]
+    concept: "Contributions"
+
+  - file: "app/forms/rollup_forms.py"
+    forms: ["RollupRuleForm"]
+    concept: "Rollups"
+
+  - file: "app/forms/yaml_forms.py"
+    forms: ["YAMLRestoreForm", "FullBackupForm"]
+    concept: "Backup/Restore"
+
+  - file: "app/forms/organization_clone_forms.py"
+    forms: ["OrganizationCloneForm"]
+    concept: "Organization Cloning"
+
+  - file: "app/forms/sso_forms.py"
+    forms: ["SSOConfigForm"]
+    concept: "SSO"
+
+  - file: "app/forms/announcement_forms.py"
+    forms: ["AnnouncementForm"]
+    concept: "Announcements"
+
+# MAJOR FEATURES TO DOCUMENT
+features_to_document:
+  # COMPLETED
+  - name: "KPI Target"
+    status: "✅ COMPLETE"
+    mapping: "docs/concept-mapping/concept_target_kpi.yaml"
+
+  - name: "Calculation Type (Manual/Formula/Linked)"
+    status: "✅ COMPLETE"
+    mapping: "docs/concept-mapping/concept_calculation_type.yaml"
+
+  - name: "Formula KPI Calculation"
+    status: "✅ COMPLETE"
+    mapping: "docs/concept-mapping/concept_formula_kpi.yaml"
+
+  # HIGH PRIORITY - CRITICAL FEATURES
+  - name: "Consensus Calculation"
+    status: "🔴 TODO - CRITICAL"
+    files:
+      - "app/services/consensus_service.py"
+      - "app/models/contribution.py"
+    priority: "CRITICAL"
+
+  - name: "Backup and Restore"
+    status: "🔴 TODO - CRITICAL"
+    files:
+      - "app/services/yaml_export_service.py"
+      - "app/services/yaml_import_service.py"
+      - "app/services/full_backup_service.py"
+      - "app/services/full_restore_service.py"
+    priority: "CRITICAL"
+
+  - name: "Linked KPI Sync"
+    status: "🔴 TODO - CRITICAL"
+    files:
+      - "app/models/value_type.py"
+      - "app/routes/workspace.py"
+    priority: "CRITICAL"
+    note: "Identified as unclear in concept_calculation_type.yaml"
+
+  - name: "Permissions System"
+    status: "🔴 TODO - CRITICAL"
+    files:
+      - "app/models/user.py"
+      - "app/models/organization.py"
+      - "app/decorators.py"
+    priority: "CRITICAL"
+
+  - name: "User Management"
+    status: "🔴 TODO - CRITICAL"
+    files:
+      - "app/models/user.py"
+      - "app/routes/global_admin.py"
+    priority: "CRITICAL"
+
+  - name: "SSO (Single Sign-On)"
+    status: "🔴 TODO - CRITICAL"
+    files:
+      - "app/models/sso_config.py"
+      - "app/services/sso_service.py"
+      - "app/routes/super_admin.py"
+    priority: "CRITICAL"
+
+  # HIGH PRIORITY - CORE FEATURES
+  - name: "Workspace Grid Display"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/templates/workspace/index.html"
+      - "app/routes/workspace.py"
+    priority: "HIGH"
+
+  - name: "Spaces"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/space.py"
+      - "app/routes/organization_admin.py"
+    priority: "HIGH"
+
+  - name: "Challenges"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/challenge.py"
+      - "app/routes/organization_admin.py"
+    priority: "HIGH"
+
+  - name: "Initiatives"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/initiative.py"
+      - "app/routes/organization_admin.py"
+    priority: "HIGH"
+
+  - name: "Systems"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/system.py"
+      - "app/routes/organization_admin.py"
+    priority: "HIGH"
+
+  - name: "KPI Core"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/kpi.py"
+      - "app/routes/workspace.py"
+    priority: "HIGH"
+
+  - name: "Value Types"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/value_type.py"
+      - "app/routes/organization_admin.py"
+    priority: "HIGH"
+
+  - name: "Contributions"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/contribution.py"
+      - "app/routes/workspace.py"
+    priority: "HIGH"
+
+  - name: "KPI Snapshots"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/kpi_snapshot.py"
+      - "app/services/snapshot_service.py"
+    priority: "HIGH"
+
+  - name: "Governance Bodies"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/governance_body.py"
+      - "app/routes/organization_admin.py"
+    priority: "HIGH"
+
+  - name: "Audit Logs"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/audit_log.py"
+      - "app/services/audit_service.py"
+    priority: "HIGH"
+
+  - name: "System Settings"
+    status: "🔴 TODO - HIGH"
+    files:
+      - "app/models/system_setting.py"
+      - "app/routes/super_admin.py"
+    priority: "HIGH"
+
+  # MEDIUM PRIORITY
+  - name: "Organization Management"
+    status: "🔴 TODO - MEDIUM"
+    files:
+      - "app/models/organization.py"
+      - "app/routes/global_admin.py"
+    priority: "MEDIUM"
+
+  - name: "Announcements"
+    status: "🔴 TODO - MEDIUM"
+    files:
+      - "app/models/announcement.py"
+      - "app/routes/super_admin.py"
+    priority: "MEDIUM"
+
+  - name: "Cell Comments"
+    status: "🔴 TODO - MEDIUM"
+    files:
+      - "app/models/cell_comment.py"
+      - "app/services/comment_service.py"
+    priority: "MEDIUM"
+
+  - name: "Rollups and Aggregation"
+    status: "🔴 TODO - MEDIUM"
+    files:
+      - "app/models/rollup_rule.py"
+      - "app/services/aggregation_service.py"
+    priority: "MEDIUM"
+
+  - name: "Organization Cloning"
+    status: "🔴 TODO - MEDIUM"
+    files:
+      - "app/services/organization_clone_service.py"
+      - "app/routes/organization_admin.py"
+    priority: "MEDIUM"
+
+  - name: "Deletion Impact Analysis"
+    status: "🔴 TODO - MEDIUM"
+    files:
+      - "app/services/deletion_impact_service.py"
+    priority: "MEDIUM"
+
+  # LOW PRIORITY
+  - name: "Filter Presets"
+    status: "🔴 TODO - LOW"
+    files:
+      - "app/models/user_filter_preset.py"
+      - "app/routes/workspace.py"
+    priority: "LOW"
+
+  - name: "Excel Export"
+    status: "🔴 TODO - LOW"
+    files:
+      - "app/services/excel_export_service.py"
+    priority: "LOW"
+
+  - name: "Analytics and Health"
+    status: "🔴 TODO - LOW"
+    files:
+      - "app/routes/analytics.py"
+    priority: "LOW"
+
+  - name: "Executive Dashboard"
+    status: "🔴 TODO - LOW"
+    files:
+      - "app/routes/executive.py"
+    priority: "LOW"
+
+# UI/UX FEATURES TO DOCUMENT
+ui_features:
+  - name: "Navigation and Menus"
+    status: "🔴 TODO"
+    files:
+      - "app/templates/base.html"
+      - "app/templates/workspace/index.html"
+    priority: "HIGH"
+
+  - name: "Drag and Drop (Ordering)"
+    status: "🔴 TODO"
+    files:
+      - "app/templates/organization_admin/manage_structure.html"
+    priority: "MEDIUM"
+
+  - name: "Filter System"
+    status: "🔴 TODO"
+    files:
+      - "app/templates/workspace/index.html"
+    priority: "HIGH"
+
+  - name: "Graph Column Management"
+    status: "🔴 TODO"
+    files:
+      - "app/templates/workspace/kpi_cell_detail.html"
+    priority: "MEDIUM"
+
+  - name: "Dark Mode"
+    status: "🔴 TODO"
+    files:
+      - "app/templates/base.html"
+      - "app/models/user.py"
+    priority: "LOW"
+
+  - name: "Dashboard"
+    status: "🔴 TODO"
+    files:
+      - "app/templates/workspace/dashboard.html"
+    priority: "MEDIUM"
+
+# TESTING COVERAGE
+testing:
+  unit_tests:
+    directory: "tests/unit/"
+    files:
+      - "test_models.py"
+      - "test_value_types.py"
+    coverage: "~40%"
+    needs_improvement: true
+
+  integration_tests:
+    directory: "tests/integration/"
+    status: "Minimal coverage"
+    needs_improvement: true
+
+  e2e_tests:
+    status: "Not implemented"
+    priority: "MEDIUM"
+
+# DOCUMENTATION STATUS
+documentation_status:
+  concept_mappings_complete: 3
+  concept_mappings_needed: 35
+  user_journey_mappings_complete: 1
+  user_journey_mappings_needed: 3
+
+  completion_percentage: "~8%"
+  target: "100%"
+
+# NEXT STEPS (Priority Order)
+next_steps:
+  1:
+    task: "Create concept_backup_restore.yaml"
+    reason: "CRITICAL feature for data safety"
+    estimated_effort: "3 hours"
+
+  2:
+    task: "Create concept_consensus.yaml"
+    reason: "CRITICAL - core calculation logic"
+    estimated_effort: "2 hours"
+
+  3:
+    task: "Create concept_linked_kpi.yaml"
+    reason: "CRITICAL - unclear sync mechanism"
+    estimated_effort: "2 hours"
+
+  4:
+    task: "Create concept_permissions.yaml"
+    reason: "CRITICAL - access control"
+    estimated_effort: "3 hours"
+
+  5:
+    task: "Create concept_sso.yaml"
+    reason: "CRITICAL - authentication"
+    estimated_effort: "2 hours"
+
+  6:
+    task: "Create concept_workspace.yaml"
+    reason: "HIGH - main user interface"
+    estimated_effort: "4 hours"
+
+  7:
+    task: "Create remaining HIGH priority mappings"
+    reason: "Cover all core features"
+    estimated_effort: "2-3 days"
+
+  8:
+    task: "Create remaining user journey YAMLs"
+    reason: "Complete role coverage"
+    estimated_effort: "1 day"
+
+  9:
+    task: "Create UI/UX feature mappings"
+    reason: "Document frontend patterns"
+    estimated_effort: "1 day"
+
+  10:
+    task: "Document testing coverage"
+    reason: "Identify gaps"
+    estimated_effort: "1 day"

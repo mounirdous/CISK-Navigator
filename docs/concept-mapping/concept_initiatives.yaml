@@ -1,0 +1,60 @@
+# Concept Mapping: Initiatives
+# Action plans to address challenges
+
+concept:
+  name: "Initiatives"
+  description: "Projects/programs to address challenges"
+  hierarchy_level: 3
+  criticality: "HIGH"
+
+database:
+  table: "initiatives"
+  key_fields:
+    - "name, description, display_order"
+    - "owner_user_id (responsible person)"
+    - "start_date, end_date"
+    - "budget, status, priority"
+    - "other form fields (14 total)"
+
+routes:
+  list: "/org-admin/initiatives"
+  create: "/org-admin/challenges/<challenge_id>/initiatives/create"
+  edit: "/org-admin/initiatives/<id>/edit"
+  delete: "/org-admin/initiatives/<id>/delete"
+  form: "/org-admin/initiatives/<id>/form"
+  rollup_config: "/org-admin/challenge-initiative-links/<link_id>/rollup-config"
+
+permissions:
+  required: "can_manage_initiatives OR is_org_admin"
+
+relationships:
+  parents: "Challenges (many-to-many via challenge_initiative_links)"
+  children: "Systems (many-to-many via initiative_system_links)"
+
+special_features:
+  form_fields:
+    count: 14
+    location: "/org-admin/initiatives/<id>/form"
+    purpose: "Extended project details (budget, owner, dates, etc.)"
+    added_in: "v1.21.0"
+
+ui_elements:
+  colors:
+    badge: "Bootstrap success (#28a745)"
+  icons:
+    initiative: "bi-lightbulb"
+
+business_rules:
+  - "Links to multiple Challenges"
+  - "Links to multiple Systems"
+  - "Form fields are optional metadata"
+  - "Owner is a User"
+
+user_journey:
+  file: "user-journeys/role_org_admin_journey.yaml"
+  journey: "J5 (Initiative Management)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

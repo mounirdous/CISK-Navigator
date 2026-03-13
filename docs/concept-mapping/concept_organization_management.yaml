@@ -1,0 +1,44 @@
+# Concept Mapping: Organization Management
+# Organization CRUD and lifecycle
+
+concept:
+  name: "Organization Management"
+  description: "Create, edit, archive, delete organizations"
+  criticality: "CRITICAL"
+
+routes:
+  list: "/global-admin/organizations"
+  create: "/global-admin/organizations/create"
+  edit: "/global-admin/organizations/<id>/edit"
+  archive: "/global-admin/organizations/<id>/archive"
+  restore: "/global-admin/organizations/<id>/restore"
+  delete: "/global-admin/organizations/<id>/delete"
+  clone: "/global-admin/organizations/<id>/clone"
+
+permissions:
+  required: "is_global_admin OR is_super_admin"
+
+database:
+  table: "organizations"
+  key_fields:
+    - "name, description"
+    - "is_active (soft delete flag)"
+    - "deleted_at (soft delete timestamp)"
+
+lifecycle:
+  create: "Global Admin creates → Assign first admin"
+  active: "Normal operations"
+  archived: "Soft deleted (can restore)"
+  deleted: "Hard deleted (permanent)"
+
+services:
+  OrganizationCloneService: "Clone org with all data"
+
+user_journey:
+  file: "role_global_admin_journey.yaml"
+  journey: "J2 (Organization Management)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "CRITICAL"
+  last_updated: "2026-03-13"

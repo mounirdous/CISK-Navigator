@@ -1,0 +1,26 @@
+# Concept Mapping: Dark Mode
+concept:
+  name: "Dark Mode"
+  description: "User preference for dark theme"
+  criticality: "LOW"
+database:
+  field: "users.dark_mode"
+  type: "BOOLEAN"
+implementation:
+  framework: "Bootstrap 5.3 data-bs-theme='dark'"
+  toggle: "User profile page"
+ui_elements:
+  switch: "form-switch toggle"
+  location: "/auth/profile"
+colors:
+  dark_mode:
+    background: "#212529"
+    text: "#dee2e6"
+    cards: "#343a40"
+user_journey:
+  file: "role_regular_user_journey.yaml"
+  journey: "J5 (Profile Management)"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

@@ -1,0 +1,69 @@
+# Concept Mapping: Governance Bodies
+# Who decides/approves (Management Board, Sustainability Team, etc.)
+
+concept:
+  name: "Governance Bodies"
+  description: "Decision-making groups that KPIs are linked to"
+  criticality: "HIGH"
+
+database:
+  table: "governance_bodies"
+  key_fields:
+    - "organization_id"
+    - "name (Management Board, Sustainability Team)"
+    - "acronym (MB, ST)"
+    - "description"
+    - "display_order"
+
+  links_table: "kpi_governance_body_links"
+  purpose: "Many-to-many: KPIs can have multiple governance bodies"
+
+routes:
+  list: "/org-admin/governance-bodies"
+  reorder: "/org-admin/governance-bodies/reorder"
+  create: "/org-admin/governance-bodies/create"
+  edit: "/org-admin/governance-bodies/<id>/edit"
+  delete: "/org-admin/governance-bodies/<id>/delete"
+
+permissions:
+  required: "can_manage_governance_bodies OR is_org_admin"
+
+ui_elements:
+  icons:
+    governance: "bi-people"
+
+  colors:
+    badge: "Bootstrap info (#0dcaf0)"
+
+business_rules:
+  - "Optional but recommended"
+  - "KPIs can link to multiple GBs"
+  - "Used for filtering in workspace"
+  - "Backed up in full backup (needs mapping on restore)"
+
+workspace_filtering:
+  location: "Workspace grid top filters"
+  feature: "Filter KPIs by governance body"
+  multiple_selection: true
+
+backup_restore:
+  importance: "CRITICAL"
+  mapping_required: true
+  reason: "Different orgs have different GBs"
+  file: "concept_backup_restore.yaml"
+
+user_journey:
+  file: "role_org_admin_journey.yaml"
+  journey: "J9 (Governance Body Management)"
+
+confusion_points:
+  - "Users don't understand concept during onboarding"
+  - "Often skipped or filled with dummy data"
+
+simplification:
+  proposal: "Make optional in onboarding, add later"
+
+metadata:
+  complexity: "LOW"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

@@ -1,0 +1,735 @@
+# Organization Admin - Complete User Journey Map
+# Maps ALL organizational management capabilities
+# CRITICAL for simplification analysis
+
+role:
+  name: "Organization Administrator"
+  db_field: "user_organization_memberships.is_org_admin"
+  access_level: "Full control over organization structure and data"
+  bypass: "Bypasses all individual permissions (can_manage_*)"
+  typical_count: "1-3 per organization"
+
+permissions:
+  special_flag:
+    name: "is_org_admin"
+    description: "Organization administrator - bypasses all permission checks"
+    grants_all:
+      - "can_manage_spaces"
+      - "can_manage_value_types"
+      - "can_manage_governance_bodies"
+      - "can_manage_challenges"
+      - "can_manage_initiatives"
+      - "can_manage_systems"
+      - "can_manage_kpis"
+      - "can_contribute"
+      - "can_view_comments"
+      - "can_add_comments"
+    note: "is_org_admin == true → all permissions auto-granted"
+
+# JOURNEY STRUCTURE: 12 major journeys, 60+ steps
+journeys:
+  # J1: Organization Onboarding Wizard
+  - id: "J1"
+    name: "Organization Onboarding Wizard"
+    description: "Complete organization setup from scratch"
+    entry_point: "New org created by Global Admin"
+    importance: "CRITICAL - first-time experience"
+    steps:
+      - id: "J1.1"
+        name: "Welcome Screen"
+        route: "/org-admin/onboarding"
+        method: "GET"
+        template: "organization_admin/onboarding.html"
+        file: "app/routes/organization_admin.py"
+        lines: [184-298]
+        displays:
+          - "Welcome message"
+          - "What needs to be set up"
+          - "Estimated time: 10-15 minutes"
+        next_steps:
+          - goto: "J1.2"
+
+      - id: "J1.2"
+        name: "Create Value Types"
+        description: "Define what metrics to track (Cost, CO2, Risk, etc.)"
+        route: "/org-admin/onboarding"
+        form: "OnboardingForm - Value Types section"
+        complexity: "HIGH - many fields per value type"
+        can_create: "Multiple value types at once"
+        fields_per_vt:
+          - "name"
+          - "kind (numeric/qualitative)"
+          - "numeric_format (if numeric)"
+          - "unit_label"
+          - "default_aggregation_formula"
+        time_estimate: "5-7 minutes"
+        pain_point: "Lots of fields, unclear defaults"
+        next_steps:
+          - goto: "J1.3"
+
+      - id: "J1.3"
+        name: "Create Governance Bodies"
+        description: "Define who decides (Management Board, Sustainability Team, etc.)"
+        route: "/org-admin/onboarding"
+        form: "OnboardingForm - Governance Bodies section"
+        can_create: "Multiple governance bodies at once"
+        fields_per_gb:
+          - "name"
+          - "acronym"
+          - "description"
+        time_estimate: "2-3 minutes"
+        next_steps:
+          - goto: "J1.4"
+
+      - id: "J1.4"
+        name: "Choose Setup Method"
+        description: "Start from scratch OR upload YAML template"
+        route: "/org-admin/onboarding"
+        options:
+          - "Start from scratch"
+          - "Upload YAML structure"
+        next_steps:
+          - condition: "From scratch"
+            goto: "J1.5"
+          - condition: "Upload YAML"
+            goto: "J7.1"  # Jump to YAML upload journey
+
+      - id: "J1.5"
+        name: "Create First Space"
+        description: "Top-level strategic area"
+        route: "/org-admin/onboarding"
+        form: "SpaceForm"
+        fields:
+          - "name"
+          - "description"
+          - "space_label (optional)"
+        time_estimate: "1 minute"
+        next_steps:
+          - goto: "J1.6"
+
+      - id: "J1.6"
+        name: "Create First Challenge"
+        description: "Strategic challenge within space"
+        route: "/org-admin/onboarding"
+        form: "ChallengeForm"
+        fields:
+          - "name"
+          - "description"
+        time_estimate: "1 minute"
+        next_steps:
+          - goto: "J1.7"
+
+      - id: "J1.7"
+        name: "Create First Initiative"
+        description: "Action plan to address challenge"
+        route: "/org-admin/onboarding"
+        form: "InitiativeForm"
+        fields:
+          - "name"
+          - "description"
+          - "owner_user_id"
+          - "start_date"
+          - "end_date"
+        time_estimate: "1-2 minutes"
+        next_steps:
+          - goto: "J1.8"
+
+      - id: "J1.8"
+        name: "Create First System"
+        description: "System affected by initiative"
+        route: "/org-admin/onboarding"
+        form: "SystemForm"
+        fields:
+          - "name"
+          - "description"
+        time_estimate: "1 minute"
+        next_steps:
+          - goto: "J1.9"
+
+      - id: "J1.9"
+        name: "Create First KPI"
+        description: "Metric to track progress"
+        route: "/org-admin/onboarding"
+        form: "KPIForm"
+        complexity: "HIGH - many options"
+        fields:
+          - "name"
+          - "description"
+          - "value_types (multi-select)"
+          - "governance_bodies (multi-select)"
+          - "target_value (optional)"
+          - "target_direction"
+        time_estimate: "2-3 minutes"
+        next_steps:
+          - goto: "J1.10"
+
+      - id: "J1.10"
+        name: "Onboarding Complete"
+        description: "Success screen + next actions"
+        route: "/org-admin/onboarding"
+        displays:
+          - "✓ Organization set up successfully"
+          - "Summary: X spaces, Y challenges, Z KPIs created"
+          - "Next steps: Invite users, add more KPIs"
+        next_steps:
+          - action: "Go to workspace"
+            goto: "workspace/index"
+          - action: "Manage structure"
+            goto: "J2.1"
+
+    total_time_estimate: "15-20 minutes"
+    pain_points:
+      - "Too many fields in value types"
+      - "Unclear what governance bodies are"
+      - "Can't skip steps (forced linear flow)"
+      - "No preview of final structure"
+    simplification_opportunities:
+      - "Pre-fill common value types (Cost, CO2)"
+      - "Allow skip to YAML upload immediately"
+      - "Make governance bodies optional"
+      - "Show progress bar"
+
+  # J2: Manage Structure (Drag & Drop)
+  - id: "J2"
+    name: "Manage Organization Structure"
+    description: "View and reorganize Spaces/Challenges/Initiatives/Systems"
+    entry_point: "/org-admin/"
+    steps:
+      - id: "J2.1"
+        name: "Structure Dashboard"
+        route: "/org-admin/"
+        method: "GET"
+        template: "organization_admin/index.html"
+        file: "app/routes/organization_admin.py"
+        lines: [142-182]
+        displays:
+          - "Hierarchical tree of structure"
+          - "Drag & drop reordering"
+          - "Edit/Delete buttons"
+        features:
+          - "Expand/collapse nodes"
+          - "Drag to reorder"
+          - "Click to edit"
+        next_steps:
+          - action: "Edit Space"
+            goto: "J3.1"
+          - action: "Edit Challenge"
+            goto: "J4.1"
+          - action: "Edit Initiative"
+            goto: "J5.1"
+          - action: "Edit System"
+            goto: "J6.1"
+
+  # J3: Space Management
+  - id: "J3"
+    name: "Space Management"
+    description: "Create, edit, delete Spaces"
+    steps:
+      - id: "J3.1"
+        name: "List Spaces"
+        route: "/org-admin/spaces"
+        method: "GET"
+        template: "organization_admin/spaces.html"
+        displays:
+          - "All spaces with descriptions"
+          - "Create New button"
+        next_steps:
+          - action: "Create"
+            goto: "J3.2"
+          - action: "Edit"
+            goto: "J3.3"
+
+      - id: "J3.2"
+        name: "Create Space"
+        route: "/org-admin/spaces/create"
+        methods: ["GET", "POST"]
+        template: "organization_admin/space_form.html"
+        form: "SpaceForm"
+        models_used: ["Space"]
+        audit_log: true
+        next_steps:
+          - condition: "Success"
+            goto: "J3.1"
+
+      - id: "J3.3"
+        name: "Edit Space"
+        route: "/org-admin/spaces/<space_id>/edit"
+        methods: ["GET", "POST"]
+        template: "organization_admin/space_form.html"
+        form: "SpaceForm"
+        models_used: ["Space"]
+        audit_log: true
+        next_steps:
+          - goto: "J3.1"
+
+      - id: "J3.4"
+        name: "Delete Space"
+        route: "/org-admin/spaces/<space_id>/delete"
+        method: "POST"
+        confirmation_required: true
+        danger: "Deletes all children (Challenges, Initiatives, Systems, KPIs)"
+        service_used: "DeletionImpactService"
+        shows_impact:
+          - "X challenges will be deleted"
+          - "Y initiatives will be deleted"
+          - "Z KPIs will be deleted"
+        audit_log: true
+        next_steps:
+          - goto: "J3.1"
+
+      - id: "J3.5"
+        name: "SWOT Analysis"
+        route: "/org-admin/spaces/<space_id>/swot"
+        method: "GET"
+        template: "organization_admin/space_swot.html"
+        displays:
+          - "Strengths, Weaknesses, Opportunities, Threats"
+        next_steps:
+          - action: "Edit SWOT"
+            goto: "J3.6"
+
+      - id: "J3.6"
+        name: "Edit SWOT"
+        route: "/org-admin/spaces/<space_id>/swot/edit"
+        methods: ["GET", "POST"]
+        form: "SpaceSWOTForm"
+        next_steps:
+          - goto: "J3.5"
+
+  # J4: Challenge Management (similar to J3)
+  - id: "J4"
+    name: "Challenge Management"
+    description: "Create, edit, delete Challenges"
+    routes:
+      - "/org-admin/challenges"  # List
+      - "/org-admin/spaces/<space_id>/challenges/create"  # Create
+      - "/org-admin/challenges/<challenge_id>/edit"  # Edit
+      - "/org-admin/challenges/<challenge_id>/delete"  # Delete
+      - "/org-admin/challenges/<challenge_id>/rollup-config"  # Rollup config
+    similar_to: "J3 (Space Management)"
+
+  # J5: Initiative Management
+  - id: "J5"
+    name: "Initiative Management"
+    description: "Create, edit, delete Initiatives"
+    routes:
+      - "/org-admin/initiatives"
+      - "/org-admin/challenges/<challenge_id>/initiatives/create"
+      - "/org-admin/initiatives/<initiative_id>/edit"
+      - "/org-admin/initiatives/<initiative_id>/delete"
+      - "/org-admin/challenge-initiative-links/<link_id>/rollup-config"
+    similar_to: "J3 (Space Management)"
+    additional_feature:
+      - "Initiative form fields (owner, start_date, end_date, etc.)"
+
+  # J6: System Management
+  - id: "J6"
+    name: "System Management"
+    description: "Create, edit, delete Systems"
+    routes:
+      - "/org-admin/systems"
+      - "/org-admin/initiatives/<initiative_id>/systems/create"
+      - "/org-admin/systems/<system_id>/edit"
+      - "/org-admin/systems/<system_id>/delete"
+      - "/org-admin/initiative-system-links/<link_id>/rollup-config"
+      - "/org-admin/initiative-system-links/<link_id>/kpis/create"
+    similar_to: "J3 (Space Management)"
+
+  # J7: YAML Backup/Restore
+  - id: "J7"
+    name: "YAML Structure Backup/Restore"
+    description: "Import/export org structure via YAML"
+    mapping: "concept_backup_restore.yaml"
+    steps:
+      - id: "J7.1"
+        name: "Upload YAML Structure"
+        route: "/org-admin/yaml-upload"
+        methods: ["GET", "POST"]
+        template: "organization_admin/yaml_upload.html"
+        form: "YAMLUploadForm"
+        file: "app/routes/organization_admin.py"
+        lines: [1965-2014]
+        operations:
+          - "User uploads .yaml file"
+          - "System parses YAML"
+          - "Creates Spaces → Challenges → Initiatives → Systems → KPIs"
+        service_used: "YAMLImportService"
+        audit_log: true
+        time_estimate: "2-5 seconds (depending on size)"
+        use_case: "Clone structure from template"
+        next_steps:
+          - condition: "Success"
+            goto: "J2.1"  # View structure
+          - condition: "Error"
+            displays: "Detailed error messages"
+
+      - id: "J7.2"
+        name: "Export YAML Structure"
+        route: "/org-admin/yaml-export"
+        method: "GET"
+        file: "app/routes/organization_admin.py"
+        lines: [2017-2044]
+        operations:
+          - "Generates YAML from current structure"
+          - "Downloads file: structure_{org_name}.yaml"
+        service_used: "YAMLExportService"
+        file_size: "~50-200KB"
+        use_case: "Share structure template"
+        time_estimate: "Instant"
+
+  # J8: Value Type Management
+  - id: "J8"
+    name: "Value Type Management"
+    description: "Create, edit, delete value types"
+    importance: "HIGH - defines what metrics can be tracked"
+    steps:
+      - id: "J8.1"
+        name: "List Value Types"
+        route: "/org-admin/value-types"
+        method: "GET"
+        template: "organization_admin/value_types.html"
+        file: "app/routes/organization_admin.py"
+        lines: [1488-1496]
+        displays:
+          - "All value types"
+          - "Drag to reorder"
+          - "Create button"
+        next_steps:
+          - action: "Reorder"
+            goto: "J8.2"
+          - action: "Create"
+            goto: "J8.3"
+          - action: "Edit"
+            goto: "J8.4"
+
+      - id: "J8.2"
+        name: "Reorder Value Types"
+        route: "/org-admin/value-types/reorder"
+        method: "POST"
+        file: "app/routes/organization_admin.py"
+        lines: [1498-1524]
+        operations:
+          - "User drags value types"
+          - "POST new order to server"
+          - "Updates display_order column"
+        next_steps:
+          - goto: "J8.1"
+
+      - id: "J8.3"
+        name: "Create Value Type"
+        route: "/org-admin/value-types/create"
+        methods: ["GET", "POST"]
+        template: "organization_admin/value_type_form.html"
+        form: "ValueTypeForm"
+        file: "app/routes/organization_admin.py"
+        lines: [1526-1580]
+        complexity: "HIGH - many conditional fields"
+        fields:
+          - "name"
+          - "kind (numeric/risk/positive_impact/...)"
+          - "numeric_format (if numeric)"
+          - "decimal_places (if numeric)"
+          - "unit_label (if numeric)"
+          - "default_aggregation_formula"
+        models_used: ["ValueType"]
+        audit_log: true
+        time_estimate: "2-3 minutes"
+        next_steps:
+          - condition: "Success"
+            goto: "J8.1"
+
+      - id: "J8.4"
+        name: "Edit Value Type"
+        route: "/org-admin/value-types/<vt_id>/edit"
+        methods: ["GET", "POST"]
+        template: "organization_admin/value_type_form.html"
+        form: "ValueTypeForm"
+        file: "app/routes/organization_admin.py"
+        lines: [1582-1628]
+        warning: "Changing value type affects all KPIs using it"
+        next_steps:
+          - goto: "J8.1"
+
+      - id: "J8.5"
+        name: "Delete Value Type Check"
+        route: "/org-admin/value-types/<vt_id>/delete-check"
+        method: "GET"
+        service_used: "ValueTypeUsageService"
+        file: "app/routes/organization_admin.py"
+        lines: [1630-1652]
+        displays:
+          - "X KPIs use this value type"
+          - "Cannot delete if in use"
+          - "Can delete if unused"
+        next_steps:
+          - condition: "In use"
+            action: "Blocked - show usage"
+          - condition: "Unused"
+            goto: "J8.6"
+
+      - id: "J8.6"
+        name: "Configure Rollup"
+        route: "/org-admin/value-types/<vt_id>/rollup-config"
+        methods: ["GET", "POST"]
+        template: "organization_admin/value_type_rollup.html"
+        file: "app/routes/organization_admin.py"
+        lines: [1654-1831]
+        description: "Configure how values roll up to higher levels"
+        complexity: "VERY HIGH - complex UI"
+        features:
+          - "Define rollup rules per level"
+          - "Challenge level rollup"
+          - "Initiative level rollup"
+        next_steps:
+          - goto: "J8.1"
+
+  # J9: Governance Body Management
+  - id: "J9"
+    name: "Governance Body Management"
+    description: "Create, edit, delete governance bodies"
+    importance: "HIGH - defines who decides"
+    steps:
+      - id: "J9.1"
+        name: "List Governance Bodies"
+        route: "/org-admin/governance-bodies"
+        method: "GET"
+        template: "organization_admin/governance_bodies.html"
+        file: "app/routes/organization_admin.py"
+        lines: [1833-1848]
+        displays:
+          - "All governance bodies"
+          - "Drag to reorder"
+        next_steps:
+          - action: "Reorder"
+            goto: "J9.2"
+          - action: "Create"
+            goto: "J9.3"
+
+      - id: "J9.2"
+        name: "Reorder Governance Bodies"
+        route: "/org-admin/governance-bodies/reorder"
+        method: "POST"
+        file: "app/routes/organization_admin.py"
+        lines: [1850-1874]
+
+      - id: "J9.3"
+        name: "Create Governance Body"
+        route: "/org-admin/governance-bodies/create"
+        methods: ["GET", "POST"]
+        template: "organization_admin/governance_body_form.html"
+        form: "GovernanceBodyForm"
+        file: "app/routes/organization_admin.py"
+        lines: [1876-1912]
+        fields:
+          - "name"
+          - "acronym"
+          - "description"
+        time_estimate: "1 minute"
+        next_steps:
+          - goto: "J9.1"
+
+      - id: "J9.4"
+        name: "Edit Governance Body"
+        route: "/org-admin/governance-bodies/<gb_id>/edit"
+        methods: ["GET", "POST"]
+        file: "app/routes/organization_admin.py"
+        lines: [1914-1940]
+        next_steps:
+          - goto: "J9.1"
+
+      - id: "J9.5"
+        name: "Delete Governance Body"
+        route: "/org-admin/governance-bodies/<gb_id>/delete"
+        method: "POST"
+        file: "app/routes/organization_admin.py"
+        lines: [1942-1963]
+        confirmation_required: true
+        next_steps:
+          - goto: "J9.1"
+
+  # J10: Clear Organization Data
+  - id: "J10"
+    name: "Clear Organization Data"
+    description: "Nuclear option - delete everything"
+    danger: "EXTREMELY DANGEROUS"
+    steps:
+      - id: "J10.1"
+        name: "Clear All Data"
+        route: "/org-admin/clear-organization-data"
+        method: "POST"
+        file: "app/routes/organization_admin.py"
+        lines: [2203-2244]
+        confirmation_required: "Must type organization name"
+        operations:
+          - "Deletes ALL Spaces (cascades to everything)"
+          - "Deletes ALL Value Types"
+          - "Deletes ALL Governance Bodies"
+        irreversible: true
+        use_case: "Start over from scratch"
+        audit_log: true
+        next_steps:
+          - goto: "J1.1"  # Onboarding again
+
+  # J11: Full Backup/Restore (with data)
+  - id: "J11"
+    name: "Full Backup/Restore"
+    description: "Backup/restore including all data"
+    mapping: "concept_backup_restore.yaml"
+    steps:
+      - id: "J11.1"
+        name: "Create Full Backup"
+        route: "/org-admin/full-backup"
+        methods: ["GET", "POST"]
+        service_used: "FullBackupService"
+        includes:
+          - "Structure"
+          - "Contributions"
+          - "Comments"
+          - "Users and permissions"
+        file_format: "JSON"
+        file_size: "Can be large (MBs)"
+        time_estimate: "10-60 seconds"
+
+      - id: "J11.2"
+        name: "Restore Full Backup"
+        route: "/org-admin/full-restore"
+        methods: ["GET", "POST"]
+        service_used: "FullRestoreService"
+        complexity: "VERY HIGH"
+        steps_within:
+          - "Upload JSON backup file"
+          - "Map governance bodies"
+          - "Map users"
+          - "Confirm restore"
+        time_estimate: "2-5 minutes"
+        danger: "Overwrites existing data"
+
+  # J12: Organization Cloning
+  - id: "J12"
+    name: "Clone Organization"
+    description: "Create copy of current org"
+    steps:
+      - id: "J12.1"
+        name: "Clone Organization"
+        route: "/org-admin/clone-organization"
+        methods: ["GET", "POST"]
+        service_used: "OrganizationCloneService"
+        operations:
+          - "Backup current org"
+          - "Create new org"
+          - "Restore backup to new org"
+        time_estimate: "1-2 minutes"
+        use_case: "Create test environment"
+
+# Blocked Routes (Not Accessible to Org Admin)
+blocked_routes:
+  - route: "/global-admin/*"
+    reason: "Not a global admin"
+  - route: "/super-admin/*"
+    reason: "Not a super admin"
+
+# Complexity Analysis
+complexity_analysis:
+  total_routes: 45
+  most_complex_journeys:
+    - name: "Onboarding Wizard"
+      steps: 10
+      time: "15-20 minutes"
+      pain_points: 5
+      simplification_priority: "CRITICAL"
+
+    - name: "Value Type Rollup Configuration"
+      complexity: "VERY HIGH"
+      ui_lines: 200+
+      user_confusion: "HIGH"
+      simplification_priority: "HIGH"
+
+    - name: "Full Backup/Restore"
+      steps: 8
+      complexity: "HIGH"
+      time: "5-10 minutes"
+
+  simplification_opportunities:
+    1:
+      journey: "Onboarding"
+      current_steps: 10
+      proposed_steps: 5
+      changes:
+        - "Pre-fill common value types"
+        - "Make governance bodies optional"
+        - "Allow skip to YAML upload"
+        - "Simplify KPI creation"
+
+    2:
+      journey: "Value Type Management"
+      issue: "Too many fields, unclear defaults"
+      proposal:
+        - "Smart defaults based on kind"
+        - "Wizard-style form"
+        - "Templates for common types"
+
+    3:
+      journey: "Rollup Configuration"
+      issue: "Too complex, rarely used correctly"
+      proposal:
+        - "Auto-suggest rollup rules"
+        - "Preset templates"
+        - "Simplified UI"
+
+# Data Flow Examples
+data_flows:
+  create_kpi_full_flow:
+    1:
+      actor: "Org Admin"
+      action: "Create Space"
+      time: "1 min"
+    2:
+      action: "Create Challenge in Space"
+      time: "1 min"
+    3:
+      action: "Create Initiative in Challenge"
+      time: "2 min"
+    4:
+      action: "Create System in Initiative"
+      time: "1 min"
+    5:
+      action: "Create KPI on Initiative-System link"
+      time: "3 min"
+    total_time: "8 minutes minimum"
+    question: "Can we simplify to 3 steps?"
+
+# Statistics
+stats:
+  total_journeys: 12
+  total_steps: 60+
+  routes_accessible: 45+
+  models_managed: 10
+  services_used: 8
+  most_used_journey: "J2 (Manage Structure)"
+  least_used_journey: "J10 (Clear Data)"
+  highest_priority_for_simplification: "J1 (Onboarding)"
+
+# User Feedback Themes
+user_feedback:
+  positive:
+    - "Drag & drop reordering is intuitive"
+    - "YAML upload saves time"
+    - "Structure tree is easy to understand"
+
+  negative:
+    - "Onboarding is too long"
+    - "Value type creation is confusing"
+    - "Rollup configuration is overwhelming"
+    - "Can't preview structure before creating"
+    - "Too many clicks to create a KPI"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  total_routes_mapped: 45
+  complexity: "VERY HIGH"
+  simplification_needed: true
+  priority_areas:
+    - "Onboarding wizard"
+    - "Value type management"
+    - "Rollup configuration"

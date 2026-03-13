@@ -1,0 +1,29 @@
+# Concept Mapping: Dashboard
+concept:
+  name: "Dashboard"
+  description: "Landing page with stats and quick actions"
+  criticality: "MEDIUM"
+route:
+  main: "/workspace/dashboard"
+displays:
+  statistics:
+    - "Total KPIs"
+    - "Spaces count"
+    - "Value types count"
+  quick_actions:
+    - "Go to workspace"
+    - "Create KPI (if permission)"
+    - "Manage structure (if org admin)"
+  announcements:
+    location: "Top of page"
+    visibility: "If targeted to user"
+ui_elements:
+  cards: "Bootstrap card grid"
+  colors: "Primary colors for stats"
+user_journey:
+  file: "role_regular_user_journey.yaml"
+  journey: "J1.3 (Land on Dashboard)"
+metadata:
+  complexity: "LOW"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

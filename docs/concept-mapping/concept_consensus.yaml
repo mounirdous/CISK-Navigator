@@ -1,0 +1,477 @@
+# Concept Mapping: Consensus Calculation
+# This file maps how consensus is calculated from multiple contributor opinions
+# CRITICAL for understanding how KPI values are derived from contributions
+
+concept:
+  name: "Consensus Calculation"
+  description: "Derives single KPI value from multiple contributor opinions using voting logic"
+  introduced_version: "1.0.0"
+  last_major_refactor: "1.5.0"
+  criticality: "CRITICAL"  # Core value calculation
+
+# What is Consensus?
+consensus_definition:
+  purpose: "Determine a single 'truth' value when multiple people contribute different opinions"
+  use_case: "5 people estimate a cost - what is the final value?"
+  philosophy: "Wisdom of crowds - aggregate opinions to find truth"
+
+  example:
+    contributions:
+      - user: "Alice"
+        value: 1000
+      - user: "Bob"
+        value: 1000
+      - user: "Charlie"
+        value: 1200
+    result:
+      status: "weak_consensus"
+      value: 1000
+      reason: "Majority (2/3) agree on 1000"
+
+# Consensus Statuses
+statuses:
+  - status: "no_data"
+    code: "STATUS_NO_DATA"
+    description: "No contributions exist"
+    value: null
+    rollup_eligible: false
+    display: "No data"
+    color: "#6c757d"  # Gray
+    icon: "—"
+
+  - status: "strong"
+    code: "STATUS_STRONG"
+    description: "All contributors agree (or only one contributor)"
+    conditions:
+      - "Only 1 contribution"
+      - "OR all contributions have same value"
+    value: "The agreed value"
+    rollup_eligible: true
+    display: "Strong consensus"
+    color: "#28a745"  # Green
+    icon: "✓"
+    examples:
+      - contributions: [1000]
+        result: 1000
+      - contributions: [1000, 1000, 1000]
+        result: 1000
+
+  - status: "weak"
+    code: "STATUS_WEAK"
+    description: "Majority exists (>50%) but not unanimous"
+    conditions:
+      - "Most common value appears in >50% of contributions"
+    value: "The majority value"
+    rollup_eligible: false
+    display: "Weak consensus"
+    color: "#ffc107"  # Yellow
+    icon: "~"
+    examples:
+      - contributions: [1000, 1000, 1200]
+        result: 1000
+        reason: "2/3 = 66% > 50%"
+
+  - status: "no_consensus"
+    code: "STATUS_NO_CONSENSUS"
+    description: "No clear majority (<=50%)"
+    conditions:
+      - "Most common value appears in <=50% of contributions"
+    value: null
+    rollup_eligible: false
+    display: "No consensus"
+    color: "#dc3545"  # Red
+    icon: "✗"
+    examples:
+      - contributions: [1000, 1200, 1500]
+        result: null
+        reason: "Each value is 33% - no majority"
+
+# Service Implementation
+service:
+  name: "ConsensusService"
+  file: "app/services/consensus_service.py"
+  lines: [1-115]
+  methods:
+    - name: "calculate_consensus(contributions)"
+      line: 30
+      description: "Core consensus algorithm"
+      parameters:
+        - name: "contributions"
+          type: "List[Contribution]"
+          description: "List of contribution objects"
+      returns:
+        type: "dict"
+        structure:
+          status: "no_data | strong | weak | no_consensus"
+          value: "Numeric or qualitative value (or None)"
+          count: "Number of contributions"
+          is_rollup_eligible: "True if can participate in rollups"
+      algorithm:
+        1: "If no contributions: return no_data"
+        2: "If 1 contribution: return strong with that value"
+        3: "If multiple: extract numeric_value OR qualitative_level"
+        4: "Count occurrences using Counter"
+        5: "If all same (len==1): return strong"
+        6: "If majority >50%: return weak"
+        7: "Otherwise: return no_consensus"
+
+    - name: "get_cell_value(kpi_value_type_config)"
+      line: 104
+      description: "Convenience wrapper to get consensus for a KPI cell"
+      parameters:
+        - name: "kpi_value_type_config"
+          type: "KPIValueTypeConfig"
+          description: "Config object with contributions relationship"
+      returns:
+        type: "dict"
+        description: "Same as calculate_consensus()"
+      usage: "Called when displaying KPI cell values"
+
+# Where Consensus Is Calculated
+locations:
+  - location: "KPI Detail Page"
+    file: "app/templates/workspace/kpi_cell_detail.html"
+    description: "Shows consensus value and status"
+    route: "/workspace/kpi/<id>/value-type/<vt_id>"
+    displays:
+      - "Large consensus value"
+      - "Consensus status badge"
+      - "Contribution count"
+      - "Contributions table with all opinions"
+
+  - location: "Workspace Grid"
+    file: "app/templates/workspace/index.html"
+    description: "Shows consensus value in each cell"
+    note: "Does NOT show consensus status (could be improvement)"
+
+  - location: "Model Method Override"
+    file: "app/models/value_type.py"
+    method: "get_consensus_value()"
+    lines: [289-349]
+    description: "Integrates consensus with formula/linked KPIs"
+    logic: |
+      if is_formula():
+          return calculate_formula_value()
+      elif is_linked():
+          return source_config.get_consensus_value()
+      else:
+          return ConsensusService.get_cell_value(self)
+
+  - location: "Contribution Save"
+    file: "app/routes/workspace.py"
+    description: "Triggers consensus recalculation after new contribution"
+    flow: "User submits contribution → Save to DB → Consensus auto-recalculates on next page load"
+
+  - location: "Rollup Calculation"
+    file: "app/services/aggregation_service.py"
+    description: "Uses consensus values for rollup calculations"
+    note: "Only strong consensus values are eligible for rollups"
+
+# Business Rules
+business_rules:
+  - rule: "Single contribution = Strong consensus"
+    rationale: "One expert opinion is better than no opinion"
+    behavior: "Displayed as strong, eligible for rollups"
+    debate: "Should single contribution require confirmation?"
+
+  - rule: "Unanimous agreement = Strong consensus"
+    rationale: "Everyone agrees, high confidence"
+    behavior: "Eligible for rollups"
+
+  - rule: "Majority >50% = Weak consensus"
+    rationale: "Most people agree, but not everyone"
+    behavior: "Value shown but NOT eligible for rollups"
+    rationale_for_no_rollup: "Not confident enough to aggregate up"
+
+  - rule: "No majority = No consensus"
+    rationale: "Too much disagreement"
+    behavior: "No value shown, NOT eligible for rollups"
+
+  - rule: "Rollup eligibility is strict"
+    only_allows: "Strong consensus"
+    excludes: "Weak consensus, no consensus, no data"
+    rationale: "Only aggregate confident values to higher levels"
+
+# Data Flow
+data_flow:
+  contribution_to_consensus:
+    1:
+      actor: "User A"
+      action: "Contributes value 1000"
+      state: "1 contribution"
+      consensus: "Strong (1000)"
+
+    2:
+      actor: "User B"
+      action: "Contributes value 1000"
+      state: "2 contributions, both same"
+      consensus: "Strong (1000)"
+
+    3:
+      actor: "User C"
+      action: "Contributes value 1200"
+      state: "3 contributions, 2 vs 1"
+      consensus: "Weak (1000) - 2/3 majority"
+
+    4:
+      actor: "User D"
+      action: "Contributes value 1200"
+      state: "4 contributions, 2 vs 2"
+      consensus: "No consensus - 50/50 tie"
+
+# Edge Cases
+edge_cases:
+  - case: "All contributions are different"
+    example: [100, 200, 300]
+    result: "No consensus (each is 33%)"
+
+  - case: "Exact 50/50 split"
+    example: [100, 100, 200, 200]
+    result: "No consensus (50% is not >50%)"
+    note: "Requires >50%, not >=50%"
+
+  - case: "Floating point values"
+    example: [1000.00, 1000.01]
+    result: "Weak consensus (values treated as different)"
+    issue: "May need fuzzy matching for near-identical floats"
+    current_behavior: "Exact equality check"
+
+  - case: "Qualitative values"
+    example: [1, 1, 2]  # Risk: !, !, !!
+    result: "Weak consensus (1)"
+    note: "Same algorithm works for qualitative"
+
+  - case: "None values ignored"
+    contributions: [1000, None, 1000]
+    result: "Strong (1000) - None values are skipped"
+
+# UI Display
+ui_display:
+  status_badges:
+    strong:
+      text: "✓ Strong"
+      class: "badge bg-success"
+      tooltip: "All contributors agree"
+
+    weak:
+      text: "~ Weak"
+      class: "badge bg-warning text-dark"
+      tooltip: "Majority agree, but not unanimous"
+
+    no_consensus:
+      text: "✗ No consensus"
+      class: "badge bg-danger"
+      tooltip: "No clear majority"
+
+    no_data:
+      text: "— No data"
+      class: "badge bg-secondary"
+      tooltip: "No contributions yet"
+
+  contribution_table:
+    shows:
+      - "Contributor name"
+      - "Value contributed"
+      - "Date contributed"
+      - "Comment (if any)"
+    highlights: "Values that match consensus are highlighted"
+
+# Performance
+performance:
+  algorithm_complexity: "O(n) where n = number of contributions"
+  typical_n: "1-10 contributions per KPI cell"
+  bottleneck: "Counter() operation"
+  optimization: "Not needed - consensus is fast"
+
+  caching:
+    current: "Not cached"
+    proposal: "Cache consensus in KPISnapshot"
+    benefit: "Avoid recalculating on every page load"
+    invalidation: "Recalculate when new contribution added"
+
+# Integration with Other Concepts
+integrations:
+  formula_kpis:
+    relationship: "Formula KPIs override consensus calculation"
+    logic: "get_consensus_value() checks is_formula() first"
+    file: "concept_formula_kpi.yaml"
+
+  linked_kpis:
+    relationship: "Linked KPIs read consensus from source"
+    logic: "get_consensus_value() recursively calls source"
+    file: "concept_linked_kpi.yaml"
+
+  rollups:
+    relationship: "Rollups only use strong consensus values"
+    filter: "is_rollup_eligible == True"
+    file: "concept_rollups.yaml"
+
+  snapshots:
+    relationship: "Snapshots capture consensus value at point in time"
+    storage: "KPISnapshot stores consensus value"
+    file: "concept_snapshots.yaml"
+
+  contributions:
+    relationship: "Contributions are inputs to consensus"
+    model: "Contribution"
+    file: "concept_contributions.yaml"
+
+# Testing Requirements
+testing:
+  unit_tests:
+    - "Test no contributions → no_data"
+    - "Test 1 contribution → strong"
+    - "Test all same values → strong"
+    - "Test majority >50% → weak"
+    - "Test 50/50 tie → no_consensus"
+    - "Test all different → no_consensus"
+    - "Test qualitative values"
+    - "Test None values ignored"
+
+  integration_tests:
+    - "Add contribution → verify consensus updates"
+    - "Add majority opinion → verify weak consensus"
+    - "Achieve unanimous → verify strong consensus"
+    - "Delete contribution → verify consensus recalculates"
+
+  edge_case_tests:
+    - "Floating point near-equality"
+    - "Large number of contributions (100+)"
+    - "Contributions with same timestamp"
+
+# Impact Analysis
+impact_analysis:
+  - change: "Change majority threshold (e.g., require 60%)"
+    affected:
+      - "app/services/consensus_service.py (line 87)"
+      - "All KPI values may change status"
+      - "Rollup calculations may change"
+    testing_required:
+      - "Verify all existing tests still pass"
+      - "Add tests for new threshold"
+    risk: "HIGH - changes business logic"
+
+  - change: "Add 'pending' status for single contribution"
+    affected:
+      - "app/services/consensus_service.py"
+      - "UI templates to show new status"
+    testing_required:
+      - "Test single contribution flow"
+    risk: "MEDIUM - requires UI changes"
+
+  - change: "Cache consensus values"
+    affected:
+      - "app/models/kpi_snapshot.py"
+      - "app/services/consensus_service.py"
+    benefit: "Performance improvement"
+    complexity: "Cache invalidation logic"
+    risk: "LOW - optimization only"
+
+# Future Enhancements
+future_enhancements:
+  - feature: "Weighted Consensus"
+    description: "Expert opinions count more"
+    example: "Manager's opinion weighted 2x"
+    priority: "LOW"
+
+  - feature: "Confidence Levels"
+    description: "Contributors rate their confidence"
+    use_case: "High confidence votes count more"
+    priority: "LOW"
+
+  - feature: "Fuzzy Matching"
+    description: "1000 and 1000.01 treated as same"
+    threshold: "Within 1% = same"
+    priority: "MEDIUM"
+
+  - feature: "Consensus History"
+    description: "Track how consensus changed over time"
+    use_case: "See when agreement was reached"
+    priority: "LOW"
+
+  - feature: "Consensus Explanation"
+    description: "Show why consensus is weak/strong"
+    example: "2 out of 3 contributors agree"
+    priority: "MEDIUM"
+
+  - feature: "Outlier Detection"
+    description: "Flag contributions far from consensus"
+    use_case: "Alice said 1000, everyone else said 10000"
+    priority: "LOW"
+
+# Technical Debt
+technical_debt:
+  - issue: "No caching of consensus values"
+    description: "Recalculated on every page load"
+    proposal: "Cache in KPISnapshot"
+    priority: "MEDIUM"
+
+  - issue: "Floating point exact equality"
+    description: "1000.0 and 1000.01 treated as different"
+    proposal: "Add fuzzy matching with tolerance"
+    priority: "LOW"
+
+  - issue: "Consensus status not shown in workspace grid"
+    description: "Can't see if value is strong/weak without clicking"
+    proposal: "Add status indicator badge in grid cells"
+    priority: "MEDIUM"
+
+  - issue: "No consensus explanation in UI"
+    description: "Users don't understand why consensus is weak"
+    proposal: "Add tooltip: '2 out of 3 agree'"
+    priority: "LOW"
+
+# Related Concepts
+related_concepts:
+  - concept: "Contributions"
+    relation: "Input to consensus calculation"
+    file: "concept_contributions.yaml"
+
+  - concept: "Rollups"
+    relation: "Uses consensus values (only strong)"
+    file: "concept_rollups.yaml"
+
+  - concept: "Formula KPIs"
+    relation: "Overrides consensus calculation"
+    file: "concept_formula_kpi.yaml"
+
+  - concept: "Linked KPIs"
+    relation: "Reads consensus from source"
+    file: "concept_linked_kpi.yaml"
+
+  - concept: "KPI Snapshots"
+    relation: "Stores consensus value at point in time"
+    file: "concept_snapshots.yaml"
+
+# Documentation
+documentation:
+  user_guide:
+    file: "USER_GUIDE_V1.14.md"
+    sections:
+      - "Understanding Consensus"
+      - "Strong vs Weak Consensus"
+      - "Contributing Values"
+
+  technical_docs:
+    file: "docs/roles/ROLE_USER_REGULAR.md"
+    sections:
+      - "Contribution and Consensus Flow"
+
+# Version History
+version_history:
+  - version: "1.0.0"
+    changes: ["Initial consensus algorithm"]
+
+  - version: "1.5.0"
+    changes:
+      - "Single contribution treated as strong"
+      - "Added rollup_eligible flag"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "MEDIUM"
+  criticality: "CRITICAL"  # Core value calculation
+  stability: "STABLE"
+  technical_debt: "LOW"
+  test_coverage: "70%"

@@ -1,0 +1,49 @@
+# Concept Mapping: Single Sign-On (SSO)
+# SAML/OAuth authentication
+
+concept:
+  name: "SSO Configuration"
+  description: "System-wide single sign-on authentication"
+  criticality: "CRITICAL"
+
+database:
+  table: "sso_configs"
+  key_fields:
+    - "provider (SAML, OAuth)"
+    - "entity_id, sso_url, x509_certificate"
+    - "attribute_mappings (JSON)"
+    - "is_enabled"
+
+service:
+  file: "app/services/sso_service.py"
+  purpose: "SAML/OAuth authentication flow"
+
+routes:
+  dashboard: "/super-admin/settings/sso"
+  configure: "/super-admin/settings/sso/config"
+  toggle: "/super-admin/settings/sso/toggle"
+
+permissions:
+  required: "is_super_admin"
+
+complexity:
+  user_pain: "Very complex - XML, certificates, mappings"
+  time: "15 minutes to configure"
+
+simplification:
+  proposed: "Step-by-step wizard with provider presets"
+  benefit: "15 min → 5 min"
+
+ui_elements:
+  form:
+    fields: ["Provider", "Entity ID", "SSO URL", "Certificate", "Mappings"]
+    validation: "Real-time format checking"
+
+user_journey:
+  file: "role_super_admin_journey.yaml"
+  journey: "J2 (SSO Configuration)"
+
+metadata:
+  complexity: "VERY HIGH"
+  criticality: "CRITICAL"
+  last_updated: "2026-03-13"

@@ -1,0 +1,69 @@
+# Concept Mapping: Audit Logs
+# Activity tracking for security and compliance
+
+concept:
+  name: "Audit Logs"
+  description: "Complete trail of who did what when"
+  criticality: "HIGH"
+
+database:
+  table: "audit_logs"
+  key_fields:
+    - "user_id (who)"
+    - "organization_id (where)"
+    - "action (create, edit, delete, restore, etc.)"
+    - "entity_type (Space, KPI, User, etc.)"
+    - "entity_id"
+    - "entity_name"
+    - "details (JSON)"
+    - "created_at (when)"
+
+service:
+  file: "app/services/audit_service.py"
+  class: "AuditService"
+  methods:
+    - "log_creation(entity_type, entity_id, entity_name)"
+    - "log_update(entity_type, entity_id, entity_name)"
+    - "log_deletion(entity_type, entity_id, entity_name)"
+    - "log_restore(entity_type, entity_id, entity_name)"
+
+when_logged:
+  - "Space/Challenge/Initiative/System/KPI created"
+  - "KPI edited"
+  - "User created/edited/deleted"
+  - "Organization created/edited/deleted"
+  - "Contribution submitted"
+  - "Backup created"
+  - "Restore executed"
+  - "Structure imported"
+
+routes:
+  super_admin_view: "/super-admin/logs"
+  export: "CSV download"
+
+ui_elements:
+  table:
+    columns: ["User", "Action", "Entity", "Date", "Details"]
+    sorting: "Most recent first"
+    filtering: "By user, org, action, date"
+
+permissions:
+  view: "Super Admin only"
+
+business_rules:
+  - "Cannot be deleted (immutable log)"
+  - "Includes user_id even if user later deleted"
+  - "JSON details field for complex changes"
+
+security:
+  purpose: "Compliance, troubleshooting, security auditing"
+  retention: "Indefinite (or per policy)"
+
+user_journey:
+  file: "role_super_admin_journey.yaml"
+  journey: "J6.1 (Audit Logs)"
+
+metadata:
+  complexity: "LOW"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

@@ -1,0 +1,25 @@
+# Concept Mapping: Organization Cloning
+concept:
+  name: "Organization Cloning"
+  description: "Duplicate organization with all data"
+  criticality: "MEDIUM"
+service:
+  file: "app/services/organization_clone_service.py"
+routes:
+  clone: "/global-admin/organizations/<id>/clone"
+process:
+  1: "Create full backup of source"
+  2: "Create new empty organization"
+  3: "Restore backup to new org"
+  4: "Map governance bodies"
+  5: "Map users"
+use_cases:
+  - "Create test environment"
+  - "Spin up new similar org"
+user_journey:
+  file: "role_global_admin_journey.yaml"
+  journey: "J2.9 (Clone Organization)"
+metadata:
+  complexity: "HIGH"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

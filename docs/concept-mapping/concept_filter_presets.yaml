@@ -1,0 +1,28 @@
+# Concept Mapping: Filter Presets
+concept:
+  name: "Filter Presets"
+  description: "Save workspace filter configurations"
+  criticality: "LOW"
+database:
+  table: "user_filter_presets"
+  fields:
+    - "user_id"
+    - "name"
+    - "filter_config (JSON)"
+    - "last_workspace_preset_id (user default)"
+features:
+  - "Save current filters"
+  - "Load saved preset"
+  - "Set as default"
+  - "Per-user (not shared)"
+simplification:
+  proposed: "Allow sharing presets with team"
+ui_elements:
+  location: "Workspace grid top right"
+  dropdown: "Saved presets list"
+user_journey:
+  usage: "Power users who frequently filter"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

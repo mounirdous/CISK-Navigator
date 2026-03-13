@@ -1,0 +1,52 @@
+# Concept Mapping: Challenges
+# Strategic challenges within Spaces
+
+concept:
+  name: "Challenges"
+  description: "Strategic challenges to address (Climate Change, Cybersecurity, etc.)"
+  hierarchy_level: 2
+  criticality: "HIGH"
+
+database:
+  table: "challenges"
+  key_fields:
+    - "space_id (parent)"
+    - "name, description, display_order"
+
+routes:
+  list: "/org-admin/challenges"
+  create: "/org-admin/spaces/<space_id>/challenges/create"
+  edit: "/org-admin/challenges/<id>/edit"
+  delete: "/org-admin/challenges/<id>/delete"
+  rollup_config: "/org-admin/challenges/<id>/rollup-config"
+
+permissions:
+  required: "can_manage_challenges OR is_org_admin"
+
+relationships:
+  parent: "Space"
+  children: "Initiatives (many-to-many via challenge_initiative_links)"
+
+ui_elements:
+  colors:
+    badge: "Bootstrap info (#0dcaf0)"
+  icons:
+    challenge: "bi-flag"
+
+business_rules:
+  - "Must belong to a Space"
+  - "Can link to multiple Initiatives"
+  - "Rollup configuration for value types"
+
+rollup:
+  purpose: "Aggregate Initiative values up to Challenge level"
+  mapping: "concept_rollups.yaml"
+
+user_journey:
+  file: "user-journeys/role_org_admin_journey.yaml"
+  journey: "J4 (Challenge Management)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

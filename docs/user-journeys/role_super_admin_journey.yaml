@@ -1,0 +1,549 @@
+# Super Admin - Complete User Journey Map
+# Maps ALL system-wide administrative capabilities
+# Highest privilege level - system configuration and maintenance
+
+role:
+  name: "Super Administrator"
+  db_field: "users.is_super_admin"
+  access_level: "Full system control - configuration, backups, announcements, SSO"
+  inherits: "All Global Admin capabilities PLUS system settings"
+  typical_count: "1-2 per instance"
+  danger_level: "CRITICAL - can break entire system"
+
+permissions:
+  special_flag:
+    name: "is_super_admin"
+    description: "Super administrator - God mode"
+    grants:
+      - "All Global Admin capabilities"
+      - "System settings configuration"
+      - "SSO configuration"
+      - "System-wide backups"
+      - "Announcements management"
+      - "Maintenance mode"
+      - "View all linked KPIs"
+      - "Direct database access (via restore)"
+
+# JOURNEYS: 7 major areas, 30+ steps
+journeys:
+  # J1: System Settings
+  - id: "J1"
+    name: "System Settings Management"
+    description: "Configure platform-wide settings"
+    importance: "CRITICAL"
+    steps:
+      - id: "J1.1"
+        name: "Settings Dashboard"
+        route: "/super-admin/"
+        route_alt: "/super-admin/settings"
+        method: "GET"
+        template: "super_admin/index.html"
+        file: "app/routes/super_admin.py"
+        lines: [29-55]
+        displays:
+          - "System statistics"
+          - "Quick links to settings categories"
+          - "Maintenance mode status"
+        next_steps:
+          - action: "Configure SSO"
+            goto: "J2.1"
+          - action: "Security settings"
+            goto: "J1.2"
+          - action: "Maintenance mode"
+            goto: "J1.3"
+
+      - id: "J1.2"
+        name: "Security Settings"
+        route: "/super-admin/settings/security"
+        method: "GET"
+        template: "super_admin/settings_security.html"
+        file: "app/routes/super_admin.py"
+        lines: [138-149]
+        settings:
+          - "Password policy"
+          - "Session timeout"
+          - "Failed login attempts"
+        next_steps:
+          - action: "Update"
+            route: "/super-admin/settings/update"
+            goto: "J1.1"
+
+      - id: "J1.3"
+        name: "Maintenance Mode"
+        route: "/super-admin/settings/maintenance"
+        method: "GET"
+        template: "super_admin/settings_maintenance.html"
+        file: "app/routes/super_admin.py"
+        lines: [151-158]
+        displays:
+          - "Maintenance mode ON/OFF"
+          - "Custom maintenance message"
+        next_steps:
+          - action: "Toggle"
+            route: "/super-admin/settings/maintenance/toggle"
+            method: "POST"
+            danger: "Blocks all users from accessing system"
+
+  # J2: SSO Configuration
+  - id: "J2"
+    name: "Single Sign-On (SSO) Configuration"
+    description: "Configure SAML/OAuth authentication"
+    importance: "CRITICAL"
+    mapping: "concept_sso.yaml"
+    steps:
+      - id: "J2.1"
+        name: "SSO Dashboard"
+        route: "/super-admin/settings/sso"
+        method: "GET"
+        template: "super_admin/settings_sso.html"
+        file: "app/routes/super_admin.py"
+        lines: [96-114]
+        displays:
+          - "SSO enabled/disabled"
+          - "Current SSO provider"
+          - "Configuration status"
+        next_steps:
+          - action: "Configure"
+            goto: "J2.2"
+          - action: "Toggle"
+            goto: "J2.3"
+
+      - id: "J2.2"
+        name: "Configure SSO"
+        route: "/super-admin/settings/sso/config"
+        methods: ["GET", "POST"]
+        template: "super_admin/sso_config.html"
+        form: "SSOConfigForm"
+        file: "app/routes/super_admin.py"
+        lines: [265-341]
+        complexity: "VERY HIGH"
+        fields:
+          - "provider (SAML/OAuth)"
+          - "entity_id"
+          - "sso_url"
+          - "x509_certificate"
+          - "attribute_mappings"
+        time_estimate: "10-15 minutes"
+        pain_point: "Complex XML/certificate handling"
+        models_used: ["SSOConfig"]
+        service_used: "SSOService"
+        next_steps:
+          - condition: "Success"
+            goto: "J2.1"
+
+      - id: "J2.3"
+        name: "Toggle SSO"
+        route: "/super-admin/settings/sso/toggle"
+        method: "POST"
+        file: "app/routes/super_admin.py"
+        lines: [116-136]
+        danger: "Disabling SSO may lock out users"
+        confirmation_required: true
+        next_steps:
+          - goto: "J2.1"
+
+  # J3: System-Wide Backup
+  - id: "J3"
+    name: "System Backup and Restore"
+    description: "Backup ALL organizations at once"
+    importance: "CRITICAL"
+    mapping: "concept_backup_restore.yaml"
+    steps:
+      - id: "J3.1"
+        name: "Backup Dashboard"
+        route: "/super-admin/backup"
+        method: "GET"
+        template: "super_admin/backup.html"
+        file: "app/routes/super_admin.py"
+        lines: [508-514]
+        displays:
+          - "List of organizations"
+          - "Select all checkbox"
+          - "Backup button"
+        next_steps:
+          - action: "Backup"
+            goto: "J3.2"
+
+      - id: "J3.2"
+        name: "Create System Backup"
+        route: "/super-admin/backup/create/<org_ids>"
+        method: "GET"
+        file: "app/routes/super_admin.py"
+        lines: [516-572]
+        service_used: "FullBackupService"
+        operations:
+          - "Backup selected organizations"
+          - "If multiple: create ZIP file"
+          - "If single: JSON file"
+        time_estimate: "1-5 minutes (depends on size)"
+        file_size: "Can be very large (100s of MBs)"
+        next_steps:
+          - action: "Download"
+
+      - id: "J3.3"
+        name: "Restore System"
+        route: "/super-admin/backup/restore"
+        method: "POST"
+        file: "app/routes/super_admin.py"
+        lines: [574-718]
+        description: "Restore one or multiple organizations"
+        operations:
+          - "Upload backup ZIP"
+          - "Extract organizations"
+          - "Show mapping interface"
+        danger: "EXTREME - can overwrite entire system"
+        next_steps:
+          - goto: "J3.4"
+
+      - id: "J3.4"
+        name: "Execute Restore"
+        route: "/super-admin/backup/restore_execute"
+        method: "POST"
+        file: "app/routes/super_admin.py"
+        lines: [656-718]
+        service_used: "FullRestoreService"
+        confirmation_required: "Must type 'RESTORE' to confirm"
+        time_estimate: "2-10 minutes"
+        danger: "IRREVERSIBLE"
+        audit_log: true
+        next_steps:
+          - goto: "J3.1"
+
+  # J4: Announcements
+  - id: "J4"
+    name: "System Announcements"
+    description: "Broadcast messages to all users"
+    importance: "HIGH"
+    mapping: "concept_announcements.yaml"
+    steps:
+      - id: "J4.1"
+        name: "List Announcements"
+        route: "/super-admin/announcements"
+        method: "GET"
+        template: "super_admin/announcements.html"
+        file: "app/routes/super_admin.py"
+        lines: [1029-1063]
+        displays:
+          - "All announcements"
+          - "Active/archived status"
+          - "Target audience"
+        next_steps:
+          - action: "Create"
+            goto: "J4.2"
+          - action: "Edit"
+            goto: "J4.3"
+
+      - id: "J4.2"
+        name: "Create Announcement"
+        route: "/super-admin/announcements/create"
+        methods: ["GET", "POST"]
+        template: "super_admin/announcement_form.html"
+        form: "AnnouncementForm"
+        file: "app/routes/super_admin.py"
+        lines: [1065-1115]
+        fields:
+          - "title"
+          - "message (rich text)"
+          - "type (info/warning/danger)"
+          - "target (all users, specific orgs, specific users)"
+          - "start_date"
+          - "end_date"
+          - "requires_acknowledgment"
+        models_used:
+          - "SystemAnnouncement"
+          - "AnnouncementTargetUser"
+          - "AnnouncementTargetOrganization"
+        time_estimate: "2-3 minutes"
+        next_steps:
+          - condition: "Success"
+            displays: "Announcement live immediately"
+            goto: "J4.1"
+
+      - id: "J4.3"
+        name: "Edit Announcement"
+        route: "/super-admin/announcements/<id>/edit"
+        methods: ["GET", "POST"]
+        file: "app/routes/super_admin.py"
+        lines: [1117-1169]
+        next_steps:
+          - goto: "J4.1"
+
+      - id: "J4.4"
+        name: "View Acknowledgment Stats"
+        route: "/super-admin/announcements/<id>/stats"
+        method: "GET"
+        template: "super_admin/announcement_stats.html"
+        file: "app/routes/super_admin.py"
+        lines: [1186-1220]
+        displays:
+          - "X% of users acknowledged"
+          - "List of users who haven't acknowledged"
+        use_case: "Verify important message was read"
+        next_steps:
+          - goto: "J4.1"
+
+      - id: "J4.5"
+        name: "Delete Announcement"
+        route: "/super-admin/announcements/<id>/delete"
+        method: "POST"
+        file: "app/routes/super_admin.py"
+        lines: [1171-1184]
+        next_steps:
+          - goto: "J4.1"
+
+  # J5: User Management (Super Admin view)
+  - id: "J5"
+    name: "User Management (Super Admin)"
+    description: "View all users across platform"
+    steps:
+      - id: "J5.1"
+        name: "List All Users"
+        route: "/super-admin/users"
+        method: "GET"
+        template: "super_admin/users.html"
+        file: "app/routes/super_admin.py"
+        lines: [182-189]
+        displays:
+          - "All users (all orgs)"
+          - "Role indicators (Global Admin, Super Admin)"
+        note: "Read-only - use Global Admin for editing"
+
+      - id: "J5.2"
+        name: "Pending Users"
+        route: "/super-admin/users/pending"
+        method: "GET"
+        template: "super_admin/users_pending.html"
+        file: "app/routes/super_admin.py"
+        lines: [343-365]
+        displays: "Users with no organization assigned"
+        next_steps:
+          - action: "Assign to org"
+            route: "/super-admin/users/<id>/assign-organization"
+            method: "POST"
+
+  # J6: Monitoring and Diagnostics
+  - id: "J6"
+    name: "System Monitoring"
+    description: "Health checks and diagnostics"
+    steps:
+      - id: "J6.1"
+        name: "Audit Logs"
+        route: "/super-admin/logs"
+        method: "GET"
+        template: "super_admin/logs.html"
+        file: "app/routes/super_admin.py"
+        lines: [191-249]
+        displays:
+          - "All audit log entries"
+          - "Filter by user, org, action, date"
+          - "Export to CSV"
+        models_used: ["AuditLog"]
+        time_estimate: "Instant viewing"
+        use_case: "Security auditing, troubleshooting"
+
+      - id: "J6.2"
+        name: "System Health"
+        route: "/super-admin/health"
+        method: "GET"
+        template: "super_admin/health.html"
+        file: "app/routes/super_admin.py"
+        lines: [251-263]
+        displays:
+          - "Database status"
+          - "Active users"
+          - "System uptime"
+          - "Error rates"
+        use_case: "System monitoring"
+
+      - id: "J6.3"
+        name: "Linked KPIs Overview"
+        route: "/super-admin/linked-kpis"
+        method: "GET"
+        template: "super_admin/linked_kpis.html"
+        file: "app/routes/super_admin.py"
+        lines: [414-505]
+        mapping: "concept_linked_kpi.yaml"
+        displays:
+          - "All linked KPIs across platform"
+          - "Consumer → Source relationships"
+          - "Cross-org dependencies"
+        stats:
+          - "Total linked KPIs"
+          - "Number of source KPIs"
+          - "Number of cross-org links"
+        use_case: "Impact analysis before deleting KPIs"
+
+  # J7: System Documentation
+  - id: "J7"
+    name: "System Documentation Viewer"
+    description: "Browse complete system documentation - user journeys, concept mappings, UI/UX audit"
+    importance: "MEDIUM"
+    added_in: "v1.22.1"
+    steps:
+      - id: "J7.1"
+        name: "Documentation Dashboard"
+        route: "/super-admin/documentation"
+        method: "GET"
+        template: "super_admin/documentation/index.html"
+        file: "app/routes/super_admin.py"
+        lines: [1260-1294]
+        displays:
+          - "4 user journey files"
+          - "38 concept mappings (CRITICAL → LOW)"
+          - "UI/UX consistency audit (85% score)"
+          - "Simplification analysis (top 5 opportunities)"
+        stats:
+          - "100% coverage"
+          - "140+ steps documented"
+          - "28 database models"
+          - "All features mapped"
+        use_case: "Impact analysis, onboarding, simplification planning"
+        next_steps:
+          - action: "View User Journey"
+            goto: "J7.2"
+          - action: "View Concept"
+            goto: "J7.3"
+          - action: "View UI Audit"
+            goto: "J7.4"
+          - action: "View Analysis"
+            goto: "J7.5"
+
+      - id: "J7.2"
+        name: "View User Journey"
+        route: "/super-admin/documentation/journey/<role>"
+        method: "GET"
+        template: "super_admin/documentation/journey.html"
+        file: "app/routes/super_admin.py"
+        lines: [1297-1311]
+        roles_available:
+          - "role_regular_user_journey"
+          - "role_org_admin_journey"
+          - "role_global_admin_journey"
+          - "role_super_admin_journey"
+        displays:
+          - "Complete role capabilities"
+          - "All journeys with steps"
+          - "Routes, templates, models used"
+          - "Pain points identified"
+          - "Simplification opportunities"
+        format: "YAML parsed and displayed with accordion steps"
+        next_steps:
+          - goto: "J7.1"
+
+      - id: "J7.3"
+        name: "View Concept Mapping"
+        route: "/super-admin/documentation/concept/<concept>"
+        method: "GET"
+        template: "super_admin/documentation/concept.html"
+        file: "app/routes/super_admin.py"
+        lines: [1314-1328]
+        examples:
+          - "concept_target_kpi"
+          - "concept_permissions"
+          - "concept_linked_kpi"
+          - "concept_backup_restore"
+        displays:
+          - "Criticality level"
+          - "Database models"
+          - "Routes used"
+          - "Services"
+          - "UI elements"
+          - "Business rules"
+          - "Related concepts"
+          - "Impact analysis"
+        use_case: "Before modifying feature - check all affected areas"
+        next_steps:
+          - goto: "J7.1"
+
+      - id: "J7.4"
+        name: "View UI/UX Audit"
+        route: "/super-admin/documentation/ui-audit"
+        method: "GET"
+        template: "super_admin/documentation/ui_audit.html"
+        file: "app/routes/super_admin.py"
+        lines: [1331-1343]
+        displays:
+          - "Overall consistency score: 85%"
+          - "Color system (all colors mapped)"
+          - "Icon system (emoji + Bootstrap)"
+          - "Button styles"
+          - "Typography"
+          - "Identified inconsistencies (3 critical)"
+        use_case: "Maintain UI consistency when adding features"
+        next_steps:
+          - goto: "J7.1"
+
+      - id: "J7.5"
+        name: "View Simplification Analysis"
+        route: "/super-admin/documentation/analysis"
+        method: "GET"
+        template: "super_admin/documentation/analysis.html"
+        file: "app/routes/super_admin.py"
+        lines: [1346-1360]
+        displays:
+          - "Top 5 simplification opportunities"
+          - "Time savings quantified"
+          - "Annual savings: ~700 hours"
+          - "ROI analysis"
+        priorities:
+          - "Onboarding: 20 min → 10 min"
+          - "Permissions: 5 min → 30 sec"
+          - "KPI Creation: 8 min → 2 min"
+          - "Rollup Config: Complex → Auto"
+          - "SSO Setup: 15 min → 5 min"
+        use_case: "Planning UX improvements and feature roadmap"
+        next_steps:
+          - goto: "J7.1"
+
+# Total Metrics
+stats:
+  total_journeys: 7
+  total_steps: 35+
+  routes_accessible: 26
+  models_managed: 6
+  most_dangerous_journey: "J3.3 (System Restore)"
+  most_complex_journey: "J2.2 (SSO Configuration)"
+
+# Danger Zones
+danger_zones:
+  - feature: "System Restore"
+    danger_level: "EXTREME"
+    can_destroy: "Entire platform"
+    confirmation: "Must type 'RESTORE'"
+
+  - feature: "Maintenance Mode"
+    danger_level: "HIGH"
+    impact: "Locks out all users"
+
+  - feature: "SSO Toggle"
+    danger_level: "HIGH"
+    risk: "Can lock out users if misconfigured"
+
+# Simplification Opportunities
+simplification_analysis:
+  sso_configuration:
+    current: "Very complex - XML, certificates"
+    proposed: "SSO wizard with step-by-step guidance"
+    benefit: "Reduce setup time from 15 min to 5 min"
+
+  backup_restore:
+    current: "4 steps with complex mapping"
+    status: "Acceptable for infrequent operation"
+
+  announcements:
+    current: "Simple ✓"
+    status: "Already easy to use"
+
+# Complexity Rating
+complexity_rating:
+  overall: "HIGH"
+  most_complex: "SSO Configuration"
+  most_dangerous: "System Restore"
+  easiest: "Announcements"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  total_routes_mapped: 26
+  power_level: "GOD MODE"
+  simplification_priority: "SSO configuration wizard"

@@ -1,0 +1,480 @@
+# Concept Mapping: Permission System
+# Maps how access control works across all 4 roles
+# CRITICAL for security and role-based access
+
+concept:
+  name: "Permission System"
+  description: "Role-based access control with granular permissions per organization"
+  introduced_version: "1.0.0"
+  last_major_refactor: "1.22.0 (added is_org_admin flag)"
+  criticality: "CRITICAL"  # Security foundation
+
+# Permission Architecture
+architecture:
+  levels:
+    1:
+      level: "Super Admin"
+      field: "users.is_super_admin"
+      scope: "System-wide"
+      bypass: "All checks"
+      count: "1-2 per instance"
+
+    2:
+      level: "Global Admin"
+      field: "users.is_global_admin"
+      scope: "All organizations"
+      bypass: "Org-level checks"
+      count: "1-5 per instance"
+
+    3:
+      level: "Organization Admin"
+      field: "user_organization_memberships.is_org_admin"
+      scope: "Single organization"
+      bypass: "All org permissions"
+      count: "1-3 per org"
+
+    4:
+      level: "Regular User"
+      field: "user_organization_memberships.*"
+      scope: "Per-permission basis"
+      bypass: "None"
+      count: "Unlimited"
+
+  hierarchy:
+    rule: "Higher levels bypass lower checks"
+    flow: "Super Admin > Global Admin > Org Admin > Regular User"
+
+# Database Schema
+database:
+  users_table:
+    fields:
+      - name: "is_super_admin"
+        type: "BOOLEAN"
+        default: false
+        grants: "God mode - full system access"
+
+      - name: "is_global_admin"
+        type: "BOOLEAN"
+        default: false
+        grants: "Cross-org user/org management"
+
+  user_organization_memberships:
+    fields:
+      - name: "is_org_admin"
+        type: "BOOLEAN"
+        default: false
+        added_in: "v1.22.0"
+        grants: "All org permissions"
+        ui_location: "Global Admin - Edit User (checkbox)"
+
+      - name: "can_manage_spaces"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete Spaces"
+
+      - name: "can_manage_value_types"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete Value Types"
+
+      - name: "can_manage_governance_bodies"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete Governance Bodies"
+
+      - name: "can_manage_challenges"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete Challenges"
+
+      - name: "can_manage_initiatives"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete Initiatives"
+
+      - name: "can_manage_systems"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete Systems"
+
+      - name: "can_manage_kpis"
+        type: "BOOLEAN"
+        default: false
+        grants: "Create/edit/delete KPIs"
+
+      - name: "can_contribute"
+        type: "BOOLEAN"
+        default: true
+        added_in: "v1.21.0"
+        grants: "Submit KPI contributions"
+
+      - name: "can_view_comments"
+        type: "BOOLEAN"
+        default: true
+        grants: "View cell comments"
+
+      - name: "can_add_comments"
+        type: "BOOLEAN"
+        default: false
+        grants: "Add cell comments"
+
+# Permission Check Flow
+check_flow:
+  order:
+    1: "Check if user is logged in"
+    2: "Check if is_super_admin → GRANT ALL"
+    3: "Check if is_global_admin → GRANT cross-org access"
+    4: "Check if is_org_admin → GRANT all org permissions"
+    5: "Check specific permission (can_manage_*)"
+    6: "DENY if no permission found"
+
+  code_location: "app/models/user.py"
+  methods:
+    - "is_org_admin(org_id)"
+    - "can_manage_spaces(org_id)"
+    - "can_manage_kpis(org_id)"
+    - "can_contribute(org_id)"
+    - "... (9 permission methods)"
+
+# Model Implementation
+model:
+  file: "app/models/user.py"
+  class: "User"
+
+  methods:
+    - name: "is_org_admin(organization_id)"
+      lines: "~150"
+      logic: |
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and membership.is_org_admin)
+
+    - name: "can_manage_spaces(organization_id)"
+      logic: |
+        if self.is_org_admin(organization_id):
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and membership.can_manage_spaces)
+
+    - name: "can_manage_kpis(organization_id)"
+      logic: "Same pattern as above"
+
+    - name: "get_membership(organization_id)"
+      returns: "UserOrganizationMembership or None"
+      used_by: "All permission methods"
+
+# Decorators
+decorators:
+  file: "app/decorators.py"
+
+  organization_required:
+    usage: "@organization_required"
+    checks: "User has organization in session"
+    redirects: "Login if not authenticated"
+
+  permission_required:
+    usage: "@permission_required('can_manage_kpis')"
+    checks: "User has specific permission in current org"
+    redirects: "Dashboard with error message if denied"
+    file: "app/routes/organization_admin.py"
+    example: |
+      @permission_required('can_manage_kpis')
+      def create_kpi():
+          # Only users with can_manage_kpis can access
+
+  super_admin_required:
+    usage: "@super_admin_required"
+    checks: "User.is_super_admin"
+    returns: "403 if not super admin"
+
+  global_admin_required:
+    usage: "@global_admin_required"
+    checks: "User.is_global_admin OR is_super_admin"
+    returns: "403 if denied"
+
+# Permission Matrix
+permission_matrix:
+  feature_access:
+    workspace_view:
+      regular_user: "✅"
+      org_admin: "✅"
+      global_admin: "✅"
+      super_admin: "✅"
+
+    contribute_values:
+      requires: "can_contribute"
+      regular_user: "✅ (if granted)"
+      org_admin: "✅ (always)"
+      global_admin: "✅"
+      super_admin: "✅"
+
+    create_kpis:
+      requires: "can_manage_kpis"
+      regular_user: "✅ (if granted)"
+      org_admin: "✅ (always)"
+      global_admin: "✅"
+      super_admin: "✅"
+
+    manage_structure:
+      requires: "can_manage_spaces/challenges/initiatives/systems"
+      regular_user: "✅ (if granted)"
+      org_admin: "✅ (always)"
+      global_admin: "✅"
+      super_admin: "✅"
+
+    manage_users:
+      regular_user: "❌"
+      org_admin: "❌"
+      global_admin: "✅"
+      super_admin: "✅"
+
+    manage_organizations:
+      regular_user: "❌"
+      org_admin: "❌"
+      global_admin: "✅"
+      super_admin: "✅"
+
+    system_settings:
+      regular_user: "❌"
+      org_admin: "❌"
+      global_admin: "❌"
+      super_admin: "✅"
+
+    sso_configuration:
+      regular_user: "❌"
+      org_admin: "❌"
+      global_admin: "❌"
+      super_admin: "✅"
+
+# UI Implementation
+ui:
+  permission_display:
+    location: "Global Admin - Edit User"
+    file: "app/templates/global_admin/edit_user.html"
+    pattern: "Per-org accordion with checkboxes"
+    complexity: "HIGH - 10 checkboxes per org"
+
+    is_org_admin_checkbox:
+      location: "Top of each org section"
+      behavior: "Auto-checks all permissions via JavaScript"
+      javascript: "toggleOrgAdminPermissions(org_id)"
+      added_in: "v1.22.0"
+
+  permission_indicators:
+    badges:
+      - "Super Admin (red badge)"
+      - "Global Admin (yellow badge)"
+      - "Org Admin (info badge)"
+    location: "User lists"
+
+# Business Rules
+business_rules:
+  - rule: "Super Admin bypasses all checks"
+    enforcement: "First check in all permission methods"
+    cannot_override: true
+
+  - rule: "Global Admin bypasses org-level checks"
+    enforcement: "Second check in permission methods"
+
+  - rule: "Org Admin bypasses all org permissions"
+    enforcement: "Third check in permission methods"
+    added_in: "v1.22.0"
+    ui: "Single checkbox grants all"
+
+  - rule: "Permissions are per-organization"
+    example: "User can be admin in Org A, viewer in Org B"
+    storage: "user_organization_memberships table"
+
+  - rule: "Default permission: can_contribute = true"
+    rationale: "New users can contribute values by default"
+
+  - rule: "Negative permissions not supported"
+    example: "Cannot explicitly deny a permission"
+    workaround: "Don't grant the permission"
+
+  - rule: "Permission changes take effect immediately"
+    no_cache: true
+    checked_per_request: true
+
+# Permission Templates (Proposed)
+proposed_templates:
+  administrator:
+    grants:
+      - "is_org_admin: true"
+    auto_enables: "All org permissions"
+
+  editor:
+    grants:
+      - "can_manage_spaces"
+      - "can_manage_challenges"
+      - "can_manage_initiatives"
+      - "can_manage_systems"
+      - "can_manage_kpis"
+      - "can_contribute"
+      - "can_view_comments"
+      - "can_add_comments"
+
+  viewer:
+    grants:
+      - "can_contribute"
+      - "can_view_comments"
+
+  custom:
+    grants: "Manual selection"
+
+# Security Considerations
+security:
+  checks:
+    - "Permission checked on every request"
+    - "No client-side permission checks"
+    - "Decorators enforce server-side"
+
+  bypasses:
+    - "Super Admin can access anything"
+    - "Global Admin can manage users/orgs"
+    - "Org Admin bypasses org permissions"
+
+  risks:
+    - issue: "No audit trail for permission changes"
+      mitigation: "Add to audit log"
+      priority: "HIGH"
+
+    - issue: "Permission escalation through org admin flag"
+      mitigation: "Only Global/Super Admin can set"
+      status: "SAFE"
+
+# Edge Cases
+edge_cases:
+  - case: "User loses org admin status"
+    behavior: "Reverts to individual permissions"
+    immediate: true
+
+  - case: "User in multiple orgs with different permissions"
+    behavior: "Permissions checked per org context"
+    session: "organization_id in session determines context"
+
+  - case: "Global Admin creates user without permissions"
+    behavior: "User can login but has minimal access"
+    default: "can_contribute = true"
+
+  - case: "Org deleted while user is logged in"
+    behavior: "User redirected to org selection"
+    error: "Organization no longer accessible"
+
+# Testing Requirements
+testing:
+  unit_tests:
+    - "Test permission hierarchy (Super > Global > Org > User)"
+    - "Test each permission method"
+    - "Test is_org_admin bypass"
+    - "Test permission changes take effect"
+
+  integration_tests:
+    - "Regular user cannot access org admin routes"
+    - "Org admin can access all org features"
+    - "Global admin can manage users"
+    - "Super admin can access all routes"
+
+  security_tests:
+    - "Attempt privilege escalation"
+    - "Test permission bypass attempts"
+    - "Test session hijacking protection"
+
+# Impact Analysis
+impact_analysis:
+  - change: "Add new permission (e.g., can_manage_reports)"
+    affected:
+      - "Add column to user_organization_memberships"
+      - "Add method to User model"
+      - "Update UI in edit_user.html"
+      - "Add decorator checks where needed"
+    effort: "2 hours"
+
+  - change: "Implement permission templates"
+    affected:
+      - "New PermissionTemplate model"
+      - "Update edit_user.html UI"
+      - "Update create_user route"
+    effort: "2 days"
+
+  - change: "Add permission inheritance"
+    example: "can_manage_systems implies can_view_systems"
+    affected: "All permission check logic"
+    effort: "3 days"
+    risk: "HIGH - complex refactor"
+
+# Related Concepts
+related_concepts:
+  - concept: "User Management"
+    relation: "Permissions assigned during user creation/editing"
+    file: "concept_user_management.yaml"
+
+  - concept: "Organization Management"
+    relation: "Permissions are per-organization"
+    file: "concept_organization_management.yaml"
+
+  - concept: "Audit Logs"
+    relation: "Permission checks should be logged"
+    file: "concept_audit_logs.yaml"
+
+# UI/UX Elements
+ui_elements:
+  colors:
+    super_admin_badge: "#dc3545"  # Red
+    global_admin_badge: "#ffc107"  # Yellow
+    org_admin_badge: "#0dcaf0"  # Cyan
+
+  icons:
+    admin: "bi-shield-fill-check"
+    permission_granted: "✓"
+    permission_denied: "✗"
+
+  checkboxes:
+    class: "form-check-input"
+    style: "Bootstrap default"
+    location: "Edit user form"
+
+# Future Enhancements
+future_enhancements:
+  - feature: "Permission Templates"
+    priority: "HIGH"
+    benefit: "Reduce checkbox hell"
+
+  - feature: "Permission Inheritance"
+    example: "Manage implies view"
+    priority: "MEDIUM"
+
+  - feature: "Time-based Permissions"
+    example: "Grant for 30 days"
+    priority: "LOW"
+
+  - feature: "Permission Groups"
+    example: "Finance team gets finance permissions"
+    priority: "LOW"
+
+# Technical Debt
+technical_debt:
+  - issue: "10 checkboxes per org in UI"
+    impact: "Poor UX for multi-org users"
+    proposal: "Permission templates"
+    priority: "HIGH"
+
+  - issue: "No audit trail for permission changes"
+    impact: "Cannot track who granted what"
+    proposal: "Log to audit_logs table"
+    priority: "HIGH"
+
+  - issue: "Permission checks scattered across codebase"
+    impact: "Hard to audit all checks"
+    proposal: "Centralize in permission service"
+    priority: "MEDIUM"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "MEDIUM"
+  criticality: "CRITICAL"  # Security foundation
+  stability: "STABLE"
+  technical_debt: "MEDIUM"
+  test_coverage: "60%"

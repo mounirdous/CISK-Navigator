@@ -1,0 +1,351 @@
+# Concept Mapping: KPI Target
+# This file maps EVERYWHERE the concept of "KPI Target" is used
+# Perfect for impact analysis when modifying target-related features
+
+concept:
+  name: "KPI Target"
+  description: "Target value that a KPI should reach (with optional tolerance and date)"
+  introduced_version: "1.0.0"
+  last_modified: "1.22.0"
+
+# Database Schema
+database:
+  table: "kpi_value_type_configs"
+  fields:
+    - name: "target_value"
+      type: "FLOAT"
+      nullable: true
+      description: "The target value to reach"
+
+    - name: "target_tolerance_pct"
+      type: "FLOAT"
+      nullable: true
+      default: 10.0
+      description: "Tolerance percentage (±%) around target"
+
+    - name: "target_direction"
+      type: "VARCHAR"
+      nullable: true
+      values: ["maximize", "minimize", "exact"]
+      description: "Whether target should be reached by going up, down, or exactly"
+
+    - name: "target_date"
+      type: "DATE"
+      nullable: true
+      description: "Date by which target should be reached"
+
+# Models
+models:
+  - file: "app/models/value_type.py"
+    class: "KPIValueTypeConfig"
+    attributes:
+      - target_value
+      - target_tolerance_pct
+      - target_direction
+      - target_date
+    methods:
+      - has_target()  # Returns True if target_value is set
+
+# Forms
+forms:
+  - file: "app/forms/kpi_forms.py"
+    class: "KPIForm"
+    fields:
+      - target_value (FloatField, optional)
+      - target_tolerance_pct (FloatField, default=10.0)
+      - target_direction (SelectField, choices=[maximize, minimize, exact])
+      - target_date (DateField, optional)
+    validation:
+      - "target_value must be numeric if provided"
+      - "target_tolerance_pct must be between 0 and 100"
+      - "target_date must be in the future"
+
+# Routes (Where target is handled)
+routes:
+  - file: "app/routes/workspace.py"
+    route: "/kpis/<id>/edit"
+    methods: ["GET", "POST"]
+    operations:
+      - "Display target configuration form"
+      - "Save target values to database"
+      - "Validate target inputs"
+    permissions_required: ["can_manage_kpis"]
+
+  - file: "app/routes/workspace.py"
+    route: "/kpis/create/<link_id>"
+    methods: ["GET", "POST"]
+    operations:
+      - "Allow setting initial target during KPI creation"
+      - "Target is optional at creation time"
+    permissions_required: ["can_manage_kpis"]
+
+# Templates (Where target is displayed)
+templates:
+  - file: "app/templates/workspace/kpi_cell_detail.html"
+    sections:
+      - name: "Target Line on Chart"
+        lines: [1005-1015]
+        description: "Displays target as horizontal line on trend chart"
+        color: "#28a745"  # GREEN (changed from red in v1.22.0)
+        elements:
+          - "Solid line at target value"
+          - "Tolerance band (dashed lines ±tolerance%)"
+          - "Label showing target value and direction"
+        javascript:
+          - "Chart.js dataset for target line"
+          - "Dynamic calculation of upper/lower bounds"
+          - "Auto-updates when target changes"
+
+  - file: "app/templates/workspace/edit_kpi.html"
+    sections:
+      - name: "Target Configuration Section"
+        description: "Form section for setting KPI target"
+        fields:
+          - "Target Value input"
+          - "Tolerance Percentage slider"
+          - "Target Direction dropdown"
+          - "Target Date picker"
+        conditional_display:
+          - "Only shown for numeric value types"
+          - "Hidden for qualitative value types"
+
+  - file: "app/templates/workspace/_calculation_config_modal.html"
+    sections:
+      - name: "Target Info Display"
+        description: "Shows target in modal when configuring formulas"
+        note: "Read-only display of current target"
+
+# JavaScript/Frontend Logic
+javascript:
+  - file: "app/templates/workspace/kpi_cell_detail.html"
+    function: "loadTrendChart()"
+    lines: [900-1020]
+    operations:
+      - "Checks if config.target_value exists"
+      - "Calculates upper_bound = target + (target * tolerance / 100)"
+      - "Calculates lower_bound = target - (target * tolerance / 100)"
+      - "Creates Chart.js datasets for tolerance band"
+      - "Creates Chart.js dataset for target line"
+      - "Adds direction icon (⬆️ maximize, ⬇️ minimize, 🎯 exact)"
+      - "Formats target value with proper units"
+    chart_configuration:
+      target_line:
+        borderColor: "#28a745"  # Green
+        borderWidth: 2
+        order: 5  # Draw on top of band but behind actual values
+      tolerance_band:
+        borderColor: "rgba(40, 167, 69, 0.2)"  # Light green
+        backgroundColor: "rgba(40, 167, 69, 0.15)"  # Very light green
+        borderDash: [2, 2]
+        fill: true
+        order: 10  # Draw behind everything
+
+# Services (Business Logic)
+services: []
+  # Note: No dedicated service for target calculation
+  # Target logic is currently in templates/JavaScript
+  # Consider: Creating TargetService for centralized logic?
+
+# API Endpoints (Future)
+api_endpoints: []
+  # Note: No API endpoints for target yet
+  # When API is added, target should be included in KPI responses
+
+# Business Rules
+business_rules:
+  - rule: "Target is optional"
+    description: "KPIs can exist without targets"
+    applies_to: ["All KPIs"]
+
+  - rule: "Target only for numeric KPIs"
+    description: "Qualitative KPIs cannot have numeric targets"
+    validation: "Form hides target fields for qualitative value types"
+
+  - rule: "Target direction affects interpretation"
+    description: "Same target value means different things based on direction"
+    examples:
+      - "maximize: Being above target is good"
+      - "minimize: Being below target is good"
+      - "exact: Being exactly at target is good"
+
+  - rule: "Tolerance defines 'in target' range"
+    description: "Values within ±tolerance% are considered 'on target'"
+    default_tolerance: 10
+    calculation: "upper = target * (1 + tolerance/100), lower = target * (1 - tolerance/100)"
+
+  - rule: "Target date is advisory only"
+    description: "System doesn't enforce or alert on target date"
+    note: "Consider: Add notification feature when target date approaches?"
+
+# UI/UX Decisions
+ux_decisions:
+  - decision: "Target line is GREEN, not RED"
+    rationale: "Being in target is GOOD, so use positive color"
+    changed_in: "v1.22.0"
+    impact:
+      - "Chart.js borderColor changed"
+      - "Tolerance band backgroundColor changed"
+      - "User perception: target is now visually positive"
+
+  - decision: "Target shown on chart, not just text"
+    rationale: "Visual reference easier to understand than numbers"
+    implementation: "Horizontal line spans entire chart width"
+
+  - decision: "Tolerance band is subtle (dashed, light)"
+    rationale: "Band is guidance, not hard boundary"
+    implementation: "Dashed borders, very light fill"
+
+  - decision: "Target is optional at KPI creation"
+    rationale: "Users might not know target initially"
+    allows: "Add target later via edit"
+
+# Impact Analysis Examples
+impact_analysis:
+  - change: "Modify target calculation logic"
+    affected_files:
+      - "app/templates/workspace/kpi_cell_detail.html (lines 970-1015)"
+      - "app/models/value_type.py (KPIValueTypeConfig)"
+    affected_features:
+      - "Chart display"
+      - "Target band visualization"
+    testing_required:
+      - "Load KPI detail page with target set"
+      - "Verify chart shows correct target line"
+      - "Verify tolerance band calculations"
+
+  - change: "Add target notifications"
+    new_files_needed:
+      - "app/services/target_notification_service.py"
+      - "app/models/target_alert.py"
+      - "app/templates/notifications/target_alert.html"
+    modified_files:
+      - "app/routes/workspace.py (add notification logic)"
+      - "app/models/value_type.py (add alert methods)"
+    new_database_tables:
+      - "target_alerts"
+      - "target_alert_acknowledgments"
+
+  - change: "Change target color from green to blue"
+    affected_files:
+      - "app/templates/workspace/kpi_cell_detail.html (2 lines)"
+    search_pattern: "#28a745"  # Current green color
+    replace_with: "#0d6efd"  # Bootstrap primary blue
+    testing_required:
+      - "Visual regression test on KPI chart"
+
+# Related Concepts
+related_concepts:
+  - concept: "KPI Value"
+    relation: "Target is compared against actual KPI values"
+    files:
+      - "app/models/contribution.py"
+      - "app/models/kpi_snapshot.py"
+
+  - concept: "Consensus"
+    relation: "Consensus value is compared to target"
+    files:
+      - "app/services/consensus_service.py"
+
+  - concept: "Formula KPIs"
+    relation: "Formula results can have targets too"
+    note: "Target applies to calculated value, not source KPIs"
+
+  - concept: "Linked KPIs"
+    relation: "Linked KPIs inherit target from source OR have own target"
+    question: "Should linked KPI target override source target?"
+
+# Future Enhancements
+future_enhancements:
+  - feature: "Target Alerts"
+    description: "Notify when KPI reaches/misses target"
+    priority: "Medium"
+    estimated_effort: "2-3 days"
+
+  - feature: "Target History"
+    description: "Track how target changes over time"
+    priority: "Low"
+    requires_new_table: "target_history"
+
+  - feature: "Target Templates"
+    description: "Pre-defined target strategies (industry benchmarks)"
+    priority: "Low"
+
+  - feature: "Multi-tier Targets"
+    description: "Good/Better/Best target ranges"
+    priority: "Medium"
+    requires_schema_change: true
+
+  - feature: "Target Progress Bar"
+    description: "Visual progress indicator toward target"
+    priority: "High"
+    estimated_effort: "1 day"
+
+# Technical Debt
+technical_debt:
+  - issue: "Target logic scattered in JavaScript"
+    description: "Chart target logic is in template, should be centralized"
+    proposal: "Create TargetService with calculate_bounds(), format_display(), etc."
+    priority: "Medium"
+
+  - issue: "No backend validation for target_direction"
+    description: "Direction is validated in frontend only"
+    proposal: "Add SQLAlchemy Enum for target_direction"
+    priority: "Low"
+
+  - issue: "Tolerance calculation duplicated"
+    description: "Same calculation in JavaScript and (future) Python"
+    proposal: "Centralize in model method"
+    priority: "Low"
+
+# Testing Coverage
+tests:
+  existing:
+    - "tests/unit/test_models.py::TestKPIValueTypeConfig::test_has_target"
+  missing:
+    - "Target tolerance band calculation"
+    - "Target direction interpretation"
+    - "Target date validation"
+    - "Chart rendering with/without target"
+  # TODO: Add integration tests for target feature
+
+# Documentation
+documentation:
+  user_guide:
+    file: "USER_GUIDE_V1.14.md"
+    sections:
+      - "Setting KPI Targets"
+      - "Understanding Target Tolerance"
+      - "Target Direction Explained"
+
+  technical_docs:
+    file: "docs/roles/ROLE_USER_REGULAR.md"
+    sections:
+      - "KPI Target Configuration"
+
+  inline_comments:
+    - file: "app/templates/workspace/kpi_cell_detail.html"
+      line: 961
+      comment: "Add target line and tolerance band if target is set (numeric only)"
+
+# Version History
+version_history:
+  - version: "1.0.0"
+    date: "2025-01-01"
+    changes:
+      - "Initial target feature implementation"
+      - "Target line shown in RED"
+
+  - version: "1.22.0"
+    date: "2026-03-13"
+    changes:
+      - "Changed target color from RED to GREEN"
+      - "Updated tolerance band to green shades"
+      - "Improved target visibility on charts"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  maintainer: "CISK Development Team"
+  complexity: "Medium"
+  criticality: "Medium"  # Not core feature but widely used
+  stability: "Stable"  # Few changes expected

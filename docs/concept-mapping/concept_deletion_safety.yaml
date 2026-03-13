@@ -1,0 +1,25 @@
+# Concept Mapping: Deletion Impact Analysis
+concept:
+  name: "Deletion Safety"
+  description: "Impact analysis before deletions"
+  criticality: "HIGH"
+service:
+  file: "app/services/deletion_impact_service.py"
+features:
+  - "Count dependent objects"
+  - "Block deletion if in use"
+  - "Show what will be deleted"
+examples:
+  value_type:
+    check: "How many KPIs use this value type?"
+    block_if: "> 0 KPIs"
+  space:
+    show: "X challenges, Y initiatives, Z KPIs will be deleted"
+    confirm: "Type space name to confirm"
+ui_elements:
+  preview: "Deletion preview page"
+  confirmation: "Text input to confirm"
+metadata:
+  complexity: "MEDIUM"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

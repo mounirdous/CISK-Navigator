@@ -1,0 +1,56 @@
+# Concept Mapping: Spaces
+# Top-level organizational structure
+# CRITICAL for hierarchy navigation
+
+concept:
+  name: "Spaces"
+  description: "Top-level strategic areas (Sustainability, Digital Transformation, etc.)"
+  hierarchy_level: 1
+  criticality: "HIGH"
+
+database:
+  table: "spaces"
+  key_fields:
+    - "name, description, display_order"
+    - "space_label (custom label)"
+    - "SWOT fields (strengths, weaknesses, opportunities, threats)"
+    - "is_private (visibility flag)"
+
+routes:
+  list: "/org-admin/spaces"
+  create: "/org-admin/spaces/create"
+  edit: "/org-admin/spaces/<id>/edit"
+  delete: "/org-admin/spaces/<id>/delete"
+  swot: "/org-admin/spaces/<id>/swot"
+  swot_edit: "/org-admin/spaces/<id>/swot/edit"
+
+permissions:
+  required: "can_manage_spaces OR is_org_admin"
+
+relationships:
+  children: "Challenges (one-to-many)"
+  parent: "Organization"
+
+ui_elements:
+  colors:
+    header: "Bootstrap primary (#0d6efd)"
+    background: "White/Light gray"
+  icons:
+    space: "bi-box"
+    swot: "bi-grid-3x3"
+  drag_drop: "Yes - reorder via display_order"
+
+business_rules:
+  - "Top of hierarchy"
+  - "Deletable only if no children"
+  - "SWOT analysis optional"
+  - "Private spaces filter visibility"
+
+user_journey:
+  file: "user-journeys/role_org_admin_journey.yaml"
+  journey: "J3 (Space Management)"
+
+metadata:
+  complexity: "LOW"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

@@ -1,0 +1,688 @@
+# Concept Mapping: Formula KPI Calculation
+# This file maps EVERYWHERE formula KPIs are defined, calculated, displayed, and modified
+# CRITICAL for understanding formula calculation architecture and dependencies
+
+concept:
+  name: "Formula KPI Calculation"
+  description: "Auto-calculated KPI values based on formulas that reference other KPIs"
+  introduced_version: "1.20.0"
+  last_major_refactor: "1.20.0"
+  criticality: "HIGH"  # Complex feature with dependencies
+
+# What Makes a Formula KPI
+formula_kpi_definition:
+  characteristics:
+    - "calculation_type = 'formula'"
+    - "calculation_config contains source KPI references"
+    - "Value auto-updates when source KPIs change"
+    - "No manual contributions accepted"
+    - "Must use numeric value types only"
+
+  two_modes:
+    - id: "simple"
+      name: "Simple Operation Mode"
+      description: "Predefined operations on source KPIs"
+      operations: ["sum", "avg", "min", "max", "multiply", "subtract", "divide"]
+      example: "Sum of Cost from 3 KPIs"
+
+    - id: "advanced"
+      name: "Advanced Expression Mode"
+      description: "Python expressions with safe evaluation"
+      syntax: "kpi_<id> variables with math operators"
+      functions: ["round", "abs", "max", "min", "sum", "floor", "ceil", "sqrt", "pow"]
+      example: "round((kpi_284 / kpi_285) * 100, 1)"
+
+# Database Schema
+database:
+  table: "kpi_value_type_configs"
+  fields:
+    - name: "calculation_type"
+      type: "VARCHAR(20)"
+      value: "formula"
+      description: "Identifies this as a formula KPI"
+
+    - name: "calculation_config"
+      type: "JSONB"
+      nullable: false
+      description: "Configuration for formula calculation"
+      structure:
+        mode: "simple | advanced"
+        kpi_config_ids: "[1, 2, 3]  # Source KPIValueTypeConfig IDs"
+        source_config_ids: "[1, 2, 3]  # Duplicate for backwards compatibility"
+        operation: "sum | avg | min | max | multiply | subtract | divide  # Simple mode only"
+        expression: "kpi_284 + kpi_285  # Advanced mode only"
+
+# CRITICAL: Where Formula Logic Is Implemented
+locations:
+  # 1. CALCULATION ENGINE
+  - location: "Model - Formula Value Calculation"
+    file: "app/models/value_type.py"
+    class: "KPIValueTypeConfig"
+    method: "_calculate_formula_value"
+    lines: [351-508]
+    description: "Core calculation logic for formula KPIs"
+    operations:
+      - "Retrieves source KPI configs"
+      - "Recursively gets consensus values from sources"
+      - "Builds namespace with kpi_<id> variables"
+      - "Evaluates expression (simple or advanced)"
+      - "Returns calculated numeric value"
+    circular_protection: "Uses _visited set to prevent infinite loops"
+    error_handling:
+      - "Returns None if source values unavailable"
+      - "Returns None on division by zero"
+      - "Returns None on invalid expression"
+      - "Logs errors to app logger"
+
+  - location: "Model - Consensus Value Override"
+    file: "app/models/value_type.py"
+    method: "get_consensus_value"
+    lines: [289-349]
+    description: "Overrides normal consensus to call formula calculation"
+    logic: |
+      if config.is_formula():
+          calculated_value = _calculate_formula_value(_visited)
+          return wrap_in_consensus_dict(calculated_value)
+      else:
+          # Normal contribution-based consensus
+    consistency: "✅ GOOD - Seamless integration with existing consensus system"
+
+  # 2. FORMULA CONFIGURATION UI
+  - location: "Formula Builder Modal"
+    file: "app/templates/workspace/_calculation_config_modal.html"
+    lines: [1-686]
+    description: "918-line modal for configuring all calculation types"
+    sections:
+      - name: "Mode Selection"
+        lines: [12-38]
+        buttons: ["Manual Entry", "Formula", "Linked KPI"]
+
+      - name: "Result Display"
+        lines: [42-49]
+        description: "🎯 RESULT shown FIRST (UX improvement v1.19)"
+        display: "Large green display-4 text with live preview"
+
+      - name: "Selected KPIs List"
+        lines: [55-70]
+        description: "Compact list of source KPIs with remove buttons"
+        shows: "KPI name, current value, remove button"
+
+      - name: "Add KPI Search"
+        lines: [72-91]
+        description: "Collapsible search interface"
+        features: ["Text search", "Shows max 10 results", "Click to add"]
+
+      - name: "Formula Mode Toggle"
+        lines: [93-99]
+        buttons: ["Simple", "Advanced"]
+
+      - name: "Simple Mode - Operation Selector"
+        lines: [101-112]
+        operations: ["➕ Sum", "📊 Average", "⬇️ Minimum", "⬆️ Maximum", "✖️ Multiply", "➖ Subtract"]
+
+      - name: "Advanced Mode - Expression Editor"
+        lines: [114-127]
+        features:
+          - "Clickable variable badges (kpi_<id>)"
+          - "Monospace textarea for expression"
+          - "Live preview in Result display"
+
+      - name: "Help & Examples"
+        lines: [128-146]
+        collapsible: true
+        documents: "Operators, functions, expression examples"
+
+    javascript:
+      alpine_component: "calculationBuilder()"
+      methods:
+        - "calculateResult() - Client-side preview"
+        - "getResultDisplay() - Format result for display"
+        - "loadAvailableKPIs() - Fetch KPIs for selection"
+        - "addKPI(kpi) - Add source KPI"
+        - "removeKPI(index) - Remove source KPI"
+        - "insertVariable(kpiId) - Insert kpi_<id> into expression"
+        - "saveConfiguration() - POST to backend"
+
+  # 3. BACKEND VALIDATION & SAVE
+  - location: "Update Calculation Route"
+    file: "app/routes/workspace.py"
+    route: "/kpi-config/<int:config_id>/calculation"
+    method: "POST"
+    function: "update_calculation_config"
+    lines: [2509-2658]
+    validations:
+      - "calculation_type must be valid"
+      - "kpi_config_ids must be provided"
+      - "Source configs must exist"
+      - "No self-reference (circular check)"
+      - "All source KPIs must be numeric"
+      - "Mode must be 'simple' or 'advanced'"
+      - "Simple: operation must be valid"
+      - "Advanced: expression must exist"
+      - "Advanced: expression kpi_* refs must match selected KPIs"
+    operations:
+      - "Updates config.calculation_type = 'formula'"
+      - "Updates config.calculation_config = {...}"
+      - "Clears linked_source_* fields"
+      - "Optionally clears old contributions"
+      - "Commits to database"
+    permissions_required: "can_manage_kpis"
+
+  # 4. FORMULA DISPLAY
+  - location: "KPI Detail Page - Formula Info"
+    file: "app/templates/workspace/kpi_cell_detail.html"
+    lines: [766-777]
+    description: "Shows formula details when viewing formula KPI"
+    displays:
+      - "Mode: simple or advanced"
+      - "Operation (simple mode)"
+      - "Expression (advanced mode)"
+      - "List of source KPIs with current values"
+      - "Evaluated expression result"
+    conditional: "Only shown if config.is_formula()"
+
+  - location: "Workspace Grid - Cell Value"
+    file: "app/templates/workspace/index.html"
+    description: "Shows calculated value in grid"
+    issue: "❌ NO indicator that this is a formula KPI"
+    proposal: "Add 📐 badge next to value"
+    priority: "HIGH"
+    reference: "See concept_calculation_type.yaml line 244-253"
+
+  # 5. API ENDPOINTS
+  - location: "Get KPIs for Formula Selection"
+    file: "app/routes/workspace.py"
+    route: "/workspace/api/kpis-for-formula/<int:org_id>"
+    method: "GET"
+    lines: "~2470-2506"
+    description: "Returns list of available KPIs to use in formulas"
+    filters:
+      - "Same organization only"
+      - "Excludes formula and linked KPIs"
+      - "Only numeric value types"
+      - "Excludes archived KPIs"
+    returns:
+      - "id: config.id"
+      - "kpi_name: name"
+      - "value_type_name: value type"
+      - "currentValue: formatted current value"
+      - "path: Space › Challenge › Initiative › System"
+
+# Business Rules
+business_rules:
+  - rule: "Only numeric KPIs can be used in formulas"
+    enforcement: "Backend validation in update_calculation_config"
+    reason: "Can't perform math on qualitative values (Risk !, !!, !!!)"
+    violation_message: "Formula cannot use qualitative value type '...' (...). Only numeric value types can be used in formulas."
+
+  - rule: "Formula KPIs cannot accept manual contributions"
+    enforcement: "UI hides contribution form"
+    rationale: "Value is calculated, not contributed"
+    behavior: "Contribution form not shown in kpi_cell_detail.html"
+
+  - rule: "Formula KPIs auto-update when source values change"
+    enforcement: "Calculation happens on-demand in get_consensus_value()"
+    realtime: true
+    mechanism: "Recursive value lookup when page loads"
+    note: "No background job needed - calculated on read"
+
+  - rule: "No circular dependencies allowed"
+    enforcement: "_visited set in _calculate_formula_value()"
+    validation: "Basic check: config cannot reference itself"
+    circular_protection: "Returns None if config already visited"
+    limitation: "Only detects immediate circles, not complex chains"
+    improvement_needed: "Full dependency tree validation"
+
+  - rule: "Advanced expressions use safe evaluation"
+    enforcement: "simpleeval library"
+    allowed:
+      - "Math operators: + - * / ** ()"
+      - "Functions: round, abs, max, min, sum, floor, ceil, sqrt, pow"
+      - "Variables: kpi_<id>"
+    forbidden:
+      - "Import statements"
+      - "File access"
+      - "System calls"
+      - "Arbitrary functions"
+    security: "HIGH - Cannot execute malicious code"
+
+  - rule: "Switching to formula preserves old contributions"
+    enforcement: "Backend doesn't delete contributions by default"
+    rationale: "User can switch back and restore values"
+    warning_shown: "Modal warns about hidden contributions"
+    optional_clear: "User can choose to clear contributions"
+
+# Formula Modes Comparison
+formula_modes:
+  simple:
+    operations:
+      - name: "sum"
+        description: "Sum all source values"
+        example: "kpi_1 + kpi_2 + kpi_3"
+        use_case: "Total cost across projects"
+
+      - name: "avg"
+        description: "Average of all source values"
+        formula: "sum(values) / count(values)"
+        use_case: "Average project duration"
+
+      - name: "min"
+        description: "Minimum of all source values"
+        use_case: "Best case scenario"
+
+      - name: "max"
+        description: "Maximum of all source values"
+        use_case: "Worst case scenario"
+
+      - name: "multiply"
+        description: "Multiply all values together"
+        formula: "kpi_1 * kpi_2 * kpi_3"
+        use_case: "Compound growth rates"
+
+      - name: "subtract"
+        description: "Subtract subsequent values from first"
+        formula: "kpi_1 - kpi_2 - kpi_3"
+        use_case: "Net value (revenue - cost)"
+        order_matters: true
+
+      - name: "divide"
+        description: "Divide first by subsequent values"
+        formula: "kpi_1 / kpi_2"
+        use_case: "Ratios, percentages"
+        order_matters: true
+        division_by_zero: "Returns None"
+
+    advantages:
+      - "Simple to understand"
+      - "No syntax errors possible"
+      - "Dropdown selection"
+      - "Safe by design"
+
+    limitations:
+      - "Fixed operation order"
+      - "Cannot mix operations"
+      - "No parentheses control"
+      - "No rounding control"
+
+  advanced:
+    syntax: "Python-like expressions"
+    variables: "kpi_<id> for each source KPI"
+    operators: "+ - * / ** ()"
+
+    functions:
+      - "round(num, decimals=0)"
+      - "abs(num)"
+      - "max(...nums)"
+      - "min(...nums)"
+      - "sum(...nums)"
+      - "floor(num)"
+      - "ceil(num)"
+      - "sqrt(num)"
+      - "pow(base, exp)"
+
+    examples:
+      - expression: "kpi_284 / 2"
+        description: "Half the value"
+      - expression: "round((kpi_1 / kpi_2) * 100, 1)"
+        description: "Percentage with 1 decimal"
+      - expression: "abs(kpi_1 - kpi_2)"
+        description: "Absolute difference"
+      - expression: "max(kpi_1, kpi_2, kpi_3)"
+        description: "Best of three"
+      - expression: "kpi_1 + kpi_2 - kpi_3"
+        description: "Mixed operations"
+
+    advantages:
+      - "Full flexibility"
+      - "Complex formulas possible"
+      - "Rounding control"
+      - "Multiple operations"
+
+    limitations:
+      - "Syntax errors possible"
+      - "Requires understanding of expressions"
+      - "No autocomplete (yet)"
+      - "Error messages could be clearer"
+
+# Evaluation Engine Details
+evaluation:
+  library: "simpleeval"
+  safety: "Sandboxed - cannot access filesystem or system"
+
+  evaluation_flow:
+    1: "Get source configs from kpi_config_ids"
+    2: "For each source, recursively call get_consensus_value(_visited)"
+    3: "Build namespace: {kpi_123: 456.78, kpi_456: 789.01, ...}"
+    4: "Add math functions to namespace"
+    5: "Call simple_eval(expression, names=namespace, functions={...})"
+    6: "Return float result or None on error"
+
+  error_handling:
+    ZeroDivisionError: "Returns None, logs error"
+    ValueError: "Returns None (invalid value in formula)"
+    TypeError: "Returns None (type mismatch)"
+    InvalidExpression: "Returns None (syntax error)"
+    FunctionNotDefined: "Returns None (unknown function)"
+    Exception: "Returns None (catch-all)"
+
+  logging:
+    debug: true
+    logs:
+      - "Formula config {id}: mode={mode}, source_configs={count}"
+      - "Formula config {id}: source_config={id}, value={value}"
+      - "Formula config {id}: Evaluating expression '{expr}' with namespace {ns}"
+      - "Formula config {id}: Result = {result}"
+      - "Formula calculation error for config {id}: {error}"
+
+# Circular Dependency Protection
+circular_protection:
+  mechanism: "_visited set passed recursively"
+
+  how_it_works:
+    1: "get_consensus_value() initializes _visited = set()"
+    2: "Before calculating, check: if self.id in _visited: return None"
+    3: "Add self.id to _visited"
+    4: "Pass _visited to recursive calls"
+    5: "If circular reference found, returns None to break cycle"
+
+  limitations:
+    - "Only detects circles during runtime"
+    - "Doesn't prevent user from creating circular configs"
+    - "Simple self-reference blocked in UI (config_id in source_ids)"
+    - "Complex chains not validated upfront"
+
+  improvement_needed:
+    - "Full dependency tree validation on save"
+    - "Show warning in UI if circular dependency exists"
+    - "Prevent save if dependency cycle detected"
+
+# UI/UX Design Decisions
+ux_decisions:
+  - decision: "Show result FIRST at top of modal"
+    rationale: "v1.19 improvement - users want to see result immediately"
+    before: "Result at bottom after 918 lines (had to scroll)"
+    after: "Large green display-4 result at top"
+    impact: "POSITIVE - Much better UX"
+
+  - decision: "Collapsible 'Add KPI' section"
+    rationale: "Reduce clutter - only show when adding"
+    implementation: "Alpine.js x-show toggle"
+
+  - decision: "Clickable variable badges in advanced mode"
+    rationale: "Easy to insert kpi_<id> without typing"
+    implementation: "@click=insertVariable(kpi.id)"
+
+  - decision: "Client-side preview of result"
+    rationale: "Instant feedback without server round-trip"
+    limitation: "Preview may differ from actual (if sources changed)"
+
+  - decision: "Formula KPIs can use formula and linked sources"
+    rationale: "Maximum flexibility - formulas can chain"
+    note: "Filters applied in API endpoint"
+    current_filter: "Only excludes itself"
+
+  - decision: "Separate 'source_config_ids' and 'kpi_config_ids'"
+    rationale: "Backwards compatibility during refactor"
+    technical_debt: "Should consolidate to one field name"
+
+# Testing Requirements
+testing:
+  unit_tests:
+    - "Test simple operations (sum, avg, min, max, multiply, subtract, divide)"
+    - "Test advanced expressions with valid syntax"
+    - "Test division by zero returns None"
+    - "Test invalid expression returns None"
+    - "Test circular dependency detection"
+    - "Test formula with missing source values"
+    - "Test formula with qualitative source (should fail validation)"
+
+  integration_tests:
+    - "Create formula KPI → verify calculated value"
+    - "Update source KPI → verify formula KPI auto-updates"
+    - "Switch KPI from manual to formula → verify contributions hidden"
+    - "Switch formula KPI back to manual → verify contributions restored"
+    - "Create chained formula (KPI C = KPI B, KPI B = KPI A)"
+    - "Create circular formula (KPI A = KPI B, KPI B = KPI A) → verify blocked"
+
+  ui_tests:
+    - "Open modal → verify result shows at top"
+    - "Add source KPI → verify appears in list"
+    - "Remove source KPI → verify removed from list"
+    - "Switch simple/advanced → verify UI changes"
+    - "Type expression → verify result preview updates"
+    - "Save formula → verify page reloads with new value"
+
+  edge_cases:
+    - "What if source KPI is deleted?"
+    - "What if source KPI changes from numeric to qualitative?"
+    - "What if expression references non-existent kpi_999?"
+    - "What if all source values are None?"
+    - "What if user enters malicious expression?"
+
+# Impact Analysis Examples
+impact_analysis:
+  - change: "Add new formula operation (e.g., 'median')"
+    affected_files:
+      - "app/models/value_type.py (_calculate_formula_value, add elif)"
+      - "app/templates/workspace/_calculation_config_modal.html (add option)"
+      - "app/routes/workspace.py (add to valid_operations)"
+    testing_required:
+      - "Unit test for median calculation"
+      - "UI test to select median from dropdown"
+    estimated_effort: "2 hours"
+
+  - change: "Add autocomplete for advanced expressions"
+    affected_files:
+      - "app/templates/workspace/_calculation_config_modal.html (add JS autocomplete)"
+      - "Static assets (may need CodeMirror or similar library)"
+    new_dependencies: "CodeMirror or Monaco Editor"
+    testing_required:
+      - "UI test for autocomplete functionality"
+    estimated_effort: "1 day"
+
+  - change: "Implement full circular dependency validation"
+    affected_files:
+      - "app/routes/workspace.py (add validation in update_calculation_config)"
+      - "New service: app/services/dependency_validator.py"
+    operations:
+      - "Build dependency graph for all formulas"
+      - "Detect cycles using DFS/topological sort"
+      - "Return error if cycle detected"
+    testing_required:
+      - "Create complex circular chains"
+      - "Verify blocked at save time"
+    estimated_effort: "1 day"
+
+  - change: "Cache formula results (performance optimization)"
+    affected_files:
+      - "app/models/value_type.py (add caching decorator)"
+      - "Database migration (add formula_result_cache column?)"
+    considerations:
+      - "When to invalidate cache?"
+      - "Cache per snapshot or current value?"
+      - "Redis for distributed cache?"
+    estimated_effort: "2-3 days"
+    risk: "Cache invalidation is hard"
+
+# Related Concepts
+related_concepts:
+  - concept: "Calculation Type (Manual/Formula/Linked)"
+    relation: "Formula is one of three calculation types"
+    file: "docs/concept-mapping/concept_calculation_type.yaml"
+
+  - concept: "Consensus Calculation"
+    relation: "Formula overrides normal consensus mechanism"
+    note: "Formula KPIs don't use contributions"
+
+  - concept: "Linked KPI"
+    relation: "Both auto-update, but linked reads from another KPI"
+    difference: "Formula calculates, Linked copies"
+
+  - concept: "Value Type"
+    relation: "Formula only works with numeric value types"
+    validation: "Backend blocks qualitative sources"
+
+  - concept: "KPI Snapshot"
+    relation: "Snapshots capture formula results at point in time"
+    question: "Should snapshots store calculation_config for audit?"
+
+# Performance Considerations
+performance:
+  calculation_overhead:
+    - "Formula calculated on-demand (every page load)"
+    - "Recursive calls to get source values"
+    - "Complex formulas with many sources = slower"
+    - "No caching currently implemented"
+
+  optimization_opportunities:
+    - "Cache formula results until source changes"
+    - "Lazy load formula details in grid view"
+    - "Batch calculate all formulas in background job"
+    - "Denormalize formula result into snapshots"
+
+  scaling_concerns:
+    - "What if 1000 KPIs depend on one source?"
+    - "Deep dependency chains (KPI → KPI → KPI → ...)"
+    - "Circular reference detection overhead"
+
+# Security Considerations
+security:
+  expression_evaluation:
+    library: "simpleeval (sandboxed)"
+    safe: true
+    cannot_access:
+      - "Filesystem"
+      - "Network"
+      - "System calls"
+      - "Arbitrary imports"
+    allowed:
+      - "Math operations"
+      - "Whitelisted functions"
+      - "KPI variables only"
+
+  injection_prevention:
+    - "Expression parsed by simpleeval, not eval()"
+    - "No code execution outside sandbox"
+    - "Whitelisted functions only"
+
+  permission_check:
+    - "can_manage_kpis required to create formula"
+    - "No permission to update source KPIs"
+    - "Cannot create formula with KPIs from other orgs (yet)"
+
+# Future Enhancements
+future_enhancements:
+  - feature: "Formula Templates"
+    description: "Pre-built formulas (ROI, efficiency, etc.)"
+    priority: "Medium"
+
+  - feature: "Conditional Formulas"
+    description: "IF-THEN-ELSE logic in expressions"
+    syntax: "if(kpi_1 > 100, kpi_2, kpi_3)"
+    priority: "Low"
+
+  - feature: "Time-based Formulas"
+    description: "Reference historical values (last month, etc.)"
+    syntax: "kpi_1.last_month + kpi_2.current"
+    priority: "Medium"
+    complexity: "HIGH"
+
+  - feature: "Cross-organization Formulas"
+    description: "Formula can use KPIs from other orgs"
+    use_case: "Aggregated metrics across subsidiaries"
+    priority: "Low"
+    requires: "Permission model update"
+
+  - feature: "Formula Validation on Save"
+    description: "Full dependency tree validation"
+    prevents: "Circular dependencies"
+    priority: "HIGH"
+    estimated_effort: "1 day"
+
+  - feature: "Formula Performance Dashboard"
+    description: "Show calculation time, dependency depth"
+    for_role: "Super Admin"
+    priority: "Low"
+
+# Technical Debt
+technical_debt:
+  - issue: "Duplicate field names (source_config_ids vs kpi_config_ids)"
+    description: "Both stored in calculation_config"
+    reason: "Backwards compatibility during refactor"
+    proposal: "Consolidate to one field name"
+    priority: "LOW"
+
+  - issue: "No upfront circular dependency validation"
+    description: "Circles only detected at runtime"
+    proposal: "Validate dependency tree on save"
+    priority: "HIGH"
+
+  - issue: "Client-side preview may be inaccurate"
+    description: "Modal calculates preview, but sources may have changed"
+    proposal: "Add server-side preview endpoint"
+    priority: "MEDIUM"
+
+  - issue: "Formula details template is 918 lines"
+    description: "Modal too complex, hard to maintain"
+    proposal: "Extract formula mode to separate component"
+    priority: "MEDIUM"
+
+  - issue: "No caching of formula results"
+    description: "Recalculated on every page load"
+    proposal: "Cache results, invalidate on source change"
+    priority: "MEDIUM"
+    complexity: "HIGH"
+
+# Documentation
+documentation:
+  user_guide:
+    file: "USER_GUIDE_V1.14.md"
+    sections:
+      - "Creating Formula KPIs"
+      - "Simple vs Advanced Mode"
+      - "Available Functions"
+      - "Formula Examples"
+
+  technical_docs:
+    file: "docs/concept-mapping/concept_calculation_type.yaml"
+    sections:
+      - "Calculation Type Overview"
+      - "Formula Type Specifics"
+
+  inline_comments:
+    - file: "app/models/value_type.py"
+      line: 351
+      comment: "Calculate value based on formula configuration. Supports simple and advanced modes."
+
+# Version History
+version_history:
+  - version: "1.20.0"
+    date: "2025-12-01"
+    changes:
+      - "Initial formula KPI implementation"
+      - "Simple mode with 6 operations"
+      - "Advanced mode with Python expressions"
+      - "Circular dependency protection"
+
+  - version: "1.20.5"
+    date: "2026-01-15"
+    changes:
+      - "Added multiply, subtract, divide operations"
+      - "Improved error handling"
+      - "Added expression preview in modal"
+
+  - version: "1.19.0"
+    date: "2026-02-01"
+    changes:
+      - "Modal UX improvement: Result shown first"
+      - "Collapsible sections"
+      - "Clickable variable badges"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "HIGH"  # Complex calculation engine
+  criticality: "HIGH"  # Important feature with dependencies
+  stability: "STABLE"  # Mature feature
+  technical_debt: "MEDIUM"  # Some refactoring opportunities
+  test_coverage: "50%"  # Needs more coverage

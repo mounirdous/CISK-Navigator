@@ -1,0 +1,27 @@
+# Concept Mapping: Analytics & Health
+concept:
+  name: "Analytics Dashboard"
+  description: "Platform health and statistics"
+  criticality: "MEDIUM"
+routes:
+  global_admin: "/global-admin/health-dashboard"
+  super_admin: "/super-admin/health"
+displays:
+  statistics:
+    - "Total users, orgs, KPIs"
+    - "Activity metrics"
+    - "Per-org breakdowns"
+  health_indicators:
+    - "Organizations with no activity"
+    - "Users with no contributions"
+    - "System uptime"
+ui_elements:
+  charts: "Stats cards + tables"
+  colors: "Bootstrap default"
+user_journey:
+  file: "role_global_admin_journey.yaml"
+  journey: "J3 (Health Dashboard)"
+metadata:
+  complexity: "LOW"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

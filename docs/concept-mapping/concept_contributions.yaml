@@ -1,0 +1,309 @@
+# Concept Mapping: Contributions
+# Maps how users submit KPI values
+# CRITICAL - primary data entry mechanism
+
+concept:
+  name: "Contributions"
+  description: "User-submitted KPI values that feed into consensus calculation"
+  introduced_version: "1.0.0"
+  last_major_refactor: "1.5.0"
+  criticality: "CRITICAL"  # Core data entry
+
+# What is a Contribution?
+definition:
+  purpose: "Allow multiple users to provide their opinion on a KPI value"
+  philosophy: "Wisdom of crowds - multiple inputs lead to better truth"
+  feeds_into: "Consensus calculation"
+  mapping: "concept_consensus.yaml"
+
+# Database Schema
+database:
+  table: "contributions"
+  fields:
+    - name: "id"
+      type: "INTEGER"
+      primary_key: true
+
+    - name: "kpi_value_type_config_id"
+      type: "INTEGER"
+      fk: "kpi_value_type_configs.id"
+      ondelete: "CASCADE"
+
+    - name: "user_id"
+      type: "INTEGER"
+      fk: "users.id"
+      nullable: false
+
+    - name: "contribution_name"
+      type: "VARCHAR(200)"
+      nullable: false
+      description: "Identifier for this contribution"
+      example: "Q1 2026 Actual"
+
+    - name: "numeric_value"
+      type: "DECIMAL(20,6)"
+      nullable: true
+      description: "For numeric value types"
+
+    - name: "qualitative_level"
+      type: "INTEGER"
+      nullable: true
+      description: "For qualitative types (1=!, 2=!!, 3=!!!)"
+
+    - name: "contribution_date"
+      type: "DATE"
+      nullable: false
+      default: "today"
+      description: "Effective date of this value"
+
+    - name: "comment"
+      type: "TEXT"
+      nullable: true
+      description: "Optional explanation"
+
+    - name: "created_at"
+      type: "TIMESTAMP"
+
+    - name: "updated_at"
+      type: "TIMESTAMP"
+
+# Model
+model:
+  file: "app/models/contribution.py"
+  class: "Contribution"
+  relationships:
+    - "kpi_value_type_config (parent)"
+    - "user (contributor)"
+
+# Form
+form:
+  file: "app/forms/contribution_forms.py"
+  class: "ContributionForm"
+  fields:
+    - "contribution_name"
+    - "value (numeric or qualitative)"
+    - "contribution_date"
+    - "comment"
+
+  validation:
+    - "Either numeric_value OR qualitative_level (not both)"
+    - "Matches value type kind"
+    - "Date not in future"
+
+# Routes
+routes:
+  submit_contribution:
+    route: "/workspace/kpi/<kpi_id>/value-type/<vt_id>/contribute"
+    method: "POST"
+    file: "app/routes/workspace.py"
+    function: "contribute"
+    operations:
+      - "Validate form"
+      - "Create Contribution"
+      - "Recalculate consensus"
+      - "Create snapshot"
+      - "Log audit"
+      - "Trigger formula recalculation (if dependents exist)"
+    services_used:
+      - "ConsensusService"
+      - "AuditService"
+
+# UI/UX
+ui:
+  contribution_form:
+    location: "KPI detail page"
+    template: "app/templates/workspace/kpi_cell_detail.html"
+    visibility: "Only if can_contribute AND calculation_type=manual"
+    fields:
+      - label: "Contribution Name"
+        placeholder: "Q1 2026 Actual"
+        required: true
+      - label: "Value"
+        type: "Numeric input OR qualitative selector"
+        required: true
+      - label: "Date"
+        type: "Date picker"
+        default: "Today"
+      - label: "Comment"
+        type: "Textarea"
+        optional: true
+
+  contributions_table:
+    location: "Below chart on KPI detail"
+    columns:
+      - "Contributor"
+      - "Value"
+      - "Date"
+      - "Comment"
+    sorting: "Most recent first"
+    highlighting: "Values matching consensus"
+
+  colors:
+    matching_consensus: "#28a745"  # Green background
+    not_matching: "Default"
+
+# Business Rules
+business_rules:
+  - rule: "One user can make multiple contributions"
+    rationale: "Values change over time"
+    example: "Alice submits Q1, Q2, Q3 estimates"
+
+  - rule: "Contributions preserved when switching calc type"
+    behavior: "Hidden but not deleted if switch to formula/linked"
+    rationale: "Can switch back and restore"
+    mapping: "concept_calculation_type.yaml"
+
+  - rule: "Only for manual KPIs"
+    enforcement: "Form hidden if calculation_type != 'manual'"
+    error: "Cannot contribute to formula/linked KPIs"
+
+  - rule: "Requires can_contribute permission"
+    enforcement: "Decorator + UI check"
+    default: "true (new users can contribute)"
+
+  - rule: "All contributions considered in consensus"
+    exception: "None - no weighted voting (yet)"
+    mapping: "concept_consensus.yaml"
+
+# Data Flow
+data_flow:
+  1:
+    actor: "User"
+    action: "Fills contribution form"
+    location: "KPI detail page"
+
+  2:
+    actor: "System"
+    action: "Validates input"
+    checks:
+      - "User has can_contribute"
+      - "KPI is manual type"
+      - "Value matches value type"
+
+  3:
+    actor: "System"
+    action: "Saves contribution"
+    table: "contributions"
+
+  4:
+    actor: "ConsensusService"
+    action: "Recalculates consensus"
+    updates: "KPI cell status/value"
+
+  5:
+    actor: "SnapshotService"
+    action: "Creates/updates snapshot"
+    table: "kpi_snapshots"
+
+  6:
+    actor: "RecalculationService"
+    action: "Triggers dependent formulas (if any)"
+    note: "Formula KPIs that use this as source"
+
+  7:
+    actor: "AuditService"
+    action: "Logs contribution"
+    table: "audit_logs"
+
+  8:
+    actor: "System"
+    action: "Reloads page with new value"
+    displays: "Updated consensus"
+
+# Integration with Other Concepts
+integrations:
+  consensus:
+    relation: "Contributions are inputs"
+    service: "ConsensusService.calculate_consensus(contributions)"
+    file: "concept_consensus.yaml"
+
+  snapshots:
+    relation: "Snapshot stores consensus value after contribution"
+    trigger: "After successful contribution"
+    file: "concept_snapshots.yaml"
+
+  formula_kpis:
+    relation: "New contribution triggers formula recalculation"
+    mechanism: "Dependent formulas read updated consensus"
+    file: "concept_formula_kpi.yaml"
+
+  audit_logs:
+    relation: "Every contribution logged"
+    fields: "user, KPI, value, date"
+    file: "concept_audit_logs.yaml"
+
+# UI Colors & Icons
+ui_elements:
+  colors:
+    form_background: "Default"
+    success_message: "#28a745"  # Green
+    error_message: "#dc3545"  # Red
+
+  icons:
+    submit_button: "bi-check-lg"
+    contributor_icon: "bi-person"
+
+  buttons:
+    submit:
+      class: "btn btn-primary"
+      text: "Submit Contribution"
+
+# Performance
+performance:
+  contribution_save: "< 100ms"
+  consensus_recalc: "< 50ms"
+  snapshot_update: "< 50ms"
+  total: "< 200ms"
+
+  bottlenecks:
+    - "None - fast operation"
+
+# Edge Cases
+edge_cases:
+  - case: "User contributes same value twice"
+    behavior: "Both counted in consensus"
+    rationale: "User might want to emphasize"
+
+  - case: "User contributes conflicting values"
+    behavior: "All counted, consensus determines winner"
+    note: "No overwrite, all kept"
+
+  - case: "Contribution to formula KPI"
+    behavior: "Form hidden, error if direct POST"
+
+  - case: "Contribution with future date"
+    behavior: "Blocked by validation"
+
+  - case: "Contribution after switching to formula"
+    behavior: "Old contributions preserved but hidden"
+
+# Testing
+testing:
+  unit_tests:
+    - "Validate numeric vs qualitative"
+    - "Date validation"
+    - "Permission check"
+
+  integration_tests:
+    - "Submit contribution → verify consensus updates"
+    - "Submit contribution → verify snapshot created"
+    - "Submit to formula KPI → verify blocked"
+
+# Related Concepts
+related_concepts:
+  - concept: "Consensus"
+    file: "concept_consensus.yaml"
+  - concept: "Snapshots"
+    file: "concept_snapshots.yaml"
+  - concept: "Permissions"
+    file: "concept_permissions.yaml"
+  - concept: "Audit Logs"
+    file: "concept_audit_logs.yaml"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "LOW"
+  criticality: "CRITICAL"
+  stability: "STABLE"
+  test_coverage: "70%"

@@ -1,0 +1,589 @@
+# Concept Mapping: Linked KPI
+# This file maps how KPIs can read values live from other KPIs
+# CRITICAL for understanding cross-KPI dependencies and sync mechanism
+
+concept:
+  name: "Linked KPI"
+  description: "KPI that reads its value live from another KPI (same or different organization)"
+  introduced_version: "1.18.0"
+  last_major_refactor: "1.20.0"
+  criticality: "CRITICAL"  # Creates dependencies
+
+# What is a Linked KPI?
+linked_kpi_definition:
+  purpose: "Reuse KPI values across different contexts without duplication"
+  mechanism: "Live read-through - no data copying"
+  sync: "REALTIME - reads source value on every page load"
+  use_cases:
+    - "Department KPI links to corporate KPI"
+    - "Initiative reuses Challenge-level metric"
+    - "Cross-organization reporting"
+    - "Cascading metrics down hierarchy"
+
+  example:
+    scenario: "IT Department tracks Corporate Security Budget"
+    source:
+      org: "Corporate"
+      kpi: "Security Budget"
+      value: 500000
+    consumer:
+      org: "IT Department"
+      kpi: "Our Security Budget"
+      type: "Linked"
+      shows: 500000  # Read live from Corporate
+
+# How Linked KPIs Work
+mechanism:
+  storage:
+    - "No value stored locally"
+    - "No contributions accepted"
+    - "Stores only link configuration"
+
+  read_process:
+    1: "User views linked KPI cell"
+    2: "System calls config.get_consensus_value()"
+    3: "Detects calculation_type == 'linked'"
+    4: "Looks up source config (linked_source_kpi_id + linked_source_value_type_id)"
+    5: "Recursively calls source_config.get_consensus_value()"
+    6: "Returns source value as if it were local"
+    7: "No caching - fresh read every time"
+
+  circular_protection:
+    mechanism: "_visited set passed recursively"
+    prevents: "KPI A → KPI B → KPI A infinite loop"
+    behavior: "Returns None if circular reference detected"
+
+# Database Schema
+database:
+  table: "kpi_value_type_configs"
+  fields:
+    - name: "calculation_type"
+      value: "linked"
+      description: "Identifies this as linked KPI"
+
+    - name: "linked_source_org_id"
+      type: "INTEGER"
+      fk: "organizations.id"
+      nullable: true
+      ondelete: "RESTRICT"
+      description: "Source organization (can be same org or different)"
+
+    - name: "linked_source_kpi_id"
+      type: "INTEGER"
+      fk: "kpis.id"
+      nullable: true
+      ondelete: "RESTRICT"
+      description: "Source KPI (deletion blocked while linked)"
+
+    - name: "linked_source_value_type_id"
+      type: "INTEGER"
+      fk: "value_types.id"
+      nullable: true
+      ondelete: "RESTRICT"
+      description: "Source value type (must be compatible)"
+
+    - name: "calculation_config"
+      type: "JSONB"
+      nullable: true
+      description: "Stores link configuration for consistency"
+      structure:
+        linked_org_id: 1
+        linked_kpi_id: 456
+        linked_value_type_id: 789
+
+  foreign_keys:
+    - "ON DELETE RESTRICT prevents source deletion"
+    - "Must manually unlink before deleting source"
+
+# Model Implementation
+model:
+  file: "app/models/value_type.py"
+  class: "KPIValueTypeConfig"
+
+  methods:
+    - name: "is_linked()"
+      lines: [249-255]
+      description: "Check if this config is linked"
+      logic: |
+        return (
+            calculation_type == 'linked'
+            OR all three linked_source_* fields are set
+        )
+      note: "Checks both ways for backwards compatibility"
+
+    - name: "get_linked_source_config()"
+      lines: [276-288]
+      description: "Get the source config this links to"
+      returns: "KPIValueTypeConfig or None"
+      query: |
+        KPIValueTypeConfig.query.filter_by(
+            kpi_id=self.linked_source_kpi_id,
+            value_type_id=self.linked_source_value_type_id
+        ).first()
+
+    - name: "get_consensus_value(_visited)"
+      lines: [332-344]
+      description: "Override consensus to read from source"
+      logic: |
+        if self.is_linked():
+            source_config = self.get_linked_source_config()
+            if source_config:
+                # Recursive read from source (with circular protection)
+                return source_config.get_consensus_value(_visited)
+            else:
+                # Source not found
+                return no_data_dict
+      circular_protection: "Passes _visited set to prevent infinite recursion"
+
+  relationships:
+    - name: "linked_source_org"
+      relationship: "Organization"
+      fk: "linked_source_org_id"
+      backref: "linked_kpi_consumers"
+
+    - name: "linked_source_kpi"
+      relationship: "KPI"
+      fk: "linked_source_kpi_id"
+      backref: "linked_value_consumers"
+
+    - name: "linked_source_value_type"
+      relationship: "ValueType"
+      fk: "linked_source_value_type_id"
+      backref: "linked_kpi_value_consumers"
+
+# Configuration UI
+configuration_ui:
+  modal: "app/templates/workspace/_calculation_config_modal.html"
+  section: "Linked Mode"
+  lines: [157-204]
+
+  steps:
+    1:
+      label: "Select Source Organization"
+      field: "Select dropdown"
+      options: "All orgs user is member of"
+      api: "GET /workspace/api/organizations-for-linking"
+
+    2:
+      label: "Select Source KPI"
+      field: "Select dropdown"
+      options: "All KPIs in selected org"
+      api: "GET /workspace/api/linked-kpi/kpis/<org_id>"
+      filtered: "Excludes archived KPIs"
+
+    3:
+      label: "Select Source Value Type"
+      field: "Select dropdown"
+      options: "Value types from source KPI"
+      api: "GET /workspace/api/linked-kpi/value-types/<kpi_id>"
+      compatibility_check: "Only shows compatible value types"
+
+  compatibility_rules:
+    numeric_to_numeric: "✅ Allowed"
+    numeric_to_qualitative: "❌ Blocked"
+    qualitative_to_numeric: "❌ Blocked"
+    qualitative_to_same_qualitative: "✅ Allowed (risk to risk, sentiment to sentiment)"
+    qualitative_to_different_qualitative: "❌ Blocked (can't link risk to sentiment)"
+
+# API Endpoints
+api_endpoints:
+  - route: "/workspace/api/organizations-for-linking"
+    method: "GET"
+    file: "app/routes/workspace.py"
+    lines: [2661-2670]
+    description: "Get orgs user can link from"
+    returns:
+      organizations:
+        - id: 1
+          name: "Corporate"
+        - id: 2
+          name: "IT Department"
+    filters: "Only active orgs user is member of"
+
+  - route: "/workspace/api/linked-kpi/kpis/<org_id>"
+    method: "GET"
+    file: "app/routes/workspace.py"
+    lines: [2673-2736]
+    description: "Get linkable KPIs from org"
+    returns:
+      kpis:
+        - id: 456
+          name: "Security Budget"
+          value_types: [...]
+    filters:
+      - "Excludes archived KPIs"
+      - "Only KPIs user has access to"
+
+  - route: "/workspace/api/linked-kpi/value-types/<kpi_id>"
+    method: "GET"
+    file: "app/routes/workspace.py"
+    lines: [2739-2760]
+    description: "Get value types from source KPI"
+    returns: "List of value type configs"
+    compatibility_filter: "Applied in modal JavaScript"
+
+# Routes - Save Configuration
+routes:
+  - route: "/workspace/kpi-config/<config_id>/calculation"
+    method: "POST"
+    function: "update_calculation_config"
+    file: "app/routes/workspace.py"
+    lines: [2636-2645]
+    description: "Save linked configuration"
+    operations:
+      - "Validate calculation_type == 'linked'"
+      - "Validate compatibility (numeric to numeric, etc.)"
+      - "Set config.calculation_type = 'linked'"
+      - "Set config.calculation_config = {...}"
+      - "Set config.linked_source_org_id"
+      - "Set config.linked_source_kpi_id"
+      - "Set config.linked_source_value_type_id"
+      - "Clear old contributions if requested"
+      - "Commit to database"
+    validation:
+      - "Source value type exists"
+      - "Type compatibility (numeric/qualitative)"
+
+# Display
+display:
+  kpi_detail_page:
+    file: "app/templates/workspace/kpi_cell_detail.html"
+    shows:
+      - "🔗 LINKED KPI badge"
+      - "Source organization name"
+      - "Source KPI name"
+      - "Live value from source"
+      - "Link to source KPI (opens in new tab)"
+    hides:
+      - "Contribution form (can't contribute to linked KPI)"
+      - "Historical chart (no local data)"
+
+  workspace_grid:
+    file: "app/templates/workspace/index.html"
+    shows: "Value (read from source)"
+    issue: "❌ NO indicator that this is linked"
+    proposal: "Add 🔗 badge next to value"
+    priority: "HIGH"
+
+# Business Rules
+business_rules:
+  - rule: "Linked KPI cannot accept contributions"
+    rationale: "Value comes from source, not local"
+    enforcement: "Contribution form hidden in UI"
+
+  - rule: "Source deletion is blocked"
+    rationale: "Linked KPIs depend on source"
+    enforcement: "ON DELETE RESTRICT foreign key"
+    error_message: "Cannot delete KPI while other KPIs link to it"
+
+  - rule: "Value types must be compatible"
+    rationale: "Can't link Cost (numeric) to Risk (qualitative)"
+    enforcement: "Backend validation in update_calculation_config"
+    rules:
+      - "Numeric → Numeric: ✅"
+      - "Risk → Risk: ✅"
+      - "Numeric → Risk: ❌"
+
+  - rule: "No caching - always live read"
+    rationale: "Ensure value is always up-to-date"
+    implication: "Slight performance overhead"
+    benefit: "Never stale"
+
+  - rule: "Circular links return None"
+    rationale: "Prevent infinite recursion"
+    mechanism: "_visited set tracks visited configs"
+
+  - rule: "Linked KPIs can link to formula KPIs"
+    behavior: "Reads calculated value from formula source"
+    use_case: "Department links to corporate aggregated metric"
+
+  - rule: "Linked KPIs can link to other linked KPIs"
+    behavior: "Chains allowed (A → B → C)"
+    limitation: "No circular chains (A → B → A)"
+
+# Sync Mechanism CLARIFIED
+sync_mechanism:
+  type: "REALTIME READ-THROUGH"
+  not_a_sync: "No background job, no scheduled updates"
+  how_it_works:
+    - "Linked KPI stores NO value locally"
+    - "Every page load calls get_consensus_value()"
+    - "Recursively reads from source"
+    - "Returns source value as if it were local"
+
+  performance:
+    overhead: "One additional database query per linked KPI"
+    typical: "Negligible (< 5ms)"
+    worst_case: "Long chains (A → B → C → D) = multiple queries"
+
+  data_freshness:
+    guarantee: "Always current - no staleness possible"
+    tradeoff: "Performance vs freshness (chose freshness)"
+
+  alternative_considered:
+    approach: "Background sync job copies values"
+    rejected_because:
+      - "Stale data between syncs"
+      - "Complexity of change detection"
+      - "Sync conflicts"
+
+# Cross-Organization Linking
+cross_org_linking:
+  capability: "Link KPI from different organization"
+  use_cases:
+    - "Subsidiary reports to parent company"
+    - "Shared services across divisions"
+    - "Cross-departmental metrics"
+
+  permissions:
+    requirement: "User must be member of both organizations"
+    enforcement: "API only returns orgs user belongs to"
+
+  security:
+    consideration: "Linked KPI exposes source org data"
+    mitigation: "User must have access to both orgs"
+
+# Dependency Tracking
+dependency_tracking:
+  super_admin_view:
+    route: "/super-admin/linked-kpis"
+    file: "app/routes/super_admin.py"
+    lines: [414-505]
+    description: "View all linked KPIs across platform"
+    displays:
+      - "Consumer KPI"
+      - "Consumer organization"
+      - "Source KPI"
+      - "Source organization"
+      - "Value type"
+    stats:
+      - "Total linked KPIs"
+      - "Number of source KPIs being linked to"
+      - "Number of source organizations"
+    use_case: "Impact analysis before deleting KPI"
+
+  deletion_prevention:
+    service: "DeletionImpactService"
+    file: "app/services/deletion_impact_service.py"
+    check: "Count linked consumers before allowing deletion"
+    error: "Cannot delete - X KPIs link to this"
+
+# Use Cases
+use_cases:
+  - use_case: "Department tracks corporate metric"
+    example:
+      corporate_kpi: "Overall IT Budget"
+      corporate_value: 5000000
+      department_kpi: "Our Budget Allocation"
+      department_links_to: "Overall IT Budget"
+      department_shows: 5000000
+    benefit: "Single source of truth"
+
+  - use_case: "Cascading targets"
+    example:
+      corporate_target: "Reduce CO2 by 20%"
+      division_1: "Links to corporate, contributes to it"
+      division_2: "Links to corporate, contributes to it"
+    benefit: "All divisions track same goal"
+
+  - use_case: "Shared KPI across initiatives"
+    example:
+      shared_kpi: "Number of Employees (at System level)"
+      initiative_1: "Links to shared KPI"
+      initiative_2: "Links to same shared KPI"
+    benefit: "Don't duplicate data entry"
+
+# Edge Cases
+edge_cases:
+  - case: "Source KPI deleted"
+    current_behavior: "ON DELETE RESTRICT prevents deletion"
+    user_must: "Manually unlink consumers first"
+    improvement_needed: "Show list of consumers in deletion error"
+
+  - case: "Source changes value type"
+    current_behavior: "Linked KPI still reads (if compatible)"
+    issue: "If incompatible change, link breaks silently"
+    proposal: "Validate compatibility on source value type change"
+
+  - case: "Circular link"
+    protection: "_visited set returns None"
+    example: "KPI A → KPI B → KPI A"
+    result: "KPI A shows no data (cycle detected)"
+    ui_issue: "No warning that cycle exists"
+
+  - case: "Long chain"
+    example: "A → B → C → D → E"
+    performance: "5 database queries per page load"
+    acceptable: "Yes - chains are rare"
+
+  - case: "User loses access to source org"
+    behavior: "Still can see linked KPI (value accessible)"
+    rationale: "Link created when had access"
+    debate: "Should link break when access revoked?"
+
+  - case: "Source is formula KPI"
+    behavior: "✅ Works - reads calculated value"
+    use_case: "Link to aggregated metric"
+
+  - case: "Source is also linked"
+    behavior: "✅ Works - chains are allowed"
+    limit: "No circular chains"
+
+# Testing Requirements
+testing:
+  unit_tests:
+    - "Test is_linked() detection"
+    - "Test get_linked_source_config()"
+    - "Test get_consensus_value() with link"
+    - "Test circular protection"
+    - "Test compatibility validation"
+
+  integration_tests:
+    - "Create linked KPI → verify reads source value"
+    - "Update source KPI → verify linked KPI shows new value"
+    - "Delete source KPI → verify blocked by foreign key"
+    - "Create circular link → verify returns None"
+    - "Link across organizations → verify works"
+    - "Link to formula KPI → verify reads calculated value"
+
+  ui_tests:
+    - "Configure linked KPI via modal"
+    - "Verify contribution form hidden for linked KPI"
+    - "Verify link indicator shown"
+    - "Click link to source → verify opens source KPI"
+
+  edge_case_tests:
+    - "Link to incompatible value type → verify blocked"
+    - "Long chain (5 deep) → verify performance acceptable"
+    - "User loses access to source org → verify behavior"
+
+# Impact Analysis
+impact_analysis:
+  - change: "Add background sync instead of live read"
+    affected:
+      - "app/models/value_type.py (get_consensus_value)"
+      - "New cron job for syncing"
+      - "Add last_synced_at timestamp"
+    benefit: "Performance improvement"
+    tradeoff: "Stale data between syncs"
+    risk: "HIGH - changes core behavior"
+
+  - change: "Cache linked values"
+    affected:
+      - "app/models/kpi_snapshot.py (add caching)"
+      - "Invalidation logic when source changes"
+    benefit: "Performance"
+    complexity: "Cache invalidation"
+    risk: "MEDIUM"
+
+  - change: "Show linked indicator in workspace grid"
+    affected:
+      - "app/templates/workspace/index.html"
+    benefit: "Better UX"
+    risk: "LOW - UI only"
+
+# Future Enhancements
+future_enhancements:
+  - feature: "Bidirectional linking"
+    description: "Source KPI aware of consumers"
+    use_case: "Show 'X KPIs link to this' on source"
+    priority: "MEDIUM"
+
+  - feature: "Link validation on source change"
+    description: "Warn if source value type changes"
+    prevent: "Breaking links silently"
+    priority: "HIGH"
+
+  - feature: "Bulk unlinking"
+    description: "Unlink all consumers from source"
+    use_case: "Before deleting source KPI"
+    priority: "MEDIUM"
+
+  - feature: "Link history"
+    description: "Track when link was created/changed"
+    audit: "Who linked to what, when"
+    priority: "LOW"
+
+  - feature: "Link with transformation"
+    description: "Link + apply formula (e.g., x * 0.5)"
+    use_case: "Department gets 50% of corporate budget"
+    priority: "LOW"
+
+# Technical Debt
+technical_debt:
+  - issue: "No caching of linked values"
+    description: "Reads from source on every page load"
+    proposal: "Cache in KPISnapshot"
+    priority: "MEDIUM"
+
+  - issue: "Circular link detection at runtime only"
+    description: "Not prevented at link creation time"
+    proposal: "Build dependency graph on save, detect cycles"
+    priority: "HIGH"
+
+  - issue: "No UI indicator in workspace grid"
+    description: "Can't tell if KPI is linked without clicking"
+    proposal: "Add 🔗 badge"
+    priority: "MEDIUM"
+
+  - issue: "Link breaks silently if source value type changes"
+    description: "No warning to user"
+    proposal: "Validate on source value type change"
+    priority: "HIGH"
+
+  - issue: "ON DELETE RESTRICT error is cryptic"
+    description: "Doesn't list which KPIs link to deleted one"
+    proposal: "Show list of consumers in error message"
+    priority: "MEDIUM"
+
+# Related Concepts
+related_concepts:
+  - concept: "Formula KPI"
+    relation: "Both auto-update, but formula calculates, linked reads"
+    file: "concept_formula_kpi.yaml"
+
+  - concept: "Calculation Type"
+    relation: "Linked is one of three calc types"
+    file: "concept_calculation_type.yaml"
+
+  - concept: "Consensus"
+    relation: "Linked overrides normal consensus"
+    file: "concept_consensus.yaml"
+
+  - concept: "Deletion Safety"
+    relation: "Linked consumers block source deletion"
+    file: "concept_deletion_safety.yaml"
+
+# Documentation
+documentation:
+  user_guide:
+    file: "USER_GUIDE_V1.14.md"
+    sections:
+      - "Linking to Other KPIs"
+      - "Cross-Organization Links"
+
+  technical_docs:
+    file: "docs/concept-mapping/concept_calculation_type.yaml"
+    sections:
+      - "Linked KPI Type"
+
+# Version History
+version_history:
+  - version: "1.18.0"
+    changes: ["Initial linked KPI implementation"]
+
+  - version: "1.20.0"
+    changes:
+      - "Unified with calculation_type field"
+      - "Added circular protection"
+      - "Improved compatibility validation"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "HIGH"
+  criticality: "CRITICAL"  # Creates dependencies
+  stability: "STABLE"
+  technical_debt: "MEDIUM"
+  test_coverage: "50%"
+  sync_mechanism: "REALTIME READ-THROUGH (NOT background sync)"

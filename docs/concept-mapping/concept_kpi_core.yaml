@@ -1,0 +1,74 @@
+# Concept Mapping: KPI Core Model
+# The KPI entity itself (not values, not configs)
+
+concept:
+  name: "KPI Core"
+  description: "The KPI entity - name, description, archiving"
+  criticality: "CRITICAL"
+
+database:
+  table: "kpis"
+  key_fields:
+    - "initiative_system_link_id (parent)"
+    - "name, description"
+    - "is_archived, archived_at, archived_by_user_id"
+    - "display_order"
+
+  related_table: "kpi_value_type_configs"
+  purpose: "Configs for each value type the KPI tracks"
+
+routes:
+  create: "/org-admin/initiative-system-links/<link_id>/kpis/create"
+  edit: "/org-admin/kpis/<id>/edit"
+  delete: "/org-admin/kpis/<id>/delete"
+  archive: "/org-admin/kpis/<id>/archive"
+  unarchive: "/org-admin/kpis/<id>/unarchive"
+
+  view_detail: "/workspace/kpi/<kpi_id>/value-type/<vt_id>"
+
+permissions:
+  manage: "can_manage_kpis OR is_org_admin"
+  view: "All org members"
+  contribute: "can_contribute"
+
+relationships:
+  parent: "InitiativeSystemLink"
+  configs: "KPIValueTypeConfig (one per value type)"
+  governance_bodies: "GovernanceBody (many-to-many via kpi_governance_body_links)"
+
+special_features:
+  archiving:
+    purpose: "Soft delete - hide from workspace but keep data"
+    fields: "is_archived, archived_at, archived_by_user_id"
+    toggle: "Archive/Unarchive buttons"
+    filter: "Workspace has 'Show Archived' checkbox"
+
+  multi_value_types:
+    concept: "One KPI can track multiple value types"
+    example: "Security Budget tracks Cost AND Risk"
+    storage: "kpi_value_type_configs table"
+
+ui_elements:
+  icons:
+    kpi: "bi-graph-up"
+    archived: "bi-archive"
+
+business_rules:
+  - "Belongs to Initiative-System link (not System directly)"
+  - "Can have multiple value types"
+  - "Can link to multiple governance bodies"
+  - "Archiving preserves data but hides from workspace"
+
+related_concepts:
+  - "concept_calculation_type.yaml"
+  - "concept_value_types.yaml"
+  - "concept_governance_bodies.yaml"
+
+user_journey:
+  creation: "role_org_admin_journey.yaml (J1.9, J6)"
+  viewing: "role_regular_user_journey.yaml (J2.2)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "CRITICAL"
+  last_updated: "2026-03-13"

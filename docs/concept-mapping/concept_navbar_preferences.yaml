@@ -1,0 +1,16 @@
+# Concept Mapping: Navbar Preferences
+concept:
+  name: "Navbar Position"
+  description: "User can choose navbar position"
+  criticality: "LOW"
+database:
+  field: "users.navbar_position"
+  values: ["top", "fixed-top"]
+toggle:
+  location: "User profile"
+ui_elements:
+  options: "Top / Fixed Top"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

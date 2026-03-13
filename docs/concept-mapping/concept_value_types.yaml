@@ -1,0 +1,79 @@
+# Concept Mapping: Value Types
+# Defines what metrics can be tracked (Cost, CO2, Risk, etc.)
+
+concept:
+  name: "Value Types"
+  description: "Metric definitions - what values KPIs can track"
+  criticality: "CRITICAL"
+
+database:
+  table: "value_types"
+  key_fields:
+    - "organization_id"
+    - "name (Cost, CO2, Risk, etc.)"
+    - "kind (numeric, risk, positive_impact, negative_impact, level, sentiment)"
+    - "numeric_format (integer/decimal)"
+    - "decimal_places"
+    - "unit_label (€, tCO2e, etc.)"
+    - "default_aggregation_formula (sum, avg, min, max)"
+    - "display_order"
+
+kinds:
+  numeric:
+    examples: "Cost, CO2, Number of licenses"
+    can_target: true
+    can_formula: true
+
+  risk:
+    levels: "!, !!, !!!"
+    color: "Red/Yellow"
+
+  positive_impact:
+    levels: "★, ★★, ★★★"
+
+  negative_impact:
+    levels: "▼, ▼▼, ▼▼▼"
+
+routes:
+  list: "/org-admin/value-types"
+  reorder: "/org-admin/value-types/reorder"
+  create: "/org-admin/value-types/create"
+  edit: "/org-admin/value-types/<id>/edit"
+  delete_check: "/org-admin/value-types/<id>/delete-check"
+  rollup_config: "/org-admin/value-types/<id>/rollup-config"
+
+permissions:
+  required: "can_manage_value_types OR is_org_admin"
+
+ui_elements:
+  colors:
+    numeric: "#0d6efd"  # Blue
+    risk: "#dc3545"  # Red
+    positive: "#28a745"  # Green
+    negative: "#fd7e14"  # Orange
+
+business_rules:
+  - "Per-organization (not global)"
+  - "Cannot delete if in use by KPIs"
+  - "Display order matters (shown in forms)"
+  - "Smart defaults based on kind"
+
+user_journey:
+  file: "role_org_admin_journey.yaml"
+  journey: "J8 (Value Type Management)"
+
+pain_points:
+  - "Too many fields in creation form"
+  - "Rollup configuration is complex"
+  - "Unclear what 'kind' means"
+
+simplification:
+  templates:
+    - "Cost (€, numeric, decimal, 2 places, sum)"
+    - "CO2 (tCO2e, numeric, decimal, 2 places, sum)"
+    - "Risk (qualitative, 1-3 levels, max)"
+
+metadata:
+  complexity: "HIGH"
+  criticality: "CRITICAL"
+  last_updated: "2026-03-13"

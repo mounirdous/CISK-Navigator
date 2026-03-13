@@ -1,0 +1,51 @@
+# Concept Mapping: User Management
+# User CRUD operations
+
+concept:
+  name: "User Management"
+  description: "Create, edit, delete users and manage permissions"
+  criticality: "CRITICAL"
+
+routes:
+  list: "/global-admin/users"
+  create: "/global-admin/users/create"
+  edit: "/global-admin/users/<id>/edit"
+  delete: "/global-admin/users/<id>/delete"
+
+permissions:
+  required: "is_global_admin OR is_super_admin"
+
+database:
+  main_table: "users"
+  membership_table: "user_organization_memberships"
+
+forms:
+  create_user:
+    fields:
+      - "login, email, display_name, password"
+      - "organizations (multi-select)"
+      - "Per-org: 10 permission checkboxes + is_org_admin"
+
+  edit_user:
+    additional: "Add/remove organizations, change permissions"
+    complexity: "VERY HIGH if multi-org"
+
+ui_elements:
+  permission_matrix:
+    location: "Edit user page"
+    structure: "Per-org accordion with checkboxes"
+    pain_point: "10+ checkboxes per org"
+    javascript: "toggleOrgAdminPermissions() auto-checks all"
+
+simplification:
+  proposed: "Permission templates (Admin, Editor, Viewer)"
+  benefit: "5 min → 30 sec per user"
+
+user_journey:
+  file: "role_global_admin_journey.yaml"
+  journey: "J1 (User Management)"
+
+metadata:
+  complexity: "HIGH"
+  criticality: "CRITICAL"
+  last_updated: "2026-03-13"

@@ -1,0 +1,59 @@
+# Concept Mapping: Systems
+# Systems affected by initiatives
+
+concept:
+  name: "Systems"
+  description: "Technical/business systems affected (ERP, CRM, Manufacturing, etc.)"
+  hierarchy_level: 4
+  criticality: "HIGH"
+
+database:
+  table: "systems"
+  key_fields:
+    - "name, description, display_order"
+
+  links_table: "initiative_system_links"
+  link_fields:
+    - "initiative_id"
+    - "system_id"
+    - "display_order"
+
+routes:
+  list: "/org-admin/systems"
+  create: "/org-admin/initiatives/<initiative_id>/systems/create"
+  edit: "/org-admin/systems/<id>/edit"
+  delete: "/org-admin/systems/<id>/delete"
+  create_kpi: "/org-admin/initiative-system-links/<link_id>/kpis/create"
+  rollup_config: "/org-admin/initiative-system-links/<link_id>/rollup-config"
+
+permissions:
+  required: "can_manage_systems OR is_org_admin"
+
+relationships:
+  parents: "Initiatives (many-to-many via initiative_system_links)"
+  children: "KPIs (one-to-many on the link)"
+
+critical_concept:
+  kpi_attachment: "KPIs belong to Initiative-System LINK, not System itself"
+  rationale: "Same system can be in multiple initiatives with different KPIs"
+  table: "initiative_system_links"
+
+ui_elements:
+  colors:
+    badge: "Bootstrap warning (#ffc107)"
+  icons:
+    system: "bi-gear"
+
+business_rules:
+  - "Links to multiple Initiatives"
+  - "KPIs created on Initiative-System link (not System directly)"
+  - "Same System can appear in multiple Initiatives"
+
+user_journey:
+  file: "user-journeys/role_org_admin_journey.yaml"
+  journey: "J6 (System Management)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

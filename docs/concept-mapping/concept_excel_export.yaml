@@ -1,0 +1,25 @@
+# Concept Mapping: Excel Export
+concept:
+  name: "Excel Export"
+  description: "Export workspace to Excel file"
+  criticality: "LOW"
+service:
+  file: "app/services/excel_export_service.py"
+route:
+  export: "/workspace/export"
+features:
+  - "Full workspace hierarchy"
+  - "All value types"
+  - "Current values"
+  - "Formatted cells"
+library:
+  python: "openpyxl or xlsxwriter"
+ui_elements:
+  button: "Export button in workspace"
+  icon: "bi-download"
+user_journey:
+  use_case: "Reporting, offline analysis"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

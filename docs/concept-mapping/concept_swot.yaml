@@ -1,0 +1,29 @@
+# Concept Mapping: SWOT Analysis
+concept:
+  name: "SWOT Analysis"
+  description: "Strengths, Weaknesses, Opportunities, Threats for Spaces"
+  criticality: "LOW"
+database:
+  table: "spaces"
+  fields:
+    - "swot_strengths (TEXT)"
+    - "swot_weaknesses (TEXT)"
+    - "swot_opportunities (TEXT)"
+    - "swot_threats (TEXT)"
+routes:
+  view: "/org-admin/spaces/<id>/swot"
+  edit: "/org-admin/spaces/<id>/swot/edit"
+ui_elements:
+  layout: "2x2 grid"
+  colors:
+    strengths: "Green"
+    weaknesses: "Red"
+    opportunities: "Blue"
+    threats: "Orange"
+usage:
+  frequency: "Rarely used"
+  visibility: "Low"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

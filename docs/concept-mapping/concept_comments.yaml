@@ -1,0 +1,53 @@
+# Concept Mapping: Cell Comments & Mentions
+# Collaboration features on KPI cells
+
+concept:
+  name: "Cell Comments"
+  description: "Comments and @mentions on KPI cells"
+  criticality: "MEDIUM"
+
+database:
+  comments_table: "cell_comments"
+  comments_fields:
+    - "kpi_value_type_config_id"
+    - "user_id (author)"
+    - "content (text with @mentions)"
+    - "created_at"
+
+  mentions_table: "mention_notifications"
+  mentions_fields:
+    - "cell_comment_id"
+    - "mentioned_user_id"
+    - "is_read"
+
+service:
+  file: "app/services/comment_service.py"
+  purpose: "Parse @mentions, create notifications"
+
+routes:
+  add_comment: "/workspace/kpi/<id>/value-type/<vt_id>/comments"
+
+permissions:
+  view: "can_view_comments"
+  add: "can_add_comments"
+
+ui_elements:
+  location: "KPI detail page (below contributions)"
+  features:
+    - "@mention autocomplete"
+    - "Timestamp"
+    - "Author name"
+
+business_rules:
+  - "Requires permissions"
+  - "@mentions create notifications"
+  - "Comments preserved when KPI archived"
+
+user_journey:
+  file: "role_regular_user_journey.yaml"
+  journey: "J6 (Comments)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

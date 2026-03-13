@@ -1,0 +1,60 @@
+# Concept Mapping: System Announcements
+# Broadcast messages to users
+
+concept:
+  name: "System Announcements"
+  description: "Platform-wide or org-specific announcements"
+  criticality: "MEDIUM"
+
+database:
+  main_table: "system_announcements"
+  fields:
+    - "title, message (rich text)"
+    - "type (info, warning, danger)"
+    - "start_date, end_date"
+    - "requires_acknowledgment"
+
+  targeting_tables:
+    - "announcement_target_users (specific users)"
+    - "announcement_target_organizations (specific orgs)"
+
+  acknowledgment_table: "user_announcement_acknowledgments"
+
+routes:
+  list: "/super-admin/announcements"
+  create: "/super-admin/announcements/create"
+  edit: "/super-admin/announcements/<id>/edit"
+  delete: "/super-admin/announcements/<id>/delete"
+  stats: "/super-admin/announcements/<id>/stats"
+
+  user_view: "/workspace/dashboard (auto-shown)"
+  acknowledge: "/announcements/<id>/acknowledge"
+
+permissions:
+  manage: "is_super_admin"
+  view: "All users (if targeted)"
+
+ui_elements:
+  colors:
+    info: "#0dcaf0"
+    warning: "#ffc107"
+    danger: "#dc3545"
+
+  display:
+    location: "Top of dashboard"
+    style: "Bootstrap alert"
+    dismissible: true
+
+business_rules:
+  - "Can target: all users, specific orgs, specific users"
+  - "Optional acknowledgment requirement"
+  - "Date range controls visibility"
+
+user_journey:
+  file: "role_super_admin_journey.yaml"
+  journey: "J4 (Announcements)"
+
+metadata:
+  complexity: "MEDIUM"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

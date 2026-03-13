@@ -1,0 +1,24 @@
+# Concept Mapping: System Settings
+concept:
+  name: "System Settings"
+  criticality: "HIGH"
+database:
+  table: "system_settings"
+  key_value_store: true
+routes:
+  dashboard: "/super-admin/settings"
+  security: "/super-admin/settings/security"
+  maintenance: "/super-admin/settings/maintenance"
+permissions:
+  required: "is_super_admin"
+settings:
+  - "Maintenance mode (ON/OFF)"
+  - "Password policy"
+  - "Session timeout"
+user_journey:
+  file: "role_super_admin_journey.yaml"
+  journey: "J1 (System Settings)"
+metadata:
+  complexity: "LOW"
+  criticality: "HIGH"
+  last_updated: "2026-03-13"

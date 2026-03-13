@@ -1,0 +1,25 @@
+# Concept Mapping: Rollups & Aggregation
+concept:
+  name: "Rollups"
+  description: "Aggregate KPI values up hierarchy (System→Initiative→Challenge)"
+  criticality: "MEDIUM"
+database:
+  rules_table: "rollup_rules"
+  snapshots_table: "rollup_snapshots"
+service:
+  file: "app/services/aggregation_service.py"
+routes:
+  challenge_rollup: "/org-admin/challenges/<id>/rollup-config"
+  initiative_rollup: "/org-admin/challenge-initiative-links/<id>/rollup-config"
+  system_rollup: "/org-admin/initiative-system-links/<id>/rollup-config"
+  value_type_rollup: "/org-admin/value-types/<id>/rollup-config"
+complexity:
+  user_confusion: "VERY HIGH - complex UI"
+  simplification: "Smart defaults (Cost=sum, Risk=max)"
+ui_elements:
+  template: "200+ lines"
+  pain_point: "Overwhelming configuration"
+metadata:
+  complexity: "VERY HIGH"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

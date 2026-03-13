@@ -3,7 +3,9 @@ Super Admin routes - System-wide settings and configuration
 """
 
 from datetime import datetime
+from pathlib import Path
 
+import yaml
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -1245,3 +1247,111 @@ def announcement_stats(announcement_id):
         not_acknowledged=not_acknowledged,
         stats=stats,
     )
+
+
+# Documentation System Routes
+@bp.route("/documentation")
+@super_admin_required
+def documentation():
+    """View the complete system documentation"""
+    docs_path = Path("docs")
+
+    # Get all documentation files
+    user_journeys = sorted(docs_path.glob("user-journeys/*.yaml"))
+    concept_mappings = sorted(docs_path.glob("concept-mapping/*.yaml"))
+    ui_audit = docs_path / "ui-ux" / "UI_CONSISTENCY_AUDIT.yaml"
+
+    # Parse the complete documentation index
+    index_path = docs_path / "COMPLETE_DOCUMENTATION_INDEX.md"
+    index_content = None
+    if index_path.exists():
+        with open(index_path, "r") as f:
+            index_content = f.read()
+
+    # Parse YAML files for quick stats
+    journey_stats = {}
+    for journey_file in user_journeys:
+        with open(journey_file, "r") as f:
+            data = yaml.safe_load(f)
+            role_name = data.get("role", {}).get("name", journey_file.stem)
+            journey_count = len(data.get("journeys", []))
+            journey_stats[journey_file.stem] = {"name": role_name, "count": journey_count, "file": journey_file.name}
+
+    concept_stats = {
+        "critical": len([f for f in concept_mappings if "MASTER" not in f.name]),
+        "total": len([f for f in concept_mappings if "MASTER" not in f.name]),
+    }
+
+    return render_template(
+        "super_admin/documentation/index.html",
+        user_journeys=journey_stats,
+        concept_count=concept_stats,
+        ui_audit_exists=ui_audit.exists(),
+        index_content=index_content,
+    )
+
+
+@bp.route("/documentation/journey/<role>")
+@super_admin_required
+def documentation_journey(role):
+    """View a specific user journey"""
+    docs_path = Path("docs") / "user-journeys"
+    file_path = docs_path / f"{role}.yaml"
+
+    if not file_path.exists():
+        flash(f"Journey file not found: {role}", "danger")
+        return redirect(url_for("super_admin.documentation"))
+
+    with open(file_path, "r") as f:
+        journey_data = yaml.safe_load(f)
+
+    return render_template("super_admin/documentation/journey.html", role=role, journey_data=journey_data)
+
+
+@bp.route("/documentation/concept/<concept>")
+@super_admin_required
+def documentation_concept(concept):
+    """View a specific concept mapping"""
+    docs_path = Path("docs") / "concept-mapping"
+    file_path = docs_path / f"{concept}.yaml"
+
+    if not file_path.exists():
+        flash(f"Concept file not found: {concept}", "danger")
+        return redirect(url_for("super_admin.documentation"))
+
+    with open(file_path, "r") as f:
+        concept_data = yaml.safe_load(f)
+
+    return render_template("super_admin/documentation/concept.html", concept=concept, concept_data=concept_data)
+
+
+@bp.route("/documentation/ui-audit")
+@super_admin_required
+def documentation_ui_audit():
+    """View the UI/UX consistency audit"""
+    docs_path = Path("docs") / "ui-ux" / "UI_CONSISTENCY_AUDIT.yaml"
+
+    if not docs_path.exists():
+        flash("UI/UX audit file not found", "danger")
+        return redirect(url_for("super_admin.documentation"))
+
+    with open(docs_path, "r") as f:
+        audit_data = yaml.safe_load(f)
+
+    return render_template("super_admin/documentation/ui_audit.html", audit_data=audit_data)
+
+
+@bp.route("/documentation/analysis")
+@super_admin_required
+def documentation_analysis():
+    """View simplification analysis"""
+    docs_path = Path("docs") / "SIMPLIFICATION_ANALYSIS.md"
+
+    if not docs_path.exists():
+        flash("Simplification analysis file not found", "danger")
+        return redirect(url_for("super_admin.documentation"))
+
+    with open(docs_path, "r") as f:
+        analysis_content = f.read()
+
+    return render_template("super_admin/documentation/analysis.html", analysis_content=analysis_content)

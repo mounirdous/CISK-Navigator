@@ -1,0 +1,26 @@
+# Concept Mapping: Drag & Drop Reordering
+concept:
+  name: "Drag & Drop"
+  description: "Visual reordering of elements"
+  criticality: "MEDIUM"
+locations:
+  - "Org Admin - Manage Structure (full tree)"
+  - "Value Types list"
+  - "Governance Bodies list"
+implementation:
+  library: "Sortable.js or similar"
+  field_updated: "display_order"
+routes:
+  value_types: "/org-admin/value-types/reorder"
+  governance: "/org-admin/governance-bodies/reorder"
+ui_elements:
+  handle: "Drag icon (bi-grip-vertical)"
+  visual: "Ghost element while dragging"
+user_feedback:
+  positive: "Intuitive, easy to use"
+missing_feature:
+  kpis: "Cannot drag KPIs within System (requested)"
+metadata:
+  complexity: "LOW"
+  criticality: "MEDIUM"
+  last_updated: "2026-03-13"

@@ -1,0 +1,38 @@
+# Concept Mapping: Workspace Grid
+concept:
+  name: "Workspace Grid"
+  description: "Main hierarchical KPI grid view"
+  criticality: "CRITICAL"
+template:
+  file: "app/templates/workspace/index.html"
+  complexity: "HIGH"
+route:
+  main: "/workspace"
+features:
+  - "Hierarchical tree (Space→Challenge→Initiative→System→KPI)"
+  - "Collapsible rows"
+  - "Governance body filters"
+  - "Level visibility toggles"
+  - "Show archived checkbox"
+  - "Filter presets"
+  - "Click cell → KPI detail"
+service:
+  file: "app/services/snapshot_service.py"
+  purpose: "Load latest snapshots for all KPIs"
+inconsistencies:
+  - issue: "No calculation type indicators (🔗 📐)"
+    priority: "HIGH"
+  - issue: "No consensus status badges"
+    priority: "HIGH"
+ui_elements:
+  colors:
+    cell_background: "White"
+    hover: "Light gray"
+    selected: "Light blue"
+user_journey:
+  file: "role_regular_user_journey.yaml"
+  journey: "J2.1 (Open Workspace Grid)"
+metadata:
+  complexity: "HIGH"
+  criticality: "CRITICAL"
+  last_updated: "2026-03-13"

@@ -1,0 +1,18 @@
+# Concept Mapping: Value Type Usage Service
+concept:
+  name: "Value Type Usage Analysis"
+  description: "Check where value type is used before deletion"
+  criticality: "LOW"
+service:
+  file: "app/services/value_type_usage_service.py"
+  purpose: "Prevent deletion of in-use value types"
+route:
+  check: "/org-admin/value-types/<id>/delete-check"
+displays:
+  - "X KPIs use this value type"
+  - "Y linked KPIs use this as source"
+  - "Cannot delete if in use"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

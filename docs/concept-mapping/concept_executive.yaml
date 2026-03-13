@@ -1,0 +1,14 @@
+# Concept Mapping: Executive Dashboard
+concept:
+  name: "Executive Dashboard"
+  description: "High-level executive view"
+  criticality: "LOW"
+route:
+  main: "/executive"
+status:
+  implementation: "Minimal"
+  usage: "Rarely used"
+metadata:
+  complexity: "LOW"
+  criticality: "LOW"
+  last_updated: "2026-03-13"

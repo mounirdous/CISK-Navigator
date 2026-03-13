@@ -1,0 +1,229 @@
+# Concept Mapping: KPI Snapshots
+# Maps time-series value storage for historical tracking
+# CRITICAL for charts, trends, and historical analysis
+
+concept:
+  name: "KPI Snapshots"
+  description: "Time-series storage of KPI consensus values for historical tracking"
+  introduced_version: "1.0.0"
+  last_major_refactor: "1.14.0 (added privacy columns)"
+  criticality: "HIGH"  # Historical data
+
+# What is a Snapshot?
+definition:
+  purpose: "Capture KPI consensus value at a point in time"
+  creates: "Historical timeline for charts"
+  frequency: "On-demand (not scheduled)"
+  trigger: "After contribution or value change"
+
+# Database Schema
+database:
+  table: "kpi_snapshots"
+  fields:
+    - name: "id"
+      type: "INTEGER"
+
+    - name: "kpi_value_type_config_id"
+      type: "INTEGER"
+      fk: "kpi_value_type_configs.id"
+
+    - name: "snapshot_date"
+      type: "DATE"
+      indexed: true
+      description: "Date of this snapshot"
+
+    - name: "consensus_value"
+      type: "DECIMAL(20,6)"
+      nullable: true
+      description: "Numeric value"
+
+    - name: "consensus_qualitative_level"
+      type: "INTEGER"
+      nullable: true
+      description: "Qualitative level"
+
+    - name: "consensus_status"
+      type: "VARCHAR(20)"
+      values: ["strong", "weak", "no_consensus", "no_data"]
+
+    - name: "contribution_count"
+      type: "INTEGER"
+      description: "How many contributions"
+
+    - name: "snapshot_batch_id"
+      type: "VARCHAR(50)"
+      nullable: true
+      description: "Groups snapshots taken together"
+
+    - name: "is_public"
+      type: "BOOLEAN"
+      default: true
+      added_in: "v1.14.0"
+
+    - name: "is_draft"
+      type: "BOOLEAN"
+      default: false
+      added_in: "v1.14.0"
+
+    - name: "created_at"
+      type: "TIMESTAMP"
+
+  indexes:
+    - "kpi_value_type_config_id, snapshot_date (unique)"
+    - "snapshot_date"
+    - "snapshot_batch_id"
+
+# Model
+model:
+  file: "app/models/kpi_snapshot.py"
+  class: "KPISnapshot"
+  relationships:
+    - "config (parent KPIValueTypeConfig)"
+
+# Service
+service:
+  file: "app/services/snapshot_service.py"
+  class: "SnapshotService"
+
+  methods:
+    - name: "create_snapshot(config, date)"
+      operations:
+        - "Get consensus from config"
+        - "Check if snapshot exists for date"
+        - "Update or create"
+      returns: "KPISnapshot"
+
+    - name: "get_historical_data(config, start_date, end_date)"
+      returns: "List of snapshots for chart"
+
+# When Snapshots Are Created
+triggers:
+  1:
+    event: "User submits contribution"
+    timing: "After consensus recalculation"
+    service: "SnapshotService.create_snapshot()"
+
+  2:
+    event: "Formula KPI recalculates"
+    timing: "After formula evaluation"
+
+  3:
+    event: "Linked KPI value changes"
+    timing: "When source changes (maybe)"
+    note: "Needs verification"
+
+  4:
+    event: "Manual snapshot creation"
+    route: "/snapshots/create"
+    use_case: "Batch snapshot for reporting"
+
+# Charts
+charts:
+  historical_chart:
+    location: "KPI detail page"
+    library: "Chart.js"
+    data_source: "kpi_snapshots"
+    shows:
+      - "Consensus values over time"
+      - "Target line (if set)"
+      - "Tolerance band"
+    conditional: "Only for manual KPIs (not formula/linked)"
+    file: "app/templates/workspace/kpi_cell_detail.html"
+    lines: "~900-1020"
+
+# Business Rules
+business_rules:
+  - rule: "One snapshot per date per config"
+    enforcement: "Unique constraint"
+    update: "Overwrites existing if date exists"
+
+  - rule: "Snapshots not deleted when contributions deleted"
+    rationale: "Historical record"
+    note: "Snapshot shows value at that point in time"
+
+  - rule: "Formula/linked KPIs may not have snapshots"
+    issue: "UNCLEAR - need verification"
+    question: "Are snapshots created for formula KPIs?"
+
+  - rule: "Privacy flags control visibility"
+    is_public: "true = visible to all"
+    is_draft: "true = work in progress"
+
+# Rollup Snapshots (Separate Table)
+rollup_snapshots:
+  table: "rollup_snapshots"
+  purpose: "Store aggregated values at Challenge/Initiative level"
+  created_by: "AggregationService"
+  fields:
+    - "rollup_rule_id"
+    - "snapshot_date"
+    - "aggregated_value"
+  mapping: "concept_rollups.yaml"
+
+# UI/UX
+ui:
+  chart:
+    type: "Line chart"
+    x_axis: "Date"
+    y_axis: "Value"
+    colors:
+      line: "#0d6efd"  # Blue
+      fill: "rgba(13, 110, 253, 0.2)"
+    target_line:
+      color: "#28a745"  # Green
+      style: "Solid, width: 2"
+
+  no_chart_message:
+    location: "KPI detail page"
+    text: "No historical data available"
+    shown_when: "No snapshots or formula/linked KPI"
+
+# Performance
+performance:
+  snapshot_creation: "< 50ms"
+  chart_query: "< 100ms (typical)"
+  optimization: "Indexed on date and config_id"
+
+# Edge Cases
+edge_cases:
+  - case: "Same date, multiple contributions"
+    behavior: "Snapshot updated to latest consensus"
+
+  - case: "Gap in snapshots (no data for weeks)"
+    chart: "Shows gap (not interpolated)"
+
+  - case: "Snapshot for formula KPI"
+    question: "Are these created?"
+    needs_verification: true
+
+# Testing
+testing:
+  unit_tests:
+    - "Create snapshot"
+    - "Update existing snapshot"
+    - "Query historical data"
+
+  integration_tests:
+    - "Contribution → snapshot created"
+    - "Chart displays snapshots"
+
+# Related Concepts
+related_concepts:
+  - concept: "Contributions"
+    relation: "Trigger snapshot creation"
+    file: "concept_contributions.yaml"
+
+  - concept: "Rollups"
+    relation: "Separate rollup_snapshots table"
+    file: "concept_rollups.yaml"
+
+  - concept: "Charts"
+    relation: "Snapshots feed historical charts"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "MEDIUM"
+  criticality: "HIGH"
+  stability: "STABLE"
+  test_coverage: "60%"

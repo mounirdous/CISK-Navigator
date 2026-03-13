@@ -1,0 +1,395 @@
+# Global Admin - Complete User Journey Map
+# Maps ALL cross-organization management capabilities
+# Enables simplification: "Can we reduce user creation from 5 steps to 2?"
+
+role:
+  name: "Global Administrator"
+  db_field: "users.is_global_admin"
+  access_level: "Manages users and organizations across the platform"
+  cannot_access: "System settings, SSO config (Super Admin only)"
+  typical_count: "1-5 per instance"
+
+permissions:
+  special_flag:
+    name: "is_global_admin"
+    description: "Global administrator - manages all organizations"
+    grants:
+      - "Create/edit/delete users"
+      - "Create/edit/delete organizations"
+      - "Backup/restore any organization"
+      - "View health dashboard"
+    does_not_grant:
+      - "SSO configuration (Super Admin only)"
+      - "System settings (Super Admin only)"
+      - "Announcements (Super Admin only)"
+
+# JOURNEYS: 8 major areas, 35+ steps
+journeys:
+  # J1: User Management
+  - id: "J1"
+    name: "User Management"
+    description: "Create, edit, delete users across platform"
+    importance: "CRITICAL"
+    steps:
+      - id: "J1.1"
+        name: "List Users"
+        route: "/global-admin/users"
+        method: "GET"
+        template: "global_admin/users.html"
+        file: "app/routes/global_admin.py"
+        lines: [161-168]
+        displays:
+          - "All users (all orgs)"
+          - "Filter by organization"
+          - "Search by name/email"
+          - "Create User button"
+        next_steps:
+          - action: "Create"
+            goto: "J1.2"
+          - action: "Edit"
+            goto: "J1.3"
+
+      - id: "J1.2"
+        name: "Create User"
+        route: "/global-admin/users/create"
+        methods: ["GET", "POST"]
+        template: "global_admin/create_user.html"
+        form: "CreateUserForm"
+        file: "app/routes/global_admin.py"
+        lines: [170-232]
+        complexity: "HIGH - many permissions per org"
+        fields:
+          - "login"
+          - "email"
+          - "display_name"
+          - "password (optional if SSO)"
+          - "organizations (multi-select)"
+          - "PER ORGANIZATION: 10 permission checkboxes"
+        pain_point: "Too many checkboxes if user in multiple orgs"
+        time_estimate: "3-5 minutes for multi-org user"
+        models_used:
+          - "User"
+          - "UserOrganizationMembership"
+        audit_log: true
+        next_steps:
+          - condition: "Success"
+            goto: "J1.1"
+
+      - id: "J1.3"
+        name: "Edit User"
+        route: "/global-admin/users/<user_id>/edit"
+        methods: ["GET", "POST"]
+        template: "global_admin/edit_user.html"
+        form: "EditUserForm"
+        file: "app/routes/global_admin.py"
+        lines: [234-316]
+        complexity: "VERY HIGH"
+        features:
+          - "Edit basic info"
+          - "Add/remove organizations"
+          - "Per-org permission matrix"
+          - "is_org_admin checkbox (auto-checks all permissions)"
+        javascript_features:
+          - "toggleOrgAdminPermissions() - auto-check"
+        time_estimate: "2-10 minutes"
+        next_steps:
+          - goto: "J1.1"
+
+      - id: "J1.4"
+        name: "Delete User"
+        route: "/global-admin/users/<user_id>/delete"
+        method: "POST"
+        file: "app/routes/global_admin.py"
+        lines: [318-353]
+        confirmation_required: true
+        danger: "Removes from all organizations"
+        audit_log: true
+        next_steps:
+          - goto: "J1.1"
+
+    simplification_opportunities:
+      - "Permission templates (Admin, Editor, Viewer)"
+      - "Bulk permission assignment"
+      - "Default permissions per org"
+
+  # J2: Organization Management
+  - id: "J2"
+    name: "Organization Management"
+    description: "Create, edit, archive, delete organizations"
+    importance: "CRITICAL"
+    steps:
+      - id: "J2.1"
+        name: "List Organizations"
+        route: "/global-admin/organizations"
+        method: "GET"
+        template: "global_admin/organizations.html"
+        file: "app/routes/global_admin.py"
+        lines: [355-366]
+        displays:
+          - "All active organizations"
+          - "User count per org"
+          - "Create button"
+        next_steps:
+          - action: "Create"
+            goto: "J2.2"
+          - action: "Edit"
+            goto: "J2.3"
+
+      - id: "J2.2"
+        name: "Create Organization"
+        route: "/global-admin/organizations/create"
+        methods: ["GET", "POST"]
+        template: "global_admin/organization_form.html"
+        form: "OrganizationForm"
+        file: "app/routes/global_admin.py"
+        lines: [368-435]
+        fields:
+          - "name"
+          - "description"
+          - "assign_admin (select user)"
+        operations:
+          - "Create organization"
+          - "Assign first admin"
+        time_estimate: "1 minute"
+        models_used: ["Organization", "UserOrganizationMembership"]
+        audit_log: true
+        next_steps:
+          - condition: "Success"
+            goto: "J2.1"
+          - condition: "Created"
+            note: "Org admin can now onboard"
+
+      - id: "J2.3"
+        name: "Edit Organization"
+        route: "/global-admin/organizations/<org_id>/edit"
+        methods: ["GET", "POST"]
+        template: "global_admin/organization_form.html"
+        file: "app/routes/global_admin.py"
+        lines: [437-503]
+        fields:
+          - "name"
+          - "description"
+          - "is_active"
+        next_steps:
+          - goto: "J2.1"
+
+      - id: "J2.4"
+        name: "Delete Preview"
+        route: "/global-admin/organizations/<org_id>/delete-preview"
+        method: "GET"
+        file: "app/routes/global_admin.py"
+        lines: [505-525]
+        displays:
+          - "Impact analysis"
+          - "X users will lose access"
+          - "Y spaces, Z KPIs will be deleted"
+        next_steps:
+          - action: "Confirm delete"
+            goto: "J2.6"
+          - action: "Archive instead"
+            goto: "J2.5"
+
+      - id: "J2.5"
+        name: "Archive Organization"
+        route: "/global-admin/organizations/<org_id>/archive"
+        method: "POST"
+        file: "app/routes/global_admin.py"
+        lines: [527-546]
+        description: "Soft delete - can be restored"
+        sets: "is_active = False, deleted_at = now"
+        next_steps:
+          - goto: "J2.1"
+
+      - id: "J2.6"
+        name: "Delete Organization"
+        route: "/global-admin/organizations/<org_id>/delete"
+        method: "POST"
+        file: "app/routes/global_admin.py"
+        lines: [580-612]
+        danger: "PERMANENT - cannot be undone"
+        confirmation_required: "Must type org name"
+        audit_log: true
+        next_steps:
+          - goto: "J2.1"
+
+      - id: "J2.7"
+        name: "View Archived Organizations"
+        route: "/global-admin/organizations/archived"
+        method: "GET"
+        template: "global_admin/organizations_archived.html"
+        file: "app/routes/global_admin.py"
+        lines: [548-556]
+        displays: "Soft-deleted organizations"
+        next_steps:
+          - action: "Restore"
+            goto: "J2.8"
+
+      - id: "J2.8"
+        name: "Restore Organization"
+        route: "/global-admin/organizations/<org_id>/restore"
+        method: "POST"
+        file: "app/routes/global_admin.py"
+        lines: [558-578]
+        sets: "is_active = True, deleted_at = NULL"
+        next_steps:
+          - goto: "J2.1"
+
+      - id: "J2.9"
+        name: "Clone Organization"
+        route: "/global-admin/organizations/<org_id>/clone"
+        methods: ["GET", "POST"]
+        file: "app/routes/global_admin.py"
+        lines: [614-644]
+        service_used: "OrganizationCloneService"
+        operations:
+          - "Backup source org"
+          - "Create new org"
+          - "Restore backup to new org"
+        time_estimate: "1-2 minutes"
+        use_case: "Create test environment"
+        next_steps:
+          - goto: "J2.1"
+
+      - id: "J2.10"
+        name: "Clear Comments"
+        route: "/global-admin/organizations/<org_id>/clear-comments"
+        method: "POST"
+        file: "app/routes/global_admin.py"
+        lines: [928-948]
+        description: "Delete all comments in org"
+        danger: "Irreversible"
+        use_case: "Data cleanup"
+        next_steps:
+          - goto: "J2.1"
+
+  # J3: Health Dashboard
+  - id: "J3"
+    name: "Health Dashboard"
+    description: "Monitor platform health and statistics"
+    steps:
+      - id: "J3.1"
+        name: "View Health Dashboard"
+        route: "/global-admin/"
+        route_alt: "/global-admin/health-dashboard"
+        method: "GET"
+        template: "global_admin/health_dashboard.html"
+        file: "app/routes/global_admin.py"
+        lines: [68-159]
+        displays:
+          statistics:
+            - "Total users"
+            - "Total organizations"
+            - "Total KPIs"
+            - "Total contributions"
+          per_organization:
+            - "User count"
+            - "KPI count"
+            - "Contribution count"
+            - "Last activity"
+          health_indicators:
+            - "Organizations with no activity (last 30 days)"
+            - "Users with no contributions"
+            - "KPIs with no data"
+        time_estimate: "View in seconds"
+        use_case: "System monitoring"
+
+  # J4: Backup/Restore
+  - id: "J4"
+    name: "Cross-Organization Backup/Restore"
+    description: "Backup/restore any organization"
+    mapping: "concept_backup_restore.yaml"
+    steps:
+      - id: "J4.1"
+        name: "Backup/Restore Dashboard"
+        route: "/global-admin/backup-restore"
+        method: "GET"
+        template: "global_admin/backup_restore.html"
+        file: "app/routes/global_admin.py"
+        lines: [646-694]
+        displays:
+          - "List of organizations"
+          - "Backup button per org"
+          - "Restore button"
+        next_steps:
+          - action: "Backup"
+            goto: "J4.2"
+          - action: "Restore"
+            goto: "J4.3"
+
+      - id: "J4.2"
+        name: "Create Backup"
+        route: "/global-admin/backup-restore/create/<org_id>"
+        method: "GET"
+        file: "app/routes/global_admin.py"
+        lines: [696-741]
+        service_used: "FullBackupService"
+        operations:
+          - "Generate JSON backup"
+          - "Download file"
+        time_estimate: "10-60 seconds"
+        next_steps:
+          - goto: "J4.1"
+
+      - id: "J4.3"
+        name: "Upload Restore File"
+        route: "/global-admin/backup-restore/restore"
+        method: "POST"
+        file: "app/routes/global_admin.py"
+        lines: [743-836]
+        operations:
+          - "Upload JSON backup"
+          - "Parse and validate"
+          - "Show governance body mapping interface"
+        next_steps:
+          - goto: "J4.4"
+
+      - id: "J4.4"
+        name: "Map Governance Bodies"
+        route: "/global-admin/backup-restore/governance-mapping"
+        methods: ["GET", "POST"]
+        template: "global_admin/governance_mapping.html"
+        file: "app/routes/global_admin.py"
+        lines: [838-926]
+        description: "Map backup GBs to existing GBs"
+        complexity: "MEDIUM"
+        next_steps:
+          - action: "Execute restore"
+            service_used: "FullRestoreService"
+            goto: "J4.1"
+
+# Total Metrics
+stats:
+  total_journeys: 4
+  total_steps: 35+
+  routes_accessible: 24
+  models_managed: 3
+  services_used: 4
+  most_critical_journey: "J2 (Organization Management)"
+
+# Simplification Opportunities
+simplification_analysis:
+  user_creation:
+    current_steps: "Fill 10+ permission checkboxes per org"
+    proposed: "Permission templates (Admin, Editor, Viewer)"
+    time_saved: "2-3 minutes per user"
+
+  organization_creation:
+    current_steps: 1
+    status: "Already simple ✓"
+
+  backup_restore:
+    current_steps: 4
+    complexity: "Governance mapping is confusing"
+    proposed: "Auto-suggest mappings"
+
+# Complexity Rating
+complexity_rating:
+  overall: "MEDIUM"
+  most_complex_journey: "J1.3 (Edit User) - permission matrix"
+  simplest_journey: "J3.1 (Health Dashboard) - read-only"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  total_routes_mapped: 24
+  simplification_priority: "User permission management"

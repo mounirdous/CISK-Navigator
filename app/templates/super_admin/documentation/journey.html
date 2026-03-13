@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}{{ journey_data.role.name }} Journey{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-route text-primary me-2"></i>
+                        {{ journey_data.role.name }}
+                    </h1>
+                    <p class="text-muted mb-0">{{ journey_data.role.description|default('Complete user journey mapping') }}</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('super_admin.documentation') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role Info Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Access Level:</strong>
+                            <p class="mb-0">{{ journey_data.role.access_level }}</p>
+                        </div>
+                        {% if journey_data.role.db_field %}
+                        <div class="col-md-3">
+                            <strong>Database Field:</strong>
+                            <p class="mb-0"><code>{{ journey_data.role.db_field }}</code></p>
+                        </div>
+                        {% endif %}
+                        {% if journey_data.role.typical_count %}
+                        <div class="col-md-3">
+                            <strong>Typical Count:</strong>
+                            <p class="mb-0">{{ journey_data.role.typical_count }}</p>
+                        </div>
+                        {% endif %}
+                        {% if journey_data.role.bypass %}
+                        <div class="col-md-3">
+                            <strong>Special Abilities:</strong>
+                            <p class="mb-0 text-danger">{{ journey_data.role.bypass }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Permissions -->
+    {% if journey_data.permissions %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Permissions
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if journey_data.permissions.special_flag %}
+                        <div class="alert alert-info mb-3">
+                            <strong>{{ journey_data.permissions.special_flag.name }}:</strong>
+                            {{ journey_data.permissions.special_flag.description }}
+                            {% if journey_data.permissions.special_flag.note %}
+                            <br><small>{{ journey_data.permissions.special_flag.note }}</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <div class="row">
+                        {% for perm in journey_data.permissions if perm.name is defined %}
+                        <div class="col-md-4 mb-2">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-check-circle text-success me-2 mt-1"></i>
+                                <div>
+                                    <strong>{{ perm.name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ perm.description }}</small>
+                                    {% if perm.default is defined %}
+                                    <br><span class="badge bg-secondary">Default: {{ perm.default }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Journeys -->
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">User Journeys ({{ journey_data.journeys|length }})</h3>
+
+            {% for journey in journey_data.journeys %}
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-map-marked-alt me-2"></i>
+                            {{ journey.id }}: {{ journey.name }}
+                        </h5>
+                        {% if journey.importance %}
+                        <span class="badge
+                            {% if journey.importance == 'CRITICAL' %}bg-danger
+                            {% elif journey.importance == 'HIGH' %}bg-warning
+                            {% else %}bg-secondary{% endif %}">
+                            {{ journey.importance }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if journey.description %}
+                    <p class="text-muted">{{ journey.description }}</p>
+                    {% endif %}
+
+                    {% if journey.entry_point %}
+                    <p><strong>Entry Point:</strong> {{ journey.entry_point }}</p>
+                    {% endif %}
+
+                    {% if journey.pain_points %}
+                    <div class="alert alert-warning mb-3">
+                        <strong><i class="fas fa-exclamation-triangle me-2"></i>Pain Points:</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for pain in journey.pain_points %}
+                            <li>{{ pain }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Journey Steps -->
+                    {% if journey.steps %}
+                    <h6 class="mt-3 mb-3">Steps ({{ journey.steps|length }}):</h6>
+                    <div class="accordion" id="accordion{{ journey.id }}">
+                        {% for step in journey.steps %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#step{{ journey.id }}{{ step.id|replace('.', '_') }}">
+                                    <strong>{{ step.id }}</strong>: {{ step.name }}
+                                    {% if step.route %}
+                                    <code class="ms-2 text-primary">{{ step.route }}</code>
+                                    {% endif %}
+                                </button>
+                            </h2>
+                            <div id="step{{ journey.id }}{{ step.id|replace('.', '_') }}" class="accordion-collapse collapse" data-bs-parent="#accordion{{ journey.id }}">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        {% if step.template %}
+                                        <div class="col-md-6">
+                                            <strong>Template:</strong>
+                                            <p><code>{{ step.template }}</code></p>
+                                        </div>
+                                        {% endif %}
+                                        {% if step.method %}
+                                        <div class="col-md-6">
+                                            <strong>HTTP Method:</strong>
+                                            <p><span class="badge bg-info">{{ step.method }}</span></p>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if step.code_files or step.file %}
+                                    <div class="mt-2">
+                                        <strong>Code Files:</strong>
+                                        <ul>
+                                            {% for file in step.code_files %}
+                                            <li><code>{{ file }}</code></li>
+                                            {% endfor %}
+                                            {% if step.file %}
+                                            <li><code>{{ step.file }}</code>
+                                                {% if step.lines %} (lines {{ step.lines[0] }}-{{ step.lines[1] }}){% endif %}
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if step.models_used %}
+                                    <div class="mt-2">
+                                        <strong>Models Used:</strong>
+                                        <p>
+                                            {% for model in step.models_used %}
+                                            <span class="badge bg-secondary me-1">{{ model }}</span>
+                                            {% endfor %}
+                                        </p>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if step.displays %}
+                                    <div class="mt-2">
+                                        <strong>Displays:</strong>
+                                        <ul>
+                                            {% for display in step.displays %}
+                                            <li>{{ display }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if step.next_steps %}
+                                    <div class="mt-2">
+                                        <strong>Next Steps:</strong>
+                                        <ul>
+                                            {% for next_step in step.next_steps %}
+                                            <li>
+                                                {% if next_step.condition %}
+                                                <strong>If</strong> {{ next_step.condition }} →
+                                                {% elif next_step.action %}
+                                                <strong>Action:</strong> {{ next_step.action }} →
+                                                {% endif %}
+                                                {% if next_step.goto %}
+                                                <code>{{ next_step.goto }}</code>
+                                                {% elif next_step.end %}
+                                                <span class="badge bg-success">END</span>
+                                                {% endif %}
+                                            </li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if step.time_estimate %}
+                                    <div class="mt-2">
+                                        <strong>Time Estimate:</strong>
+                                        <span class="badge bg-warning">{{ step.time_estimate }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if journey.simplification_opportunity %}
+                    <div class="alert alert-success mt-3">
+                        <strong><i class="fas fa-lightbulb me-2"></i>Simplification Opportunity:</strong>
+                        <p class="mb-0">{{ journey.simplification_opportunity }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

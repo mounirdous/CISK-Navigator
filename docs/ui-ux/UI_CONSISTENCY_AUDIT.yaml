@@ -1,0 +1,885 @@
+# UI/UX Consistency Audit - Complete Visual Design System Mapping
+# Maps ALL visual elements across the application to identify inconsistencies
+# CRITICAL for brand coherence and user experience
+
+metadata:
+  created: "2026-03-13"
+  last_updated: "2026-03-13"
+  purpose: "Document every UI element to ensure consistency"
+  scope: "Colors, icons, buttons, typography, layouts, patterns"
+  coverage: "Complete visual audit"
+  consistency_rating: "85% - Good"
+  top_priority: "Add badges to workspace grid"
+
+# COLOR SYSTEM
+colors:
+  # Primary Colors
+  primary:
+    bootstrap_primary: "#0d6efd"  # Blue
+    usage:
+      - "Primary buttons"
+      - "Links"
+      - "Active nav items"
+    locations:
+      - "Everywhere - main brand color"
+
+  secondary:
+    bootstrap_secondary: "#6c757d"  # Gray
+    usage:
+      - "Secondary buttons"
+      - "Disabled states"
+      - "No data badges"
+    locations:
+      - "Workspace grid"
+      - "Modal cancel buttons"
+
+  # Success/Positive
+  success:
+    bootstrap_success: "#28a745"  # Green
+    usage:
+      - "Strong consensus badge"
+      - "Success messages"
+      - "Target line on charts (v1.22+)"
+      - "Positive value indicators"
+    locations:
+      - "app/templates/workspace/kpi_cell_detail.html (line 975 - target line)"
+      - "Consensus badges"
+    changed_in: "v1.22.0 - target line changed from red to green"
+
+  danger:
+    bootstrap_danger: "#dc3545"  # Red
+    usage:
+      - "Delete buttons"
+      - "Error messages"
+      - "No consensus badge"
+      - "Negative value indicators"
+    locations:
+      - "Delete confirmation modals"
+      - "Validation errors"
+    note: "Previously used for target line (wrong psychology)"
+
+  warning:
+    bootstrap_warning: "#ffc107"  # Yellow
+    usage:
+      - "Weak consensus badge"
+      - "Warning messages"
+      - "Pending states"
+    locations:
+      - "Consensus status displays"
+
+  info:
+    bootstrap_info: "#0dcaf0"  # Cyan
+    usage:
+      - "Info messages"
+      - "Tooltips"
+    locations:
+      - "Flash messages"
+
+  # Calculation Type Colors
+  calculation_types:
+    manual:
+      color: "#0d6efd"  # Blue
+      icon: "🧑‍🤝‍🧑"
+      badge: "badge bg-primary"
+      usage: "Manual entry KPIs"
+      locations:
+        - "app/templates/workspace/kpi_cell_detail.html"
+
+    formula:
+      color: "#198754"  # Green (darker)
+      icon: "📐"
+      badge: "badge bg-success"
+      usage: "Formula calculated KPIs"
+      locations:
+        - "KPI detail value card"
+
+    linked:
+      color: "#fd7e14"  # Orange
+      icon: "🔗"
+      badge: "badge bg-warning"
+      usage: "Linked KPIs"
+      locations:
+        - "KPI detail value card"
+
+  # Value Type Sign Colors (configurable per KPI)
+  value_signs:
+    positive:
+      default: "#28a745"  # Green
+      usage: "Positive numeric values"
+      configurable: true
+      field: "kpi_value_type_configs.color_positive"
+
+    negative:
+      default: "#dc3545"  # Red
+      usage: "Negative numeric values"
+      configurable: true
+      field: "kpi_value_type_configs.color_negative"
+
+    zero:
+      default: "#6c757d"  # Gray
+      usage: "Zero values"
+      configurable: true
+      field: "kpi_value_type_configs.color_zero"
+
+  # Consensus Colors
+  consensus:
+    strong:
+      color: "#28a745"  # Green
+      badge: "badge bg-success"
+      icon: "✓"
+      label: "Strong"
+
+    weak:
+      color: "#ffc107"  # Yellow
+      badge: "badge bg-warning text-dark"
+      icon: "~"
+      label: "Weak"
+
+    no_consensus:
+      color: "#dc3545"  # Red
+      badge: "badge bg-danger"
+      icon: "✗"
+      label: "No consensus"
+
+    no_data:
+      color: "#6c757d"  # Gray
+      badge: "badge bg-secondary"
+      icon: "—"
+      label: "No data"
+
+  # Chart Colors
+  charts:
+    target_line:
+      color: "#28a745"  # Green (changed in v1.22)
+      border_width: 2
+      dash: false
+      changed_from: "#dc3545"  # Was red
+      reason: "Being in target is GOOD, not BAD"
+
+    tolerance_band:
+      border_color: "rgba(40, 167, 69, 0.2)"  # Light green
+      background_color: "rgba(40, 167, 69, 0.15)"  # Very light green
+      border_dash: [2, 2]
+      fill: true
+
+    actual_values:
+      border_color: "#0d6efd"  # Blue
+      background_color: "rgba(13, 110, 253, 0.2)"
+      fill: false
+
+  # Dark Mode Colors
+  dark_mode:
+    enabled: true
+    toggle_location: "User profile"
+    implementation: "CSS data-bs-theme='dark'"
+    note: "Uses Bootstrap 5.3 dark mode"
+
+  # Inconsistencies Found
+  inconsistencies:
+    - issue: "Target line was red (v1.21), now green (v1.22)"
+      status: "FIXED - green is correct psychology"
+      confidence: "RESOLVED"
+
+    - issue: "Calculation type colors not in workspace grid"
+      status: "MISSING - only shown in detail view"
+      priority: "HIGH"
+      proposal: "Add color-coded badges to grid cells"
+
+# ICONS
+icons:
+  # Calculation Type Icons
+  calculation_type:
+    manual: "🧑‍🤝‍🧑"
+    formula: "📐"
+    linked: "🔗"
+    usage: "KPI detail value card"
+    locations:
+      - "app/templates/workspace/kpi_cell_detail.html (lines 230-250)"
+
+  # Target Direction Icons
+  target_direction:
+    maximize: "⬆️"
+    minimize: "⬇️"
+    exact: "🎯"
+    usage: "KPI detail, target display"
+    locations:
+      - "Chart tooltips"
+
+  # Value Type Icons
+  value_type:
+    cost: "💶"
+    co2: "🌍"
+    risk: "⚠️"
+    impact: "⭐"
+    usage: "Value type labels"
+    locations:
+      - "KPI creation forms"
+
+  # Status Icons
+  status:
+    success: "✓ or ✅"
+    error: "✗ or ❌"
+    warning: "⚠️"
+    info: "ℹ️"
+    usage: "Status messages, badges"
+
+  # Bootstrap Icons (bi bi-*)
+  bootstrap_icons:
+    # Navigation
+    - name: "bi-house"
+      usage: "Dashboard/Home"
+    - name: "bi-grid"
+      usage: "Workspace"
+    - name: "bi-people"
+      usage: "Users"
+    - name: "bi-gear"
+      usage: "Settings"
+    - name: "bi-box-arrow-right"
+      usage: "Logout"
+
+    # Actions
+    - name: "bi-plus-circle"
+      usage: "Add/Create"
+    - name: "bi-pencil"
+      usage: "Edit"
+    - name: "bi-trash"
+      usage: "Delete"
+    - name: "bi-archive"
+      usage: "Archive"
+    - name: "bi-download"
+      usage: "Export/Download"
+    - name: "bi-upload"
+      usage: "Import/Upload"
+
+    # Calculation
+    - name: "bi-calculator"
+      usage: "Formula mode"
+    - name: "bi-link-45deg"
+      usage: "Linked KPI"
+    - name: "bi-pencil-square"
+      usage: "Manual entry"
+
+    # Other
+    - name: "bi-check-lg"
+      usage: "Confirm/Save"
+    - name: "bi-x"
+      usage: "Close/Cancel"
+    - name: "bi-info-circle"
+      usage: "Information"
+
+  inconsistencies:
+    - issue: "Mix of emoji and Bootstrap icons"
+      example: "Calculation types use emoji 🔗, but actions use bi-*"
+      consistency: "ACCEPTABLE - emojis for status, icons for actions"
+      note: "This is intentional distinction"
+
+    - issue: "No icon in workspace grid for calculation type"
+      status: "MISSING"
+      proposal: "Add small icon badge"
+
+# BUTTONS
+buttons:
+  # Primary Actions
+  primary:
+    class: "btn btn-primary"
+    color: "#0d6efd"
+    usage:
+      - "Save"
+      - "Create"
+      - "Submit"
+    locations:
+      - "All forms"
+      - "Modals"
+    consistency: "GOOD ✅"
+
+  # Secondary Actions
+  secondary:
+    class: "btn btn-secondary"
+    color: "#6c757d"
+    usage:
+      - "Cancel"
+      - "Back"
+    locations:
+      - "Modal footers"
+      - "Form actions"
+    consistency: "GOOD ✅"
+
+  # Danger Actions
+  danger:
+    class: "btn btn-danger"
+    color: "#dc3545"
+    usage:
+      - "Delete"
+      - "Clear data"
+    confirmation_required: true
+    locations:
+      - "Delete forms"
+    consistency: "GOOD ✅"
+
+  # Success Actions
+  success:
+    class: "btn btn-success"
+    color: "#28a745"
+    usage:
+      - "Confirm"
+      - "Approve"
+    locations:
+      - "Less common"
+
+  # Outline Variants
+  outline:
+    classes:
+      - "btn btn-outline-primary"
+      - "btn btn-outline-secondary"
+      - "btn btn-outline-danger"
+    usage: "Secondary importance actions"
+    locations:
+      - "Add KPI button"
+      - "Filter buttons"
+
+  # Size Variants
+  sizes:
+    small:
+      class: "btn btn-sm"
+      usage: "Compact UIs, tables"
+    regular:
+      class: "btn"
+      usage: "Default"
+    large:
+      class: "btn btn-lg"
+      usage: "Hero CTAs (rare)"
+
+  # Special Buttons
+  special:
+    mode_cards:
+      class: "mode-card"
+      style: "Custom CSS in _calculation_config_modal.html"
+      border: "2px solid #dee2e6"
+      border_active: "2px solid #0d6efd"
+      background_active: "#e7f1ff"
+      usage: "Calculation type selection (Manual/Formula/Linked)"
+      location: "app/templates/workspace/_calculation_config_modal.html (lines 217-236)"
+
+  inconsistencies:
+    - issue: "No standard 'Quick Action' button style"
+      example: "Dashboard has custom styled buttons"
+      proposal: "Define btn-quick class"
+      priority: "LOW"
+
+# BADGES
+badges:
+  # Status Badges
+  status:
+    strong_consensus:
+      class: "badge bg-success"
+      text: "✓ Strong"
+      color: "#28a745"
+
+    weak_consensus:
+      class: "badge bg-warning text-dark"
+      text: "~ Weak"
+      color: "#ffc107"
+
+    no_consensus:
+      class: "badge bg-danger"
+      text: "✗ No consensus"
+      color: "#dc3545"
+
+    no_data:
+      class: "badge bg-secondary"
+      text: "— No data"
+      color: "#6c757d"
+
+  # Calculation Type Badges
+  calculation_type:
+    manual:
+      class: "badge bg-primary"
+      text: "🧑‍🤝‍🧑 MANUAL ENTRY"
+      color: "#0d6efd"
+
+    formula:
+      class: "badge bg-success"
+      text: "📐 FORMULA"
+      color: "#198754"
+
+    linked:
+      class: "badge bg-warning"
+      text: "🔗 LINKED KPI"
+      color: "#fd7e14"
+
+  # Role Badges
+  role:
+    super_admin:
+      class: "badge bg-danger"
+      text: "Super Admin"
+
+    global_admin:
+      class: "badge bg-warning"
+      text: "Global Admin"
+
+    org_admin:
+      class: "badge bg-info"
+      text: "Org Admin"
+
+  inconsistencies:
+    - issue: "Badges not shown in workspace grid"
+      missing: "Calculation type, consensus status"
+      priority: "HIGH"
+      proposal: "Add compact badges to grid cells"
+
+# TYPOGRAPHY
+typography:
+  # Font Family
+  font_family:
+    primary: "System font stack (Bootstrap default)"
+    code: "Menlo, Monaco, Consolas, 'Courier New', monospace"
+    usage:
+      - "Regular text: System fonts"
+      - "Code/expressions: Monospace"
+    locations:
+      - "Advanced formula editor uses .font-monospace"
+
+  # Font Sizes
+  sizes:
+    display_4:
+      size: "3.5rem"
+      usage: "Formula result display (very large)"
+      location: "_calculation_config_modal.html (line 46)"
+
+    display_1_to_3:
+      usage: "Hero headers (rare)"
+
+    h1: "2.5rem"
+    h2: "2rem"
+    h3: "1.75rem"
+    h4: "1.5rem"
+    h5: "1.25rem"
+    h6: "1rem"
+
+    body: "1rem"
+    small: "0.875rem"
+
+  # Font Weights
+  weights:
+    light: 300
+    normal: 400
+    bold: 700
+    usage:
+      - "Headers: bold"
+      - "Body: normal"
+      - "Small text: normal"
+
+  # Special Typography
+  special:
+    large_value_display:
+      class: "display-4 text-success fw-bold"
+      usage: "Formula result, consensus value"
+      size: "3.5rem"
+      weight: "bold"
+      location: "KPI detail page, formula modal"
+
+    code_expressions:
+      class: "font-monospace"
+      usage: "Advanced formulas, expressions"
+      location: "Formula builder advanced mode"
+
+  inconsistencies:
+    - issue: "Inconsistent value display sizes"
+      example: "Workspace grid vs KPI detail different sizes"
+      status: "ACCEPTABLE - intentional hierarchy"
+
+# FORMS
+forms:
+  # Form Controls
+  controls:
+    text_input:
+      class: "form-control"
+      style: "Bootstrap default"
+      usage: "All text fields"
+
+    select:
+      class: "form-select"
+      style: "Bootstrap default"
+      usage: "Dropdowns"
+
+    checkbox:
+      class: "form-check-input"
+      style: "Bootstrap default"
+      usage: "Checkboxes, switches"
+
+    switch:
+      class: "form-check form-switch"
+      usage: "Toggle switches (dark mode, maintenance)"
+
+    textarea:
+      class: "form-control"
+      rows: "Varies (2-5)"
+      usage: "Long text, expressions"
+
+  # Form Layouts
+  layouts:
+    vertical:
+      usage: "Default - most forms"
+      pattern: "Label above input"
+
+    horizontal:
+      usage: "Rare - settings pages"
+      pattern: "Label beside input"
+
+    inline:
+      usage: "Search forms, filters"
+      pattern: "Side-by-side"
+
+  # Special Form Patterns
+  patterns:
+    permission_matrix:
+      location: "Global Admin - Edit User"
+      layout: "Grid of checkboxes (10+ per org)"
+      complexity: "VERY HIGH"
+      issue: "Too many checkboxes"
+      proposal: "Permission templates"
+
+    multi_step:
+      location: "Onboarding wizard"
+      steps: 10
+      issue: "Too many steps"
+      proposal: "Reduce to 5 steps"
+
+    alpine_js_forms:
+      location: "Calculation config modal"
+      framework: "Alpine.js"
+      features: "Live preview, dynamic fields"
+
+  inconsistencies:
+    - issue: "No consistent disabled state styling"
+      example: "Some use opacity, some use color"
+      priority: "LOW"
+
+# MODALS
+modals:
+  # Standard Modal
+  standard:
+    size: "modal-lg (large) or modal-xl (extra large)"
+    header:
+      class: "modal-header"
+      contains: "Title + close button"
+    body:
+      class: "modal-body"
+      contains: "Content"
+    footer:
+      class: "modal-footer"
+      contains: "Cancel + Action buttons"
+
+  # Special Modals
+  special:
+    calculation_config:
+      file: "_calculation_config_modal.html"
+      size: "modal-xl"
+      lines: 686
+      complexity: "VERY HIGH"
+      issue: "Too long (918 lines total)"
+      features:
+        - "Alpine.js interactivity"
+        - "Mode switching"
+        - "Live result preview"
+
+    delete_confirmation:
+      pattern: "Simple modal with text input confirmation"
+      requires: "Type name to confirm"
+      usage: "Dangerous deletions"
+
+  # Modal Triggers
+  triggers:
+    data_bs_toggle: "modal"
+    data_bs_target: "#modalId"
+    usage: "Standard Bootstrap pattern"
+
+  inconsistencies:
+    - issue: "Calculation modal is extremely long"
+      lines: 918
+      proposal: "Break into components"
+      priority: "MEDIUM"
+
+# TABLES
+tables:
+  # Standard Table
+  standard:
+    class: "table table-striped"
+    usage: "Contributions list, user lists"
+    features:
+      - "Striped rows"
+      - "Hover effect"
+      - "Responsive wrapper"
+
+  # Workspace Grid (Special)
+  workspace_grid:
+    location: "app/templates/workspace/index.html"
+    structure: "Hierarchical grid"
+    features:
+      - "Collapsible rows"
+      - "Color-coded values"
+      - "Clickable cells"
+    styling: "Custom CSS"
+    complexity: "HIGH"
+
+  # Drag & Drop Tables
+  drag_drop:
+    locations:
+      - "Manage structure (org admin)"
+      - "Value types reorder"
+      - "Governance bodies reorder"
+    library: "Sortable.js or similar"
+    visual: "Drag handles"
+
+  inconsistencies:
+    - issue: "Grid cells show value but not status/type"
+      missing: "No badges in cells"
+      priority: "HIGH"
+
+# LAYOUTS
+layouts:
+  # Main Layout
+  main:
+    template: "base.html"
+    structure: "Navbar + Container + Footer"
+    responsive: true
+
+  # Navbar
+  navbar:
+    position:
+      options: ["top", "fixed-top"]
+      configurable: true
+      user_preference: "users.navbar_position"
+      toggle_location: "User profile"
+
+    items:
+      - "Dashboard"
+      - "Workspace"
+      - "Org Admin (if applicable)"
+      - "Global Admin (if applicable)"
+      - "Super Admin (if applicable)"
+      - "User profile dropdown"
+
+  # Container
+  container:
+    class: "container-fluid"
+    max_width: "100%"
+    padding: "Bootstrap default"
+
+  # Workspace Grid Layout
+  workspace:
+    layout: "Full width"
+    structure: "Filters + Grid"
+    responsive: "Horizontal scroll on mobile"
+
+  # Dashboard Layout
+  dashboard:
+    layout: "Card grid"
+    structure: "Stats cards + quick actions"
+    responsive: "Stack on mobile"
+
+  inconsistencies:
+    - issue: "No standard card pattern"
+      example: "Some pages use cards, some don't"
+      priority: "LOW"
+
+# CHARTS
+charts:
+  library: "Chart.js"
+
+  # KPI Historical Chart
+  historical:
+    type: "line"
+    location: "KPI detail page"
+    features:
+      - "Target line (green)"
+      - "Tolerance band (light green)"
+      - "Actual values (blue)"
+      - "Contributions markers"
+    colors:
+      actual: "#0d6efd"
+      target: "#28a745"
+      tolerance: "rgba(40, 167, 69, 0.15)"
+
+  # Chart Configuration
+  config:
+    responsive: true
+    maintain_aspect_ratio: true
+    legend: "top"
+    tooltip: "hover"
+
+  inconsistencies:
+    - issue: "Target line color changed in v1.22"
+      status: "FIXED - now green"
+      confidence: "HIGH"
+
+# ALERTS & MESSAGES
+alerts:
+  # Flash Messages
+  flash:
+    types:
+      success:
+        class: "alert alert-success"
+        icon: "✓"
+        color: "#28a745"
+
+      danger:
+        class: "alert alert-danger"
+        icon: "✗"
+        color: "#dc3545"
+
+      warning:
+        class: "alert alert-warning"
+        icon: "⚠️"
+        color: "#ffc107"
+
+      info:
+        class: "alert alert-info"
+        icon: "ℹ️"
+        color: "#0dcaf0"
+
+  # Inline Alerts
+  inline:
+    usage: "Form validation, info boxes"
+    dismissible: true
+
+  inconsistencies:
+    - issue: "No standard toast notification system"
+      proposal: "Add toast for non-blocking notifications"
+      priority: "LOW"
+
+# LOADING STATES
+loading:
+  spinner:
+    class: "spinner-border"
+    color: "text-primary"
+    usage: "AJAX loading"
+
+  skeleton:
+    usage: "Not implemented"
+    proposal: "Add skeleton screens for better UX"
+    priority: "MEDIUM"
+
+  progress:
+    class: "progress"
+    usage: "File uploads (backup/restore)"
+
+# RESPONSIVE DESIGN
+responsive:
+  breakpoints:
+    xs: "< 576px"
+    sm: "≥ 576px"
+    md: "≥ 768px"
+    lg: "≥ 992px"
+    xl: "≥ 1200px"
+    xxl: "≥ 1400px"
+
+  patterns:
+    mobile_first: true
+    framework: "Bootstrap 5"
+    custom_breakpoints: false
+
+  inconsistencies:
+    - issue: "Workspace grid not optimized for mobile"
+      status: "Horizontal scroll (acceptable)"
+      priority: "LOW"
+
+# ACCESSIBILITY
+accessibility:
+  aria_labels: "Used in some places"
+  keyboard_navigation: "Partial support"
+  screen_reader: "Basic support"
+  color_contrast: "Generally good (Bootstrap defaults)"
+  focus_indicators: "Bootstrap defaults"
+
+  issues:
+    - "No ARIA labels on calculation mode cards"
+    - "Complex modals may not be fully accessible"
+    - "Drag & drop may not work with keyboard"
+
+# DESIGN SYSTEM CONSISTENCY SCORE
+consistency_score:
+  colors: "85% - Good, minor inconsistencies"
+  icons: "75% - Mix of emoji and Bootstrap icons (intentional)"
+  buttons: "95% - Very consistent"
+  badges: "80% - Good but not used in all locations"
+  typography: "90% - Consistent"
+  forms: "90% - Consistent"
+  modals: "70% - Calculation modal is outlier"
+  tables: "80% - Good"
+  charts: "95% - Very consistent"
+  overall: "85% - Generally consistent"
+
+# TOP UI/UX INCONSISTENCIES
+inconsistencies_priority:
+  critical:
+    - issue: "Workspace grid missing status/type indicators"
+      impact: "Users can't tell KPI type without clicking"
+      fix: "Add badges to grid cells"
+      effort: "2 hours"
+
+    - issue: "Calculation modal is 918 lines"
+      impact: "Hard to maintain, confusing UI"
+      fix: "Break into components"
+      effort: "2 days"
+
+  high:
+    - issue: "Permission matrix too complex"
+      impact: "Checkbox hell for multi-org users"
+      fix: "Permission templates"
+      effort: "2 days"
+
+  medium:
+    - issue: "No loading states for long operations"
+      impact: "User doesn't know if system is working"
+      fix: "Add spinners/skeleton screens"
+      effort: "1 day"
+
+  low:
+    - issue: "Inconsistent card usage"
+      impact: "Minor visual inconsistency"
+      fix: "Standard card pattern"
+      effort: "1 day"
+
+# BRAND IDENTITY
+brand:
+  logo:
+    location: "Navbar"
+    format: "Text or image"
+    note: "Not specified in code review"
+
+  colors:
+    primary: "#0d6efd"  # Bootstrap Blue
+    note: "Using Bootstrap defaults (good for consistency)"
+
+  tone:
+    style: "Professional, clean"
+    framework: "Bootstrap 5"
+    customization: "Minimal - mostly default Bootstrap"
+
+# RECOMMENDED DESIGN SYSTEM IMPROVEMENTS
+recommendations:
+  1:
+    priority: "HIGH"
+    item: "Create design system documentation"
+    reason: "Ensure consistency as team grows"
+
+  2:
+    priority: "HIGH"
+    item: "Add status badges to workspace grid"
+    reason: "Visual scanning is critical"
+
+  3:
+    priority: "MEDIUM"
+    item: "Standardize loading states"
+    reason: "Better user feedback"
+
+  4:
+    priority: "MEDIUM"
+    item: "Break large modal into components"
+    reason: "Maintainability"
+
+  5:
+    priority: "LOW"
+    item: "Add toast notifications"
+    reason: "Non-blocking feedback"

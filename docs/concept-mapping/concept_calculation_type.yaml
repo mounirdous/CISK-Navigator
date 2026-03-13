@@ -1,0 +1,477 @@
+# Concept Mapping: KPI Calculation Type (Manual / Formula / Linked)
+# This file maps EVERYWHERE calculation type is used/changed/displayed
+# CRITICAL for identifying inconsistencies and optimization opportunities
+
+concept:
+  name: "KPI Calculation Type"
+  description: "How a KPI gets its value: Manual entry, Formula calculation, or Linked from another KPI"
+  introduced_version: "1.0.0"
+  last_major_refactor: "1.19.0"
+  criticality: "CRITICAL"  # Core to how KPIs work
+
+# The Three Types
+calculation_types:
+  - id: "manual"
+    name: "Manual Entry"
+    description: "Users contribute values, system calculates consensus"
+    icon: "🧑‍🤝‍🧑"
+    color: "#0d6efd"  # Blue
+    requires:
+      - contributions: true
+      - consensus_calculation: true
+
+  - id: "formula"
+    name: "Formula Calculated"
+    description: "Auto-calculated from other KPIs using formula"
+    icon: "📐"
+    color: "#198754"  # Green
+    requires:
+      - source_kpis: true
+      - formula_operation: true
+      - auto_recalculation: true
+
+  - id: "linked"
+    name: "Linked KPI"
+    description: "Value pulled from another organization's KPI"
+    icon: "🔗"
+    color: "#fd7e14"  # Orange
+    requires:
+      - source_organization: true
+      - source_kpi: true
+      - value_type_mapping: true
+
+# Database Schema
+database:
+  table: "kpi_value_type_configs"
+  fields:
+    - name: "calculation_type"
+      type: "VARCHAR(20)"
+      nullable: false
+      default: "manual"
+      values: ["manual", "formula", "linked"]
+      description: "SINGLE SOURCE OF TRUTH for calc type"
+
+    - name: "calculation_config"
+      type: "JSONB"
+      nullable: true
+      description: "Configuration specific to calc type"
+      structure:
+        manual: null  # No config needed
+        formula:
+          operation: "sum | avg | min | max | ..."
+          source_kpi_config_ids: [1, 2, 3]
+          advanced_formula: "optional Python expression"
+        linked:
+          source_organization_id: 123
+          source_kpi_id: 456
+          source_value_type_id: 789
+
+# CRITICAL: Where Calculation Type Is Used
+locations:
+  # 1. WHERE TYPE IS STORED
+  - location: "Database"
+    file: "kpi_value_type_configs table"
+    field: "calculation_type"
+    is_source_of_truth: true
+    consistency_check: "All other locations MUST read from here"
+
+  # 2. WHERE TYPE IS READ/DISPLAYED
+  - location: "KPI Detail Page - Value Card"
+    file: "app/templates/workspace/kpi_cell_detail.html"
+    lines: [230-250]
+    logic: "Displays icon and label based on calc_type"
+    conditional_rendering:
+      manual: "Shows 🧑‍🤝‍🧑 MANUAL ENTRY + consensus info"
+      formula: "Shows 📐 FORMULA + source KPIs"
+      linked: "Shows 🔗 LINKED KPI + source info"
+    consistency: "✅ GOOD - Uses config.calculation_type directly"
+
+  - location: "KPI Detail Page - Chart Section"
+    file: "app/templates/workspace/kpi_cell_detail.html"
+    lines: [500-600]
+    logic: "Conditionally shows historical chart"
+    conditional_rendering:
+      manual: "Shows chart + contributions table"
+      formula: "NO chart (auto-calculated, no history)"
+      linked: "NO chart (pulled from source)"
+    consistency: "✅ GOOD - Correct logic per type"
+
+  - location: "KPI Settings Page - Calculation Type Section"
+    file: "app/templates/workspace/edit_kpi.html"
+    lines: [150-300]
+    logic: "Shows current type + buttons to switch"
+    conditional_rendering:
+      manual: "Shows 'Switch to Formula' + 'Switch to Linked'"
+      formula: "Shows 'Edit Formula' + 'Switch to Manual' + 'Switch to Linked'"
+      linked: "Shows link config + 'Switch to Manual' + 'Switch to Formula'"
+    consistency: "✅ GOOD - Clear mode indication"
+
+  - location: "Workspace Grid - Cell Display"
+    file: "app/templates/workspace/index.html"
+    lines: [400-500]
+    logic: "Shows value in grid cells"
+    issue: "❌ BAD - NO indicator of calc type in grid!"
+    proposal: "Add small badge (🔗 📐) next to value"
+    priority: "HIGH"
+
+  # 3. WHERE TYPE IS CHANGED
+  - location: "Switch to Formula Button"
+    file: "app/templates/workspace/edit_kpi.html"
+    lines: [180-190]
+    route: "Opens calculation modal"
+    action: "User clicks 'Switch to Formula'"
+    modal: "_calculation_config_modal.html"
+    consistency_check: "Does clicking 'Save' update calculation_type field?"
+
+  - location: "Calculation Config Modal - Mode Toggle"
+    file: "app/templates/workspace/_calculation_config_modal.html"
+    lines: [50-80]
+    logic: "Radio buttons: Manual / Formula"
+    action: "User toggles mode"
+    javascript: "Switches modal content based on selection"
+    save_route: "POST /kpis/<id>/update-calculation"
+    consistency_check: "✅ Updates calculation_type + calculation_config"
+
+  - location: "Switch to Linked Button"
+    file: "app/templates/workspace/edit_kpi.html"
+    lines: [200-210]
+    route: "Shows linked KPI configuration form"
+    action: "User clicks 'Switch to Linked KPI'"
+    saves_to:
+      - calculation_type: "linked"
+      - calculation_config: "{source_org, source_kpi, source_vt}"
+    consistency_check: "✅ Updates both fields atomically"
+
+  - location: "Backend Route - Update Calculation"
+    file: "app/routes/workspace.py"
+    function: "update_kpi_calculation"
+    lines: [800-900]
+    operations:
+      - "Validates new calculation type"
+      - "Updates kpi_value_type_configs.calculation_type"
+      - "Updates kpi_value_type_configs.calculation_config"
+      - "Triggers recalculation if formula"
+      - "Clears contributions if switching away from manual"
+    consistency: "✅ GOOD - Atomic update, proper cleanup"
+
+# CRITICAL: Consistency Analysis
+consistency_analysis:
+  - question: "Can user change calc type?"
+    answer: "YES - via KPI settings page"
+    locations: [3 buttons]
+    consistent: true
+
+  - question: "Does changing type update database?"
+    answer: "YES"
+    locations: ["workspace.py::update_kpi_calculation"]
+    consistent: true
+
+  - question: "Does UI reflect current type?"
+    answer: "MOSTLY"
+    locations:
+      - "KPI detail page: ✅ YES"
+      - "Settings page: ✅ YES"
+      - "Workspace grid: ❌ NO - Missing indicator"
+    consistent: false
+    action_required: "Add calc type badges to workspace grid cells"
+
+  - question: "Is calc type validated on save?"
+    answer: "YES"
+    locations: ["workspace.py", "kpi_forms.py"]
+    validation:
+      - "Type must be one of [manual, formula, linked]"
+      - "Formula requires source_kpi_config_ids"
+      - "Linked requires source_org + source_kpi + source_vt"
+    consistent: true
+
+  - question: "What happens to old data when switching types?"
+    answer:
+      manual_to_formula:
+        - "Contributions preserved (not deleted)"
+        - "Consensus value replaced by formula result"
+        - "Chart hidden (formula doesn't need chart)"
+      manual_to_linked:
+        - "Contributions preserved"
+        - "Value replaced by linked value"
+        - "Chart hidden"
+      formula_to_manual:
+        - "Formula config preserved (in case user switches back)"
+        - "Can now add contributions"
+        - "Chart reappears"
+      linked_to_manual:
+        - "Link config preserved"
+        - "Can now add contributions"
+        - "Chart reappears"
+    data_loss: "NO - All config preserved"
+    consistent: true
+    good_design: true
+
+# Business Rules
+business_rules:
+  - rule: "Every KPI config has exactly ONE calculation type"
+    enforcement: "Database field, NOT NULL"
+    violations: 0
+    consistent: true
+
+  - rule: "Calculation type determines UI elements"
+    examples:
+      - "Manual → Show contribution form"
+      - "Formula → Show source KPIs list"
+      - "Linked → Show link configuration"
+    enforcement: "Template conditionals"
+    violations: "Workspace grid missing indicators"
+    consistent: false
+
+  - rule: "User can switch between types freely"
+    enforcement: "UI buttons + backend route"
+    restrictions: "Must have proper permissions (can_manage_kpis)"
+    violations: 0
+    consistent: true
+
+  - rule: "Formula KPIs auto-recalculate when sources change"
+    enforcement: "RecalculationService triggers on contribution save"
+    tested: true
+    consistent: true
+
+  - rule: "Linked KPIs sync on schedule (not real-time)"
+    enforcement: "Background job (not implemented yet?)"
+    tested: false
+    consistent: "UNKNOWN - check if sync job exists"
+    action_required: "Verify linked KPI sync mechanism"
+
+# Inconsistencies Found (CRITICAL)
+inconsistencies:
+  - issue: "Workspace grid doesn't show calc type"
+    severity: "HIGH"
+    description: "User can't tell if KPI is manual/formula/linked without clicking"
+    affected_files:
+      - "app/templates/workspace/index.html"
+    fix_required:
+      - "Add badge (🔗 📐) next to KPI value in grid"
+      - "Color-code cells based on calc type"
+    estimated_effort: "2 hours"
+    priority: "HIGH"
+
+  - issue: "No validation that formula sources are same value type"
+    severity: "MEDIUM"
+    description: "Can create formula summing Cost + Risk (nonsensical)"
+    affected_files:
+      - "app/routes/workspace.py"
+      - "app/forms/kpi_forms.py"
+    fix_required:
+      - "Add validation: source KPIs must have same value type"
+      - "Show error if user tries to mix types"
+    estimated_effort: "4 hours"
+    priority: "MEDIUM"
+
+  - issue: "Linked KPI sync mechanism unclear"
+    severity: "HIGH"
+    description: "Not documented how/when linked KPIs update"
+    affected_files:
+      - "UNKNOWN - may not exist?"
+    fix_required:
+      - "Document sync mechanism"
+      - "OR implement if missing"
+    estimated_effort: "UNKNOWN"
+    priority: "CRITICAL - INVESTIGATE"
+
+  - issue: "Formula and Linked preserve old contributions"
+    severity: "LOW"
+    description: "Switching to formula keeps manual contributions (correct but confusing)"
+    affected_files:
+      - "app/routes/workspace.py"
+    current_behavior: "Contributions hidden but not deleted"
+    proposed_behavior: "Add warning: 'Previous contributions will be preserved but hidden'"
+    estimated_effort: "1 hour"
+    priority: "LOW"
+
+# Optimization Opportunities
+optimizations:
+  - opportunity: "Centralize calc type logic"
+    description: "Type-specific logic scattered across templates"
+    current_state: "Each template has if/else for calc_type"
+    proposed_state: "Create KPIDisplayService with methods like should_show_chart()"
+    benefit: "Easier to maintain, less duplication"
+    effort: "1 day"
+    priority: "MEDIUM"
+
+  - opportunity: "Add calc type enum"
+    description: "Currently string-based ('manual', 'formula', 'linked')"
+    current_state: "Strings in templates and Python"
+    proposed_state: "Python Enum in models, use enum values everywhere"
+    benefit: "Type safety, autocomplete, fewer typos"
+    files_to_change:
+      - "app/models/value_type.py (add enum)"
+      - "All templates (use enum values)"
+      - "Forms (validate against enum)"
+    effort: "3 hours"
+    priority: "LOW"
+
+  - opportunity: "Formula builder UI improvement"
+    description: "Modal is 918 lines, too complex"
+    current_state: "Result not visible without scrolling"
+    proposed_state: "Compact UI with result at top (see USER_JOURNEY_MAP.md)"
+    benefit: "Better UX, less confusion"
+    effort: "1 day"
+    priority: "CRITICAL"
+    note: "Already documented in user journey map"
+
+# Code References (For Impact Analysis)
+code_references:
+  models:
+    - file: "app/models/value_type.py"
+      class: "KPIValueTypeConfig"
+      attributes:
+        - calculation_type
+        - calculation_config
+      methods:
+        - is_manual()
+        - is_formula()
+        - is_linked()
+        - get_formula_config()
+        - get_link_config()
+
+  forms:
+    - file: "app/forms/kpi_forms.py"
+      class: "KPICalculationForm"
+      fields:
+        - calculation_type (SelectField)
+        - formula_operation (SelectField, conditional)
+        - source_kpis (SelectMultipleField, conditional)
+        - source_organization (SelectField, conditional)
+        - source_kpi (SelectField, conditional)
+
+  routes:
+    - file: "app/routes/workspace.py"
+      function: "update_kpi_calculation(kpi_id)"
+      line: ~800
+      operations:
+        - "Read new calc type from form"
+        - "Validate calc config"
+        - "Update database atomically"
+        - "Trigger recalculation if needed"
+
+  templates:
+    - file: "app/templates/workspace/kpi_cell_detail.html"
+      sections:
+        - "Value card (lines 230-250)"
+        - "Chart section (lines 500-600)"
+      conditionals: "{% if config.calculation_type == 'manual' %}"
+
+    - file: "app/templates/workspace/edit_kpi.html"
+      sections:
+        - "Calculation type section (lines 150-300)"
+      buttons:
+        - "Switch to Formula"
+        - "Switch to Linked KPI"
+        - "Switch to Manual"
+
+    - file: "app/templates/workspace/_calculation_config_modal.html"
+      sections:
+        - "Mode toggle (lines 50-80)"
+        - "Formula config (lines 200-600)"
+        - "Linked config (lines 700-800)"
+
+  services:
+    - file: "app/services/formula_calculation_service.py"
+      purpose: "Calculates formula KPI values"
+      called_by: "RecalculationService"
+
+    - file: "app/services/recalculation_service.py"
+      purpose: "Triggers recalc when source KPIs change"
+      runs_on: "Contribution save"
+
+# Testing Requirements
+testing:
+  unit_tests:
+    - "Test switching manual → formula"
+    - "Test switching formula → manual"
+    - "Test switching manual → linked"
+    - "Test switching linked → manual"
+    - "Test formula calculation with different operations"
+    - "Test linked KPI value sync"
+
+  integration_tests:
+    - "Create manual KPI → contribute → switch to formula → verify value"
+    - "Create formula KPI → verify auto-recalc when source changes"
+    - "Create linked KPI → verify value matches source"
+    - "Switch all three types in sequence → verify no data loss"
+
+  ui_tests:
+    - "KPI detail page shows correct icon for each type"
+    - "Settings page shows correct buttons for each type"
+    - "Modal switches content correctly when toggling type"
+    - "Chart appears/disappears correctly when switching"
+
+  edge_cases:
+    - "What if source KPI is deleted while formula KPI exists?"
+    - "What if source organization is deleted for linked KPI?"
+    - "What if user has no source KPIs to choose for formula?"
+    - "What if linked source KPI changes calc type?"
+
+# Impact Analysis: What Changes If...
+impact_analysis:
+  - scenario: "Add new calculation type (e.g., 'aggregated')"
+    affected_files:
+      - "app/models/value_type.py (add to enum)"
+      - "app/templates/workspace/kpi_cell_detail.html (add conditional)"
+      - "app/templates/workspace/edit_kpi.html (add switch button)"
+      - "app/routes/workspace.py (add handling)"
+      - "database migration (update allowed values)"
+    estimated_effort: "2 days"
+
+  - scenario: "Remove 'linked' calculation type"
+    affected_files: "ALL files above + data migration"
+    estimated_effort: "3 days"
+    risk: "HIGH - may break existing linked KPIs"
+
+  - scenario: "Change how formula recalculation works"
+    affected_files:
+      - "app/services/formula_calculation_service.py"
+      - "app/services/recalculation_service.py"
+    estimated_effort: "1 day"
+    risk: "LOW - isolated to services"
+
+# Documentation
+documentation:
+  user_guide:
+    - file: "USER_GUIDE_V1.14.md"
+      sections:
+        - "Manual vs Formula vs Linked KPIs"
+        - "Switching Between Calculation Types"
+
+  technical_docs:
+    - file: "docs/user-journeys/USER_JOURNEY_MAP.md"
+      sections:
+        - "Journey 2: Create KPI - Manual Entry Type"
+        - "Journey 3: Create KPI - Formula Type"
+        - "Journey 4: Create KPI - Linked Type"
+
+# Version History
+version_history:
+  - version: "1.0.0"
+    changes: ["Initial manual KPIs only"]
+
+  - version: "1.10.0"
+    changes: ["Added formula calculation type"]
+
+  - version: "1.15.0"
+    changes: ["Added linked KPI type"]
+
+  - version: "1.19.0"
+    changes:
+      - "Major refactor: Unified calculation type handling"
+      - "Single modal for all type switches"
+      - "Improved formula builder UX"
+
+  - version: "1.22.0"
+    changes: ["Added is_org_admin flag (not related to calc type)"]
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "HIGH"  # Core feature with many interactions
+  criticality: "CRITICAL"  # Everything depends on this
+  stability: "STABLE"  # Mature feature, few changes expected
+  technical_debt: "MEDIUM"  # Some refactoring opportunities
+  test_coverage: "60%"  # Needs more edge case tests

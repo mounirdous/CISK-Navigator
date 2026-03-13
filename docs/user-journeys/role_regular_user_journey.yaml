@@ -1,0 +1,455 @@
+# Regular User - Complete User Journey Map (Machine-Readable)
+# This file maps ALL possible paths a regular user can take
+# Can be used to generate flow diagrams, dependency graphs, etc.
+
+role:
+  name: "Regular User"
+  db_field: "user_organization_memberships with specific permissions"
+  access_level: "Limited to granted permissions"
+  typical_count: "Unlimited per organization"
+
+permissions:
+  - name: "can_contribute"
+    description: "Enter KPI values"
+    default: true
+  - name: "can_manage_kpis"
+    description: "Create/edit KPIs"
+    default: false
+  - name: "can_manage_spaces"
+    description: "Create/edit Spaces"
+    default: false
+  - name: "can_view_comments"
+    description: "View cell comments"
+    default: true
+  - name: "can_add_comments"
+    description: "Add cell comments"
+    default: false
+
+journeys:
+  # Journey 1: Login and Access
+  - id: "J1"
+    name: "First Login & Organization Selection"
+    steps:
+      - id: "J1.1"
+        name: "Login"
+        route: "/auth/login"
+        method: "GET/POST"
+        template: "auth/login.html"
+        code_files:
+          - "app/routes/auth.py"
+        models_used:
+          - "User"
+        next_steps:
+          - condition: "User has 1 org"
+            goto: "J1.3"
+          - condition: "User has multiple orgs"
+            goto: "J1.2"
+
+      - id: "J1.2"
+        name: "Select Organization"
+        route: "/auth/select-organization"
+        method: "GET"
+        template: "auth/select_organization.html"
+        code_files:
+          - "app/routes/auth.py"
+        models_used:
+          - "User"
+          - "UserOrganizationMembership"
+          - "Organization"
+        session_data:
+          sets:
+            - "organization_id"
+            - "organization_name"
+        next_steps:
+          - goto: "J1.3"
+
+      - id: "J1.3"
+        name: "Land on Dashboard"
+        route: "/workspace/dashboard"
+        method: "GET"
+        template: "workspace/dashboard.html"
+        code_files:
+          - "app/routes/workspace.py"
+        models_used:
+          - "Space"
+          - "Challenge"
+          - "Initiative"
+          - "System"
+          - "KPI"
+          - "ValueType"
+          - "GovernanceBody"
+        displays:
+          - "Organization statistics"
+          - "Quick action buttons"
+        next_steps:
+          - goto: "J2.1"  # Open workspace
+          - goto: "J5.1"  # View profile
+
+  # Journey 2: View Workspace
+  - id: "J2"
+    name: "Workspace Navigation"
+    steps:
+      - id: "J2.1"
+        name: "Open Workspace Grid"
+        route: "/workspace"
+        method: "GET"
+        template: "workspace/index.html"
+        code_files:
+          - "app/routes/workspace.py"
+        models_used:
+          - "Space"
+          - "Challenge"
+          - "Initiative"
+          - "System"
+          - "KPI"
+          - "Contribution"
+          - "KPISnapshot"
+          - "GovernanceBody"
+        services_used:
+          - "app/services/snapshot_service.py"
+        displays:
+          - "Hierarchical grid"
+          - "Governance body filters"
+          - "Level visibility toggles"
+          - "Archived KPIs toggle"
+        next_steps:
+          - action: "Click KPI cell"
+            goto: "J2.2"
+          - action: "Click + button on link"
+            requires_permission: "can_manage_kpis"
+            goto: "J4.1"
+
+      - id: "J2.2"
+        name: "View KPI Detail"
+        route: "/workspace/kpi/<kpi_id>/value-type/<vt_id>"
+        method: "GET"
+        template: "workspace/kpi_cell_detail.html"
+        code_files:
+          - "app/routes/workspace.py"
+        models_used:
+          - "KPI"
+          - "KPIValueTypeConfig"
+          - "ValueType"
+          - "Contribution"
+          - "KPISnapshot"
+          - "CellComment"
+        services_used:
+          - "app/services/consensus_service.py"
+        displays:
+          - "Current value (large)"
+          - "Consensus information"
+          - "Historical chart"
+          - "Contributions table"
+          - "Comments (if permission)"
+        next_steps:
+          - action: "Submit contribution"
+            requires_permission: "can_contribute"
+            goto: "J3.1"
+          - action: "Add comment"
+            requires_permission: "can_add_comments"
+            goto: "J6.1"
+          - action: "Back to workspace"
+            goto: "J2.1"
+
+  # Journey 3: Contribute Values
+  - id: "J3"
+    name: "Contribute KPI Value"
+    requires_permission: "can_contribute"
+    steps:
+      - id: "J3.1"
+        name: "Submit Contribution"
+        route: "/workspace/kpi/<kpi_id>/value-type/<vt_id>/contribute"
+        method: "POST"
+        code_files:
+          - "app/routes/workspace.py"
+        models_used:
+          - "Contribution"
+          - "KPI"
+          - "KPIValueTypeConfig"
+        services_used:
+          - "app/services/consensus_service.py"
+          - "app/services/audit_service.py"
+        form_data:
+          - "contribution_name"
+          - "value"
+          - "comment"
+          - "contribution_date"
+        db_operations:
+          - type: "INSERT"
+            table: "contributions"
+          - type: "UPDATE"
+            table: "kpi_snapshots"
+        audit_log: true
+        next_steps:
+          - condition: "Success"
+            goto: "J2.2"  # Back to KPI detail
+          - condition: "Validation error"
+            goto: "J2.2"  # Stay on page with error
+
+  # Journey 4: Create KPI (If Permitted)
+  - id: "J4"
+    name: "Create KPI"
+    requires_permission: "can_manage_kpis"
+    steps:
+      - id: "J4.1"
+        name: "Open KPI Creation Form"
+        route: "/kpis/create/<link_id>"
+        method: "GET"
+        template: "workspace/create_kpi.html"
+        code_files:
+          - "app/routes/workspace.py"
+        models_used:
+          - "InitiativeSystemLink"
+          - "ValueType"
+          - "GovernanceBody"
+        displays:
+          - "KPI form"
+          - "Value type checkboxes"
+          - "Governance body checkboxes"
+        next_steps:
+          - action: "Submit form"
+            goto: "J4.2"
+
+      - id: "J4.2"
+        name: "Submit KPI Creation"
+        route: "/kpis/create/<link_id>"
+        method: "POST"
+        code_files:
+          - "app/routes/workspace.py"
+          - "app/forms/kpi_forms.py"
+        models_used:
+          - "KPI"
+          - "KPIValueTypeConfig"
+          - "KPIGovernanceBodyLink"
+        services_used:
+          - "app/services/audit_service.py"
+        db_operations:
+          - type: "INSERT"
+            table: "kpis"
+          - type: "INSERT"
+            table: "kpi_value_type_configs"
+            count: "One per selected value type"
+          - type: "INSERT"
+            table: "kpi_governance_body_links"
+            count: "One per selected governance body"
+        audit_log: true
+        next_steps:
+          - condition: "Success"
+            goto: "J2.2"  # View new KPI
+          - condition: "Missing governance bodies"
+            goto: "J4.3"  # Redirect to create gov body
+          - condition: "Validation error"
+            goto: "J4.1"  # Stay on form
+
+      - id: "J4.3"
+        name: "Create Governance Body (Redirected)"
+        route: "/org-admin/governance-bodies/create"
+        method: "GET/POST"
+        note: "User redirected here if no governance bodies exist"
+        requires_permission: "can_manage_governance_bodies OR is_org_admin"
+        code_files:
+          - "app/routes/organization_admin.py"
+        models_used:
+          - "GovernanceBody"
+        next_steps:
+          - condition: "Created"
+            goto: "J4.1"  # Back to KPI creation
+
+  # Journey 5: Profile Management
+  - id: "J5"
+    name: "User Profile"
+    steps:
+      - id: "J5.1"
+        name: "View Profile"
+        route: "/auth/profile"
+        method: "GET"
+        template: "auth/profile.html"
+        code_files:
+          - "app/routes/auth.py"
+        models_used:
+          - "User"
+        displays:
+          - "User information"
+          - "Dark mode toggle"
+          - "Navbar position"
+        next_steps:
+          - action: "Update profile"
+            goto: "J5.2"
+
+      - id: "J5.2"
+        name: "Update Profile"
+        route: "/auth/profile"
+        method: "POST"
+        code_files:
+          - "app/routes/auth.py"
+        models_used:
+          - "User"
+        db_operations:
+          - type: "UPDATE"
+            table: "users"
+        next_steps:
+          - goto: "J5.1"
+
+  # Journey 6: Comments (If Permitted)
+  - id: "J6"
+    name: "Cell Comments"
+    requires_permission: "can_add_comments"
+    steps:
+      - id: "J6.1"
+        name: "Add Comment"
+        route: "/workspace/kpi/<kpi_id>/value-type/<vt_id>/comments"
+        method: "POST"
+        code_files:
+          - "app/routes/workspace.py"
+        models_used:
+          - "CellComment"
+          - "MentionNotification"
+        services_used:
+          - "app/services/comment_service.py"
+        db_operations:
+          - type: "INSERT"
+            table: "cell_comments"
+          - type: "INSERT"
+            table: "mention_notifications"
+            condition: "If @mentions used"
+        next_steps:
+          - goto: "J2.2"
+
+# Blocked Features (User Cannot Access)
+blocked_routes:
+  - route: "/org-admin/*"
+    reason: "Not an organization admin"
+    redirect_to: "/workspace/dashboard"
+    flash_message: "You do not have permission to access organization administration"
+
+  - route: "/global-admin/*"
+    reason: "Not a global admin"
+    status_code: 403
+
+  - route: "/super-admin/*"
+    reason: "Not a super admin"
+    status_code: 403
+
+# Conditional Features (Depends on Permissions)
+conditional_features:
+  - feature: "Contribute KPI Values"
+    requires: "can_contribute = True"
+    routes:
+      - "/workspace/kpi/<id>/contribute"
+    ui_elements:
+      - "Contribution form on KPI detail page"
+
+  - feature: "Create KPIs"
+    requires: "can_manage_kpis = True"
+    routes:
+      - "/kpis/create/<link_id>"
+      - "/kpis/<id>/edit"
+    ui_elements:
+      - "+ button on Initiative-System links"
+      - "Edit KPI button"
+
+  - feature: "View Comments"
+    requires: "can_view_comments = True"
+    ui_elements:
+      - "Comments section on KPI detail"
+
+  - feature: "Add Comments"
+    requires: "can_add_comments = True"
+    routes:
+      - "/workspace/kpi/<id>/comments"
+    ui_elements:
+      - "Add comment form"
+
+# Data Flow Examples
+data_flows:
+  - name: "Contribution to Consensus"
+    steps:
+      - actor: "User"
+        action: "Submits contribution form"
+        file: "workspace/kpi_cell_detail.html"
+      - actor: "Route"
+        action: "POST /workspace/kpi/<id>/contribute"
+        file: "app/routes/workspace.py"
+      - actor: "Model"
+        action: "Create Contribution record"
+        file: "app/models/contribution.py"
+      - actor: "Service"
+        action: "Calculate new consensus"
+        file: "app/services/consensus_service.py"
+      - actor: "Model"
+        action: "Update KPISnapshot"
+        file: "app/models/kpi_snapshot.py"
+      - actor: "Service"
+        action: "Log audit trail"
+        file: "app/services/audit_service.py"
+      - actor: "Response"
+        action: "Redirect to KPI detail with updated value"
+        goto: "J2.2"
+
+  - name: "KPI Creation"
+    steps:
+      - actor: "User"
+        action: "Clicks + on Initiative-System link"
+        requires_permission: "can_manage_kpis"
+      - actor: "Route"
+        action: "GET /kpis/create/<link_id>"
+        file: "app/routes/workspace.py"
+      - actor: "Form"
+        action: "Display KPI creation form"
+        file: "app/forms/kpi_forms.py"
+      - actor: "User"
+        action: "Fills form and submits"
+      - actor: "Route"
+        action: "POST /kpis/create/<link_id>"
+        file: "app/routes/workspace.py"
+      - actor: "Model"
+        action: "Create KPI record"
+        file: "app/models/kpi.py"
+      - actor: "Model"
+        action: "Create KPIValueTypeConfig records"
+        file: "app/models/value_type.py"
+      - actor: "Model"
+        action: "Create governance body links"
+        file: "app/models/governance_body.py"
+      - actor: "Service"
+        action: "Log creation"
+        file: "app/services/audit_service.py"
+      - actor: "Response"
+        action: "Redirect to new KPI detail"
+        goto: "J2.2"
+
+# Visualization Hints (For Future Graph Feature)
+visualization:
+  graph_type: "directed_graph"
+  node_types:
+    - type: "route"
+      color: "#0d6efd"  # Blue
+      shape: "rectangle"
+    - type: "model"
+      color: "#198754"  # Green
+      shape: "ellipse"
+    - type: "service"
+      color: "#fd7e14"  # Orange
+      shape: "hexagon"
+    - type: "template"
+      color: "#6610f2"  # Purple
+      shape: "diamond"
+  edge_types:
+    - type: "navigation"
+      style: "solid"
+      label_position: "middle"
+    - type: "data_flow"
+      style: "dashed"
+      label_position: "middle"
+    - type: "permission_required"
+      style: "dotted"
+      color: "#dc3545"  # Red
+
+# Statistics
+stats:
+  total_journeys: 6
+  total_steps: 15
+  routes_accessible: 12
+  models_used: 15
+  services_used: 4
+  permissions_checked: 5

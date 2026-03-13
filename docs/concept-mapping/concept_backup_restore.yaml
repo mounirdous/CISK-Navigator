@@ -1,0 +1,706 @@
+# Concept Mapping: Backup and Restore System
+# This file maps ALL backup/restore capabilities across the application
+# CRITICAL for data safety, disaster recovery, and org cloning
+
+concept:
+  name: "Backup and Restore System"
+  description: "Complete data backup/restore for organizations and entire system"
+  introduced_version: "1.0.0"
+  last_major_refactor: "1.15.0"
+  criticality: "CRITICAL"  # Data loss prevention
+
+# Two Backup Systems
+backup_types:
+  - type: "YAML Structure Backup"
+    scope: "Organization-level"
+    format: "YAML"
+    includes:
+      - "Value types"
+      - "Spaces/Challenges/Initiatives/Systems"
+      - "KPI structure (no data)"
+    excludes:
+      - "Contributions"
+      - "Snapshots"
+      - "Users"
+      - "Governance bodies"
+    use_case: "Template creation, structure cloning"
+    file_size: "Small (~100KB)"
+    service: "YAMLExportService / YAMLImportService"
+
+  - type: "Full JSON Backup"
+    scope: "Organization-level OR System-wide"
+    format: "JSON"
+    includes:
+      - "Everything from YAML backup PLUS:"
+      - "Contributions (actual data!)"
+      - "KPI configurations"
+      - "Users and permissions"
+      - "Governance bodies"
+      - "Comments"
+      - "Snapshots"
+    excludes:
+      - "Audit logs"
+      - "SSO configs"
+      - "System settings"
+    use_case: "Full disaster recovery, org migration"
+    file_size: "Large (can be MBs)"
+    service: "FullBackupService / FullRestoreService"
+
+# Services
+services:
+  - name: "YAMLExportService"
+    file: "app/services/yaml_export_service.py"
+    purpose: "Export structure to YAML (no data)"
+    methods:
+      - name: "export_to_yaml(organization_id)"
+        returns: "YAML string"
+        description: "Main export method"
+
+      - name: "_export_value_types(value_types)"
+        returns: "List of dicts"
+        exports:
+          - "name, kind, aggregation formula"
+          - "numeric_format, decimal_places, unit_label (if numeric)"
+
+      - name: "_export_spaces(spaces)"
+        returns: "List of dicts with hierarchy"
+        exports:
+          - "Space: name, display_order, description"
+          - "Nested challenges"
+
+      - name: "_export_challenges(challenges)"
+        exports:
+          - "Challenge: name, display_order, description"
+          - "Nested initiatives"
+
+      - name: "_export_initiatives(initiatives)"
+        exports:
+          - "Initiative: name, display_order, description"
+          - "Nested systems"
+
+      - name: "_export_systems(systems)"
+        exports:
+          - "System: name, display_order, description"
+          - "Nested KPIs"
+
+      - name: "_export_kpis(kpis)"
+        exports:
+          - "KPI: name, description, value_types"
+          - "Target values (if set)"
+          - "NO contributions, NO snapshots"
+
+  - name: "YAMLImportService"
+    file: "app/services/yaml_import_service.py"
+    purpose: "Import structure from YAML"
+    methods:
+      - name: "import_from_file(file_path, organization_id)"
+        description: "Import from file path"
+
+      - name: "import_from_string(yaml_string, organization_id)"
+        description: "Import from YAML string"
+
+      - name: "import_from_dict(data, organization_id)"
+        description: "Core import logic"
+        operations:
+          - "Parse YAML structure"
+          - "Create value types (match existing by name)"
+          - "Create Spaces → Challenges → Initiatives → Systems → KPIs"
+          - "Maintain display_order"
+          - "Set KPI targets if provided"
+        error_handling:
+          - "Rolls back on failure"
+          - "Reports detailed errors"
+
+  - name: "FullBackupService"
+    file: "app/services/full_backup_service.py"
+    purpose: "Complete backup including data"
+    methods:
+      - name: "create_full_backup(organization_id)"
+        returns: "dict with complete backup"
+        includes:
+          metadata:
+            - "version, created_at, org info"
+          organization:
+            - "name, description, is_active"
+          users:
+            - "login, email, display_name"
+            - "ALL permissions per org"
+          value_types:
+            - "Complete value type configs"
+          governance_bodies:
+            - "name, acronym, description"
+          spaces:
+            - "Full hierarchy"
+            - "KPIs with ALL data"
+
+      - name: "_export_users(organization_id)"
+        exports:
+          - "User basic info"
+          - "Permissions: can_manage_spaces, can_manage_kpis, etc."
+        note: "Only active users"
+
+      - name: "_export_kpi_with_data(kpi)"
+        exports:
+          - "KPI structure"
+          - "Contributions: contributor, value, date, comment"
+          - "KPI config: target, colors, calculation_type"
+          - "Governance body links"
+        critical: "This is where actual DATA is backed up"
+
+      - name: "export_to_json_string(organization_id)"
+        returns: "JSON string"
+        description: "Convenience wrapper"
+
+      - name: "export_to_file(organization_id, file_path)"
+        description: "Save backup to file"
+
+  - name: "FullRestoreService"
+    file: "app/services/full_restore_service.py"
+    purpose: "Restore from full backup"
+    methods:
+      - name: "restore_from_json(json_string, organization_id, governance_body_mapping, user_mapping)"
+        description: "Main restore method"
+        parameters:
+          - "json_string: Backup JSON"
+          - "organization_id: Target org (can be different!)"
+          - "governance_body_mapping: Map backup GB IDs to existing"
+          - "user_mapping: Map backup usernames to existing users"
+        operations:
+          - "Parse JSON backup"
+          - "Restore value types (merge with existing)"
+          - "Restore governance bodies (use mapping)"
+          - "Restore full hierarchy"
+          - "Restore contributions with user mapping"
+          - "Recalculate consensus"
+        critical_feature: "Can restore to DIFFERENT org (cloning!)"
+
+      - name: "_restore_space_hierarchy(space_data, ...)"
+        description: "Recursive restore of Space → Challenge → Initiative → System → KPI"
+
+      - name: "_restore_kpi_with_data(kpi_data, ...)"
+        description: "Restore KPI including contributions"
+        operations:
+          - "Create KPI"
+          - "Create KPI value type configs"
+          - "Restore governance body links"
+          - "Restore contributions"
+          - "Set targets"
+
+# Routes
+routes:
+  organization_admin:
+    - route: "/org-admin/yaml-upload"
+      methods: ["GET", "POST"]
+      function: "yaml_upload"
+      file: "app/routes/organization_admin.py"
+      lines: ~1965-2014
+      description: "Upload YAML structure file"
+      form: "YAMLUploadForm"
+      operations:
+        - "User uploads .yaml file"
+        - "Calls YAMLImportService.import_from_string()"
+        - "Creates structure in current org"
+      permissions: "is_org_admin OR can_manage_*"
+      audit: "Logs structure creation"
+
+    - route: "/org-admin/yaml-export"
+      methods: ["GET"]
+      function: "yaml_export"
+      file: "app/routes/organization_admin.py"
+      lines: ~2017-2044
+      description: "Download YAML structure"
+      operations:
+        - "Generates YAML via YAMLExportService"
+        - "Returns file download: structure_{org_name}.yaml"
+      permissions: "is_org_admin"
+      file_name: "structure_{org_name}.yaml"
+
+    - route: "/org-admin/full-backup"
+      methods: ["GET", "POST"]
+      function: "full_backup"
+      file: "app/routes/organization_admin.py"
+      description: "Create full backup with data"
+      operations:
+        - "Calls FullBackupService.create_full_backup()"
+        - "Returns JSON file download"
+      permissions: "is_org_admin"
+      file_name: "backup_{org_name}_{timestamp}.json"
+
+    - route: "/org-admin/full-restore"
+      methods: ["GET", "POST"]
+      function: "full_restore"
+      file: "app/routes/organization_admin.py"
+      description: "Restore from full backup"
+      operations:
+        - "User uploads .json backup file"
+        - "Maps governance bodies (if needed)"
+        - "Maps users (if needed)"
+        - "Calls FullRestoreService.restore_from_json()"
+        - "Restores ALL data to current org"
+      permissions: "is_org_admin"
+      danger: "Overwrites existing data!"
+      confirmation_required: true
+
+  super_admin:
+    - route: "/super-admin/system-backup"
+      methods: ["GET", "POST"]
+      function: "system_backup"
+      file: "app/routes/super_admin.py"
+      lines: ~519-560
+      description: "Backup all organizations or selected orgs"
+      operations:
+        - "Select one or multiple organizations"
+        - "Creates separate backup files"
+        - "Returns ZIP if multiple orgs"
+      permissions: "is_super_admin"
+      use_case: "Full system backup before major updates"
+
+    - route: "/super-admin/system-restore"
+      methods: ["GET", "POST"]
+      function: "system_restore"
+      file: "app/routes/super_admin.py"
+      description: "Restore full system or specific orgs"
+      operations:
+        - "Upload backup ZIP"
+        - "Restore multiple organizations"
+      permissions: "is_super_admin"
+      danger: "EXTREMELY DANGEROUS - can overwrite entire system"
+
+# Templates
+templates:
+  - file: "app/templates/organization_admin/yaml_upload.html"
+    description: "YAML structure upload form"
+    features:
+      - "File upload field"
+      - "Preview button (optional)"
+      - "Instructions for YAML format"
+
+  - file: "app/templates/organization_admin/yaml_export.html"
+    description: "YAML export page (or direct download)"
+
+  - file: "app/templates/organization_admin/full_backup.html"
+    description: "Full backup with data"
+    features:
+      - "Download backup button"
+      - "Shows backup size"
+      - "Warning about sensitive data"
+
+  - file: "app/templates/organization_admin/full_restore.html"
+    description: "Full restore interface"
+    features:
+      - "File upload"
+      - "Governance body mapping interface"
+      - "User mapping interface"
+      - "Preview before restore"
+      - "DANGER warning"
+
+  - file: "app/templates/super_admin/system_backup.html"
+    description: "System-wide backup"
+    features:
+      - "Select organizations"
+      - "Backup all option"
+      - "Download as ZIP"
+
+# Business Rules
+business_rules:
+  - rule: "YAML backup does NOT include data"
+    rationale: "Structure-only, for templates"
+    use_case: "Share structure without sensitive data"
+
+  - rule: "Full backup DOES include data"
+    rationale: "Complete disaster recovery"
+    includes: "Contributions, comments, users"
+    security: "Contains sensitive information"
+
+  - rule: "Restore can target different organization"
+    rationale: "Enable org cloning"
+    use_case: "Create new org based on existing template"
+
+  - rule: "Governance body mapping required"
+    rationale: "Different orgs have different GBs"
+    behavior: "Restore wizard shows mapping interface"
+
+  - rule: "User mapping required"
+    rationale: "Contributors may not exist in target org"
+    behavior: "Restore wizard shows user mapping interface"
+    fallback: "Can assign all contributions to single user"
+
+  - rule: "Backup files are compressed"
+    format: "GZIP for single org, ZIP for multiple"
+    rationale: "Reduce file size, easier transfer"
+
+  - rule: "Super admin can backup entire system"
+    scope: "All organizations at once"
+    output: "ZIP file with multiple JSON backups"
+
+# Data Integrity
+data_integrity:
+  validation:
+    - "Check JSON structure before restore"
+    - "Verify all required fields present"
+    - "Validate value type compatibility"
+    - "Check governance body references"
+
+  error_handling:
+    - "Rollback on any error"
+    - "Report detailed error messages"
+    - "Log failed restore attempts"
+
+  audit_trail:
+    - "Log backup creation"
+    - "Log restore operations"
+    - "Log what was restored"
+    - "Log who performed operation"
+
+# Use Cases
+use_cases:
+  - use_case: "Create Organization Template"
+    steps:
+      - "Build structure in template org"
+      - "Export YAML structure"
+      - "Share YAML file"
+      - "Others import to create similar structure"
+    backup_type: "YAML"
+
+  - use_case: "Clone Organization"
+    steps:
+      - "Create full backup of source org"
+      - "Create new empty org"
+      - "Restore backup to new org"
+      - "Map governance bodies"
+      - "Map users"
+    backup_type: "Full JSON"
+
+  - use_case: "Disaster Recovery"
+    steps:
+      - "Regular automated backups"
+      - "System failure occurs"
+      - "Restore from latest backup"
+      - "Verify data integrity"
+    backup_type: "Full JSON"
+    recommended_frequency: "Daily"
+
+  - use_case: "Migration to New Instance"
+    steps:
+      - "Backup all orgs from old instance"
+      - "Install new instance"
+      - "Restore all orgs"
+    backup_type: "Full JSON (all orgs)"
+
+  - use_case: "Testing Changes"
+    steps:
+      - "Create backup before changes"
+      - "Test changes in live system"
+      - "If problem, restore from backup"
+    backup_type: "Full JSON"
+
+# YAML Format Structure
+yaml_format:
+  structure: |
+    value_types:
+      - name: "Cost"
+        kind: "numeric"
+        numeric_format: "decimal"
+        decimal_places: 2
+        unit_label: "€"
+        default_aggregation_formula: "sum"
+
+    spaces:
+      - id: S1
+        name: "Space Name"
+        display_order: 0
+        challenges:
+          - id: C1
+            name: "Challenge Name"
+            display_order: 0
+            initiatives:
+              - id: I1
+                name: "Initiative Name"
+                display_order: 0
+                systems:
+                  - id: SYS1
+                    name: "System Name"
+                    display_order: 0
+                    kpis:
+                      - id: K1
+                        name: "KPI Name"
+                        value_types: ["Cost", "CO2"]
+
+  ids:
+    purpose: "Human-readable references"
+    format: "S1, C1, I1, SYS1, K1"
+    note: "NOT database IDs - just for linking in YAML"
+
+# JSON Backup Format
+json_format:
+  structure: |
+    {
+      "metadata": {
+        "version": "1.0",
+        "created_at": "2026-03-13T10:30:00",
+        "organization_name": "MIKRON",
+        "organization_id": 1,
+        "backup_type": "full"
+      },
+      "organization": {...},
+      "users": [{
+        "login": "john.doe",
+        "email": "john@example.com",
+        "permissions": {...}
+      }],
+      "value_types": [...],
+      "governance_bodies": [...],
+      "spaces": [{
+        "name": "...",
+        "challenges": [{
+          "initiatives": [{
+            "systems": [{
+              "kpis": [{
+                "name": "...",
+                "contributions": [{
+                  "contributor": "john.doe",
+                  "value": 1000.50,
+                  "date": "2026-01-15",
+                  "comment": "Q1 actual"
+                }]
+              }]
+            }]
+          }]
+        }]
+      }]
+    }
+
+# Restoration Process
+restore_process:
+  phases:
+    1:
+      name: "Validation"
+      operations:
+        - "Parse JSON/YAML"
+        - "Validate structure"
+        - "Check required fields"
+
+    2:
+      name: "Mapping"
+      operations:
+        - "Map governance bodies"
+        - "Map users"
+        - "Generate ID mapping table"
+
+    3:
+      name: "Value Types"
+      operations:
+        - "Match existing value types by name"
+        - "Create missing value types"
+        - "Build value_type_map"
+
+    4:
+      name: "Governance Bodies"
+      operations:
+        - "Use provided mapping"
+        - "Or create new governance bodies"
+
+    5:
+      name: "Structure Creation"
+      operations:
+        - "Create Spaces"
+        - "Create Challenges (linked to Spaces)"
+        - "Create Initiatives (linked to Challenges)"
+        - "Create Systems (linked to Initiatives)"
+        - "Create KPIs (linked to Systems)"
+
+    6:
+      name: "Data Restoration"
+      operations:
+        - "Restore contributions"
+        - "Restore KPI configs"
+        - "Restore governance body links"
+        - "Restore targets"
+
+    7:
+      name: "Consensus Recalculation"
+      operations:
+        - "Recalculate consensus for all KPIs"
+        - "Create snapshots"
+
+    8:
+      name: "Verification"
+      operations:
+        - "Verify structure created"
+        - "Verify data restored"
+        - "Log completion"
+
+# Security Considerations
+security:
+  backup_files:
+    - "Contain sensitive data"
+    - "Should be encrypted at rest"
+    - "Should be access-controlled"
+    - "Should be stored securely"
+
+  permissions:
+    - "Only org admins can backup/restore org"
+    - "Only super admins can backup/restore system"
+    - "Audit all backup/restore operations"
+
+  data_exposure:
+    - "YAML: Low risk (no data)"
+    - "JSON: HIGH risk (contains contributions, comments, user info)"
+    - "Recommendation: Encrypt JSON backups"
+
+# Performance
+performance:
+  backup_time:
+    small_org: "< 1 second (YAML), < 5 seconds (JSON)"
+    medium_org: "1-2 seconds (YAML), 10-30 seconds (JSON)"
+    large_org: "5-10 seconds (YAML), 1-2 minutes (JSON)"
+
+  restore_time:
+    small_org: "< 5 seconds (YAML), < 10 seconds (JSON)"
+    medium_org: "10-30 seconds (YAML), 30-60 seconds (JSON)"
+    large_org: "1-2 minutes (YAML), 2-5 minutes (JSON)"
+
+  optimization:
+    - "Use bulk inserts where possible"
+    - "Batch consensus calculations"
+    - "Disable triggers during restore"
+    - "Use transactions for atomicity"
+
+# Testing Requirements
+testing:
+  unit_tests:
+    - "Test YAML export/import"
+    - "Test JSON backup/restore"
+    - "Test value type matching"
+    - "Test governance body mapping"
+    - "Test user mapping"
+    - "Test error handling"
+
+  integration_tests:
+    - "Export org → Import to new org → Verify structure"
+    - "Full backup → Full restore → Verify data"
+    - "Backup with data → Restore to different org → Verify mapping"
+    - "System backup → System restore → Verify all orgs"
+
+  edge_cases:
+    - "Restore backup to org with existing data"
+    - "Restore with missing governance bodies"
+    - "Restore with missing users"
+    - "Restore corrupted backup file"
+    - "Restore incompatible backup version"
+
+# Future Enhancements
+future_enhancements:
+  - feature: "Incremental Backups"
+    description: "Only backup changes since last backup"
+    priority: "MEDIUM"
+
+  - feature: "Automated Scheduled Backups"
+    description: "Cron job to backup daily/weekly"
+    priority: "HIGH"
+
+  - feature: "Backup Encryption"
+    description: "Encrypt backup files"
+    priority: "HIGH"
+
+  - feature: "Cloud Storage Integration"
+    description: "Auto-upload backups to S3/Azure"
+    priority: "MEDIUM"
+
+  - feature: "Backup History UI"
+    description: "Browse and restore from historical backups"
+    priority: "MEDIUM"
+
+  - feature: "Selective Restore"
+    description: "Restore only specific Spaces/Challenges"
+    priority: "LOW"
+
+  - feature: "Backup Comparison Tool"
+    description: "Diff two backups to see changes"
+    priority: "LOW"
+
+# Technical Debt
+technical_debt:
+  - issue: "No backup versioning"
+    description: "Backup format not versioned, future changes may break compatibility"
+    proposal: "Add backup_format_version field"
+    priority: "HIGH"
+
+  - issue: "No backup encryption"
+    description: "Backup files stored as plain JSON/YAML"
+    proposal: "Encrypt before saving"
+    priority: "HIGH"
+
+  - issue: "No automated backup schedule"
+    description: "Backups must be manual"
+    proposal: "Add cron job for automated backups"
+    priority: "MEDIUM"
+
+  - issue: "Restore overwrites without warning"
+    description: "No preview of what will be overwritten"
+    proposal: "Add restore preview mode"
+    priority: "MEDIUM"
+
+  - issue: "Large backups not streamed"
+    description: "Entire backup loaded into memory"
+    proposal: "Stream JSON for large backups"
+    priority: "LOW"
+
+# Related Concepts
+related_concepts:
+  - concept: "Organization Cloning"
+    relation: "Uses full backup/restore mechanism"
+    file: "concept_organization_management.yaml"
+
+  - concept: "Organization Onboarding"
+    relation: "YAML import creates structure from template"
+    file: "concept_org_admin.yaml"
+
+  - concept: "Value Types"
+    relation: "Backup/restore includes value type definitions"
+    file: "concept_value_types.yaml"
+
+  - concept: "Governance Bodies"
+    relation: "Requires mapping during restore"
+    file: "concept_governance_bodies.yaml"
+
+  - concept: "Audit Logs"
+    relation: "Backup/restore operations are audited"
+    file: "concept_audit_logs.yaml"
+
+# Documentation
+documentation:
+  user_guide:
+    file: "USER_GUIDE_V1.14.md"
+    sections:
+      - "Creating Structure Templates with YAML"
+      - "Organization Backup and Restore"
+      - "System-wide Backup (Super Admin)"
+
+  technical_docs:
+    file: "docs/roles/ROLE_ORG_ADMIN.md"
+    sections:
+      - "YAML Backup/Restore Procedures"
+      - "Organization Cloning"
+
+# Version History
+version_history:
+  - version: "1.0.0"
+    changes: ["Initial YAML import/export"]
+
+  - version: "1.10.0"
+    changes: ["Added full backup with data"]
+
+  - version: "1.15.0"
+    changes:
+      - "Improved restore mapping interface"
+      - "Added system-wide backup for Super Admin"
+
+# Metadata
+metadata:
+  last_updated: "2026-03-13"
+  complexity: "HIGH"
+  criticality: "CRITICAL"  # Data loss = business failure
+  stability: "STABLE"
+  technical_debt: "MEDIUM"
+  test_coverage: "60%"

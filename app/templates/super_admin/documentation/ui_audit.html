@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}UI/UX Consistency Audit{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-0">
+                        <i class="fas fa-palette text-warning me-2"></i>
+                        UI/UX Consistency Audit
+                    </h1>
+                    <p class="text-muted mb-0">Visual design system and consistency analysis</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('super_admin.documentation') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Documentation
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overall Score -->
+    {% if audit_data.consistency_score %}
+    <div class="row mb-4">
+        <div class="col-md-4 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Overall Consistency Score</h6>
+                    <h1 class="display-3 mb-0 text-success">{{ audit_data.consistency_score.overall }}%</h1>
+                    <p class="text-muted mb-0">{{ audit_data.consistency_score.rating }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Color System -->
+    {% if audit_data.colors %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-paint-brush me-2"></i>
+                        Color System
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for category, colors in audit_data.colors.items() if colors is mapping %}
+                        <div class="col-md-4 mb-3">
+                            <h6>{{ category|replace('_', ' ')|title }}</h6>
+                            {% for name, value in colors.items() %}
+                            <div class="d-flex align-items-center mb-2">
+                                <div style="width: 30px; height: 30px; background-color: {{ value }}; border: 1px solid #ddd;" class="me-2"></div>
+                                <div>
+                                    <strong>{{ name|replace('_', ' ')|title }}:</strong>
+                                    <code>{{ value }}</code>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Icons -->
+    {% if audit_data.icons %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-icons me-2"></i>
+                        Icon System
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for category, icons in audit_data.icons.items() %}
+                    <h6>{{ category|replace('_', ' ')|title }}</h6>
+                    <div class="row">
+                        {% for icon_name, icon_class in icons.items() %}
+                        <div class="col-md-3 mb-2">
+                            <i class="{{ icon_class }} me-2"></i>
+                            <strong>{{ icon_name|replace('_', ' ')|title }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <hr>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Buttons -->
+    {% if audit_data.buttons %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-mouse-pointer me-2"></i>
+                        Button Styles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for category, buttons in audit_data.buttons.items() %}
+                    <h6>{{ category|replace('_', ' ')|title }}</h6>
+                    <div class="mb-3">
+                        {% for button in buttons %}
+                        <p><strong>{{ button.name }}:</strong> {{ button.description }}</p>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Typography -->
+    {% if audit_data.typography %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-font me-2"></i>
+                        Typography
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for key, value in audit_data.typography.items() %}
+                    <p><strong>{{ key|replace('_', ' ')|title }}:</strong> {{ value }}</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Inconsistencies -->
+    {% if audit_data.inconsistencies %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Identified Inconsistencies
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for issue in audit_data.inconsistencies %}
+                    <div class="alert alert-{{ issue.severity|lower }} mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="alert-heading">{{ issue.title }}</h6>
+                                <p class="mb-2">{{ issue.description }}</p>
+                                <p class="mb-0"><strong>Location:</strong> {{ issue.location }}</p>
+                            </div>
+                            <span class="badge bg-{{ issue.severity|lower }}">{{ issue.severity }}</span>
+                        </div>
+                        {% if issue.recommendation %}
+                        <hr>
+                        <p class="mb-0"><strong>Recommendation:</strong> {{ issue.recommendation }}</p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    {% if audit_data.recommendations %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul>
+                        {% for rec in audit_data.recommendations %}
+                        <li>{{ rec }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
