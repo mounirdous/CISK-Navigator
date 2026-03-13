@@ -5,6 +5,64 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.1] - 2026-03-13
+
+### Added
+- **🧪 Comprehensive Rollup Test Suite**: 28 new unit tests ensuring type safety in aggregations
+  - Type mixing tests: Decimal + float + int combinations across all formulas
+  - All aggregation formulas: sum, min, max, avg, median, count
+  - Consensus calculations with mixed types
+  - Partial data scenarios (5/6 KPIs with values)
+  - Qualitative value aggregation (risk, sentiment, etc.)
+  - Edge cases: zero values, negatives, very large/small numbers, high-precision decimals
+  - Real-world test cases using production data patterns
+  - Test file: `tests/unit/test_rollup.py`
+- **🌍 Global KPIs Feature**: KPIs without governance bodies
+  - KPIs can now be created without any governance body assignment
+  - Global KPIs always visible regardless of governance body filters
+  - UI explanation added to KPI creation/edit forms
+  - Backend validation updated to allow empty governance body selection
+  - Useful for organization-wide metrics that transcend specific committees
+
+### Fixed
+- **🔢 Rollup Type Safety**: Fixed Decimal/float mixing in all aggregation formulas
+  - All aggregation operations now convert to float before calculation
+  - Prevents `TypeError: unsupported operand type(s) for +: 'float' and 'decimal.Decimal'`
+  - Affects: sum, min, max, avg, median formulas
+  - Ensures consistent float return types across all aggregations
+  - Formula KPIs (float) + Manual KPIs (Decimal) now aggregate correctly
+- **📐 Formula KPI Rollup**: Fixed formula KPIs not participating in rollups
+  - Changed `ConsensusService.get_cell_value()` to delegate to formula/linked KPI calculations
+  - Formula KPIs now correctly roll up to System → Initiative → Challenge → Space
+  - Linked KPIs also properly included in rollups
+- **⚠️ Partial Rollup Support**: Removed strict `is_complete` requirement
+  - Rollups now work with partial data (e.g., 5/6 KPIs have values)
+  - Shows warning indicator (⚠) when rolling up incomplete data
+  - Previously blocked all rollups if any KPI was missing data
+
+### Changed
+- **🎨 Consistent Navigation Buttons**: Standardized across SWOT, Initiative Form, and Porter's Five Forces
+  - All "Back" buttons now say "Back to Workspace" for clarity
+  - All "Edit" buttons in view mode use `btn-outline-light` styling
+  - SWOT and Porter's edit modes now have "Back to Workspace" in header
+  - Initiative Form edit mode: removed duplicate bottom navigation (only in header now)
+  - Organization name badge in navbar now links to Dashboard (was Workspace)
+- **📊 Table Display Improvements**: Better space usage and visibility
+  - All table cells use `white-space: nowrap` (no multi-line wrapping)
+  - Saves vertical space, allows more rows visible on screen
+  - True auto-sizing: removed all `min-width` constraints from columns
+  - Columns size dynamically based on content
+  - Collapsed columns fully hide content with improved CSS (`font-size: 0`, `visibility: hidden`)
+
+### Technical
+- **Type Conversion**: All aggregation service methods now explicitly convert to `float()`
+- **Consensus Delegation**: Formula/linked KPIs use `config.get_consensus_value()` instead of contribution-based consensus
+- **Test Coverage**: Rollup functionality now has 28 dedicated tests (100% passing)
+- **CSS Improvements**: Stronger selectors and multiple fallbacks for hiding collapsed column content
+
+### Database
+- No migrations required for this release
+
 ## [1.19.0] - 2026-03-12
 
 ### Added

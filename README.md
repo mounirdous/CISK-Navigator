@@ -1,11 +1,41 @@
-# 🧭 CISK Navigator v1.17.0
+# 🧭 CISK Navigator v1.27.1
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.17.0-blue)
-![Python](https://img.shields.io/badge/python-3.11+-green)
+![Version](https://img.shields.io/badge/version-1.27.1-blue)
+![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
+![Tests](https://img.shields.io/badge/tests-192%20passing-success)
+
+## ✨ What's New in v1.27.1 (March 2026)
+
+### 🧪 **Comprehensive Rollup Testing**
+- **28 New Unit Tests**: Complete type safety validation for rollup aggregations
+- **Type Mixing Tests**: Decimal + float + int combinations work correctly
+- **Edge Case Coverage**: Zero values, negatives, very large/small numbers, high precision
+- **Real-World Scenarios**: Tests based on actual production data patterns
+- **All Formulas Tested**: sum, min, max, avg, median, count
+- **100% Passing**: Robust rollup functionality verified
+
+### 🔢 **Rollup Type Safety Fixes**
+- **Fixed Decimal/Float Mixing**: All aggregation formulas now handle mixed types correctly
+- **Formula KPI Rollup**: Formula-calculated KPIs now participate in rollups to parent levels
+- **Linked KPI Rollup**: Linked KPIs properly included in aggregations
+- **Partial Data Support**: Rollups work with incomplete data (shows ⚠ indicator)
+- **Consistent Return Types**: All aggregations return float for predictable behavior
+
+### 🌍 **Global KPIs Feature**
+- **No Governance Body Required**: KPIs can be created without governance body assignment
+- **Always Visible**: Global KPIs shown regardless of governance body filters
+- **Organization-Wide Metrics**: Perfect for KPIs that transcend specific committees
+
+### 🎨 **UI/UX Improvements**
+- **Consistent Navigation**: Standardized buttons across SWOT, Initiative Form, Porter's Five Forces
+- **Better Table Display**: No multi-line wrapping, true auto-sizing columns
+- **Collapsed Columns Fixed**: Content fully hidden in collapsed state
+- **Clearer Labels**: "Back to Workspace" instead of just "Back"
+- **Navbar Update**: Organization name badge now links to Dashboard
 
 ## ✨ What's New in v1.17.0 (March 2026)
 
