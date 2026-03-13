@@ -23,25 +23,31 @@
     .form-header {
         background: linear-gradient(135deg, var(--primary-blue) 0%, #0a58ca 100%);
         color: white;
-        padding: 1.5rem;
-        text-align: center;
+        padding: 2rem 2.5rem;
         position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .form-header h1 {
+    .form-header-title h1 {
         margin: 0;
-        font-size: 1.5rem;
-        font-weight: 600;
+        font-size: 2rem;
+        font-weight: 700;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
     }
 
-    .form-header .initiative-name {
-        font-size: 1rem;
-        opacity: 0.9;
-        margin-top: 0.25rem;
+    .form-header-title .initiative-name {
+        font-size: 1.1rem;
+        opacity: 0.95;
+        margin-top: 0.5rem;
+    }
+
+    .form-header-actions {
+        display: flex;
+        gap: 1rem;
     }
 
     .form-body {
@@ -289,19 +295,24 @@
         font-style: italic;
     }
 
-    .edit-mode-btn {
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        z-index: 10;
-    }
-
     @media (max-width: 768px) {
         .form-container {
             margin: 1rem;
         }
 
-        .form-header, .form-body {
+        .form-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1.5rem;
+        }
+
+        .form-header-actions {
+            width: 100%;
+            flex-direction: column;
+        }
+
+        .form-body {
             padding: 1.5rem;
         }
 
@@ -324,18 +335,24 @@
 <div class="container-fluid">
     <div class="form-container">
         <div class="form-header">
-            <h1>
-                <span style="font-weight: bold;">δ</span>
-                Initiative {% if edit_mode %}Form{% else %}Overview{% endif %}
-            </h1>
-            <div class="initiative-name">{{ initiative.name }}</div>
+            <div class="form-header-title">
+                <h1>
+                    <span style="font-weight: bold;">δ</span>
+                    Initiative {% if edit_mode %}Form{% else %}Overview{% endif %}
+                </h1>
+                <div class="initiative-name">{{ initiative.name }}</div>
+            </div>
+            <div class="form-header-actions">
+                {% if can_edit and not edit_mode %}
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-light">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+                {% endif %}
+                <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
+            </div>
         </div>
-
-        {% if can_edit and not edit_mode %}
-        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-warning edit-mode-btn">
-            <i class="bi bi-pencil-square"></i> Edit
-        </a>
-        {% endif %}
 
         <div class="form-body">
             {% if edit_mode %}
@@ -640,14 +657,21 @@
             </div>
             {% endif %}
 
-            <!-- Back Button -->
-            <div class="action-buttons">
-                <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-secondary btn-cancel">
-                    <i class="bi bi-arrow-left-circle"></i> Back to Workspace
+            {% endif %}
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div style="padding: 2rem; border-top: 2px solid var(--border-color); background: var(--light-bg);">
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                {% if can_edit and not edit_mode %}
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit Initiative Form
+                </a>
+                {% endif %}
+                <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Workspace
                 </a>
             </div>
-
-            {% endif %}
         </div>
     </div>
 </div>

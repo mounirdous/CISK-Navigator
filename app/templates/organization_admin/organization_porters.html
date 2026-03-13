@@ -463,6 +463,20 @@
                 </div>
             </div>
         </div>
+
+        <!-- Bottom Navigation -->
+        <div style="padding: 2rem; border-top: 2px solid var(--border-color); background: var(--bg-secondary);">
+            <div style="display: flex; gap: 1rem; justify-content: center;">
+                {% if current_user.is_global_admin or current_user.is_org_admin(organization.id) %}
+                <a href="{{ url_for('organization_admin.edit_organization_porters') }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit Porter's Five Forces
+                </a>
+                {% endif %}
+                <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Workspace
+                </a>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
