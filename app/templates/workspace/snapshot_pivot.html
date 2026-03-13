@@ -77,7 +77,7 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-12">
                         <div class="form-check form-switch">
-                            <input class="form-check-input" type="checkbox" id="show_targets" name="show_targets" {% if show_targets %}checked{% endif %}>
+                            <input class="form-check-input" type="checkbox" id="show_targets" name="show_targets" value="on" {% if show_targets %}checked{% endif %}>
                             <label class="form-check-label" for="show_targets">
                                 <i class="bi bi-bullseye"></i> Show Targets
                             </label>
@@ -427,6 +427,11 @@
                                     data-config-id="{{ kpi.config_id }}"
                                     data-kpi-name="{{ kpi.kpi_name }}">
                                 <strong>{{ kpi.kpi_name }}</strong>
+                                {% if kpi.config.target_value %}
+                                <i class="bi bi-bullseye text-warning ms-1"
+                                   title="Target: {{ kpi.config.target_value|format_value(kpi.value_type, kpi.config) }}{% if kpi.config.target_date %} by {{ kpi.config.target_date.strftime('%b %Y') }}{% endif %}"
+                                   style="cursor: help;"></i>
+                                {% endif %}
                             </td>
                             <td>{{ kpi.value_type_name }}</td>
                             {% if show_targets %}
@@ -639,6 +644,7 @@
         const params = new URLSearchParams({
             year: {{ current_year }},
             view_type: '{{ view_type }}',
+            show_targets: '{{ "true" if show_targets else "false" }}',
         });
         configIds.forEach(id => params.append('config_ids', id));
 

@@ -1077,12 +1077,13 @@ def snapshot_chart_data():
     year = request.args.get("year", type=int)
     view_type = request.args.get("view_type", "quarterly")
     config_ids = request.args.getlist("config_ids", type=int)
+    show_targets = request.args.get("show_targets") == "true"
 
     if not year or not config_ids:
         return jsonify({"error": "Missing required parameters"}), 400
 
     try:
-        chart_data = SnapshotPivotService.get_chart_data(org_id, year, config_ids, view_type)
+        chart_data = SnapshotPivotService.get_chart_data(org_id, year, config_ids, view_type, show_targets)
         return jsonify(chart_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

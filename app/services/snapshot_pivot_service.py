@@ -114,8 +114,8 @@ class SnapshotPivotService:
             elif view_type == "monthly":
                 query = query.filter(KPISnapshot.month.in_(periods))
 
-        # Fetch all snapshots
-        results = query.all()
+        # Fetch all snapshots - order by snapshot_date DESC to get most recent first
+        results = query.order_by(KPISnapshot.snapshot_date.desc()).all()
 
         # Generate period labels based on view type and custom_months
         all_periods = []
@@ -169,12 +169,13 @@ class SnapshotPivotService:
             else:  # yearly
                 period_label = str(snapshot.year)
 
-            # Store value
-            kpi_data[key]["values"][period_label] = {
-                "value": snapshot.get_value(),
-                "status": snapshot.consensus_status,
-                "snapshot_id": snapshot.id,
-            }
+            # Store value (only if not already present - keeps most recent due to DESC ordering)
+            if period_label not in kpi_data[key]["values"]:
+                kpi_data[key]["values"][period_label] = {
+                    "value": snapshot.get_value(),
+                    "status": snapshot.consensus_status,
+                    "snapshot_id": snapshot.id,
+                }
 
         # Convert to list format
         kpis = []
@@ -224,7 +225,7 @@ class SnapshotPivotService:
 
     @staticmethod
     def get_chart_data(
-        organization_id: int, year: int, kpi_config_ids: List[int], view_type: str = "quarterly"
+        organization_id: int, year: int, kpi_config_ids: List[int], view_type: str = "quarterly", show_targets: bool = False
     ) -> Dict:
         """
         Get data formatted for charting
@@ -287,5 +288,24 @@ class SnapshotPivotService:
                     "tension": 0.1,
                 }
             )
+
+            # Add target line if show_targets is True and target exists
+            if show_targets and kpi.get("config") and kpi["config"].target_value:
+                target_value = float(kpi["config"].target_value)
+                target_data = [target_value] * len(pivot["periods"])
+
+                datasets.append(
+                    {
+                        "label": f"{kpi['kpi_name']} - Target",
+                        "data": target_data,
+                        "borderColor": color,
+                        "backgroundColor": "transparent",
+                        "borderDash": [5, 5],
+                        "borderWidth": 2,
+                        "pointRadius": 0,
+                        "tension": 0,
+                        "fill": False,
+                    }
+                )
 
         return {"labels": pivot["periods"], "datasets": datasets}
