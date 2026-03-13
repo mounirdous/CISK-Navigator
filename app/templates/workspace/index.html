@@ -1070,17 +1070,19 @@ tr[data-level="kpi"] td {
                 <th style="min-width: {{ structure_width }}px; max-width: {{ structure_width }}px; width: {{ structure_width }}px; font-size: 1.1rem; font-weight: 700;">
                     <i class="bi bi-building"></i> {{ org_name }}
                     {% if organization %}
-                        {% set porters_completion = organization.get_porters_completion() %}
-                        <a href="{{ url_for('organization_admin.organization_porters') }}" style="text-decoration: none; margin-left: 0.75rem;" title="Porter's Five Forces Analysis">
-                            <i class="bi bi-diagram-3" style="font-size: 0.95rem; opacity: 0.8;"></i>
+                        <span class="form-view-icon ms-2">
+                            <a href="{{ url_for('organization_admin.organization_porters') }}" class="text-info" title="Porter's Five Forces Analysis">
+                                <i class="bi bi-diagram-3"></i>
+                            </a>
+                            {% set porters_completion = organization.get_porters_completion() %}
                             {% if porters_completion[2] == 'empty' %}
-                                <span class="completion-badge badge-empty">!</span>
+                                <span class="completion-badge badge-empty" title="Porter's Five Forces not filled">!</span>
                             {% elif porters_completion[2] == 'partial' %}
-                                <span class="completion-badge badge-partial">{{ porters_completion[0] }}/{{ porters_completion[1] }}</span>
+                                <span class="completion-badge badge-partial" title="Porter's Five Forces partially filled">{{ porters_completion[0] }}/{{ porters_completion[1] }}</span>
                             {% elif porters_completion[2] == 'complete' %}
-                                <span class="completion-badge badge-complete"><i class="bi bi-check-lg"></i></span>
+                                <span class="completion-badge badge-complete" title="Porter's Five Forces complete"><i class="bi bi-check-lg"></i></span>
                             {% endif %}
-                        </a>
+                        </span>
                     {% endif %}
                 </th>
                 {% for vt in value_types %}
