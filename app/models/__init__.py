@@ -18,6 +18,7 @@ from .kpi import KPI
 from .kpi_snapshot import KPISnapshot, RollupSnapshot
 from .organization import Organization, UserOrganizationMembership
 from .rollup_rule import RollupRule
+from .saved_chart import SavedChart
 from .space import Space
 from .sso_config import SSOConfig
 from .system import InitiativeSystemLink, System
@@ -55,4 +56,5 @@ __all__ = [
     "UserAnnouncementAcknowledgment",
     "AnnouncementTargetUser",
     "AnnouncementTargetOrganization",
+    "SavedChart",
 ]

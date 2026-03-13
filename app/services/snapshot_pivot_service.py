@@ -33,40 +33,42 @@ class SnapshotPivotService:
     @staticmethod
     def get_pivot_data(
         organization_id: int,
-        year: int,
-        view_type: str = "quarterly",  # 'monthly', 'quarterly', 'yearly'
+        year: int = None,
+        view_type: str = "quarterly",
         space_id: int = None,
+        challenge_id: int = None,
         value_type_id: int = None,
+        year_start: int = None,
+        year_end: int = None,
+        periods: List[int] = None,
+        custom_months: List[tuple] = None,
     ) -> Dict:
         """
         Get pivot table data: KPIs as rows, periods as columns
 
         Args:
             organization_id: Organization ID
-            year: Year to analyze
+            year: Year to analyze (legacy - use year_start/year_end instead)
             view_type: 'monthly', 'quarterly', or 'yearly'
             space_id: Optional space filter
             value_type_id: Optional value type filter
+            year_start: Start year for range
+            year_end: End year for range
+            periods: List of quarters (1-4) or months (1-12) to include
 
         Returns:
             Dict with structure:
             {
                 'periods': ['Q1 2026', 'Q2 2026', ...],
-                'kpis': [
-                    {
-                        'kpi_id': 1,
-                        'kpi_name': 'Finance Cost',
-                        'value_type': 'Cost (CHF)',
-                        'values': {
-                            'Q1 2026': {'value': 210000, 'status': 'strong'},
-                            'Q2 2026': {'value': 225000, 'status': 'strong'},
-                            ...
-                        }
-                    },
-                    ...
-                ]
+                'kpis': [...]
             }
         """
+        # Handle legacy year parameter
+        if year_start is None:
+            year_start = year
+        if year_end is None:
+            year_end = year_start
+
         # Build query for snapshots
         query = (
             db.session.query(KPISnapshot, KPIValueTypeConfig, KPI, ValueType)
@@ -75,32 +77,75 @@ class SnapshotPivotService:
             .join(ValueType, KPIValueTypeConfig.value_type_id == ValueType.id)
             .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
             .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .filter(Initiative.organization_id == organization_id, KPISnapshot.year == year)
+            .filter(
+                Initiative.organization_id == organization_id,
+                KPISnapshot.year >= year_start,
+                KPISnapshot.year <= year_end,
+            )
         )
 
         # Apply filters
-        if space_id:
-            # Filter by space through the hierarchy
-            from app.models import Challenge
+        if space_id or challenge_id:
+            # Filter by space/challenge through the hierarchy
+            from app.models import Challenge, ChallengeInitiativeLink
 
-            query = query.join(Challenge, Initiative.challenge_links).filter(Challenge.space_id == space_id)
+            query = query.join(ChallengeInitiativeLink, Initiative.challenge_links).join(
+                Challenge, ChallengeInitiativeLink.challenge
+            )
+
+            if space_id:
+                query = query.filter(Challenge.space_id == space_id)
+            if challenge_id:
+                query = query.filter(Challenge.id == challenge_id)
 
         if value_type_id:
             query = query.filter(ValueType.id == value_type_id)
 
+        # Filter by specific periods (quarters or months) or custom month range
+        if custom_months:
+            # Custom date range: filter by specific (year, month) tuples
+            from sqlalchemy import and_, or_
+
+            month_conditions = [and_(KPISnapshot.year == y, KPISnapshot.month == m) for y, m in custom_months]
+            query = query.filter(or_(*month_conditions))
+        elif periods:
+            if view_type == "quarterly":
+                query = query.filter(KPISnapshot.quarter.in_(periods))
+            elif view_type == "monthly":
+                query = query.filter(KPISnapshot.month.in_(periods))
+
         # Fetch all snapshots
         results = query.all()
 
-        # Generate period labels based on view type
-        if view_type == "monthly":
-            periods = [f"{SnapshotPivotService._month_name(m)} {year}" for m in range(1, 13)]
+        # Generate period labels based on view type and custom_months
+        all_periods = []
+        if custom_months:
+            # Custom range: show based on view_type
+            if view_type == "monthly":
+                all_periods = [f"{SnapshotPivotService._month_name(m)} {y}" for y, m in custom_months]
+            elif view_type == "quarterly":
+                # Convert months to quarters and dedupe
+                quarters_set = set()
+                for y, m in custom_months:
+                    q = (m - 1) // 3 + 1
+                    quarters_set.add((y, q))
+                for y, q in sorted(quarters_set):
+                    all_periods.append(f"Q{q} {y}")
+            else:  # yearly
+                years_set = {y for y, m in custom_months}
+                all_periods = [str(y) for y in sorted(years_set)]
+        elif view_type == "monthly":
+            for y in range(year_start, year_end + 1):
+                month_list = periods if periods else range(1, 13)
+                for m in month_list:
+                    all_periods.append(f"{SnapshotPivotService._month_name(m)} {y}")
         elif view_type == "quarterly":
-            periods = [f"Q{q} {year}" for q in range(1, 5)]
+            for y in range(year_start, year_end + 1):
+                quarter_list = periods if periods else range(1, 5)
+                for q in quarter_list:
+                    all_periods.append(f"Q{q} {y}")
         else:  # yearly
-            # For yearly view, show multiple years
-            min_year = min([r[0].year for r in results]) if results else year
-            max_year = max([r[0].year for r in results]) if results else year
-            periods = [str(y) for y in range(min_year, max_year + 1)]
+            all_periods = [str(y) for y in range(year_start, year_end + 1)]
 
         # Group data by KPI config
         kpi_data = defaultdict(lambda: {"kpi_name": "", "value_type_name": "", "values": {}})
@@ -114,6 +159,7 @@ class SnapshotPivotService:
             unit = value_type.unit_label if value_type.unit_label else ""
             kpi_data[key]["value_type_name"] = f"{value_type.name} ({unit})" if unit else value_type.name
             kpi_data[key]["value_type"] = value_type
+            kpi_data[key]["config"] = config
 
             # Determine period key
             if view_type == "monthly":
@@ -140,6 +186,7 @@ class SnapshotPivotService:
                     "kpi_name": data["kpi_name"],
                     "value_type_name": data["value_type_name"],
                     "value_type": data["value_type"],
+                    "config": data["config"],
                     "values": data["values"],
                 }
             )
@@ -147,7 +194,14 @@ class SnapshotPivotService:
         # Sort KPIs by name
         kpis.sort(key=lambda x: x["kpi_name"])
 
-        return {"periods": periods, "kpis": kpis, "view_type": view_type, "year": year}
+        return {
+            "periods": all_periods,
+            "kpis": kpis,
+            "view_type": view_type,
+            "year": year_start,
+            "year_start": year_start,
+            "year_end": year_end,
+        }
 
     @staticmethod
     def _month_name(month: int) -> str:

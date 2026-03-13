@@ -431,10 +431,11 @@ class KPIValueTypeConfig(db.Model):
                 logging.warning(f"Formula config {self.id}: mode=advanced but no expression")
                 return None
 
+            # Import exception types before try block so they're in scope for except clause
+            from simpleeval import FunctionNotDefined, InvalidExpression, simple_eval
+
             try:
                 import logging
-
-                from simpleeval import FunctionNotDefined, InvalidExpression, simple_eval
 
                 logging.info(
                     f"Formula config {self.id}: Evaluating expression '{expression}' with namespace {namespace}"

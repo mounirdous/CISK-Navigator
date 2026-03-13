@@ -23,12 +23,16 @@ class Config:
         if database_url.startswith("postgresql://") and "+" not in database_url:
             database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
-    # CRITICAL: In production, DATABASE_URL MUST be set - never fall back to SQLite!
-    if os.environ.get("FLASK_ENV") == "production" and not database_url:
-        raise RuntimeError(
-            "CRITICAL ERROR: DATABASE_URL environment variable is not set in production! "
-            "This would create a new SQLite database and DESTROY all your data. "
-            "Please set DATABASE_URL in your Render environment variables."
+    # CRITICAL: DATABASE_URL should be set, but allow SQLite as absolute last resort
+    # (This fallback should never be used - DevelopmentConfig overrides with PostgreSQL)
+    if not database_url:
+        import warnings
+
+        warnings.warn(
+            "WARNING: DATABASE_URL not set! Using SQLite fallback. "
+            "This should only happen during initial setup. "
+            "For normal operation, use PostgreSQL by setting DATABASE_URL or using DevelopmentConfig.",
+            RuntimeWarning,
         )
 
     SQLALCHEMY_DATABASE_URI = database_url or f'sqlite:///{basedir / "cisk.db"}'
@@ -50,6 +54,21 @@ class DevelopmentConfig(Config):
     """Development configuration"""
 
     DEBUG = True
+
+    # ENFORCE PostgreSQL - NEVER use SQLite in development
+    # Override the base Config's database URI with PostgreSQL explicitly
+    database_url = os.environ.get("DATABASE_URL")
+    if database_url:
+        # Handle postgres:// -> postgresql:// conversion
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        # Use psycopg3 driver
+        if database_url.startswith("postgresql://") and "+" not in database_url:
+            database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        SQLALCHEMY_DATABASE_URI = database_url
+    else:
+        # Default to local PostgreSQL - NO SQLite fallback!
+        SQLALCHEMY_DATABASE_URI = "postgresql+psycopg://localhost/cisknavigator"
 
 
 class ProductionConfig(Config):

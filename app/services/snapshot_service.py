@@ -36,6 +36,9 @@ class SnapshotService:
         allow_duplicates: bool = False,
         batch_id: str = None,
         is_public: bool = False,
+        year_override: int = None,
+        quarter_override: int = None,
+        month_override: int = None,
     ) -> Optional[KPISnapshot]:
         """
         Create a snapshot of the current KPI consensus value.
@@ -49,6 +52,9 @@ class SnapshotService:
             allow_duplicates: If True, always create new snapshot even if one exists for this date
             batch_id: Batch ID to group snapshots (auto-generated if not provided)
             is_public: Whether snapshot is public (default: False/private)
+            year_override: Optional year override (for fiscal year tracking)
+            quarter_override: Optional quarter override (1-4)
+            month_override: Optional month override (1-12)
 
         Returns:
             KPISnapshot object or None if no consensus
@@ -132,6 +138,9 @@ class SnapshotService:
         label: str = None,
         user_id: int = None,
         is_public: bool = False,
+        year_override: int = None,
+        quarter_override: int = None,
+        month_override: int = None,
     ) -> Dict:
         """
         Create snapshots for all KPIs in an organization.
@@ -142,6 +151,9 @@ class SnapshotService:
             label: Label for this snapshot
             user_id: User creating snapshots
             is_public: Whether snapshot is public (default: False/private)
+            year_override: Optional year override (for fiscal year tracking)
+            quarter_override: Optional quarter override (1-4)
+            month_override: Optional month override (1-12)
 
         Returns:
             Dict with counts of created snapshots
@@ -174,6 +186,9 @@ class SnapshotService:
                 batch_id=batch_id,
                 is_public=is_public,
                 allow_duplicates=True,
+                year_override=year_override,
+                quarter_override=quarter_override,
+                month_override=month_override,
             )
             if snapshot:
                 created_count += 1
@@ -189,6 +204,9 @@ class SnapshotService:
             user_id=user_id,
             is_public=is_public,
             allow_duplicates=True,
+            year_override=year_override,
+            quarter_override=quarter_override,
+            month_override=month_override,
         )
 
         return {
@@ -208,9 +226,17 @@ class SnapshotService:
         user_id: int = None,
         is_public: bool = False,
         allow_duplicates: bool = False,
+        year_override: int = None,
+        quarter_override: int = None,
+        month_override: int = None,
     ) -> int:
         """
         Create rollup snapshots for all hierarchy levels.
+
+        Args:
+            year_override: Optional year override
+            quarter_override: Optional quarter override
+            month_override: Optional month override
 
         Returns:
             Count of created rollup snapshots
@@ -241,6 +267,9 @@ class SnapshotService:
                         user_id=user_id,
                         is_public=is_public,
                         allow_duplicates=allow_duplicates,
+                        year_override=year_override,
+                        quarter_override=quarter_override,
+                        month_override=month_override,
                     )
                     if snapshot:
                         count += 1
@@ -262,6 +291,9 @@ class SnapshotService:
                         user_id=user_id,
                         is_public=is_public,
                         allow_duplicates=allow_duplicates,
+                        year_override=year_override,
+                        quarter_override=quarter_override,
+                        month_override=month_override,
                     )
                     if snapshot:
                         count += 1
@@ -283,6 +315,9 @@ class SnapshotService:
                         user_id=user_id,
                         is_public=is_public,
                         allow_duplicates=allow_duplicates,
+                        year_override=year_override,
+                        quarter_override=quarter_override,
+                        month_override=month_override,
                     )
                     if snapshot:
                         count += 1
@@ -309,6 +344,9 @@ class SnapshotService:
                         user_id=user_id,
                         is_public=is_public,
                         allow_duplicates=allow_duplicates,
+                        year_override=year_override,
+                        quarter_override=quarter_override,
+                        month_override=month_override,
                     )
                     if snapshot:
                         count += 1
@@ -327,6 +365,9 @@ class SnapshotService:
         user_id: int = None,
         is_public: bool = False,
         allow_duplicates: bool = False,
+        year_override: int = None,
+        quarter_override: int = None,
+        month_override: int = None,
     ) -> Optional[RollupSnapshot]:
         """Create a single rollup snapshot"""
 
@@ -336,10 +377,10 @@ class SnapshotService:
         if batch_id is None:
             batch_id = str(uuid.uuid4())
 
-        # Extract period tags from snapshot date
-        year = snapshot_date.year
-        quarter = (snapshot_date.month - 1) // 3 + 1
-        month = snapshot_date.month
+        # Extract period tags from snapshot date (or use overrides)
+        year = year_override if year_override is not None else snapshot_date.year
+        quarter = quarter_override if quarter_override is not None else (snapshot_date.month - 1) // 3 + 1
+        month = month_override if month_override is not None else snapshot_date.month
 
         # Skip deduplication check if allow_duplicates is True
         if not allow_duplicates:

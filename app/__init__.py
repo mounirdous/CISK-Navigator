@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "1.27.1"
+__version__ = "1.28.0"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -192,12 +192,17 @@ def create_app(config_name=None):
             if config and hasattr(config, "display_decimals") and config.display_decimals is not None:
                 decimal_places = config.display_decimals
             else:
-                # Default: use at least 2 decimals when scaling
-                decimal_places = max(2, value_type.decimal_places if value_type.decimal_places is not None else 2)
+                # Use value type's decimal places setting (respect 0 for whole numbers)
+                decimal_places = value_type.decimal_places if value_type.decimal_places is not None else 2
 
-            formatted = f"{scaled_value:.{decimal_places}f}"
-            # Remove trailing zeros and decimal point if not needed
-            formatted = formatted.rstrip("0").rstrip(".")
+            # Format value
+            if decimal_places == 0:
+                # No decimals - format as integer (don't use rstrip which would remove significant zeros)
+                formatted = f"{int(round(scaled_value))}"
+            else:
+                # Has decimals - format and remove trailing zeros after decimal point
+                formatted = f"{scaled_value:.{decimal_places}f}"
+                formatted = formatted.rstrip("0").rstrip(".")
         else:
             # No scaling: use original format
             if value_type.numeric_format == "integer":

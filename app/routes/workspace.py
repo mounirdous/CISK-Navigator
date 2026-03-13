@@ -27,6 +27,7 @@ from app.models import (
     KPIValueTypeConfig,
     Organization,
     RollupSnapshot,
+    SavedChart,
     Space,
     System,
     SystemAnnouncement,
@@ -950,31 +951,115 @@ def snapshot_pivot():
         return redirect(url_for("workspace.list_snapshots"))
 
     # Get filter parameters
-    year = request.args.get("year", type=int) or available_years[0]
+    use_custom_range = request.args.get("use_custom_range") == "true"
     view_type = request.args.get("view_type", "quarterly")
     space_id = request.args.get("space_id", type=int)
+    challenge_id = request.args.get("challenge_id", type=int)
     value_type_id = request.args.get("value_type_id", type=int)
+    show_targets = request.args.get("show_targets") == "on"
+    show_status = request.args.get("show_status") == "on"
+
+    if use_custom_range:
+        # Custom date range mode
+        start_month = request.args.get("start_month", type=int) or 1
+        start_year = request.args.get("start_year_custom", type=int) or available_years[0]
+        end_month = request.args.get("end_month", type=int) or 12
+        end_year = request.args.get("end_year_custom", type=int) or available_years[-1]
+
+        year_start = start_year
+        year_end = end_year
+
+        # Build list of months in range
+        custom_months = []
+        current_year = start_year
+        current_month = start_month
+
+        while (current_year < end_year) or (current_year == end_year and current_month <= end_month):
+            custom_months.append((current_year, current_month))
+            current_month += 1
+            if current_month > 12:
+                current_month = 1
+                current_year += 1
+
+        periods = None  # Will filter by custom_months list instead
+        quarters = []
+        months = []
+    else:
+        # Simple mode
+        year_start = request.args.get("year_start", type=int) or available_years[0]
+        year_end = request.args.get("year_end", type=int) or year_start
+        quarters = request.args.getlist("quarters", type=int)
+        months = request.args.getlist("months", type=int)
+        periods = quarters if view_type == "quarterly" else months if view_type == "monthly" else None
+        custom_months = None
 
     # Get pivot data
     pivot_data = SnapshotPivotService.get_pivot_data(
-        org_id, year, view_type, space_id=space_id, value_type_id=value_type_id
+        org_id,
+        view_type=view_type,
+        space_id=space_id,
+        challenge_id=challenge_id,
+        value_type_id=value_type_id,
+        year_start=year_start,
+        year_end=year_end,
+        periods=periods,
+        custom_months=custom_months,
     )
 
-    # Get spaces and value types for filters
-    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
+    # Get filter options - respect private spaces
+    spaces_query = Space.query.filter_by(organization_id=org_id)
+    # Filter out private spaces unless user is the owner or has admin access
+    if not current_user.is_global_admin and not current_user.is_org_admin(org_id):
+        spaces_query = spaces_query.filter(
+            or_(Space.is_private.is_(False), Space.created_by_user_id == current_user.id)
+        )
+    spaces = spaces_query.order_by(Space.display_order, Space.name).all()
+
+    # Get all challenges - filtered by accessible spaces only
+    from app.models import Challenge
+
+    # Get IDs of accessible spaces
+    accessible_space_ids = [s.id for s in spaces]
+
+    all_challenges = (
+        Challenge.query.filter_by(organization_id=org_id)
+        .filter(Challenge.space_id.in_(accessible_space_ids))
+        .order_by(Challenge.display_order, Challenge.name)
+        .all()
+    )
+
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.name).all()
 
-    return render_template(
-        "workspace/snapshot_pivot.html",
-        pivot_data=pivot_data,
-        available_years=available_years,
-        current_year=year,
-        view_type=view_type,
-        spaces=spaces,
-        value_types=value_types,
-        selected_space_id=space_id,
-        selected_value_type_id=value_type_id,
-    )
+    # Prepare template variables
+    template_vars = {
+        "pivot_data": pivot_data,
+        "available_years": available_years,
+        "current_year": year_start,
+        "year_start": year_start,
+        "year_end": year_end,
+        "view_type": view_type,
+        "spaces": spaces,
+        "challenges": all_challenges,
+        "value_types": value_types,
+        "selected_space_id": space_id,
+        "selected_challenge_id": challenge_id,
+        "selected_value_type_id": value_type_id,
+        "selected_quarters": quarters,
+        "selected_months": months,
+        "use_custom_range": use_custom_range,
+        "show_targets": show_targets,
+        "show_status": show_status,
+        "csrf_token": generate_csrf,
+    }
+
+    # Add custom date values if in custom mode
+    if use_custom_range:
+        template_vars["start_month"] = request.args.get("start_month", type=int) or 1
+        template_vars["start_year_custom"] = request.args.get("start_year_custom", type=int) or available_years[0]
+        template_vars["end_month"] = request.args.get("end_month", type=int) or 12
+        template_vars["end_year_custom"] = request.args.get("end_year_custom", type=int) or available_years[-1]
+
+    return render_template("workspace/snapshot_pivot.html", **template_vars)
 
 
 @bp.route("/snapshots/chart-data")
@@ -1003,6 +1088,254 @@ def snapshot_chart_data():
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/snapshots/charts/save", methods=["POST"])
+@login_required
+@organization_required
+def save_chart():
+    """Save a chart configuration"""
+    org_id = session.get("organization_id")
+    data = request.get_json()
+
+    name = data.get("name", "").strip()
+    if not name:
+        return jsonify({"error": "Chart name is required"}), 400
+
+    config_colors = data.get("config_colors", {})
+    if not config_colors:
+        return jsonify({"error": "No KPIs selected"}), 400
+
+    chart = SavedChart(
+        organization_id=org_id,
+        created_by_user_id=current_user.id,
+        name=name,
+        description=data.get("description", ""),
+        year_start=data.get("year_start"),
+        year_end=data.get("year_end"),
+        view_type=data.get("view_type", "quarterly"),
+        chart_type=data.get("chart_type", "line"),
+        space_id=data.get("space_id"),
+        value_type_id=data.get("value_type_id"),
+        period_filter=data.get("period_filter"),
+        is_shared=data.get("is_shared", False),
+    )
+    chart.set_config_colors(config_colors)
+
+    db.session.add(chart)
+    db.session.commit()
+
+    return jsonify({"success": True, "id": chart.id, "name": chart.name, "is_shared": chart.is_shared})
+
+
+@bp.route("/snapshots/charts/search")
+@login_required
+@organization_required
+def search_charts():
+    """Search saved charts (instant search) - shows user's private charts + public charts"""
+    org_id = session.get("organization_id")
+    query = request.args.get("q", "").strip()
+
+    # Show: user's own charts (private or public) OR public charts from others
+    charts_query = (
+        SavedChart.query.filter_by(organization_id=org_id)
+        .filter(
+            or_(
+                SavedChart.created_by_user_id == current_user.id,  # User's own charts
+                SavedChart.is_shared.is_(True),  # Public charts from others
+            )
+        )
+        .order_by(SavedChart.updated_at.desc())
+    )
+
+    if query:
+        charts_query = charts_query.filter(
+            or_(
+                SavedChart.name.ilike(f"%{query}%"),
+                SavedChart.description.ilike(f"%{query}%"),
+            )
+        )
+
+    charts = charts_query.limit(20).all()
+
+    return jsonify(
+        {
+            "charts": [
+                {
+                    "id": c.id,
+                    "name": c.name,
+                    "description": c.description,
+                    "year_range": f"{c.year_start}-{c.year_end}" if c.year_start != c.year_end else str(c.year_start),
+                    "view_type": c.view_type,
+                    "chart_type": c.chart_type,
+                    "kpi_count": len(c.get_config_colors()),
+                    "is_shared": c.is_shared,
+                    "is_owner": c.created_by_user_id == current_user.id,
+                    "created_by": c.created_by.display_name,
+                }
+                for c in charts
+            ]
+        }
+    )
+
+
+@bp.route("/snapshots/charts/<int:chart_id>")
+@login_required
+@organization_required
+def load_chart(chart_id):
+    """Load a saved chart configuration"""
+    org_id = session.get("organization_id")
+    chart = SavedChart.query.filter_by(id=chart_id, organization_id=org_id).first_or_404()
+
+    return jsonify(
+        {
+            "id": chart.id,
+            "name": chart.name,
+            "description": chart.description,
+            "year_start": chart.year_start,
+            "year_end": chart.year_end,
+            "view_type": chart.view_type,
+            "chart_type": chart.chart_type,
+            "space_id": chart.space_id,
+            "value_type_id": chart.value_type_id,
+            "period_filter": chart.period_filter,
+            "config_colors": chart.get_config_colors(),
+        }
+    )
+
+
+@bp.route("/snapshots/pivot/export")
+@login_required
+@organization_required
+def export_pivot_excel():
+    """Export pivot table to Excel"""
+    from io import BytesIO
+
+    import openpyxl
+    from openpyxl.styles import Alignment, Font, PatternFill
+
+    org_id = session.get("organization_id")
+
+    # Get available years for fallback
+    available_years = SnapshotPivotService.get_available_years(org_id)
+    if not available_years:
+        flash("No data to export", "warning")
+        return redirect(url_for("workspace.list_snapshots"))
+
+    # Get same filter parameters as pivot view
+    use_custom_range = request.args.get("use_custom_range") == "true"
+    view_type = request.args.get("view_type", "quarterly")
+    space_id = request.args.get("space_id", type=int)
+    value_type_id = request.args.get("value_type_id", type=int)
+
+    if use_custom_range:
+        start_month = request.args.get("start_month", type=int) or 1
+        start_year = request.args.get("start_year_custom", type=int) or available_years[0]
+        end_month = request.args.get("end_month", type=int) or 12
+        end_year = request.args.get("end_year_custom", type=int) or available_years[-1]
+
+        year_start = start_year
+        year_end = end_year
+
+        custom_months = []
+        current_year = start_year
+        current_month = start_month
+        while (current_year < end_year) or (current_year == end_year and current_month <= end_month):
+            custom_months.append((current_year, current_month))
+            current_month += 1
+            if current_month > 12:
+                current_month = 1
+                current_year += 1
+
+        periods = None
+    else:
+        year_start = request.args.get("year_start", type=int) or available_years[0]
+        year_end = request.args.get("year_end", type=int) or year_start
+        quarters = request.args.getlist("quarters", type=int)
+        months = request.args.getlist("months", type=int)
+        periods = quarters if view_type == "quarterly" else months if view_type == "monthly" else None
+        custom_months = None
+
+    # Get data
+    pivot_data = SnapshotPivotService.get_pivot_data(
+        org_id,
+        view_type=view_type,
+        space_id=space_id,
+        value_type_id=value_type_id,
+        year_start=year_start,
+        year_end=year_end,
+        periods=periods,
+        custom_months=custom_months,
+    )
+
+    # Create workbook
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Snapshot Analysis"
+
+    # Header style
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    header_alignment = Alignment(horizontal="center", vertical="center")
+
+    # Write headers
+    ws["A1"] = "KPI"
+    ws["B1"] = "Value Type"
+    ws["A1"].fill = header_fill
+    ws["A1"].font = header_font
+    ws["A1"].alignment = header_alignment
+    ws["B1"].fill = header_fill
+    ws["B1"].font = header_font
+    ws["B1"].alignment = header_alignment
+
+    # Period headers
+    for idx, period in enumerate(pivot_data["periods"], start=3):
+        cell = ws.cell(row=1, column=idx)
+        cell.value = period
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+
+    # Write data
+    row_num = 2
+    for kpi in pivot_data["kpis"]:
+        ws.cell(row=row_num, column=1, value=kpi["kpi_name"])
+        ws.cell(row=row_num, column=2, value=kpi["value_type_name"])
+
+        for idx, period in enumerate(pivot_data["periods"], start=3):
+            if period in kpi["values"]:
+                value_data = kpi["values"][period]
+                if value_data["value"] is not None:
+                    ws.cell(row=row_num, column=idx, value=float(value_data["value"]))
+
+        row_num += 1
+
+    # Auto-size columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except Exception:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Save to BytesIO
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"snapshot_analysis_{view_type}_{year_start}-{year_end}.xlsx"
+
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @bp.route("/snapshots/create", methods=["POST"])
 @login_required
 @organization_required
@@ -1011,6 +1344,7 @@ def create_snapshot():
     Create a snapshot of current workspace state.
 
     Captures all KPI values and rollups for the organization.
+    Accepts optional period tag overrides (year, quarter, month).
     """
     org_id = session.get("organization_id")
     snapshot_date_str = request.form.get("snapshot_date")
@@ -1027,10 +1361,31 @@ def create_snapshot():
     else:
         snapshot_date = date.today()
 
+    # Get optional period tag overrides
+    year_override = request.form.get("year")
+    quarter_override = request.form.get("quarter")
+    month_override = request.form.get("month")
+
+    # Convert to integers if provided
+    try:
+        year = int(year_override) if year_override else None
+        quarter = int(quarter_override) if quarter_override else None
+        month = int(month_override) if month_override else None
+    except ValueError:
+        flash("Invalid period tag values", "danger")
+        return redirect(url_for("workspace.list_snapshots"))
+
     # Create snapshots
     try:
         result = SnapshotService.create_organization_snapshot(
-            org_id, snapshot_date=snapshot_date, label=label or None, user_id=current_user.id, is_public=is_public
+            org_id,
+            snapshot_date=snapshot_date,
+            label=label or None,
+            user_id=current_user.id,
+            is_public=is_public,
+            year_override=year,
+            quarter_override=quarter,
+            month_override=month,
         )
 
         visibility = "Public" if is_public else "Private"

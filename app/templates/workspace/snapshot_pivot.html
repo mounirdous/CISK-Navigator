@@ -20,182 +20,514 @@
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" action="{{ url_for('workspace.snapshot_pivot') }}" class="row g-3">
-                <div class="col-md-2">
-                    <label for="year" class="form-label">Year</label>
-                    <select name="year" id="year" class="form-select">
-                        {% for y in available_years %}
-                        <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
-                        {% endfor %}
-                    </select>
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
+        <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
+            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="GET" action="{{ url_for('workspace.snapshot_pivot') }}" id="filter-form">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label">View Type</label>
+                        <select name="view_type" id="view_type" class="form-select" style="border-radius: 8px;">
+                            <option value="monthly" {% if view_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                            <option value="quarterly" {% if view_type == 'quarterly' %}selected{% endif %}>Quarterly</option>
+                            <option value="yearly" {% if view_type == 'yearly' %}selected{% endif %}>Yearly</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Space</label>
+                        <select name="space_id" id="space_id" class="form-select" style="border-radius: 8px;">
+                            <option value="">All Spaces</option>
+                            {% for space in spaces %}
+                            <option value="{{ space.id }}" {% if space.id == selected_space_id %}selected{% endif %}>
+                                {{ space.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Challenge</label>
+                        <select name="challenge_id" id="challenge_id" class="form-select" style="border-radius: 8px;">
+                            <option value="">All Challenges</option>
+                            {% for challenge in challenges %}
+                            <option value="{{ challenge.id }}" data-space-id="{{ challenge.space_id }}" {% if challenge.id == selected_challenge_id %}selected{% endif %}>
+                                {{ challenge.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label">Value Type</label>
+                        <select name="value_type_id" id="value_type_id" class="form-select" style="border-radius: 8px;">
+                            <option value="">All Value Types</option>
+                            {% for vt in value_types %}
+                            <option value="{{ vt.id }}" {% if vt.id == selected_value_type_id %}selected{% endif %}>
+                                {{ vt.name }}{% if vt.unit %} ({{ vt.unit }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
 
-                <div class="col-md-2">
-                    <label for="view_type" class="form-label">View Type</label>
-                    <select name="view_type" id="view_type" class="form-select">
-                        <option value="monthly" {% if view_type == 'monthly' %}selected{% endif %}>Monthly</option>
-                        <option value="quarterly" {% if view_type == 'quarterly' %}selected{% endif %}>Quarterly</option>
-                        <option value="yearly" {% if view_type == 'yearly' %}selected{% endif %}>Yearly</option>
-                    </select>
+                <!-- Smart Toggles -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="show_targets" name="show_targets" {% if show_targets %}checked{% endif %}>
+                            <label class="form-check-label" for="show_targets">
+                                <i class="bi bi-bullseye"></i> Show Targets
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="space_id" class="form-label">Space (Optional)</label>
-                    <select name="space_id" id="space_id" class="form-select">
-                        <option value="">All Spaces</option>
-                        {% for space in spaces %}
-                        <option value="{{ space.id }}" {% if space.id == selected_space_id %}selected{% endif %}>
-                            {{ space.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
+                <!-- Time Range Selection -->
+                <div class="card" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0"><i class="bi bi-calendar-range"></i> Time Range</h6>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <input type="radio" class="btn-check" name="range_mode_toggle" id="range_mode_simple" value="simple" {% if not use_custom_range %}checked{% endif %} autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="range_mode_simple" style="border-radius: 6px 0 0 6px;">Simple</label>
+
+                                <input type="radio" class="btn-check" name="range_mode_toggle" id="range_mode_custom" value="custom" {% if use_custom_range %}checked{% endif %} autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="range_mode_custom" style="border-radius: 0 6px 6px 0;">Custom Dates</label>
+                            </div>
+                        </div>
+
+                        <!-- Simple Mode -->
+                        <div id="simple-range-mode" {% if use_custom_range %}style="display: none;"{% endif %}>
+                            <div class="row g-3">
+                            <!-- Year Range -->
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Year Range</label>
+                                <div class="row g-2">
+                                    <div class="col">
+                                        <label class="form-label small">From</label>
+                                        <select name="year_start" id="year_start" class="form-select form-select-sm" style="border-radius: 6px;">
+                                            {% for y in available_years %}
+                                            <option value="{{ y }}" {% if y == year_start %}selected{% endif %}>{{ y }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col">
+                                        <label class="form-label small">To</label>
+                                        <select name="year_end" id="year_end" class="form-select form-select-sm" style="border-radius: 6px;">
+                                            {% for y in available_years %}
+                                            <option value="{{ y }}" {% if y == year_end %}selected{% endif %}>{{ y }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Period Selection (Quarters or Months) -->
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Period Selection (optional)</label>
+                                <div id="period-selection">
+                                    <!-- Quarterly options -->
+                                    <div id="quarterly-periods" style="display: none;">
+                                        <div class="btn-group w-100" role="group">
+                                            <input type="checkbox" class="btn-check period-check" id="q1" name="quarters" value="1" autocomplete="off" {% if 1 in selected_quarters %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="q1" style="border-radius: 6px 0 0 6px;">Q1</label>
+
+                                            <input type="checkbox" class="btn-check period-check" id="q2" name="quarters" value="2" autocomplete="off" {% if 2 in selected_quarters %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="q2">Q2</label>
+
+                                            <input type="checkbox" class="btn-check period-check" id="q3" name="quarters" value="3" autocomplete="off" {% if 3 in selected_quarters %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="q3">Q3</label>
+
+                                            <input type="checkbox" class="btn-check period-check" id="q4" name="quarters" value="4" autocomplete="off" {% if 4 in selected_quarters %}checked{% endif %}>
+                                            <label class="btn btn-outline-primary" for="q4" style="border-radius: 0 6px 6px 0;">Q4</label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Monthly options -->
+                                    <div id="monthly-periods" style="display: none;">
+                                        <div class="row g-2">
+                                            {% for month_num, month_name in [(1, 'Jan'), (2, 'Feb'), (3, 'Mar'), (4, 'Apr'), (5, 'May'), (6, 'Jun'), (7, 'Jul'), (8, 'Aug'), (9, 'Sep'), (10, 'Oct'), (11, 'Nov'), (12, 'Dec')] %}
+                                            <div class="col-3">
+                                                <input type="checkbox" class="btn-check period-check" id="m{{ month_num }}" name="months" value="{{ month_num }}" autocomplete="off" {% if month_num in selected_months %}checked{% endif %}>
+                                                <label class="btn btn-outline-primary btn-sm w-100" for="m{{ month_num }}" style="border-radius: 6px;">{{ month_name }}</label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+
+                                    <small class="text-muted d-block mt-2">
+                                        <i class="bi bi-info-circle"></i> Applies same periods to all years. Use "Custom Dates" for month-level ranges.
+                                    </small>
+                                </div>
+                            </div>
+                            </div>
+                        </div>
+
+                        <!-- Custom Date Mode -->
+                        <div id="custom-range-mode" {% if not use_custom_range %}style="display: none;"{% endif %}>
+                            <input type="hidden" name="use_custom_range" id="use_custom_range" value="{% if use_custom_range %}true{% else %}false{% endif %}">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Start Date</label>
+                                    <div class="row g-2">
+                                        <div class="col-7">
+                                            <label class="form-label small">Month</label>
+                                            <select name="start_month" id="start_month" class="form-select form-select-sm" style="border-radius: 6px;">
+                                                {% for month_num, month_name in [(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')] %}
+                                                <option value="{{ month_num }}" {% if use_custom_range and start_month == month_num %}selected{% endif %}>{{ month_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-5">
+                                            <label class="form-label small">Year</label>
+                                            <select name="start_year_custom" id="start_year_custom" class="form-select form-select-sm" style="border-radius: 6px;">
+                                                {% for y in available_years %}
+                                                <option value="{{ y }}" {% if use_custom_range and start_year_custom == y %}selected{% endif %}>{{ y }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">End Date</label>
+                                    <div class="row g-2">
+                                        <div class="col-7">
+                                            <label class="form-label small">Month</label>
+                                            <select name="end_month" id="end_month" class="form-select form-select-sm" style="border-radius: 6px;">
+                                                {% for month_num, month_name in [(1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'), (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'), (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')] %}
+                                                <option value="{{ month_num }}" {% if use_custom_range and end_month == month_num %}selected{% endif %}>{{ month_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-5">
+                                            <label class="form-label small">Year</label>
+                                            <select name="end_year_custom" id="end_year_custom" class="form-select form-select-sm" style="border-radius: 6px;">
+                                                {% for y in available_years %}
+                                                <option value="{{ y }}" {% if use_custom_range and end_year_custom == y %}selected{% endif %}>{{ y }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="alert alert-info mb-0" style="border-radius: 6px;">
+                                        <i class="bi bi-lightbulb"></i>
+                                        <strong>Example:</strong> "April 2024" to "June 2026" → Shows April-Dec 2024, all of 2025, Jan-June 2026
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="col-md-3">
-                    <label for="value_type_id" class="form-label">Value Type (Optional)</label>
-                    <select name="value_type_id" id="value_type_id" class="form-select">
-                        <option value="">All Value Types</option>
-                        {% for vt in value_types %}
-                        <option value="{{ vt.id }}" {% if vt.id == selected_value_type_id %}selected{% endif %}>
-                            {{ vt.name }}{% if vt.unit %} ({{ vt.unit }}){% endif %}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-funnel"></i> Apply Filters
-                    </button>
+                <!-- Apply & Export Buttons -->
+                <div class="row g-3 mt-2">
+                    <div class="col-12">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="submit" class="btn btn-primary btn-lg" style="border-radius: 8px; min-width: 150px;">
+                                <i class="bi bi-funnel"></i> Apply Filters
+                            </button>
+                            <a href="{{ url_for('workspace.export_pivot_excel', **request.args) }}"
+                               class="btn btn-success btn-lg"
+                               style="border-radius: 8px; min-width: 150px;"
+                               title="Export to Excel">
+                                <i class="bi bi-file-earmark-excel"></i> Export Excel
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- View Toggle -->
-    <ul class="nav nav-tabs mb-3" id="viewTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-view"
-                type="button" role="tab">
-                <i class="bi bi-table"></i> Table View
-            </button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart-view" type="button"
-                role="tab">
-                <i class="bi bi-graph-up"></i> Chart View
-            </button>
-        </li>
-    </ul>
+    <!-- Quick Guide Button -->
+    <div class="mb-3 text-end">
+        <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#onboardingModal" style="border-radius: 8px;">
+            <i class="bi bi-question-circle"></i> Quick Guide
+        </button>
+    </div>
 
-    <!-- Tab Content -->
-    <div class="tab-content" id="viewTabsContent">
-        <!-- Table View -->
-        <div class="tab-pane fade show active" id="table-view" role="tabpanel">
-            <div class="card">
-                <div class="card-body">
-                    {% if pivot_data.kpis %}
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="min-width: 200px;">KPI</th>
-                                    <th style="min-width: 150px;">Value Type</th>
-                                    {% for period in pivot_data.periods %}
-                                    <th style="min-width: 120px; text-align: center;">{{ period }}</th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for kpi in pivot_data.kpis %}
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" class="form-check-input me-2 kpi-checkbox"
-                                            data-config-id="{{ kpi.config_id }}"
-                                            data-kpi-name="{{ kpi.kpi_name }}">
-                                        <strong>{{ kpi.kpi_name }}</strong>
-                                    </td>
-                                    <td>{{ kpi.value_type_name }}</td>
-                                    {% for period in pivot_data.periods %}
-                                    <td style="text-align: right;">
-                                        {% if period in kpi.values %}
-                                        {% set cell = kpi.values[period] %}
-                                        {% if cell.value is not none %}
-                                        {{ cell.value|format_value(kpi.value_type) }}
-                                        {% if cell.status == 'strong_consensus' %}
-                                        <i class="bi bi-check-circle-fill text-success" title="Strong consensus"></i>
-                                        {% elif cell.status == 'weak_consensus' %}
-                                        <i class="bi bi-exclamation-triangle-fill text-warning"
-                                            title="Weak consensus"></i>
-                                        {% endif %}
-                                        {% else %}
-                                        <span class="text-muted">-</span>
-                                        {% endif %}
-                                        {% else %}
-                                        <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    {% endfor %}
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+    <!-- Load Saved Charts Section -->
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
+        <div class="card-body p-4">
+            <h5 class="mb-3">
+                <i class="bi bi-folder-open" style="color: #6610f2;"></i> Load Saved Chart
+            </h5>
 
-                    <div class="mt-3">
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>Tip:</strong> Check the boxes next to KPIs to select them for charting in the Chart View tab.
-                        </small>
-                    </div>
-                    {% else %}
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle"></i>
-                        No snapshot data found for the selected filters. Create snapshots to start tracking KPIs over time.
-                    </div>
-                    {% endif %}
-                </div>
+            <div class="position-relative">
+                <i class="bi bi-search position-absolute" style="left: 12px; top: 50%; transform: translateY(-50%); color: #6c757d;"></i>
+                <input type="text" id="chart-search" class="form-control"
+                       placeholder="Click here to browse all charts, or type to search..."
+                       style="padding-left: 38px; border-radius: 8px; border: 1px solid #dee2e6;">
+                <div id="chart-search-results" class="mt-3" style="display: none;"></div>
             </div>
-        </div>
 
-        <!-- Chart View -->
-        <div class="tab-pane fade" id="chart-view" role="tabpanel">
-            <div class="card">
-                <div class="card-body">
-                    <div id="chart-controls" class="mb-3">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <label class="form-label">Selected KPIs:</label>
-                                <div id="selected-kpis-display" class="alert alert-info">
-                                    <i class="bi bi-info-circle"></i>
-                                    Select KPIs from the Table View to display them here.
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-lightbulb"></i> Click the search box to see all your saved charts
+            </small>
+        </div>
+    </div>
+
+    <!-- Onboarding Modal -->
+    <div class="modal fade" id="onboardingModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0; border: none;">
+                    <h4 class="modal-title"><i class="bi bi-lightbulb"></i> Snapshot Analysis Guide</h4>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-5">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                        1
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-2">Load or Build</h6>
+                                    <p class="text-muted mb-0">Search for a saved chart at the top, or build your own by selecting KPIs from the table.</p>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <label for="chart-type" class="form-label">Chart Type</label>
-                                <select id="chart-type" class="form-select">
-                                    <option value="line">Line Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                </select>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                        2
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-2">Customize</h6>
+                                    <p class="text-muted mb-0">Pick colors for each KPI and choose your chart type (line or bar).</p>
+                                </div>
                             </div>
-                            <div class="col-md-3 d-flex align-items-end">
-                                <button id="update-chart-btn" class="btn btn-primary w-100">
-                                    <i class="bi bi-graph-up"></i> Update Chart
-                                </button>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                        3
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-2">Update Chart</h6>
+                                    <p class="text-muted mb-0">Click "Update Chart" to see your visualization with the selected data.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-danger text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; font-size: 1.5rem;">
+                                        4
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-2">Save</h6>
+                                    <p class="text-muted mb-0">Like what you see? Click "Save This Chart" below the chart to save it for later!</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div style="position: relative; height: 400px;">
-                        <canvas id="snapshotChart"></canvas>
-                    </div>
+                    <hr class="my-4">
 
-                    <div id="no-chart-message" class="alert alert-warning mt-3" style="display: none;">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Please select at least one KPI from the Table View.
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <i class="bi bi-folder-open" style="font-size: 2rem; color: #6610f2;"></i>
+                            <h6 class="mt-2">Quick Load</h6>
+                            <p class="small text-muted">Search saved charts at the top to instantly load configurations</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="bi bi-lock" style="font-size: 2rem; color: #6c757d;"></i> / <i class="bi bi-globe" style="font-size: 2rem; color: #28a745;"></i>
+                            <h6 class="mt-2">Privacy</h6>
+                            <p class="small text-muted">Keep charts private or share with organization</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <i class="bi bi-bookmark-plus" style="font-size: 2rem; color: #fd7e14;"></i>
+                            <h6 class="mt-2">Save Button</h6>
+                            <p class="small text-muted">Find it right below the chart after you build it!</p>
+                        </div>
                     </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef;">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" style="border-radius: 8px;">
+                        <i class="bi bi-check-circle"></i> Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Chart Modal -->
+    <div class="modal fade" id="saveChartModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 12px; border: none;">
+                <div class="modal-header" style="border-bottom: 1px solid #e9ecef;">
+                    <h5 class="modal-title"><i class="bi bi-save"></i> Save Chart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label for="chart-name-input" class="form-label">Chart Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="chart-name-input" placeholder="Enter chart name..." style="border-radius: 8px;">
+                    </div>
+                    <div class="mb-3">
+                        <label for="chart-description-input" class="form-label">Description (optional)</label>
+                        <textarea class="form-control" id="chart-description-input" rows="2" placeholder="Add description..." style="border-radius: 8px;"></textarea>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="chart-visibility-toggle" style="cursor: pointer;">
+                        <label class="form-check-label" for="chart-visibility-toggle" style="cursor: pointer;">
+                            <i class="bi bi-globe"></i> Make chart public (visible to organization)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #e9ecef;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px;">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-chart-confirm-btn" style="border-radius: 8px;">
+                        <i class="bi bi-check-circle"></i> Save Chart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
+            <h5 class="mb-0"><i class="bi bi-table"></i> KPI Data</h5>
+        </div>
+        <div class="card-body">
+            {% if pivot_data.kpis %}
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="min-width: 200px;">KPI</th>
+                            <th style="min-width: 150px;">Value Type</th>
+                            {% if show_targets %}
+                            <th style="min-width: 100px; text-align: center; background: #fff3cd;">🎯 Target</th>
+                            {% endif %}
+                            {% for period in pivot_data.periods %}
+                            <th style="min-width: 120px; text-align: center;">{{ period }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kpi in pivot_data.kpis %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="form-check-input me-2 kpi-checkbox"
+                                    data-config-id="{{ kpi.config_id }}"
+                                    data-kpi-name="{{ kpi.kpi_name }}">
+                                <strong>{{ kpi.kpi_name }}</strong>
+                            </td>
+                            <td>{{ kpi.value_type_name }}</td>
+                            {% if show_targets %}
+                            <td style="text-align: right; background: #fff3cd;">
+                                {% if kpi.config.target_value %}
+                                <strong>{{ kpi.config.target_value|format_value(kpi.value_type, kpi.config) }}</strong>
+                                {% if kpi.config.target_date %}
+                                <br><small class="text-muted">by {{ kpi.config.target_date.strftime('%b %Y') }}</small>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            {% for period in pivot_data.periods %}
+                            <td style="text-align: right;">
+                                {% if period in kpi['values'] %}
+                                {% set cell = kpi['values'][period] %}
+                                {% if cell.value is not none %}
+                                {{ cell.value|format_value(kpi.value_type, kpi.config) }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Tip:</strong> Check the boxes next to KPIs to select them for charting below.
+                </small>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i>
+                No snapshot data found for the selected filters. Create snapshots to start tracking KPIs over time.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Chart Builder -->
+    <div class="card shadow-sm" style="border: none; border-radius: 12px;">
+        <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
+            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Chart Builder</h5>
+        </div>
+        <div class="card-body">
+            <div id="chart-controls" class="mb-3">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Selected KPIs:</label>
+                        <div id="selected-kpis-display" class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Select KPIs from the table above to display them here.
+                        </div>
+                        <div id="kpi-color-pickers" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="chart-type" class="form-label">Chart Type</label>
+                        <select id="chart-type" class="form-select">
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button id="update-chart-btn" class="btn btn-primary w-100">
+                            <i class="bi bi-graph-up"></i> Update Chart
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="position: relative; height: 400px;">
+                <canvas id="snapshotChart"></canvas>
+            </div>
+
+            <div id="no-chart-message" class="alert alert-warning mt-3" style="display: none;">
+                <i class="bi bi-exclamation-triangle"></i>
+                Please select at least one KPI from the table above.
+            </div>
+
+            <!-- Save Chart Section -->
+            <div class="mt-4 p-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-white">
+                        <h6 class="mb-1"><i class="bi bi-heart"></i> Like this chart?</h6>
+                        <small>Save it for quick access later</small>
+                    </div>
+                    <button class="btn btn-light btn-lg" style="border-radius: 8px; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#saveChartModal">
+                        <i class="bi bi-bookmark-plus"></i> Save This Chart
+                    </button>
                 </div>
             </div>
         </div>
@@ -223,7 +555,19 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     let snapshotChart = null;
-    const selectedKPIs = new Set();
+    const selectedKPIs = new Map(); // config_id -> {id, name, color}
+    const defaultColors = ['#007bff', '#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6610f2', '#fd7e14', '#20c997'];
+    let colorIndex = 0;
+
+    // Show onboarding on first visit
+    document.addEventListener('DOMContentLoaded', function() {
+        const hasSeenOnboarding = localStorage.getItem('hasSeenSnapshotOnboarding');
+        if (!hasSeenOnboarding) {
+            const onboardingModal = new bootstrap.Modal(document.getElementById('onboardingModal'));
+            onboardingModal.show();
+            localStorage.setItem('hasSeenSnapshotOnboarding', 'true');
+        }
+    });
 
     // Handle KPI checkbox selection
     document.querySelectorAll('.kpi-checkbox').forEach(checkbox => {
@@ -232,13 +576,11 @@
             const kpiName = this.dataset.kpiName;
 
             if (this.checked) {
-                selectedKPIs.add({ id: configId, name: kpiName });
+                const color = defaultColors[colorIndex % defaultColors.length];
+                colorIndex++;
+                selectedKPIs.set(configId, { id: configId, name: kpiName, color: color });
             } else {
-                selectedKPIs.forEach(kpi => {
-                    if (kpi.id === configId) {
-                        selectedKPIs.delete(kpi);
-                    }
-                });
+                selectedKPIs.delete(configId);
             }
 
             updateSelectedKPIsDisplay();
@@ -247,13 +589,37 @@
 
     function updateSelectedKPIsDisplay() {
         const display = document.getElementById('selected-kpis-display');
+        const colorPickers = document.getElementById('kpi-color-pickers');
+
         if (selectedKPIs.size === 0) {
             display.innerHTML = '<i class="bi bi-info-circle"></i> Select KPIs from the Table View to display them here.';
             display.className = 'alert alert-info';
+            colorPickers.style.display = 'none';
         } else {
-            const kpiList = Array.from(selectedKPIs).map(kpi => kpi.name).join(', ');
+            const kpiList = Array.from(selectedKPIs.values()).map(kpi => kpi.name).join(', ');
             display.innerHTML = `<strong>${selectedKPIs.size} KPI(s) selected:</strong> ${kpiList}`;
             display.className = 'alert alert-success';
+
+            // Show color pickers
+            colorPickers.style.display = 'block';
+            colorPickers.innerHTML = '<div class="row g-2">' +
+                Array.from(selectedKPIs.values()).map(kpi => `
+                    <div class="col-md-6">
+                        <label class="form-label small">${kpi.name}</label>
+                        <input type="color" class="form-control form-control-color"
+                               value="${kpi.color}"
+                               data-config-id="${kpi.id}"
+                               onchange="updateKPIColor(${kpi.id}, this.value)">
+                    </div>
+                `).join('') +
+                '</div>';
+        }
+    }
+
+    function updateKPIColor(configId, color) {
+        const kpi = selectedKPIs.get(configId);
+        if (kpi) {
+            kpi.color = color;
         }
     }
 
@@ -267,7 +633,7 @@
         document.getElementById('no-chart-message').style.display = 'none';
 
         // Get selected config IDs
-        const configIds = Array.from(selectedKPIs).map(kpi => kpi.id);
+        const configIds = Array.from(selectedKPIs.keys());
 
         // Build API URL
         const params = new URLSearchParams({
@@ -285,11 +651,31 @@
                 return;
             }
 
+            // Apply custom colors
+            data.datasets.forEach((dataset, idx) => {
+                const configId = configIds[idx];
+                const kpi = selectedKPIs.get(configId);
+                if (kpi && kpi.color) {
+                    dataset.borderColor = kpi.color;
+                    const rgb = hexToRgb(kpi.color);
+                    dataset.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
+                }
+            });
+
             renderChart(data);
         } catch (error) {
             alert('Error loading chart: ' + error.message);
         }
     });
+
+    function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        } : { r: 0, g: 0, b: 0 };
+    }
 
     function renderChart(data) {
         const ctx = document.getElementById('snapshotChart').getContext('2d');
@@ -328,11 +714,316 @@
         });
     }
 
-    // Auto-submit filters on change
-    document.querySelectorAll('#year, #view_type, #space_id, #value_type_id').forEach(select => {
-        select.addEventListener('change', function () {
-            this.form.submit();
+    // Validate chart save modal
+    const saveChartModal = document.getElementById('saveChartModal');
+    saveChartModal.addEventListener('show.bs.modal', function (e) {
+        if (selectedKPIs.size === 0) {
+            e.preventDefault();
+            showToast('error', 'No KPIs Selected', 'Please select at least one KPI from the table first');
+            return false;
+        }
+        document.getElementById('chart-name-input').value = '';
+        document.getElementById('chart-description-input').value = '';
+        document.getElementById('chart-visibility-toggle').checked = false;
+    });
+
+    // Save chart confirmation
+    document.getElementById('save-chart-confirm-btn').addEventListener('click', async function () {
+        const name = document.getElementById('chart-name-input').value.trim();
+        if (!name) {
+            alert('Please enter a chart name');
+            return;
+        }
+
+        const description = document.getElementById('chart-description-input').value.trim();
+        const isShared = document.getElementById('chart-visibility-toggle').checked;
+
+        const configColors = {};
+        selectedKPIs.forEach((kpi, configId) => {
+            configColors[configId] = kpi.color;
+        });
+
+        try {
+            const response = await fetch('{{ url_for("workspace.save_chart") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    description: description,
+                    year_start: {{ year_start }},
+                    year_end: {{ year_end }},
+                    view_type: '{{ view_type }}',
+                    chart_type: document.getElementById('chart-type').value,
+                    space_id: {{ selected_space_id or 'null' }},
+                    value_type_id: {{ selected_value_type_id or 'null' }},
+                    config_colors: configColors,
+                    is_shared: isShared
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                const modal = bootstrap.Modal.getInstance(saveChartModal);
+                modal.hide();
+
+                // Show success toast
+                showToast('success', `Chart saved: ${result.name}`, result.is_shared ? 'Public' : 'Private');
+            } else {
+                alert('Error: ' + result.error);
+            }
+        } catch (error) {
+            alert('Error saving chart: ' + error.message);
+        }
+    });
+
+    function showToast(type, title, message) {
+        const toastHtml = `
+            <div class="toast align-items-center border-0 show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                <div class="d-flex" style="background: ${type === 'success' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#dc3545'}; color: white; border-radius: 8px;">
+                    <div class="toast-body">
+                        <strong>${title}</strong><br>
+                        <small>${message}</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `;
+        const toastEl = document.createElement('div');
+        toastEl.innerHTML = toastHtml;
+        document.body.appendChild(toastEl);
+        setTimeout(() => toastEl.remove(), 3000);
+    }
+
+    // Show all charts on focus, search on input
+    const chartSearchInput = document.getElementById('chart-search');
+    const resultsDiv = document.getElementById('chart-search-results');
+    let searchTimeout;
+
+    // Show all charts when clicking in the search box
+    chartSearchInput.addEventListener('focus', function () {
+        if (this.value.trim().length === 0) {
+            performChartSearch('');
+        }
+    });
+
+    // Hide results when clicking outside
+    document.addEventListener('click', function (e) {
+        if (!chartSearchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = 'none';
+        }
+    });
+
+    // Instant search as user types
+    chartSearchInput.addEventListener('input', function () {
+        clearTimeout(searchTimeout);
+        const query = this.value.trim();
+
+        searchTimeout = setTimeout(() => {
+            performChartSearch(query);
+        }, 300);
+    });
+
+    async function performChartSearch(query) {
+        try {
+            const response = await fetch(`{{ url_for('workspace.search_charts') }}?q=${encodeURIComponent(query)}`);
+            const data = await response.json();
+
+            if (data.charts.length === 0) {
+                resultsDiv.innerHTML = `
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">${query ? 'No charts found' : 'No saved charts yet'}</p>
+                        ${query ? '' : '<small>Create your first chart below!</small>'}
+                    </div>
+                `;
+            } else {
+                const headerText = query ? `Found ${data.charts.length} chart(s)` : `All Saved Charts (${data.charts.length})`;
+                resultsDiv.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="mb-0 text-muted">${headerText}</h6>
+                    </div>
+                    <div class="row g-3">` + data.charts.map(chart => {
+                    const visibilityIcon = chart.is_shared
+                        ? '<i class="bi bi-globe text-success" title="Public chart"></i>'
+                        : '<i class="bi bi-lock text-muted" title="Private chart"></i>';
+                    const ownerBadge = chart.is_owner
+                        ? '<span class="badge bg-primary">My Chart</span>'
+                        : `<span class="badge bg-light text-dark">${chart.created_by}</span>`;
+
+                    return `
+                        <div class="col-md-6">
+                            <div class="card h-100 shadow-sm" style="border: none; border-radius: 10px; cursor: pointer; transition: transform 0.2s;"
+                                 onclick="loadSavedChart(${chart.id})"
+                                 onmouseover="this.style.transform='translateY(-4px)'"
+                                 onmouseout="this.style.transform='translateY(0)'">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0">${chart.name}</h6>
+                                        ${visibilityIcon}
+                                    </div>
+                                    <div class="mb-2">
+                                        ${ownerBadge}
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-bar-chart"></i> ${chart.kpi_count} KPIs •
+                                        <i class="bi bi-calendar"></i> ${chart.year_range} •
+                                        ${chart.view_type}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') + '</div>';
+            }
+
+            resultsDiv.style.display = 'block';
+        } catch (error) {
+            console.error('Search error:', error);
+            resultsDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> Error loading charts
+                </div>
+            `;
+            resultsDiv.style.display = 'block';
+        }
+    }
+
+    // Load saved chart
+    async function loadSavedChart(chartId) {
+        try {
+            const response = await fetch(`{{ url_for('workspace.load_chart', chart_id=0) }}`.replace('/0', `/${chartId}`));
+            const chart = await response.json();
+
+            // Clear current selection
+            selectedKPIs.clear();
+            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false);
+
+            // Select KPIs with saved colors
+            const configColors = chart.config_colors;
+            for (const [configId, color] of Object.entries(configColors)) {
+                const id = parseInt(configId);
+                const checkbox = document.querySelector(`.kpi-checkbox[data-config-id="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    selectedKPIs.set(id, { id: id, name: checkbox.dataset.kpiName, color: color });
+                }
+            }
+
+            // Update chart type
+            document.getElementById('chart-type').value = chart.chart_type;
+
+            // Update display
+            updateSelectedKPIsDisplay();
+
+            // Hide search results
+            document.getElementById('chart-search-results').style.display = 'none';
+            document.getElementById('chart-search').value = '';
+
+            // Auto-render chart
+            document.getElementById('update-chart-btn').click();
+
+            // Show success toast
+            showToast('success', 'Chart Loaded', chart.name);
+        } catch (error) {
+            showToast('error', 'Error', error.message);
+        }
+    }
+
+    // Toggle between simple and custom date range modes
+    document.querySelectorAll('[name="range_mode_toggle"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const simpleMode = document.getElementById('simple-range-mode');
+            const customMode = document.getElementById('custom-range-mode');
+            const useCustomInput = document.getElementById('use_custom_range');
+
+            if (this.value === 'custom') {
+                simpleMode.style.display = 'none';
+                customMode.style.display = 'block';
+                useCustomInput.value = 'true';
+            } else {
+                simpleMode.style.display = 'block';
+                customMode.style.display = 'none';
+                useCustomInput.value = 'false';
+            }
         });
     });
+
+    // Show/hide period selection based on view type (only in simple mode)
+    function updatePeriodSelection() {
+        const viewType = document.getElementById('view_type').value;
+        const quarterlyDiv = document.getElementById('quarterly-periods');
+        const monthlyDiv = document.getElementById('monthly-periods');
+
+        quarterlyDiv.style.display = 'none';
+        monthlyDiv.style.display = 'none';
+
+        if (viewType === 'quarterly') {
+            quarterlyDiv.style.display = 'block';
+        } else if (viewType === 'monthly') {
+            monthlyDiv.style.display = 'block';
+        }
+    }
+
+    document.getElementById('view_type').addEventListener('change', updatePeriodSelection);
+    updatePeriodSelection(); // Initialize on load
+
+    // Auto-clear period selections when view type changes
+    document.getElementById('view_type').addEventListener('change', function () {
+        document.querySelectorAll('.period-check').forEach(cb => cb.checked = false);
+    });
+
+    // Dynamic Space/Challenge filtering
+    const spaceSelect = document.getElementById('space_id');
+    const challengeSelect = document.getElementById('challenge_id');
+    const allChallengeOptions = Array.from(challengeSelect.options);
+
+    // When space changes, filter challenges
+    spaceSelect.addEventListener('change', function () {
+        const selectedSpaceId = this.value;
+
+        // Clear challenge selection
+        challengeSelect.value = '';
+
+        // Remove all options except "All Challenges"
+        while (challengeSelect.options.length > 1) {
+            challengeSelect.remove(1);
+        }
+
+        // Add back challenges that match the selected space
+        allChallengeOptions.slice(1).forEach(option => {
+            if (!selectedSpaceId || option.dataset.spaceId === selectedSpaceId) {
+                challengeSelect.add(option.cloneNode(true));
+            }
+        });
+
+        // Show count in label
+        const count = challengeSelect.options.length - 1;
+        const label = challengeSelect.previousElementSibling;
+        if (selectedSpaceId && count > 0) {
+            label.textContent = `Challenge (${count} in this space)`;
+        } else {
+            label.textContent = 'Challenge';
+        }
+    });
+
+    // When challenge changes, auto-select its space
+    challengeSelect.addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.value && selectedOption.dataset.spaceId) {
+            spaceSelect.value = selectedOption.dataset.spaceId;
+        }
+    });
+
+    // Initialize on page load if challenge is pre-selected
+    if (challengeSelect.value) {
+        const selectedOption = challengeSelect.options[challengeSelect.selectedIndex];
+        if (selectedOption.dataset.spaceId) {
+            spaceSelect.value = selectedOption.dataset.spaceId;
+            spaceSelect.dispatchEvent(new Event('change'));
+        }
+    }
 </script>
 {% endblock %}
