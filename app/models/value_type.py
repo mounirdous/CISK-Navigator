@@ -85,6 +85,35 @@ class ValueType(db.Model):
 
     @classmethod
     def get_smart_default_formula(cls, kind):
+        """Get smart default aggregation formula based on value type kind
+
+        Returns:
+            str: Recommended formula for the given kind
+        """
+        smart_defaults = {
+            cls.KIND_NUMERIC: cls.FORMULA_SUM,  # Cost, CO2 → add them up
+            cls.KIND_RISK: cls.FORMULA_MAX,  # Risk → worst case
+            cls.KIND_POSITIVE_IMPACT: cls.FORMULA_MAX,  # Impact → highest impact
+            cls.KIND_NEGATIVE_IMPACT: cls.FORMULA_MAX,  # Negative → worst case
+            cls.KIND_LEVEL: cls.FORMULA_MAX,  # Level → highest level
+            cls.KIND_SENTIMENT: cls.FORMULA_AVG,  # Sentiment → average mood
+        }
+        return smart_defaults.get(kind, cls.FORMULA_SUM)
+
+    def get_smart_formula_explanation(self):
+        """Get user-friendly explanation of why this formula makes sense"""
+        explanations = {
+            self.KIND_NUMERIC: f"{self.name} values add up (total {self.unit_label or 'amount'})",
+            self.KIND_RISK: f"{self.name} shows worst-case risk across all items",
+            self.KIND_POSITIVE_IMPACT: f"{self.name} shows highest positive impact achieved",
+            self.KIND_NEGATIVE_IMPACT: f"{self.name} shows worst negative impact",
+            self.KIND_LEVEL: f"{self.name} shows highest level reached",
+            self.KIND_SENTIMENT: f"{self.name} averages sentiment across all items",
+        }
+        return explanations.get(self.kind, f"{self.name} aggregates using {self.default_aggregation_formula}")
+
+    @classmethod
+    def get_smart_default_formula(cls, kind):
         """
         Get the smart default aggregation formula based on value type kind.
 

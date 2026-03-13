@@ -79,16 +79,41 @@
             <p class="mb-0 opacity-75">{{ value_type.name }} aggregation rules</p>
         </div>
 
-        <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
-            <h6><i class="bi bi-info-circle-fill"></i> Roll-up Configuration</h6>
-            <p class="mb-2">Control how <strong>{{ value_type.name }}</strong> values aggregate through the hierarchy:</p>
-            <ul class="mb-2">
-                <li><strong>System → Initiative</strong>: Aggregate KPI values to System level</li>
-                <li><strong>Initiative → Challenge</strong>: Aggregate System values to Initiative level</li>
-                <li><strong>Challenge → Space</strong>: Aggregate Initiative values to Challenge level</li>
-            </ul>
-            <p class="mb-0"><strong>Note:</strong> This will apply rollup rules to <strong>all existing</strong> links and challenges in this organization for {{ value_type.name }}.</p>
+        <!-- Smart Default Summary -->
+        <div class="alert alert-success" style="border-left: 4px solid #28a745; border-radius: 12px;">
+            <h6><i class="bi bi-check-circle-fill"></i> Smart Rollup Active</h6>
+            <p class="mb-2"><strong>{{ value_type.name }}</strong> automatically rolls up through your hierarchy using:</p>
+            <div class="d-flex align-items-center gap-3 p-3 bg-white bg-opacity-10 rounded">
+                <div class="text-center">
+                    <i class="bi bi-calculator-fill" style="font-size: 2rem;"></i>
+                    <div class="mt-2"><strong>{{ default_formula|upper }}</strong></div>
+                </div>
+                <div class="flex-grow-1">
+                    <p class="mb-0">{{ value_type.get_smart_formula_explanation() }}</p>
+                    <small class="text-muted">KPIs → Systems → Initiatives → Challenges → Spaces</small>
+                </div>
+            </div>
+            <p class="mb-0 mt-3">
+                <i class="bi bi-lightbulb-fill text-warning"></i>
+                <strong>No configuration needed!</strong> This works automatically for 90% of use cases.
+            </p>
         </div>
+
+        <!-- Advanced Configuration (Collapsed by Default) -->
+        <div class="card border-primary mb-3">
+            <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center" style="cursor: pointer;" onclick="toggleAdvanced()">
+                <div>
+                    <i class="bi bi-sliders"></i>
+                    <strong>Advanced Configuration</strong>
+                    <span class="badge bg-secondary ms-2">Optional</span>
+                </div>
+                <i class="bi bi-chevron-down" id="advanced-toggle-icon"></i>
+            </div>
+            <div class="card-body" id="advanced-config" style="display: none;">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <strong>Advanced Mode:</strong> Only customize if you need specific rollup behavior different from the smart defaults.
+                </div>
 
         <form method="POST">
             {{ form.hidden_tag() }}
@@ -192,15 +217,41 @@
                 </div>
             </div>
 
-            <div class="d-flex gap-2 pt-3 border-top">
-                <button type="submit" class="btn btn-primary btn-lg">
-                    <i class="bi bi-check-circle-fill"></i> Save Configuration
-                </button>
-                <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary btn-lg">
-                    <i class="bi bi-x-circle"></i> Cancel
-                </a>
+                <div class="d-flex gap-2 pt-3 border-top">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle-fill"></i> Save Custom Configuration
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="toggleAdvanced()">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                </div>
             </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="d-flex gap-2 pt-3">
+            <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary btn-lg">
+                <i class="bi bi-arrow-left"></i> Back to Value Types
+            </a>
+        </div>
         </form>
     </div>
 </div>
+
+<script>
+function toggleAdvanced() {
+    const advancedConfig = document.getElementById('advanced-config');
+    const toggleIcon = document.getElementById('advanced-toggle-icon');
+
+    if (advancedConfig.style.display === 'none') {
+        advancedConfig.style.display = 'block';
+        toggleIcon.classList.remove('bi-chevron-down');
+        toggleIcon.classList.add('bi-chevron-up');
+    } else {
+        advancedConfig.style.display = 'none';
+        toggleIcon.classList.remove('bi-chevron-up');
+        toggleIcon.classList.add('bi-chevron-down');
+    }
+}
+</script>
 {% endblock %}
