@@ -932,16 +932,7 @@ tr[data-level="kpi"] td {
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">🏢</span>
-                        <strong>{{ space.name }}</strong>
-                        {% if space.space_label %}
-                            <span class="badge bg-info ms-2">{{ space.space_label }}</span>
-                        {% endif %}
-                        {% if space.is_private %}
-                            <span class="badge bg-warning ms-2" title="Private Space">
-                                <i class="bi bi-lock-fill"></i> Private
-                            </span>
-                        {% endif %}
-                        <span class="form-view-icon ms-2">
+                        <span class="form-view-icon me-2">
                             <a href="{{ url_for('organization_admin.space_swot', space_id=space.id) }}" class="text-info" title="View SWOT Analysis">
                                 <i class="bi bi-grid-3x3"></i>
                             </a>
@@ -954,6 +945,15 @@ tr[data-level="kpi"] td {
                                 <span class="completion-badge badge-complete" title="SWOT complete"><i class="bi bi-check-lg"></i></span>
                             {% endif %}
                         </span>
+                        <strong>{{ space.name }}</strong>
+                        {% if space.space_label %}
+                            <span class="badge bg-info ms-2">{{ space.space_label }}</span>
+                        {% endif %}
+                        {% if space.is_private %}
+                            <span class="badge bg-warning ms-2" title="Private Space">
+                                <i class="bi bi-lock-fill"></i> Private
+                            </span>
+                        {% endif %}
                         {% if current_user.can_manage_spaces(org_id) or current_user.can_manage_challenges(org_id) %}
                         <span class="action-icons ms-1">
                             {% if current_user.can_manage_challenges(org_id) %}
@@ -1092,8 +1092,7 @@ tr[data-level="kpi"] td {
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
                         <span class="hierarchy-icon">δ</span>
-                        {{ initiative.name }}
-                        <span class="form-view-icon ms-2">
+                        <span class="form-view-icon me-2">
                             <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="text-info" title="View Initiative Form">
                                 <i class="bi bi-file-text"></i>
                             </a>
@@ -1106,6 +1105,7 @@ tr[data-level="kpi"] td {
                                 <span class="completion-badge badge-complete" title="Form complete"><i class="bi bi-check-lg"></i></span>
                             {% endif %}
                         </span>
+                        {{ initiative.name }}
                         {% if current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) %}
                         <span class="action-icons ms-1">
                             {% if current_user.can_manage_systems(org_id) %}
