@@ -2055,8 +2055,42 @@ document.addEventListener('DOMContentLoaded', function() {
         submitTimeout = setTimeout(() => {
             addLevelVisibilityHiddenInputs();
             console.log('Submitting form...');
+
+            // Save scroll position before reload
+            sessionStorage.setItem('workspaceScrollY', window.scrollY.toString());
+
+            // Save filter accordion state (open/closed)
+            const filtersCollapse = document.getElementById('filtersCollapse');
+            if (filtersCollapse) {
+                const isOpen = filtersCollapse.classList.contains('show');
+                sessionStorage.setItem('workspaceFiltersOpen', isOpen.toString());
+            }
+
+            // Show loading overlay
+            showLoadingOverlay();
+
             filterForm.submit();
         }, 800); // Wait 800ms after last change
+    }
+
+    // Loading overlay
+    function showLoadingOverlay() {
+        const overlay = document.createElement('div');
+        overlay.id = 'filter-loading-overlay';
+        overlay.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                        background: rgba(0,0,0,0.5); z-index: 9999;
+                        display: flex; align-items: center; justify-content: center;">
+                <div style="background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 12px;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.3); text-align: center;">
+                    <div class="spinner-border text-primary mb-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div style="color: #333; font-weight: 500;">Applying filters...</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
     }
 
     // Handle data filter checkbox changes (governance bodies, groups, archive) - these DO submit form
@@ -2737,11 +2771,18 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Backend save successful:', result);
             showNotification(`${level.charAt(0).toUpperCase() + level.slice(1)} order updated`, 'success');
 
+            // Save scroll position before reload
+            sessionStorage.setItem('workspaceScrollY', window.scrollY.toString());
+
             // Reload page to show descendants in correct position
             setTimeout(() => location.reload(), 500);
         } catch (error) {
             console.error('Error saving row order:', error);
             showNotification('Failed to save order', 'error');
+
+            // Save scroll position before reload
+            sessionStorage.setItem('workspaceScrollY', window.scrollY.toString());
+
             location.reload(); // Reload to restore original order
         }
     }
@@ -2808,6 +2849,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, parentsToExpand.length * 50 + 300);
             }
         }, 500);
+    }
+});
+
+// ========================================
+// RESTORE SCROLL & FILTER STATE AFTER RELOAD
+// ========================================
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore scroll position
+    const savedScrollY = sessionStorage.getItem('workspaceScrollY');
+    if (savedScrollY) {
+        console.log('Restoring scroll position:', savedScrollY);
+        window.scrollTo(0, parseInt(savedScrollY, 10));
+        sessionStorage.removeItem('workspaceScrollY'); // Clear after use
+    }
+
+    // Restore filter accordion state
+    const filtersWereOpen = sessionStorage.getItem('workspaceFiltersOpen');
+    if (filtersWereOpen === 'true') {
+        console.log('Reopening filters accordion');
+        const filtersCollapse = document.getElementById('filtersCollapse');
+        if (filtersCollapse) {
+            // Use Bootstrap's collapse API to show the accordion
+            const bsCollapse = new bootstrap.Collapse(filtersCollapse, {
+                show: true
+            });
+        }
+        sessionStorage.removeItem('workspaceFiltersOpen'); // Clear after use
     }
 });
 
