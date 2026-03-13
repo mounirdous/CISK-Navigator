@@ -1073,11 +1073,11 @@ tr[data-level="kpi"] td {
                         {% set porters_completion = organization.get_porters_completion() %}
                         <a href="{{ url_for('organization_admin.organization_porters') }}" style="text-decoration: none; margin-left: 0.5rem;" title="Porter's Five Forces Analysis">
                             {% if porters_completion[2] == 'empty' %}
-                                <span class="completion-badge badge-empty" style="font-size: 0.75rem;">!</span>
+                                <span class="completion-badge badge-empty">!</span>
                             {% elif porters_completion[2] == 'partial' %}
-                                <span class="completion-badge badge-partial" style="font-size: 0.75rem;">{{ porters_completion[0] }}/{{ porters_completion[1] }}</span>
+                                <span class="completion-badge badge-partial">{{ porters_completion[0] }}/{{ porters_completion[1] }}</span>
                             {% elif porters_completion[2] == 'complete' %}
-                                <span class="completion-badge badge-complete" style="font-size: 0.75rem;"><i class="bi bi-check-lg"></i></span>
+                                <span class="completion-badge badge-complete"><i class="bi bi-check-lg"></i></span>
                             {% endif %}
                         </a>
                     {% endif %}
