@@ -16,8 +16,8 @@
     background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
     border: 1px solid var(--border-color);
     border-radius: 12px;
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-lg);
+    padding: 0.75rem;  /* Reduced from var(--spacing-lg) */
+    margin-bottom: 0.75rem;  /* Reduced from var(--spacing-lg) */
     box-shadow: var(--shadow-sm);
 }
 
@@ -41,7 +41,7 @@
     top: 0;
     z-index: 10;
     font-weight: 600;
-    padding: var(--spacing-md);
+    padding: 0.5rem;  /* Reduced from var(--spacing-md) */
 }
 
 #workspace-tree tbody tr {
@@ -185,11 +185,39 @@ body.edit-mode .new-space-edit-mode-only {
     }
 }
 
+/* Compact row spacing */
 #workspace-tree tbody td {
     border-color: var(--border-subtle);
     background-color: var(--bg-primary);
     color: var(--text-primary);
-    padding: var(--spacing-sm);
+    padding: 0.35rem 0.5rem;  /* Reduced from var(--spacing-sm) */
+    line-height: 1.4;          /* Tighter line spacing */
+}
+
+/* Consensus strength visual indicators - Option E */
+.kpi-cell.consensus-strong {
+    border-left: 4px solid #28a745 !important;
+    background-color: rgba(40, 167, 69, 0.08) !important;
+}
+
+.kpi-cell.consensus-weak {
+    border-left: 3px solid #ffc107 !important;
+    background-color: rgba(255, 193, 7, 0.08) !important;
+}
+
+.kpi-cell.consensus-single {
+    border-left: 2px solid #17a2b8 !important;
+    background-color: rgba(23, 162, 184, 0.08) !important;
+}
+
+.kpi-cell.consensus-none {
+    border-left: 2px solid #dc3545 !important;
+    background-color: rgba(220, 53, 69, 0.05) !important;
+}
+
+.kpi-cell.consensus-no-data {
+    border-left: 1px solid #6c757d !important;
+    background-color: transparent !important;
 }
 
 /* Level-specific colors for hierarchy (both light & dark mode) */
@@ -542,10 +570,10 @@ tr[data-level="kpi"] td {
 /* Quick stats bar */
 .stats-bar {
     background: linear-gradient(90deg, rgba(13,110,253,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 0.75rem;
     border-radius: 6px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
 }
 
 .dark-mode .stats-bar {
@@ -642,8 +670,8 @@ tr[data-level="kpi"] td {
 
 <!-- Modern Toolbar -->
 <div class="modern-toolbar">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0"><i class="bi bi-building"></i> Organization: {{ org_name }}</h3>
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="mb-0" style="font-size: 1.25rem;"><i class="bi bi-building"></i> Organization: {{ org_name }}</h3>
         <div class="d-flex flex-wrap gap-2">
             {% if spaces %}
                 <!-- Edit Mode (only show when there's content) -->
@@ -713,10 +741,10 @@ tr[data-level="kpi"] td {
                 </button>
             </h2>
             <div id="filtersCollapse" class="accordion-collapse collapse">
-                <div class="accordion-body" style="padding: 1.5rem; background-color: rgba(255,255,255,0.02); border-radius: 8px; margin-top: 0.5rem;">
+                <div class="accordion-body" style="padding: 0.75rem; background-color: rgba(255,255,255,0.02); border-radius: 8px; margin-top: 0.25rem;">
 
                     <!-- Filter Presets Manager -->
-                    <div class="mb-3 pb-3" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div class="mb-2 pb-2" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
                         <div class="d-flex align-items-center justify-content-between mb-2">
                             <h6 class="mb-0"><i class="bi bi-bookmark-star me-2"></i>Saved Filter Presets</h6>
                             <div class="d-flex gap-2">
@@ -1366,25 +1394,36 @@ tr[data-level="kpi"] td {
                         {% set config = kpi.value_type_configs | selectattr('value_type_id', 'equalto', vt.id) | first %}
                         {% if config %}
                             {% set consensus = config.get_consensus_value() %}
-                        <td class="text-center kpi-cell"
+                        {% set consensus_class = '' %}
+                        {% set consensus_tooltip = '' %}
+                        {% if consensus.status == 'strong_consensus' %}
+                            {% set consensus_class = 'consensus-strong' %}
+                            {% set consensus_tooltip = 'Strong consensus: ' ~ consensus.count ~ ' contributor' ~ ('s' if consensus.count > 1 else '') ~ ' agree (±5%)' %}
+                        {% elif consensus.status == 'weak_consensus' %}
+                            {% set consensus_class = 'consensus-weak' %}
+                            {% set consensus_tooltip = 'Weak consensus: ' ~ consensus.count ~ ' contributors, variance ±15%' %}
+                        {% elif consensus.status == 'no_consensus' %}
+                            {% set consensus_class = 'consensus-none' %}
+                            {% set consensus_tooltip = 'No consensus: ' ~ consensus.count ~ ' contributions with high variance' %}
+                        {% elif consensus.count == 1 %}
+                            {% set consensus_class = 'consensus-single' %}
+                            {% set consensus_tooltip = 'Single contribution' %}
+                        {% else %}
+                            {% set consensus_class = 'consensus-no-data' %}
+                            {% set consensus_tooltip = 'No data yet' %}
+                        {% endif %}
+
+                        <td class="text-center kpi-cell {{ consensus_class }}"
                             data-config-id="{{ config.id }}"
                             data-kpi-name="{{ kpi.name }}"
-                            data-value-type-name="{{ vt.name }}">
-                            <div style="position: relative; padding-top: 20px;">
-                                {# Calculation Type Badge - Top Left #}
+                            data-value-type-name="{{ vt.name }}"
+                            title="{{ consensus_tooltip }}">
+                            <div style="position: relative; padding-top: 8px;">
+                                {# Calculation Type Badge - Top Left (compact) #}
                                 {% if config.calculation_type == 'formula' %}
-                                    <span class="badge bg-success badge-sm" style="position: absolute; top: -5px; left: -5px; font-size: 0.65rem; z-index: 10;" title="Formula KPI">📐</span>
+                                    <span style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.7;" title="Formula KPI">📐</span>
                                 {% elif config.calculation_type == 'linked' %}
-                                    <span class="badge bg-info badge-sm" style="position: absolute; top: -5px; left: -5px; font-size: 0.65rem; z-index: 10;" title="Linked KPI">🔗</span>
-                                {% endif %}
-
-                                {# Consensus Status Badge - Top Right #}
-                                {% if consensus.status == 'strong_consensus' %}
-                                    <span class="badge bg-success badge-sm" style="position: absolute; top: -5px; right: -5px; font-size: 0.65rem; z-index: 10;" title="Strong Consensus">✓✓</span>
-                                {% elif consensus.status == 'weak_consensus' %}
-                                    <span class="badge bg-warning badge-sm" style="position: absolute; top: -5px; right: -5px; font-size: 0.65rem; z-index: 10;" title="Weak Consensus">✓</span>
-                                {% elif consensus.status == 'no_consensus' %}
-                                    <span class="badge bg-danger badge-sm" style="position: absolute; top: -5px; right: -5px; font-size: 0.65rem; z-index: 10;" title="No Consensus">⚠</span>
+                                    <span style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.7;" title="Linked KPI">🔗</span>
                                 {% endif %}
 
                                 <div style="{% if current_user.can_contribute(org_id) %}cursor: pointer;{% else %}cursor: default;{% endif %}" {% if current_user.can_contribute(org_id) %}onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'"{% endif %}>
