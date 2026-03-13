@@ -200,12 +200,11 @@ body.edit-mode .new-space-edit-mode-only {
     width: 100%;
 }
 
-/* Value cells should wrap if content is too long */
-#workspace-tree tbody td.text-center {
+/* Prevent wrapping in all cells - single line only */
+#workspace-tree tbody td {
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    word-wrap: break-word;
-    max-width: 0;
 }
 
 /* Consensus strength visual indicators - Option E */
@@ -293,22 +292,27 @@ td.column-collapsed {
     max-width: 20px !important;
     width: 20px !important;
     padding: 0.15rem !important;
-    overflow: hidden;
+    overflow: hidden !important;
     background-color: rgba(108, 117, 125, 0.05) !important;
+    font-size: 0 !important;  /* Hide text content */
+    line-height: 0 !important;  /* Collapse line height */
 }
 
 /* Hide all content in collapsed cells */
-td.column-collapsed > * {
+td.column-collapsed * {
     display: none !important;
+    visibility: hidden !important;
 }
 
 /* Show only a subtle dot indicator if there's data */
 td.column-collapsed:not(:empty)::before {
     content: '•';
     color: rgba(108, 117, 125, 0.4);
-    font-size: 1rem;
+    font-size: 1rem !important;
+    line-height: normal !important;
     display: block;
     text-align: center;
+    visibility: visible !important;
 }
 
 /* Level-specific colors for hierarchy (both light & dark mode) */
@@ -1075,13 +1079,8 @@ tr[data-level="kpi"] td {
     <table class="table table-bordered table-hover" id="workspace-tree">
         <thead class="table-light">
             <tr>
-                {# Calculate Structure column width based on deepest visible level #}
-                {% set structure_width = 180 %}
-                {% if show_levels.challenges %}{% set structure_width = 280 %}{% endif %}
-                {% if show_levels.initiatives %}{% set structure_width = 320 %}{% endif %}
-                {% if show_levels.systems %}{% set structure_width = 360 %}{% endif %}
-                {% if show_levels.kpis %}{% set structure_width = 400 %}{% endif %}
-                <th style="min-width: {{ structure_width }}px; font-size: 1.1rem; font-weight: 700;">
+                {# Structure column - auto-size based on content #}
+                <th style="font-size: 1.1rem; font-weight: 700;">
                     <i class="bi bi-building"></i> {{ org_name }}
                     {% if organization %}
                         <span class="form-view-icon ms-2">
@@ -1101,24 +1100,24 @@ tr[data-level="kpi"] td {
                 </th>
                 {% for vt in value_types %}
                 {% if vt.kind in ['sentiment', 'risk', 'positive_impact', 'negative_impact', 'level'] %}
-                    {% set col_width = '60px' %}
+                    {% set col_width = '80px' %}
                     {% set is_narrow = true %}
                 {% elif vt.unit_label %}
                     {# Smart width based on actual unit length #}
                     {% if vt.unit_label|length <= 2 %}
-                        {% set col_width = '75px' %}  {# €, $, £, %, etc #}
+                        {% set col_width = '110px' %}  {# €, $, £, %, etc #}
                     {% elif vt.unit_label|length <= 5 %}
-                        {% set col_width = '90px' %}  {# Days, EUR, USD, etc #}
+                        {% set col_width = '130px' %}  {# Days, EUR, USD, etc #}
                     {% else %}
-                        {% set col_width = '105px' %}  {# Longer units #}
+                        {% set col_width = '150px' %}  {# Longer units #}
                     {% endif %}
                     {% set is_narrow = false %}
                 {% else %}
-                    {% set col_width = '85px' %}  {# No unit, pure number #}
+                    {% set col_width = '120px' %}  {# No unit, pure number #}
                     {% set is_narrow = false %}
                 {% endif %}
                 <th class="text-center value-type-header"
-                    style="min-width: {{ col_width }}; cursor: move; word-wrap: break-word; white-space: normal;{% if is_narrow %} font-size: 0.7rem; padding: 0.35rem 0.25rem; line-height: 1.1;{% else %} font-size: 0.8rem; padding: 0.4rem 0.3rem; line-height: 1.2;{% endif %}"
+                    style="cursor: move; white-space: nowrap;{% if is_narrow %} font-size: 0.7rem; padding: 0.35rem 0.25rem; line-height: 1.1;{% else %} font-size: 0.8rem; padding: 0.4rem 0.3rem; line-height: 1.2;{% endif %}"
                     draggable="true"
                     data-vt-id="{{ vt.id }}"
                     data-vt-index="{{ loop.index0 }}"
