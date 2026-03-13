@@ -296,30 +296,88 @@ class SnapshotPivotService:
                 target_direction = kpi["config"].target_direction or "maximize"
                 tolerance_pct = kpi["config"].target_tolerance_pct or 10
 
+                # Calculate data range for shading bounds
+                all_values = [v for v in data if v is not None]
+                if all_values:
+                    min_val = min(all_values + [target_value])
+                    max_val = max(all_values + [target_value])
+                    range_padding = (max_val - min_val) * 0.3  # 30% padding
+                else:
+                    min_val = target_value * 0.5
+                    max_val = target_value * 1.5
+                    range_padding = target_value * 0.3
+
                 # Target direction indicators
                 if target_direction == "maximize":
-                    label_suffix = "↑"  # Arrow up for maximize
+                    label_suffix = "↑ At or Above"
+                    # Shade area ABOVE target (good zone)
+                    upper_bound_val = max_val + range_padding
+
+                    # Upper bound line (invisible)
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Target Upper",
+                            "data": [upper_bound_val] * len(pivot["periods"]),
+                            "borderColor": "transparent",
+                            "backgroundColor": f"rgba(40, 167, 69, 0.15)",  # Green tint
+                            "borderWidth": 0,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": False,
+                        }
+                    )
+
+                    # Target line with fill to upper
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Target {label_suffix}",
+                            "data": target_data,
+                            "borderColor": color,
+                            "backgroundColor": f"rgba(40, 167, 69, 0.15)",  # Green tint
+                            "borderDash": [5, 5],
+                            "borderWidth": 2,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": "-1",  # Fill to previous dataset (upper bound)
+                        }
+                    )
+
                 elif target_direction == "minimize":
-                    label_suffix = "↓"  # Arrow down for minimize
+                    label_suffix = "↓ At or Below"
+                    # Shade area BELOW target (good zone)
+                    lower_bound_val = max(0, min_val - range_padding)  # Don't go negative unless data is negative
+
+                    # Target line
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Target {label_suffix}",
+                            "data": target_data,
+                            "borderColor": color,
+                            "backgroundColor": "transparent",
+                            "borderDash": [5, 5],
+                            "borderWidth": 2,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": False,
+                        }
+                    )
+
+                    # Lower bound line with fill from target
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Target Lower",
+                            "data": [lower_bound_val] * len(pivot["periods"]),
+                            "borderColor": "transparent",
+                            "backgroundColor": f"rgba(40, 167, 69, 0.15)",  # Green tint
+                            "borderWidth": 0,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": "-1",  # Fill to previous dataset (target line)
+                        }
+                    )
+
                 else:  # exact
-                    label_suffix = f"±{tolerance_pct}%"
-
-                datasets.append(
-                    {
-                        "label": f"{kpi['kpi_name']} - Target {label_suffix}",
-                        "data": target_data,
-                        "borderColor": color,
-                        "backgroundColor": "transparent",
-                        "borderDash": [5, 5],
-                        "borderWidth": 2,
-                        "pointRadius": 0,
-                        "tension": 0,
-                        "fill": False,
-                    }
-                )
-
-                # Add band for "exact" targets
-                if target_direction == "exact":
+                    label_suffix = f"± {tolerance_pct}%"
                     # Calculate upper and lower bounds
                     upper_bound = target_value * (1 + tolerance_pct / 100)
                     lower_bound = target_value * (1 - tolerance_pct / 100)
@@ -341,6 +399,21 @@ class SnapshotPivotService:
                         }
                     )
 
+                    # Add target line (center of band)
+                    datasets.append(
+                        {
+                            "label": f"{kpi['kpi_name']} - Target {label_suffix}",
+                            "data": target_data,
+                            "borderColor": color,
+                            "backgroundColor": "transparent",
+                            "borderDash": [5, 5],
+                            "borderWidth": 2,
+                            "pointRadius": 0,
+                            "tension": 0,
+                            "fill": False,
+                        }
+                    )
+
                     # Add lower bound with fill to upper
                     datasets.append(
                         {
@@ -351,7 +424,7 @@ class SnapshotPivotService:
                             "borderWidth": 0,
                             "pointRadius": 0,
                             "tension": 0,
-                            "fill": "-1",  # Fill to previous dataset (upper bound)
+                            "fill": "-2",  # Fill to 2 datasets back (upper bound)
                         }
                     )
 
