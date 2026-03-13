@@ -2,6 +2,8 @@
 Integration tests for organization admin routes
 """
 
+import pytest
+
 from app.models import GovernanceBody, Initiative, Space, System, ValueType
 
 
@@ -120,6 +122,7 @@ class TestOrgAdminInitiativeManagement:
 class TestOrgAdminSystemManagement:
     """Tests for system management routes"""
 
+    @pytest.mark.skip(reason="Systems list page removed - route no longer exists")
     def test_systems_list_page(self, client, org_user, sample_organization, db):
         """Test systems list page"""
         with client.session_transaction() as sess:

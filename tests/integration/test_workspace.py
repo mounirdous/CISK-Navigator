@@ -2,8 +2,6 @@
 Integration tests for workspace functionality
 """
 
-import pytest
-
 from app.models import KPI, Challenge, Initiative, InitiativeSystemLink, KPIValueTypeConfig, Space, System, ValueType
 
 
@@ -97,11 +95,20 @@ class TestWorkspaceGrid:
     def test_workspace_filter_by_space_type(self, client, org_user, sample_organization, db):
         """Test workspace can filter by public/private spaces"""
         # Create public and private spaces
+        # Note: Private space must be created by the user to be visible to non-admins
         public_space = Space(
-            name="Public Space", organization_id=sample_organization.id, is_private=False, display_order=1
+            name="Public Space",
+            organization_id=sample_organization.id,
+            is_private=False,
+            display_order=1,
+            created_by=org_user.id,
         )
         private_space = Space(
-            name="Private Space", organization_id=sample_organization.id, is_private=True, display_order=2
+            name="Private Space",
+            organization_id=sample_organization.id,
+            is_private=True,
+            display_order=2,
+            created_by=org_user.id,
         )
         db.session.add_all([public_space, private_space])
         db.session.commit()

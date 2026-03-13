@@ -4,7 +4,7 @@ Integration tests for admin operations
 
 import pytest
 
-from app.models import Organization, Space, User, ValueType
+from app.models import Space, ValueType
 
 
 class TestGlobalAdmin:
@@ -88,7 +88,7 @@ class TestOrganizationAdmin:
         assert response.status_code == 200
 
     def test_org_admin_can_view_spaces(self, client, org_user, sample_organization, db):
-        """Test org admin can view spaces list"""
+        """Test org admin spaces route redirects to workspace"""
         # Create a space
         space = Space(name="Admin Test Space", organization_id=sample_organization.id, display_order=1)
         db.session.add(space)
@@ -99,9 +99,10 @@ class TestOrganizationAdmin:
             sess["organization_id"] = sample_organization.id
             sess["organization_name"] = sample_organization.name
 
-        response = client.get("/org-admin/spaces")
+        response = client.get("/org-admin/spaces", follow_redirects=True)
         assert response.status_code == 200
-        assert b"Admin Test Space" in response.data
+        # Should redirect to workspace
+        assert b"Workspace" in response.data or b"workspace" in response.data
 
     def test_org_admin_space_creation_requires_permission(self, client, sample_user, sample_organization, db):
         """Test users without permission cannot create spaces"""
@@ -178,19 +179,17 @@ class TestBackupRestore:
         assert response.status_code in [200, 302, 403]
 
     def test_create_backup_returns_yaml_for_admin(self, client, admin_user, sample_organization, db):
-        """Test backup creates YAML file for download"""
+        """Test backup creates JSON file for download"""
         with client.session_transaction() as sess:
             sess["_user_id"] = str(admin_user.id)
 
         response = client.get(f"/global-admin/backup-restore/create/{sample_organization.id}")
-        # Should either return YAML content or redirect
+        # Should either return JSON content or redirect
         assert response.status_code in [200, 302]
         if response.status_code == 200:
-            # Check content type is YAML or gzip
+            # Check content type is JSON (evolved from YAML)
             assert response.content_type in [
-                "application/x-yaml",
-                "text/yaml",
-                "application/gzip",
+                "application/json",
                 "application/octet-stream",
             ]
 
