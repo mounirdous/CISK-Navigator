@@ -730,18 +730,23 @@ tr[data-level="kpi"] td {
         <div class="accordion-item" style="background-color: transparent; border: none;">
             <h2 class="accordion-header">
                 <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#filtersCollapse"
-                        style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem;">
-                    <i class="bi bi-funnel me-2"></i> <strong>Filters & Display Options</strong>
-                    {% if active_preset %}
-                    <span class="ms-2 badge bg-success">
-                        <i class="bi bi-bookmark-star"></i> {{ active_preset.name }}
-                    </span>
-                    {% else %}
-                    <span class="ms-2 badge bg-primary">
-                        {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) + (selected_space_ids|length if selected_space_ids else 0) %}
-                        {{ active_filters }} active
-                    </span>
-                    {% endif %}
+                        style="background-color: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <i class="bi bi-funnel me-2"></i> <strong>Filters & Display Options</strong>
+                        {% if active_preset %}
+                        <span class="ms-2 badge bg-success">
+                            <i class="bi bi-bookmark-star"></i> {{ active_preset.name }}
+                        </span>
+                        {% else %}
+                        <span class="ms-2 badge bg-primary">
+                            {% set active_filters = (selected_governance_body_ids|length if governance_bodies else 0) + (selected_group_labels|length) + (1 if show_archived else 0) + (selected_space_ids|length if selected_space_ids else 0) %}
+                            {{ active_filters }} active
+                        </span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted" style="font-size: 0.75rem; margin-left: auto; padding-left: 1rem;">
+                        {{ spaces|length }} spaces, {{ total_kpis }} KPIs
+                    </small>
                 </button>
             </h2>
             <div id="filtersCollapse" class="accordion-collapse collapse">
@@ -981,17 +986,6 @@ tr[data-level="kpi"] td {
             </div>
         </div>
     </div>
-</div>
-
-<!-- Quick Stats - Compact -->
-<div class="stats-bar" style="display: flex; align-items: center; gap: 1rem; font-size: 0.8rem;">
-    <span title="Organization Structure View"><i class="bi bi-diagram-3"></i> {{ spaces|length }} spaces, {{ total_kpis }} KPIs</span>
-    {% if selected_governance_body_ids|length > 0 and selected_governance_body_ids|length < governance_bodies|length %}
-        <span class="text-muted" title="Filtered Governance Bodies"><i class="bi bi-funnel"></i> {{ selected_governance_body_ids|length }}/{{ governance_bodies|length }} GBs</span>
-    {% endif %}
-    {% if show_archived %}
-        <span class="text-muted" title="Including Archived Items"><i class="bi bi-archive"></i> Archived</span>
-    {% endif %}
 </div>
 
 <div class="table-responsive">
