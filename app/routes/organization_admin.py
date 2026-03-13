@@ -9,7 +9,8 @@ from functools import wraps
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
-from wtforms import SubmitField
+from wtforms import StringField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired
 
 from app.extensions import db
 from app.forms import (
@@ -52,6 +53,34 @@ class OnboardingConfirmForm(FlaskForm):
     """Simple form for onboarding confirmation steps"""
 
     submit = SubmitField("Continue")
+
+
+class QuickStructureForm(FlaskForm):
+    """Form for creating complete structure in one step"""
+
+    # Space
+    space_name = StringField("Space Name", validators=[DataRequired()], default="Corporate Strategy")
+    space_desc = TextAreaField("Space Description", default="Strategic initiatives for corporate goals")
+
+    # Challenge
+    challenge_name = StringField("Challenge Name", validators=[DataRequired()], default="Reduce Environmental Impact")
+    challenge_desc = TextAreaField(
+        "Challenge Description", default="Minimize carbon footprint and improve sustainability"
+    )
+
+    # Initiative
+    initiative_name = StringField("Initiative Name", validators=[DataRequired()], default="Energy Efficiency Program")
+    initiative_desc = TextAreaField("Initiative Description", default="Reduce energy consumption across all facilities")
+
+    # System
+    system_name = StringField("System Name", validators=[DataRequired()], default="Office Buildings")
+    system_desc = TextAreaField("System Description", default="All corporate office facilities")
+
+    # KPI
+    kpi_name = StringField("KPI Name", validators=[DataRequired()], default="Energy Consumption")
+    kpi_desc = TextAreaField("KPI Description", default="Total energy usage measured in kWh")
+
+    submit = SubmitField("Create Complete Structure")
 
 
 def organization_required(f):
@@ -185,7 +214,7 @@ def index():
 @login_required
 @organization_required
 def onboarding():
-    """Organization onboarding wizard"""
+    """Improved organization onboarding wizard - creates complete working example"""
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
@@ -196,62 +225,20 @@ def onboarding():
     spaces_count = Space.query.filter_by(organization_id=org_id).count()
     governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id).count()
     value_types_count = ValueType.query.filter_by(organization_id=org_id).count()
+    kpis_count = KPI.query.filter_by(organization_id=org_id).count()
 
     # If everything is set up, skip to completion
-    if spaces_count > 0 and governance_bodies_count > 0 and value_types_count > 0:
+    if spaces_count > 0 and governance_bodies_count > 0 and value_types_count > 0 and kpis_count > 0:
         step = 5
 
     # Initialize forms based on step
     form = None
+
+    # STEP 2: Create Value Types (with better defaults including CO2)
     if step == 2:
-        form = SpaceCreateForm()
-        if form.validate_on_submit():
-            space = Space(
-                name=form.name.data,
-                description=form.description.data,
-                organization_id=org_id,
-            )
-            db.session.add(space)
-
-            AuditService.log_create(
-                "Space",
-                space.id if space.id else 0,
-                space.name,
-                {"description": space.description},
-            )
-
-            db.session.commit()
-            flash(f"Space '{space.name}' created successfully", "success")
-            return redirect(url_for("organization_admin.onboarding", step=3))
-
-    elif step == 3:
-        form = GovernanceBodyCreateForm()
-        if form.validate_on_submit():
-            gov_body = GovernanceBody(
-                name=form.name.data,
-                abbreviation=form.abbreviation.data,
-                description=form.description.data,
-                color=form.color.data,
-                is_active=True,
-                organization_id=org_id,
-            )
-            db.session.add(gov_body)
-
-            AuditService.log_create(
-                "GovernanceBody",
-                gov_body.id if gov_body.id else 0,
-                gov_body.name,
-                {"abbreviation": gov_body.abbreviation},
-            )
-
-            db.session.commit()
-            flash(f"Governance body '{gov_body.name}' created successfully", "success")
-            return redirect(url_for("organization_admin.onboarding", step=4))
-
-    elif step == 4:
         form = OnboardingConfirmForm()
         if form.validate_on_submit():
-            # Create default value types
+            # Create better default value types
             default_value_types = [
                 {
                     "name": "Cost",
@@ -259,17 +246,19 @@ def onboarding():
                     "numeric_format": "decimal",
                     "decimal_places": 2,
                     "unit_label": "€",
+                    "default_aggregation_formula": "sum",
                 },
                 {
-                    "name": "Revenue",
+                    "name": "CO2 Emissions",
                     "kind": "numeric",
                     "numeric_format": "decimal",
                     "decimal_places": 2,
-                    "unit_label": "€",
+                    "unit_label": "tCO2e",
+                    "default_aggregation_formula": "sum",
                 },
                 {
-                    "name": "User Satisfaction",
-                    "kind": "sentiment",
+                    "name": "Risk Level",
+                    "kind": "risk",
                 },
             ]
 
@@ -284,8 +273,142 @@ def onboarding():
                 )
 
             db.session.commit()
-            flash(f"Created {len(default_value_types)} default value types", "success")
-            return redirect(url_for("organization_admin.onboarding", step=5))
+            flash(f"Created {len(default_value_types)} value types: Cost, CO2 Emissions, Risk Level", "success")
+            return redirect(url_for("organization_admin.onboarding", step=3))
+
+    # STEP 3: Create Governance Body (simplified, with explanation)
+    elif step == 3:
+        form = GovernanceBodyCreateForm()
+        # Pre-fill default
+        if request.method == "GET":
+            form.name.data = "Management Board"
+            form.abbreviation.data = "MB"
+            form.description.data = "Strategic oversight and decision-making"
+            form.color.data = "#3498db"
+
+        if form.validate_on_submit():
+            gov_body = GovernanceBody(
+                name=form.name.data,
+                abbreviation=form.abbreviation.data,
+                description=form.description.data,
+                color=form.color.data,
+                is_active=True,
+                organization_id=org_id,
+            )
+            db.session.add(gov_body)
+            db.session.flush()  # Get ID
+
+            AuditService.log_create(
+                "GovernanceBody",
+                gov_body.id,
+                gov_body.name,
+                {"abbreviation": gov_body.abbreviation},
+            )
+
+            db.session.commit()
+            flash(f"Governance body '{gov_body.name}' created successfully", "success")
+            return redirect(url_for("organization_admin.onboarding", step=4))
+
+    # STEP 4: Create Complete Structure (Space → Challenge → Initiative → System → KPI)
+    elif step == 4:
+        form = QuickStructureForm()
+        if form.validate_on_submit():
+            try:
+                # Create Space
+                space = Space(
+                    name=form.space_name.data,
+                    description=form.space_desc.data,
+                    organization_id=org_id,
+                )
+                db.session.add(space)
+                db.session.flush()
+
+                # Create Challenge
+                challenge = Challenge(
+                    name=form.challenge_name.data,
+                    description=form.challenge_desc.data,
+                    space_id=space.id,
+                    organization_id=org_id,
+                )
+                db.session.add(challenge)
+                db.session.flush()
+
+                # Create Initiative
+                initiative = Initiative(
+                    name=form.initiative_name.data,
+                    description=form.initiative_desc.data,
+                    organization_id=org_id,
+                )
+                db.session.add(initiative)
+                db.session.flush()
+
+                # Link Initiative to Challenge
+                link = ChallengeInitiativeLink(challenge_id=challenge.id, initiative_id=initiative.id)
+                db.session.add(link)
+
+                # Create System
+                system = System(
+                    name=form.system_name.data,
+                    description=form.system_desc.data,
+                    organization_id=org_id,
+                )
+                db.session.add(system)
+                db.session.flush()
+
+                # Link System to Initiative
+                sys_link = InitiativeSystemLink(initiative_id=initiative.id, system_id=system.id)
+                db.session.add(sys_link)
+
+                # Create KPI
+                kpi = KPI(
+                    name=form.kpi_name.data,
+                    description=form.kpi_desc.data,
+                    system_id=system.id,
+                    organization_id=org_id,
+                )
+                db.session.add(kpi)
+                db.session.flush()
+
+                # Link KPI to all value types
+                value_types = ValueType.query.filter_by(organization_id=org_id).all()
+                for vt in value_types:
+                    config = KPIValueTypeConfig(
+                        kpi_id=kpi.id,
+                        value_type_id=vt.id,
+                        calculation_type="manual",
+                    )
+                    db.session.add(config)
+
+                # Link KPI to governance body
+                gov_body = GovernanceBody.query.filter_by(organization_id=org_id).first()
+                if gov_body:
+                    gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=gov_body.id)
+                    db.session.add(gb_link)
+
+                # Audit logs
+                AuditService.log_create("Space", space.id, space.name, {})
+                AuditService.log_create("Challenge", challenge.id, challenge.name, {})
+                AuditService.log_create("Initiative", initiative.id, initiative.name, {})
+                AuditService.log_create("System", system.id, system.name, {})
+                AuditService.log_create("KPI", kpi.id, kpi.name, {})
+
+                db.session.commit()
+
+                # Store summary for completion page
+                session["onboarding_summary"] = {
+                    "space": space.name,
+                    "challenge": challenge.name,
+                    "initiative": initiative.name,
+                    "system": system.name,
+                    "kpi": kpi.name,
+                }
+
+                flash("🎉 Complete structure created successfully!", "success")
+                return redirect(url_for("organization_admin.onboarding", step=5))
+
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error creating structure: {str(e)}", "danger")
 
     if form is None:
         form = OnboardingConfirmForm()
