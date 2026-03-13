@@ -45,6 +45,73 @@ class KPI(db.Model):
     governance_body_links = db.relationship("KPIGovernanceBodyLink", back_populates="kpi", cascade="all, delete-orphan")
     archived_by = db.relationship("User", foreign_keys=[archived_by_user_id])
 
+    def get_variable_name(self):
+        """
+        Generate a safe Python variable name from KPI name.
+        Used in formula calculations to make formulas readable.
+
+        Example:
+            "Inventory turns improvement" → "inventory_turns_improvement"
+            "CO2 Emissions" → "co2_emissions"
+            "Cost (€)" → "cost_eur"
+
+        Returns:
+            str: Valid Python variable name
+        """
+        import keyword
+        import re
+
+        # Start with the KPI name
+        var_name = self.name.lower()
+
+        # Replace common symbols with words
+        replacements = {
+            "€": "eur",
+            "$": "usd",
+            "£": "gbp",
+            "%": "pct",
+            "&": "and",
+            "+": "plus",
+            "-": "_",
+            "/": "_per_",
+            "(": "_",
+            ")": "",
+            "[": "_",
+            "]": "",
+            "{": "_",
+            "}": "",
+        }
+
+        for char, replacement in replacements.items():
+            var_name = var_name.replace(char, replacement)
+
+        # Replace any non-alphanumeric characters with underscore
+        var_name = re.sub(r"[^a-z0-9]+", "_", var_name)
+
+        # Remove leading/trailing underscores
+        var_name = var_name.strip("_")
+
+        # Remove consecutive underscores
+        var_name = re.sub(r"_+", "_", var_name)
+
+        # Ensure it starts with a letter (prefix with 'kpi_' if it starts with a number)
+        if var_name and var_name[0].isdigit():
+            var_name = f"kpi_{var_name}"
+
+        # If empty after sanitization, use fallback
+        if not var_name:
+            var_name = f"kpi_{self.id}"
+
+        # Ensure it's not a Python keyword
+        if keyword.iskeyword(var_name):
+            var_name = f"{var_name}_value"
+
+        # Truncate if too long (keep it reasonable)
+        if len(var_name) > 50:
+            var_name = var_name[:50].rstrip("_")
+
+        return var_name
+
     def __repr__(self):
         return f"<KPI {self.name}>"
 

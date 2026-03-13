@@ -112,28 +112,6 @@ class ValueType(db.Model):
         }
         return explanations.get(self.kind, f"{self.name} aggregates using {self.default_aggregation_formula}")
 
-    @classmethod
-    def get_smart_default_formula(cls, kind):
-        """
-        Get the smart default aggregation formula based on value type kind.
-
-        For qualitative types, SUM doesn't make sense, so we use sensible defaults:
-        - risk: MAX (show worst case risk)
-        - positive_impact: MAX (show best case impact)
-        - negative_impact: MAX (show worst case harm)
-        - level: MAX (show highest level achieved)
-        - sentiment: AVG (average mood/sentiment)
-        - numeric: SUM (default)
-        """
-        qualitative_defaults = {
-            cls.KIND_RISK: cls.FORMULA_MAX,
-            cls.KIND_POSITIVE_IMPACT: cls.FORMULA_MAX,
-            cls.KIND_NEGATIVE_IMPACT: cls.FORMULA_MAX,
-            cls.KIND_LEVEL: cls.FORMULA_MAX,
-            cls.KIND_SENTIMENT: cls.FORMULA_AVG,
-        }
-        return qualitative_defaults.get(kind, cls.FORMULA_SUM)
-
     def get_valid_formulas(self):
         """
         Get list of valid aggregation formulas for this value type.
@@ -424,7 +402,10 @@ class KPIValueTypeConfig(db.Model):
                 try:
                     float_value = float(value)
                     values.append(float_value)
-                    # Make available as kpi_<id> for expression mode
+                    # Make available using sanitized KPI name (readable)
+                    var_name = source_config.kpi.get_variable_name()
+                    namespace[var_name] = float_value
+                    # Also keep old kpi_{id} format for backwards compatibility with existing formulas
                     namespace[f"kpi_{source_config.id}"] = float_value
                 except (ValueError, TypeError):
                     # Skip non-numeric values

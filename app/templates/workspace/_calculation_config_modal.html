@@ -116,13 +116,16 @@
                         <label class="form-label small">Python Expression:</label>
                         <div class="mb-2">
                             <template x-for="kpi in selectedKPIs" :key="kpi.id">
-                                <span class="badge bg-secondary me-1" style="cursor: pointer;" @click="insertVariable(kpi.id)" title="Click to insert">
-                                    <code class="text-white" x-text="'kpi_' + kpi.id"></code>
+                                <span class="badge bg-secondary me-1" style="cursor: pointer;" @click="insertVariable(kpi)" title="Click to insert">
+                                    <code class="text-white" x-text="kpi.variable_name"></code>
                                 </span>
                             </template>
                         </div>
+                        <small class="text-muted d-block mb-2">
+                            <i class="bi bi-info-circle"></i> Click badges to insert. Readable variable names based on KPI names.
+                        </small>
                         <textarea class="form-control font-monospace" rows="2" x-model="expression" @input="updateExpressionPreview()"
-                                  placeholder="kpi_123 + kpi_456"></textarea>
+                                  placeholder="inventory_turns + sales_growth"></textarea>
                     </div>
 
                     <!-- Help - COLLAPSIBLE -->
@@ -138,10 +141,10 @@
                             • <code>sum(...nums)</code> - Sum of all values<br>
                             • <code>floor(num)</code>, <code>ceil(num)</code>, <code>sqrt(num)</code>, <code>pow(base, exp)</code><br>
                             <strong>Examples:</strong><br>
-                            • <code>round(kpi_284 / 2)</code> - Half the value<br>
-                            • <code>round((kpi_1 / kpi_2) * 100, 1)</code> - Percentage with 1 decimal<br>
-                            • <code>abs(kpi_1 - kpi_2)</code> - Difference<br>
-                            • <code>max(kpi_1, kpi_2, kpi_3)</code> - Best of three
+                            • <code>energy_cost + maintenance_cost</code> - Sum costs<br>
+                            • <code>round((sales_revenue / total_cost) * 100, 1)</code> - Profit margin %<br>
+                            • <code>abs(actual_budget - planned_budget)</code> - Budget variance<br>
+                            • <code>max(q1_revenue, q2_revenue, q3_revenue)</code> - Best quarter
                         </div>
                     </details>
                 </div>
@@ -352,8 +355,8 @@ function calculationBuilder() {
             this.selectedKPIs.splice(index, 1);
         },
 
-        insertVariable(kpiId) {
-            const varName = `kpi_${kpiId}`;
+        insertVariable(kpi) {
+            const varName = kpi.variable_name || `kpi_${kpi.id}`; // Use readable name, fallback to ID
             const textarea = document.querySelector('textarea[x-model="expression"]');
             if (textarea) {
                 const start = textarea.selectionStart;

@@ -2500,6 +2500,7 @@ def get_kpis_for_formula(org_id):
                 "path": f"{initiative.name} › {system.name}",
                 "currentValue": display_value,
                 "icon": "💶" if value_type.unit_label in ["€", "$", "USD"] else "📊",
+                "variable_name": kpi.get_variable_name(),  # Sanitized Python variable name
             }
         )
 
