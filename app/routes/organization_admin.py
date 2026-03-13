@@ -1245,10 +1245,11 @@ def quick_create_kpi():
         .all()
     )
 
-    # Get existing spaces/challenges/initiatives for suggestions
+    # Get existing spaces/challenges/initiatives/systems for suggestions
     existing_spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.name).all()
     existing_challenges = Challenge.query.filter_by(organization_id=org_id).order_by(Challenge.name).all()
     existing_initiatives = Initiative.query.filter_by(organization_id=org_id).order_by(Initiative.name).all()
+    existing_systems = System.query.filter_by(organization_id=org_id).order_by(System.name).all()
 
     # Check prerequisites
     if not value_types:
@@ -1280,6 +1281,7 @@ def quick_create_kpi():
                 existing_spaces=existing_spaces,
                 existing_challenges=existing_challenges,
                 existing_initiatives=existing_initiatives,
+                existing_systems=existing_systems,
             )
 
         if not selected_vt_ids:
@@ -1291,6 +1293,7 @@ def quick_create_kpi():
                 existing_spaces=existing_spaces,
                 existing_challenges=existing_challenges,
                 existing_initiatives=existing_initiatives,
+                existing_systems=existing_systems,
             )
 
         if not selected_gb_ids:
@@ -1302,6 +1305,7 @@ def quick_create_kpi():
                 existing_spaces=existing_spaces,
                 existing_challenges=existing_challenges,
                 existing_initiatives=existing_initiatives,
+                existing_systems=existing_systems,
             )
 
         # Auto-create hierarchy as needed

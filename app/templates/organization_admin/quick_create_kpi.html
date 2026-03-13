@@ -86,8 +86,14 @@
                             </label>
                             <input type="text" class="form-control" name="system_name"
                                    value="General"
-                                   placeholder="e.g., Office Buildings">
-                            <small class="form-text text-muted">Default: "General"</small>
+                                   placeholder="e.g., Office Buildings"
+                                   list="existing-systems">
+                            <datalist id="existing-systems">
+                                {% for system in existing_systems %}
+                                <option value="{{ system.name }}">
+                                {% endfor %}
+                            </datalist>
+                            <small class="form-text text-muted">Default: "General", created if doesn't exist</small>
                         </div>
 
                         <!-- Description -->
