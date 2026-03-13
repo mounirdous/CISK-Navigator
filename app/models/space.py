@@ -29,6 +29,12 @@ class Space(db.Model):
         nullable=False,
         comment="Private spaces are only visible to users with appropriate permissions",
     )
+    created_by = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        comment="User who created this space (owner for private spaces)",
+    )
 
     # SWOT Analysis
     swot_strengths = db.Column(db.Text, nullable=True, comment="SWOT: Internal positive attributes")
@@ -41,6 +47,7 @@ class Space(db.Model):
 
     # Relationships
     organization = db.relationship("Organization", back_populates="spaces")
+    creator = db.relationship("User", foreign_keys=[created_by])
     challenges = db.relationship(
         "Challenge", back_populates="space", cascade="all, delete-orphan", order_by="Challenge.display_order"
     )

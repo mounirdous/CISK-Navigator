@@ -208,10 +208,16 @@ def index():
     # Get space type filter (all, private, public)
     space_type_filter = request.args.get("space_type", "all")
 
-    # Get space counts for filter pills
-    all_spaces_count = Space.query.filter_by(organization_id=org_id).count()
-    public_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=False).count()
-    private_spaces_count = Space.query.filter_by(organization_id=org_id, is_private=True).count()
+    # Get space counts for filter pills (with privacy filtering)
+    base_spaces_query = Space.query.filter_by(organization_id=org_id)
+    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
+        # Regular user: only count spaces they can see
+        base_spaces_query = base_spaces_query.filter(
+            or_(Space.is_private == False, Space.created_by == current_user.id)
+        )
+    all_spaces_count = base_spaces_query.count()
+    public_spaces_count = base_spaces_query.filter_by(is_private=False).count()
+    private_spaces_count = base_spaces_query.filter_by(is_private=True).count()
 
     # ALWAYS show all columns - user requested removal of column hiding feature
     # Keeping parameter for backwards compatibility but always defaulting to True
@@ -240,16 +246,32 @@ def index():
     # Get show_archived flag
     show_archived = request.args.get("show_archived") == "1"
 
-    # Get all spaces for space selector filter
-    all_spaces_for_filter = (
-        Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
-    )
+    # Get all spaces for space selector filter (with privacy filtering)
+    filter_spaces_query = Space.query.filter_by(organization_id=org_id)
+    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
+        # Regular user: only show spaces they can see
+        filter_spaces_query = filter_spaces_query.filter(
+            or_(Space.is_private == False, Space.created_by == current_user.id)
+        )
+    all_spaces_for_filter = filter_spaces_query.order_by(Space.display_order, Space.name).all()
 
     # Get selected space IDs (new space filter)
     selected_space_ids = request.args.getlist("space")
 
     # Get spaces based on filters
     spaces_query = Space.query.filter_by(organization_id=org_id)
+
+    # SECURITY: Filter private spaces based on user permissions
+    # Private spaces are only visible to:
+    # 1. The creator/owner
+    # 2. Global admins
+    # 3. Organization admins
+    # 4. Super admins
+    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
+        # Regular user: only show public spaces OR private spaces they created
+        spaces_query = spaces_query.filter(
+            or_(Space.is_private == False, Space.created_by == current_user.id)
+        )
 
     # Apply space type filter (all, private, public)
     if space_type_filter == "private":

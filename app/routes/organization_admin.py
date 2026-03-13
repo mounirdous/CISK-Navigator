@@ -365,6 +365,7 @@ def onboarding():
                     name=form.space_name.data,
                     description=form.space_desc.data,
                     organization_id=org_id,
+                    created_by=current_user.id,
                 )
                 db.session.add(space)
                 db.session.flush()
@@ -490,6 +491,7 @@ def create_space():
             space_label=form.space_label.data,
             display_order=form.display_order.data,
             is_private=form.is_private.data,
+            created_by=current_user.id,
         )
         db.session.add(space)
         db.session.flush()
