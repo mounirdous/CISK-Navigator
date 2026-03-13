@@ -1239,11 +1239,20 @@ tr[data-level="kpi"] td {
                             data-kpi-name="{{ kpi.name }}"
                             data-value-type-name="{{ vt.name }}">
                             <div style="position: relative; padding-top: 20px;">
-                                {# Calculation Type Badge - Top Left (outside content area) #}
+                                {# Calculation Type Badge - Top Left #}
                                 {% if config.calculation_type == 'formula' %}
                                     <span class="badge bg-success badge-sm" style="position: absolute; top: -5px; left: -5px; font-size: 0.65rem; z-index: 10;" title="Formula KPI">📐</span>
                                 {% elif config.calculation_type == 'linked' %}
                                     <span class="badge bg-info badge-sm" style="position: absolute; top: -5px; left: -5px; font-size: 0.65rem; z-index: 10;" title="Linked KPI">🔗</span>
+                                {% endif %}
+
+                                {# Consensus Status Badge - Top Right #}
+                                {% if consensus.status == 'strong_consensus' %}
+                                    <span class="badge bg-success badge-sm" style="position: absolute; top: -5px; right: -5px; font-size: 0.65rem; z-index: 10;" title="Strong Consensus">✓✓</span>
+                                {% elif consensus.status == 'weak_consensus' %}
+                                    <span class="badge bg-warning badge-sm" style="position: absolute; top: -5px; right: -5px; font-size: 0.65rem; z-index: 10;" title="Weak Consensus">✓</span>
+                                {% elif consensus.status == 'no_consensus' %}
+                                    <span class="badge bg-danger badge-sm" style="position: absolute; top: -5px; right: -5px; font-size: 0.65rem; z-index: 10;" title="No Consensus">⚠</span>
                                 {% endif %}
 
                                 <div style="{% if current_user.can_contribute(org_id) %}cursor: pointer;{% else %}cursor: default;{% endif %}" {% if current_user.can_contribute(org_id) %}onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'"{% endif %}>

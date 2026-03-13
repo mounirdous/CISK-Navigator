@@ -398,6 +398,34 @@
                         </li>
                         {% endif %}
                     {% elif current_user.is_global_admin or current_user.is_super_admin %}
+                        <!-- ESCAPE HATCH: Back to Workspace -->
+                        {% if current_user.organization_memberships|length > 0 %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="workspaceDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-grid-3x3-gap"></i> Back to Workspace
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="workspaceDropdown">
+                                <li class="px-3 py-2 border-bottom" style="background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, transparent 100%);">
+                                    <div class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7;">
+                                        Select Organization
+                                    </div>
+                                </li>
+                                {% for membership in current_user.organization_memberships %}
+                                    {% if membership.organization.is_active %}
+                                        <li>
+                                            <form method="POST" action="{{ url_for('auth.switch_organization', org_id=membership.organization_id) }}" style="margin: 0;">
+                                                <button type="submit" class="dropdown-item" style="border: none; background: none; width: 100%; text-align: left;">
+                                                    <i class="bi bi-building"></i> {{ membership.organization.name }}
+                                                </button>
+                                            </form>
+                                        </li>
+                                    {% endif %}
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- Admin Links -->
                         {% if current_user.is_super_admin %}
                         <li class="nav-item">
                             <a class="nav-link text-danger" href="{{ url_for('super_admin.index') }}">
