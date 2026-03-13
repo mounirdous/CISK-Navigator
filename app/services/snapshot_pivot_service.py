@@ -111,7 +111,8 @@ class SnapshotPivotService:
             # Store KPI metadata
             kpi_data[key]["kpi_id"] = kpi.id
             kpi_data[key]["kpi_name"] = kpi.name
-            kpi_data[key]["value_type_name"] = f"{value_type.name} ({value_type.unit or ''})"
+            unit = value_type.unit_label if value_type.unit_label else ""
+            kpi_data[key]["value_type_name"] = f"{value_type.name} ({unit})" if unit else value_type.name
             kpi_data[key]["value_type"] = value_type
 
             # Determine period key
