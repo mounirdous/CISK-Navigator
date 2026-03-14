@@ -288,6 +288,9 @@
                         </div>
                     </div>
 
+                    <!-- Icon Input (hidden, required by server) -->
+                    <input type="hidden" name="{{ entity_type }}_icon" value="{{ default_icon }}" id="icon-input-{{ entity_type }}">
+
                     <!-- Logo Actions -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold">Logo / Icon</label>
@@ -584,8 +587,34 @@ function submitTemplate() {
 
 // Reset to default settings (no logo, default color)
 function resetToDefaults(entityType) {
-    if (!confirm(`Reset ${entityType} to default appearance? This will remove any custom logo.`)) {
+    if (!confirm(`Reset ${entityType} to default appearance? This will remove any custom logo and reset color.`)) {
         return;
+    }
+
+    // Hardcoded defaults
+    const defaults = {
+        'organization': { color: '#3b82f6', icon: '🏢' },
+        'space': { color: '#10b981', icon: '🏢' },
+        'challenge': { color: '#f59e0b', icon: 'ƒ' },
+        'initiative': { color: '#8b5cf6', icon: 'δ' },
+        'system': { color: '#ec4899', icon: 'Φ' },
+        'kpi': { color: '#06b6d4', icon: 'Ψ' }
+    };
+
+    // Update form with default values
+    const form = document.getElementById('brandingForm');
+    const colorInput = form.querySelector(`input[name="${entityType}_color"]`);
+    const iconInput = form.querySelector(`input[name="${entityType}_icon"]`);
+
+    if (defaults[entityType]) {
+        colorInput.value = defaults[entityType].color;
+        if (iconInput) iconInput.value = defaults[entityType].icon;
+
+        // Update text input too
+        const textInput = colorInput.nextElementSibling;
+        if (textInput) textInput.value = defaults[entityType].color;
+
+        updatePreview(entityType);
     }
 
     // Delete the logo for this entity type
@@ -605,7 +634,8 @@ function resetToDefaults(entityType) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            location.reload();
+            // Don't reload, just show success
+            alert('Reset successful! Click "Save All Changes" to apply.');
         } else {
             alert('Error: ' + (data.error || 'Reset failed'));
         }
