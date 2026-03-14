@@ -113,7 +113,14 @@
             {% for space in spaces %}
             <tr>
                 <td>
-                    <strong><span style="margin-right: 0.5rem;">🏢</span>{{ space.name }}</strong>
+                    <strong>
+                        {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                        <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 0.5rem;">
+                        {% else %}
+                        <span style="font-weight: bold; margin-right: 0.5rem;">{{ entity_defaults.get('space', {}).get('icon', '◆') }}</span>
+                        {% endif %}
+                        {{ space.name }}
+                    </strong>
                     {% if space.is_private %}
                         <span class="badge bg-warning ms-2" title="Private Space">
                             <i class="bi bi-lock-fill"></i> Private
@@ -144,7 +151,14 @@
             {% if space.challenges %}
                 {% for challenge in space.challenges %}
                 <tr>
-                    <td style="padding-left: 2rem;"><span style="margin-right: 0.5rem;">🎯</span>{{ challenge.name }}</td>
+                    <td style="padding-left: 2rem;">
+                        {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                        <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 0.5rem;">
+                        {% else %}
+                        <span style="font-weight: bold; font-style: italic; margin-right: 0.5rem;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                        {% endif %}
+                        {{ challenge.name }}
+                    </td>
                     <td>{{ challenge.description[:80] if challenge.description else '-' }}</td>
                     <td>{{ challenge.display_order }}</td>
                     <td>
@@ -169,7 +183,14 @@
                 {% for link in challenge.initiative_links %}
                     {% set initiative = link.initiative %}
                     <tr>
-                        <td style="padding-left: 4rem;"><span style="margin-right: 0.5rem;">💡</span>{{ initiative.name }}</td>
+                        <td style="padding-left: 4rem;">
+                            {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                            <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 0.5rem;">
+                            {% else %}
+                            <span style="font-weight: bold; margin-right: 0.5rem;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                            {% endif %}
+                            {{ initiative.name }}
+                        </td>
                         <td>{{ initiative.description[:80] if initiative.description else '-' }}</td>
                         <td>-</td>
                         <td>
@@ -194,7 +215,14 @@
                     {% for sys_link in initiative.system_links %}
                         {% set system = sys_link.system %}
                         <tr>
-                            <td style="padding-left: 6rem;"><span style="margin-right: 0.5rem;">⚙️</span>{{ system.name }}</td>
+                            <td style="padding-left: 6rem;">
+                                {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                                <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 0.5rem;">
+                                {% else %}
+                                <span style="font-weight: bold; margin-right: 0.5rem;">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
+                                {% endif %}
+                                {{ system.name }}
+                            </td>
                             <td>{{ system.description[:80] if system.description else '-' }}</td>
                             <td>-</td>
                             <td>
@@ -218,7 +246,14 @@
                         </tr>
                         {% for kpi in sys_link.kpis %}
                         <tr>
-                            <td style="padding-left: 8rem;"><span style="margin-right: 0.5rem;">📊</span>{{ kpi.name }}</td>
+                            <td style="padding-left: 8rem;">
+                                {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 0.5rem;">
+                                {% else %}
+                                <span style="font-weight: bold; margin-right: 0.5rem;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                                {% endif %}
+                                {{ kpi.name }}
+                            </td>
                             <td>{{ kpi.description[:80] if kpi.description else '-' }}</td>
                             <td>-</td>
                             <td>
