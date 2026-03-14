@@ -396,6 +396,10 @@ body.dark-mode .card.border-primary {
                 <form method="POST" id="contributionForm">
                     {{ form.hidden_tag() }}
                     <input type="hidden" name="entry_mode" id="entry_mode" value="contributing">
+                    {# Preserve workspace filter state for return #}
+                    {% for key, value in workspace_filters.items() %}
+                    <input type="hidden" name="workspace_filter_{{ key }}" value="{{ value }}">
+                    {% endfor %}
                     <div class="row">
                         <div class="col-md-4">
                             <div class="mb-3">

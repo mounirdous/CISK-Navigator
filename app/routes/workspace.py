@@ -820,18 +820,14 @@ def kpi_cell_detail(kpi_id, vt_id):
         db.session.commit()
 
         # Preserve filter state when returning to workspace
-        from urllib.parse import parse_qs, urlparse
+        # Get filters from hidden form fields
         return_params = {"show_all_columns": 1}
 
-        # Get filters from referrer URL if available
-        referrer = request.referrer
-        if referrer and "workspace" in referrer:
-            parsed = urlparse(referrer)
-            query_params = parse_qs(parsed.query)
-            # Flatten single-value lists and preserve filter parameters
-            for key, values in query_params.items():
-                if key not in ["show_all_columns"]:  # Don't duplicate
-                    return_params[key] = values[0] if len(values) == 1 else values
+        # Extract workspace_filters from form data (these were added as hidden fields)
+        for key in request.form.keys():
+            if key.startswith("workspace_filter_"):
+                filter_key = key.replace("workspace_filter_", "")
+                return_params[filter_key] = request.form.get(key)
 
         return redirect(url_for("workspace.index", **return_params))
 
@@ -916,6 +912,16 @@ def kpi_cell_detail(kpi_id, vt_id):
             "logo": logo_url,
         }
 
+    # Capture workspace filter state from referrer (for preserving on return)
+    from urllib.parse import parse_qs, urlparse
+    workspace_filters = {}
+    referrer = request.referrer
+    if referrer and "workspace" in referrer:
+        parsed = urlparse(referrer)
+        query_params = parse_qs(parsed.query)
+        for key, values in query_params.items():
+            workspace_filters[key] = values[0] if len(values) == 1 else values
+
     return render_template(
         "workspace/kpi_cell_detail.html",
         kpi=kpi,
@@ -928,6 +934,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         formula_details=formula_details,
         can_contribute=current_user.can_contribute(org_id),
         entity_defaults=entity_defaults,
+        workspace_filters=workspace_filters,
     )
 
 
