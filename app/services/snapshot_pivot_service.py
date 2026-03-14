@@ -49,19 +49,23 @@ class SnapshotPivotService:
         Args:
             organization_id: Organization ID
             year: Year to analyze (legacy - use year_start/year_end instead)
-            view_type: 'monthly', 'quarterly', or 'yearly'
+            view_type: 'daily', 'monthly', 'quarterly', or 'yearly'
             space_id: Optional space filter
             value_type_id: Optional value type filter
             year_start: Start year for range
             year_end: End year for range
             periods: List of quarters (1-4) or months (1-12) to include
+            custom_months: List of (year, month) tuples for custom date range
 
         Returns:
             Dict with structure:
             {
-                'periods': ['Q1 2026', 'Q2 2026', ...],
+                'periods': ['Q1 2026', 'Q2 2026', ...] or ['2026-03-14', ...] for daily,
                 'kpis': [...]
             }
+
+        Note: For daily view, when multiple snapshots exist on the same date,
+              the most recent one (by created_at timestamp) is used.
         """
         # Handle legacy year parameter
         if year_start is None:
@@ -114,12 +118,20 @@ class SnapshotPivotService:
             elif view_type == "monthly":
                 query = query.filter(KPISnapshot.month.in_(periods))
 
-        # Fetch all snapshots - order by snapshot_date DESC to get most recent first
-        results = query.order_by(KPISnapshot.snapshot_date.desc()).all()
+        # Fetch all snapshots - order by snapshot_date DESC, created_at DESC
+        # This ensures when multiple snapshots exist on same date, we get the latest by created_at
+        results = query.order_by(KPISnapshot.snapshot_date.desc(), KPISnapshot.created_at.desc()).all()
 
         # Generate period labels based on view type and custom_months
         all_periods = []
-        if custom_months:
+        if view_type == "daily":
+            # Daily view: collect all unique dates from snapshots
+            unique_dates = set()
+            for snapshot, config, kpi, value_type in results:
+                if snapshot.snapshot_date:
+                    unique_dates.add(snapshot.snapshot_date)
+            all_periods = [date.strftime("%Y-%m-%d") for date in sorted(unique_dates)]
+        elif custom_months:
             # Custom range: show based on view_type
             if view_type == "monthly":
                 all_periods = [f"{SnapshotPivotService._month_name(m)} {y}" for y, m in custom_months]
@@ -162,15 +174,18 @@ class SnapshotPivotService:
             kpi_data[key]["config"] = config
 
             # Determine period key
-            if view_type == "monthly":
+            if view_type == "daily":
+                period_label = snapshot.snapshot_date.strftime("%Y-%m-%d") if snapshot.snapshot_date else None
+            elif view_type == "monthly":
                 period_label = f"{SnapshotPivotService._month_name(snapshot.month)} {snapshot.year}"
             elif view_type == "quarterly":
                 period_label = f"Q{snapshot.quarter} {snapshot.year}"
             else:  # yearly
                 period_label = str(snapshot.year)
 
-            # Store value (only if not already present - keeps most recent due to DESC ordering)
-            if period_label not in kpi_data[key]["values"]:
+            # Store value (only if not already present - keeps most recent due to DESC ordering by date + created_at)
+            # For daily view with multiple snapshots on same date, this ensures we get the latest by created_at
+            if period_label and period_label not in kpi_data[key]["values"]:
                 kpi_data[key]["values"][period_label] = {
                     "value": snapshot.get_value(),
                     "status": snapshot.consensus_status,
@@ -225,7 +240,11 @@ class SnapshotPivotService:
 
     @staticmethod
     def get_chart_data(
-        organization_id: int, year: int, kpi_config_ids: List[int], view_type: str = "quarterly", show_targets: bool = False
+        organization_id: int,
+        year: int,
+        kpi_config_ids: List[int],
+        view_type: str = "quarterly",
+        show_targets: bool = False,
     ) -> Dict:
         """
         Get data formatted for charting
@@ -319,7 +338,7 @@ class SnapshotPivotService:
                             "label": f"{kpi['kpi_name']} - Target Upper",
                             "data": [upper_bound_val] * len(pivot["periods"]),
                             "borderColor": "transparent",
-                            "backgroundColor": f"rgba(40, 167, 69, 0.15)",  # Green tint
+                            "backgroundColor": "rgba(40, 167, 69, 0.15)",  # Green tint
                             "borderWidth": 0,
                             "pointRadius": 0,
                             "tension": 0,
@@ -333,7 +352,7 @@ class SnapshotPivotService:
                             "label": f"{kpi['kpi_name']} - Target {label_suffix}",
                             "data": target_data,
                             "borderColor": color,
-                            "backgroundColor": f"rgba(40, 167, 69, 0.15)",  # Green tint
+                            "backgroundColor": "rgba(40, 167, 69, 0.15)",  # Green tint
                             "borderDash": [5, 5],
                             "borderWidth": 2,
                             "pointRadius": 0,
@@ -368,7 +387,7 @@ class SnapshotPivotService:
                             "label": f"{kpi['kpi_name']} - Target Lower",
                             "data": [lower_bound_val] * len(pivot["periods"]),
                             "borderColor": "transparent",
-                            "backgroundColor": f"rgba(40, 167, 69, 0.15)",  # Green tint
+                            "backgroundColor": "rgba(40, 167, 69, 0.15)",  # Green tint
                             "borderWidth": 0,
                             "pointRadius": 0,
                             "tension": 0,
