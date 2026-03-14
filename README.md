@@ -1,12 +1,33 @@
-# 🧭 CISK Navigator v1.28.0
+# 🧭 CISK Navigator v1.31.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.28.0-blue)
+![Version](https://img.shields.io/badge/version-1.31.0-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-96%20passing-success)
+
+## ✨ What's New in v1.31.0 (March 2026)
+
+### 🎨 **Dynamic Entity Colors & Branding Improvements**
+- **Branding Color Persistence Fixed**: Colors now save properly and persist after page reload
+  - Hidden icon fields added (server requires both color AND icon)
+  - Custom entity colors appear in workspace tree view with light tints (6-15% opacity)
+  - Visual consistency across the entire application
+- **Rollup Gradient Colors**: Configuration page headers use dynamic gradients based on branding
+  - Level 1 (KPI→System): gradient from KPI color to System color
+  - Level 2 (System→Initiative): gradient from System through Initiative to Challenge color
+  - Level 3 (Initiative→Challenge): gradient from Initiative through Challenge to Space color
+  - Reflects organization's branding instead of hardcoded values
+- **Simplified Rollup Headers**: Clearer, more concise level descriptions
+  - Removed confusing "Primary/Secondary" text
+  - Clean headers: "Level 1: KPI → System", "Level 2: System → Initiative", "Level 3: Initiative → Challenge"
+
+### 🎨 **UI/UX Polish**
+- **Dashboard Stat Box Heights**: All 7 stat boxes now uniform height for consistent appearance
+- **Workspace Description**: Updated Open Workspace text to explicitly list all entity types
+  - "View and manage Spaces, Challenges, Initiatives, Systems, KPIs and track progress"
 
 ## ✨ What's New in v1.28.0 (March 2026)
 

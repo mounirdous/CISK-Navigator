@@ -1,6 +1,6 @@
 # Entity Type Defaults - Branding & White-Labeling System
 
-**Version:** v1.30.0
+**Version:** v1.31.0
 **Date:** 2026-03-14
 **Status:** ✅ Production Ready - Fully Deployed
 
@@ -372,9 +372,45 @@ DELETE FROM entity_type_defaults;
 
 ---
 
-## Recent Fixes & Improvements (v1.30.0 - 2026-03-14)
+## Recent Fixes & Improvements
 
-### Default Icons Fixed
+### v1.31.0 - 2026-03-14 - Branding Persistence & Visual Polish
+
+#### Color Persistence Fixed ✅
+- **Issue**: Branding colors not saving - showed "Saved" message but reverted on reload
+- **Root Cause**: Form missing required `icon` input field (server requires both color AND icon)
+- **Fix**: Added hidden icon input for each entity type in branding form
+- **Impact**: Colors now save properly and persist after page reload
+- **File**: `app/templates/organization_admin/branding_manager.html`
+
+#### Dynamic Gradient Colors in Rollup Configuration ✅
+- **Feature**: Rollup configuration page headers now use dynamic gradients
+- **Implementation**:
+  - Level 1: gradient from KPI color → System color
+  - Level 2: gradient from System → Initiative → Challenge colors
+  - Level 3: gradient from Initiative → Challenge → Space colors
+- **Benefits**: Visual consistency with organization's branding
+- **Files**:
+  - `app/routes/organization_admin.py` - Pass entity_defaults to template
+  - `app/templates/organization_admin/configure_rollup.html` - CSS with dynamic colors
+
+#### Simplified Rollup Headers ✅
+- **Issue**: Confusing "Primary/Secondary" text in level descriptions
+- **Fix**: Simplified to clear single-line descriptions
+  - "Level 1: KPI → System" (how KPIs aggregate to System level)
+  - "Level 2: System → Initiative" (how Systems aggregate to Initiative level)
+  - "Level 3: Initiative → Challenge" (how Initiatives aggregate to Challenge level)
+- **Impact**: Clearer user experience, less confusion about what each level configures
+
+#### Rollup Template Dictionary Access Fix (Production Hotfix) ✅
+- **Issue**: UndefinedError in production - `entity_defaults.kpi.color`
+- **Root Cause**: entity_defaults is a dictionary, not an object
+- **Fix**: Changed to dictionary access: `entity_defaults.get('kpi', {}).get('color', '#06b6d4')`
+- **File**: `app/templates/organization_admin/configure_rollup.html`
+
+### v1.30.0 - 2026-03-14 - Icon Fixes & Logo Upload
+
+#### Default Icons Fixed
 - **Issue**: Reset to default was using wrong emoji icons
 - **Fix**: Updated hardcoded defaults to use correct symbols
   - Challenge: ⚡ → ƒ (italic f)
@@ -384,13 +420,13 @@ DELETE FROM entity_type_defaults;
   - Space: 🎯 → 🏢 (building)
 - **Migration**: `b22a92c1a37e_fix_entity_type_default_icons.py`
 
-### Production Deployment Fixed
+#### Production Deployment Fixed
 - **Issue**: Logo upload returned "Unexpected token '<', "<!html><"... is not valid JSON"
 - **Root Cause**: Pillow missing from requirements.txt
 - **Fix**: Added Pillow==12.1.1 to requirements.txt
 - **Lesson**: Always sync local pip installs with requirements.txt for production
 
-### Logo Display Comprehensive Implementation
+#### Logo Display Comprehensive Implementation
 - ✅ Executive Dashboard - Top Performers/Needs Attention
 - ✅ Snapshot Comparison - Comparison table
 - ✅ Full Search Results - All entity types
