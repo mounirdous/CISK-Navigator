@@ -1404,6 +1404,19 @@ tr[data-level="kpi"] td {
                         {% else %}
                         <span class="hierarchy-icon initiative-icon">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
                         {% endif %}
+                        <span class="form-view-icon me-2">
+                            <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="text-info" title="View Initiative Form">
+                                <i class="bi bi-file-text"></i>
+                            </a>
+                            {% set form_completion = initiative.get_form_completion() %}
+                            {% if form_completion[2] == 'empty' %}
+                                <span class="completion-badge badge-empty" title="Form not filled">!</span>
+                            {% elif form_completion[2] == 'partial' %}
+                                <span class="completion-badge badge-partial" title="Form partially filled">{{ form_completion[0] }}/{{ form_completion[1] }}</span>
+                            {% elif form_completion[2] == 'complete' %}
+                                <span class="completion-badge badge-complete" title="Form complete"><i class="bi bi-check-lg"></i></span>
+                            {% endif %}
+                        </span>
                         {{ initiative.name }}
                         {% if current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) %}
                         <span class="action-icons ms-1">
