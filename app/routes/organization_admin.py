@@ -2597,6 +2597,9 @@ def configure_rollup(vt_id):
         source_type=RollupRule.SOURCE_CHALLENGE, value_type_id=value_type.id
     ).first()
 
+    # Load entity defaults for gradient colors
+    entity_defaults = EntityTypeDefault.get_all_defaults(org_id)
+
     # Create form for CSRF token
     form = FlaskForm()
 
@@ -2608,6 +2611,7 @@ def configure_rollup(vt_id):
         current_system_rule=current_system_rule,
         current_initiative_rule=current_initiative_rule,
         current_challenge_rule=current_challenge_rule,
+        entity_defaults=entity_defaults,
         form=form,
     )
 

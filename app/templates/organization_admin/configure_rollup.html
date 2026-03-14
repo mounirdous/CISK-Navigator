@@ -4,6 +4,14 @@
 
 {% block extra_css %}
 <style>
+:root {
+    --kpi-color: {{ entity_defaults.kpi.color if entity_defaults and entity_defaults.kpi else '#06b6d4' }};
+    --system-color: {{ entity_defaults.system.color if entity_defaults and entity_defaults.system else '#ec4899' }};
+    --initiative-color: {{ entity_defaults.initiative.color if entity_defaults and entity_defaults.initiative else '#8b5cf6' }};
+    --challenge-color: {{ entity_defaults.challenge.color if entity_defaults and entity_defaults.challenge else '#f59e0b' }};
+    --space-color: {{ entity_defaults.space.color if entity_defaults and entity_defaults.space else '#10b981' }};
+}
+
 .page-header {
     background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
     color: white;
@@ -48,18 +56,18 @@
 }
 
 .rollup-card-header.level-1 {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    background: linear-gradient(135deg, var(--kpi-color) 0%, var(--system-color) 100%);
     color: white;
 }
 
 .rollup-card-header.level-2 {
-    background: linear-gradient(135deg, #20c997 0%, #1aa179 100%);
+    background: linear-gradient(135deg, var(--system-color) 0%, var(--initiative-color) 50%, var(--challenge-color) 100%);
     color: white;
 }
 
 .rollup-card-header.level-3 {
-    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
-    color: #000;
+    background: linear-gradient(135deg, var(--initiative-color) 0%, var(--challenge-color) 50%, var(--space-color) 100%);
+    color: white;
 }
 
 .rollup-card-body {
