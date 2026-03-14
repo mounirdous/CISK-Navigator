@@ -1971,6 +1971,11 @@ def configure_rollup(vt_id):
             db.session.rollback()
             flash(f"Error updating rollup configuration: {str(e)}", "danger")
 
+        # If coming from workspace quick-access, return to workspace
+        return_to = request.args.get("return_to")
+        if return_to == "workspace":
+            return redirect(url_for("workspace.index", auto_edit=1))
+
         return redirect(url_for("organization_admin.value_types"))
 
     # Get current default settings

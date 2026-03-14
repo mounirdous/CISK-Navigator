@@ -74,3 +74,4 @@ requirements.new.txt
 requirements-*.txt
 !requirements.txt
 .local-pc-notes
+.coverage

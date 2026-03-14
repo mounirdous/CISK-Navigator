@@ -1171,7 +1171,7 @@ tr[data-level="kpi"] td {
                     title="Drag to reorder">
                     <span class="collapse-column-icon" title="Click to collapse/expand: {{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});" style="{% if is_narrow %}font-size: 0.85rem; top: 2px; right: 2px;{% endif %}">⇄</span>
                     {% if vt.kind == 'numeric' %}
-                    <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id) }}"
+                    <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, return_to='workspace') }}"
                        class="rollup-config-icon"
                        title="Configure rollup display for {{ vt.name }}"
                        onclick="event.stopPropagation();"
@@ -1244,7 +1244,7 @@ tr[data-level="kpi"] td {
                         {% set color_config = space.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="space" style="background-color: #d6e9f7; font-weight: bold; position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
-                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='space') }}"
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='space', return_to='workspace') }}"
                                class="formula-edit-icon"
                                title="Configure rollup formula and display for {{ vt.name }} at Space level"
                                onclick="event.stopPropagation();"
@@ -1322,7 +1322,7 @@ tr[data-level="kpi"] td {
                         {% set color_config = challenge.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="challenge" style="background-color: #f0f4f8; position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
-                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='challenge') }}"
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='challenge', return_to='workspace') }}"
                                class="formula-edit-icon"
                                title="Configure rollup formula and display for {{ vt.name }} at Challenge level"
                                onclick="event.stopPropagation();"
@@ -1414,7 +1414,7 @@ tr[data-level="kpi"] td {
                         {% set color_config = initiative.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="initiative" style="background-color: #eff6f9; position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
-                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='initiative') }}"
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='initiative', return_to='workspace') }}"
                                class="formula-edit-icon"
                                title="Configure rollup formula and display for {{ vt.name }} at Initiative level"
                                onclick="event.stopPropagation();"
@@ -1493,7 +1493,7 @@ tr[data-level="kpi"] td {
                         {% set color_config = sys_link.get_color_config(vt.id) %}
                         <td class="text-center" data-agg-level="system" style="background-color: #e8f4f8; position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
-                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='system') }}"
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='system', return_to='workspace') }}"
                                class="formula-edit-icon"
                                title="Configure rollup formula and display for {{ vt.name }} at System level"
                                onclick="event.stopPropagation();"
