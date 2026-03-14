@@ -560,6 +560,8 @@
 
 ## 🚀 Quick Start
 
+> **⚡ For daily development startup:** See **[QUICK_START.md](./QUICK_START.md)** for one-liner commands to start PostgreSQL + Flask instantly.
+
 ### Prerequisites
 - Python 3.11+
 - PostgreSQL 16+ (local development)

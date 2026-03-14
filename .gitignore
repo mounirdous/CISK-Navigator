@@ -35,6 +35,7 @@ nohup.out
 # Documentation (keep these for reference but not needed for deployment)
 *.md
 !README.md
+!QUICK_START.md
 !ARCHITECTURE.md
 !DEPLOYMENT.md
 !DEPLOYMENT_NEW_APP.md
