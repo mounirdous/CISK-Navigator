@@ -5,11 +5,11 @@
 {% block extra_css %}
 <style>
 :root {
-    --kpi-color: {{ entity_defaults.kpi.color if entity_defaults and entity_defaults.kpi else '#06b6d4' }};
-    --system-color: {{ entity_defaults.system.color if entity_defaults and entity_defaults.system else '#ec4899' }};
-    --initiative-color: {{ entity_defaults.initiative.color if entity_defaults and entity_defaults.initiative else '#8b5cf6' }};
-    --challenge-color: {{ entity_defaults.challenge.color if entity_defaults and entity_defaults.challenge else '#f59e0b' }};
-    --space-color: {{ entity_defaults.space.color if entity_defaults and entity_defaults.space else '#10b981' }};
+    --kpi-color: {{ entity_defaults.get('kpi', {}).get('color', '#06b6d4') if entity_defaults else '#06b6d4' }};
+    --system-color: {{ entity_defaults.get('system', {}).get('color', '#ec4899') if entity_defaults else '#ec4899' }};
+    --initiative-color: {{ entity_defaults.get('initiative', {}).get('color', '#8b5cf6') if entity_defaults else '#8b5cf6' }};
+    --challenge-color: {{ entity_defaults.get('challenge', {}).get('color', '#f59e0b') if entity_defaults else '#f59e0b' }};
+    --space-color: {{ entity_defaults.get('space', {}).get('color', '#10b981') if entity_defaults else '#10b981' }};
 }
 
 .page-header {
