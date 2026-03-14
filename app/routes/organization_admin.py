@@ -4,6 +4,7 @@ Organization Administration routes
 For managing business content within an organization (spaces, challenges, initiatives, etc.).
 """
 
+import io
 from datetime import datetime
 from functools import wraps
 
@@ -11,6 +12,7 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import generate_csrf
+from PIL import Image
 from wtforms import StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired
 
@@ -687,10 +689,7 @@ def logo_manager():
 @any_org_admin_permission_required
 def upload_entity_logo():
     """Upload logo - for organization OR default logo for entity type"""
-    import io
     import os
-
-    from PIL import Image
 
     org_id = session.get("organization_id")
     entity_type = request.form.get("entity_type")
