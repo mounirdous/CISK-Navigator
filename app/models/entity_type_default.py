@@ -67,11 +67,11 @@ class EntityTypeDefault(db.Model):
         """Hardcoded fallback defaults"""
         return {
             "organization": {"color": "#3b82f6", "icon": "🏢"},
-            "space": {"color": "#10b981", "icon": "🎯"},
-            "challenge": {"color": "#f59e0b", "icon": "⚡"},
-            "initiative": {"color": "#8b5cf6", "icon": "🚀"},
-            "system": {"color": "#ec4899", "icon": "⚙️"},
-            "kpi": {"color": "#06b6d4", "icon": "📊"},
+            "space": {"color": "#10b981", "icon": "🏢"},
+            "challenge": {"color": "#f59e0b", "icon": "ƒ"},
+            "initiative": {"color": "#8b5cf6", "icon": "δ"},
+            "system": {"color": "#ec4899", "icon": "Φ"},
+            "kpi": {"color": "#06b6d4", "icon": "Ψ"},
         }
 
     @staticmethod
