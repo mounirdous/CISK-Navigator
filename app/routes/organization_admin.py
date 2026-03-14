@@ -4,6 +4,7 @@ Organization Administration routes
 For managing business content within an organization (spaces, challenges, initiatives, etc.).
 """
 
+import base64
 import io
 from datetime import datetime
 from functools import wraps
@@ -968,9 +969,22 @@ def edit_space(space_id):
 
         db.session.commit()
         flash(f"Space {space.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.edit_space", space_id=space_id))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
-    return render_template("organization_admin/edit_space.html", form=form, space=space)
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
+    return render_template("organization_admin/edit_space.html", form=form, space=space, entity_defaults=entity_defaults)
 
 
 @bp.route("/spaces/<int:space_id>/delete", methods=["POST"])
@@ -1147,8 +1161,25 @@ def edit_challenge(challenge_id):
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
 
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
-        "organization_admin/edit_challenge.html", form=form, challenge=challenge, value_types=value_types
+        "organization_admin/edit_challenge.html",
+        form=form,
+        challenge=challenge,
+        value_types=value_types,
+        entity_defaults=entity_defaults,
     )
 
 
@@ -1250,35 +1281,82 @@ def edit_initiative(initiative_id):
 
     form = InitiativeEditForm(obj=initiative)
 
+    # Load all challenges for the dropdown
+    challenges = Challenge.query.filter_by(organization_id=org_id).order_by(Challenge.name).all()
+    form.challenge_ids.choices = [(c.id, f"{c.space.name} > {c.name}") for c in challenges]
+
+    # Pre-populate with currently linked challenges
+    current_challenge_ids = [link.challenge_id for link in initiative.challenge_links]
+    if not form.is_submitted():
+        form.challenge_ids.data = current_challenge_ids
+
     if form.validate_on_submit():
         # Capture old values for audit
         old_values = {
             "name": initiative.name,
             "description": initiative.description,
             "group_label": initiative.group_label,
+            "challenge_ids": current_challenge_ids,
         }
 
         initiative.name = form.name.data
         initiative.description = form.description.data
         initiative.group_label = form.group_label.data if form.group_label.data else None
 
+        # Update challenge links
+        new_challenge_ids = form.challenge_ids.data
+
+        # Remove links that are no longer selected
+        for link in list(initiative.challenge_links):
+            if link.challenge_id not in new_challenge_ids:
+                db.session.delete(link)
+
+        # Add new links
+        existing_challenge_ids = [link.challenge_id for link in initiative.challenge_links]
+        for challenge_id in new_challenge_ids:
+            if challenge_id not in existing_challenge_ids:
+                new_link = ChallengeInitiativeLink(
+                    challenge_id=challenge_id,
+                    initiative_id=initiative.id,
+                    display_order=0
+                )
+                db.session.add(new_link)
+
         # Audit log
         new_values = {
             "name": initiative.name,
             "description": initiative.description,
             "group_label": initiative.group_label,
+            "challenge_ids": new_challenge_ids,
         }
         AuditService.log_update("Initiative", initiative.id, initiative.name, old_values, new_values)
 
         db.session.commit()
         flash(f"Initiative {initiative.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.edit_initiative", initiative_id=initiative_id))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
 
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
-        "organization_admin/edit_initiative.html", form=form, initiative=initiative, value_types=value_types
+        "organization_admin/edit_initiative.html",
+        form=form,
+        initiative=initiative,
+        value_types=value_types,
+        entity_defaults=entity_defaults,
     )
 
 
@@ -1390,12 +1468,31 @@ def edit_system(system_id):
 
         db.session.commit()
         flash(f"System {system.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.edit_system", system_id=system_id))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
 
-    return render_template("organization_admin/edit_system.html", form=form, system=system, value_types=value_types)
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
+    return render_template(
+        "organization_admin/edit_system.html",
+        form=form,
+        system=system,
+        value_types=value_types,
+        entity_defaults=entity_defaults,
+    )
 
 
 @bp.route("/initiative-system-links/<int:link_id>/rollup-config", methods=["POST"])
@@ -1836,12 +1933,26 @@ def edit_kpi(kpi_id):
         flash(f"KPI {kpi.name} updated successfully", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
         "organization_admin/edit_kpi.html",
         form=form,
         kpi=kpi,
         governance_bodies=governance_bodies,
         current_gb_ids=current_gb_ids,
+        entity_defaults=entity_defaults,
     )
 
 

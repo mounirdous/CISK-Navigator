@@ -34,7 +34,11 @@
         <div class="card hover-lift">
             <div class="page-header">
                 <div class="page-header-icon">
-                    <i class="bi bi-pencil-square"></i>
+                    {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                    <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 40px; height: 40px; object-fit: contain;">
+                    {% else %}
+                    <span style="font-size: 1.5rem;">{{ entity_defaults.get('space', {}).get('icon', '🏢') }}</span>
+                    {% endif %}
                 </div>
                 <h2 class="mb-1">Edit Space</h2>
                 <p class="mb-0 opacity-75">{{ space.name }}</p>

@@ -20,6 +20,7 @@ class InitiativeCreateForm(FlaskForm):
 class InitiativeEditForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=200)])
     description = TextAreaField("Description")
+    challenge_ids = SelectMultipleField("Parent Challenges", coerce=int)
     group_label = SelectField(
         "Group Label",
         choices=[("", "-- No Group --"), ("A", "Group A"), ("B", "Group B"), ("C", "Group C"), ("D", "Group D")],

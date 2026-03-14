@@ -40,7 +40,11 @@
         <div class="card hover-lift form-card">
             <div class="form-header">
                 <h2>
-                    <span style="font-weight: bold; font-style: italic;">ƒ</span>
+                    {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                    <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 32px; height: 32px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    <span style="font-weight: bold; font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                    {% endif %}
                     Edit Challenge
                 </h2>
                 <p>Modify challenge: {{ challenge.name }}</p>
