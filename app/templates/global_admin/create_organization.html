@@ -91,27 +91,39 @@
                         </small>
 
                         <!-- Permission Templates -->
-                        <div class="alert alert-info mb-3">
-                            <div class="row align-items-center">
-                                <div class="col-md-6">
-                                    <strong><i class="bi bi-lightning-fill"></i> Quick Apply Template:</strong>
-                                    <small class="d-block text-muted">Apply same permissions to all selected users</small>
+                        <div class="alert alert-info mb-3" style="background: linear-gradient(135deg, rgba(13, 202, 240, 0.1) 0%, rgba(13, 110, 253, 0.1) 100%); border: 1px solid rgba(13, 110, 253, 0.2);">
+                            <div class="mb-3">
+                                <strong style="font-size: 1.1rem;"><i class="bi bi-lightning-fill"></i> Quick Apply Template</strong>
+                                <small class="d-block text-muted mt-1">Select users above, then apply a permission template to all selected users</small>
+                            </div>
+                            <div class="row g-2">
+                                <div class="col-sm-6 col-lg-3">
+                                    <button type="button" class="btn btn-primary w-100" onclick="applyTemplate('administrator')" style="padding: 0.6rem 1rem;">
+                                        <i class="bi bi-shield-fill-check"></i>
+                                        <div style="font-size: 0.95rem; font-weight: 600;">Administrator</div>
+                                        <small style="font-size: 0.75rem; opacity: 0.9;">Full access</small>
+                                    </button>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="d-flex gap-2">
-                                        <button type="button" class="btn btn-sm btn-primary" onclick="applyTemplate('administrator')">
-                                            <i class="bi bi-shield-fill-check"></i> Administrator
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-success" onclick="applyTemplate('editor')">
-                                            <i class="bi bi-pencil-fill"></i> Editor
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-secondary" onclick="applyTemplate('viewer')">
-                                            <i class="bi bi-eye-fill"></i> Viewer
-                                        </button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyTemplate('clear')">
-                                            <i class="bi bi-x-circle"></i> Clear All
-                                        </button>
-                                    </div>
+                                <div class="col-sm-6 col-lg-3">
+                                    <button type="button" class="btn btn-success w-100" onclick="applyTemplate('editor')" style="padding: 0.6rem 1rem;">
+                                        <i class="bi bi-pencil-fill"></i>
+                                        <div style="font-size: 0.95rem; font-weight: 600;">Editor</div>
+                                        <small style="font-size: 0.75rem; opacity: 0.9;">Can edit all</small>
+                                    </button>
+                                </div>
+                                <div class="col-sm-6 col-lg-3">
+                                    <button type="button" class="btn btn-warning w-100" onclick="applyTemplate('viewer')" style="padding: 0.6rem 1rem;">
+                                        <i class="bi bi-eye-fill"></i>
+                                        <div style="font-size: 0.95rem; font-weight: 600;">Viewer</div>
+                                        <small style="font-size: 0.75rem; opacity: 0.9;">Read-only</small>
+                                    </button>
+                                </div>
+                                <div class="col-sm-6 col-lg-3">
+                                    <button type="button" class="btn btn-outline-danger w-100" onclick="applyTemplate('clear')" style="padding: 0.6rem 1rem;">
+                                        <i class="bi bi-x-circle"></i>
+                                        <div style="font-size: 0.95rem; font-weight: 600;">Clear All</div>
+                                        <small style="font-size: 0.75rem;">Remove perms</small>
+                                    </button>
                                 </div>
                             </div>
                         </div>
