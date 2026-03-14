@@ -821,29 +821,34 @@ def kpi_cell_detail(kpi_id, vt_id):
 
         # Preserve filter state when returning to workspace
         # Get filters from hidden form fields and build URL manually
+        import logging
         from urllib.parse import urlencode
 
+        logger = logging.getLogger(__name__)
         return_params = [("show_all_columns", "1")]
 
         # Extract workspace_filters from form data (these were added as hidden fields)
         processed_keys = set()
+        logger.info(f"🔍 POST - Form keys: {list(request.form.keys())}")
         for key in request.form.keys():
             if key.startswith("workspace_filter_") and key not in processed_keys:
                 filter_key = key.replace("workspace_filter_", "")
                 # Get all values for this key (handles multi-select filters)
                 values = request.form.getlist(key)
+                logger.info(f"🔍 Found filter: {filter_key} = {values}")
                 for value in values:
                     return_params.append((filter_key, value))
                 processed_keys.add(key)
 
-        # Debug: log what we're redirecting with
-        print(f"DEBUG: Redirecting to workspace with params: {return_params}")
+        # Log what we're redirecting with
+        logger.info(f"🔍 Redirecting to workspace with params: {return_params}")
 
         # Build URL manually to properly handle multiple values for same key
         workspace_url = url_for("workspace.index")
         if return_params:
             workspace_url = f"{workspace_url}?{urlencode(return_params)}"
 
+        logger.info(f"🔍 Final redirect URL: {workspace_url}")
         return redirect(workspace_url)
 
     # Build breadcrumb
@@ -928,19 +933,21 @@ def kpi_cell_detail(kpi_id, vt_id):
         }
 
     # Capture workspace filter state from referrer (for preserving on return)
+    import logging
     from urllib.parse import parse_qs, urlparse
 
+    logger = logging.getLogger(__name__)
     workspace_filters = {}
     referrer = request.referrer
-    print(f"DEBUG: Referrer URL: {referrer}")
+    logger.info(f"🔍 KPI Detail GET - Referrer URL: {referrer}")
     if referrer and "workspace" in referrer:
         parsed = urlparse(referrer)
         query_params = parse_qs(parsed.query)
         for key, values in query_params.items():
             workspace_filters[key] = values[0] if len(values) == 1 else values
-        print(f"DEBUG: Captured workspace_filters: {workspace_filters}")
+        logger.info(f"🔍 Captured workspace_filters: {workspace_filters}")
     else:
-        print("DEBUG: No workspace in referrer, workspace_filters empty")
+        logger.info("🔍 No workspace in referrer, workspace_filters empty")
 
     return render_template(
         "workspace/kpi_cell_detail.html",
