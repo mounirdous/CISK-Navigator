@@ -75,8 +75,13 @@
             <div class="page-header-icon">
                 <i class="bi bi-diagram-3"></i>
             </div>
-            <h2 class="mb-2">Configure Rollup</h2>
-            <p class="mb-0 opacity-75">{{ value_type.name }} aggregation rules</p>
+            <h2 class="mb-2">Configure Rollup: {{ value_type.name }}</h2>
+            <p class="mb-1" style="font-size: 1.1rem; font-weight: 500;">
+                {% if value_type.unit_label %}({{ value_type.unit_label }}){% endif %}
+            </p>
+            <p class="mb-0 opacity-75" style="font-size: 0.95rem;">
+                <i class="bi bi-arrow-up-circle"></i> Aggregation path: KPIs → Systems → Initiatives → Challenges → Spaces
+            </p>
         </div>
 
         <!-- Smart Default Summary -->
@@ -119,10 +124,16 @@
             {{ form.hidden_tag() }}
 
             <!-- System to Initiative -->
-            <div class="rollup-card">
+            <div class="rollup-card" id="level-system">
                 <div class="rollup-card-header level-1">
                     <i class="bi bi-arrow-up-circle-fill"></i>
-                    Level 1: System → Initiative Roll-up
+                    <div>
+                        <div>Level 1: KPI → System Roll-up</div>
+                        <small style="opacity: 0.9; font-weight: 400;">
+                            <strong>Primary:</strong> How KPIs aggregate to System level (formula, display, decimals)<br>
+                            <strong>Secondary:</strong> Then Systems aggregate to Initiative level
+                        </small>
+                    </div>
                 </div>
                 <div class="rollup-card-body">
                     <div class="form-check form-switch mb-4">
@@ -150,14 +161,48 @@
                             {% endif %}
                         </small>
                     </div>
+
+                    {% if value_type.is_numeric() %}
+                    <div class="border-top pt-3 mt-3" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem -1rem 0 -1rem;">
+                        <h6 class="mb-1"><i class="bi bi-eye"></i> Display Settings at System Level</h6>
+                        <p class="text-muted small mb-3"><i class="bi bi-arrow-right-short"></i> This controls how System values appear in the workspace (e.g., 319.793k CHF)</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="display_scale_system" class="form-label small fw-semibold">Display Scale</label>
+                                <select class="form-select" id="display_scale_system" name="display_scale_system">
+                                    <option value="" {% if not current_system_rule or not current_system_rule.display_scale %}selected{% endif %}>Inherit from KPIs (Smart)</option>
+                                    <option value="default" {% if current_system_rule and current_system_rule.display_scale == 'default' %}selected{% endif %}>Normal (Full Numbers)</option>
+                                    <option value="thousands" {% if current_system_rule and current_system_rule.display_scale == 'thousands' %}selected{% endif %}>Thousands (k)</option>
+                                    <option value="millions" {% if current_system_rule and current_system_rule.display_scale == 'millions' %}selected{% endif %}>Millions (M)</option>
+                                </select>
+                                <small class="form-text text-muted">Format for System-level rollup values</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="display_decimals_system" class="form-label small fw-semibold">Display Decimals</label>
+                                <input type="number" min="0" max="6" class="form-control" id="display_decimals_system"
+                                       name="display_decimals_system" placeholder="Auto"
+                                       {% if current_system_rule and current_system_rule.display_decimals is not none %}value="{{ current_system_rule.display_decimals }}"{% endif %}>
+                                <small class="form-text text-muted">
+                                    Number of decimals (e.g., 3 for "319.793k")
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- Initiative to Challenge -->
-            <div class="rollup-card">
+            <div class="rollup-card" id="level-initiative">
                 <div class="rollup-card-header level-2">
                     <i class="bi bi-arrow-up-circle-fill"></i>
-                    Level 2: Initiative → Challenge Roll-up
+                    <div>
+                        <div>Level 2: System → Initiative → Challenge Roll-up</div>
+                        <small style="opacity: 0.9; font-weight: 400;">
+                            <strong>Primary:</strong> How Systems aggregate to Initiative level<br>
+                            <strong>Secondary:</strong> Then Initiatives aggregate to Challenge level
+                        </small>
+                    </div>
                 </div>
                 <div class="rollup-card-body">
                     <div class="form-check form-switch mb-4">
@@ -182,14 +227,48 @@
                             <i class="bi bi-info-circle"></i> How to aggregate multiple System values into one Initiative value
                         </small>
                     </div>
+
+                    {% if value_type.is_numeric() %}
+                    <div class="border-top pt-3 mt-3" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem -1rem 0 -1rem;">
+                        <h6 class="mb-1"><i class="bi bi-eye"></i> Display Settings at Initiative Level</h6>
+                        <p class="text-muted small mb-3"><i class="bi bi-arrow-right-short"></i> This controls how Initiative values appear in the workspace</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="display_scale_initiative" class="form-label small fw-semibold">Display Scale</label>
+                                <select class="form-select" id="display_scale_initiative" name="display_scale_initiative">
+                                    <option value="" {% if not current_initiative_rule or not current_initiative_rule.display_scale %}selected{% endif %}>Inherit from Systems (Smart)</option>
+                                    <option value="default" {% if current_initiative_rule and current_initiative_rule.display_scale == 'default' %}selected{% endif %}>Normal (Full Numbers)</option>
+                                    <option value="thousands" {% if current_initiative_rule and current_initiative_rule.display_scale == 'thousands' %}selected{% endif %}>Thousands (k)</option>
+                                    <option value="millions" {% if current_initiative_rule and current_initiative_rule.display_scale == 'millions' %}selected{% endif %}>Millions (M)</option>
+                                </select>
+                                <small class="form-text text-muted">Format for Initiative-level rollup values</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="display_decimals_initiative" class="form-label small fw-semibold">Display Decimals</label>
+                                <input type="number" min="0" max="6" class="form-select" id="display_decimals_initiative"
+                                       name="display_decimals_initiative" placeholder="Auto"
+                                       {% if current_initiative_rule and current_initiative_rule.display_decimals is not none %}value="{{ current_initiative_rule.display_decimals }}"{% endif %}>
+                                <small class="form-text text-muted">
+                                    Number of decimals (e.g., 3 for "319.793k")
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
             <!-- Challenge to Space -->
-            <div class="rollup-card">
+            <div class="rollup-card" id="level-challenge">
                 <div class="rollup-card-header level-3">
                     <i class="bi bi-arrow-up-circle-fill"></i>
-                    Level 3: Challenge → Space Roll-up
+                    <div>
+                        <div>Level 3: Initiative → Challenge → Space Roll-up</div>
+                        <small style="opacity: 0.9; font-weight: 400;">
+                            <strong>Primary:</strong> How Initiatives aggregate to Challenge level<br>
+                            <strong>Secondary:</strong> Then Challenges aggregate to Space level (top-most)
+                        </small>
+                    </div>
                 </div>
                 <div class="rollup-card-body">
                     <div class="form-check form-switch mb-4">
@@ -214,6 +293,34 @@
                             <i class="bi bi-info-circle"></i> How to aggregate multiple Initiative values into one Challenge value
                         </small>
                     </div>
+
+                    {% if value_type.is_numeric() %}
+                    <div class="border-top pt-3 mt-3" style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin: 1rem -1rem 0 -1rem;">
+                        <h6 class="mb-1"><i class="bi bi-eye"></i> Display Settings at Challenge Level</h6>
+                        <p class="text-muted small mb-3"><i class="bi bi-arrow-right-short"></i> This controls how Challenge values appear in the workspace</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="display_scale_challenge" class="form-label small fw-semibold">Display Scale</label>
+                                <select class="form-select" id="display_scale_challenge" name="display_scale_challenge">
+                                    <option value="" {% if not current_challenge_rule or not current_challenge_rule.display_scale %}selected{% endif %}>Inherit from Initiatives (Smart)</option>
+                                    <option value="default" {% if current_challenge_rule and current_challenge_rule.display_scale == 'default' %}selected{% endif %}>Normal (Full Numbers)</option>
+                                    <option value="thousands" {% if current_challenge_rule and current_challenge_rule.display_scale == 'thousands' %}selected{% endif %}>Thousands (k)</option>
+                                    <option value="millions" {% if current_challenge_rule and current_challenge_rule.display_scale == 'millions' %}selected{% endif %}>Millions (M)</option>
+                                </select>
+                                <small class="form-text text-muted">Format for Challenge-level rollup values</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="display_decimals_challenge" class="form-label small fw-semibold">Display Decimals</label>
+                                <input type="number" min="0" max="6" class="form-control" id="display_decimals_challenge"
+                                       name="display_decimals_challenge" placeholder="Auto"
+                                       {% if current_challenge_rule and current_challenge_rule.display_decimals is not none %}value="{{ current_challenge_rule.display_decimals }}"{% endif %}>
+                                <small class="form-text text-muted">
+                                    Number of decimals (e.g., 3 for "319.793k")
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -253,5 +360,35 @@ function toggleAdvanced() {
         toggleIcon.classList.add('bi-chevron-down');
     }
 }
+
+// Auto-scroll to specific level if requested via URL parameter
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const level = urlParams.get('level');
+
+    if (level) {
+        // Show advanced configuration if not already visible
+        const advancedConfig = document.getElementById('advanced-config');
+        if (advancedConfig && advancedConfig.style.display === 'none') {
+            toggleAdvanced();
+        }
+
+        // Scroll to and highlight the relevant section
+        const targetSection = document.getElementById('level-' + level);
+        if (targetSection) {
+            setTimeout(() => {
+                targetSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add highlight effect
+                targetSection.style.boxShadow = '0 0 0 4px rgba(255, 193, 7, 0.5)';
+                targetSection.style.transform = 'scale(1.02)';
+                setTimeout(() => {
+                    targetSection.style.transition = 'all 0.3s ease';
+                    targetSection.style.boxShadow = '';
+                    targetSection.style.transform = '';
+                }, 2000);
+            }, 300);
+        }
+    }
+});
 </script>
 {% endblock %}

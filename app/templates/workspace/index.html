@@ -258,6 +258,52 @@ body.hide-gb-badges .gb-badge {
     opacity: 1;
 }
 
+.value-type-header .rollup-config-icon {
+    display: none;
+}
+
+body.edit-mode .value-type-header .rollup-config-icon {
+    display: inline;
+}
+
+.value-type-header .rollup-config-icon:hover {
+    opacity: 1 !important;
+}
+
+.kpi-cell .kpi-edit-icon {
+    display: none;
+}
+
+body.edit-mode .kpi-cell .kpi-edit-icon {
+    display: inline;
+}
+
+.target-edit-link {
+    pointer-events: none;
+    text-decoration: none;
+}
+
+body.edit-mode .target-edit-link {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.kpi-cell .kpi-config-icon:hover {
+    opacity: 1 !important;
+}
+
+td[data-agg-level] .formula-edit-icon {
+    display: none;
+}
+
+body.edit-mode td[data-agg-level] .formula-edit-icon {
+    display: inline;
+}
+
+td[data-agg-level] .formula-edit-icon:hover {
+    opacity: 1 !important;
+}
+
 .value-type-header.column-collapsed {
     min-width: 20px !important;
     max-width: 20px !important;
@@ -1124,6 +1170,15 @@ tr[data-level="kpi"] td {
                     data-vt-name="{{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}"
                     title="Drag to reorder">
                     <span class="collapse-column-icon" title="Click to collapse/expand: {{ vt.name }}{% if vt.unit_label %} ({{ vt.unit_label }}){% endif %}" onclick="event.stopPropagation(); toggleColumnCollapse({{ loop.index0 }});" style="{% if is_narrow %}font-size: 0.85rem; top: 2px; right: 2px;{% endif %}">⇄</span>
+                    {% if vt.kind == 'numeric' %}
+                    <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id) }}"
+                       class="rollup-config-icon"
+                       title="Configure rollup display for {{ vt.name }}"
+                       onclick="event.stopPropagation();"
+                       style="position: absolute; top: {% if is_narrow %}2px{% else %}4px{% endif %}; left: {% if is_narrow %}2px{% else %}4px{% endif %}; font-size: {% if is_narrow %}0.7rem{% else %}0.8rem{% endif %}; opacity: 0.6; transition: opacity 0.2s; text-decoration: none;">
+                        <i class="bi bi-sliders"></i>
+                    </a>
+                    {% endif %}
                     <i class="bi bi-grip-vertical text-muted me-1" style="font-size: {% if is_narrow %}0.65rem{% else %}0.8rem{% endif %};"></i>
                     <span class="column-content">
                         {{ vt.name }}
@@ -1187,20 +1242,29 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = space.get_rollup_value(vt.id) %}
                         {% set color_config = space.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="space" style="background-color: #d6e9f7; font-weight: bold;">
+                        <td class="text-center" data-agg-level="space" style="background-color: #d6e9f7; font-weight: bold; position: relative;">
+                            {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='space') }}"
+                               class="formula-edit-icon"
+                               title="Configure rollup formula and display for {{ vt.name }} at Space level"
+                               onclick="event.stopPropagation();"
+                               style="position: absolute; top: 2px; right: 2px; font-size: 0.7rem; opacity: 0.5; text-decoration: none;">
+                                <i class="bi bi-calculator"></i>
+                            </a>
+                            {% endif %}
                             {% if rollup and rollup.value is not none %}
                                 {% if rollup.formula == 'sum' %}
-                                <span class="rollup-indicator">Σ</span>
+                                <span class="rollup-indicator" title="Sum formula">Σ</span>
                                 {% elif rollup.formula == 'max' %}
-                                <span class="rollup-indicator">↑</span>
+                                <span class="rollup-indicator" title="Maximum formula">↑</span>
                                 {% elif rollup.formula == 'min' %}
-                                <span class="rollup-indicator">↓</span>
+                                <span class="rollup-indicator" title="Minimum formula">↓</span>
                                 {% elif rollup.formula == 'avg' %}
-                                <span class="rollup-indicator">≈</span>
+                                <span class="rollup-indicator" title="Average formula">≈</span>
                                 {% elif rollup.formula == 'median' %}
-                                <span class="rollup-indicator">m</span>
+                                <span class="rollup-indicator" title="Median formula">m</span>
                                 {% elif rollup.formula == 'count' %}
-                                <span class="rollup-indicator">#</span>
+                                <span class="rollup-indicator" title="Count formula">#</span>
                                 {% endif %}
                                 {% if vt.kind == 'numeric' %}
                                     {% if color_config %}
@@ -1256,18 +1320,27 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = challenge.get_rollup_value(vt.id) %}
                         {% set color_config = challenge.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="challenge" style="background-color: #f0f4f8;">
+                        <td class="text-center" data-agg-level="challenge" style="background-color: #f0f4f8; position: relative;">
+                            {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='challenge') }}"
+                               class="formula-edit-icon"
+                               title="Configure rollup formula and display for {{ vt.name }} at Challenge level"
+                               onclick="event.stopPropagation();"
+                               style="position: absolute; top: 2px; right: 2px; font-size: 0.7rem; opacity: 0.5; text-decoration: none;">
+                                <i class="bi bi-calculator"></i>
+                            </a>
+                            {% endif %}
                             {% if rollup and rollup.value is not none %}
                                 {% if rollup.formula == 'sum' %}
-                                <span class="rollup-indicator">Σ</span>
+                                <span class="rollup-indicator" title="Sum formula">Σ</span>
                                 {% elif rollup.formula == 'max' %}
-                                <span class="rollup-indicator">↑</span>
+                                <span class="rollup-indicator" title="Maximum formula">↑</span>
                                 {% elif rollup.formula == 'min' %}
-                                <span class="rollup-indicator">↓</span>
+                                <span class="rollup-indicator" title="Minimum formula">↓</span>
                                 {% elif rollup.formula == 'avg' %}
-                                <span class="rollup-indicator">≈</span>
+                                <span class="rollup-indicator" title="Average formula">≈</span>
                                 {% elif rollup.formula == 'median' %}
-                                <span class="rollup-indicator">m</span>
+                                <span class="rollup-indicator" title="Median formula">m</span>
                                 {% elif rollup.formula == 'count' %}
                                 <span class="rollup-indicator">#</span>
                                 {% endif %}
@@ -1339,18 +1412,27 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = initiative.get_rollup_value(vt.id) %}
                         {% set color_config = initiative.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="initiative" style="background-color: #eff6f9;">
+                        <td class="text-center" data-agg-level="initiative" style="background-color: #eff6f9; position: relative;">
+                            {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='initiative') }}"
+                               class="formula-edit-icon"
+                               title="Configure rollup formula and display for {{ vt.name }} at Initiative level"
+                               onclick="event.stopPropagation();"
+                               style="position: absolute; top: 2px; right: 2px; font-size: 0.7rem; opacity: 0.5; text-decoration: none;">
+                                <i class="bi bi-calculator"></i>
+                            </a>
+                            {% endif %}
                             {% if rollup and rollup.value is not none %}
                                 {% if rollup.formula == 'sum' %}
-                                <span class="rollup-indicator">Σ</span>
+                                <span class="rollup-indicator" title="Sum formula">Σ</span>
                                 {% elif rollup.formula == 'max' %}
-                                <span class="rollup-indicator">↑</span>
+                                <span class="rollup-indicator" title="Maximum formula">↑</span>
                                 {% elif rollup.formula == 'min' %}
-                                <span class="rollup-indicator">↓</span>
+                                <span class="rollup-indicator" title="Minimum formula">↓</span>
                                 {% elif rollup.formula == 'avg' %}
-                                <span class="rollup-indicator">≈</span>
+                                <span class="rollup-indicator" title="Average formula">≈</span>
                                 {% elif rollup.formula == 'median' %}
-                                <span class="rollup-indicator">m</span>
+                                <span class="rollup-indicator" title="Median formula">m</span>
                                 {% elif rollup.formula == 'count' %}
                                 <span class="rollup-indicator">#</span>
                                 {% endif %}
@@ -1409,19 +1491,28 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = sys_link.get_rollup_value(vt.id) %}
                         {% set color_config = sys_link.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="system" style="background-color: #e8f4f8;">
+                        <td class="text-center" data-agg-level="system" style="background-color: #e8f4f8; position: relative;">
+                            {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
+                            <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='system') }}"
+                               class="formula-edit-icon"
+                               title="Configure rollup formula and display for {{ vt.name }} at System level"
+                               onclick="event.stopPropagation();"
+                               style="position: absolute; top: 2px; right: 2px; font-size: 0.7rem; opacity: 0.5; text-decoration: none;">
+                                <i class="bi bi-calculator"></i>
+                            </a>
+                            {% endif %}
                             {% if rollup and rollup.value is not none %}
-                                <div>
+                                <div style="position: relative;">
                                     {% if rollup.formula == 'sum' %}
-                                    <span class="rollup-indicator">Σ</span>
+                                    <span class="rollup-indicator" title="Sum formula">Σ</span>
                                     {% elif rollup.formula == 'max' %}
-                                    <span class="rollup-indicator">↑</span>
+                                    <span class="rollup-indicator" title="Maximum formula">↑</span>
                                     {% elif rollup.formula == 'min' %}
-                                    <span class="rollup-indicator">↓</span>
+                                    <span class="rollup-indicator" title="Minimum formula">↓</span>
                                     {% elif rollup.formula == 'avg' %}
-                                    <span class="rollup-indicator">≈</span>
+                                    <span class="rollup-indicator" title="Average formula">≈</span>
                                     {% elif rollup.formula == 'median' %}
-                                    <span class="rollup-indicator">m</span>
+                                    <span class="rollup-indicator" title="Median formula">m</span>
                                     {% elif rollup.formula == 'count' %}
                                     <span class="rollup-indicator">#</span>
                                     {% endif %}
@@ -1536,7 +1627,13 @@ tr[data-level="kpi"] td {
                             {% set consensus_tooltip = 'No consensus: ' ~ consensus.count ~ ' contributions with high variance' %}
                         {% elif consensus.count == 1 %}
                             {% set consensus_class = 'consensus-single' %}
-                            {% set consensus_tooltip = 'Single contribution' %}
+                            {% if config.calculation_type == 'formula' %}
+                                {% set consensus_tooltip = 'Formula KPI - Calculated value' %}
+                            {% elif config.calculation_type == 'linked' %}
+                                {% set consensus_tooltip = 'Linked KPI - Aggregated from other KPIs' %}
+                            {% else %}
+                                {% set consensus_tooltip = 'Single manual contribution' %}
+                            {% endif %}
                         {% else %}
                             {% set consensus_class = 'consensus-no-data' %}
                             {% set consensus_tooltip = 'No data yet' %}
@@ -1548,11 +1645,42 @@ tr[data-level="kpi"] td {
                             data-value-type-name="{{ vt.name }}"
                             title="{{ consensus_tooltip }}">
                             <div style="position: relative; padding-top: 8px;">
-                                {# Calculation Type Badge - Top Left (compact) #}
+                                {# Calculation Type Badge - Top Left #}
                                 {% if config.calculation_type == 'formula' %}
                                     <span style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.7;" title="Formula KPI">📐</span>
+                                    {% if current_user.can_manage_kpis(org_id) %}
+                                    <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}"
+                                       class="kpi-edit-icon"
+                                       onclick="event.stopPropagation();"
+                                       style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.7; text-decoration: none; transition: opacity 0.2s;"
+                                       onmouseover="this.style.opacity='1'"
+                                       onmouseout="this.style.opacity='0.7'"
+                                       title="Formula KPI - Click to edit">📐</a>
+                                    {% endif %}
                                 {% elif config.calculation_type == 'linked' %}
                                     <span style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.7;" title="Linked KPI">🔗</span>
+                                    {% if current_user.can_manage_kpis(org_id) %}
+                                    <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}"
+                                       class="kpi-edit-icon"
+                                       onclick="event.stopPropagation();"
+                                       style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.7; text-decoration: none; transition: opacity 0.2s;"
+                                       onmouseover="this.style.opacity='1'"
+                                       onmouseout="this.style.opacity='0.7'"
+                                       title="Linked KPI - Click to edit">🔗</a>
+                                    {% endif %}
+                                {% else %}
+                                    {# Manual entry - show edit icon in edit mode #}
+                                    {% if current_user.can_manage_kpis(org_id) %}
+                                    <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}"
+                                       class="kpi-edit-icon"
+                                       onclick="event.stopPropagation();"
+                                       style="position: absolute; top: -3px; left: 2px; font-size: 0.7rem; opacity: 0.5; text-decoration: none; transition: opacity 0.2s; color: var(--bs-secondary);"
+                                       onmouseover="this.style.opacity='1'"
+                                       onmouseout="this.style.opacity='0.5'"
+                                       title="Manual entry - Click to edit calculation type">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    {% endif %}
                                 {% endif %}
 
                                 <div style="{% if current_user.can_contribute(org_id) %}cursor: pointer;{% else %}cursor: default;{% endif %}" {% if current_user.can_contribute(org_id) %}onclick="window.location.href='{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=vt.id) }}'"{% endif %}>
@@ -1588,7 +1716,7 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set target_color = '#dc3545' %}
                                             {% endif %}
-                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %})">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}<a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#target_{{ config.id }}" class="target-edit-link" onclick="event.stopPropagation();" style="transition: opacity 0.2s;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'">{% endif %}<span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {{ config.target_value|format_value(vt, config) }}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}) - Click to edit target">🎯</span>{% if current_user.can_manage_kpis(org_id) %}</a>{% endif %}
                                         {% endif %}
                                     {% elif vt.kind == 'risk' %}
                                         {% if consensus.value == 1 %}<strong>!</strong>{% endif %}
@@ -1610,7 +1738,15 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set target_color = '#dc3545' %}
                                             {% endif %}
-                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}
+                                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#target_{{ config.id }}"
+                                               onclick="event.stopPropagation();"
+                                               style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                               onmouseover="this.style.opacity='0.7'"
+                                               onmouseout="this.style.opacity='1'">
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}!{% elif config.target_value == 2 %}!!{% elif config.target_value == 3 %}!!!{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} - Click to edit target)">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}</a>{% endif %}
                                         {% endif %}
                                     {% elif vt.kind == 'positive_impact' %}
                                         {% if consensus.value == 1 %}<strong>★</strong>{% endif %}
@@ -1632,7 +1768,15 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set target_color = '#dc3545' %}
                                             {% endif %}
-                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}
+                                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#target_{{ config.id }}"
+                                               onclick="event.stopPropagation();"
+                                               style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                               onmouseover="this.style.opacity='0.7'"
+                                               onmouseout="this.style.opacity='1'">
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}★{% elif config.target_value == 2 %}★★{% elif config.target_value == 3 %}★★★{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} - Click to edit target)">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}</a>{% endif %}
                                         {% endif %}
                                     {% elif vt.kind == 'negative_impact' %}
                                         {% if consensus.value == 1 %}<strong>▼</strong>{% endif %}
@@ -1654,7 +1798,15 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set target_color = '#dc3545' %}
                                             {% endif %}
-                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}
+                                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#target_{{ config.id }}"
+                                               onclick="event.stopPropagation();"
+                                               style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                               onmouseover="this.style.opacity='0.7'"
+                                               onmouseout="this.style.opacity='1'">
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}▼{% elif config.target_value == 2 %}▼▼{% elif config.target_value == 3 %}▼▼▼{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} - Click to edit target)">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}</a>{% endif %}
                                         {% endif %}
                                     {% elif vt.kind == 'level' %}
                                         {% if consensus.value == 1 %}<strong>●</strong>{% endif %}
@@ -1676,7 +1828,15 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set target_color = '#dc3545' %}
                                             {% endif %}
-                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}
+                                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#target_{{ config.id }}"
+                                               onclick="event.stopPropagation();"
+                                               style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                               onmouseover="this.style.opacity='0.7'"
+                                               onmouseout="this.style.opacity='1'">
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}●{% elif config.target_value == 2 %}●●{% elif config.target_value == 3 %}●●●{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} - Click to edit target)">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}</a>{% endif %}
                                         {% endif %}
                                     {% elif vt.kind == 'sentiment' %}
                                         {% if consensus.value == 1 %}<strong>☹️</strong>{% endif %}
@@ -1698,7 +1858,15 @@ tr[data-level="kpi"] td {
                                             {% else %}
                                                 {% set target_color = '#dc3545' %}
                                             {% endif %}
-                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %}">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}
+                                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}#target_{{ config.id }}"
+                                               onclick="event.stopPropagation();"
+                                               style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                               onmouseover="this.style.opacity='0.7'"
+                                               onmouseout="this.style.opacity='1'">
+                                            {% endif %}
+                                            <span style="color: {{ target_color }}; margin-left: 0.5rem; font-size: 1.1rem;" title="Target: {{ progress }}% achieved (Goal: {% if config.target_value == 1 %}😞{% elif config.target_value == 2 %}😐{% elif config.target_value == 3 %}😊{% endif %}{% if config.target_date %} by {{ config.target_date.strftime('%Y-%m-%d') }}{% endif %} - Click to edit target)">🎯</span>
+                                            {% if current_user.can_manage_kpis(org_id) %}</a>{% endif %}
                                         {% endif %}
                                     {% else %}
                                         <strong>{{ consensus.value }}</strong>

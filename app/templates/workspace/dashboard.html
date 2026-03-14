@@ -182,7 +182,7 @@
 <!-- Compact Statistics Bar -->
 <div class="row g-2 mb-4">
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of spaces (flexible groupings like seasons, sites, customers)">
             <div class="stat-compact-icon" style="background: rgba(102, 126, 234, 0.1);">
                 <i class="bi bi-grid-3x3-gap" style="color: #667eea;"></i>
             </div>
@@ -193,7 +193,7 @@
         </div>
     </div>
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of challenges defined across all spaces">
             <div class="stat-compact-icon" style="background: rgba(108, 117, 125, 0.1);">
                 <span style="color: #6c757d; font-weight: bold; font-style: italic; font-size: 1.5rem;">ƒ</span>
             </div>
@@ -204,7 +204,7 @@
         </div>
     </div>
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of initiatives working to address challenges">
             <div class="stat-compact-icon" style="background: rgba(13, 202, 240, 0.1);">
                 <span style="color: #0dcaf0; font-weight: bold; font-size: 1.5rem;">δ</span>
             </div>
@@ -215,7 +215,7 @@
         </div>
     </div>
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of systems being tracked within initiatives">
             <div class="stat-compact-icon" style="background: rgba(25, 135, 84, 0.1);">
                 <span style="color: #198754; font-weight: bold; font-size: 1.5rem;">Φ</span>
             </div>
@@ -226,7 +226,7 @@
         </div>
     </div>
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of Key Performance Indicators measuring system performance">
             <div class="stat-compact-icon" style="background: rgba(255, 193, 7, 0.1);">
                 <span style="color: #ffc107; font-weight: bold; font-size: 1.5rem;">Ψ</span>
             </div>
@@ -237,7 +237,7 @@
         </div>
     </div>
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of value types (metrics like cost, time, quality) configured for KPIs">
             <div class="stat-compact-icon" style="background: rgba(220, 53, 69, 0.1);">
                 <i class="bi bi-hash" style="color: #dc3545;"></i>
             </div>
@@ -248,7 +248,7 @@
         </div>
     </div>
     <div class="col-lg col-md-6 col-sm-6">
-        <div class="stat-compact">
+        <div class="stat-compact" title="Total number of governance bodies managing decision-making and oversight">
             <div class="stat-compact-icon" style="background: rgba(25, 135, 84, 0.1);">
                 <i class="bi bi-people-fill" style="color: #198754;"></i>
             </div>
@@ -300,10 +300,50 @@
     </div>
 </div>
 
+<!-- Admin Actions (if user has permissions) -->
+{% set has_admin_actions = current_user.can_manage_value_types(session.organization_id) or current_user.can_manage_governance_bodies(session.organization_id) or current_user.is_global_admin or current_user.is_super_admin %}
+{% if has_admin_actions %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card" style="background: var(--bg-secondary); border: 2px solid var(--border-color); border-radius: 12px;">
+            <div class="card-body">
+                <h6 class="mb-3" style="font-size: 0.9rem; font-weight: 600; color: var(--text-primary);">
+                    <i class="bi bi-gear-fill me-2"></i> Administration
+                </h6>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if current_user.can_manage_value_types(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.value_types') }}"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Manage value types, configure rollup formulas, display scales, units, and aggregation rules">
+                        <i class="bi bi-hash"></i> Edit Value Types (Roll-ups, Units, Scales)
+                    </a>
+                    {% endif %}
+                    {% if current_user.can_manage_governance_bodies(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.governance_bodies') }}"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Manage governance bodies and their members">
+                        <i class="bi bi-people-fill"></i> Manage Governance Bodies
+                    </a>
+                    {% endif %}
+                    {% set has_any_admin = current_user.is_global_admin or current_user.is_super_admin or current_user.can_manage_spaces(session.organization_id) or current_user.can_manage_challenges(session.organization_id) or current_user.can_manage_initiatives(session.organization_id) or current_user.can_manage_systems(session.organization_id) or current_user.can_manage_kpis(session.organization_id) %}
+                    {% if has_any_admin %}
+                    <a href="{{ url_for('organization_admin.index') }}"
+                       class="btn btn-sm btn-outline-secondary"
+                       title="Manage organization settings, spaces, challenges, initiatives, systems, and KPIs">
+                        <i class="bi bi-building-gear"></i> Organization Settings
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Action Cards Grid -->
 <div class="row g-3 mb-4">
     <div class="col-lg-4 col-md-6">
-        <div class="action-card">
+        <div class="action-card" title="Snapshots save all current KPI values at a specific date for historical comparison and trend analysis">
             <div class="action-card-icon" style="background: rgba(25, 135, 84, 0.1);">
                 <i class="bi bi-camera-fill" style="color: #198754;"></i>
             </div>
@@ -315,7 +355,7 @@
         </div>
     </div>
     <div class="col-lg-4 col-md-6">
-        <div class="action-card">
+        <div class="action-card" title="View and compare historical snapshots to see how KPI values have changed over time">
             <div class="action-card-icon" style="background: rgba(13, 202, 240, 0.1);">
                 <i class="bi bi-clock-history" style="color: #0dcaf0;"></i>
             </div>
@@ -327,7 +367,7 @@
         </div>
     </div>
     <div class="col-lg-4 col-md-6">
-        <div class="action-card">
+        <div class="action-card" title="Export all workspace data including spaces, challenges, initiatives, systems, and KPIs to Excel spreadsheet">
             <div class="action-card-icon" style="background: rgba(25, 135, 84, 0.1);">
                 <i class="bi bi-file-earmark-excel" style="color: #198754;"></i>
             </div>
@@ -340,39 +380,6 @@
     </div>
 </div>
 
-<!-- Admin Actions (if user has permissions) -->
-{% set has_admin_actions = current_user.can_manage_value_types(session.organization_id) or current_user.can_manage_governance_bodies(session.organization_id) or current_user.is_global_admin or current_user.is_super_admin %}
-{% if has_admin_actions %}
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card" style="background: var(--bg-secondary); border: 1px solid var(--border-color);">
-            <div class="card-body">
-                <h6 class="mb-3" style="font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);">
-                    <i class="bi bi-gear-fill me-2"></i> Administration
-                </h6>
-                <div class="d-flex flex-wrap gap-2">
-                    {% if current_user.can_manage_value_types(session.organization_id) %}
-                    <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-hash"></i> Manage Value Types
-                    </a>
-                    {% endif %}
-                    {% if current_user.can_manage_governance_bodies(session.organization_id) %}
-                    <a href="{{ url_for('organization_admin.governance_bodies') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-people-fill"></i> Manage Governance Bodies
-                    </a>
-                    {% endif %}
-                    {% set has_any_admin = current_user.is_global_admin or current_user.is_super_admin or current_user.can_manage_spaces(session.organization_id) or current_user.can_manage_challenges(session.organization_id) or current_user.can_manage_initiatives(session.organization_id) or current_user.can_manage_systems(session.organization_id) or current_user.can_manage_kpis(session.organization_id) %}
-                    {% if has_any_admin %}
-                    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-building-gear"></i> Organization Settings
-                    </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <!-- Two Column Layout -->
 <div class="row g-3">

@@ -58,11 +58,32 @@ class Initiative(db.Model):
             return None
 
     def get_color_config(self, value_type_id):
-        """Get a representative KPIValueTypeConfig for coloring and scaling rollups
+        """Get a representative config for coloring and scaling rollups
 
-        Returns the config with the largest display scale (millions > thousands > default)
-        to ensure rollups show appropriate precision
+        Returns RollupRule if display_scale is configured, or inherits from System level
         """
+        from app.models import RollupRule
+
+        # First check if there's a rollup rule with display_scale set on any challenge link
+        for challenge_link in self.challenge_links:
+            rollup_rule = RollupRule.query.filter_by(
+                source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
+                source_id=challenge_link.id,
+                value_type_id=value_type_id,
+            ).first()
+
+            if rollup_rule and rollup_rule.display_scale:
+                return rollup_rule
+
+            # If rollup_rule exists but display_scale is None (inherit mode),
+            # delegate to System level
+            if rollup_rule and rollup_rule.display_scale is None:
+                # Get config from first system link (they should all have same config if inherit is set)
+                if self.system_links:
+                    first_sys_link = self.system_links[0]
+                    return first_sys_link.get_color_config(value_type_id)
+
+        # Fall back to KPI config (legacy behavior)
         scale_priority = {"millions": 3, "thousands": 2, "default": 1, None: 0}
         best_config = None
         best_scale = 0

@@ -1820,14 +1820,29 @@ def configure_rollup(vt_id):
         # System level formula
         sys_enabled = request.form.get("rollup_enabled_system") == "on"
         sys_formula = request.form.get("formula_system", "default")
+        sys_display_scale = request.form.get("display_scale_system") or None
+        sys_display_decimals = request.form.get("display_decimals_system")
+        sys_display_decimals = (
+            int(sys_display_decimals) if sys_display_decimals and sys_display_decimals.strip() else None
+        )
 
         # Initiative level formula
         init_enabled = request.form.get("rollup_enabled_initiative") == "on"
         init_formula = request.form.get("formula_initiative", "default")
+        init_display_scale = request.form.get("display_scale_initiative") or None
+        init_display_decimals = request.form.get("display_decimals_initiative")
+        init_display_decimals = (
+            int(init_display_decimals) if init_display_decimals and init_display_decimals.strip() else None
+        )
 
         # Challenge level formula
         chal_enabled = request.form.get("rollup_enabled_challenge") == "on"
         chal_formula = request.form.get("formula_challenge", "default")
+        chal_display_scale = request.form.get("display_scale_challenge") or None
+        chal_display_decimals = request.form.get("display_decimals_challenge")
+        chal_display_decimals = (
+            int(chal_display_decimals) if chal_display_decimals and chal_display_decimals.strip() else None
+        )
 
         # VALIDATION: Prevent SUM on qualitative value types
         # If user somehow tries to use SUM on qualitative, convert to MAX (sensible default)
@@ -1877,6 +1892,8 @@ def configure_rollup(vt_id):
                     if rule:
                         rule.rollup_enabled = True
                         rule.formula_override = sys_formula
+                        rule.display_scale = sys_display_scale
+                        rule.display_decimals = sys_display_decimals
                     else:
                         rule = RollupRule(
                             source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
@@ -1884,6 +1901,8 @@ def configure_rollup(vt_id):
                             value_type_id=value_type.id,
                             rollup_enabled=True,
                             formula_override=sys_formula,
+                            display_scale=sys_display_scale,
+                            display_decimals=sys_display_decimals,
                         )
                         db.session.add(rule)
                     updated_count += 1
@@ -1902,6 +1921,8 @@ def configure_rollup(vt_id):
                     if rule:
                         rule.rollup_enabled = True
                         rule.formula_override = init_formula
+                        rule.display_scale = init_display_scale
+                        rule.display_decimals = init_display_decimals
                     else:
                         rule = RollupRule(
                             source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
@@ -1909,6 +1930,8 @@ def configure_rollup(vt_id):
                             value_type_id=value_type.id,
                             rollup_enabled=True,
                             formula_override=init_formula,
+                            display_scale=init_display_scale,
+                            display_decimals=init_display_decimals,
                         )
                         db.session.add(rule)
                     updated_count += 1
@@ -1925,6 +1948,8 @@ def configure_rollup(vt_id):
                     if rule:
                         rule.rollup_enabled = True
                         rule.formula_override = chal_formula
+                        rule.display_scale = chal_display_scale
+                        rule.display_decimals = chal_display_decimals
                     else:
                         rule = RollupRule(
                             source_type=RollupRule.SOURCE_CHALLENGE,
@@ -1932,6 +1957,8 @@ def configure_rollup(vt_id):
                             value_type_id=value_type.id,
                             rollup_enabled=True,
                             formula_override=chal_formula,
+                            display_scale=chal_display_scale,
+                            display_decimals=chal_display_decimals,
                         )
                         db.session.add(rule)
                     updated_count += 1
@@ -1964,6 +1991,20 @@ def configure_rollup(vt_id):
         )
         default_formula = smart_default
 
+    # Load existing configuration from RollupRules to show current settings
+    # Get a sample rule from each level to show what's currently configured
+    current_system_rule = RollupRule.query.filter_by(
+        source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM, value_type_id=value_type.id
+    ).first()
+
+    current_initiative_rule = RollupRule.query.filter_by(
+        source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE, value_type_id=value_type.id
+    ).first()
+
+    current_challenge_rule = RollupRule.query.filter_by(
+        source_type=RollupRule.SOURCE_CHALLENGE, value_type_id=value_type.id
+    ).first()
+
     # Create form for CSRF token
     form = FlaskForm()
 
@@ -1972,6 +2013,9 @@ def configure_rollup(vt_id):
         value_type=value_type,
         default_enabled=default_enabled,
         default_formula=default_formula,
+        current_system_rule=current_system_rule,
+        current_initiative_rule=current_initiative_rule,
+        current_challenge_rule=current_challenge_rule,
         form=form,
     )
 

@@ -79,11 +79,22 @@ class InitiativeSystemLink(db.Model):
             return None
 
     def get_color_config(self, value_type_id):
-        """Get a representative KPIValueTypeConfig for coloring and scaling rollups
+        """Get a representative config for coloring and scaling rollups
 
-        Returns the config with the largest display scale (millions > thousands > default)
-        to ensure rollups show appropriate precision
+        Returns RollupRule if display_scale is configured, otherwise falls back to
+        KPIValueTypeConfig with the largest display scale
         """
+        from app.models import RollupRule
+
+        # First check if there's a rollup rule with display_scale set
+        rollup_rule = RollupRule.query.filter_by(
+            source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM, source_id=self.id, value_type_id=value_type_id
+        ).first()
+
+        if rollup_rule and rollup_rule.display_scale:
+            return rollup_rule
+
+        # Fall back to KPI config (legacy behavior)
         scale_priority = {"millions": 3, "thousands": 2, "default": 1, None: 0}
         best_config = None
         best_scale = 0
