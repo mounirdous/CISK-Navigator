@@ -1142,7 +1142,7 @@ def edit_challenge(challenge_id):
 
         db.session.commit()
         flash(f"Challenge {challenge.name} updated successfully", "success")
-        return redirect(url_for("organization_admin.edit_challenge", challenge_id=challenge_id))
+        return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
