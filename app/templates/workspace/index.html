@@ -5,6 +5,15 @@
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
 <style>
+/* Entity type colors from database - CSS custom properties */
+:root {
+    --entity-space-color: {{ entity_defaults.space.color if entity_defaults and entity_defaults.space else '#10b981' }};
+    --entity-challenge-color: {{ entity_defaults.challenge.color if entity_defaults and entity_defaults.challenge else '#f59e0b' }};
+    --entity-initiative-color: {{ entity_defaults.initiative.color if entity_defaults and entity_defaults.initiative else '#8b5cf6' }};
+    --entity-system-color: {{ entity_defaults.system.color if entity_defaults and entity_defaults.system else '#ec4899' }};
+    --entity-kpi-color: {{ entity_defaults.kpi.color if entity_defaults and entity_defaults.kpi else '#06b6d4' }};
+}
+
 /* Workspace Specific Styles - Using CSS Variables */
 
 #workspace-container {
@@ -362,46 +371,46 @@ td.column-collapsed:not(:empty)::before {
 }
 
 /* Level-specific colors for hierarchy (both light & dark mode) */
-/* Colors now come from entity_defaults */
+/* Colors now come from entity_defaults via CSS variables */
 tr[data-level="space"] td {
-    background-color: {% if entity_defaults and 'space' in entity_defaults %}{{ entity_defaults['space']['color'] }}15{% else %}#10b98115{% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-space-color) 8%, transparent) !important;
 }
 
 tr[data-level="challenge"] td {
-    background-color: {% if entity_defaults and 'challenge' in entity_defaults %}{{ entity_defaults['challenge']['color'] }}0f{% else %}rgba(46, 204, 113, 0.06){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-challenge-color) 6%, transparent) !important;
 }
 
 tr[data-level="initiative"] td {
-    background-color: {% if entity_defaults and 'initiative' in entity_defaults %}{{ entity_defaults['initiative']['color'] }}0f{% else %}rgba(243, 156, 18, 0.06){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-initiative-color) 6%, transparent) !important;
 }
 
 tr[data-level="system"] td {
-    background-color: {% if entity_defaults and 'system' in entity_defaults %}{{ entity_defaults['system']['color'] }}0f{% else %}rgba(155, 89, 182, 0.06){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-system-color) 6%, transparent) !important;
 }
 
 tr[data-level="kpi"] td {
-    background-color: {% if entity_defaults and 'kpi' in entity_defaults %}{{ entity_defaults['kpi']['color'] }}0f{% else %}rgba(231, 76, 60, 0.06){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-kpi-color) 6%, transparent) !important;
 }
 
 /* Dark mode - stronger hierarchy colors */
 .dark-mode tr[data-level="space"] td {
-    background-color: {% if entity_defaults and 'space' in entity_defaults %}{{ entity_defaults['space']['color'] }}26{% else %}rgba(52, 152, 219, 0.15){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-space-color) 15%, transparent) !important;
 }
 
 .dark-mode tr[data-level="challenge"] td {
-    background-color: {% if entity_defaults and 'challenge' in entity_defaults %}{{ entity_defaults['challenge']['color'] }}1f{% else %}rgba(46, 204, 113, 0.12){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-challenge-color) 12%, transparent) !important;
 }
 
 .dark-mode tr[data-level="initiative"] td {
-    background-color: {% if entity_defaults and 'initiative' in entity_defaults %}{{ entity_defaults['initiative']['color'] }}1f{% else %}rgba(243, 156, 18, 0.12){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-initiative-color) 12%, transparent) !important;
 }
 
 .dark-mode tr[data-level="system"] td {
-    background-color: {% if entity_defaults and 'system' in entity_defaults %}{{ entity_defaults['system']['color'] }}1f{% else %}rgba(155, 89, 182, 0.12){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-system-color) 12%, transparent) !important;
 }
 
 .dark-mode tr[data-level="kpi"] td {
-    background-color: {% if entity_defaults and 'kpi' in entity_defaults %}{{ entity_defaults['kpi']['color'] }}1f{% else %}rgba(231, 76, 60, 0.12){% endif %} !important;
+    background-color: color-mix(in srgb, var(--entity-kpi-color) 12%, transparent) !important;
 }
 
 /* Hierarchy icons and visual guides */
@@ -1243,7 +1252,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = space.get_rollup_value(vt.id) %}
                         {% set color_config = space.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="space" style="background-color: {% if entity_defaults and 'space' in entity_defaults %}{{ entity_defaults['space']['color'] }}20{% else %}#d6e9f7{% endif %}; font-weight: bold; position: relative;">
+                        <td class="text-center" data-agg-level="space" style="background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: bold; position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
                             <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='space', return_to='workspace') }}"
                                class="formula-edit-icon"
@@ -1321,7 +1330,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = challenge.get_rollup_value(vt.id) %}
                         {% set color_config = challenge.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="challenge" style="background-color: {% if entity_defaults and 'challenge' in entity_defaults %}{{ entity_defaults['challenge']['color'] }}20{% else %}#f0f4f8{% endif %}; position: relative;">
+                        <td class="text-center" data-agg-level="challenge" style="background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
                             <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='challenge', return_to='workspace') }}"
                                class="formula-edit-icon"
@@ -1413,7 +1422,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = initiative.get_rollup_value(vt.id) %}
                         {% set color_config = initiative.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="initiative" style="background-color: {% if entity_defaults and 'initiative' in entity_defaults %}{{ entity_defaults['initiative']['color'] }}20{% else %}#eff6f9{% endif %}; position: relative;">
+                        <td class="text-center" data-agg-level="initiative" style="background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
                             <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='initiative', return_to='workspace') }}"
                                class="formula-edit-icon"
@@ -1492,7 +1501,7 @@ tr[data-level="kpi"] td {
                     {% for vt in value_types %}
                         {% set rollup = sys_link.get_rollup_value(vt.id) %}
                         {% set color_config = sys_link.get_color_config(vt.id) %}
-                        <td class="text-center" data-agg-level="system" style="background-color: {% if entity_defaults and 'system' in entity_defaults %}{{ entity_defaults['system']['color'] }}20{% else %}#e8f4f8{% endif %}; position: relative;">
+                        <td class="text-center" data-agg-level="system" style="background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;">
                             {% if current_user.can_manage_value_types(org_id) and vt.kind == 'numeric' %}
                             <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id, level='system', return_to='workspace') }}"
                                class="formula-edit-icon"

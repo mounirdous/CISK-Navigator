@@ -100,6 +100,9 @@ def update_setting():
 @super_admin_required
 def entity_defaults():
     """Manage entity type default colors and icons"""
+    from flask_wtf import FlaskForm
+    from flask_wtf.csrf import generate_csrf
+
     # Ensure defaults exist in database
     EntityTypeDefault.ensure_defaults_exist()
 
@@ -111,7 +114,12 @@ def entity_defaults():
     defaults_dict = {d.entity_type: d for d in defaults}
     ordered_defaults = [defaults_dict.get(entity_type) for entity_type in entity_order if entity_type in defaults_dict]
 
-    return render_template("super_admin/entity_defaults.html", entity_defaults=ordered_defaults)
+    # Create empty form for CSRF token
+    form = FlaskForm()
+
+    return render_template(
+        "super_admin/entity_defaults.html", entity_defaults=ordered_defaults, form=form, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/entity-defaults/update", methods=["POST"])
