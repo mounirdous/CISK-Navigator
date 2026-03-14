@@ -78,12 +78,35 @@
 
                     <div class="mb-3">
                         {{ form.challenge_ids.label(class="form-label fw-semibold") }}
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-link-45deg"></i></span>
-                            {{ form.challenge_ids(class="form-select", size="5", multiple=True) }}
+                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                            {% if challenges %}
+                                {% for challenge in challenges %}
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" name="challenge_ids" value="{{ challenge.id }}" id="challenge_{{ challenge.id }}"
+                                           {% if challenge.id in current_challenge_ids %}checked{% endif %}>
+                                    <label class="form-check-label d-flex align-items-center" for="challenge_{{ challenge.id }}" style="cursor: pointer;">
+                                        {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                                        <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 18px; height: 18px; object-fit: contain; margin-right: 0.5rem;">
+                                        {% else %}
+                                        <span style="font-size: 0.9rem; margin-right: 0.5rem;">{{ entity_defaults.get('space', {}).get('icon', '🏢') }}</span>
+                                        {% endif %}
+                                        <span style="color: #6c757d; margin-right: 0.5rem;">{{ challenge.space.name }}</span>
+                                        <span style="margin-right: 0.5rem;">→</span>
+                                        {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                                        <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 18px; height: 18px; object-fit: contain; margin-right: 0.5rem;">
+                                        {% else %}
+                                        <span style="font-weight: bold; font-style: italic; margin-right: 0.5rem;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                                        {% endif %}
+                                        <span>{{ challenge.name }}</span>
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="text-muted mb-0">No challenges available</p>
+                            {% endif %}
                         </div>
                         <small class="form-text text-muted">
-                            <i class="bi bi-info-circle"></i> Hold Ctrl/Cmd to select multiple challenges
+                            <i class="bi bi-info-circle"></i> Select one or more challenges for this initiative
                         </small>
                     </div>
 
