@@ -121,7 +121,12 @@
 {% block content %}
 <div class="mb-4">
     <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem;">
-        <i class="bi bi-speedometer2" style="color: var(--accent-primary);"></i> {{ org_name }}
+        {% if org_logo %}
+        <img src="{{ org_logo }}" alt="{{ org_name }}" style="height: 2rem; width: auto; margin-right: 0.5rem; vertical-align: middle;">
+        {% else %}
+        <i class="bi bi-speedometer2" style="color: var(--accent-primary);"></i>
+        {% endif %}
+        {{ org_name }}
     </h1>
     <p class="text-muted mb-0">Welcome back! Here's your overview.</p>
 </div>
@@ -184,7 +189,11 @@
     <div class="col-lg col-md-6 col-sm-6">
         <div class="stat-compact" title="Total number of spaces (flexible groupings like seasons, sites, customers)">
             <div class="stat-compact-icon" style="background: rgba(102, 126, 234, 0.1);">
+                {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 24px; height: 24px; object-fit: contain;">
+                {% else %}
                 <i class="bi bi-grid-3x3-gap" style="color: #667eea;"></i>
+                {% endif %}
             </div>
             <div>
                 <div class="stat-compact-value">{{ stats.spaces }}</div>
@@ -195,7 +204,11 @@
     <div class="col-lg col-md-6 col-sm-6">
         <div class="stat-compact" title="Total number of challenges defined across all spaces">
             <div class="stat-compact-icon" style="background: rgba(108, 117, 125, 0.1);">
+                {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 24px; height: 24px; object-fit: contain;">
+                {% else %}
                 <span style="color: #6c757d; font-weight: bold; font-style: italic; font-size: 1.5rem;">ƒ</span>
+                {% endif %}
             </div>
             <div>
                 <div class="stat-compact-value">{{ stats.challenges }}</div>
@@ -206,7 +219,11 @@
     <div class="col-lg col-md-6 col-sm-6">
         <div class="stat-compact" title="Total number of initiatives working to address challenges">
             <div class="stat-compact-icon" style="background: rgba(13, 202, 240, 0.1);">
+                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 24px; height: 24px; object-fit: contain;">
+                {% else %}
                 <span style="color: #0dcaf0; font-weight: bold; font-size: 1.5rem;">δ</span>
+                {% endif %}
             </div>
             <div>
                 <div class="stat-compact-value">{{ stats.initiatives }}</div>
@@ -217,7 +234,11 @@
     <div class="col-lg col-md-6 col-sm-6">
         <div class="stat-compact" title="Total number of systems being tracked within initiatives">
             <div class="stat-compact-icon" style="background: rgba(25, 135, 84, 0.1);">
+                {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 24px; height: 24px; object-fit: contain;">
+                {% else %}
                 <span style="color: #198754; font-weight: bold; font-size: 1.5rem;">Φ</span>
+                {% endif %}
             </div>
             <div>
                 <div class="stat-compact-value">{{ stats.systems }}</div>
@@ -228,7 +249,11 @@
     <div class="col-lg col-md-6 col-sm-6">
         <div class="stat-compact" title="Total number of Key Performance Indicators measuring system performance">
             <div class="stat-compact-icon" style="background: rgba(255, 193, 7, 0.1);">
+                {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 24px; height: 24px; object-fit: contain;">
+                {% else %}
                 <span style="color: #ffc107; font-weight: bold; font-size: 1.5rem;">Ψ</span>
+                {% endif %}
             </div>
             <div>
                 <div class="stat-compact-value">{{ stats.kpis }}</div>

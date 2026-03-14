@@ -64,8 +64,15 @@
             {% for space in results.spaces %}
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
                 <a href="{{ url_for('workspace.index') }}#space-{{ space.id }}" class="flex-grow-1 text-decoration-none text-dark">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ space.name }}</h6>
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                            <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 24px; height: 24px; object-fit: contain;">
+                            {% else %}
+                            <i class="bi bi-grid-3x3-gap-fill"></i>
+                            {% endif %}
+                            <h6 class="mb-0">{{ space.name }}</h6>
+                        </div>
                     </div>
                     {% if space.description %}
                     <p class="mb-1 text-muted">{{ space.description }}</p>
@@ -97,8 +104,15 @@
             {% for challenge in results.challenges %}
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
                 <a href="{{ url_for('workspace.index') }}#challenge-{{ challenge.id }}" class="flex-grow-1 text-decoration-none text-dark">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ challenge.name }}</h6>
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                            <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 24px; height: 24px; object-fit: contain;">
+                            {% else %}
+                            <span style="font-weight: bold; font-style: italic;">ƒ</span>
+                            {% endif %}
+                            <h6 class="mb-0">{{ challenge.name }}</h6>
+                        </div>
                         <small class="text-muted">{{ challenge.space }}</small>
                     </div>
                     {% if challenge.description %}
@@ -131,8 +145,15 @@
             {% for initiative in results.initiatives %}
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
                 <a href="{{ url_for('workspace.index') }}#initiative-{{ initiative.id }}" class="flex-grow-1 text-decoration-none text-dark">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ initiative.name }}</h6>
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                            <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 24px; height: 24px; object-fit: contain;">
+                            {% else %}
+                            <span style="font-weight: bold;">δ</span>
+                            {% endif %}
+                            <h6 class="mb-0">{{ initiative.name }}</h6>
+                        </div>
                     </div>
                     {% if initiative.description %}
                     <p class="mb-1 text-muted">{{ initiative.description }}</p>
@@ -164,8 +185,15 @@
             {% for system in results.systems %}
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
                 <a href="{{ url_for('workspace.index') }}#system-{{ system.id }}" class="flex-grow-1 text-decoration-none text-dark">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ system.name }}</h6>
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                            <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 24px; height: 24px; object-fit: contain;">
+                            {% else %}
+                            <i class="bi bi-diagram-3-fill"></i>
+                            {% endif %}
+                            <h6 class="mb-0">{{ system.name }}</h6>
+                        </div>
                     </div>
                     {% if system.description %}
                     <p class="mb-1 text-muted">{{ system.description }}</p>
@@ -197,8 +225,15 @@
             {% for kpi in results.kpis %}
             <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
                 <a href="{{ url_for('workspace.index') }}#kpi-{{ kpi.id }}" class="flex-grow-1 text-decoration-none text-dark">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h6 class="mb-1">{{ kpi.name }}</h6>
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                            <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 24px; height: 24px; object-fit: contain;">
+                            {% else %}
+                            <i class="bi bi-bullseye"></i>
+                            {% endif %}
+                            <h6 class="mb-0">{{ kpi.name }}</h6>
+                        </div>
                         <small class="text-muted">{{ kpi.initiative }} / {{ kpi.system }}</small>
                     </div>
                     {% if kpi.description %}

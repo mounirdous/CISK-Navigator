@@ -1137,7 +1137,12 @@ tr[data-level="kpi"] td {
             <tr>
                 {# Structure column - auto-size based on content #}
                 <th style="font-size: 1.1rem; font-weight: 700;">
-                    <i class="bi bi-building"></i> {{ org_name }}
+                    {% if org_logo %}
+                    <img src="{{ org_logo }}" alt="{{ org_name }}" style="height: 1.5rem; width: auto; margin-right: 0.5rem; vertical-align: middle;">
+                    {% else %}
+                    <i class="bi bi-building"></i>
+                    {% endif %}
+                    {{ org_name }}
                     {% if organization %}
                         <span class="form-view-icon ms-2">
                             <a href="{{ url_for('organization_admin.organization_porters') }}" class="text-info" title="Porter's Five Forces Analysis">
@@ -1208,7 +1213,11 @@ tr[data-level="kpi"] td {
                     <td class="level-border space">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon space-icon">🏢</span>
+                        {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                        <img src="{{ entity_defaults['space']['logo'] }}" class="hierarchy-icon-img" alt="Space" style="width: 24px; height: 24px; object-fit: contain; margin-right: 0.5rem; vertical-align: middle; border-radius: 4px;">
+                        {% else %}
+                        <span class="hierarchy-icon space-icon">{{ entity_defaults.get('space', {}).get('icon', '🏢') }}</span>
+                        {% endif %}
                         <span class="form-view-icon me-2">
                             <a href="{{ url_for('organization_admin.space_swot', space_id=space.id) }}" class="text-info" title="View SWOT Analysis">
                                 <i class="bi bi-grid-3x3"></i>
@@ -1307,7 +1316,11 @@ tr[data-level="kpi"] td {
                     <td class="level-border challenge" style="padding-left: 2.5rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon challenge-icon" style="font-style: italic;">ƒ</span>
+                        {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                        <img src="{{ entity_defaults['challenge']['logo'] }}" class="hierarchy-icon-img" alt="Challenge" style="width: 24px; height: 24px; object-fit: contain; margin-right: 0.5rem; vertical-align: middle; border-radius: 4px;">
+                        {% else %}
+                        <span class="hierarchy-icon challenge-icon" style="font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                        {% endif %}
                         {{ challenge.name }}
                         {% if current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) %}
                         <span class="action-icons ms-2">
@@ -1386,7 +1399,11 @@ tr[data-level="kpi"] td {
                     <td class="level-border initiative" style="padding-left: 5rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon initiative-icon">δ</span>
+                        {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                        <img src="{{ entity_defaults['initiative']['logo'] }}" class="hierarchy-icon-img" alt="Initiative" style="width: 24px; height: 24px; object-fit: contain; margin-right: 0.5rem; vertical-align: middle; border-radius: 4px;">
+                        {% else %}
+                        <span class="hierarchy-icon initiative-icon">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                        {% endif %}
                         <span class="form-view-icon me-2">
                             <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="text-info" title="View Initiative Form">
                                 <i class="bi bi-file-text"></i>
@@ -1478,7 +1495,11 @@ tr[data-level="kpi"] td {
                     <td class="level-border system" style="padding-left: 7.5rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
                         <span class="expand-icon">▶</span>
-                        <span class="hierarchy-icon system-icon">Φ</span>
+                        {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                        <img src="{{ entity_defaults['system']['logo'] }}" class="hierarchy-icon-img" alt="System" style="width: 24px; height: 24px; object-fit: contain; margin-right: 0.5rem; vertical-align: middle; border-radius: 4px;">
+                        {% else %}
+                        <span class="hierarchy-icon system-icon">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
+                        {% endif %}
                         {{ system.name }}
                         {% if current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
@@ -1581,7 +1602,11 @@ tr[data-level="kpi"] td {
                 <tr id="kpi-{{ kpi.id }}" data-level="kpi" data-id="{{ kpi.id }}" data-parent-type="system" data-parent-id="{{ sys_link.id }}" class="table-warning {% if kpi.is_archived %}table-secondary{% endif %} draggable-row" draggable="true" style="display: none; {% if kpi.is_archived %}opacity: 0.6;{% endif %}" {% if not show_levels.kpis %}data-level-hidden="true"{% endif %}>
                     <td class="level-border kpi" style="padding-left: 10rem !important;">
                         <span class="drag-handle" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></span>
-                        <span class="hierarchy-icon kpi-icon">Ψ</span>
+                        {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                        <img src="{{ entity_defaults['kpi']['logo'] }}" class="hierarchy-icon-img" alt="KPI" style="width: 24px; height: 24px; object-fit: contain; margin-right: 0.5rem; vertical-align: middle; border-radius: 4px;">
+                        {% else %}
+                        <span class="hierarchy-icon kpi-icon">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                        {% endif %}
                         {% set has_target_direction = namespace(value=none) %}
                         {% for config in kpi.value_type_configs %}
                             {% if config.target_value is not none and has_target_direction.value is none %}

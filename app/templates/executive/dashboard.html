@@ -397,12 +397,16 @@
                 {% if top_performers %}
                 {% for item in top_performers %}
                 <div class="kpi-list-item" style="cursor: help;" title="{{ item.system }} - {{ item.achievement_pct|round(1) }}% achievement ({{ 'At or Above' if item.target_direction == 'maximize' else ('At or Below' if item.target_direction == 'minimize' else 'At target') }})">
-                    <div>
-                        <strong>
-                            {% if item.target_direction == 'minimize' %}⬇️{% elif item.target_direction == 'exact' %}🎯{% else %}⬆️{% endif %}
-                            {{ item.kpi.name }}
-                        </strong>
-                        <div class="small text-muted">{{ item.system }}</div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                        <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 24px; height: 24px; object-fit: contain;">
+                        {% else %}
+                        <span style="font-size: 1.25rem;">{% if item.target_direction == 'minimize' %}⬇️{% elif item.target_direction == 'exact' %}🎯{% else %}⬆️{% endif %}</span>
+                        {% endif %}
+                        <div>
+                            <strong>{{ item.kpi.name }}</strong>
+                            <div class="small text-muted">{{ item.system }}</div>
+                        </div>
                     </div>
                     <div class="text-end">
                         <span class="badge bg-success">{{ item.achievement_pct|round(0)|int }}% of target</span>
@@ -425,12 +429,16 @@
                 {% if needs_attention %}
                 {% for item in needs_attention %}
                 <div class="kpi-list-item" style="cursor: help;" title="{{ item.reason }} - {{ item.system }}">
-                    <div>
-                        <strong>
-                            {% if item.target_direction == 'minimize' %}⬇️{% elif item.target_direction == 'exact' %}🎯{% elif item.target_direction %}⬆️{% endif %}
-                            {{ item.kpi.name }}
-                        </strong>
-                        <div class="small text-muted">{{ item.system }}</div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                        <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 24px; height: 24px; object-fit: contain;">
+                        {% else %}
+                        <span style="font-size: 1.25rem;">{% if item.target_direction == 'minimize' %}⬇️{% elif item.target_direction == 'exact' %}🎯{% elif item.target_direction %}⬆️{% endif %}</span>
+                        {% endif %}
+                        <div>
+                            <strong>{{ item.kpi.name }}</strong>
+                            <div class="small text-muted">{{ item.system }}</div>
+                        </div>
                     </div>
                     <div class="text-end">
                         {% if item.achievement_pct %}

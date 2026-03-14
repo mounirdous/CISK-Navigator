@@ -4,6 +4,7 @@ Organization Administration routes
 For managing business content within an organization (spaces, challenges, initiatives, etc.).
 """
 
+from datetime import datetime
 from functools import wraps
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
@@ -35,6 +36,7 @@ from app.models import (
     KPI,
     Challenge,
     ChallengeInitiativeLink,
+    EntityTypeDefault,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
@@ -461,6 +463,420 @@ def onboarding():
         form = OnboardingConfirmForm()
 
     return render_template("organization_admin/onboarding.html", org_name=org_name, step=step, form=form)
+
+
+# Organization Settings (Logo, Branding)
+
+
+@bp.route("/settings")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def organization_settings():
+    """Organization settings - logo, branding"""
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+    form = FlaskForm()  # For CSRF
+    return render_template(
+        "organization_admin/organization_settings.html", organization=org, form=form, csrf_token=generate_csrf
+    )
+
+
+@bp.route("/settings/upload-logo", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def upload_logo():
+    """Upload organization logo with automatic resizing"""
+    import io
+    import os
+
+    from PIL import Image
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+
+    if "logo" not in request.files:
+        flash("No file uploaded", "danger")
+        return redirect(url_for("organization_admin.organization_settings"))
+
+    file = request.files["logo"]
+    if file.filename == "":
+        flash("No file selected", "danger")
+        return redirect(url_for("organization_admin.organization_settings"))
+
+    # Validate file type
+    allowed_extensions = {"png", "jpg", "jpeg", "gif", "webp"}
+    ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
+    if ext not in allowed_extensions:
+        flash("Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP", "danger")
+        return redirect(url_for("organization_admin.organization_settings"))
+
+    # Validate file size (max 5MB)
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > 5 * 1024 * 1024:  # 5MB
+        flash("File too large. Maximum size: 5MB", "danger")
+        return redirect(url_for("organization_admin.organization_settings"))
+
+    try:
+        # Read image
+        image = Image.open(file)
+
+        # Convert RGBA to RGB if needed (for JPEG compatibility)
+        if image.mode in ("RGBA", "LA", "P"):
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            if image.mode == "P":
+                image = image.convert("RGBA")
+            background.paste(image, mask=image.split()[-1] if image.mode in ("RGBA", "LA") else None)
+            image = background
+
+        # Resize maintaining aspect ratio (max 200x200)
+        max_size = (200, 200)
+        image.thumbnail(max_size, Image.Resampling.LANCZOS)
+
+        # Save to bytes
+        output = io.BytesIO()
+        image_format = "PNG" if ext in ("png", "webp") else "JPEG"
+        mime_type = f"image/{ext}" if ext in ("png", "webp") else "image/jpeg"
+        image.save(output, format=image_format, quality=85, optimize=True)
+        logo_data = output.getvalue()
+
+        # Store in database
+        org.logo_data = logo_data
+        org.logo_mime_type = mime_type
+        db.session.commit()
+
+        # Update session with new logo URL
+        session["organization_logo"] = url_for("logo.organization_logo", entity_id=org.id)
+
+        flash("Logo uploaded successfully!", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error uploading logo: {str(e)}", "danger")
+
+    return redirect(url_for("organization_admin.organization_settings"))
+
+
+@bp.route("/settings/delete-logo", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def delete_logo():
+    """Delete organization logo"""
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+
+    if org.logo_data:
+        try:
+            # Clear logo from database
+            org.logo_data = None
+            org.logo_mime_type = None
+            db.session.commit()
+
+            # Clear from session
+            session["organization_logo"] = None
+
+            flash("Logo deleted successfully", "success")
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error deleting logo: {str(e)}", "danger")
+    else:
+        flash("No logo to delete", "info")
+
+    return redirect(url_for("organization_admin.organization_settings"))
+
+
+@bp.route("/branding")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def branding_manager():
+    """Branding manager - manage colors, icons, and logos for all entity types"""
+    import base64
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+
+    # Ensure defaults exist for this organization
+    EntityTypeDefault.ensure_defaults_exist(org_id)
+
+    # Get entity defaults for this organization (color and icon only)
+    entity_defaults = EntityTypeDefault.get_all_defaults(org_id)
+
+    # Get full entity defaults with logos
+    entity_defaults_full = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_default_logos = {}
+    for default in entity_defaults_full:
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+            entity_default_logos[default.entity_type] = logo_url
+
+    # Hardcoded fallbacks
+    entity_defaults_hardcoded = EntityTypeDefault.get_hardcoded_defaults()
+
+    return render_template(
+        "organization_admin/branding_manager.html",
+        organization=org,
+        entity_defaults=entity_defaults,
+        entity_default_logos=entity_default_logos,
+        entity_defaults_hardcoded=entity_defaults_hardcoded,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/branding/update", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def update_branding():
+    """Update branding (colors and icons) for all entity types"""
+    org_id = session.get("organization_id")
+
+    try:
+        entity_types = ["organization", "space", "challenge", "initiative", "system", "kpi"]
+
+        for entity_type in entity_types:
+            color = request.form.get(f"{entity_type}_color")
+            icon = request.form.get(f"{entity_type}_icon")
+
+            if color and icon:
+                # Get or create entity default for this organization
+                entity_default = EntityTypeDefault.query.filter_by(
+                    organization_id=org_id, entity_type=entity_type
+                ).first()
+
+                if entity_default:
+                    entity_default.default_color = color
+                    entity_default.default_icon = icon
+                    entity_default.updated_by = current_user.id
+                    entity_default.updated_at = datetime.utcnow()
+                else:
+                    # Create new default
+                    entity_default = EntityTypeDefault(
+                        organization_id=org_id,
+                        entity_type=entity_type,
+                        default_color=color,
+                        default_icon=icon,
+                        display_name=entity_type.title(),
+                        updated_by=current_user.id,
+                    )
+                    db.session.add(entity_default)
+
+        db.session.commit()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/logo-manager")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def logo_manager():
+    """Logo manager - manage all entity logos for this organization (legacy, redirects to branding)"""
+    return redirect(url_for("organization_admin.branding_manager"))
+
+
+@bp.route("/logo-manager/upload", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def upload_entity_logo():
+    """Upload logo - for organization OR default logo for entity type"""
+    import io
+    import os
+
+    from PIL import Image
+
+    org_id = session.get("organization_id")
+    entity_type = request.form.get("entity_type")
+    entity_id = request.form.get("entity_id")
+
+    if "logo" not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded"}), 400
+
+    file = request.files["logo"]
+    if file.filename == "":
+        return jsonify({"success": False, "error": "No file selected"}), 400
+
+    # Validate file type
+    allowed_extensions = {"png", "jpg", "jpeg", "gif", "webp"}
+    ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
+    if ext not in allowed_extensions:
+        return jsonify({"success": False, "error": "Invalid file type"}), 400
+
+    # Validate file size (max 5MB)
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > 5 * 1024 * 1024:
+        return jsonify({"success": False, "error": "File too large (max 5MB)"}), 400
+
+    try:
+        # Read and process image
+        image = Image.open(file)
+
+        # Convert RGBA to RGB if needed
+        if image.mode in ("RGBA", "LA", "P"):
+            background = Image.new("RGB", image.size, (255, 255, 255))
+            if image.mode == "P":
+                image = image.convert("RGBA")
+            background.paste(image, mask=image.split()[-1] if image.mode in ("RGBA", "LA") else None)
+            image = background
+
+        # Resize maintaining aspect ratio (max 200x200)
+        max_size = (200, 200)
+        image.thumbnail(max_size, Image.Resampling.LANCZOS)
+
+        # Save to bytes
+        output = io.BytesIO()
+        image_format = "PNG" if ext in ("png", "webp") else "JPEG"
+        mime_type = f"image/{ext}" if ext in ("png", "webp") else "image/jpeg"
+        image.save(output, format=image_format, quality=85, optimize=True)
+        logo_data = output.getvalue()
+
+        # Store based on entity type
+        if entity_type == "organization":
+            # Individual organization logo
+            org = Organization.query.get_or_404(entity_id)
+            if org.id != org_id:
+                return jsonify({"success": False, "error": "Unauthorized"}), 403
+            org.logo_data = logo_data
+            org.logo_mime_type = mime_type
+            db.session.commit()
+            # Update session
+            session["organization_logo"] = url_for("logo.organization_logo", entity_id=org.id)
+        else:
+            # Default logo for entity type
+            entity_default = EntityTypeDefault.query.filter_by(organization_id=org_id, entity_type=entity_type).first()
+
+            if not entity_default:
+                # Create if doesn't exist
+                entity_default = EntityTypeDefault(
+                    organization_id=org_id,
+                    entity_type=entity_type,
+                    default_color=EntityTypeDefault.get_hardcoded_defaults()[entity_type]["color"],
+                    default_icon=EntityTypeDefault.get_hardcoded_defaults()[entity_type]["icon"],
+                    display_name=entity_type.title(),
+                    description="",
+                )
+                db.session.add(entity_default)
+
+            entity_default.default_logo_data = logo_data
+            entity_default.default_logo_mime_type = mime_type
+            db.session.commit()
+
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/logo-manager/apply-template", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def apply_logo_template():
+    """Apply logo template (AJAX endpoint)"""
+    org_id = session.get("organization_id")
+    data = request.get_json()
+    entity_type = data.get("entity_type")
+    entity_id = data.get("entity_id")
+    template_url = data.get("template_url")
+
+    try:
+        # Extract SVG data from data URL first
+        if not template_url.startswith("data:image/svg+xml"):
+            return jsonify({"success": False, "error": "Invalid template URL format"}), 400
+
+        # Decode SVG data - handle both formats with and without charset
+        if ";charset=utf-8," in template_url:
+            svg_data = template_url.split(";charset=utf-8,", 1)[1]
+        elif "," in template_url:
+            svg_data = template_url.split(",", 1)[1]
+        else:
+            return jsonify({"success": False, "error": "Invalid SVG data URL format"}), 400
+
+        # URL decode
+        from urllib.parse import unquote
+
+        svg_data = unquote(svg_data)
+        svg_bytes = svg_data.encode("utf-8")
+
+        # Organization logos are stored on the Organization model
+        if entity_type == "organization":
+            entity = Organization.query.get_or_404(entity_id)
+            if entity.id != org_id:
+                return jsonify({"success": False, "error": "Unauthorized"}), 403
+            entity.logo_data = svg_bytes
+            entity.logo_mime_type = "image/svg+xml"
+            db.session.commit()
+            session["organization_logo"] = url_for("logo.organization_logo", entity_id=entity.id)
+        else:
+            # All other entity type logos are stored in EntityTypeDefault
+            entity_default = EntityTypeDefault.query.filter_by(organization_id=org_id, entity_type=entity_type).first()
+
+            if not entity_default:
+                # Create if doesn't exist
+                entity_default = EntityTypeDefault(
+                    organization_id=org_id,
+                    entity_type=entity_type,
+                    default_color=EntityTypeDefault.get_hardcoded_defaults()[entity_type]["color"],
+                    default_icon=EntityTypeDefault.get_hardcoded_defaults()[entity_type]["icon"],
+                    display_name=entity_type.title(),
+                    description="",
+                )
+                db.session.add(entity_default)
+
+            entity_default.default_logo_data = svg_bytes
+            entity_default.default_logo_mime_type = "image/svg+xml"
+            db.session.commit()
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@bp.route("/logo-manager/delete", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def delete_entity_logo():
+    """Delete entity logo (AJAX endpoint)"""
+    org_id = session.get("organization_id")
+    data = request.get_json()
+    entity_type = data.get("entity_type")
+    entity_id = data.get("entity_id")
+
+    try:
+        # Organization logos are stored on the Organization model
+        if entity_type == "organization":
+            entity = Organization.query.get_or_404(entity_id)
+            if entity.id != org_id:
+                return jsonify({"success": False, "error": "Unauthorized"}), 403
+            entity.logo_data = None
+            entity.logo_mime_type = None
+            db.session.commit()
+            session["organization_logo"] = None
+        else:
+            # All other entity type logos are stored in EntityTypeDefault
+            entity_default = EntityTypeDefault.query.filter_by(organization_id=org_id, entity_type=entity_type).first()
+
+            if entity_default:
+                entity_default.default_logo_data = None
+                entity_default.default_logo_mime_type = None
+                db.session.commit()
+
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # Space Management

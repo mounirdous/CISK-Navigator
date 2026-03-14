@@ -247,8 +247,12 @@
                         {% for membership in current_user.organization_memberships %}
                             <div class="org-card {% if membership.organization.id == session.get('organization_id') %}current{% endif %}">
                                 <div>
-                                    <div class="fw-bold">
+                                    <div class="fw-bold d-flex align-items-center gap-2">
+                                        {% if org_logos.get(membership.organization.id) %}
+                                        <img src="{{ org_logos[membership.organization.id] }}" alt="{{ membership.organization.name }}" style="width: 24px; height: 24px; object-fit: contain;">
+                                        {% else %}
                                         <i class="bi bi-building"></i>
+                                        {% endif %}
                                         {{ membership.organization.name }}
                                     </div>
                                     <small class="text-muted">

@@ -1,0 +1,583 @@
+{% extends "base.html" %}
+
+{% block title %}Logo Manager - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .logo-card {
+        border: 2px solid #e0e0e0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .logo-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        border-color: #0d6efd;
+    }
+
+    .logo-preview-circle {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 3px solid #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+        margin: 0 auto 1rem;
+        overflow: hidden;
+        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .logo-card:hover .logo-preview-circle {
+        border-color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13,110,253,0.2);
+    }
+
+    .logo-preview-circle img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .logo-preview-circle .empty-icon {
+        font-size: 3rem;
+        color: #adb5bd;
+    }
+
+    .entity-type-badge {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        font-size: 1.5rem;
+        opacity: 0.3;
+    }
+
+    .org-banner {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 20px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 40px rgba(102,126,234,0.3);
+    }
+
+    .template-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .template-option {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8f9fa;
+    }
+
+    .template-option:hover {
+        border-color: #0d6efd;
+        transform: scale(1.05);
+    }
+
+    .template-option.selected {
+        border-color: #198754;
+        box-shadow: 0 0 0 3px rgba(25,135,84,0.2);
+    }
+
+    .template-option img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .upload-dropzone {
+        border: 2px dashed #cbd5e0;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        background: #f8f9fa;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .upload-dropzone:hover {
+        border-color: #0d6efd;
+        background: #e7f1ff;
+    }
+
+    .upload-dropzone.dragover {
+        border-color: #198754;
+        background: #d1f2eb;
+    }
+
+    .dark-mode .logo-card {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+        border-color: #444;
+    }
+
+    .dark-mode .logo-preview-circle {
+        background: #2a2a2a;
+        border-color: #444;
+    }
+
+    .dark-mode .upload-dropzone {
+        background: #2a2a2a;
+        border-color: #444;
+    }
+
+    .dark-mode .upload-dropzone:hover {
+        border-color: #0d6efd;
+        background: #1a2332;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+
+    .btn-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid fade-in">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-images"></i> Logo Manager</h2>
+            <p class="text-muted mb-0">Manage logos for {{ organization.name }}</p>
+        </div>
+        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Admin
+        </a>
+    </div>
+
+    <!-- Organization Info Banner -->
+    <div class="org-banner">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                {% if organization.logo_data %}
+                    <img src="{{ url_for('logo.organization_logo', entity_id=organization.id) }}" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover; border: 3px solid white;">
+                {% else %}
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border: 3px solid white;">
+                        <i class="bi bi-building text-white" style="font-size: 2rem;"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="col-md-10 text-white">
+                <h3 class="mb-1">{{ organization.name }}</h3>
+                <p class="mb-0 opacity-75">Customize all logos for your organization's entity types</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logo Grid -->
+    <div class="row g-4" id="logoGrid">
+        <!-- Organization Logo -->
+        <div class="col-md-4">
+            <div class="logo-card">
+                <div class="entity-type-badge">🏢</div>
+                <div class="logo-preview-circle" style="border-color: {{ entity_defaults.organization.color if entity_defaults.organization else '#6366f1' }};">
+                    {% if organization.logo_data %}
+                        <img src="{{ url_for('logo.organization_logo', entity_id=organization.id) }}" alt="Organization Logo">
+                    {% else %}
+                        <i class="bi bi-building empty-icon"></i>
+                    {% endif %}
+                </div>
+                <h5 class="text-center mb-2">Organization</h5>
+                <p class="text-center text-muted small mb-3">Main organization logo</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-circle" onclick="openUploadModal('organization', {{ organization.id }})" title="Upload">
+                        <i class="bi bi-upload"></i>
+                    </button>
+                    <button class="btn btn-info btn-circle" onclick="openTemplateModal('organization', {{ organization.id }})" title="Select Template">
+                        <i class="bi bi-grid-3x3"></i>
+                    </button>
+                    {% if organization.logo_data %}
+                    <button class="btn btn-danger btn-circle" onclick="deleteLogo('organization', {{ organization.id }})" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Space Logo -->
+        <div class="col-md-4">
+            <div class="logo-card">
+                <div class="entity-type-badge">📦</div>
+                <div class="logo-preview-circle" style="border-color: {{ entity_defaults.space.color if entity_defaults.space else '#10b981' }};">
+                    <i class="bi bi-box empty-icon"></i>
+                </div>
+                <h5 class="text-center mb-2">Space</h5>
+                <p class="text-center text-muted small mb-3">Default logo for spaces</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-circle" onclick="alert('Coming soon: Space logo management')" title="Upload">
+                        <i class="bi bi-upload"></i>
+                    </button>
+                    <button class="btn btn-info btn-circle" onclick="alert('Coming soon: Space logo templates')" title="Select Template">
+                        <i class="bi bi-grid-3x3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenge Logo -->
+        <div class="col-md-4">
+            <div class="logo-card">
+                <div class="entity-type-badge">🎯</div>
+                <div class="logo-preview-circle" style="border-color: {{ entity_defaults.challenge.color if entity_defaults.challenge else '#f59e0b' }};">
+                    <i class="bi bi-target empty-icon"></i>
+                </div>
+                <h5 class="text-center mb-2">Challenge</h5>
+                <p class="text-center text-muted small mb-3">Default logo for challenges</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-circle" onclick="alert('Coming soon: Challenge logo management')" title="Upload">
+                        <i class="bi bi-upload"></i>
+                    </button>
+                    <button class="btn btn-info btn-circle" onclick="alert('Coming soon: Challenge logo templates')" title="Select Template">
+                        <i class="bi bi-grid-3x3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Initiative Logo -->
+        <div class="col-md-4">
+            <div class="logo-card">
+                <div class="entity-type-badge">🚀</div>
+                <div class="logo-preview-circle" style="border-color: {{ entity_defaults.initiative.color if entity_defaults.initiative else '#8b5cf6' }};">
+                    <i class="bi bi-rocket-takeoff empty-icon"></i>
+                </div>
+                <h5 class="text-center mb-2">Initiative</h5>
+                <p class="text-center text-muted small mb-3">Default logo for initiatives</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-circle" onclick="alert('Coming soon: Initiative logo management')" title="Upload">
+                        <i class="bi bi-upload"></i>
+                    </button>
+                    <button class="btn btn-info btn-circle" onclick="alert('Coming soon: Initiative logo templates')" title="Select Template">
+                        <i class="bi bi-grid-3x3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Logo -->
+        <div class="col-md-4">
+            <div class="logo-card">
+                <div class="entity-type-badge">⚙️</div>
+                <div class="logo-preview-circle" style="border-color: {{ entity_defaults.system.color if entity_defaults.system else '#ec4899' }};">
+                    <i class="bi bi-gear empty-icon"></i>
+                </div>
+                <h5 class="text-center mb-2">System</h5>
+                <p class="text-center text-muted small mb-3">Default logo for systems</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-circle" onclick="alert('Coming soon: System logo management')" title="Upload">
+                        <i class="bi bi-upload"></i>
+                    </button>
+                    <button class="btn btn-info btn-circle" onclick="alert('Coming soon: System logo templates')" title="Select Template">
+                        <i class="bi bi-grid-3x3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI Logo -->
+        <div class="col-md-4">
+            <div class="logo-card">
+                <div class="entity-type-badge">📊</div>
+                <div class="logo-preview-circle" style="border-color: {{ entity_defaults.kpi.color if entity_defaults.kpi else '#06b6d4' }};">
+                    <i class="bi bi-graph-up empty-icon"></i>
+                </div>
+                <h5 class="text-center mb-2">KPI</h5>
+                <p class="text-center text-muted small mb-3">Default logo for KPIs</p>
+                <div class="action-buttons">
+                    <button class="btn btn-primary btn-circle" onclick="alert('Coming soon: KPI logo management')" title="Upload">
+                        <i class="bi bi-upload"></i>
+                    </button>
+                    <button class="btn btn-info btn-circle" onclick="alert('Coming soon: KPI logo templates')" title="Select Template">
+                        <i class="bi bi-grid-3x3"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-upload"></i> Upload Logo - <span id="uploadEntityType"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                    <input type="hidden" id="uploadType" name="entity_type">
+                    <input type="hidden" id="uploadEntityId" name="entity_id">
+
+                    <div class="upload-dropzone" id="dropzone">
+                        <i class="bi bi-cloud-upload" style="font-size: 3rem; color: #6c757d;"></i>
+                        <p class="mt-2 mb-1">Drop image here or click to browse</p>
+                        <p class="small text-muted">PNG, JPG, JPEG, GIF, WEBP (Max 5MB)</p>
+                        <input type="file" id="fileInput" name="logo" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;">
+                    </div>
+
+                    <div id="previewArea" class="mt-3" style="display: none;">
+                        <label class="form-label">Preview</label>
+                        <div class="text-center">
+                            <img id="uploadPreview" src="" class="rounded-circle" style="max-width: 200px; max-height: 200px; object-fit: cover; border: 3px solid #0d6efd;">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitUpload()">
+                    <i class="bi bi-upload"></i> Upload
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Modal -->
+<div class="modal fade" id="templateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-grid-3x3"></i> Select Template - <span id="templateEntityType"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="templateType">
+                <input type="hidden" id="templateEntityId">
+
+                <div class="template-grid" id="templateGrid">
+                    <!-- Templates will be loaded here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitTemplate()">
+                    <i class="bi bi-check-lg"></i> Apply Template
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Upload Modal Functions
+function openUploadModal(entityType, entityId) {
+    document.getElementById('uploadEntityType').textContent = entityType.charAt(0).toUpperCase() + entityType.slice(1);
+    document.getElementById('uploadType').value = entityType;
+    document.getElementById('uploadEntityId').value = entityId;
+    document.getElementById('fileInput').value = '';
+    document.getElementById('previewArea').style.display = 'none';
+    new bootstrap.Modal(document.getElementById('uploadModal')).show();
+}
+
+// Dropzone functionality
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+
+dropzone?.addEventListener('click', () => fileInput.click());
+
+dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('dragover');
+});
+
+dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('dragover');
+});
+
+dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        previewFile(e.dataTransfer.files[0]);
+    }
+});
+
+fileInput?.addEventListener('change', (e) => {
+    if (e.target.files.length) {
+        previewFile(e.target.files[0]);
+    }
+});
+
+function previewFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('uploadPreview').src = e.target.result;
+        document.getElementById('previewArea').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+}
+
+function submitUpload() {
+    const form = document.getElementById('uploadForm');
+    const formData = new FormData(form);
+
+    if (!fileInput.files.length) {
+        alert('Please select a file');
+        return;
+    }
+
+    fetch('{{ url_for("organization_admin.upload_entity_logo") }}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Upload failed'));
+        }
+    })
+    .catch(error => {
+        alert('Error uploading logo: ' + error);
+    });
+}
+
+// Template Modal Functions
+let selectedTemplate = null;
+
+function openTemplateModal(entityType, entityId) {
+    document.getElementById('templateEntityType').textContent = entityType.charAt(0).toUpperCase() + entityType.slice(1);
+    document.getElementById('templateType').value = entityType;
+    document.getElementById('templateEntityId').value = entityId;
+    loadTemplates(entityType);
+    new bootstrap.Modal(document.getElementById('templateModal')).show();
+}
+
+function loadTemplates(entityType) {
+    const templates = getTemplateLibrary(entityType);
+    const grid = document.getElementById('templateGrid');
+    grid.innerHTML = '';
+
+    templates.forEach((template, index) => {
+        const div = document.createElement('div');
+        div.className = 'template-option';
+        div.innerHTML = `<img src="${template}" alt="Template ${index + 1}">`;
+        div.onclick = () => selectTemplate(div, template);
+        grid.appendChild(div);
+    });
+}
+
+function selectTemplate(element, templateUrl) {
+    document.querySelectorAll('.template-option').forEach(el => el.classList.remove('selected'));
+    element.classList.add('selected');
+    selectedTemplate = templateUrl;
+}
+
+function submitTemplate() {
+    if (!selectedTemplate) {
+        alert('Please select a template');
+        return;
+    }
+
+    const entityType = document.getElementById('templateType').value;
+    const entityId = document.getElementById('templateEntityId').value;
+
+    fetch('{{ url_for("organization_admin.apply_logo_template") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            entity_type: entityType,
+            entity_id: entityId,
+            template_url: selectedTemplate
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Template application failed'));
+        }
+    });
+}
+
+function deleteLogo(entityType, entityId) {
+    if (!confirm('Are you sure you want to delete this logo?')) return;
+
+    fetch('{{ url_for("organization_admin.delete_entity_logo") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            entity_type: entityType,
+            entity_id: entityId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Delete failed'));
+        }
+    });
+}
+
+// Template library - varied professional templates
+function getTemplateLibrary(entityType) {
+    const colors = {
+        organization: ['#6366f1', '#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b'],
+        space: ['#10b981', '#14b8a6', '#22c55e', '#84cc16', '#a3e635', '#65a30d'],
+        challenge: ['#f59e0b', '#f97316', '#fb923c', '#fdba74', '#ea580c', '#dc2626'],
+        initiative: ['#8b5cf6', '#a855f7', '#c084fc', '#d946ef', '#9333ea', '#7c3aed'],
+        system: ['#ec4899', '#f43f5e', '#fb7185', '#e11d48', '#be123c', '#9f1239'],
+        kpi: ['#06b6d4', '#0ea5e9', '#38bdf8', '#0284c7', '#0369a1', '#075985']
+    };
+
+    const entityColors = colors[entityType] || colors.organization;
+
+    return entityColors.map(color =>
+        `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Ccircle cx='100' cy='100' r='90' fill='${encodeURIComponent(color)}'/%3E%3C/svg%3E`
+    );
+}
+</script>
+{% endblock %}

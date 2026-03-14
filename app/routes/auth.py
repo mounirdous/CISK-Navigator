@@ -98,6 +98,9 @@ def login():
         login_user(user)
         session["organization_id"] = selected_org.id
         session["organization_name"] = selected_org.name
+        session["organization_logo"] = (
+            url_for("logo.organization_logo", entity_id=selected_org.id) if selected_org.logo_data else None
+        )
 
         # Audit log successful login
         AuditService.log_login(user, success=True)
@@ -130,6 +133,7 @@ def logout():
         logout_user()
     session.pop("organization_id", None)
     session.pop("organization_name", None)
+    session.pop("organization_logo", None)
     session.pop("_temp_user_id", None)
     session.pop("_pwd_check_done", None)
     flash("You have been logged out", "info")
@@ -140,6 +144,8 @@ def logout():
 @login_required
 def profile():
     """View and edit user profile"""
+    import base64
+
     form = ProfileEditForm()
 
     # Populate organization choices
@@ -175,7 +181,15 @@ def profile():
         form.dark_mode.data = current_user.dark_mode
         form.default_organization.data = current_user.default_organization_id or 0
 
-    return render_template("auth/profile.html", form=form)
+    # Get organization logos for display
+    org_logos = {}
+    for membership in current_user.organization_memberships:
+        org = membership.organization
+        if org.logo_data and org.logo_mime_type:
+            logo_url = f"data:{org.logo_mime_type};base64,{base64.b64encode(org.logo_data).decode('utf-8')}"
+            org_logos[org.id] = logo_url
+
+    return render_template("auth/profile.html", form=form, org_logos=org_logos)
 
 
 @bp.route("/switch-organization/<int:org_id>", methods=["POST"])
@@ -196,6 +210,9 @@ def switch_organization(org_id):
     # Switch organization context
     session["organization_id"] = organization.id
     session["organization_name"] = organization.name
+    session["organization_logo"] = (
+        url_for("logo.organization_logo", entity_id=organization.id) if organization.logo_data else None
+    )
 
     flash(f"Switched to {organization.name}", "success")
     return redirect(url_for("workspace.dashboard"))
@@ -212,6 +229,7 @@ def switch_to_global_admin():
     # Clear organization context
     session["organization_id"] = None
     session["organization_name"] = "Instance Admin"
+    session["organization_logo"] = None
 
     flash("Switched to Instance Admin mode", "success")
     return redirect(url_for("global_admin.index"))
@@ -367,6 +385,9 @@ def sso_callback():
     login_user(user)
     session["organization_id"] = selected_org.id
     session["organization_name"] = selected_org.name
+    session["organization_logo"] = (
+        url_for("logo.organization_logo", entity_id=selected_org.id) if selected_org.logo_data else None
+    )
 
     # Clean up SSO session data
     session.pop("sso_state", None)

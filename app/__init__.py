@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "1.28.1"
+__version__ = "1.30.0"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -64,7 +64,7 @@ def create_app(config_name=None):
             return None
 
     # Register blueprints
-    from app.routes import analytics, auth, executive, global_admin, organization_admin, super_admin, workspace
+    from app.routes import analytics, auth, executive, global_admin, logo, organization_admin, super_admin, workspace
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(super_admin.bp)
@@ -73,6 +73,7 @@ def create_app(config_name=None):
     app.register_blueprint(workspace.bp)
     app.register_blueprint(analytics.bp)
     app.register_blueprint(executive.bp)
+    app.register_blueprint(logo.bp)
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":
@@ -146,10 +147,17 @@ def create_app(config_name=None):
     @app.context_processor
     def inject_entity_defaults():
         """Make entity type defaults available to all templates for branding"""
+        from flask import session
+
         from app.models import EntityTypeDefault
 
-        entity_defaults = EntityTypeDefault.get_all_defaults()
-        if not entity_defaults:
+        organization_id = session.get("organization_id")
+
+        if organization_id:
+            entity_defaults = EntityTypeDefault.get_all_defaults(organization_id)
+            if not entity_defaults:
+                entity_defaults = EntityTypeDefault.get_hardcoded_defaults()
+        else:
             entity_defaults = EntityTypeDefault.get_hardcoded_defaults()
 
         return {"entity_defaults": entity_defaults}

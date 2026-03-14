@@ -4,6 +4,7 @@ Workspace routes
 Main tree/grid navigation and data entry.
 """
 
+import base64
 from datetime import date
 from functools import wraps
 
@@ -20,6 +21,7 @@ from app.models import (
     Challenge,
     ChallengeInitiativeLink,
     Contribution,
+    EntityTypeDefault,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
@@ -110,6 +112,26 @@ def dashboard():
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
+    # Get organization logo
+    org = Organization.query.get(org_id)
+    org_logo = None
+    if org and org.logo_data:
+        org_logo = f"data:{org.logo_mime_type};base64,{base64.b64encode(org.logo_data).decode('utf-8')}"
+
+    # Get entity type defaults (for logos in stats cards)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     # Get statistics
     stats = {
         "spaces": Space.query.filter_by(organization_id=org_id).count(),
@@ -162,6 +184,8 @@ def dashboard():
     return render_template(
         "workspace/dashboard.html",
         org_name=org_name,
+        org_logo=org_logo,
+        entity_defaults=entity_defaults,
         stats=stats,
         recent_snapshots=recent_snapshots,
         recent_comments=recent_comments,
@@ -549,11 +573,34 @@ def index():
     # Get organization object for Porter's completion
     organization = Organization.query.get(org_id)
 
+    # Get organization logo
+    org_logo = None
+    if organization and organization.logo_data:
+        org_logo = (
+            f"data:{organization.logo_mime_type};base64,{base64.b64encode(organization.logo_data).decode('utf-8')}"
+        )
+
+    # Get entity type defaults (for icons/logos in tree view)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
         "workspace/index.html",
         org_id=org_id,
         org_name=org_name,
+        org_logo=org_logo,
         organization=organization,
+        entity_defaults=entity_defaults,
         spaces=spaces,
         value_types=value_types,
         hidden_value_types=hidden_value_types,
@@ -841,6 +888,19 @@ def kpi_cell_detail(kpi_id, vt_id):
                 expr = expr.replace(config_id, str(value))
             formula_details["expression_evaluated"] = expr
 
+    # Get entity type defaults (for logos)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
         "workspace/kpi_cell_detail.html",
         kpi=kpi,
@@ -852,6 +912,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         breadcrumb=breadcrumb,
         formula_details=formula_details,
         can_contribute=current_user.can_contribute(org_id),
+        entity_defaults=entity_defaults,
     )
 
 
@@ -1058,6 +1119,20 @@ def snapshot_pivot():
         template_vars["start_year_custom"] = request.args.get("start_year_custom", type=int) or available_years[0]
         template_vars["end_month"] = request.args.get("end_month", type=int) or 12
         template_vars["end_year_custom"] = request.args.get("end_year_custom", type=int) or available_years[-1]
+
+    # Get entity type defaults (for logos)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+    template_vars["entity_defaults"] = entity_defaults
 
     return render_template("workspace/snapshot_pivot.html", **template_vars)
 
@@ -1308,6 +1383,7 @@ def export_pivot_excel():
 
     # Get organization name
     from app.models import Organization
+
     org = Organization.query.get(org_id)
     org_name = org.name if org else "Unknown"
 
@@ -1315,7 +1391,6 @@ def export_pivot_excel():
     row_num = 2
     for kpi in pivot_data["kpis"]:
         # Get KPI relationships for metadata
-        from app.models import Challenge, Initiative, System
         kpi_obj = KPI.query.get(kpi["kpi_id"])
         if not kpi_obj:
             continue
@@ -1329,7 +1404,6 @@ def export_pivot_excel():
         system = System.query.get(init_sys_link.system_id)
 
         # Get Challenge(s) through ChallengeInitiativeLink
-        from app.models import ChallengeInitiativeLink
         challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative.id).all()
         challenges = [Challenge.query.get(link.challenge_id) for link in challenge_links if link]
         challenge_names = ", ".join([c.name for c in challenges if c])
@@ -1355,7 +1429,9 @@ def export_pivot_excel():
             ws.cell(row=row_num, column=8, value=float(config.target_value))
             ws.cell(row=row_num, column=9, value=config.target_date.strftime("%Y-%m-%d") if config.target_date else "")
             ws.cell(row=row_num, column=10, value=config.target_direction or "maximize")
-            ws.cell(row=row_num, column=11, value=config.target_tolerance_pct if config.target_direction == "exact" else "")
+            ws.cell(
+                row=row_num, column=11, value=config.target_tolerance_pct if config.target_direction == "exact" else ""
+            )
         else:
             ws.cell(row=row_num, column=8, value="")
             ws.cell(row=row_num, column=9, value="")
@@ -1664,6 +1740,19 @@ def compare_snapshots():
             }
         )
 
+    # Get entity type defaults (for logos)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
         "workspace/compare_snapshots.html",
         comparisons=comparisons,
@@ -1674,6 +1763,7 @@ def compare_snapshots():
         label1=label1,
         label2=label2,
         organization_name=session.get("organization_name"),
+        entity_defaults=entity_defaults,
     )
 
 
@@ -2317,8 +2407,26 @@ def search_page():
     # Count totals
     total = sum(len(results[key]) for key in results)
 
+    # Get entity type defaults (for logos)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
-        "workspace/search.html", organization_name=org_name, query=query, results=results, total=total
+        "workspace/search.html",
+        organization_name=org_name,
+        query=query,
+        results=results,
+        total=total,
+        entity_defaults=entity_defaults,
     )
 
 

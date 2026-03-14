@@ -2,6 +2,7 @@
 Executive Dashboard routes
 """
 
+import base64
 from datetime import datetime, timedelta
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
@@ -14,6 +15,7 @@ from app.models import (
     Challenge,
     ChallengeInitiativeLink,
     Contribution,
+    EntityTypeDefault,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
@@ -79,6 +81,19 @@ def dashboard():
         .first()
         is not None
     )
+
+    # Get entity type defaults (for logos)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
 
     # Calculate status for each KPI
     kpi_statuses = []
@@ -423,6 +438,8 @@ def dashboard():
         # Privacy filter
         space_type=space_type,
         has_private_spaces=has_private_spaces,
+        # Entity defaults
+        entity_defaults=entity_defaults,
     )
 
 

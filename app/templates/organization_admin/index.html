@@ -13,66 +13,162 @@
     </a>
 </div>
 
+<style>
+.admin-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.admin-card:hover {
+    border-color: var(--accent-primary);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+.admin-card-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.25rem;
+}
+.admin-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+.admin-card-desc {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
+}
+.admin-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.admin-card-actions .btn {
+    width: 100%;
+    font-weight: 600;
+    padding: 0.75rem;
+    border-radius: 10px;
+}
+</style>
+
 <!-- Organization Settings Section -->
-<div class="row mt-4 g-4">
-    <div class="col-md-12">
-        <div class="card h-100 border-danger">
-            <div class="card-header bg-danger text-white">
-                <h6 class="mb-0"><i class="bi bi-file-earmark-code"></i> YAML Backup & Restore</h6>
+<div class="row g-4 mb-5">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="bi bi-palette-fill" style="color: white;"></i>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <strong>Export:</strong> Download current structure as YAML
-                    <div class="mt-2">
-                        <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-download"></i> Export YAML
-                        </a>
-                    </div>
-                </div>
+            <div class="admin-card-title">
+                <i class="bi bi-palette"></i> Branding & Appearance
+            </div>
+            <div class="admin-card-desc">
+                Customize colors, icons, and logos for all entity types in your organization. Create a unique visual identity.
+            </div>
+            <div class="admin-card-actions">
+                <a href="{{ url_for('organization_admin.branding_manager') }}" class="btn btn-primary">
+                    <i class="bi bi-palette"></i> Open Branding Manager
+                </a>
+                <a href="{{ url_for('organization_admin.organization_settings') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-gear"></i> Basic Settings
+                </a>
+            </div>
+        </div>
+    </div>
 
-                <hr>
-
-                <div>
-                    <strong class="text-danger">Import - Deletes all data!</strong>
-                    <p class="small text-muted mb-2">Upload a YAML file to replace the complete organizational structure.</p>
-                    <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-danger btn-sm">
-                        <i class="bi bi-upload"></i> Import YAML
-                    </a>
-                </div>
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <i class="bi bi-file-earmark-code-fill" style="color: white;"></i>
+            </div>
+            <div class="admin-card-title">
+                <i class="bi bi-file-earmark-code"></i> YAML Backup & Restore
+            </div>
+            <div class="admin-card-desc">
+                Export your organization structure as YAML for backup, or import a YAML file to restore/replace data.
+            </div>
+            <div class="admin-card-actions">
+                <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Export YAML
+                </a>
+                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-outline-danger">
+                    <i class="bi bi-upload"></i> Import YAML (Danger)
+                </a>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Danger Zone -->
-<div class="card border-danger mt-5">
-    <div class="card-header bg-danger text-white">
-        <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill"></i> Danger Zone</h5>
-    </div>
-    <div class="card-body">
-        <div class="alert alert-danger mb-3">
-            <h6 class="alert-heading"><i class="bi bi-exclamation-octagon-fill"></i> WARNING: Destructive Action</h6>
-            <p class="mb-0">The following action will permanently delete ALL data in this organization. This cannot be undone!</p>
+<!-- Danger Zone - Separated and Distinct -->
+<div style="margin-top: 4rem; padding-top: 3rem; border-top: 3px dashed #dc3545;">
+    <div class="mb-4 text-center">
+        <div style="display: inline-block; background: linear-gradient(135deg, #dc3545 0%, #b02a37 100%); color: white; padding: 0.75rem 2rem; border-radius: 50px; font-weight: 700; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> DANGER ZONE
         </div>
+    </div>
 
-        <div class="row">
-            <div class="col-md-8">
-                <h6 class="text-danger"><i class="bi bi-trash-fill"></i> Clear All Organization Data</h6>
-                <p class="text-muted small mb-2">This will permanently delete:</p>
-                <ul class="small text-muted mb-3">
-                    <li>All Spaces, Challenges, Initiatives, Systems, and KPIs</li>
-                    <li>All Value Types and Governance Bodies</li>
-                    <li>All Contributions and historical data</li>
-                    <li>All Snapshots and rollup data</li>
-                    <li>All Comments and discussions</li>
-                    <li>All Audit logs for this organization</li>
-                </ul>
-                <p class="small"><strong>Note:</strong> User accounts and organization settings will be preserved.</p>
+    <div class="card border-danger" style="border-width: 3px; border-radius: 16px; background: linear-gradient(135deg, rgba(220, 53, 69, 0.03) 0%, rgba(220, 53, 69, 0.08) 100%); box-shadow: 0 8px 24px rgba(220, 53, 69, 0.15);">
+        <div class="card-body" style="padding: 2.5rem;">
+            <div class="alert alert-danger mb-4" style="border-radius: 12px; border: 2px solid #dc3545;">
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-exclamation-octagon-fill me-3" style="font-size: 2rem; color: #dc3545;"></i>
+                    <div>
+                        <h5 class="alert-heading mb-2">
+                            <i class="bi bi-exclamation-triangle-fill"></i> CRITICAL WARNING: Destructive Action
+                        </h5>
+                        <p class="mb-0">The following action will <strong>permanently delete ALL data</strong> in this organization. <strong>This cannot be undone!</strong></p>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-4 d-flex align-items-center justify-content-end">
-                <button type="button" class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#clearOrgModal">
-                    <i class="bi bi-trash-fill"></i> Clear All Data
-                </button>
+
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h4 class="text-danger mb-3">
+                        <i class="bi bi-trash-fill me-2"></i> Clear All Organization Data
+                    </h4>
+                    <p class="mb-3" style="font-size: 1.05rem;">This will permanently delete:</p>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> All Spaces, Challenges, Initiatives</li>
+                                <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> All Systems and KPIs</li>
+                                <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> All Value Types and Governance Bodies</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> All Contributions and historical data</li>
+                                <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> All Snapshots and rollup data</li>
+                                <li class="mb-2"><i class="bi bi-x-circle-fill text-danger me-2"></i> All Comments, discussions, and audit logs</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="alert alert-info" style="border-radius: 10px;">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Note:</strong> User accounts and organization settings will be preserved.
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div style="padding: 2rem; background: white; border-radius: 16px; border: 3px solid #dc3545;">
+                        <i class="bi bi-trash-fill text-danger mb-3" style="font-size: 3rem;"></i>
+                        <button type="button" class="btn btn-danger btn-lg w-100" data-bs-toggle="modal" data-bs-target="#clearOrgModal" style="font-size: 1.1rem; padding: 1rem; border-radius: 12px; font-weight: 700;">
+                            <i class="bi bi-trash-fill me-2"></i> Delete Everything
+                        </button>
+                        <p class="text-muted small mt-3 mb-0">Requires confirmation</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

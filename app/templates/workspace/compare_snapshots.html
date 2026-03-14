@@ -135,10 +135,14 @@
                         {% if comp.value1 is not none or comp.value2 is not none %}
                         <tr>
                             <td>
-                                <strong>
-                                    {% if comp.config.target_direction == 'minimize' %}⬇️{% elif comp.config.target_direction == 'exact' %}🎯{% elif comp.config.target_direction %}⬆️{% endif %}
-                                    {{ comp.kpi.name }}
-                                </strong>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain; flex-shrink: 0;">
+                                    {% else %}
+                                    <span style="font-size: 1.1rem;">{% if comp.config.target_direction == 'minimize' %}⬇️{% elif comp.config.target_direction == 'exact' %}🎯{% elif comp.config.target_direction %}⬆️{% endif %}</span>
+                                    {% endif %}
+                                    <strong>{{ comp.kpi.name }}</strong>
+                                </div>
                             </td>
                             <td>
                                 {{ comp.value_type.name }}

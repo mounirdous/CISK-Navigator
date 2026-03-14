@@ -22,6 +22,8 @@ class Initiative(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
+    logo_data = db.Column(db.LargeBinary, nullable=True, comment="Logo image binary data")
+    logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type")
 
     # Initiative Form Fields (v1.19.0)
     mission = db.Column(db.Text, nullable=True, comment="Mission/objectives of the initiative")
