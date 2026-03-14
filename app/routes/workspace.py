@@ -742,7 +742,18 @@ def kpi_cell_detail(kpi_id, vt_id):
             return redirect(url_for("workspace.index"))
         # If GET request, still allow viewing but disable form
 
+    # Debug POST requests
+    if request.method == "POST":
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info(f"🔍 POST received - All form keys: {list(request.form.keys())}")
+
     if form.validate_on_submit():
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.info("🔍 POST - Form validation PASSED")
         contributor_name = form.contributor_name.data
         entry_mode = request.form.get("entry_mode", "contributing")  # 'new_data' or 'contributing'
 
