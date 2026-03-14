@@ -300,7 +300,11 @@
         <div class="form-header">
             <div class="form-header-title">
                 <h1>
-                    <span style="font-weight: bold;">δ</span>
+                    {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                    <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 32px; height: 32px; object-fit: contain; vertical-align: middle; margin-right: 8px;">
+                    {% else %}
+                    <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                    {% endif %}
                     Initiative {% if edit_mode %}Form{% else %}Overview{% endif %}
                 </h1>
                 <div class="initiative-name">{{ initiative.name }}</div>
