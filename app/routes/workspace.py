@@ -792,7 +792,25 @@ def kpi_cell_detail(kpi_id, vt_id):
                 db.session.commit()
 
                 flash(f"Previous value saved in snapshot. New value entered by {contributor_name}", "success")
-                return redirect(url_for("workspace.index", show_all_columns=1))
+
+                # Preserve filter state when returning to workspace
+                from urllib.parse import urlencode
+
+                return_params = [("show_all_columns", "1")]
+                processed_keys = set()
+                for key in request.form.keys():
+                    if key.startswith("workspace_filter_") and key not in processed_keys:
+                        filter_key = key.replace("workspace_filter_", "")
+                        values = request.form.getlist(key)
+                        for value in values:
+                            return_params.append((filter_key, value))
+                        processed_keys.add(key)
+
+                workspace_url = url_for("workspace.index")
+                if return_params:
+                    workspace_url = f"{workspace_url}?{urlencode(return_params)}"
+
+                return redirect(workspace_url)
 
             except Exception as e:
                 db.session.rollback()
