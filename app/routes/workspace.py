@@ -837,6 +837,9 @@ def kpi_cell_detail(kpi_id, vt_id):
                     return_params[filter_key] = values
                 processed_keys.add(key)
 
+        # Debug: log what we're redirecting with
+        print(f"DEBUG: Redirecting to workspace with params: {return_params}")
+
         return redirect(url_for("workspace.index", **return_params))
 
     # Build breadcrumb
@@ -925,11 +928,15 @@ def kpi_cell_detail(kpi_id, vt_id):
 
     workspace_filters = {}
     referrer = request.referrer
+    print(f"DEBUG: Referrer URL: {referrer}")
     if referrer and "workspace" in referrer:
         parsed = urlparse(referrer)
         query_params = parse_qs(parsed.query)
         for key, values in query_params.items():
             workspace_filters[key] = values[0] if len(values) == 1 else values
+        print(f"DEBUG: Captured workspace_filters: {workspace_filters}")
+    else:
+        print("DEBUG: No workspace in referrer, workspace_filters empty")
 
     return render_template(
         "workspace/kpi_cell_detail.html",
