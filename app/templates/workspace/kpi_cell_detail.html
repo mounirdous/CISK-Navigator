@@ -398,7 +398,13 @@ body.dark-mode .card.border-primary {
                     <input type="hidden" name="entry_mode" id="entry_mode" value="contributing">
                     {# Preserve workspace filter state for return #}
                     {% for key, value in workspace_filters.items() %}
+                        {% if value is sequence and value is not string %}
+                            {% for v in value %}
+                    <input type="hidden" name="workspace_filter_{{ key }}" value="{{ v }}">
+                            {% endfor %}
+                        {% else %}
                     <input type="hidden" name="workspace_filter_{{ key }}" value="{{ value }}">
+                        {% endif %}
                     {% endfor %}
                     <div class="row">
                         <div class="col-md-4">

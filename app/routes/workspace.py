@@ -824,10 +824,18 @@ def kpi_cell_detail(kpi_id, vt_id):
         return_params = {"show_all_columns": 1}
 
         # Extract workspace_filters from form data (these were added as hidden fields)
+        # Use a dict to track which keys we've already processed
+        processed_keys = set()
         for key in request.form.keys():
-            if key.startswith("workspace_filter_"):
+            if key.startswith("workspace_filter_") and key not in processed_keys:
                 filter_key = key.replace("workspace_filter_", "")
-                return_params[filter_key] = request.form.get(key)
+                # Get all values for this key (handles multi-select filters)
+                values = request.form.getlist(key)
+                if len(values) == 1:
+                    return_params[filter_key] = values[0]
+                else:
+                    return_params[filter_key] = values
+                processed_keys.add(key)
 
         return redirect(url_for("workspace.index", **return_params))
 
@@ -914,6 +922,7 @@ def kpi_cell_detail(kpi_id, vt_id):
 
     # Capture workspace filter state from referrer (for preserving on return)
     from urllib.parse import parse_qs, urlparse
+
     workspace_filters = {}
     referrer = request.referrer
     if referrer and "workspace" in referrer:
