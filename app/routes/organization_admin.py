@@ -984,7 +984,9 @@ def edit_space(space_id):
             "logo": logo_url,
         }
 
-    return render_template("organization_admin/edit_space.html", form=form, space=space, entity_defaults=entity_defaults)
+    return render_template(
+        "organization_admin/edit_space.html", form=form, space=space, entity_defaults=entity_defaults
+    )
 
 
 @bp.route("/spaces/<int:space_id>/delete", methods=["POST"])
@@ -1267,7 +1269,22 @@ def create_initiative(challenge_id):
         flash(f"Initiative {initiative.name} created and linked to {challenge.name}", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
-    return render_template("organization_admin/create_initiative.html", form=form, challenge=challenge)
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
+    return render_template(
+        "organization_admin/create_initiative.html", form=form, challenge=challenge, entity_defaults=entity_defaults
+    )
 
 
 @bp.route("/initiatives/<int:initiative_id>/edit", methods=["GET", "POST"])
@@ -1316,9 +1333,7 @@ def edit_initiative(initiative_id):
         for challenge_id in new_challenge_ids:
             if challenge_id not in existing_challenge_ids:
                 new_link = ChallengeInitiativeLink(
-                    challenge_id=challenge_id,
-                    initiative_id=initiative.id,
-                    display_order=0
+                    challenge_id=challenge_id, initiative_id=initiative.id, display_order=0
                 )
                 db.session.add(new_link)
 

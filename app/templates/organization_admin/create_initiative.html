@@ -40,7 +40,11 @@
         <div class="card hover-lift form-card">
             <div class="form-header">
                 <h2>
-                    <span style="font-weight: bold;">δ</span>
+                    {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                    <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 32px; height: 32px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                    {% endif %}
                     Create Initiative
                 </h2>
                 <p>Add a new initiative to {{ challenge.name }}</p>
@@ -53,7 +57,13 @@
                     <div class="mb-3">
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
-                            <span class="input-group-text"><span style="font-weight: bold;">δ</span></span>
+                            <span class="input-group-text">
+                                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                                <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% else %}
+                                <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                                {% endif %}
+                            </span>
                             {{ form.name(class="form-control", placeholder="Enter initiative name") }}
                         </div>
                     </div>
