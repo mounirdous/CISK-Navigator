@@ -5,6 +5,34 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.31.0] - 2026-03-14
+
+### Added
+- **🎨 Dynamic Entity Colors in Rollup Configuration**: Rollup level headers now use gradient colors based on entity type branding
+  - Level 1 (KPI→System): gradient from KPI color to System color
+  - Level 2 (System→Initiative): gradient from System color through Initiative to Challenge color
+  - Level 3 (Initiative→Challenge): gradient from Initiative through Challenge to Space color
+  - Colors dynamically reflect organization's branding settings instead of hardcoded values
+  - Visual consistency across the application
+
+### Fixed
+- **✅ Branding Color Persistence**: Colors now save correctly in branding manager
+  - Added missing icon input fields (server requires both color AND icon to save)
+  - Colors persist after page reload
+  - Custom entity colors now appear in workspace tree view with light tints (6-15% opacity)
+- **📏 Dashboard Stat Box Heights**: All 7 stat boxes now have uniform height
+  - Changed from `min-height: 80px` to `height: 80px`
+  - Consistent visual appearance across dashboard
+
+### Changed
+- **📝 Simplified Rollup Configuration Headers**: Clearer, more concise level descriptions
+  - Removed confusing "Primary/Secondary" text that didn't add value
+  - Simplified headers: "Level 1: KPI → System", "Level 2: System → Initiative", "Level 3: Initiative → Challenge"
+  - Each level clearly shows exactly one aggregation step
+- **🏢 Workspace Description**: Updated Open Workspace button text
+  - Now reads: "View and manage Spaces, Challenges, Initiatives, Systems, KPIs and track progress"
+  - Explicitly lists all entity types users can manage
+
 ## [1.28.0] - 2026-03-13
 
 ### Added
