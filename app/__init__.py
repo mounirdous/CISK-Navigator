@@ -187,10 +187,12 @@ def create_app(config_name=None):
         scaled_value = float(value) / divisor
 
         # Determine decimal places to use
+        explicit_decimals = False
         if divisor > 1:
             # Using scale: check if display_decimals is explicitly set
             if config and hasattr(config, "display_decimals") and config.display_decimals is not None:
                 decimal_places = config.display_decimals
+                explicit_decimals = True
             else:
                 # Use value type's decimal places setting (respect 0 for whole numbers)
                 decimal_places = value_type.decimal_places if value_type.decimal_places is not None else 2
@@ -200,9 +202,11 @@ def create_app(config_name=None):
                 # No decimals - format as integer (don't use rstrip which would remove significant zeros)
                 formatted = f"{int(round(scaled_value))}"
             else:
-                # Has decimals - format and remove trailing zeros after decimal point
+                # Has decimals
                 formatted = f"{scaled_value:.{decimal_places}f}"
-                formatted = formatted.rstrip("0").rstrip(".")
+                # Only strip trailing zeros if decimals weren't explicitly set
+                if not explicit_decimals:
+                    formatted = formatted.rstrip("0").rstrip(".")
         else:
             # No scaling: use original format
             if value_type.numeric_format == "integer":
