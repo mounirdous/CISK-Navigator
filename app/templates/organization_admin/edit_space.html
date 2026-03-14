@@ -51,7 +51,13 @@
                     <div class="mb-4">
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                            <span class="input-group-text">
+                                {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                                <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% else %}
+                                <span style="font-size: 1.1rem;">{{ entity_defaults.get('space', {}).get('icon', '🏢') }}</span>
+                                {% endif %}
+                            </span>
                             {{ form.name(class="form-control", placeholder="e.g., Season 1, Division A") }}
                         </div>
                         {% if form.name.errors %}

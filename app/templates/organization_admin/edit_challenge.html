@@ -57,7 +57,13 @@
                     <div class="mb-3">
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
-                            <span class="input-group-text"><span style="font-weight: bold; font-style: italic;">ƒ</span></span>
+                            <span class="input-group-text">
+                                {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                                <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% else %}
+                                <span style="font-weight: bold; font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                                {% endif %}
+                            </span>
                             {{ form.name(class="form-control", placeholder="Enter challenge name") }}
                         </div>
                     </div>

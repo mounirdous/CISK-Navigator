@@ -92,7 +92,13 @@
                         <div class="mb-3">
                             {{ form.name.label(class="form-label fw-semibold") }}
                             <div class="input-group">
-                                <span class="input-group-text"><span style="font-weight: bold;">Ψ</span></span>
+                                <span class="input-group-text">
+                                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain;">
+                                    {% else %}
+                                    <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                                    {% endif %}
+                                </span>
                                 {{ form.name(class="form-control", placeholder="KPI name") }}
                             </div>
                         </div>

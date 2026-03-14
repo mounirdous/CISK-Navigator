@@ -57,7 +57,13 @@
                     <div class="mb-3">
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-cpu"></i></span>
+                            <span class="input-group-text">
+                                {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                                <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% else %}
+                                <span style="font-weight: bold; font-size: 1.1rem;">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
+                                {% endif %}
+                            </span>
                             {{ form.name(class="form-control", placeholder="Enter system name") }}
                         </div>
                     </div>

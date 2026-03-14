@@ -67,7 +67,13 @@
                     <div class="mb-3">
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
-                            <span class="input-group-text"><span style="font-weight: bold;">δ</span></span>
+                            <span class="input-group-text">
+                                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                                <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% else %}
+                                <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                                {% endif %}
+                            </span>
                             {{ form.name(class="form-control", placeholder="Enter initiative name") }}
                         </div>
                     </div>
