@@ -820,27 +820,31 @@ def kpi_cell_detail(kpi_id, vt_id):
         db.session.commit()
 
         # Preserve filter state when returning to workspace
-        # Get filters from hidden form fields
-        return_params = {"show_all_columns": 1}
+        # Get filters from hidden form fields and build URL manually
+        from urllib.parse import urlencode
+
+        return_params = [("show_all_columns", "1")]
 
         # Extract workspace_filters from form data (these were added as hidden fields)
-        # Use a dict to track which keys we've already processed
         processed_keys = set()
         for key in request.form.keys():
             if key.startswith("workspace_filter_") and key not in processed_keys:
                 filter_key = key.replace("workspace_filter_", "")
                 # Get all values for this key (handles multi-select filters)
                 values = request.form.getlist(key)
-                if len(values) == 1:
-                    return_params[filter_key] = values[0]
-                else:
-                    return_params[filter_key] = values
+                for value in values:
+                    return_params.append((filter_key, value))
                 processed_keys.add(key)
 
         # Debug: log what we're redirecting with
         print(f"DEBUG: Redirecting to workspace with params: {return_params}")
 
-        return redirect(url_for("workspace.index", **return_params))
+        # Build URL manually to properly handle multiple values for same key
+        workspace_url = url_for("workspace.index")
+        if return_params:
+            workspace_url = f"{workspace_url}?{urlencode(return_params)}"
+
+        return redirect(workspace_url)
 
     # Build breadcrumb
     system = is_link.system
