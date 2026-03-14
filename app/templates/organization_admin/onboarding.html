@@ -523,6 +523,26 @@
         </div>
         {% endif %}
 
+        {% if current_user.is_org_admin(session.organization_id) or current_user.is_global_admin or current_user.is_super_admin %}
+        <div class="alert alert-light border mt-4" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%); border-left: 4px solid #8b5cf6 !important;">
+            <div class="d-flex align-items-start">
+                <div style="font-size: 2rem; margin-right: 1rem;">🎨</div>
+                <div class="flex-grow-1 text-start">
+                    <h6 class="mb-2"><i class="bi bi-palette-fill"></i> Personalize Your Workspace</h6>
+                    <p class="mb-2 small">Make this workspace truly yours! You can customize:</p>
+                    <ul class="small mb-2">
+                        <li>Custom logos for Challenges, Initiatives, Systems, and KPIs</li>
+                        <li>Brand colors and icons to match your organization</li>
+                        <li>Organization logo and visual identity</li>
+                    </ul>
+                    <a href="{{ url_for('organization_admin.branding_manager') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-brush"></i> Customize Branding
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="text-center mt-5">
             <a href="{{ url_for('workspace.index') }}" class="btn btn-primary btn-lg px-5 py-3" style="font-size: 1.25rem;">
                 <i class="bi bi-grid-3x3-gap me-2"></i> Go to Workspace
