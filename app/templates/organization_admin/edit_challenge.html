@@ -66,6 +66,17 @@
                         </div>
                     </div>
 
+                    <div class="mb-3">
+                        {{ form.space_id.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-grid-3x3-gap"></i></span>
+                            {{ form.space_id(class="form-select") }}
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Move this challenge to a different space
+                        </small>
+                    </div>
+
                     <div class="mb-4">
                         {{ form.display_order.label(class="form-label fw-semibold") }}
                         <div class="input-group">

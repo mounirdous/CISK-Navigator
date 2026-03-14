@@ -968,7 +968,7 @@ def edit_space(space_id):
 
         db.session.commit()
         flash(f"Space {space.name} updated successfully", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        return redirect(url_for("organization_admin.edit_space", space_id=space_id))
 
     return render_template("organization_admin/edit_space.html", form=form, space=space)
 
@@ -1115,21 +1115,34 @@ def edit_challenge(challenge_id):
 
     form = ChallengeEditForm(obj=challenge)
 
+    # Load all spaces for the dropdown
+    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.name).all()
+    form.space_id.choices = [(s.id, s.name) for s in spaces]
+
     if form.validate_on_submit():
         # Capture old values for audit
-        old_values = {"name": challenge.name, "description": challenge.description}
+        old_values = {
+            "name": challenge.name,
+            "description": challenge.description,
+            "space_id": challenge.space_id,
+        }
 
         challenge.name = form.name.data
         challenge.description = form.description.data
+        challenge.space_id = form.space_id.data
         challenge.display_order = form.display_order.data
 
         # Audit log
-        new_values = {"name": challenge.name, "description": challenge.description}
+        new_values = {
+            "name": challenge.name,
+            "description": challenge.description,
+            "space_id": challenge.space_id,
+        }
         AuditService.log_update("Challenge", challenge.id, challenge.name, old_values, new_values)
 
         db.session.commit()
         flash(f"Challenge {challenge.name} updated successfully", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        return redirect(url_for("organization_admin.edit_challenge", challenge_id=challenge_id))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -1259,7 +1272,7 @@ def edit_initiative(initiative_id):
 
         db.session.commit()
         flash(f"Initiative {initiative.name} updated successfully", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        return redirect(url_for("organization_admin.edit_initiative", initiative_id=initiative_id))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
@@ -1377,7 +1390,7 @@ def edit_system(system_id):
 
         db.session.commit()
         flash(f"System {system.name} updated successfully", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        return redirect(url_for("organization_admin.edit_system", system_id=system_id))
 
     # Get value types for rollup configuration tab
     value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
