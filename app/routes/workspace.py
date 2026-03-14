@@ -2449,9 +2449,9 @@ def live_search():
         if default.default_logo_data and default.default_logo_mime_type:
             logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
         entity_defaults[default.entity_type] = {
-            'color': default.default_color,
-            'icon': default.default_icon,
-            'logo': logo_url
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
         }
 
     search_pattern = f"%{query}%"
@@ -2479,8 +2479,8 @@ def live_search():
                 "description": s.description[:100] if s.description else None,
                 "url": url_for("workspace.index", _anchor=f"space-{s.id}"),
                 "edit_url": url_for("organization_admin.edit_space", space_id=s.id),
-                "icon": entity_defaults.get('space', {}).get('icon', '🏢'),
-                "logo": entity_defaults.get('space', {}).get('logo'),
+                "icon": entity_defaults.get("space", {}).get("icon", "🏢"),
+                "logo": entity_defaults.get("space", {}).get("logo"),
             }
         )
 
@@ -2505,8 +2505,8 @@ def live_search():
                 "space": c.space.name,
                 "url": url_for("workspace.index", _anchor=f"challenge-{c.id}"),
                 "edit_url": url_for("organization_admin.edit_challenge", challenge_id=c.id),
-                "icon": entity_defaults.get('challenge', {}).get('icon', 'ƒ'),
-                "logo": entity_defaults.get('challenge', {}).get('logo'),
+                "icon": entity_defaults.get("challenge", {}).get("icon", "ƒ"),
+                "logo": entity_defaults.get("challenge", {}).get("logo"),
             }
         )
 
@@ -2529,8 +2529,8 @@ def live_search():
                 "description": i.description[:100] if i.description else None,
                 "url": url_for("workspace.index", _anchor=f"initiative-{i.id}"),
                 "edit_url": url_for("organization_admin.edit_initiative", initiative_id=i.id),
-                "icon": entity_defaults.get('initiative', {}).get('icon', 'δ'),
-                "logo": entity_defaults.get('initiative', {}).get('logo'),
+                "icon": entity_defaults.get("initiative", {}).get("icon", "δ"),
+                "logo": entity_defaults.get("initiative", {}).get("logo"),
             }
         )
 
@@ -2553,8 +2553,8 @@ def live_search():
                 "description": s.description[:100] if s.description else None,
                 "url": url_for("workspace.index", _anchor=f"system-{s.id}"),
                 "edit_url": url_for("organization_admin.edit_system", system_id=s.id),
-                "icon": entity_defaults.get('system', {}).get('icon', 'Φ'),
-                "logo": entity_defaults.get('system', {}).get('logo'),
+                "icon": entity_defaults.get("system", {}).get("icon", "Φ"),
+                "logo": entity_defaults.get("system", {}).get("logo"),
             }
         )
 
@@ -2582,8 +2582,8 @@ def live_search():
                 "system": k.initiative_system_link.system.name if k.initiative_system_link else None,
                 "url": url_for("workspace.index", _anchor=f"kpi-{k.id}"),
                 "edit_url": url_for("organization_admin.edit_kpi", kpi_id=k.id),
-                "icon": entity_defaults.get('kpi', {}).get('icon', 'Ψ'),
-                "logo": entity_defaults.get('kpi', {}).get('logo'),
+                "icon": entity_defaults.get("kpi", {}).get("icon", "Ψ"),
+                "logo": entity_defaults.get("kpi", {}).get("logo"),
             }
         )
 
