@@ -1357,8 +1357,6 @@ def edit_initiative(initiative_id):
         initiative=initiative,
         value_types=value_types,
         entity_defaults=entity_defaults,
-        challenges=challenges,
-        current_challenge_ids=current_challenge_ids,
     )
 
 
