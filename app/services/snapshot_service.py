@@ -437,10 +437,10 @@ class SnapshotService:
             limit: Optional limit on number of snapshots
 
         Returns:
-            List of KPISnapshot objects, ordered by date descending
+            List of KPISnapshot objects, ordered by date descending, then by creation time descending
         """
         query = KPISnapshot.query.filter_by(kpi_value_type_config_id=config_id).order_by(
-            KPISnapshot.snapshot_date.desc()
+            KPISnapshot.snapshot_date.desc(), KPISnapshot.created_at.desc()
         )
 
         if limit:
@@ -452,10 +452,10 @@ class SnapshotService:
     def get_rollup_history(
         entity_type: str, entity_id: int, value_type_id: int, limit: int = None
     ) -> List[RollupSnapshot]:
-        """Get historical rollup snapshots"""
+        """Get historical rollup snapshots, ordered by date descending, then by creation time descending"""
         query = RollupSnapshot.query.filter_by(
             entity_type=entity_type, entity_id=entity_id, value_type_id=value_type_id
-        ).order_by(RollupSnapshot.snapshot_date.desc())
+        ).order_by(RollupSnapshot.snapshot_date.desc(), RollupSnapshot.created_at.desc())
 
         if limit:
             query = query.limit(limit)
