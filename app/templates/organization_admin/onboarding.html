@@ -180,7 +180,13 @@
 
         <div class="row mt-4">
             <div class="col-md-4 text-center mb-3">
-                <div class="mb-2" style="font-size: 2rem;">📊</div>
+                <div class="mb-2" style="font-size: 2rem;">
+                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 32px; height: 32px; object-fit: contain;">
+                    {% else %}
+                    {{ entity_defaults.get('kpi', {}).get('icon', '📊') }}
+                    {% endif %}
+                </div>
                 <strong>Value Types</strong>
                 <p class="text-muted small">What you measure<br>(Cost, CO2, Risk)</p>
             </div>
@@ -351,7 +357,14 @@
                         {{ form.space_desc(class="form-control", rows=2) }}
                     </div>
 
-                    <h5 class="mb-3">🎯 Challenge (Goal)</h5>
+                    <h5 class="mb-3">
+                        {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                        <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle;">
+                        {% else %}
+                        {{ entity_defaults.get('challenge', {}).get('icon', '🎯') }}
+                        {% endif %}
+                        Challenge (Goal)
+                    </h5>
                     <div class="mb-3">
                         {{ form.challenge_name.label(class="form-label") }}
                         {{ form.challenge_name(class="form-control") }}
@@ -361,7 +374,14 @@
                         {{ form.challenge_desc(class="form-control", rows=2) }}
                     </div>
 
-                    <h5 class="mb-3">🚀 Initiative (Action Plan)</h5>
+                    <h5 class="mb-3">
+                        {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                        <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle;">
+                        {% else %}
+                        {{ entity_defaults.get('initiative', {}).get('icon', '🚀') }}
+                        {% endif %}
+                        Initiative (Action Plan)
+                    </h5>
                     <div class="mb-3">
                         {{ form.initiative_name.label(class="form-label") }}
                         {{ form.initiative_name(class="form-control") }}
@@ -374,7 +394,14 @@
 
                 <!-- Right Column -->
                 <div class="col-md-6">
-                    <h5 class="mb-3">🏢 System (Affected Area)</h5>
+                    <h5 class="mb-3">
+                        {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                        <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle;">
+                        {% else %}
+                        {{ entity_defaults.get('system', {}).get('icon', '🏢') }}
+                        {% endif %}
+                        System (Affected Area)
+                    </h5>
                     <div class="mb-3">
                         {{ form.system_name.label(class="form-label") }}
                         {{ form.system_name(class="form-control") }}
@@ -384,7 +411,14 @@
                         {{ form.system_desc(class="form-control", rows=2) }}
                     </div>
 
-                    <h5 class="mb-3">📊 KPI (Metric)</h5>
+                    <h5 class="mb-3">
+                        {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                        <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 24px; height: 24px; object-fit: contain; vertical-align: middle;">
+                        {% else %}
+                        {{ entity_defaults.get('kpi', {}).get('icon', '📊') }}
+                        {% endif %}
+                        KPI (Metric)
+                    </h5>
                     <div class="mb-3">
                         {{ form.kpi_name.label(class="form-label") }}
                         {{ form.kpi_name(class="form-control") }}
@@ -408,7 +442,12 @@
                     <br>  └─ <span id="preview-challenge">Reduce Environmental Impact</span>
                     <br>      └─ <span id="preview-initiative">Energy Efficiency Program</span>
                     <br>          └─ <span id="preview-system">Office Buildings</span>
-                    <br>              └─ <span id="preview-kpi">Energy Consumption</span> 📊
+                    <br>              └─ <span id="preview-kpi">Energy Consumption</span>
+                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    {{ entity_defaults.get('kpi', {}).get('icon', '📊') }}
+                    {% endif %}
                 </div>
             </div>
 
@@ -446,10 +485,38 @@
             <h6><i class="bi bi-check-circle-fill me-2"></i>What We Created:</h6>
             <ul class="mb-0">
                 <li>📁 Space: <strong>{{ summary.space }}</strong></li>
-                <li>🎯 Challenge: <strong>{{ summary.challenge }}</strong></li>
-                <li>🚀 Initiative: <strong>{{ summary.initiative }}</strong></li>
-                <li>🏢 System: <strong>{{ summary.system }}</strong></li>
-                <li>📊 KPI: <strong>{{ summary.kpi }}</strong></li>
+                <li>
+                    {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                    <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    {{ entity_defaults.get('challenge', {}).get('icon', '🎯') }}
+                    {% endif %}
+                    Challenge: <strong>{{ summary.challenge }}</strong>
+                </li>
+                <li>
+                    {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                    <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    {{ entity_defaults.get('initiative', {}).get('icon', '🚀') }}
+                    {% endif %}
+                    Initiative: <strong>{{ summary.initiative }}</strong>
+                </li>
+                <li>
+                    {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                    <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    {{ entity_defaults.get('system', {}).get('icon', '🏢') }}
+                    {% endif %}
+                    System: <strong>{{ summary.system }}</strong>
+                </li>
+                <li>
+                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                    {% else %}
+                    {{ entity_defaults.get('kpi', {}).get('icon', '📊') }}
+                    {% endif %}
+                    KPI: <strong>{{ summary.kpi }}</strong>
+                </li>
                 <li>📈 3 Value Types: Cost, CO2 Emissions, Risk Level</li>
                 <li>👥 1 Governance Body</li>
             </ul>

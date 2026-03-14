@@ -1049,25 +1049,45 @@ tr[data-level="kpi"] td {
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_challenges" value="1" id="show_challenges"
                                                        {% if show_levels.challenges %}checked{% endif %} hidden>
-                                                <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
+                                                {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                                                <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold; font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                                                {% endif %}
+                                                Challenges
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('challenges', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_initiatives" value="1" id="show_initiatives"
                                                        {% if show_levels.initiatives %}checked{% endif %} hidden>
-                                                <span style="font-weight: bold;">δ</span> Initiatives
+                                                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                                                <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                                                {% endif %}
+                                                Initiatives
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('initiatives', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_systems" value="1" id="show_systems"
                                                        {% if show_levels.systems %}checked{% endif %} hidden>
-                                                <span style="font-weight: bold;">Φ</span> Systems
+                                                {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                                                <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold;">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
+                                                {% endif %}
+                                                Systems
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('systems', 0) }}</span>
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_kpis" value="1" id="show_kpis"
                                                        {% if show_levels.kpis %}checked{% endif %} hidden>
-                                                <span style="font-weight: bold;">Ψ</span> KPIs
+                                                {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                                <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                                                {% endif %}
+                                                KPIs
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ level_counts.get('kpis', 0) }}</span>
                                             </label>
                                         </div>
@@ -1084,15 +1104,30 @@ tr[data-level="kpi"] td {
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_challenge_aggs" value="1" id="show_challenge_aggs" checked hidden>
-                                                <span style="font-weight: bold; font-style: italic;">ƒ</span> Challenges
+                                                {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                                                <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold; font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
+                                                {% endif %}
+                                                Challenges
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_initiative_aggs" value="1" id="show_initiative_aggs" checked hidden>
-                                                <span style="font-weight: bold;">δ</span> Initiatives
+                                                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                                                <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
+                                                {% endif %}
+                                                Initiatives
                                             </label>
                                             <label class="filter-pill">
                                                 <input type="checkbox" name="show_system_aggs" value="1" id="show_system_aggs" checked hidden>
-                                                <span style="font-weight: bold;">Φ</span> Systems
+                                                {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                                                <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 16px; height: 16px; object-fit: contain; vertical-align: middle;">
+                                                {% else %}
+                                                <span style="font-weight: bold;">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
+                                                {% endif %}
+                                                Systems
                                             </label>
                                         </div>
                                     </div>
