@@ -818,7 +818,22 @@ def kpi_cell_detail(kpi_id, vt_id):
             flash(f"Contribution from {contributor_name} added", "success")
 
         db.session.commit()
-        return redirect(url_for("workspace.index", show_all_columns=1))
+
+        # Preserve filter state when returning to workspace
+        from urllib.parse import parse_qs, urlparse
+        return_params = {"show_all_columns": 1}
+
+        # Get filters from referrer URL if available
+        referrer = request.referrer
+        if referrer and "workspace" in referrer:
+            parsed = urlparse(referrer)
+            query_params = parse_qs(parsed.query)
+            # Flatten single-value lists and preserve filter parameters
+            for key, values in query_params.items():
+                if key not in ["show_all_columns"]:  # Don't duplicate
+                    return_params[key] = values[0] if len(values) == 1 else values
+
+        return redirect(url_for("workspace.index", **return_params))
 
     # Build breadcrumb
     system = is_link.system
