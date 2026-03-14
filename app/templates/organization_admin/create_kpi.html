@@ -102,7 +102,11 @@
         <div class="card hover-lift">
             <div class="page-header">
                 <div class="page-header-icon">
-                    <span style="font-weight: bold;">Ψ</span>
+                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 40px; height: 40px; object-fit: contain;">
+                    {% else %}
+                    <span style="font-weight: bold; font-size: 1.5rem;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                    {% endif %}
                 </div>
                 <h2 class="mb-1">Create KPI</h2>
                 <p class="mb-0 opacity-75">{{ initiative.name }} → {{ system.name }}</p>
@@ -121,7 +125,13 @@
                         <div class="mb-3">
                             {{ form.name.label(class="form-label fw-semibold") }}
                             <div class="input-group">
-                                <span class="input-group-text"><span style="font-weight: bold;">Ψ</span></span>
+                                <span class="input-group-text">
+                                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain;">
+                                    {% else %}
+                                    <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                                    {% endif %}
+                                </span>
                                 {{ form.name(class="form-control", placeholder="KPI name", autofocus=True) }}
                             </div>
                         </div>

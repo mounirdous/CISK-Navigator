@@ -1767,6 +1767,19 @@ def create_kpi(link_id):
     if len(governance_bodies) == 1 and not preselect_governance_bodies:
         preselect_governance_bodies = [governance_bodies[0].id]
 
+    # Get entity type defaults with logos
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     return render_template(
         "organization_admin/create_kpi.html",
         form=form,
@@ -1777,6 +1790,7 @@ def create_kpi(link_id):
         governance_bodies=governance_bodies,
         preselect_value_types=preselect_value_types,
         preselect_governance_bodies=preselect_governance_bodies,
+        entity_defaults=entity_defaults,
     )
 
 
