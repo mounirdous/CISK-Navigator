@@ -833,9 +833,15 @@ def kpi_cell_detail(kpi_id, vt_id):
         # Preserve filter state when returning to workspace
         # Get filters from hidden form fields and build URL manually
         import logging
+        import sys
         from urllib.parse import urlencode
 
         logger = logging.getLogger(__name__)
+        logger.info("=" * 80)
+        logger.info("🔍 STARTING FILTER PRESERVATION")
+        logger.info("=" * 80)
+        sys.stdout.flush()  # Force flush
+
         return_params = [("show_all_columns", "1")]
 
         # Extract workspace_filters from form data (these were added as hidden fields)
