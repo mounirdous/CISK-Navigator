@@ -153,7 +153,14 @@ body.dark-mode .card.border-primary {
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h2 class="mb-1"><span style="font-weight: bold;">Ψ</span> KPI: {{ kpi.name }}</h2>
+        <h2 class="mb-1">
+            {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+            <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 28px; height: 28px; object-fit: contain; vertical-align: middle; margin-right: 8px;">
+            {% else %}
+            <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+            {% endif %}
+            KPI: {{ kpi.name }}
+        </h2>
         <p class="text-muted mb-0">{{ kpi.description }}</p>
     </div>
     <div class="d-flex gap-2">
@@ -457,7 +464,14 @@ body.dark-mode .card.border-primary {
     <div class="col-md-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><span style="font-weight: bold;">Ψ</span> Historical Trend</h5>
+                <h5 class="mb-0">
+                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                    <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 5px;">
+                    {% else %}
+                    <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                    {% endif %}
+                    Historical Trend
+                </h5>
                 <button class="btn btn-sm btn-outline-primary" onclick="loadTrendChart()">
                     <i class="bi bi-arrow-clockwise"></i> Refresh
                 </button>
