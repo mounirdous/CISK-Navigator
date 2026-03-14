@@ -811,12 +811,17 @@
                 const label = typeLabels[result.type] || result.type;
 
                 html += `<div class="live-search-item" style="display: flex; align-items: start; gap: 8px; padding: 10px 12px; border-radius: 6px; margin: 2px 0; transition: background 0.15s; cursor: pointer;" onclick="window.location.href='${result.url}'">`;
-                // Handle Unicode symbols vs Bootstrap icons
-                if (icon.startsWith('unicode-')) {
+
+                // Display custom logo if available, otherwise fallback to icon/symbol
+                if (result.logo) {
+                    html += `<img src="${result.logo}" alt="${result.type}" style="width: 24px; height: 24px; object-fit: contain; margin-top: 2px; border-radius: 4px;">`;
+                } else if (icon.startsWith('unicode-')) {
+                    // Handle Unicode symbols
                     const symbol = icon.replace('unicode-', '');
                     const fontStyle = (result.type === 'challenge') ? 'font-style: italic;' : '';
                     html += `<span style="color: ${color}; font-size: 1.1rem; margin-top: 2px; font-weight: bold; ${fontStyle}">${symbol}</span>`;
                 } else {
+                    // Handle Bootstrap icons
                     html += `<i class="bi ${icon}" style="color: ${color}; font-size: 1.1rem; margin-top: 2px;"></i>`;
                 }
                 html += `<div style="flex: 1; min-width: 0;">`;
