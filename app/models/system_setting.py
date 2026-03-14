@@ -116,3 +116,39 @@ class SystemSetting(db.Model):
                 grouped[category] = []
             grouped[category].append(setting)
         return grouped
+
+    @staticmethod
+    def get_entity_defaults():
+        """Get default colors and icons for entity types"""
+        import json
+
+        value = SystemSetting.get_value("entity_defaults")
+        if not value:
+            # Return hardcoded defaults if not configured
+            return {
+                "organization": {"color": "#3b82f6", "icon": "🏢"},
+                "space": {"color": "#10b981", "icon": "🎯"},
+                "challenge": {"color": "#f59e0b", "icon": "⚡"},
+                "initiative": {"color": "#8b5cf6", "icon": "🚀"},
+                "system": {"color": "#ec4899", "icon": "⚙️"},
+                "kpi": {"color": "#06b6d4", "icon": "📊"},
+            }
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            # Fallback to defaults if JSON is invalid
+            return {
+                "organization": {"color": "#3b82f6", "icon": "🏢"},
+                "space": {"color": "#10b981", "icon": "🎯"},
+                "challenge": {"color": "#f59e0b", "icon": "⚡"},
+                "initiative": {"color": "#8b5cf6", "icon": "🚀"},
+                "system": {"color": "#ec4899", "icon": "⚙️"},
+                "kpi": {"color": "#06b6d4", "icon": "📊"},
+            }
+
+    @staticmethod
+    def set_entity_defaults(defaults_dict, updated_by_user_id=None):
+        """Set default colors and icons for entity types"""
+        import json
+
+        SystemSetting.set_value("entity_defaults", json.dumps(defaults_dict), updated_by_user_id)

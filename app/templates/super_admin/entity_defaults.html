@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Entity Type Defaults - Super Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+.entity-card {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.2s;
+}
+
+.entity-card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.entity-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.entity-icon-preview {
+    font-size: 3rem;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    transition: all 0.3s;
+}
+
+.entity-info {
+    flex: 1;
+}
+
+.entity-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.entity-description {
+    color: #6b7280;
+    margin: 0.25rem 0 0 0;
+}
+
+.color-input-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.color-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    border: 2px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.color-preview:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="color"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.icon-input {
+    font-size: 2rem;
+    text-align: center;
+    width: 80px;
+    height: 60px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+}
+
+.icon-suggestions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.icon-suggestion {
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.icon-suggestion:hover {
+    background: #f3f4f6;
+    transform: scale(1.1);
+}
+
+.usage-examples {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.usage-example {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    margin: 0.25rem;
+    border-radius: 6px;
+    color: white;
+    font-weight: 500;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-palette"></i> Entity Type Defaults</h2>
+            <p class="text-muted mb-0">Configure default colors and icons for entity types. These apply system-wide and can be overridden by individual organizations.</p>
+        </div>
+        <a href="{{ url_for('super_admin.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> <strong>Tip:</strong> Choose colors and icons that reflect your brand identity. These will be used throughout the platform for visual consistency.
+    </div>
+
+    <form method="POST" action="{{ url_for('super_admin.update_entity_defaults') }}" id="defaultsForm">
+        {{ form.hidden_tag() if form else '' }}
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+        {% for entity in entity_defaults %}
+        <div class="entity-card">
+            <div class="entity-header">
+                <div class="entity-icon-preview" id="preview_{{ entity.entity_type }}" style="background-color: {{ entity.default_color }}20; border: 2px solid {{ entity.default_color }};">
+                    <span id="icon_preview_{{ entity.entity_type }}">{{ entity.default_icon }}</span>
+                </div>
+                <div class="entity-info">
+                    <h3 class="entity-title">{{ entity.display_name }}</h3>
+                    <p class="entity-description">{{ entity.description }}</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold"><i class="bi bi-palette-fill"></i> Color</label>
+                    <div class="color-input-group">
+                        <label for="color_{{ entity.entity_type }}" class="color-preview" id="color_preview_{{ entity.entity_type }}" style="background-color: {{ entity.default_color }};" title="Click to change color"></label>
+                        <input type="color"
+                               id="color_{{ entity.entity_type }}"
+                               name="{{ entity.entity_type }}_color"
+                               value="{{ entity.default_color }}"
+                               onchange="updatePreview('{{ entity.entity_type }}')">
+                        <input type="text"
+                               class="form-control"
+                               id="color_text_{{ entity.entity_type }}"
+                               value="{{ entity.default_color }}"
+                               pattern="^#[0-9A-Fa-f]{6}$"
+                               onchange="document.getElementById('color_{{ entity.entity_type }}').value = this.value; updatePreview('{{ entity.entity_type }}');"
+                               style="max-width: 120px; font-family: monospace;">
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold"><i class="bi bi-emoji-smile"></i> Icon</label>
+                    <input type="text"
+                           class="form-control icon-input"
+                           id="icon_{{ entity.entity_type }}"
+                           name="{{ entity.entity_type }}_icon"
+                           value="{{ entity.default_icon }}"
+                           maxlength="10"
+                           onchange="updatePreview('{{ entity.entity_type }}')">
+                    <div class="icon-suggestions" id="suggestions_{{ entity.entity_type }}">
+                        <!-- Icon suggestions will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="usage-examples">
+                <strong><i class="bi bi-eye"></i> Preview in UI:</strong>
+                <div class="mt-2">
+                    <span class="usage-example" id="example_{{ entity.entity_type }}" style="background-color: {{ entity.default_color }};">
+                        <span id="example_icon_{{ entity.entity_type }}">{{ entity.default_icon }}</span>
+                        {{ entity.display_name }} Example
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-circle"></i> Save Changes
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-lg" onclick="location.reload()">
+                <i class="bi bi-arrow-clockwise"></i> Reset
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+// Icon suggestions for each entity type
+const iconSuggestions = {
+    organization: ['🏢', '🏛️', '🏭', '🏪', '🏬', '🏦', '💼', '🌐'],
+    space: ['🎯', '📍', '🗺️', '🌍', '🏠', '📌', '🎪', '🏞️'],
+    challenge: ['⚡', '🎲', '🎯', '🚀', '💪', '🏆', '⭐', '🔥'],
+    initiative: ['🚀', '📈', '💡', '⚙️', '🎯', '📊', '🎨', '🔧'],
+    system: ['⚙️', '🔧', '🛠️', '⚡', '🔌', '💻', '🖥️', '📡'],
+    kpi: ['📊', '📈', '📉', '📋', '📌', '🎯', '💹', '📍']
+};
+
+// Populate icon suggestions
+Object.keys(iconSuggestions).forEach(entityType => {
+    const container = document.getElementById('suggestions_' + entityType);
+    if (container) {
+        iconSuggestions[entityType].forEach(icon => {
+            const span = document.createElement('span');
+            span.className = 'icon-suggestion';
+            span.textContent = icon;
+            span.title = 'Click to use this icon';
+            span.onclick = function() {
+                document.getElementById('icon_' + entityType).value = icon;
+                updatePreview(entityType);
+            };
+            container.appendChild(span);
+        });
+    }
+});
+
+// Update preview when color or icon changes
+function updatePreview(entityType) {
+    const color = document.getElementById('color_' + entityType).value;
+    const icon = document.getElementById('icon_' + entityType).value;
+
+    // Update color preview swatch
+    document.getElementById('color_preview_' + entityType).style.backgroundColor = color;
+
+    // Update hex text input
+    document.getElementById('color_text_' + entityType).value = color;
+
+    // Update icon preview in header
+    document.getElementById('icon_preview_' + entityType).textContent = icon;
+    document.getElementById('preview_' + entityType).style.backgroundColor = color + '20';
+    document.getElementById('preview_' + entityType).style.borderColor = color;
+
+    // Update usage example
+    document.getElementById('example_' + entityType).style.backgroundColor = color;
+    document.getElementById('example_icon_' + entityType).textContent = icon;
+}
+</script>
+{% endblock %}

@@ -16,6 +16,7 @@ from app.models import (
     AnnouncementTargetOrganization,
     AnnouncementTargetUser,
     AuditLog,
+    EntityTypeDefault,
     Organization,
     SSOConfig,
     SystemAnnouncement,
@@ -93,6 +94,53 @@ def update_setting():
 
     # Redirect back to the referring page or settings page
     return redirect(request.referrer or url_for("super_admin.settings"))
+
+
+@bp.route("/entity-defaults")
+@super_admin_required
+def entity_defaults():
+    """Manage entity type default colors and icons"""
+    # Ensure defaults exist in database
+    EntityTypeDefault.ensure_defaults_exist()
+
+    # Get all entity defaults ordered by type
+    entity_order = ["organization", "space", "challenge", "initiative", "system", "kpi"]
+    defaults = EntityTypeDefault.query.all()
+
+    # Sort defaults by defined order
+    defaults_dict = {d.entity_type: d for d in defaults}
+    ordered_defaults = [defaults_dict.get(entity_type) for entity_type in entity_order if entity_type in defaults_dict]
+
+    return render_template("super_admin/entity_defaults.html", entity_defaults=ordered_defaults)
+
+
+@bp.route("/entity-defaults/update", methods=["POST"])
+@super_admin_required
+def update_entity_defaults():
+    """Update entity type defaults"""
+    try:
+        # Process all entity types
+        entity_types = ["organization", "space", "challenge", "initiative", "system", "kpi"]
+
+        for entity_type in entity_types:
+            color = request.form.get(f"{entity_type}_color")
+            icon = request.form.get(f"{entity_type}_icon")
+
+            if color and icon:
+                entity_default = EntityTypeDefault.query.filter_by(entity_type=entity_type).first()
+                if entity_default:
+                    entity_default.default_color = color
+                    entity_default.default_icon = icon
+                    entity_default.updated_by = current_user.id
+                    entity_default.updated_at = datetime.utcnow()
+
+        db.session.commit()
+        flash("Entity type defaults updated successfully! Changes will apply to new entities and throughout the UI.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error updating entity defaults: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.entity_defaults"))
 
 
 @bp.route("/settings/sso")

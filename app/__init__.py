@@ -142,6 +142,18 @@ def create_app(config_name=None):
 
         return {"maintenance_mode": SystemSetting.is_maintenance_mode(), "app_version": __version__}
 
+    # Context processor - inject entity defaults for branding
+    @app.context_processor
+    def inject_entity_defaults():
+        """Make entity type defaults available to all templates for branding"""
+        from app.models import EntityTypeDefault
+
+        entity_defaults = EntityTypeDefault.get_all_defaults()
+        if not entity_defaults:
+            entity_defaults = EntityTypeDefault.get_hardcoded_defaults()
+
+        return {"entity_defaults": entity_defaults}
+
     # Register error handlers
     @app.errorhandler(404)
     def not_found_error(error):
