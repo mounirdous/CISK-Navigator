@@ -517,7 +517,7 @@ def delete_site(site_id):
     )
 
     # Check if site has KPI assignments
-    kpi_count = len(site.kpi_assignments)
+    kpi_count = len(site.geography_assignments)
     if kpi_count > 0:
         flash(
             f"Cannot delete site '{site.name}' - it has {kpi_count} KPI assignments. " "Remove KPI assignments first.",

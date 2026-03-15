@@ -132,7 +132,15 @@
             <h6><i class="bi bi-pin-map-fill"></i> Map Statistics</h6>
             <div class="stat-item">
                 <span class="stat-label">Total Sites</span>
-                <span class="stat-value">{{ regions|sum(attribute='countries')|sum(attribute='sites')|length }}</span>
+                <span class="stat-value">
+                    {% set site_count = namespace(value=0) %}
+                    {% for region in regions %}
+                        {% for country in region.countries %}
+                            {% set site_count.value = site_count.value + country.sites|length %}
+                        {% endfor %}
+                    {% endfor %}
+                    {{ site_count.value }}
+                </span>
             </div>
             <div class="stat-item">
                 <span class="stat-label">KPIs with Location</span>

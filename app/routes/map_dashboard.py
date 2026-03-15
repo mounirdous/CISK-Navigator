@@ -2,10 +2,11 @@
 Map Dashboard route for geographic visualization of KPIs
 """
 
-from flask import Blueprint, render_template, session
+from flask import Blueprint, redirect, render_template, session, url_for
 from flask_login import login_required
 
-from app.models import GeographyRegion, Organization
+from app.extensions import db
+from app.models import GeographyRegion, KPIGeographyAssignment, Organization
 
 bp = Blueprint("map_dashboard", __name__, url_prefix="/map")
 
@@ -18,21 +19,15 @@ def index():
 
     if not org_id:
         # Redirect to org selection if no context
-        from flask import redirect, url_for
-
         return redirect(url_for("auth.select_organization"))
 
     organization = Organization.query.get_or_404(org_id)
 
-    # Get all regions with sites that have KPI assignments
+    # Get all regions for this organization
     regions = GeographyRegion.query.filter_by(organization_id=org_id).order_by(GeographyRegion.display_order).all()
 
-    # Count total KPIs with geography
-    total_kpis_with_location = 0
-    for region in regions:
-        for country in region.countries:
-            for site in country.sites:
-                total_kpis_with_location += site.get_kpi_count()
+    # Count total KPIs with geography assignments (distinct KPI IDs)
+    total_kpis_with_location = db.session.query(KPIGeographyAssignment.kpi_id).distinct().count()
 
     return render_template(
         "map_dashboard/index.html", organization=organization, regions=regions, total_kpis=total_kpis_with_location
