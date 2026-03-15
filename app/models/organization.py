@@ -26,6 +26,14 @@ class Organization(db.Model):
     logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type (e.g., image/png)")
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
+    # Map color preferences
+    map_country_color_with_kpis = db.Column(
+        db.String(7), nullable=True, default="#3b82f6", comment="Hex color for countries with KPIs on map"
+    )
+    map_country_color_no_kpis = db.Column(
+        db.String(7), nullable=True, default="#9ca3af", comment="Hex color for countries in system without KPIs"
+    )
+
     # Soft delete fields
     is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
     deleted_at = db.Column(db.DateTime, nullable=True)
