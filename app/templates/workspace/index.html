@@ -659,17 +659,90 @@ tr[data-level="kpi"] td {
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Sticky first column */
+/* Sticky first column - FIXED for mobile */
 #workspace-tree td:first-child,
 #workspace-tree th:first-child {
     position: sticky;
     left: 0;
     z-index: 5;
-    background-color: inherit;
+    /* ✅ Explicit background colors instead of inherit */
+    background-color: #fff;
 }
 
+/* Shadow on right edge to show it's separate */
+#workspace-tree td:first-child::after,
+#workspace-tree th:first-child::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 15px;
+    box-shadow: 3px 0 8px -3px rgba(0,0,0,0.15);
+    pointer-events: none;
+}
+
+/* Header sticky column - highest z-index */
 #workspace-tree thead th:first-child {
     z-index: 15;
+    background-color: #f8f9fa; /* table-light color */
+}
+
+/* Entity-specific background colors for sticky column */
+#workspace-tree tr.table-primary td:first-child {
+    background-color: #cfe2ff; /* Space row */
+}
+
+#workspace-tree tr.table-secondary td:first-child {
+    background-color: #e2e3e5; /* Challenge row */
+}
+
+#workspace-tree tr.table-info td:first-child {
+    background-color: #cff4fc; /* Initiative row */
+}
+
+#workspace-tree tr.table-warning td:first-child {
+    background-color: #fff3cd; /* KPI row */
+}
+
+/* Dark mode support */
+.dark-mode #workspace-tree td:first-child {
+    background-color: #1a1a1a;
+}
+
+.dark-mode #workspace-tree thead th:first-child {
+    background-color: #222;
+}
+
+.dark-mode #workspace-tree tr.table-primary td:first-child {
+    background-color: #1a2a3a;
+}
+
+.dark-mode #workspace-tree tr.table-secondary td:first-child {
+    background-color: #2a2a2a;
+}
+
+.dark-mode #workspace-tree tr.table-info td:first-child {
+    background-color: #1a3a3a;
+}
+
+.dark-mode #workspace-tree tr.table-warning td:first-child {
+    background-color: #3a3a1a;
+}
+
+/* Mobile optimization - wider shadow for better separation */
+@media (max-width: 768px) {
+    #workspace-tree td:first-child::after,
+    #workspace-tree th:first-child::after {
+        width: 20px;
+        box-shadow: 5px 0 10px -3px rgba(0,0,0,0.25);
+    }
+
+    /* Slightly wider first column on mobile for better readability */
+    #workspace-tree td:first-child,
+    #workspace-tree th:first-child {
+        min-width: 200px;
+    }
 }
 
 /* Modern button styles */
