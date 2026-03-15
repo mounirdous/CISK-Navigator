@@ -184,6 +184,7 @@ def create_user():
             is_active=form.is_active.data,
             is_global_admin=form.is_global_admin.data,
             is_super_admin=form.is_super_admin.data if current_user.is_super_admin else False,
+            beta_tester=form.beta_tester.data,
             must_change_password=True,
         )
         user.set_password(form.password.data)
