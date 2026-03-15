@@ -596,7 +596,7 @@ def api_sites_json():
 @login_required
 @organization_required
 def api_countries_json():
-    """Return all countries with KPI assignments as GeoJSON for map display"""
+    """Return all countries (with or without KPI assignments) as GeoJSON for map display"""
     org_id = session.get("organization_id")
 
     countries = (
@@ -607,7 +607,7 @@ def api_countries_json():
 
     features = []
     for country in countries:
-        # Only include countries that have coordinates and KPI assignments
+        # Include ALL countries that have coordinates (not just those with KPIs)
         if country.latitude and country.longitude:
             # Count direct country assignments
             direct_assignments = len(country.geography_assignments)
@@ -620,26 +620,26 @@ def api_countries_json():
 
             total_kpi_count = direct_assignments + site_assignments + region_assignments
 
-            # Include country if it has any assignments (direct, from sites, or from region)
-            if total_kpi_count > 0:
-                features.append(
-                    {
-                        "type": "Feature",
-                        "geometry": {
-                            "type": "Point",
-                            "coordinates": [float(country.longitude), float(country.latitude)],
-                        },
-                        "properties": {
-                            "id": country.id,
-                            "name": country.name,
-                            "code": country.code,
-                            "iso_code": country.iso_code,
-                            "region": country.region.name,
-                            "kpi_count": total_kpi_count,
-                            "level": "country",
-                        },
-                    }
-                )
+            # Include country even if it has 0 KPIs (for grey display)
+            features.append(
+                {
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [float(country.longitude), float(country.latitude)],
+                    },
+                    "properties": {
+                        "id": country.id,
+                        "name": country.name,
+                        "code": country.code,
+                        "iso_code": country.iso_code,
+                        "region": country.region.name,
+                        "kpi_count": total_kpi_count,
+                        "level": "country",
+                        "in_system": True,  # Flag to indicate country is in geography system
+                    },
+                }
+            )
 
     return jsonify({"type": "FeatureCollection", "features": features})
 
