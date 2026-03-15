@@ -272,6 +272,9 @@ def index():
     # Get initiative group filter
     selected_group_labels = request.args.getlist("group")
 
+    # Get initiative impact filter
+    selected_impact_levels = request.args.getlist("impact")
+
     # Get show_archived flag
     show_archived = request.args.get("show_archived") == "1"
 
@@ -313,15 +316,21 @@ def index():
 
     spaces = spaces_query.order_by(Space.display_order, Space.name).all()
 
-    # Filter initiatives by group in Python (cleaner than template logic)
-    if selected_group_labels:
+    # Filter initiatives by group and impact in Python (cleaner than template logic)
+    if selected_group_labels or selected_impact_levels:
         for space in spaces:
             for challenge in space.challenges:
-                # Filter initiative_links to only show selected groups or ungrouped
+                # Filter initiative_links
                 challenge.initiative_links = [
                     link
                     for link in challenge.initiative_links
-                    if not link.initiative.group_label or link.initiative.group_label in selected_group_labels
+                    if (
+                        # Group filter: if no group labels selected OR initiative matches selected groups or is ungrouped
+                        (not selected_group_labels or (not link.initiative.group_label or link.initiative.group_label in selected_group_labels))
+                        and
+                        # Impact filter: if no impact levels selected OR initiative matches selected impact levels
+                        (not selected_impact_levels or (link.initiative.impact_on_challenge in selected_impact_levels))
+                    )
                 ]
 
     # Get space IDs for filtering value types
@@ -362,6 +371,11 @@ def index():
                 or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
             )
 
+        if selected_impact_levels:
+            value_types_with_contributions = value_types_with_contributions.filter(
+                Initiative.impact_on_challenge.in_(selected_impact_levels)
+            )
+
         if not show_archived:
             value_types_with_contributions = value_types_with_contributions.filter(KPI.is_archived.is_(False))
 
@@ -392,6 +406,11 @@ def index():
         if selected_group_labels:
             value_types_with_formulas = value_types_with_formulas.filter(
                 or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
+            )
+
+        if selected_impact_levels:
+            value_types_with_formulas = value_types_with_formulas.filter(
+                Initiative.impact_on_challenge.in_(selected_impact_levels)
             )
 
         if not show_archived:
@@ -454,6 +473,28 @@ def index():
             group_counts[group_label] = count
     else:
         group_counts = {"A": 0, "B": 0, "C": 0, "D": 0}
+
+    # Calculate counts for initiative impact levels
+    impact_counts = {}
+    if space_ids:
+        for impact_level in ["not_assessed", "low", "medium", "high", "no_consensus"]:
+            count = (
+                db.session.query(Initiative.id)
+                .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+                .filter(Challenge.space_id.in_(space_ids), Initiative.impact_on_challenge == impact_level)
+                .distinct()
+                .count()
+            )
+            impact_counts[impact_level] = count
+    else:
+        impact_counts = {
+            "not_assessed": 0,
+            "low": 0,
+            "medium": 0,
+            "high": 0,
+            "no_consensus": 0,
+        }
 
     # Calculate KPI counts per governance body
     gb_kpi_counts = {}
@@ -610,6 +651,7 @@ def index():
         governance_bodies=governance_bodies,
         selected_governance_body_ids=selected_governance_body_ids,
         selected_group_labels=selected_group_labels,
+        selected_impact_levels=selected_impact_levels,
         show_archived=show_archived,
         show_levels=show_levels,
         space_type_filter=space_type_filter,
@@ -618,6 +660,7 @@ def index():
         private_spaces_count=private_spaces_count,
         show_all_columns=show_all_columns,
         group_counts=group_counts,
+        impact_counts=impact_counts,
         gb_kpi_counts=gb_kpi_counts,
         level_counts=level_counts,
         archived_kpis_count=archived_kpis_count,

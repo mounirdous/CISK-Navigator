@@ -910,13 +910,19 @@ tr[data-level="kpi"] td {
                         </div>
 
                         {% if filter_presets %}
-                        <div class="d-flex gap-2 flex-wrap">
+                        <div class="mb-2">
+                            <input type="text" id="preset-search" class="form-control form-control-sm" placeholder="🔍 Search saved filters..." autocomplete="off" style="max-width: 300px;">
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap" id="presets-container">
                             {% for preset in filter_presets %}
-                            <div class="badge bg-secondary d-flex align-items-center gap-2" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
+                            <div class="badge bg-secondary d-flex align-items-center gap-2 preset-item" data-preset-name="{{ preset.name|lower }}" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
                                 <span class="filter-preset-name" style="cursor: pointer;" data-preset-id="{{ preset.id }}" title="Click to load this preset">{{ preset.name }}</span>
                                 <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" data-delete-preset="{{ preset.id }}" title="Delete preset"></button>
                             </div>
                             {% endfor %}
+                        </div>
+                        <div id="no-presets-found" style="display: none;" class="text-muted mb-0 small mt-2">
+                            No filters match your search. Try a different term.
                         </div>
                         {% else %}
                         <p class="text-muted mb-0 small">No saved presets yet. Click "Save Current Filters" to create one.</p>
@@ -1022,6 +1028,44 @@ tr[data-level="kpi"] td {
                                                        {% if 'D' in selected_group_labels %}checked{% endif %} hidden>
                                                 Group D
                                                 <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ group_counts.get('D', 0) }}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="filter-group">
+                                        <div class="filter-label">
+                                            <i class="bi bi-lightning-charge"></i> Impact Assessment
+                                        </div>
+                                        <div class="filter-pills">
+                                            <label class="filter-pill {% if 'high' in selected_impact_levels %}active{% endif %}">
+                                                <input type="checkbox" name="impact" value="high" id="filter_impact_high"
+                                                       {% if 'high' in selected_impact_levels %}checked{% endif %} hidden>
+                                                🟢 High
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ impact_counts.get('high', 0) }}</span>
+                                            </label>
+                                            <label class="filter-pill {% if 'medium' in selected_impact_levels %}active{% endif %}">
+                                                <input type="checkbox" name="impact" value="medium" id="filter_impact_medium"
+                                                       {% if 'medium' in selected_impact_levels %}checked{% endif %} hidden>
+                                                🟡 Medium
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ impact_counts.get('medium', 0) }}</span>
+                                            </label>
+                                            <label class="filter-pill {% if 'low' in selected_impact_levels %}active{% endif %}">
+                                                <input type="checkbox" name="impact" value="low" id="filter_impact_low"
+                                                       {% if 'low' in selected_impact_levels %}checked{% endif %} hidden>
+                                                🔵 Low
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ impact_counts.get('low', 0) }}</span>
+                                            </label>
+                                            <label class="filter-pill {% if 'no_consensus' in selected_impact_levels %}active{% endif %}" style="border-color: #e91e63;">
+                                                <input type="checkbox" name="impact" value="no_consensus" id="filter_impact_no_consensus"
+                                                       {% if 'no_consensus' in selected_impact_levels %}checked{% endif %} hidden>
+                                                ⚠️ No Consensus
+                                                <span class="pill-badge" style="background-color: rgba(233, 30, 99, 0.2);">{{ impact_counts.get('no_consensus', 0) }}</span>
+                                            </label>
+                                            <label class="filter-pill {% if 'not_assessed' in selected_impact_levels %}active{% endif %}">
+                                                <input type="checkbox" name="impact" value="not_assessed" id="filter_impact_not_assessed"
+                                                       {% if 'not_assessed' in selected_impact_levels %}checked{% endif %} hidden>
+                                                ⚪ Not Assessed
+                                                <span class="pill-badge" style="background-color: rgba(255,255,255,0.2);">{{ impact_counts.get('not_assessed', 0) }}</span>
                                             </label>
                                         </div>
                                     </div>
@@ -3648,6 +3692,29 @@ function getCurrentFilters() {
 
     return filters;
 }
+
+// Live search for saved filter presets
+document.getElementById('preset-search')?.addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase().trim();
+    const presetItems = document.querySelectorAll('.preset-item');
+    const noResultsMsg = document.getElementById('no-presets-found');
+    let visibleCount = 0;
+
+    presetItems.forEach(item => {
+        const presetName = item.dataset.presetName || '';
+        if (!searchTerm || presetName.includes(searchTerm)) {
+            item.style.display = '';
+            visibleCount++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+
+    // Show/hide "no results" message
+    if (noResultsMsg) {
+        noResultsMsg.style.display = (visibleCount === 0 && presetItems.length > 0) ? 'block' : 'none';
+    }
+});
 
 // Save current filters as preset
 document.getElementById('save-preset-btn')?.addEventListener('click', async function() {
