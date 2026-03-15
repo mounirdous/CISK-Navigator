@@ -843,12 +843,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Hierarchical geography checkbox selection
-    // When a country is checked, auto-check its parent region
-    document.querySelectorAll('.country-checkbox').forEach(checkbox => {
+    // Hierarchical geography checkbox selection with constraints
+
+    // When a site checkbox changes
+    document.querySelectorAll('.site-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            const countryId = this.getAttribute('data-country-id');
+            const regionId = this.getAttribute('data-region-id');
+
             if (this.checked) {
-                const regionId = this.getAttribute('data-region-id');
+                // Checking a site -> auto-check parent country and grandparent region
+                const countryCheckbox = document.getElementById('country_' + countryId);
+                if (countryCheckbox) {
+                    countryCheckbox.checked = true;
+                }
+
                 const regionCheckbox = document.getElementById('region_' + regionId);
                 if (regionCheckbox) {
                     regionCheckbox.checked = true;
@@ -857,23 +866,63 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // When a site is checked, auto-check its parent country AND grandparent region
-    document.querySelectorAll('.site-checkbox').forEach(checkbox => {
+    // When a country checkbox changes
+    document.querySelectorAll('.country-checkbox').forEach(checkbox => {
         checkbox.addEventListener('change', function() {
+            const countryId = this.value;
+            const regionId = this.getAttribute('data-region-id');
+
             if (this.checked) {
-                const countryId = this.getAttribute('data-country-id');
-                const regionId = this.getAttribute('data-region-id');
-
-                // Check parent country
-                const countryCheckbox = document.getElementById('country_' + countryId);
-                if (countryCheckbox) {
-                    countryCheckbox.checked = true;
-                }
-
-                // Check grandparent region
+                // Checking a country -> auto-check parent region
                 const regionCheckbox = document.getElementById('region_' + regionId);
                 if (regionCheckbox) {
                     regionCheckbox.checked = true;
+                }
+            } else {
+                // Unchecking a country -> check if any child sites are selected
+                const childSites = document.querySelectorAll('.site-checkbox[data-country-id="' + countryId + '"]');
+                const hasCheckedSites = Array.from(childSites).some(site => site.checked);
+
+                if (hasCheckedSites) {
+                    // Prevent unchecking - at least one site is still selected
+                    this.checked = true;
+                    alert('Cannot uncheck country while sites are still selected. Please uncheck all sites first.');
+                } else {
+                    // Safe to uncheck - no child sites selected
+                    // Also uncheck all child sites to be sure
+                    childSites.forEach(site => {
+                        site.checked = false;
+                    });
+                }
+            }
+        });
+    });
+
+    // When a region checkbox changes
+    document.querySelectorAll('.region-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const regionId = this.value;
+
+            if (!this.checked) {
+                // Unchecking a region -> check if any child countries are selected
+                const childCountries = document.querySelectorAll('.country-checkbox[data-region-id="' + regionId + '"]');
+                const hasCheckedCountries = Array.from(childCountries).some(country => country.checked);
+
+                if (hasCheckedCountries) {
+                    // Prevent unchecking - at least one country is still selected
+                    this.checked = true;
+                    alert('Cannot uncheck region while countries or sites are still selected. Please uncheck all countries and sites first.');
+                } else {
+                    // Safe to uncheck - also uncheck all descendants
+                    childCountries.forEach(country => {
+                        country.checked = false;
+                        // Also uncheck that country's sites
+                        const countryId = country.value;
+                        const childSites = document.querySelectorAll('.site-checkbox[data-country-id="' + countryId + '"]');
+                        childSites.forEach(site => {
+                            site.checked = false;
+                        });
+                    });
                 }
             }
         });
