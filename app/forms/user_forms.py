@@ -17,6 +17,7 @@ class UserCreateForm(FlaskForm):
     is_active = BooleanField("Active", default=True)
     is_global_admin = BooleanField("Instance Administrator")
     is_super_admin = BooleanField("Super Administrator (System-wide)")
+    beta_tester = BooleanField("Enable Beta Testing")
     organizations = SelectMultipleField("Assigned Organizations", coerce=int)
     submit = SubmitField("Create User")
 
@@ -31,6 +32,7 @@ class UserEditForm(FlaskForm):
     is_global_admin = BooleanField("Instance Administrator")
     is_super_admin = BooleanField("Super Administrator (System-wide)")
     must_change_password = BooleanField("Force Password Change on Next Login")
+    beta_tester = BooleanField("Enable Beta Testing")
     organizations = SelectMultipleField("Assigned Organizations", coerce=int)
     reset_password = PasswordField(
         "Reset Password (leave blank to keep current)", validators=[Optional(), Length(min=8)]

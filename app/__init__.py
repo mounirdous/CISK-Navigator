@@ -67,6 +67,7 @@ def create_app(config_name=None):
     from app.routes import (
         analytics,
         auth,
+        beta,
         entity_links,
         executive,
         geography,
@@ -89,6 +90,7 @@ def create_app(config_name=None):
     app.register_blueprint(map_dashboard.bp)
     app.register_blueprint(logo.bp)
     app.register_blueprint(entity_links.bp)
+    app.register_blueprint(beta.bp)  # Beta feature prototypes
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":
@@ -123,6 +125,42 @@ def create_app(config_name=None):
                 )
                 # Try to redirect to referer or dashboard
                 return redirect(request.referrer or url_for("workspace.dashboard"))
+
+        return None
+
+    # Beta tester auto-redirect (global)
+    @app.before_request
+    def beta_auto_redirect():
+        """Auto-redirect beta testers to /beta routes"""
+        from flask import redirect, request, url_for
+        from flask_login import current_user
+
+        # Skip if:
+        # - Not authenticated
+        # - Already on /beta route
+        # - On static/auth/logout routes
+        # - Not a beta tester
+        if (
+            not current_user.is_authenticated
+            or request.endpoint
+            and (
+                request.endpoint.startswith("beta.")
+                or request.endpoint in ["static", "auth.login", "auth.logout", None]
+            )
+        ):
+            return None
+
+        # If user is beta tester (or super admin), redirect to beta equivalent
+        if current_user.beta_tester or current_user.is_super_admin:
+            # Map regular routes to beta routes
+            route_mapping = {
+                "workspace.index": "beta.workspace",
+                "workspace.dashboard": "beta.dashboard",
+                # Add more mappings as we build more beta pages
+            }
+
+            if request.endpoint in route_mapping:
+                return redirect(url_for(route_mapping[request.endpoint]))
 
         return None
 

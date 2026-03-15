@@ -1,0 +1,60 @@
+{% extends "beta/base_beta.html" %}
+
+{% block title %}Dashboard (Beta){% endblock %}
+
+{% block content %}
+<div class="mobile-dashboard" style="padding: 1rem;">
+
+    <!-- Header -->
+    <div class="mobile-header mb-4">
+        <h4 class="mb-1">{{ org_name }}</h4>
+        <p class="text-muted small">Dashboard - Mobile Beta</p>
+    </div>
+
+    <!-- Success Message -->
+    <div class="alert alert-success" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>
+        <strong>Beta Mode Active!</strong> You're seeing the mobile-optimized version.
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-section mb-4">
+        <h6 class="mb-3">Quick Stats</h6>
+        <div class="row g-2">
+            <div class="col-6">
+                <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏢</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #333;">{{ stats.spaces }}</div>
+                    <div style="font-size: 0.85rem; color: #666;">Spaces</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-card" style="background: white; border-radius: 12px; padding: 1.5rem; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
+                    <div style="font-size: 1.5rem; font-weight: 700; color: #333;">{{ stats.kpis }}</div>
+                    <div style="font-size: 0.85rem; color: #666;">KPIs</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions-section mb-4">
+        <h6 class="mb-3">Quick Actions</h6>
+        <a href="{{ url_for('mobile.workspace') }}" class="btn btn-primary w-100 mb-2" style="height: 56px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">
+            <i class="bi bi-grid-3x3 me-2"></i>
+            View Workspace
+        </a>
+    </div>
+
+    <!-- Test Info -->
+    <div class="alert alert-info" role="alert">
+        <h6 class="alert-heading">🧪 This is a prototype!</h6>
+        <p class="mb-0 small">
+            We're testing new mobile layouts. Your feedback is valuable!
+            More features coming soon.
+        </p>
+    </div>
+
+</div>
+{% endblock %}

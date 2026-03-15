@@ -268,6 +268,7 @@ def edit_user(user_id):
             user.is_super_admin = form.is_super_admin.data
 
         user.must_change_password = form.must_change_password.data
+        user.beta_tester = form.beta_tester.data
 
         # Only reset password if field has actual content (strip whitespace)
         if form.reset_password.data and form.reset_password.data.strip():
