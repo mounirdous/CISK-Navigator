@@ -1390,12 +1390,17 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                 kpiMarkers.push(marker);
                         });
 
-                        // Extend existing bounds (which includes all geography countries)
-                        // Don't overwrite - just extend to include KPI markers too
-                        if (!bounds.isEmpty()) {
-                            // markerBounds already contains all countries, just zoom to KPIs initially
-                            map.fitBounds(bounds, {
+                        // Zoom to show ALL countries (not just KPIs) on initial load
+                        if (markerBounds && !markerBounds.isEmpty()) {
+                            map.fitBounds(markerBounds, {
                                 padding: { top: 80, bottom: 80, left: 450, right: 80 }, // Account for sidebar
+                                maxZoom: 6,
+                                duration: 1500
+                            });
+                        } else if (!bounds.isEmpty()) {
+                            // Fallback to KPI markers if no geography bounds
+                            map.fitBounds(bounds, {
+                                padding: { top: 80, bottom: 80, left: 450, right: 80 },
                                 maxZoom: 6,
                                 duration: 1500
                             });
