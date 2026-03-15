@@ -49,6 +49,11 @@ class Config:
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None
 
+    # Mapbox (for geographic visualizations)
+    # Get free token at: https://account.mapbox.com/access-tokens/
+    # Free tier: 50,000 map loads/month
+    MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN", "")
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""
