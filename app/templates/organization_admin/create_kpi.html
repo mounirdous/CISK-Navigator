@@ -510,7 +510,8 @@
                                 <!-- COUNTRY LEVEL -->
                                 <div class="form-check mb-2">
                                     <input class="form-check-input country-checkbox" type="checkbox"
-                                           name="country_ids" value="{{ country.id }}" id="country_{{ country.id }}">
+                                           name="country_ids" value="{{ country.id }}" id="country_{{ country.id }}"
+                                           data-region-id="{{ region.id }}">
                                     <label class="form-check-label fw-semibold text-success" for="country_{{ country.id }}">
                                         <i class="bi bi-flag-fill"></i> {{ country.name }}
                                         {% if country.code %}
@@ -526,7 +527,8 @@
                                     <!-- SITE LEVEL -->
                                     <div class="form-check">
                                         <input class="form-check-input site-checkbox" type="checkbox"
-                                               name="site_ids" value="{{ site.id }}" id="site_{{ site.id }}">
+                                               name="site_ids" value="{{ site.id }}" id="site_{{ site.id }}"
+                                               data-country-id="{{ country.id }}" data-region-id="{{ region.id }}">
                                         <label class="form-check-label text-danger" for="site_{{ site.id }}">
                                             <i class="bi bi-geo-alt-fill"></i> {{ site.name }}
                                             {% if site.code %}
@@ -837,6 +839,42 @@ document.addEventListener('DOMContentLoaded', function() {
             const linkedSection = document.getElementById('linked_section_' + vtId);
             if (linkedSection) {
                 linkedSection.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    });
+
+    // Hierarchical geography checkbox selection
+    // When a country is checked, auto-check its parent region
+    document.querySelectorAll('.country-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                const regionId = this.getAttribute('data-region-id');
+                const regionCheckbox = document.getElementById('region_' + regionId);
+                if (regionCheckbox) {
+                    regionCheckbox.checked = true;
+                }
+            }
+        });
+    });
+
+    // When a site is checked, auto-check its parent country AND grandparent region
+    document.querySelectorAll('.site-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            if (this.checked) {
+                const countryId = this.getAttribute('data-country-id');
+                const regionId = this.getAttribute('data-region-id');
+
+                // Check parent country
+                const countryCheckbox = document.getElementById('country_' + countryId);
+                if (countryCheckbox) {
+                    countryCheckbox.checked = true;
+                }
+
+                // Check grandparent region
+                const regionCheckbox = document.getElementById('region_' + regionId);
+                if (regionCheckbox) {
+                    regionCheckbox.checked = true;
+                }
             }
         });
     });
