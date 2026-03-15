@@ -129,7 +129,18 @@
         <div id="map"></div>
 
         <div class="map-stats">
-            <h6><i class="bi bi-pin-map-fill"></i> Map Statistics</h6>
+            <h6><i class="bi bi-pin-map-fill"></i> Map Legend</h6>
+            <div style="margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="width: 16px; height: 16px; border-radius: 50%; background: #28a745; border: 2px solid white;"></div>
+                    <small>Country-level KPIs</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #0d6efd; border: 2px solid white;"></div>
+                    <small>Site-level KPIs</small>
+                </div>
+            </div>
+            <hr>
             <div class="stat-item">
                 <span class="stat-label">Total Sites</span>
                 <span class="stat-value">
@@ -171,40 +182,79 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 18
 }).addTo(map);
 
-// Fetch site data from API
-fetch('{{ url_for("geography.api_sites_json") }}')
+const allMarkers = [];
+
+// Fetch country data first
+fetch('{{ url_for("geography.api_countries_json") }}')
     .then(response => response.json())
     .then(data => {
         if (data.features && data.features.length > 0) {
-            // Create marker cluster group
-            const markers = [];
+            // Add markers for each country
+            data.features.forEach(feature => {
+                const coords = feature.geometry.coordinates;
+                const props = feature.properties;
+                const kpiCount = props.kpi_count || 0;
 
+                // Larger marker for countries
+                const marker = L.circleMarker([coords[1], coords[0]], {
+                    radius: 15,
+                    fillColor: '#28a745',
+                    color: '#fff',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0.7
+                });
+
+                // Create popup content for country
+                const popupContent = `
+                    <div>
+                        <h5><i class="bi bi-flag-fill text-success"></i> ${props.name}</h5>
+                        <p><strong>Region:</strong> ${props.region}</p>
+                        ${props.iso_code ? `<p><strong>ISO Code:</strong> <span class="badge bg-secondary">${props.iso_code}</span></p>` : ''}
+                        <p><strong>Country-level KPIs:</strong> <span class="badge bg-success">${kpiCount}</span></p>
+                        <hr style="margin: 0.5rem 0;">
+                        <small class="text-muted"><i class="bi bi-info-circle"></i> Country-level assignment</small>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                marker.addTo(map);
+                allMarkers.push(marker);
+            });
+        }
+
+        // Then fetch site data
+        return fetch('{{ url_for("geography.api_sites_json") }}');
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.features && data.features.length > 0) {
             // Add markers for each site
             data.features.forEach(feature => {
                 const coords = feature.geometry.coordinates;
                 const props = feature.properties;
-
-                // Create custom marker icon based on KPI count
                 const kpiCount = props.kpi_count || 0;
-                const iconSize = Math.max(20, Math.min(40, 20 + (kpiCount * 3)));
+
+                // Smaller marker for sites
+                const iconSize = Math.max(8, Math.min(20, 8 + (kpiCount * 2)));
 
                 const marker = L.circleMarker([coords[1], coords[0]], {
                     radius: iconSize / 2,
-                    fillColor: kpiCount > 0 ? '#0d6efd' : '#6c757d',
+                    fillColor: '#0d6efd',
                     color: '#fff',
-                    weight: 3,
+                    weight: 2,
                     opacity: 1,
                     fillOpacity: 0.8
                 });
 
-                // Create popup content
+                // Create popup content for site
                 const popupContent = `
                     <div>
-                        <h5><i class="bi bi-geo-alt-fill text-danger"></i> ${props.name}</h5>
+                        <h5><i class="bi bi-geo-alt-fill text-primary"></i> ${props.name}</h5>
                         <p><strong>Region:</strong> ${props.region}</p>
                         <p><strong>Country:</strong> ${props.country}</p>
                         ${props.code ? `<p><strong>Code:</strong> <span class="badge bg-secondary">${props.code}</span></p>` : ''}
-                        <p><strong>KPIs:</strong> <span class="badge bg-primary">${kpiCount}</span></p>
+                        <p><strong>Site KPIs:</strong> <span class="badge bg-primary">${kpiCount}</span></p>
                         ${props.address ? `<p class="text-muted small">${props.address}</p>` : ''}
                         <hr style="margin: 0.5rem 0;">
                         <a href="{{ url_for('workspace.index') }}?site_id=${props.id}" class="btn btn-sm btn-primary">
@@ -215,18 +265,18 @@ fetch('{{ url_for("geography.api_sites_json") }}')
 
                 marker.bindPopup(popupContent);
                 marker.addTo(map);
-                markers.push(marker);
+                allMarkers.push(marker);
             });
+        }
 
-            // Fit map to show all markers
-            if (markers.length > 0) {
-                const group = new L.featureGroup(markers);
-                map.fitBounds(group.getBounds().pad(0.1));
-            }
+        // Fit map to show all markers (countries + sites)
+        if (allMarkers.length > 0) {
+            const group = new L.featureGroup(allMarkers);
+            map.fitBounds(group.getBounds().pad(0.1));
         }
     })
     .catch(error => {
-        console.error('Error loading site data:', error);
+        console.error('Error loading geographic data:', error);
     });
 {% endif %}
 </script>

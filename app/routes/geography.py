@@ -592,6 +592,49 @@ def api_sites_json():
     return jsonify({"type": "FeatureCollection", "features": features})
 
 
+@bp.route("/api/countries.json")
+@login_required
+@organization_required
+def api_countries_json():
+    """Return all countries with KPI assignments as GeoJSON for map display"""
+    org_id = session.get("organization_id")
+
+    countries = (
+        GeographyCountry.query.join(GeographyRegion)
+        .filter(GeographyRegion.organization_id == org_id)
+        .all()
+    )
+
+    features = []
+    for country in countries:
+        # Only include countries that have coordinates and KPI assignments
+        if country.latitude and country.longitude:
+            kpi_count = len(country.geography_assignments)
+
+            # Include country if it has direct assignments or if its sites have assignments
+            if kpi_count > 0 or any(len(site.geography_assignments) > 0 for site in country.sites):
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [float(country.longitude), float(country.latitude)],
+                        },
+                        "properties": {
+                            "id": country.id,
+                            "name": country.name,
+                            "code": country.code,
+                            "iso_code": country.iso_code,
+                            "region": country.region.name,
+                            "kpi_count": kpi_count,
+                            "level": "country",
+                        },
+                    }
+                )
+
+    return jsonify({"type": "FeatureCollection", "features": features})
+
+
 @bp.route("/api/countries/search")
 @login_required
 def api_countries_search():
