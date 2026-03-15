@@ -931,12 +931,7 @@
                     <i class="bi bi-arrows-angle-expand"></i> Show All
                 </button>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <p style="font-size: 10px; font-weight: 700; color: #999; margin: 0; text-transform: uppercase; letter-spacing: 0.5px;">Countries</p>
-                    <button id="openColorSettings" class="btn btn-sm btn-outline-secondary" style="font-size: 10px; padding: 2px 8px;" title="Customize map colors">
-                        <i class="bi bi-palette"></i>
-                    </button>
-                </div>
+                <p style="font-size: 10px; font-weight: 700; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Countries</p>
                 <div style="margin-bottom: 1rem;">
                     <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
                         <div id="legend-with-kpis" style="width: 24px; height: 14px; background: {{ map_color_with_kpis }}; border: 1px solid {{ map_color_with_kpis }}; border-radius: 2px;"></div>
@@ -1060,43 +1055,6 @@
                 <i class="bi bi-geo-alt"></i>
                 Center on Map
             </button>
-        </div>
-    </div>
-</div>
-
-<!-- Color Settings Modal -->
-<div class="modal fade" id="colorSettingsModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-palette"></i> Map Color Settings</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label for="colorWithKPIs" class="form-label">Countries with KPIs</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="color" class="form-control form-control-color" id="colorWithKPIs" value="{{ map_color_with_kpis }}" title="Choose color">
-                        <input type="text" class="form-control" id="colorWithKPIsHex" value="{{ map_color_with_kpis }}" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#3b82f6">
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label for="colorNoKPIs" class="form-label">Countries in system (no KPIs)</label>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="color" class="form-control form-control-color" id="colorNoKPIs" value="{{ map_color_no_kpis }}" title="Choose color">
-                        <input type="text" class="form-control" id="colorNoKPIsHex" value="{{ map_color_no_kpis }}" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#9ca3af">
-                    </div>
-                </div>
-                <div class="alert alert-info" style="font-size: 0.875rem;">
-                    <i class="bi bi-info-circle"></i> Changes will be applied immediately to the map and saved for your organization.
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="saveColorSettings">
-                    <i class="bi bi-check-circle"></i> Save Colors
-                </button>
-            </div>
         </div>
     </div>
 </div>
@@ -1815,85 +1773,6 @@ document.getElementById('detailsMapBtn').addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         closeDetailsPanel();
-    }
-});
-
-// ========================================
-// MAP COLOR SETTINGS
-// ========================================
-
-// Open color settings modal
-document.getElementById('openColorSettings').addEventListener('click', () => {
-    const modal = new bootstrap.Modal(document.getElementById('colorSettingsModal'));
-    modal.show();
-});
-
-// Sync color picker with hex input
-document.getElementById('colorWithKPIs').addEventListener('input', (e) => {
-    document.getElementById('colorWithKPIsHex').value = e.target.value;
-});
-document.getElementById('colorWithKPIsHex').addEventListener('input', (e) => {
-    const hex = e.target.value;
-    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-        document.getElementById('colorWithKPIs').value = hex;
-    }
-});
-
-document.getElementById('colorNoKPIs').addEventListener('input', (e) => {
-    document.getElementById('colorNoKPIsHex').value = e.target.value;
-});
-document.getElementById('colorNoKPIsHex').addEventListener('input', (e) => {
-    const hex = e.target.value;
-    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
-        document.getElementById('colorNoKPIs').value = hex;
-    }
-});
-
-// Save color settings
-document.getElementById('saveColorSettings').addEventListener('click', async () => {
-    const colorWithKPIs = document.getElementById('colorWithKPIs').value;
-    const colorNoKPIs = document.getElementById('colorNoKPIs').value;
-
-    try {
-        const response = await fetch('{{ url_for("map_dashboard.save_colors") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                color_with_kpis: colorWithKPIs,
-                color_no_kpis: colorNoKPIs
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // Update legend colors
-            document.getElementById('legend-with-kpis').style.background = colorWithKPIs;
-            document.getElementById('legend-with-kpis').style.borderColor = colorWithKPIs;
-            document.getElementById('legend-no-kpis').style.background = colorNoKPIs;
-            document.getElementById('legend-no-kpis').style.borderColor = colorNoKPIs;
-
-            // Update map colors
-            map.setPaintProperty('country-fills', 'fill-color', [
-                'case',
-                ['>', ['coalesce', ['feature-state', 'kpi_count'], 0], 0], colorWithKPIs,
-                ['boolean', ['feature-state', 'in_system'], false], colorNoKPIs,
-                '#e0e0e0'
-            ]);
-
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('colorSettingsModal')).hide();
-
-            // Show success message
-            alert('✅ Map colors updated successfully!');
-        } else {
-            alert('❌ Error: ' + result.message);
-        }
-    } catch (error) {
-        console.error('Error saving colors:', error);
-        alert('❌ Failed to save colors. Please try again.');
     }
 });
 

@@ -50,6 +50,10 @@ def index():
     total_sites = sum(len(country.sites) for region in regions for country in region.countries)
     total_kpis_with_geography = db.session.query(KPIGeographyAssignment.kpi_id).distinct().count()
 
+    # Get map color preferences
+    map_color_with_kpis = organization.map_country_color_with_kpis or "#3b82f6"
+    map_color_no_kpis = organization.map_country_color_no_kpis or "#9ca3af"
+
     return render_template(
         "geography/index.html",
         organization=organization,
@@ -58,7 +62,55 @@ def index():
         total_countries=total_countries,
         total_sites=total_sites,
         total_kpis_with_geography=total_kpis_with_geography,
+        map_color_with_kpis=map_color_with_kpis,
+        map_color_no_kpis=map_color_no_kpis,
         csrf_token=generate_csrf(),
+    )
+
+
+@bp.route("/save-map-colors", methods=["POST"])
+@login_required
+@organization_required
+def save_map_colors():
+    """Save map color preferences for the organization"""
+    from flask import jsonify, request
+    from flask_login import current_user
+    import re
+
+    org_id = session.get("organization_id")
+    organization = Organization.query.get_or_404(org_id)
+
+    # Check if user has permission (org admin)
+    membership = current_user.get_organization_membership(org_id)
+    if not membership or not membership.is_org_admin:
+        return jsonify({"success": False, "message": "Permission denied. Only org admins can change map colors."}), 403
+
+    data = request.get_json()
+    color_with_kpis = data.get("color_with_kpis")
+    color_no_kpis = data.get("color_no_kpis")
+
+    # Validate hex colors
+    hex_pattern = re.compile(r"^#[0-9a-fA-F]{6}$")
+    if color_with_kpis and not hex_pattern.match(color_with_kpis):
+        return jsonify({"success": False, "message": "Invalid hex color for countries with KPIs"}), 400
+    if color_no_kpis and not hex_pattern.match(color_no_kpis):
+        return jsonify({"success": False, "message": "Invalid hex color for countries without KPIs"}), 400
+
+    # Update colors
+    if color_with_kpis:
+        organization.map_country_color_with_kpis = color_with_kpis
+    if color_no_kpis:
+        organization.map_country_color_no_kpis = color_no_kpis
+
+    db.session.commit()
+
+    return jsonify(
+        {
+            "success": True,
+            "message": "Map colors updated successfully",
+            "color_with_kpis": organization.map_country_color_with_kpis,
+            "color_no_kpis": organization.map_country_color_no_kpis,
+        }
     )
 
 

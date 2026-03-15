@@ -259,6 +259,48 @@
         </div>
     </div>
 
+    <!-- Map Color Settings -->
+    <div class="card mb-4" style="border-radius: 12px; border: 1px solid var(--border-color);">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0">
+                <i class="bi bi-palette-fill"></i> Map Color Settings
+            </h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted mb-3">Customize the colors used on the Map Dashboard for different country states.</p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="colorWithKPIs" class="form-label fw-semibold">
+                        <i class="bi bi-circle-fill" style="color: {{ map_color_with_kpis }};"></i>
+                        Countries with KPIs
+                    </label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" class="form-control form-control-color" id="colorWithKPIs" value="{{ map_color_with_kpis }}" title="Choose color" style="width: 80px;">
+                        <input type="text" class="form-control" id="colorWithKPIsHex" value="{{ map_color_with_kpis }}" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#3b82f6">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label for="colorNoKPIs" class="form-label fw-semibold">
+                        <i class="bi bi-circle-fill" style="color: {{ map_color_no_kpis }};"></i>
+                        Countries in system (no KPIs)
+                    </label>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" class="form-control form-control-color" id="colorNoKPIs" value="{{ map_color_no_kpis }}" title="Choose color" style="width: 80px;">
+                        <input type="text" class="form-control" id="colorNoKPIsHex" value="{{ map_color_no_kpis }}" pattern="^#[0-9A-Fa-f]{6}$" placeholder="#9ca3af">
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 d-flex justify-content-between align-items-center">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i> Changes apply immediately to the Map Dashboard
+                </small>
+                <button type="button" class="btn btn-primary" id="saveMapColors">
+                    <i class="bi bi-check-circle"></i> Save Colors
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Quick Actions Info -->
     <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
         <i class="bi bi-lightbulb-fill"></i>
@@ -377,4 +419,89 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ========================================
+// MAP COLOR SETTINGS
+// ========================================
+
+// Sync color picker with hex input
+document.getElementById('colorWithKPIs').addEventListener('input', (e) => {
+    document.getElementById('colorWithKPIsHex').value = e.target.value;
+});
+document.getElementById('colorWithKPIsHex').addEventListener('input', (e) => {
+    const hex = e.target.value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        document.getElementById('colorWithKPIs').value = hex;
+    }
+});
+
+document.getElementById('colorNoKPIs').addEventListener('input', (e) => {
+    document.getElementById('colorNoKPIsHex').value = e.target.value;
+});
+document.getElementById('colorNoKPIsHex').addEventListener('input', (e) => {
+    const hex = e.target.value;
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        document.getElementById('colorNoKPIs').value = hex;
+    }
+});
+
+// Save color settings
+document.getElementById('saveMapColors').addEventListener('click', async () => {
+    const colorWithKPIs = document.getElementById('colorWithKPIs').value;
+    const colorNoKPIs = document.getElementById('colorNoKPIs').value;
+    const button = document.getElementById('saveMapColors');
+
+    // Disable button during save
+    button.disabled = true;
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+
+    try {
+        const response = await fetch('{{ url_for("geography.save_map_colors") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                color_with_kpis: colorWithKPIs,
+                color_no_kpis: colorNoKPIs
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Show success message
+            button.innerHTML = '<i class="bi bi-check-circle-fill"></i> Saved!';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+
+            // Update the color preview icons
+            document.querySelector('label[for="colorWithKPIs"] i').style.color = colorWithKPIs;
+            document.querySelector('label[for="colorNoKPIs"] i').style.color = colorNoKPIs;
+
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                button.innerHTML = originalHTML;
+                button.classList.remove('btn-success');
+                button.classList.add('btn-primary');
+                button.disabled = false;
+            }, 2000);
+        } else {
+            // Show error
+            alert('❌ Error: ' + result.message);
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error saving colors:', error);
+        alert('❌ Failed to save colors. Please try again.');
+        button.innerHTML = originalHTML;
+        button.disabled = false;
+    }
+});
+</script>
 {% endblock %}
