@@ -1160,6 +1160,19 @@ fetch('{{ url_for("geography.api_countries_json") }}')
         console.log('Country KPIs map:', countryKPIs);
         console.log('Countries in system:', countriesInSystem);
 
+        // Create bounds from ALL countries in geography system (including those with 0 KPIs)
+        if (data.features && data.features.length > 0) {
+            const allCountriesBounds = new mapboxgl.LngLatBounds();
+            data.features.forEach(feature => {
+                if (feature.geometry && feature.geometry.coordinates) {
+                    allCountriesBounds.extend(feature.geometry.coordinates);
+                }
+            });
+            // Store for "Show All" button - this includes ALL geography countries
+            markerBounds = allCountriesBounds;
+            console.log('Bounds set for all countries in system:', markerBounds);
+        }
+
         // Wait for map to load
         map.on('load', () => {
             console.log('Map loaded, adding country source...');
@@ -1377,9 +1390,10 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                 kpiMarkers.push(marker);
                         });
 
-                        // Store bounds and auto-zoom to fit all markers
+                        // Extend existing bounds (which includes all geography countries)
+                        // Don't overwrite - just extend to include KPI markers too
                         if (!bounds.isEmpty()) {
-                            markerBounds = bounds;
+                            // markerBounds already contains all countries, just zoom to KPIs initially
                             map.fitBounds(bounds, {
                                 padding: { top: 80, bottom: 80, left: 450, right: 80 }, // Account for sidebar
                                 maxZoom: 6,
