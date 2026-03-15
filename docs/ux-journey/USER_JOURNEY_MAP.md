@@ -2,8 +2,27 @@
 
 **Purpose:** Map EVERY step users take to ensure THE SIMPLEST POSSIBLE experience
 
-**Date:** 2026-03-12
-**Version:** 1.19.0
+**Date:** 2026-03-12 (Original) | **Updated:** 2026-03-15
+**Version:** 1.19.0 → 1.33.32
+
+> **📋 Note:** This document describes user flows from v1.19.0. For a comprehensive UX audit covering v1.33.32 with current issues and recommendations, see [COMPREHENSIVE_UX_AUDIT_v1.33.md](./COMPREHENSIVE_UX_AUDIT_v1.33.md)
+
+## 🆕 What's New Since v1.19.0
+
+### Added in v1.33.32:
+- **Entity Links** - Attach URLs/documents to any entity with hover popovers
+- **Entity links appear in:**
+  - Workspace tree view (link icon with popup)
+  - All edit pages (links section with add/delete)
+- **Smart icon detection** for Google Docs, GitHub, PDFs, etc.
+- **Public/Private sharing** options
+
+### Added in v1.32.0 - v1.33.0:
+- **Geography Management** - Track KPIs by location (regions/countries/sites)
+- **Mapbox Integration** - Professional mapping with colored country polygons
+- **Impact Assessment** - Track initiative impact on challenges
+- **Saved Filter Search** - Live search for filter presets
+- **Dashboard improvements** - Multiple improvements and refinements
 
 ---
 
