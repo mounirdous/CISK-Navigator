@@ -3694,26 +3694,31 @@ function getCurrentFilters() {
 }
 
 // Live search for saved filter presets
-document.getElementById('preset-search')?.addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase().trim();
-    const presetItems = document.querySelectorAll('.preset-item');
-    const noResultsMsg = document.getElementById('no-presets-found');
-    let visibleCount = 0;
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('preset-search');
+    if (!searchInput) return;
 
-    presetItems.forEach(item => {
-        const presetName = item.dataset.presetName || '';
-        if (!searchTerm || presetName.includes(searchTerm)) {
-            item.style.display = '';
-            visibleCount++;
-        } else {
-            item.style.display = 'none';
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const presetItems = document.querySelectorAll('.preset-item');
+        const noResultsMsg = document.getElementById('no-presets-found');
+        let visibleCount = 0;
+
+        presetItems.forEach(item => {
+            const presetName = item.dataset.presetName || '';
+            if (!searchTerm || presetName.includes(searchTerm)) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // Show/hide "no results" message
+        if (noResultsMsg) {
+            noResultsMsg.style.display = (visibleCount === 0 && presetItems.length > 0) ? 'block' : 'none';
         }
     });
-
-    // Show/hide "no results" message
-    if (noResultsMsg) {
-        noResultsMsg.style.display = (visibleCount === 0 && presetItems.length > 0) ? 'block' : 'none';
-    }
 });
 
 // Save current filters as preset
