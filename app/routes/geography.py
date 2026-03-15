@@ -666,3 +666,42 @@ def api_countries_search():
 
     # Limit to 10 results
     return jsonify(results[:10])
+
+
+@bp.route("/api/geocode")
+@login_required
+def api_geocode():
+    """Geocode an address using Nominatim (OpenStreetMap)"""
+    import requests
+
+    address = request.args.get("address", "").strip()
+    if not address:
+        return jsonify({"error": "Address is required"}), 400
+
+    try:
+        # Use Nominatim API (OpenStreetMap geocoding service)
+        response = requests.get(
+            "https://nominatim.openstreetmap.org/search",
+            params={"q": address, "format": "json", "limit": 1, "addressdetails": 1},
+            headers={"User-Agent": "CISK-Navigator/1.0"},
+            timeout=10,
+        )
+        response.raise_for_status()
+
+        results = response.json()
+        if not results:
+            return jsonify({"error": "Address not found"}), 404
+
+        location = results[0]
+        return jsonify(
+            {
+                "latitude": float(location["lat"]),
+                "longitude": float(location["lon"]),
+                "display_name": location.get("display_name", ""),
+                "address": location.get("address", {}),
+            }
+        )
+    except requests.RequestException as e:
+        return jsonify({"error": f"Geocoding service error: {str(e)}"}), 500
+    except (ValueError, KeyError) as e:
+        return jsonify({"error": f"Invalid response from geocoding service: {str(e)}"}), 500

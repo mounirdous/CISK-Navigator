@@ -52,26 +52,31 @@
 
                         <div class="mb-3">
                             {{ form.address.label(class="form-label") }}
-                            {{ form.address(class="form-control", rows=3, placeholder="123 Rue Example, 75001 Paris, France") }}
+                            {{ form.address(class="form-control", rows=3, placeholder="123 Rue Example, 75001 Paris, France", id="address_field") }}
                             <small class="form-text text-muted">Physical address (optional)</small>
                         </div>
 
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill"></i>
-                            <strong>Coordinates for Map Display:</strong> Enter latitude and longitude to show this site on the map dashboard.
-                            You can find coordinates by searching the address on <a href="https://www.google.com/maps" target="_blank">Google Maps</a> and clicking on the location.
+                            <i class="bi bi-map-fill"></i>
+                            <strong>Auto-Geocode Address:</strong> Enter an address above and click the button below to automatically get coordinates.
+                            <div class="mt-2">
+                                <button type="button" class="btn btn-sm btn-primary" id="geocode_btn">
+                                    <i class="bi bi-geo-alt-fill"></i> Get Coordinates from Address
+                                </button>
+                                <span id="geocode_status" class="ms-2"></span>
+                            </div>
                         </div>
 
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.latitude.label(class="form-label") }}
-                                {{ form.latitude(class="form-control", placeholder="e.g., 48.8566 (Paris)", step="0.00000001") }}
+                                {{ form.latitude(class="form-control", placeholder="e.g., 48.8566 (Paris)", step="0.00000001", id="latitude_field") }}
                                 <small class="form-text text-muted">Decimal degrees (-90 to 90)</small>
                             </div>
 
                             <div class="col-md-6 mb-3">
                                 {{ form.longitude.label(class="form-label") }}
-                                {{ form.longitude(class="form-control", placeholder="e.g., 2.3522 (Paris)", step="0.00000001") }}
+                                {{ form.longitude(class="form-control", placeholder="e.g., 2.3522 (Paris)", step="0.00000001", id="longitude_field") }}
                                 <small class="form-text text-muted">Decimal degrees (-180 to 180)</small>
                             </div>
                         </div>
@@ -104,4 +109,54 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('geocode_btn').addEventListener('click', function() {
+    const address = document.getElementById('address_field').value.trim();
+    const statusEl = document.getElementById('geocode_status');
+    const btn = this;
+
+    if (!address) {
+        statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> Please enter an address first</span>';
+        return;
+    }
+
+    // Show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Geocoding...';
+    statusEl.innerHTML = '<span class="text-muted">Searching...</span>';
+
+    // Call geocoding API
+    fetch('{{ url_for("geography.api_geocode") }}?address=' + encodeURIComponent(address))
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update coordinates
+            document.getElementById('latitude_field').value = data.latitude.toFixed(8);
+            document.getElementById('longitude_field').value = data.longitude.toFixed(8);
+
+            statusEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Coordinates found!</span>';
+
+            // Show the full address found
+            if (data.display_name) {
+                setTimeout(() => {
+                    statusEl.innerHTML = '<span class="text-muted"><small>' + data.display_name + '</small></span>';
+                }, 2000);
+            }
+        })
+        .catch(error => {
+            statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle"></i> ' +
+                (error.error || 'Geocoding failed') + '</span>';
+        })
+        .finally(() => {
+            // Reset button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-geo-alt-fill"></i> Get Coordinates from Address';
+        });
+});
+</script>
 {% endblock %}

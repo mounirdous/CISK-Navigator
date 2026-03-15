@@ -129,15 +129,32 @@
         <div id="map"></div>
 
         <div class="map-stats">
-            <h6><i class="bi bi-pin-map-fill"></i> Map Legend</h6>
+            <h6><i class="bi bi-map-fill"></i> Map Legend</h6>
             <div style="margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <div style="width: 16px; height: 16px; border-radius: 50%; background: #28a745; border: 2px solid white;"></div>
-                    <small>Country-level KPIs</small>
+                <p style="margin-bottom: 0.5rem;"><strong>Country KPI Density:</strong></p>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <div style="width: 20px; height: 12px; background: #006d2c; border: 1px solid #666;"></div>
+                    <small>50+ KPIs</small>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #0d6efd; border: 2px solid white;"></div>
-                    <small>Site-level KPIs</small>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <div style="width: 20px; height: 12px; background: #31a354; border: 1px solid #666;"></div>
+                    <small>20-50 KPIs</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <div style="width: 20px; height: 12px; background: #74c476; border: 1px solid #666;"></div>
+                    <small>10-20 KPIs</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <div style="width: 20px; height: 12px; background: #bae4b3; border: 1px solid #666;"></div>
+                    <small>5-10 KPIs</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="width: 20px; height: 12px; background: #edf8e9; border: 1px solid #666;"></div>
+                    <small>1-5 KPIs</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #dc3545; border: 2px solid white;"></div>
+                    <small>Site location</small>
                 </div>
             </div>
             <hr>
@@ -159,7 +176,7 @@
             </div>
             <hr>
             <small class="text-muted">
-                <i class="bi bi-info-circle"></i> Click markers for details
+                <i class="bi bi-info-circle"></i> Hover over countries and click for details
             </small>
         </div>
     </div>
@@ -174,7 +191,7 @@
 <script>
 {% if total_kpis > 0 %}
 // Initialize map
-const map = L.map('map').setView([48.8566, 2.3522], 4); // Center on Europe
+const map = L.map('map').setView([20, 0], 2); // World view
 
 // Add OpenStreetMap tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -183,47 +200,100 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 const allMarkers = [];
+let countryKPIs = {};
 
-// Fetch country data first
+// First, fetch country KPI data
 fetch('{{ url_for("geography.api_countries_json") }}')
     .then(response => response.json())
     .then(data => {
+        // Build a map of country ISO codes to KPI counts
         if (data.features && data.features.length > 0) {
-            // Add markers for each country
             data.features.forEach(feature => {
-                const coords = feature.geometry.coordinates;
                 const props = feature.properties;
-                const kpiCount = props.kpi_count || 0;
-
-                // Larger marker for countries
-                const marker = L.circleMarker([coords[1], coords[0]], {
-                    radius: 15,
-                    fillColor: '#28a745',
-                    color: '#fff',
-                    weight: 3,
-                    opacity: 1,
-                    fillOpacity: 0.7
-                });
-
-                // Create popup content for country
-                const popupContent = `
-                    <div>
-                        <h5><i class="bi bi-flag-fill text-success"></i> ${props.name}</h5>
-                        <p><strong>Region:</strong> ${props.region}</p>
-                        ${props.iso_code ? `<p><strong>ISO Code:</strong> <span class="badge bg-secondary">${props.iso_code}</span></p>` : ''}
-                        <p><strong>Country-level KPIs:</strong> <span class="badge bg-success">${kpiCount}</span></p>
-                        <hr style="margin: 0.5rem 0;">
-                        <small class="text-muted"><i class="bi bi-info-circle"></i> Country-level assignment</small>
-                    </div>
-                `;
-
-                marker.bindPopup(popupContent);
-                marker.addTo(map);
-                allMarkers.push(marker);
+                if (props.iso_code) {
+                    countryKPIs[props.iso_code.toUpperCase()] = {
+                        name: props.name,
+                        kpi_count: props.kpi_count || 0,
+                        region: props.region,
+                        id: props.id
+                    };
+                }
             });
         }
 
-        // Then fetch site data
+        // Fetch world countries GeoJSON from CDN
+        return fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+    })
+    .then(response => response.json())
+    .then(worldData => {
+        // Color scale function
+        function getColor(kpiCount) {
+            return kpiCount > 50 ? '#006d2c' :
+                   kpiCount > 20 ? '#31a354' :
+                   kpiCount > 10 ? '#74c476' :
+                   kpiCount > 5  ? '#bae4b3' :
+                   kpiCount > 0  ? '#edf8e9' :
+                   '#f0f0f0';
+        }
+
+        function style(feature) {
+            const iso = feature.properties.ISO_A2 || feature.properties.iso_a2;
+            const countryData = countryKPIs[iso];
+            const kpiCount = countryData ? countryData.kpi_count : 0;
+
+            return {
+                fillColor: getColor(kpiCount),
+                weight: 1,
+                opacity: 1,
+                color: '#666',
+                fillOpacity: kpiCount > 0 ? 0.7 : 0.1
+            };
+        }
+
+        function highlightFeature(e) {
+            const layer = e.target;
+            layer.setStyle({
+                weight: 3,
+                color: '#333',
+                fillOpacity: 0.9
+            });
+            layer.bringToFront();
+        }
+
+        function resetHighlight(e) {
+            geojsonLayer.resetStyle(e.target);
+        }
+
+        function onEachFeature(feature, layer) {
+            const iso = feature.properties.ISO_A2 || feature.properties.iso_a2;
+            const countryData = countryKPIs[iso];
+
+            if (countryData && countryData.kpi_count > 0) {
+                layer.on({
+                    mouseover: highlightFeature,
+                    mouseout: resetHighlight
+                });
+
+                const popupContent = `
+                    <div>
+                        <h5><i class="bi bi-flag-fill text-success"></i> ${countryData.name}</h5>
+                        <p><strong>Region:</strong> ${countryData.region}</p>
+                        <p><strong>ISO Code:</strong> <span class="badge bg-secondary">${iso}</span></p>
+                        <p><strong>Country-level KPIs:</strong> <span class="badge bg-success">${countryData.kpi_count}</span></p>
+                        <hr style="margin: 0.5rem 0;">
+                        <small class="text-muted"><i class="bi bi-info-circle"></i> Click to view KPIs</small>
+                    </div>
+                `;
+                layer.bindPopup(popupContent);
+            }
+        }
+
+        const geojsonLayer = L.geoJSON(worldData, {
+            style: style,
+            onEachFeature: onEachFeature
+        }).addTo(map);
+
+        // Then fetch site data to add as markers
         return fetch('{{ url_for("geography.api_sites_json") }}');
     })
     .then(response => response.json())
@@ -235,29 +305,27 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                 const props = feature.properties;
                 const kpiCount = props.kpi_count || 0;
 
-                // Smaller marker for sites
-                const iconSize = Math.max(8, Math.min(20, 8 + (kpiCount * 2)));
-
+                // Marker for sites
                 const marker = L.circleMarker([coords[1], coords[0]], {
-                    radius: iconSize / 2,
-                    fillColor: '#0d6efd',
+                    radius: 6,
+                    fillColor: '#dc3545',
                     color: '#fff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.8
+                    fillOpacity: 0.9
                 });
 
                 // Create popup content for site
                 const popupContent = `
                     <div>
-                        <h5><i class="bi bi-geo-alt-fill text-primary"></i> ${props.name}</h5>
+                        <h5><i class="bi bi-geo-alt-fill text-danger"></i> ${props.name}</h5>
                         <p><strong>Region:</strong> ${props.region}</p>
                         <p><strong>Country:</strong> ${props.country}</p>
                         ${props.code ? `<p><strong>Code:</strong> <span class="badge bg-secondary">${props.code}</span></p>` : ''}
-                        <p><strong>Site KPIs:</strong> <span class="badge bg-primary">${kpiCount}</span></p>
+                        <p><strong>Site KPIs:</strong> <span class="badge bg-danger">${kpiCount}</span></p>
                         ${props.address ? `<p class="text-muted small">${props.address}</p>` : ''}
                         <hr style="margin: 0.5rem 0;">
-                        <a href="{{ url_for('workspace.index') }}?site_id=${props.id}" class="btn btn-sm btn-primary">
+                        <a href="{{ url_for('workspace.index') }}?site_id=${props.id}" class="btn btn-sm btn-danger">
                             <i class="bi bi-grid-3x3-gap"></i> View KPIs
                         </a>
                     </div>
@@ -269,10 +337,17 @@ fetch('{{ url_for("geography.api_countries_json") }}')
             });
         }
 
-        // Fit map to show all markers (countries + sites)
+        // Auto-zoom to show countries with KPIs
+        const countryCoords = Object.keys(countryKPIs).map(iso => {
+            // Get approximate center for each country with KPIs
+            const data = '{{ url_for("geography.api_countries_json") }}';
+            return null;
+        }).filter(c => c);
+
+        // If we have markers, fit to them
         if (allMarkers.length > 0) {
             const group = new L.featureGroup(allMarkers);
-            map.fitBounds(group.getBounds().pad(0.1));
+            map.fitBounds(group.getBounds().pad(0.2));
         }
     })
     .catch(error => {
