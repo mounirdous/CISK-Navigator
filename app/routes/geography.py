@@ -73,64 +73,58 @@ def index():
 @organization_required
 def save_map_colors():
     """Save map color preferences for the organization"""
-    from flask import jsonify, request
-    from flask_login import current_user
     import re
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.info("=== save_map_colors called ===")
 
     try:
         org_id = session.get("organization_id")
-        logger.info(f"Organization ID: {org_id}")
         organization = Organization.query.get_or_404(org_id)
 
         # Check if user has permission (org admin)
         membership = current_user.get_organization_membership(org_id)
-        logger.info(f"User membership: {membership}, is_org_admin: {membership.is_org_admin if membership else 'None'}")
-
         if not membership or not membership.is_org_admin:
-            logger.warning("Permission denied - user is not org admin")
-            return jsonify({"success": False, "message": "Permission denied. Only org admins can change map colors."}), 403
+            return jsonify({"success": False, "message": "Permission denied"}), 403
 
         data = request.get_json()
-        logger.info(f"Received data: {data}")
         color_with_kpis = data.get("color_with_kpis")
         color_no_kpis = data.get("color_no_kpis")
 
         # Validate hex colors
         hex_pattern = re.compile(r"^#[0-9a-fA-F]{6}$")
         if color_with_kpis and not hex_pattern.match(color_with_kpis):
-            logger.warning(f"Invalid hex color for with_kpis: {color_with_kpis}")
-            return jsonify({"success": False, "message": "Invalid hex color for countries with KPIs"}), 400
+            return jsonify({"success": False, "message": "Invalid color format"}), 400
         if color_no_kpis and not hex_pattern.match(color_no_kpis):
-            logger.warning(f"Invalid hex color for no_kpis: {color_no_kpis}")
-            return jsonify({"success": False, "message": "Invalid hex color for countries without KPIs"}), 400
+            return jsonify({"success": False, "message": "Invalid color format"}), 400
+
+        # Check if columns exist (migration might not have run on production)
+        if not hasattr(organization, "map_country_color_with_kpis"):
+            return (
+                jsonify(
+                    {
+                        "success": False,
+                        "message": "Database not updated. Please run: flask db upgrade on server.",
+                    }
+                ),
+                500,
+            )
 
         # Update colors
         if color_with_kpis:
             organization.map_country_color_with_kpis = color_with_kpis
-            logger.info(f"Updated color_with_kpis to: {color_with_kpis}")
         if color_no_kpis:
             organization.map_country_color_no_kpis = color_no_kpis
-            logger.info(f"Updated color_no_kpis to: {color_no_kpis}")
 
         db.session.commit()
-        logger.info("Colors saved to database successfully")
 
         return jsonify(
             {
                 "success": True,
-                "message": "Map colors updated successfully",
                 "color_with_kpis": organization.map_country_color_with_kpis,
                 "color_no_kpis": organization.map_country_color_no_kpis,
             }
         )
     except Exception as e:
-        logger.error(f"Error saving map colors: {str(e)}", exc_info=True)
         db.session.rollback()
-        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @bp.route("/import-csv", methods=["GET", "POST"])
