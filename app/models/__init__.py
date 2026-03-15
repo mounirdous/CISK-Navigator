@@ -12,6 +12,7 @@ from .audit_log import AuditLog
 from .cell_comment import CellComment, MentionNotification
 from .challenge import Challenge
 from .contribution import Contribution
+from .entity_link import EntityLink
 from .entity_type_default import EntityTypeDefault
 from .geography import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, KPISiteAssignment
 from .governance_body import GovernanceBody, KPIGovernanceBodyLink
@@ -53,6 +54,7 @@ __all__ = [
     "CellComment",
     "MentionNotification",
     "SystemSetting",
+    "EntityLink",
     "EntityTypeDefault",
     "UserFilterPreset",
     "SystemAnnouncement",

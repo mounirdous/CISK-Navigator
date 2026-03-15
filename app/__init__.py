@@ -67,6 +67,7 @@ def create_app(config_name=None):
     from app.routes import (
         analytics,
         auth,
+        entity_links,
         executive,
         geography,
         global_admin,
@@ -87,6 +88,7 @@ def create_app(config_name=None):
     app.register_blueprint(executive.bp)
     app.register_blueprint(map_dashboard.bp)
     app.register_blueprint(logo.bp)
+    app.register_blueprint(entity_links.bp)
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":
