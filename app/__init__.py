@@ -150,8 +150,9 @@ def create_app(config_name=None):
         ):
             return None
 
-        # If user is beta tester (or super admin), redirect to beta equivalent
-        if current_user.beta_tester or current_user.is_super_admin:
+        # If user is beta tester, redirect to beta equivalent
+        # (super admins can access beta but are NOT auto-redirected)
+        if current_user.beta_tester:
             # Map regular routes to beta routes
             route_mapping = {
                 "workspace.index": "beta.workspace",

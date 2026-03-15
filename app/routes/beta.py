@@ -3,7 +3,7 @@ Beta Feature Prototypes
 ------------------------
 Experimental features and UI prototypes for testing.
 
-Auto-redirect: Users with mobile_beta_tester=True automatically see beta routes.
+Auto-redirect: Users with beta_tester=True automatically see beta routes.
 """
 
 from functools import wraps
