@@ -609,10 +609,19 @@ def api_countries_json():
     for country in countries:
         # Only include countries that have coordinates and KPI assignments
         if country.latitude and country.longitude:
-            kpi_count = len(country.geography_assignments)
+            # Count direct country assignments
+            direct_assignments = len(country.geography_assignments)
 
-            # Include country if it has direct assignments or if its sites have assignments
-            if kpi_count > 0 or any(len(site.geography_assignments) > 0 for site in country.sites):
+            # Count site assignments that roll up to this country
+            site_assignments = sum(len(site.geography_assignments) for site in country.sites)
+
+            # Count region assignments that roll down to this country
+            region_assignments = len(country.region.geography_assignments) if country.region else 0
+
+            total_kpi_count = direct_assignments + site_assignments + region_assignments
+
+            # Include country if it has any assignments (direct, from sites, or from region)
+            if total_kpi_count > 0:
                 features.append(
                     {
                         "type": "Feature",
@@ -626,7 +635,7 @@ def api_countries_json():
                             "code": country.code,
                             "iso_code": country.iso_code,
                             "region": country.region.name,
-                            "kpi_count": kpi_count,
+                            "kpi_count": total_kpi_count,
                             "level": "country",
                         },
                     }
@@ -640,18 +649,21 @@ def api_countries_json():
 @organization_required
 def api_map_kpis():
     """Return all KPIs with their geographic locations and latest values for map display"""
-    from app.models import KPI
+    from app.models import KPI, InitiativeSystemLink, Initiative
     from sqlalchemy import desc
 
     org_id = session.get("organization_id")
 
     # Get all KPIs with geography assignments in this organization
+    # Join through InitiativeSystemLink → Initiative to filter by organization
     kpis = (
         KPI.query.join(KPI.geography_assignments)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
         .join(GeographyCountry, KPIGeographyAssignment.country_id == GeographyCountry.id, isouter=True)
         .join(GeographySite, KPIGeographyAssignment.site_id == GeographySite.id, isouter=True)
         .join(GeographyRegion, KPIGeographyAssignment.region_id == GeographyRegion.id, isouter=True)
-        .filter(KPI.organization_id == org_id)
+        .filter(Initiative.organization_id == org_id)
         .distinct()
         .all()
     )
@@ -682,6 +694,11 @@ def api_map_kpis():
                     location_type = "region"
 
             if lat and lon:
+                # Get primary value type config for unit and target
+                primary_config = kpi.value_type_configs[0] if kpi.value_type_configs else None
+                unit_label = primary_config.value_type.unit_label if primary_config and primary_config.value_type else None
+                target_value = primary_config.target_value if primary_config else None
+
                 features.append(
                     {
                         "type": "Feature",
@@ -689,13 +706,13 @@ def api_map_kpis():
                         "properties": {
                             "kpi_id": kpi.id,
                             "kpi_name": kpi.name,
-                            "kpi_code": kpi.code,
+                            "kpi_code": f"KPI-{kpi.id}",  # KPI model has no code field
                             "location_name": location_name,
                             "location_type": location_type,
                             "value": str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value else "No data",
                             "period": latest_snapshot.period.strftime("%Y-%m") if latest_snapshot else None,
-                            "target": kpi.target,
-                            "unit": kpi.unit,
+                            "target": str(target_value) if target_value else None,
+                            "unit": unit_label,
                         },
                     }
                 )

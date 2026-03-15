@@ -118,25 +118,30 @@
         </div>
     </div>
 
-    {% if total_kpis == 0 %}
-    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
-        <h4><i class="bi bi-info-circle-fill"></i> No Geographic Data Yet</h4>
-        <p class="mb-3">To see KPIs on the map, you need to:</p>
-        <ol>
-            <li><a href="{{ url_for('geography.index') }}">Create regions, countries, and sites</a> with coordinates</li>
-            <li>Assign sites to KPIs when creating or editing them</li>
-            <li>Return here to view your geographic KPI distribution</li>
-        </ol>
-        <a href="{{ url_for('geography.index') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle-fill"></i> Set Up Geography
-        </a>
-    </div>
-    {% else %}
     <div class="map-container">
         <div id="map"></div>
 
+        {% if total_kpis == 0 %}
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; max-width: 500px; text-align: center;">
+            <h4><i class="bi bi-info-circle-fill text-info"></i> No KPIs Assigned to Locations Yet</h4>
+            <p class="mb-3">The map is ready! To add KPI markers:</p>
+            <ol style="text-align: left;">
+                <li><a href="{{ url_for('geography.index') }}">Create regions, countries, and sites</a></li>
+                <li><strong>Edit your KPIs</strong> and check the geography boxes</li>
+                <li>Return here to see KPIs on the map</li>
+            </ol>
+            <a href="{{ url_for('geography.index') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle-fill"></i> Set Up Geography
+            </a>
+        </div>
+        {% endif %}
+
         <div class="map-stats">
-            <h6><i class="bi bi-map-fill"></i> Map Legend</h6>
+            <h6><i class="bi bi-map-fill"></i> Map Controls</h6>
+
+            <button id="toggleKPIs" class="btn btn-sm btn-primary w-100 mb-3" style="font-size: 12px;">
+                <i class="bi bi-eye-slash"></i> Hide KPI Markers
+            </button>
 
             <p style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 8px; text-transform: uppercase;">Countries</p>
             <div style="margin-bottom: 1rem;">
@@ -200,29 +205,30 @@
             </small>
         </div>
     </div>
-    {% endif %}
 </div>
 
 <!-- Mapbox GL JS -->
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
 
 <script>
-{% if total_kpis > 0 %}
 // Mapbox access token - get free token at https://account.mapbox.com/access-tokens/
 // Free tier: 50,000 map loads/month
 mapboxgl.accessToken = '{{ config.get("MAPBOX_ACCESS_TOKEN", "pk.YOUR_TOKEN_HERE") }}';
 
 console.log('=== MAPBOX MAP INITIALIZATION ===');
 
-// Initialize Mapbox map
+// Initialize Mapbox map (2D)
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v11', // Light background
     center: [10, 45], // Europe
-    zoom: 3
+    zoom: 3,
+    projection: 'mercator' // 2D map
 });
 
 let countryKPIs = {};
+let kpiMarkers = []; // Store all KPI markers for toggle
+let markersVisible = true;
 
 // Fetch YOUR country data
 fetch('{{ url_for("geography.api_countries_json") }}')
@@ -230,22 +236,31 @@ fetch('{{ url_for("geography.api_countries_json") }}')
     .then(data => {
         console.log('YOUR COUNTRIES WITH KPIs:', data);
 
-        // Build lookup map
+        // Build lookup map with both 2-letter and 3-letter ISO codes
         if (data.features && data.features.length > 0) {
             data.features.forEach(feature => {
                 const props = feature.properties;
                 if (props.iso_code) {
                     const iso = props.iso_code.toUpperCase().trim();
-                    // Store with both 2-letter and 3-letter codes
-                    countryKPIs[iso] = props.kpi_count || 0;
 
-                    // Add 3-letter code mapping
+                    // ISO code mappings (bidirectional)
                     const iso2to3 = {
                         'US': 'USA', 'CH': 'CHE', 'IT': 'ITA', 'FR': 'FRA', 'DE': 'DEU',
                         'GB': 'GBR', 'ES': 'ESP', 'NL': 'NLD', 'BE': 'BEL', 'AT': 'AUT'
                     };
-                    if (iso2to3[iso]) {
+                    const iso3to2 = {
+                        'USA': 'US', 'CHE': 'CH', 'ITA': 'IT', 'FRA': 'FR', 'DEU': 'DE',
+                        'GBR': 'GB', 'ESP': 'ES', 'NLD': 'NL', 'BEL': 'BE', 'AUT': 'AT'
+                    };
+
+                    // Store with the ISO code from database
+                    countryKPIs[iso] = props.kpi_count || 0;
+
+                    // Also store with alternate format (2-letter <-> 3-letter)
+                    if (iso.length === 2 && iso2to3[iso]) {
                         countryKPIs[iso2to3[iso]] = props.kpi_count || 0;
+                    } else if (iso.length === 3 && iso3to2[iso]) {
+                        countryKPIs[iso3to2[iso]] = props.kpi_count || 0;
                     }
 
                     console.log(`Registered: ${props.name} (${iso}) = ${props.kpi_count} KPIs`);
@@ -257,68 +272,93 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
         // Wait for map to load
         map.on('load', () => {
-            console.log('Map loaded, adding country layer...');
+            console.log('Map loaded, adding country source...');
 
-            // Add country fill layer - Mapbox has built-in country boundaries!
+            // Add country boundaries source with explicit ID
+            map.addSource('country-boundaries', {
+                'type': 'vector',
+                'url': 'mapbox://mapbox.country-boundaries-v1'
+            });
+
+            // Add layers immediately
             map.addLayer({
                 'id': 'country-fills',
                 'type': 'fill',
-                'source': {
-                    'type': 'vector',
-                    'url': 'mapbox://mapbox.country-boundaries-v1'
-                },
+                'source': 'country-boundaries',
                 'source-layer': 'country_boundaries',
                 'paint': {
                     'fill-color': [
                         'case',
-                        ['>', ['get', 'kpi_count'], 0], '#00ff00', // Green if has KPIs
-                        '#f0f0f0' // Gray otherwise
+                        ['>', ['coalesce', ['feature-state', 'kpi_count'], 0], 0], '#10b981', // Green
+                        '#e0e0e0' // Gray
                     ],
                     'fill-opacity': [
                         'case',
-                        ['>', ['get', 'kpi_count'], 0], 0.7,
-                        0.2
+                        ['>', ['coalesce', ['feature-state', 'kpi_count'], 0], 0], 0.8,
+                        0.15
                     ]
                 }
             });
 
-            // Add country borders
             map.addLayer({
                 'id': 'country-borders',
                 'type': 'line',
-                'source': {
-                    'type': 'vector',
-                    'url': 'mapbox://mapbox.country-boundaries-v1'
-                },
+                'source': 'country-boundaries',
                 'source-layer': 'country_boundaries',
                 'paint': {
-                    'line-color': '#666',
-                    'line-width': 1
+                    'line-color': '#999',
+                    'line-width': 1,
+                    'line-opacity': 0.5
                 }
             });
 
-            // Update country colors based on our KPI data
-            map.on('data', (e) => {
-                if (e.sourceId !== 'composite' || !e.isSourceLoaded) return;
+            console.log('Country layers added, waiting for tiles to load...');
 
-                const features = map.querySourceFeatures('composite', {
-                    sourceLayer: 'country_boundaries'
+            // Set feature states - use idle event to ensure tiles are loaded
+            map.once('idle', () => {
+                console.log('Map idle, setting country colors...');
+
+                const features = map.queryRenderedFeatures({
+                    layers: ['country-fills']
                 });
 
+                if (features.length === 0) {
+                    console.log('⚠️ No country features rendered yet');
+                    return;
+                }
+
+                console.log(`Found ${features.length} rendered countries, setting colors...`);
+                let matched = 0;
+
+                const processedIds = new Set();
                 features.forEach(feature => {
-                    const iso = feature.properties.iso_3166_1 || feature.properties.iso_3166_1_alpha_3;
-                    if (iso && countryKPIs[iso]) {
+                    // Avoid duplicates (same country rendered in multiple tiles)
+                    if (processedIds.has(feature.id)) return;
+                    processedIds.add(feature.id);
+
+                    const iso2 = feature.properties.iso_3166_1;
+                    const iso3 = feature.properties.iso_3166_1_alpha_3;
+                    const name = feature.properties.name_en;
+
+                    const kpiCount = countryKPIs[iso2] || countryKPIs[iso3] || 0;
+
+                    if (kpiCount > 0) {
                         map.setFeatureState(
-                            { source: 'composite', sourceLayer: 'country_boundaries', id: feature.id },
-                            { kpi_count: countryKPIs[iso] }
+                            { source: 'country-boundaries', sourceLayer: 'country_boundaries', id: feature.id },
+                            { kpi_count: kpiCount }
                         );
-                        console.log(`✓ Colored: ${feature.properties.name_en} (${iso}) = ${countryKPIs[iso]} KPIs`);
+                        console.log(`✅ COLORED: ${name} (${iso2}/${iso3}) = ${kpiCount} KPIs`);
+                        matched++;
                     }
                 });
+
+                console.log(`🎨 ${matched} countries colored GREEN! Switzerland should be visible now.`);
             });
 
-            // Add hover effect
-            map.on('mousemove', 'country-fills', (e) => {
+            // Add hover effect with single popup instance
+            let countryPopup = null;
+
+            map.on('mouseenter', 'country-fills', (e) => {
                 if (e.features.length > 0) {
                     map.getCanvas().style.cursor = 'pointer';
 
@@ -327,12 +367,21 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                     const kpiCount = countryKPIs[iso] || 0;
 
                     if (kpiCount > 0) {
-                        new mapboxgl.Popup()
+                        // Remove existing popup
+                        if (countryPopup) {
+                            countryPopup.remove();
+                        }
+
+                        // Create new popup
+                        countryPopup = new mapboxgl.Popup({
+                            closeButton: false,
+                            closeOnClick: false
+                        })
                             .setLngLat(e.lngLat)
                             .setHTML(`
-                                <div style="padding: 10px;">
-                                    <h6>${feature.properties.name_en}</h6>
-                                    <p><strong>KPIs:</strong> ${kpiCount}</p>
+                                <div style="padding: 8px;">
+                                    <h6 style="margin: 0 0 5px 0; font-size: 14px;">${feature.properties.name_en}</h6>
+                                    <p style="margin: 0; font-size: 13px;"><strong>KPIs:</strong> ${kpiCount}</p>
                                 </div>
                             `)
                             .addTo(map);
@@ -342,20 +391,23 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
             map.on('mouseleave', 'country-fills', () => {
                 map.getCanvas().style.cursor = '';
+                // Remove popup when leaving country
+                if (countryPopup) {
+                    countryPopup.remove();
+                    countryPopup = null;
+                }
             });
 
             console.log('Country layer added!');
 
             // Now add KPI markers
-            return fetch('{{ url_for("geography.api_map_kpis") }}');
-        });
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('KPI data received:', data);
+            fetch('{{ url_for("geography.api_map_kpis") }}')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('KPI data received:', data);
 
-        if (data.features && data.features.length > 0) {
-            data.features.forEach(feature => {
+                    if (data.features && data.features.length > 0) {
+                        data.features.forEach(feature => {
                 const coords = feature.geometry.coordinates;
                 const props = feature.properties;
 
@@ -363,25 +415,25 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                 let bgGradient, borderColor, iconSize, fontSize, icon;
 
                 if (props.location_type === 'region') {
-                    // Region-level: Large, blue gradient
+                    // Region-level: Compact blue
                     bgGradient = 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)';
                     borderColor = '#1e40af';
-                    iconSize = 'padding: 12px 18px;';
-                    fontSize = '18px';
+                    iconSize = 'padding: 4px 8px;';
+                    fontSize = '11px';
                     icon = '🌍';
                 } else if (props.location_type === 'country') {
-                    // Country-level: Medium, green gradient
+                    // Country-level: Compact green
                     bgGradient = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
                     borderColor = '#059669';
-                    iconSize = 'padding: 10px 15px;';
-                    fontSize = '16px';
+                    iconSize = 'padding: 4px 7px;';
+                    fontSize = '10px';
                     icon = '🏳️';
                 } else {
-                    // Site-level: Smaller, purple gradient
+                    // Site-level: Compact purple
                     bgGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
                     borderColor = '#764ba2';
-                    iconSize = 'padding: 8px 12px;';
-                    fontSize = '14px';
+                    iconSize = 'padding: 3px 6px;';
+                    fontSize = '9px';
                     icon = '📍';
                 }
 
@@ -392,21 +444,17 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                     <div style="background: ${bgGradient};
                                 color: white;
                                 ${iconSize}
-                                border-radius: 20px;
+                                border-radius: 8px;
                                 font-weight: bold;
                                 font-size: ${fontSize};
-                                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                                border: 3px solid ${borderColor};
+                                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                                border: 2px solid ${borderColor};
                                 white-space: nowrap;
                                 text-align: center;
                                 cursor: pointer;
                                 position: relative;">
-                        <div style="font-size: 10px; opacity: 0.85; text-transform: uppercase; letter-spacing: 1px;">
-                            ${icon} ${props.location_type}
-                        </div>
-                        <div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">${props.kpi_code || 'KPI'}</div>
-                        <div style="font-size: ${fontSize}; font-weight: 900; margin-top: 4px;">${props.value}</div>
-                        ${props.unit ? `<div style="font-size: 10px; opacity: 0.8; margin-top: 2px;">${props.unit}</div>` : ''}
+                        <div style="font-size: 8px; opacity: 0.85;">${icon}</div>
+                        <div style="font-size: ${fontSize}; font-weight: 900; margin-top: 1px;">${props.value}</div>
                     </div>
                 `;
 
@@ -465,20 +513,42 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                     </div>
                 `);
 
-                // Add marker to map
-                new mapboxgl.Marker(el)
+                // Add marker to map and store reference
+                const marker = new mapboxgl.Marker(el)
                     .setLngLat(coords)
                     .setPopup(popup)
                     .addTo(map);
-            });
-        }
 
-        console.log('===== MAPBOX MAP COMPLETE =====');
+                kpiMarkers.push(marker);
+                        });
+                    }
+
+                    console.log(`===== MAPBOX MAP COMPLETE (${kpiMarkers.length} KPI markers) =====`);
+
+                    // Add toggle button functionality
+                    document.getElementById('toggleKPIs').addEventListener('click', function() {
+                        markersVisible = !markersVisible;
+                        kpiMarkers.forEach(marker => {
+                            if (markersVisible) {
+                                marker.getElement().style.display = '';
+                            } else {
+                                marker.getElement().style.display = 'none';
+                            }
+                        });
+                        this.innerHTML = markersVisible
+                            ? '<i class="bi bi-eye-slash"></i> Hide KPI Markers'
+                            : '<i class="bi bi-eye"></i> Show KPI Markers';
+                    });
+                })
+                .catch(error => {
+                    console.error('===== KPI MARKERS ERROR =====', error);
+                    alert('Map error: ' + error.message);
+                });
+        });
     })
     .catch(error => {
-        console.error('===== ERROR =====', error);
-        alert('Map error: ' + error.message);
+        console.error('===== COUNTRY DATA ERROR =====', error);
+        alert('Map error loading countries: ' + error.message);
     });
-{% endif %}
 </script>
 {% endblock %}

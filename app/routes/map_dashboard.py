@@ -26,8 +26,19 @@ def index():
     # Get all regions for this organization
     regions = GeographyRegion.query.filter_by(organization_id=org_id).order_by(GeographyRegion.display_order).all()
 
-    # Count total KPIs with geography assignments (distinct KPI IDs)
-    total_kpis_with_location = db.session.query(KPIGeographyAssignment.kpi_id).distinct().count()
+    # Count total KPIs with geography assignments (distinct KPI IDs) for this organization
+    # Join through KPI → InitiativeSystemLink → Initiative to filter by organization
+    from app.models import KPI, InitiativeSystemLink, Initiative
+
+    total_kpis_with_location = (
+        db.session.query(KPIGeographyAssignment.kpi_id)
+        .join(KPI, KPIGeographyAssignment.kpi_id == KPI.id)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id)
+        .distinct()
+        .count()
+    )
 
     return render_template(
         "map_dashboard/index.html", organization=organization, regions=regions, total_kpis=total_kpis_with_location
