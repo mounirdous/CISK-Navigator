@@ -4,7 +4,7 @@ Geography management routes for regions, countries, and sites
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
-from flask_wtf.csrf import generate_csrf
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 from app.extensions import db
 from app.forms.geography_forms import GeographyCountryForm, GeographyRegionForm, GeographySiteForm
@@ -12,6 +12,7 @@ from app.models import GeographyCountry, GeographyRegion, GeographySite, KPIGeog
 from app.services import AuditService
 
 bp = Blueprint("geography", __name__, url_prefix="/org-admin/geography")
+csrf = CSRFProtect()
 
 
 def organization_required(f):
@@ -69,6 +70,7 @@ def index():
 
 
 @bp.route("/save-map-colors", methods=["POST"])
+@csrf.exempt
 @login_required
 @organization_required
 def save_map_colors():
