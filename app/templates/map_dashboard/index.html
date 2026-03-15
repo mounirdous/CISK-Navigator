@@ -217,17 +217,37 @@ fetch('{{ url_for("geography.api_countries_json") }}')
         console.log('Country lookup map:', countryKPIs);
         console.log('Total countries with KPIs:', Object.keys(countryKPIs).length);
 
-        // Step 2: Fetch world GeoJSON - using PROVEN working source
+        // Step 2: Fetch world GeoJSON - multiple fallback sources
         console.log('Fetching world boundaries...');
-        return fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+
+        // Try primary source
+        return fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson')
+            .catch(err => {
+                console.warn('Primary source failed, trying backup 1...', err);
+                return fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json');
+            })
+            .catch(err => {
+                console.warn('Backup 1 failed, trying backup 2...', err);
+                return fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+            });
     })
     .then(response => {
-        if (!response.ok) throw new Error('GeoJSON fetch failed: ' + response.status);
+        console.log('GeoJSON response received:', response);
+        if (!response.ok) {
+            throw new Error('GeoJSON fetch failed: ' + response.status);
+        }
         return response.json();
     })
     .then(worldGeoJSON => {
-        console.log('World GeoJSON loaded:', worldGeoJSON.features.length, 'countries');
-        console.log('Sample country:', worldGeoJSON.features[0].properties);
+        console.log('===== GEOJSON LOADED SUCCESSFULLY =====');
+        console.log('Total countries in GeoJSON:', worldGeoJSON.features ? worldGeoJSON.features.length : 'NONE');
+
+        if (!worldGeoJSON.features || worldGeoJSON.features.length === 0) {
+            throw new Error('GeoJSON has no features!');
+        }
+
+        console.log('First country sample:', worldGeoJSON.features[0]);
+        console.log('Sample properties:', worldGeoJSON.features[0].properties);
 
         // Step 3: Style function - check EVERY possible ISO field
         function styleCountry(feature) {
@@ -255,10 +275,10 @@ fetch('{{ url_for("geography.api_countries_json") }}')
             }
 
             return {
-                fillColor: hasKPIs ? '#28a745' : '#e0e0e0',
-                fillOpacity: hasKPIs ? 0.7 : 0.3,
-                color: hasKPIs ? '#1e7e34' : '#999',
-                weight: hasKPIs ? 2 : 1,
+                fillColor: hasKPIs ? '#00ff00' : '#f5f5f5',
+                fillOpacity: hasKPIs ? 0.8 : 0.2,
+                color: hasKPIs ? '#00aa00' : '#cccccc',
+                weight: hasKPIs ? 3 : 0.5,
                 opacity: 1
             };
         }
@@ -353,11 +373,27 @@ fetch('{{ url_for("geography.api_countries_json") }}')
             });
         }
 
-        console.log('Map initialization complete!');
+        console.log('===== MAP INITIALIZATION COMPLETE =====');
+
+        // Show status to user
+        if (Object.keys(countryKPIs).length > 0) {
+            console.log(`SUCCESS: ${Object.keys(countryKPIs).length} countries with KPIs should now be GREEN!`);
+        }
     })
     .catch(error => {
-        console.error('ERROR:', error);
-        alert('Map failed to load: ' + error.message);
+        console.error('===== FATAL ERROR =====');
+        console.error('Error details:', error);
+        console.error('Stack:', error.stack);
+
+        // Show prominent error on map
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:red;color:white;padding:20px;border-radius:8px;z-index:9999;font-size:18px;text-align:center;';
+        errorDiv.innerHTML = `
+            <strong>MAP LOADING FAILED!</strong><br>
+            ${error.message}<br>
+            <small>Check browser console (F12) for details</small>
+        `;
+        document.getElementById('map').appendChild(errorDiv);
     });
 {% endif %}
 </script>
