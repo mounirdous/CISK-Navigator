@@ -132,11 +132,11 @@
             <h6><i class="bi bi-map-fill"></i> Map Legend</h6>
             <div style="margin-bottom: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <div style="width: 24px; height: 16px; background: #28a745; border: 1px solid #999; opacity: 0.6;"></div>
+                    <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(40, 167, 69, 0.4); border: 2px solid #1e7e34;"></div>
                     <small><strong>Country with KPIs</strong></small>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                    <div style="width: 12px; height: 12px; border-radius: 50%; background: #dc3545; border: 2px solid white;"></div>
+                    <div style="width: 16px; height: 16px; border-radius: 50%; background: #dc3545; border: 2px solid white;"></div>
                     <small><strong>Site location</strong></small>
                 </div>
             </div>
@@ -183,132 +183,49 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 const allMarkers = [];
-let countryKPIs = {};
 
-console.log('Starting map initialization...');
-
-// First, fetch country KPI data
+// Fetch country data and display as large highlighted areas
 fetch('{{ url_for("geography.api_countries_json") }}')
     .then(response => response.json())
     .then(data => {
-        console.log('Country KPI data received:', data);
-
-        // Build a map of country ISO codes to KPI counts
         if (data.features && data.features.length > 0) {
+            // Add large circular markers for each country with KPIs
             data.features.forEach(feature => {
+                const coords = feature.geometry.coordinates;
                 const props = feature.properties;
-                if (props.iso_code) {
-                    const iso2 = props.iso_code.toUpperCase();
-                    countryKPIs[iso2] = {
-                        name: props.name,
-                        kpi_count: props.kpi_count || 0,
-                        region: props.region,
-                        id: props.id
-                    };
-                    console.log('Added country:', iso2, countryKPIs[iso2]);
+                const kpiCount = props.kpi_count || 0;
+
+                if (kpiCount > 0) {
+                    // Create a LARGE circle to highlight the country area
+                    const circle = L.circle([coords[1], coords[0]], {
+                        radius: 300000, // 300km radius - covers most countries visibly
+                        fillColor: '#28a745',
+                        color: '#1e7e34',
+                        weight: 2,
+                        opacity: 0.8,
+                        fillOpacity: 0.4
+                    });
+
+                    // Add popup
+                    const popupContent = `
+                        <div>
+                            <h5><i class="bi bi-flag-fill text-success"></i> ${props.name}</h5>
+                            <p><strong>Region:</strong> ${props.region}</p>
+                            ${props.iso_code ? `<p><strong>ISO Code:</strong> <span class="badge bg-secondary">${props.iso_code}</span></p>` : ''}
+                            <p><strong>Country-level KPIs:</strong> <span class="badge bg-success">${kpiCount}</span></p>
+                            <hr style="margin: 0.5rem 0;">
+                            <small class="text-muted"><i class="bi bi-info-circle"></i> Country with assigned KPIs</small>
+                        </div>
+                    `;
+
+                    circle.bindPopup(popupContent);
+                    circle.addTo(map);
+                    allMarkers.push(circle);
                 }
             });
         }
 
-        console.log('Country KPIs map:', countryKPIs);
-
-        // Fetch world countries GeoJSON from reliable source
-        console.log('Fetching world GeoJSON...');
-        return fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json');
-    })
-    .then(response => {
-        console.log('GeoJSON response received:', response.status);
-        if (!response.ok) {
-            throw new Error('Failed to load world map data: ' + response.status);
-        }
-        return response.json();
-    })
-    .then(worldData => {
-        console.log('World GeoJSON loaded, features:', worldData.features ? worldData.features.length : 0);
-
-        // Log first feature to see property structure
-        if (worldData.features && worldData.features.length > 0) {
-            console.log('Sample feature properties:', worldData.features[0].properties);
-        }
-
-        function style(feature) {
-            // Try multiple possible property names for ISO code
-            const iso = feature.properties.id ||
-                       feature.properties.ISO_A2 ||
-                       feature.properties.iso_a2 ||
-                       feature.properties.iso2 ||
-                       feature.properties.ISO2;
-
-            console.log('Processing country:', feature.properties.name, 'ISO:', iso);
-
-            const countryData = countryKPIs[iso];
-            const hasKPIs = countryData && countryData.kpi_count > 0;
-
-            if (hasKPIs) {
-                console.log('Found match!', iso, 'KPIs:', countryData.kpi_count);
-            }
-
-            // Solid color fill: green if has KPIs, light gray if not
-            return {
-                fillColor: hasKPIs ? '#28a745' : '#f0f0f0',
-                weight: 1,
-                opacity: 1,
-                color: '#999',
-                fillOpacity: hasKPIs ? 0.6 : 0.1
-            };
-        }
-
-        function highlightFeature(e) {
-            const layer = e.target;
-            layer.setStyle({
-                weight: 3,
-                color: '#333',
-                fillOpacity: 0.9
-            });
-            layer.bringToFront();
-        }
-
-        function resetHighlight(e) {
-            geojsonLayer.resetStyle(e.target);
-        }
-
-        function onEachFeature(feature, layer) {
-            const iso = feature.properties.id ||
-                       feature.properties.ISO_A2 ||
-                       feature.properties.iso_a2 ||
-                       feature.properties.iso2 ||
-                       feature.properties.ISO2;
-
-            const countryData = countryKPIs[iso];
-
-            if (countryData && countryData.kpi_count > 0) {
-                layer.on({
-                    mouseover: highlightFeature,
-                    mouseout: resetHighlight
-                });
-
-                const popupContent = `
-                    <div>
-                        <h5><i class="bi bi-flag-fill text-success"></i> ${countryData.name}</h5>
-                        <p><strong>Region:</strong> ${countryData.region}</p>
-                        <p><strong>ISO Code:</strong> <span class="badge bg-secondary">${iso}</span></p>
-                        <p><strong>Country-level KPIs:</strong> <span class="badge bg-success">${countryData.kpi_count}</span></p>
-                        <hr style="margin: 0.5rem 0;">
-                        <small class="text-muted"><i class="bi bi-info-circle"></i> Click to view KPIs</small>
-                    </div>
-                `;
-                layer.bindPopup(popupContent);
-            }
-        }
-
-        console.log('Creating GeoJSON layer...');
-        const geojsonLayer = L.geoJSON(worldData, {
-            style: style,
-            onEachFeature: onEachFeature
-        }).addTo(map);
-        console.log('GeoJSON layer added to map');
-
-        // Then fetch site data to add as markers
+        // Then fetch site data
         return fetch('{{ url_for("geography.api_sites_json") }}');
     })
     .then(response => response.json())
@@ -322,7 +239,7 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
                 // Marker for sites
                 const marker = L.circleMarker([coords[1], coords[0]], {
-                    radius: 6,
+                    radius: 8,
                     fillColor: '#dc3545',
                     color: '#fff',
                     weight: 2,
@@ -352,14 +269,7 @@ fetch('{{ url_for("geography.api_countries_json") }}')
             });
         }
 
-        // Auto-zoom to show countries with KPIs
-        const countryCoords = Object.keys(countryKPIs).map(iso => {
-            // Get approximate center for each country with KPIs
-            const data = '{{ url_for("geography.api_countries_json") }}';
-            return null;
-        }).filter(c => c);
-
-        // If we have markers, fit to them
+        // Auto-zoom to show all markers (countries + sites)
         if (allMarkers.length > 0) {
             const group = new L.featureGroup(allMarkers);
             map.fitBounds(group.getBounds().pad(0.2));
@@ -367,6 +277,7 @@ fetch('{{ url_for("geography.api_countries_json") }}')
     })
     .catch(error => {
         console.error('Error loading geographic data:', error);
+        alert('Failed to load map data. Please refresh the page.');
     });
 {% endif %}
 </script>
