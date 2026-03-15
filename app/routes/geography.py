@@ -104,7 +104,7 @@ def create_region():
             entity_type="GeographyRegion",
             entity_id=region.id,
             entity_name=region.name,
-            new_values={"name": region.name, "code": region.code},
+            new_value={"name": region.name, "code": region.code},
         )
 
         flash(f"Region '{region.name}' created successfully!", "success")
@@ -144,8 +144,8 @@ def edit_region(region_id):
             entity_type="GeographyRegion",
             entity_id=region.id,
             entity_name=region.name,
-            old_values=old_values,
-            new_values={"name": region.name, "code": region.code},
+            old_value=old_values,
+            new_value={"name": region.name, "code": region.code},
         )
 
         flash(f"Region '{region.name}' updated successfully!", "success")
@@ -234,7 +234,7 @@ def create_country():
             entity_type="GeographyCountry",
             entity_id=country.id,
             entity_name=country.name,
-            new_values={"name": country.name, "code": country.code, "iso_code": country.iso_code},
+            new_value={"name": country.name, "code": country.code, "iso_code": country.iso_code},
         )
 
         flash(f"Country '{country.name}' created successfully!", "success")
@@ -284,8 +284,8 @@ def edit_country(country_id):
             entity_type="GeographyCountry",
             entity_id=country.id,
             entity_name=country.name,
-            old_values=old_values,
-            new_values={"name": country.name, "code": country.code, "iso_code": country.iso_code},
+            old_value=old_values,
+            new_value={"name": country.name, "code": country.code, "iso_code": country.iso_code},
         )
 
         flash(f"Country '{country.name}' updated successfully!", "success")
@@ -385,7 +385,7 @@ def create_site():
             entity_type="GeographySite",
             entity_id=site.id,
             entity_name=site.name,
-            new_values={
+            new_value={
                 "name": site.name,
                 "code": site.code,
                 "address": site.address,
@@ -457,8 +457,8 @@ def edit_site(site_id):
             entity_type="GeographySite",
             entity_id=site.id,
             entity_name=site.name,
-            old_values=old_values,
-            new_values={
+            old_value=old_values,
+            new_value={
                 "name": site.name,
                 "code": site.code,
                 "address": site.address,
