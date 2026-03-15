@@ -31,16 +31,20 @@ class GeographyRegion(db.Model):
         cascade="all, delete-orphan",
         order_by="GeographyCountry.display_order",
     )
+    geography_assignments = db.relationship(
+        "KPIGeographyAssignment", back_populates="region", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<GeographyRegion {self.name}>"
 
     def get_kpi_count(self):
-        """Get total number of KPIs associated with sites in this region"""
-        count = 0
-        for country in self.countries:
-            count += country.get_kpi_count()
-        return count
+        """Get total number of KPIs (direct + from all countries + sites)"""
+        # Direct region assignments
+        direct_count = len(self.geography_assignments)
+        # From all countries in this region (direct + from their sites)
+        countries_count = sum(country.get_kpi_count() for country in self.countries)
+        return direct_count + countries_count
 
 
 class GeographyCountry(db.Model):
@@ -77,16 +81,22 @@ class GeographyCountry(db.Model):
         cascade="all, delete-orphan",
         order_by="GeographySite.display_order",
     )
+    geography_assignments = db.relationship(
+        "KPIGeographyAssignment", back_populates="country", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<GeographyCountry {self.name}>"
 
     def get_kpi_count(self):
-        """Get total number of KPIs associated with sites in this country"""
-        count = 0
-        for site in self.sites:
-            count += site.get_kpi_count()
-        return count
+        """Get total number of KPIs (direct + inherited from region + from all sites)"""
+        # Direct country assignments
+        direct_count = len(self.geography_assignments)
+        # Inherited from parent region
+        region_count = len([a for a in self.region.geography_assignments if a.region_id == self.region_id])
+        # From all sites in this country
+        sites_count = sum(len(site.geography_assignments) for site in self.sites)
+        return direct_count + region_count + sites_count
 
 
 class GeographySite(db.Model):
@@ -115,14 +125,27 @@ class GeographySite(db.Model):
 
     # Relationships
     country = db.relationship("GeographyCountry", back_populates="sites")
+    # Legacy site assignments (deprecated)
     kpi_assignments = db.relationship("KPISiteAssignment", back_populates="site", cascade="all, delete-orphan")
+    # New flexible geography assignments
+    geography_assignments = db.relationship(
+        "KPIGeographyAssignment", back_populates="site", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<GeographySite {self.name}>"
 
     def get_kpi_count(self):
-        """Get number of KPIs assigned to this site"""
-        return len(self.kpi_assignments)
+        """Get number of KPIs assigned to this site (includes direct + inherited from country/region)"""
+        # Direct site assignments
+        direct_count = len(self.geography_assignments)
+        # Inherited from country level
+        country_count = len([a for a in self.country.geography_assignments if a.country_id == self.country_id])
+        # Inherited from region level
+        region_count = len(
+            [a for a in self.country.region.geography_assignments if a.region_id == self.country.region_id]
+        )
+        return direct_count + country_count + region_count
 
     def get_coordinates_dict(self):
         """Get coordinates as dictionary for JSON serialization"""
@@ -134,10 +157,90 @@ class GeographySite(db.Model):
         return None
 
 
+class KPIGeographyAssignment(db.Model):
+    """
+    Flexible geography assignment for KPIs.
+    A KPI can be assigned to a Region, Country, or Site.
+    Exactly ONE of region_id, country_id, or site_id must be set.
+
+    Hierarchy resolution:
+    - Region assignment: KPI visible at region level only
+    - Country assignment: KPI visible at country + parent region
+    - Site assignment: KPI visible at site + parent country + grandparent region
+    """
+
+    __tablename__ = "kpi_geography_assignments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    kpi_id = db.Column(db.Integer, db.ForeignKey("kpis.id", ondelete="CASCADE"), nullable=False)
+
+    # Flexible assignment - exactly ONE must be set
+    region_id = db.Column(
+        db.Integer,
+        db.ForeignKey("geography_regions.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    country_id = db.Column(
+        db.Integer,
+        db.ForeignKey("geography_countries.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    site_id = db.Column(
+        db.Integer,
+        db.ForeignKey("geography_sites.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    kpi = db.relationship("KPI", backref="geography_assignments")
+    region = db.relationship("GeographyRegion", back_populates="geography_assignments")
+    country = db.relationship("GeographyCountry", back_populates="geography_assignments")
+    site = db.relationship("GeographySite", back_populates="geography_assignments")
+
+    def __repr__(self):
+        if self.site_id:
+            return f"<KPIGeographyAssignment KPI:{self.kpi_id} Site:{self.site_id}>"
+        elif self.country_id:
+            return f"<KPIGeographyAssignment KPI:{self.kpi_id} Country:{self.country_id}>"
+        else:
+            return f"<KPIGeographyAssignment KPI:{self.kpi_id} Region:{self.region_id}>"
+
+    def get_level(self):
+        """Return the assignment level: 'region', 'country', or 'site'"""
+        if self.site_id:
+            return "site"
+        elif self.country_id:
+            return "country"
+        else:
+            return "region"
+
+    def get_entity(self):
+        """Return the assigned entity (Region, Country, or Site object)"""
+        if self.site_id:
+            return self.site
+        elif self.country_id:
+            return self.country
+        else:
+            return self.region
+
+    def get_hierarchy_path(self):
+        """Return the full hierarchy path as string"""
+        if self.site_id and self.site:
+            return f"{self.site.country.region.name} > {self.site.country.name} > {self.site.name}"
+        elif self.country_id and self.country:
+            return f"{self.country.region.name} > {self.country.name}"
+        elif self.region_id and self.region:
+            return self.region.name
+        return "Unknown"
+
+
+# Keep old table name for backward compatibility (will be migrated)
 class KPISiteAssignment(db.Model):
     """
-    Many-to-many junction table linking KPIs to Sites.
-    One KPI can be measured at multiple sites.
+    DEPRECATED: Use KPIGeographyAssignment instead.
+    Legacy table for migration purposes only.
     """
 
     __tablename__ = "kpi_site_assignments"

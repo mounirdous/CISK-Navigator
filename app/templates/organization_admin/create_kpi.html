@@ -472,64 +472,86 @@
                         </div>
                     </div>
 
-                    <!-- Geography Sites Section -->
+                    <!-- Geography Assignment Section (Multi-Level) -->
                     {% if geography_regions %}
                     <div class="form-section">
                         <div class="form-section-title">
-                            <i class="bi bi-geo-alt-fill"></i>
-                            Geography Sites <span class="text-muted">(optional)</span>
+                            <i class="bi bi-globe-americas"></i>
+                            Geography Assignment <span class="text-muted">(optional)</span>
                         </div>
-                        <p class="text-muted mb-3">
-                            <strong>🗺️ Location-Based KPIs:</strong> Select sites where this KPI is measured. Leave empty if this KPI applies globally or is not geography-specific.<br>
-                            <small>View geographic distribution on the <a href="{{ url_for('workspace.dashboard') }}">Map Dashboard</a> (coming soon).</small>
-                        </p>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-lightbulb-fill"></i>
+                            <strong>Flexible Assignment:</strong> Select at any level for intelligent roll-up:
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Region:</strong> KPI visible only at region level</li>
+                                <li><strong>Country:</strong> KPI visible at country + parent region levels</li>
+                                <li><strong>Site:</strong> KPI visible at site + country + region levels</li>
+                            </ul>
+                            <small class="text-muted">View on <a href="{{ url_for('map_dashboard.index') }}">Map Dashboard</a></small>
+                        </div>
 
                         {% for region in geography_regions %}
-                        <div class="mb-3">
-                            <h6 class="text-primary">
-                                <i class="bi bi-map-fill"></i> {{ region.name }}
-                                {% if region.code %}
-                                <span class="badge bg-primary">{{ region.code }}</span>
-                                {% endif %}
-                            </h6>
-                            {% for country in region.countries %}
-                            <div class="ms-3 mb-2">
-                                <div class="fw-semibold text-success">
-                                    <i class="bi bi-flag-fill"></i> {{ country.name }}
-                                    {% if country.code %}
-                                    <span class="badge bg-secondary">{{ country.code }}</span>
+                        <div class="mb-4 geography-item" style="border-left: 4px solid #667eea; padding-left: 1rem; background: linear-gradient(90deg, rgba(102, 126, 234, 0.05) 0%, transparent 100%);">
+                            <!-- REGION LEVEL -->
+                            <div class="form-check mb-2">
+                                <input class="form-check-input region-checkbox" type="checkbox"
+                                       name="region_ids" value="{{ region.id }}" id="region_{{ region.id }}">
+                                <label class="form-check-label fw-bold text-primary" for="region_{{ region.id }}">
+                                    <i class="bi bi-map-fill"></i> {{ region.name }}
+                                    {% if region.code %}
+                                    <span class="badge bg-primary">{{ region.code }}</span>
                                     {% endif %}
+                                    <small class="text-muted">(Region Level)</small>
+                                </label>
+                            </div>
+
+                            {% for country in region.countries %}
+                            <div class="ms-4 mb-3 geography-item" style="border-left: 3px solid #10b981; padding-left: 1rem;">
+                                <!-- COUNTRY LEVEL -->
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input country-checkbox" type="checkbox"
+                                           name="country_ids" value="{{ country.id }}" id="country_{{ country.id }}">
+                                    <label class="form-check-label fw-semibold text-success" for="country_{{ country.id }}">
+                                        <i class="bi bi-flag-fill"></i> {{ country.name }}
+                                        {% if country.code %}
+                                        <span class="badge bg-success">{{ country.code }}</span>
+                                        {% endif %}
+                                        <small class="text-muted">(Country Level)</small>
+                                    </label>
                                 </div>
-                                <div class="ms-3">
-                                    {% for site in country.sites %}
-                                    {% if site.is_active %}
+
+                                {% for site in country.sites %}
+                                {% if site.is_active %}
+                                <div class="ms-4">
+                                    <!-- SITE LEVEL -->
                                     <div class="form-check">
                                         <input class="form-check-input site-checkbox" type="checkbox"
                                                name="site_ids" value="{{ site.id }}" id="site_{{ site.id }}">
-                                        <label class="form-check-label" for="site_{{ site.id }}">
-                                            <i class="bi bi-geo-alt-fill text-danger"></i> {{ site.name }}
+                                        <label class="form-check-label text-danger" for="site_{{ site.id }}">
+                                            <i class="bi bi-geo-alt-fill"></i> {{ site.name }}
                                             {% if site.code %}
-                                            <span class="badge bg-secondary">{{ site.code }}</span>
+                                            <span class="badge bg-danger">{{ site.code }}</span>
                                             {% endif %}
                                             {% if site.latitude and site.longitude %}
                                             <small class="text-muted" style="font-family: monospace;">
                                                 ({{ "%.4f"|format(site.latitude) }}, {{ "%.4f"|format(site.longitude) }})
                                             </small>
                                             {% endif %}
+                                            <small class="text-muted">(Site Level)</small>
                                         </label>
                                     </div>
-                                    {% endif %}
-                                    {% endfor %}
                                 </div>
+                                {% endif %}
+                                {% endfor %}
                             </div>
                             {% endfor %}
                         </div>
                         {% endfor %}
 
                         {% if not geography_regions or not geography_regions[0].countries %}
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill"></i>
-                            No geography data available. <a href="{{ url_for('geography.index') }}">Create regions, countries, and sites</a> to enable location-based KPI tracking.
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            No geography data available. <a href="{{ url_for('geography.index') }}">Create regions, countries, and sites</a> first.
                         </div>
                         {% endif %}
                     </div>

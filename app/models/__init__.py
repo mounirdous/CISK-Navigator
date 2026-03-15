@@ -13,7 +13,7 @@ from .cell_comment import CellComment, MentionNotification
 from .challenge import Challenge
 from .contribution import Contribution
 from .entity_type_default import EntityTypeDefault
-from .geography import GeographyCountry, GeographyRegion, GeographySite, KPISiteAssignment
+from .geography import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, KPISiteAssignment
 from .governance_body import GovernanceBody, KPIGovernanceBodyLink
 from .initiative import ChallengeInitiativeLink, Initiative
 from .kpi import KPI
@@ -63,5 +63,6 @@ __all__ = [
     "GeographyRegion",
     "GeographyCountry",
     "GeographySite",
+    "KPIGeographyAssignment",
     "KPISiteAssignment",
 ]
