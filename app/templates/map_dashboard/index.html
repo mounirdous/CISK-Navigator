@@ -132,12 +132,16 @@
             <h6><i class="bi bi-map-fill"></i> Map Legend</h6>
             <div style="margin-bottom: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <div style="width: 24px; height: 24px; border-radius: 50%; background: rgba(40, 167, 69, 0.4); border: 2px solid #1e7e34;"></div>
+                    <div style="width: 30px; height: 20px; background: rgba(40, 167, 69, 0.7); border: 2px solid #1e7e34;"></div>
                     <small><strong>Country with KPIs</strong></small>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
                     <div style="width: 16px; height: 16px; border-radius: 50%; background: #dc3545; border: 2px solid white;"></div>
                     <small><strong>Site location</strong></small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <div style="width: 30px; height: 20px; background: rgba(224, 224, 224, 0.3); border: 1px solid #999;"></div>
+                    <small class="text-muted">Country without KPIs</small>
                 </div>
             </div>
             <hr>
@@ -174,7 +178,7 @@
 <script>
 {% if total_kpis > 0 %}
 // Initialize map
-const map = L.map('map').setView([20, 0], 2); // World view
+const map = L.map('map').setView([45, 10], 3); // Center on Europe
 
 // Add OpenStreetMap tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -183,101 +187,177 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 const allMarkers = [];
+let countryKPIs = {};
 
-// Fetch country data and display as large highlighted areas
+console.log('=== MAP INITIALIZATION ===');
+
+// Step 1: Fetch YOUR country data
 fetch('{{ url_for("geography.api_countries_json") }}')
     .then(response => response.json())
     .then(data => {
+        console.log('YOUR COUNTRIES WITH KPIs:', data);
+
+        // Build lookup map - normalize ISO codes
         if (data.features && data.features.length > 0) {
-            // Add large circular markers for each country with KPIs
             data.features.forEach(feature => {
-                const coords = feature.geometry.coordinates;
                 const props = feature.properties;
-                const kpiCount = props.kpi_count || 0;
-
-                if (kpiCount > 0) {
-                    // Create a LARGE circle to highlight the country area
-                    const circle = L.circle([coords[1], coords[0]], {
-                        radius: 300000, // 300km radius - covers most countries visibly
-                        fillColor: '#28a745',
-                        color: '#1e7e34',
-                        weight: 2,
-                        opacity: 0.8,
-                        fillOpacity: 0.4
-                    });
-
-                    // Add popup
-                    const popupContent = `
-                        <div>
-                            <h5><i class="bi bi-flag-fill text-success"></i> ${props.name}</h5>
-                            <p><strong>Region:</strong> ${props.region}</p>
-                            ${props.iso_code ? `<p><strong>ISO Code:</strong> <span class="badge bg-secondary">${props.iso_code}</span></p>` : ''}
-                            <p><strong>Country-level KPIs:</strong> <span class="badge bg-success">${kpiCount}</span></p>
-                            <hr style="margin: 0.5rem 0;">
-                            <small class="text-muted"><i class="bi bi-info-circle"></i> Country with assigned KPIs</small>
-                        </div>
-                    `;
-
-                    circle.bindPopup(popupContent);
-                    circle.addTo(map);
-                    allMarkers.push(circle);
+                if (props.iso_code) {
+                    const iso = props.iso_code.toUpperCase().trim();
+                    countryKPIs[iso] = {
+                        name: props.name,
+                        kpi_count: props.kpi_count || 0,
+                        region: props.region,
+                        id: props.id
+                    };
+                    console.log(`Registered country: ${props.name} (${iso}) - ${props.kpi_count} KPIs`);
                 }
             });
         }
 
-        // Then fetch site data
+        console.log('Country lookup map:', countryKPIs);
+        console.log('Total countries with KPIs:', Object.keys(countryKPIs).length);
+
+        // Step 2: Fetch world GeoJSON - using PROVEN working source
+        console.log('Fetching world boundaries...');
+        return fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson');
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('GeoJSON fetch failed: ' + response.status);
+        return response.json();
+    })
+    .then(worldGeoJSON => {
+        console.log('World GeoJSON loaded:', worldGeoJSON.features.length, 'countries');
+        console.log('Sample country:', worldGeoJSON.features[0].properties);
+
+        // Step 3: Style function - check EVERY possible ISO field
+        function styleCountry(feature) {
+            const props = feature.properties;
+
+            // Try ALL possible ISO code fields
+            const iso = (props.ISO_A2 || props.iso_a2 || props.ISO2 || props.iso2 ||
+                        props.ADM0_A3 || props.ISO_A3 || props.iso_a3 || '').toUpperCase().trim();
+
+            // Also try 3-letter codes by converting to 2-letter
+            let iso2 = iso;
+            if (iso.length === 3) {
+                // Common 3-to-2 letter conversions
+                const iso3to2 = {
+                    'USA': 'US', 'CHE': 'CH', 'ITA': 'IT', 'FRA': 'FR', 'DEU': 'DE',
+                    'GBR': 'GB', 'ESP': 'ES', 'NLD': 'NL', 'BEL': 'BE', 'AUT': 'AT'
+                };
+                iso2 = iso3to2[iso] || iso.substring(0, 2);
+            }
+
+            const hasKPIs = countryKPIs[iso] || countryKPIs[iso2];
+
+            if (hasKPIs) {
+                console.log(`✓ MATCH FOUND: ${props.ADMIN} (${iso}/${iso2}) - ${hasKPIs.kpi_count} KPIs`);
+            }
+
+            return {
+                fillColor: hasKPIs ? '#28a745' : '#e0e0e0',
+                fillOpacity: hasKPIs ? 0.7 : 0.3,
+                color: hasKPIs ? '#1e7e34' : '#999',
+                weight: hasKPIs ? 2 : 1,
+                opacity: 1
+            };
+        }
+
+        // Step 4: Interaction handlers
+        function highlightFeature(e) {
+            const layer = e.target;
+            layer.setStyle({
+                weight: 3,
+                color: '#000',
+                fillOpacity: 0.9
+            });
+            layer.bringToFront();
+        }
+
+        function resetHighlight(e) {
+            geoJsonLayer.resetStyle(e.target);
+        }
+
+        function onEachFeature(feature, layer) {
+            const props = feature.properties;
+            const iso = (props.ISO_A2 || props.iso_a2 || '').toUpperCase().trim();
+            const iso3 = (props.ISO_A3 || props.iso_a3 || '').toUpperCase().trim();
+
+            // Check both 2-letter and 3-letter codes
+            let countryData = countryKPIs[iso] || countryKPIs[iso3];
+
+            // Try 3-to-2 conversion
+            if (!countryData && iso3.length === 3) {
+                const iso3to2 = {
+                    'USA': 'US', 'CHE': 'CH', 'ITA': 'IT', 'FRA': 'FR', 'DEU': 'DE',
+                    'GBR': 'GB', 'ESP': 'ES', 'NLD': 'NL', 'BEL': 'BE', 'AUT': 'AT'
+                };
+                const converted = iso3to2[iso3];
+                if (converted) countryData = countryKPIs[converted];
+            }
+
+            if (countryData && countryData.kpi_count > 0) {
+                layer.on({
+                    mouseover: highlightFeature,
+                    mouseout: resetHighlight
+                });
+
+                layer.bindPopup(`
+                    <div>
+                        <h5><i class="bi bi-flag-fill text-success"></i> ${countryData.name}</h5>
+                        <p><strong>Region:</strong> ${countryData.region}</p>
+                        <p><strong>ISO:</strong> <span class="badge bg-secondary">${iso || iso3}</span></p>
+                        <p><strong>KPIs:</strong> <span class="badge bg-success">${countryData.kpi_count}</span></p>
+                    </div>
+                `);
+            }
+        }
+
+        // Step 5: Add GeoJSON layer
+        console.log('Adding GeoJSON layer to map...');
+        const geoJsonLayer = L.geoJSON(worldGeoJSON, {
+            style: styleCountry,
+            onEachFeature: onEachFeature
+        }).addTo(map);
+
+        console.log('GeoJSON layer added successfully!');
+
+        // Step 6: Add sites
         return fetch('{{ url_for("geography.api_sites_json") }}');
     })
     .then(response => response.json())
     .then(data => {
         if (data.features && data.features.length > 0) {
-            // Add markers for each site
             data.features.forEach(feature => {
                 const coords = feature.geometry.coordinates;
                 const props = feature.properties;
-                const kpiCount = props.kpi_count || 0;
 
-                // Marker for sites
                 const marker = L.circleMarker([coords[1], coords[0]], {
                     radius: 8,
                     fillColor: '#dc3545',
                     color: '#fff',
                     weight: 2,
-                    opacity: 1,
                     fillOpacity: 0.9
                 });
 
-                // Create popup content for site
-                const popupContent = `
+                marker.bindPopup(`
                     <div>
                         <h5><i class="bi bi-geo-alt-fill text-danger"></i> ${props.name}</h5>
-                        <p><strong>Region:</strong> ${props.region}</p>
                         <p><strong>Country:</strong> ${props.country}</p>
-                        ${props.code ? `<p><strong>Code:</strong> <span class="badge bg-secondary">${props.code}</span></p>` : ''}
-                        <p><strong>Site KPIs:</strong> <span class="badge bg-danger">${kpiCount}</span></p>
-                        ${props.address ? `<p class="text-muted small">${props.address}</p>` : ''}
-                        <hr style="margin: 0.5rem 0;">
-                        <a href="{{ url_for('workspace.index') }}?site_id=${props.id}" class="btn btn-sm btn-danger">
-                            <i class="bi bi-grid-3x3-gap"></i> View KPIs
-                        </a>
+                        <p><strong>KPIs:</strong> <span class="badge bg-danger">${props.kpi_count || 0}</span></p>
                     </div>
-                `;
+                `);
 
-                marker.bindPopup(popupContent);
                 marker.addTo(map);
                 allMarkers.push(marker);
             });
         }
 
-        // Auto-zoom to show all markers (countries + sites)
-        if (allMarkers.length > 0) {
-            const group = new L.featureGroup(allMarkers);
-            map.fitBounds(group.getBounds().pad(0.2));
-        }
+        console.log('Map initialization complete!');
     })
     .catch(error => {
-        console.error('Error loading geographic data:', error);
-        alert('Failed to load map data. Please refresh the page.');
+        console.error('ERROR:', error);
+        alert('Map failed to load: ' + error.message);
     });
 {% endif %}
 </script>
