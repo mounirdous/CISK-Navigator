@@ -8,7 +8,7 @@ from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.forms.geography_forms import GeographyCountryForm, GeographyRegionForm, GeographySiteForm
-from app.models import GeographyCountry, GeographyRegion, GeographySite, KPISiteAssignment, Organization
+from app.models import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, Organization
 from app.services import AuditService
 
 bp = Blueprint("geography", __name__, url_prefix="/org-admin/geography")
@@ -48,7 +48,7 @@ def index():
     # Calculate statistics
     total_countries = sum(len(region.countries) for region in regions)
     total_sites = sum(len(country.sites) for region in regions for country in region.countries)
-    total_kpis_with_geography = db.session.query(KPISiteAssignment.kpi_id).distinct().count()
+    total_kpis_with_geography = db.session.query(KPIGeographyAssignment.kpi_id).distinct().count()
 
     return render_template(
         "geography/index.html",
