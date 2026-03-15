@@ -39,6 +39,7 @@ from app.models import (
     KPI,
     Challenge,
     ChallengeInitiativeLink,
+    EntityLink,
     EntityTypeDefault,
     GovernanceBody,
     Initiative,
@@ -1024,8 +1025,16 @@ def edit_space(space_id):
             "logo": logo_url,
         }
 
+    # Get entity links for this space
+    entity_links = EntityLink.get_links_for_entity("space", space.id, current_user.id, include_private=True)
+
     return render_template(
-        "organization_admin/edit_space.html", form=form, space=space, entity_defaults=entity_defaults
+        "organization_admin/edit_space.html",
+        form=form,
+        space=space,
+        entity_defaults=entity_defaults,
+        entity_links=entity_links,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1216,12 +1225,17 @@ def edit_challenge(challenge_id):
             "logo": logo_url,
         }
 
+    # Get entity links for this challenge
+    entity_links = EntityLink.get_links_for_entity("challenge", challenge.id, current_user.id, include_private=True)
+
     return render_template(
         "organization_admin/edit_challenge.html",
         form=form,
         challenge=challenge,
         value_types=value_types,
         entity_defaults=entity_defaults,
+        entity_links=entity_links,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1406,12 +1420,19 @@ def edit_initiative(initiative_id):
             "logo": logo_url,
         }
 
+    # Get entity links for this initiative
+    entity_links = EntityLink.get_links_for_entity("initiative", initiative.id, current_user.id, include_private=True)
+
+    from flask_wtf.csrf import generate_csrf
+
     return render_template(
         "organization_admin/edit_initiative.html",
         form=form,
         initiative=initiative,
         value_types=value_types,
         entity_defaults=entity_defaults,
+        entity_links=entity_links,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1541,12 +1562,17 @@ def edit_system(system_id):
             "logo": logo_url,
         }
 
+    # Get entity links for this system
+    entity_links = EntityLink.get_links_for_entity("system", system.id, current_user.id, include_private=True)
+
     return render_template(
         "organization_admin/edit_system.html",
         form=form,
         system=system,
         value_types=value_types,
         entity_defaults=entity_defaults,
+        entity_links=entity_links,
+        csrf_token=generate_csrf,
     )
 
 
@@ -2082,6 +2108,9 @@ def edit_kpi(kpi_id):
             "logo": logo_url,
         }
 
+    # Get entity links for this KPI
+    entity_links = EntityLink.get_links_for_entity("kpi", kpi.id, current_user.id, include_private=True)
+
     return render_template(
         "organization_admin/edit_kpi.html",
         form=form,
@@ -2093,6 +2122,8 @@ def edit_kpi(kpi_id):
         current_country_ids=current_country_ids,
         current_site_ids=current_site_ids,
         entity_defaults=entity_defaults,
+        entity_links=entity_links,
+        csrf_token=generate_csrf,
     )
 
 
@@ -3236,6 +3267,9 @@ def initiative_form(initiative_id):
             "logo": logo_url,
         }
 
+    # Get entity links for this initiative
+    entity_links = EntityLink.get_links_for_entity("initiative", initiative.id, current_user.id, include_private=True)
+
     return render_template(
         "organization_admin/initiative_form.html",
         initiative=initiative,
@@ -3244,4 +3278,5 @@ def initiative_form(initiative_id):
         can_edit=can_edit,
         edit_mode=edit_mode,
         entity_defaults=entity_defaults,
+        entity_links=entity_links,
     )

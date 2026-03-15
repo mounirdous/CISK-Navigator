@@ -2,7 +2,7 @@
 Entity Links routes for managing URLs attached to entities
 """
 
-from flask import Blueprint, jsonify, request, session
+from flask import Blueprint, flash, jsonify, redirect, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
@@ -15,25 +15,26 @@ bp = Blueprint("entity_links", __name__, url_prefix="/entity-links")
 @login_required
 def add_link():
     """Add a new link to an entity"""
-    data = request.get_json()
-
-    entity_type = data.get("entity_type")
-    entity_id = data.get("entity_id")
-    url = data.get("url", "").strip()
-    title = data.get("title", "").strip()
-    is_public = data.get("is_public", False)
+    entity_type = request.form.get("entity_type")
+    entity_id = int(request.form.get("entity_id"))
+    url = request.form.get("url", "").strip()
+    title = request.form.get("title", "").strip()
+    is_public = request.form.get("is_public") == "true"
 
     # Validate
     if not entity_type or not entity_id:
-        return jsonify({"success": False, "message": "Entity type and ID required"}), 400
+        flash("Entity type and ID required", "danger")
+        return redirect(request.referrer or url_for("workspace.index"))
 
     if entity_type not in ["space", "challenge", "initiative", "system", "kpi"]:
-        return jsonify({"success": False, "message": "Invalid entity type"}), 400
+        flash("Invalid entity type", "danger")
+        return redirect(request.referrer or url_for("workspace.index"))
 
     # Validate URL
     is_valid, error_msg = EntityLink.validate_url(url)
     if not is_valid:
-        return jsonify({"success": False, "message": error_msg}), 400
+        flash(error_msg, "danger")
+        return redirect(request.referrer or url_for("workspace.index"))
 
     # Get next display_order
     max_order = (
@@ -57,13 +58,8 @@ def add_link():
     db.session.add(link)
     db.session.commit()
 
-    return jsonify(
-        {
-            "success": True,
-            "message": "Link added successfully",
-            "link_id": link.id,
-        }
-    )
+    flash("Link added successfully", "success")
+    return redirect(request.referrer or url_for("workspace.index"))
 
 
 @bp.route("/update", methods=["POST"])
@@ -105,23 +101,24 @@ def update_link():
 @login_required
 def delete_link():
     """Delete a link"""
-    data = request.get_json()
-
-    link_id = data.get("link_id")
+    link_id = request.form.get("link_id")
 
     if not link_id:
-        return jsonify({"success": False, "message": "Link ID required"}), 400
+        flash("Link ID required", "danger")
+        return redirect(request.referrer or url_for("workspace.index"))
 
-    link = EntityLink.query.get_or_404(link_id)
+    link = EntityLink.query.get_or_404(int(link_id))
 
     # Check permission (creator only)
     if link.created_by != current_user.id:
-        return jsonify({"success": False, "message": "Permission denied. Only the creator can delete this link."}), 403
+        flash("Permission denied. Only the creator can delete this link.", "danger")
+        return redirect(request.referrer or url_for("workspace.index"))
 
     db.session.delete(link)
     db.session.commit()
 
-    return jsonify({"success": True, "message": "Link deleted successfully"})
+    flash("Link deleted successfully", "success")
+    return redirect(request.referrer or url_for("workspace.index"))
 
 
 @bp.route("/reorder", methods=["POST"])

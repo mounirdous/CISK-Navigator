@@ -1417,6 +1417,17 @@ tr[data-level="kpi"] td {
                         <span class="hierarchy-icon challenge-icon" style="font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
                         {% endif %}
                         {{ challenge.name }}
+                        {% if challenge.id in challenge_links %}
+                        <span class="ms-1"
+                              data-bs-toggle="popover"
+                              data-bs-trigger="hover focus"
+                              data-bs-html="true"
+                              data-bs-placement="right"
+                              data-bs-content="{% for link in challenge_links[challenge.id] %}<a href='{{ link.url }}' target='_blank' style='color: #0d6efd; display: block; margin-bottom: 4px; text-decoration: none;'>{{ link.get_display_icon() }} {{ link.title or link.url[:40] }}</a>{% endfor %}"
+                              style="cursor: pointer;">
+                            <i class="bi bi-link-45deg text-primary" style="font-size: 1.1rem;"></i>
+                        </span>
+                        {% endif %}
                         {% if current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) %}
                         <span class="action-icons ms-2">
                             {% if current_user.can_manage_initiatives(org_id) %}
@@ -1513,6 +1524,17 @@ tr[data-level="kpi"] td {
                             {% endif %}
                         </span>
                         {{ initiative.name }}
+                        {% if initiative.id in initiative_links %}
+                        <span class="ms-1"
+                              data-bs-toggle="popover"
+                              data-bs-trigger="hover focus"
+                              data-bs-html="true"
+                              data-bs-placement="right"
+                              data-bs-content="{% for link in initiative_links[initiative.id] %}<a href='{{ link.url }}' target='_blank' style='color: #0d6efd; display: block; margin-bottom: 4px; text-decoration: none;'>{{ link.get_display_icon() }} {{ link.title or link.url[:40] }}</a>{% endfor %}"
+                              style="cursor: pointer;">
+                            <i class="bi bi-link-45deg text-primary" style="font-size: 1.1rem;"></i>
+                        </span>
+                        {% endif %}
                         {% if current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) %}
                         <span class="action-icons ms-1">
                             {% if current_user.can_manage_systems(org_id) %}
@@ -1596,6 +1618,17 @@ tr[data-level="kpi"] td {
                         <span class="hierarchy-icon system-icon">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
                         {% endif %}
                         {{ system.name }}
+                        {% if system.id in system_links %}
+                        <span class="ms-1"
+                              data-bs-toggle="popover"
+                              data-bs-trigger="hover focus"
+                              data-bs-html="true"
+                              data-bs-placement="right"
+                              data-bs-content="{% for link in system_links[system.id] %}<a href='{{ link.url }}' target='_blank' style='color: #0d6efd; display: block; margin-bottom: 4px; text-decoration: none;'>{{ link.get_display_icon() }} {{ link.title or link.url[:40] }}</a>{% endfor %}"
+                              style="cursor: pointer;">
+                            <i class="bi bi-link-45deg text-primary" style="font-size: 1.1rem;"></i>
+                        </span>
+                        {% endif %}
                         {% if current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
                             {% if current_user.can_manage_kpis(org_id) %}
@@ -1710,6 +1743,17 @@ tr[data-level="kpi"] td {
                         {% endfor %}
                         {% if has_target_direction.value == 'minimize' %}⬇️{% elif has_target_direction.value == 'exact' %}🎯{% elif has_target_direction.value %}⬆️{% endif %}
                         {{ kpi.name }}
+                        {% if kpi.id in kpi_links %}
+                        <span class="ms-1"
+                              data-bs-toggle="popover"
+                              data-bs-trigger="hover focus"
+                              data-bs-html="true"
+                              data-bs-placement="right"
+                              data-bs-content="{% for link in kpi_links[kpi.id] %}<a href='{{ link.url }}' target='_blank' style='color: #0d6efd; display: block; margin-bottom: 4px; text-decoration: none;'>{{ link.get_display_icon() }} {{ link.title or link.url[:40] }}</a>{% endfor %}"
+                              style="cursor: pointer;">
+                            <i class="bi bi-link-45deg text-primary" style="font-size: 1.1rem;"></i>
+                        </span>
+                        {% endif %}
                         {% if kpi.value_type_configs | selectattr('linked_source_kpi_id') | list | length > 0 %}
                         <i class="bi bi-link-45deg" style="font-size: 0.9rem; color: #666; opacity: 0.7;" title="This KPI has linked values"></i>
                         {% endif %}
@@ -1725,8 +1769,8 @@ tr[data-level="kpi"] td {
                         {% endfor %}
                         {% if current_user.can_manage_kpis(org_id) %}
                         <span class="action-icons ms-2">
-                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="text-primary" title="Edit KPI Settings">
-                                <i class="bi bi-sliders"></i>
+                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id) }}" class="text-primary" title="Edit KPI">
+                                <i class="bi bi-pencil-square"></i>
                             </a>
                             {% if not kpi.is_archived %}
                             <a href="#" onclick="archiveKPI({{ kpi.id }}, '{{ kpi.name }}'); return false;" class="text-warning ms-1" title="Archive KPI">
@@ -3508,11 +3552,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // SPACE CRUD
 async function editSpace(spaceId) {
-    // Fetch space data
-    const response = await fetch(`/org-admin/spaces/${spaceId}/edit`);
-    if (response.redirected) {
-        window.location.href = response.url;
-    }
+    window.location.href = `/org-admin/spaces/${spaceId}/edit`;
 }
 
 async function deleteSpace(spaceId, spaceName) {
@@ -3930,6 +3970,45 @@ if (clearFiltersTopBtn) {
         }
     });
 }
+
+// Initialize Bootstrap popovers for initiative links
+document.addEventListener('DOMContentLoaded', function() {
+    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
+    popoverTriggerList.forEach(function (popoverTriggerEl) {
+        var popover = new bootstrap.Popover(popoverTriggerEl, {
+            trigger: 'manual',
+            html: true
+        });
+
+        let hideTimeout;
+
+        popoverTriggerEl.addEventListener('mouseenter', function() {
+            clearTimeout(hideTimeout);
+            popover.show();
+
+            // Keep popover open when hovering over it
+            setTimeout(function() {
+                const popoverElement = document.querySelector('.popover');
+                if (popoverElement) {
+                    popoverElement.addEventListener('mouseenter', function() {
+                        clearTimeout(hideTimeout);
+                    });
+                    popoverElement.addEventListener('mouseleave', function() {
+                        hideTimeout = setTimeout(function() {
+                            popover.hide();
+                        }, 100);
+                    });
+                }
+            }, 10);
+        });
+
+        popoverTriggerEl.addEventListener('mouseleave', function() {
+            hideTimeout = setTimeout(function() {
+                popover.hide();
+            }, 100);
+        });
+    });
+});
 
 </script>
 

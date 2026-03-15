@@ -326,7 +326,10 @@ def index():
                     for link in challenge.initiative_links
                     if (
                         # Group filter: if no group labels selected OR initiative matches selected groups or is ungrouped
-                        (not selected_group_labels or (not link.initiative.group_label or link.initiative.group_label in selected_group_labels))
+                        (
+                            not selected_group_labels
+                            or (not link.initiative.group_label or link.initiative.group_label in selected_group_labels)
+                        )
                         and
                         # Impact filter: if no impact levels selected OR initiative matches selected impact levels
                         (not selected_impact_levels or (link.initiative.impact_on_challenge in selected_impact_levels))
@@ -638,6 +641,43 @@ def index():
             "logo": logo_url,
         }
 
+    # Get entity links for workspace view
+    from app.models import EntityLink
+
+    challenge_links = {}
+    initiative_links = {}
+    system_links = {}
+    kpi_links = {}
+
+    for space in spaces:
+        for challenge in space.challenges:
+            # Get challenge links
+            links = EntityLink.get_links_for_entity("challenge", challenge.id, current_user.id, include_private=True)
+            if links:
+                challenge_links[challenge.id] = links
+
+            # Get initiative links
+            for init_link in challenge.initiative_links:
+                initiative = init_link.initiative
+                links = EntityLink.get_links_for_entity(
+                    "initiative", initiative.id, current_user.id, include_private=True
+                )
+                if links:
+                    initiative_links[initiative.id] = links
+
+                # Get system links
+                for sys_link in initiative.system_links:
+                    system = sys_link.system
+                    links = EntityLink.get_links_for_entity("system", system.id, current_user.id, include_private=True)
+                    if links:
+                        system_links[system.id] = links
+
+                    # Get KPI links
+                    for kpi in sys_link.kpis:
+                        links = EntityLink.get_links_for_entity("kpi", kpi.id, current_user.id, include_private=True)
+                        if links:
+                            kpi_links[kpi.id] = links
+
     return render_template(
         "workspace/index.html",
         org_id=org_id,
@@ -662,6 +702,10 @@ def index():
         group_counts=group_counts,
         impact_counts=impact_counts,
         gb_kpi_counts=gb_kpi_counts,
+        challenge_links=challenge_links,
+        initiative_links=initiative_links,
+        system_links=system_links,
+        kpi_links=kpi_links,
         level_counts=level_counts,
         archived_kpis_count=archived_kpis_count,
         filter_presets=filter_presets,

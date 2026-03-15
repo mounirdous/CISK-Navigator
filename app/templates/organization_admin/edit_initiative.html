@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_entity_links.html" import render_links %}
 
 {% block title %}Edit Initiative - {{ session.organization_name }}{% endblock %}
 
@@ -105,6 +106,9 @@
                         </a>
                     </div>
                 </form>
+
+                <!-- Entity Links Section -->
+                {{ render_links('initiative', initiative.id, entity_links, True) }}
             </div>
         </div>
     </div>

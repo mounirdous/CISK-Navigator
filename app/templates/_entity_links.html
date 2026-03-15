@@ -1,257 +1,59 @@
 {% macro render_links(entity_type, entity_id, links, edit_mode=False) %}
-<!-- Entity Links Section - Reusable Component -->
+<!-- Entity Links Section - Simple inline version -->
 <div class="entity-links-section" style="margin-top: 2rem;">
-    <div class="card" style="border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden;">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1rem 1.5rem;">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-link-45deg"></i> Links & Resources
-                </h5>
-                {% if edit_mode %}
-                <button type="button" class="btn btn-sm btn-light" onclick="openAddLinkModal('{{ entity_type }}', {{ entity_id }})">
-                    <i class="bi bi-plus-circle"></i> Add Link
-                </button>
-                {% endif %}
-            </div>
+    <div class="card">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+            <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Links & Resources</h5>
         </div>
-        <div class="card-body" style="padding: 1.5rem;">
+        <div class="card-body">
             {% if links %}
-            <div class="links-list">
                 {% for link in links %}
-                <div class="link-item" data-link-id="{{ link.id }}" style="padding: 1rem; margin-bottom: 0.75rem; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary); display: flex; align-items: center; justify-content: between; gap: 1rem;">
-                    <div style="flex: 1; min-width: 0;">
-                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
-                            <span style="font-size: 1.25rem;">{{ link.get_display_icon() }}</span>
-                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" style="font-weight: 600; color: var(--accent-primary); text-decoration: none; word-break: break-all;">
-                                {% if link.title %}
-                                    {{ link.title }}
-                                {% else %}
-                                    {{ link.url[:60] }}{% if link.url|length > 60 %}...{% endif %}
-                                {% endif %}
-                                <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem; margin-left: 0.25rem;"></i>
-                            </a>
-                        </div>
-                        {% if link.title %}
-                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-left: 2rem; word-break: break-all;">
-                            {{ link.url }}
-                        </div>
-                        {% endif %}
-                        <div style="font-size: 0.75rem; color: var(--text-tertiary); margin-left: 2rem; margin-top: 0.25rem;">
-                            {% if link.is_public %}
-                            <span class="badge bg-success" style="font-size: 0.7rem;">
-                                <i class="bi bi-people-fill"></i> Public
-                            </span>
-                            {% else %}
-                            <span class="badge bg-secondary" style="font-size: 0.7rem;">
-                                <i class="bi bi-lock-fill"></i> Private
-                            </span>
-                            {% endif %}
-                            <span style="margin-left: 0.5rem;">Added by {{ link.creator.login if link.creator else 'Unknown' }}</span>
-                        </div>
-                    </div>
+                <div style="padding: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa;">
+                    <div><a href="{{ link.url }}" target="_blank">{{ link.title or link.url }}</a></div>
+                    <small>{{ 'Public' if link.is_public else 'Private' }} - Added by {{ link.creator.login if link.creator else 'Unknown' }}</small>
                     {% if edit_mode %}
-                    <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="editLink({{ link.id }}, '{{ link.url }}', '{{ link.title or '' }}', {{ 'true' if link.is_public else 'false' }})" title="Edit link">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteLink({{ link.id }}, '{{ entity_type }}', {{ entity_id }})" title="Delete link">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
+                    <form method="POST" action="/entity-links/delete" style="display: inline;" onsubmit="return confirm('Delete this link?');">
+                        {% if csrf_token is defined %}
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is callable else csrf_token }}"/>
+                        {% endif %}
+                        <input type="hidden" name="link_id" value="{{ link.id }}"/>
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
                     {% endif %}
                 </div>
                 {% endfor %}
-            </div>
             {% else %}
-            <div class="text-center text-muted" style="padding: 2rem;">
-                <i class="bi bi-link-45deg" style="font-size: 3rem; opacity: 0.3;"></i>
-                <p class="mb-0 mt-2">No links added yet</p>
-                {% if edit_mode %}
-                <p class="small">Click "Add Link" to attach documents, resources, or related URLs</p>
+                <p class="text-muted">No links yet</p>
+            {% endif %}
+
+            {% if edit_mode %}
+            <hr>
+            <h6>Add New Link</h6>
+            <form method="POST" action="/entity-links/add">
+                {% if csrf_token is defined %}
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is callable else csrf_token }}"/>
                 {% endif %}
-            </div>
+                <input type="hidden" name="entity_type" value="{{ entity_type }}"/>
+                <input type="hidden" name="entity_id" value="{{ entity_id }}"/>
+
+                <div class="mb-2">
+                    <label class="form-label">URL *</label>
+                    <input type="url" name="url" class="form-control" placeholder="https://..." required>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label">Title (optional)</label>
+                    <input type="text" name="title" class="form-control" placeholder="Link title">
+                </div>
+
+                <div class="mb-2">
+                    <input type="checkbox" name="is_public" value="true"> Public (shared with organization)
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Link</button>
+            </form>
             {% endif %}
         </div>
     </div>
 </div>
-
-<!-- Add/Edit Link Modal -->
-<div class="modal fade" id="linkModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-link-45deg"></i> <span id="linkModalTitle">Add Link</span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <input type="hidden" id="linkId">
-                <input type="hidden" id="linkEntityType">
-                <input type="hidden" id="linkEntityId">
-
-                <div class="mb-3">
-                    <label for="linkUrl" class="form-label">URL <span class="text-danger">*</span></label>
-                    <input type="url" class="form-control" id="linkUrl" placeholder="https://..." required>
-                    <div class="form-text">Must start with http://, https://, or ftp://</div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="linkTitle" class="form-label">Title (optional)</label>
-                    <input type="text" class="form-control" id="linkTitle" placeholder="e.g., Project Documentation, Technical Specs">
-                    <div class="form-text">Descriptive name for the link</div>
-                </div>
-
-                <div class="mb-3">
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="linkIsPublic">
-                        <label class="form-check-label" for="linkIsPublic">
-                            <i class="bi bi-people-fill"></i> <strong>Public link</strong> - Shared with everyone in the organization
-                        </label>
-                    </div>
-                    <div class="form-text ms-4">
-                        <i class="bi bi-lock-fill"></i> Private links are visible only to you
-                    </div>
-                </div>
-
-                <div id="linkError" class="alert alert-danger" style="display: none;"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveLink()">
-                    <i class="bi bi-check-circle"></i> Save Link
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-.link-item:hover {
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-    transition: all 0.2s;
-}
-</style>
-
-<script>
-// Open modal for adding new link
-function openAddLinkModal(entityType, entityId) {
-    document.getElementById('linkModalTitle').textContent = 'Add Link';
-    document.getElementById('linkId').value = '';
-    document.getElementById('linkEntityType').value = entityType;
-    document.getElementById('linkEntityId').value = entityId;
-    document.getElementById('linkUrl').value = '';
-    document.getElementById('linkTitle').value = '';
-    document.getElementById('linkIsPublic').checked = false;
-    document.getElementById('linkError').style.display = 'none';
-
-    const modal = new bootstrap.Modal(document.getElementById('linkModal'));
-    modal.show();
-}
-
-// Open modal for editing existing link
-function editLink(linkId, url, title, isPublic) {
-    document.getElementById('linkModalTitle').textContent = 'Edit Link';
-    document.getElementById('linkId').value = linkId;
-    document.getElementById('linkUrl').value = url;
-    document.getElementById('linkTitle').value = title;
-    document.getElementById('linkIsPublic').checked = isPublic;
-    document.getElementById('linkError').style.display = 'none';
-
-    const modal = new bootstrap.Modal(document.getElementById('linkModal'));
-    modal.show();
-}
-
-// Save link (add or update)
-async function saveLink() {
-    const linkId = document.getElementById('linkId').value;
-    const entityType = document.getElementById('linkEntityType').value;
-    const entityId = document.getElementById('linkEntityId').value;
-    const url = document.getElementById('linkUrl').value.trim();
-    const title = document.getElementById('linkTitle').value.trim();
-    const isPublic = document.getElementById('linkIsPublic').checked;
-    const errorDiv = document.getElementById('linkError');
-
-    // Client-side validation
-    if (!url) {
-        errorDiv.textContent = 'URL is required';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    if (!url.match(/^(https?|ftp):\/\//i)) {
-        errorDiv.textContent = 'URL must start with http://, https://, or ftp://';
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    const endpoint = linkId ? '/entity-links/update' : '/entity-links/add';
-    const payload = {
-        entity_type: entityType,
-        entity_id: entityId,
-        url: url,
-        title: title,
-        is_public: isPublic
-    };
-
-    if (linkId) {
-        payload.link_id = linkId;
-    }
-
-    try {
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            bootstrap.Modal.getInstance(document.getElementById('linkModal')).hide();
-            location.reload(); // Reload to show updated links
-        } else {
-            errorDiv.textContent = result.message || 'Failed to save link';
-            errorDiv.style.display = 'block';
-        }
-    } catch (error) {
-        errorDiv.textContent = 'Error: ' + error.message;
-        errorDiv.style.display = 'block';
-    }
-}
-
-// Delete link
-async function deleteLink(linkId, entityType, entityId) {
-    if (!confirm('Delete this link?')) return;
-
-    try {
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-        const response = await fetch('/entity-links/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                link_id: linkId,
-                entity_type: entityType,
-                entity_id: entityId
-            })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            location.reload();
-        } else {
-            alert('Failed to delete link: ' + (result.message || 'Unknown error'));
-        }
-    } catch (error) {
-        alert('Error: ' + error.message);
-    }
-}
-</script>
 {% endmacro %}
