@@ -910,19 +910,35 @@ tr[data-level="kpi"] td {
                         </div>
 
                         {% if filter_presets %}
-                        <div class="mb-2">
-                            <input type="text" id="preset-search" class="form-control form-control-sm" placeholder="🔍 Search saved filters..." autocomplete="off" style="max-width: 300px;">
-                        </div>
-                        <div class="d-flex gap-2 flex-wrap" id="presets-container">
-                            {% for preset in filter_presets %}
-                            <div class="badge bg-secondary d-flex align-items-center gap-2 preset-item" data-preset-name="{{ preset.name|lower }}" style="font-size: 0.9rem; padding: 0.4rem 0.8rem;">
-                                <span class="filter-preset-name" style="cursor: pointer;" data-preset-id="{{ preset.id }}" title="Click to load this preset">{{ preset.name }}</span>
-                                <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" data-delete-preset="{{ preset.id }}" title="Delete preset"></button>
+                        <div style="position: relative; max-width: 400px;">
+                            <input type="text" id="preset-search" class="form-control form-control-sm"
+                                   placeholder="🔍 Search saved filters... ({{ filter_presets|length }} available)"
+                                   autocomplete="off">
+
+                            <!-- Dropdown list (hidden by default) -->
+                            <div id="presets-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 400px; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; margin-top: 4px;">
+                                {% for preset in filter_presets %}
+                                <div class="preset-dropdown-item" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name|lower }}"
+                                     style="padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;">
+                                    <div style="flex: 1;">
+                                        <div class="preset-item-name" style="font-weight: 600; font-size: 0.9rem; color: #2c3e50;">{{ preset.name }}</div>
+                                        <div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">
+                                            {% set filter_count = preset.filters|length if preset.filters else 0 %}
+                                            {{ filter_count }} filter{{ 's' if filter_count != 1 }}
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-preset-btn" data-delete-preset="{{ preset.id }}"
+                                            style="padding: 2px 8px; font-size: 0.75rem; border-radius: 4px;"
+                                            onclick="event.stopPropagation();" title="Delete preset">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% endfor %}
-                        </div>
-                        <div id="no-presets-found" style="display: none;" class="text-muted mb-0 small mt-2">
-                            No filters match your search. Try a different term.
+
+                            <div id="no-presets-found" style="display: none; padding: 12px; text-align: center; color: #6c757d; font-size: 0.85rem; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; margin-top: 4px;">
+                                No filters match "{{ '<span id="search-term-display"></span>' }}". Try a different term.
+                            </div>
                         </div>
                         {% else %}
                         <p class="text-muted mb-0 small">No saved presets yet. Click "Save Current Filters" to create one.</p>
@@ -3693,30 +3709,110 @@ function getCurrentFilters() {
     return filters;
 }
 
-// Live search for saved filter presets
+// Live search for saved filter presets (dropdown pattern)
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('preset-search');
-    if (!searchInput) return;
+    const dropdown = document.getElementById('presets-dropdown');
+    const noResultsMsg = document.getElementById('no-presets-found');
 
+    if (!searchInput || !dropdown) return;
+
+    // Add hover effects via JavaScript
+    document.querySelectorAll('.preset-dropdown-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = '#f8f9fa';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = 'white';
+        });
+    });
+
+    // Show dropdown on focus
+    searchInput.addEventListener('focus', function() {
+        dropdown.style.display = 'block';
+        noResultsMsg.style.display = 'none';
+        // Show all items initially
+        document.querySelectorAll('.preset-dropdown-item').forEach(item => {
+            item.style.display = '';
+        });
+    });
+
+    // Filter as user types
     searchInput.addEventListener('input', function() {
         const searchTerm = this.value.toLowerCase().trim();
-        const presetItems = document.querySelectorAll('.preset-item');
-        const noResultsMsg = document.getElementById('no-presets-found');
+        const presetItems = document.querySelectorAll('.preset-dropdown-item');
         let visibleCount = 0;
 
-        presetItems.forEach(item => {
-            const presetName = item.dataset.presetName || '';
-            if (!searchTerm || presetName.includes(searchTerm)) {
-                item.style.display = '';
-                visibleCount++;
+        if (searchTerm) {
+            presetItems.forEach(item => {
+                const presetName = item.dataset.presetName || '';
+                if (presetName.includes(searchTerm)) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            // Show/hide "no results" message
+            if (visibleCount === 0) {
+                dropdown.style.display = 'none';
+                noResultsMsg.style.display = 'block';
+                document.getElementById('search-term-display').textContent = this.value;
             } else {
-                item.style.display = 'none';
+                dropdown.style.display = 'block';
+                noResultsMsg.style.display = 'none';
+            }
+        } else {
+            // No search term - show all
+            presetItems.forEach(item => item.style.display = '');
+            dropdown.style.display = 'block';
+            noResultsMsg.style.display = 'none';
+        }
+    });
+
+    // Click preset to load
+    document.querySelectorAll('.preset-dropdown-item').forEach(item => {
+        item.addEventListener('click', async function() {
+            const presetId = this.dataset.presetId;
+            const presetName = this.querySelector('.preset-item-name').textContent;
+
+            if (confirm(`Load filter preset "${presetName}"?`)) {
+                try {
+                    // Mark as last used
+                    await fetch(`/workspace/api/filter-presets/${presetId}/set-last-used`, {
+                        method: 'POST'
+                    });
+
+                    // Fetch and navigate
+                    const response = await fetch(`/workspace/api/filter-presets`);
+                    const presets = await response.json();
+                    const preset = presets.find(p => p.id == presetId);
+
+                    if (preset && preset.filters) {
+                        const params = new URLSearchParams();
+                        for (const [key, value] of Object.entries(preset.filters)) {
+                            if (Array.isArray(value)) {
+                                value.forEach(v => params.append(key, v));
+                            } else {
+                                params.append(key, value);
+                            }
+                        }
+                        window.location.href = '/workspace/?' + params.toString();
+                    }
+                } catch (err) {
+                    console.error('Error loading preset:', err);
+                    alert('Failed to load preset');
+                }
             }
         });
+    });
 
-        // Show/hide "no results" message
-        if (noResultsMsg) {
-            noResultsMsg.style.display = (visibleCount === 0 && presetItems.length > 0) ? 'block' : 'none';
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target) && !noResultsMsg.contains(e.target)) {
+            dropdown.style.display = 'none';
+            noResultsMsg.style.display = 'none';
         }
     });
 });
@@ -3784,12 +3880,14 @@ document.querySelectorAll('.filter-preset-name').forEach(el => {
     });
 });
 
-// Delete preset
+// Delete preset (updated for dropdown pattern)
 document.querySelectorAll('[data-delete-preset]').forEach(btn => {
     btn.addEventListener('click', async function(e) {
         e.stopPropagation();
         const presetId = this.dataset.deletePreset;
-        const presetName = this.previousElementSibling.textContent;
+        // Find preset name from parent item
+        const parentItem = this.closest('.preset-dropdown-item');
+        const presetName = parentItem ? parentItem.querySelector('.preset-item-name').textContent : 'this preset';
 
         if (!confirm(`Delete filter preset "${presetName}"?`)) return;
 

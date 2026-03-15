@@ -1,7 +1,72 @@
-# CISK Navigator v1.14 - Feature Updates
+# CISK Navigator v1.33 - Feature Updates
 
-**Latest Version**: v1.14.0 (March 8, 2026)
+**Latest Version**: v1.33.0 (March 15, 2026)
 **Status**: ✅ **DEPLOYED TO PRODUCTION**
+
+---
+
+## 🆕 Features Added in v1.33
+
+### Impact Assessment for Initiatives (v1.33.0)
+
+**Purpose**: Capture and track the impact level of initiatives on their associated challenges with collaborative assessment support.
+
+**Features:**
+
+1. **Impact Levels**:
+   - 5 distinct levels: Not Assessed (default), Low, Medium, High, No Consensus
+   - Colored badges with emojis for quick visual identification
+   - No Consensus status for collaborative environments where opinions differ
+
+2. **Initiative Form Integration**:
+   - New "Impact" section with pink branding (#fce4ec background, #e91e63 border)
+   - Dropdown selector for impact level
+   - Rationale text area for capturing opinions, discussions, and justifications
+   - Integrated into form completion tracking (8 fields total)
+   - View mode shows colored badges with status
+
+3. **Workspace Filtering**:
+   - Filter initiatives by impact level with pill-shaped buttons
+   - Multiple selections supported
+   - Real-time counts for each impact level
+   - Persistent filter state in URL parameters
+
+4. **Dashboard Alerts**:
+   - Warning banner for initiatives with "No Consensus" status
+   - Quick visibility for items requiring team alignment
+   - Count display: "X initiative(s) with NO CONSENSUS"
+
+**Database Schema:**
+```sql
+ALTER TABLE initiatives ADD COLUMN impact_on_challenge VARCHAR(20) DEFAULT 'not_assessed';
+ALTER TABLE initiatives ADD COLUMN impact_rationale TEXT;
+```
+
+**Migrations**: `999c86785d6c_add_impact_assessment_fields_to_.py`
+
+---
+
+### Live Search for Saved Filters (v1.33.0)
+
+**Purpose**: Quickly find and apply saved filter presets in workspaces with many saved configurations.
+
+**Features:**
+
+1. **Dropdown Pattern**:
+   - Click search box to display all available saved filters
+   - Type to filter results in real-time
+   - Consistent with other live search patterns across platform
+
+2. **Display Information**:
+   - Preset name prominently displayed
+   - Filter count showing number of active filters in preset
+   - Delete button for quick removal
+
+3. **User Experience**:
+   - Shows count of available presets in placeholder text
+   - Filters dropdown list as user types
+   - Click preset to load immediately
+   - Removed grey badge display in favor of cleaner dropdown approach
 
 ---
 

@@ -1,7 +1,7 @@
 # CISK Navigator - Data Dictionary
 
-**Version:** v1.15.2
-**Last Updated:** 2026-03-10
+**Version:** v1.33.0
+**Last Updated:** 2026-03-15
 **Purpose:** Complete reference for all database tables and columns
 
 ---
@@ -104,6 +104,8 @@ Solutions or action plans addressing challenges.
 | `organization_id` | INTEGER | NO | FK | Parent organization |
 | `name` | VARCHAR(255) | NO | - | Initiative name |
 | `description` | TEXT | YES | NULL | Initiative description |
+| `impact_on_challenge` | VARCHAR(20) | YES | 'not_assessed' | Impact level: not_assessed, low, medium, high, no_consensus |
+| `impact_rationale` | TEXT | YES | NULL | Rationale and opinions about impact assessment |
 | `display_order` | INTEGER | NO | 0 | Sort order in UI |
 | `created_at` | TIMESTAMP | NO | now() | Creation timestamp |
 | `updated_at` | TIMESTAMP | YES | now() | Last update timestamp |

@@ -5,6 +5,30 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.0] - 2026-03-15
+
+### Added
+- **Impact Assessment for Initiatives**: Capture impact levels on challenges
+  - New fields: `impact_on_challenge` (not_assessed, low, medium, high, no_consensus)
+  - Rationale field to capture opinions and discussions
+  - Integrated into initiative form with colored badges and emojis
+  - Impact filter in workspace with counts per level
+  - Dashboard alerts for initiatives with "No Consensus" status
+  - Form completion tracking includes impact assessment (8 fields total)
+- **Live Search for Saved Filters**: Dropdown pattern for filter presets
+  - Click search box to display all available saved filters
+  - Type to filter dropdown results in real-time
+  - Shows preset name, filter count, and delete button
+  - Consistent with other live search patterns across platform
+
+### Changed
+- Initiative form now includes Impact section with pink branding
+- Workspace filter interface updated with impact level pills
+
+### Database
+- **Migration**: `999c86785d6c_add_impact_assessment_fields_to_.py`
+- New fields in `initiatives` table: `impact_on_challenge`, `impact_rationale`
+
 ## [1.32.0] - 2026-03-15
 
 ### Added
