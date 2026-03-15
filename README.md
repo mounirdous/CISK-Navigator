@@ -10,24 +10,37 @@
 
 ## ✨ What's New in v1.32.0 (March 2026)
 
-### 🗺️ **Complete Geography Management System**
+### 🗺️ **Complete Geography Management System with Professional Mapping**
 - **3-Tier Hierarchy**: Regions → Countries → Sites for organizing KPIs by location
-- **Interactive Map Dashboard**: Leaflet.js-powered world map with circle markers
-  - Markers sized by KPI count
-  - Click markers for site details and KPI links
-  - Auto-fit bounds to show all sites
-  - Statistics overlay (sites, KPIs with location)
-- **KPI-Site Assignment**: Optional multi-site assignment in KPI forms
-  - Hierarchical checkbox interface
-  - Coordinate display next to site names
-  - Link to geography management if empty
+- **Professional Map Dashboard**: **Mapbox GL JS** with built-in country boundaries
+  - **Colored Country Polygons**: Countries with KPIs filled bright green, others gray
+  - **Smart KPI Visualization**: Different marker styles by level:
+    - 🌍 **Region Level** (Blue gradient) - Largest markers for regional KPIs
+    - 🏳️ **Country Level** (Green gradient) - Medium markers for country KPIs
+    - 📍 **Site Level** (Purple gradient) - Smaller markers for site KPIs
+  - **Interactive Features**: Hover highlighting, click for popups with KPI details
+  - **KPI Values Displayed**: Shows current value, unit, target, period on map
+  - **Auto-Zoom**: Fits to show all countries and sites with KPIs
+  - **Professional Quality**: Same mapping library used by Uber, Airbnb, NYT
+- **Multi-Level KPI Assignment**: Assign KPIs at region, country, OR site level
+  - **Hierarchical Checkbox Interface**: Auto-checks parent levels when child selected
+  - **Constraint Enforcement**: Cannot uncheck parent if child still selected
+  - **Intelligent Rollup**: Assignments cascade up the hierarchy
+  - Coordinate display next to site/country names
+- **Address Geocoding**: Auto-convert addresses to coordinates
+  - Click "Get Coordinates from Address" button
+  - Uses Nominatim API (OpenStreetMap - free)
+  - Auto-fills latitude/longitude fields
+- **Country Autocomplete**: Live search from 195+ georeferenced countries
+  - Real coordinates for accurate map display
+  - ISO codes for international standards
 - **Full CRUD Admin UI**: Modern tree view with color-coded hierarchy
   - Purple gradients for regions
-  - Green for countries
-  - Red for sites with coordinate display
-  - Statistics cards (regions, countries, sites)
+  - Green for countries with map coordinates
+  - Red for sites with precise locations
+  - Statistics cards (regions, countries, sites, KPIs by location)
   - Cascade delete protection
-- **GeoJSON API**: RESTful endpoint for map data integration
+- **GeoJSON API**: RESTful endpoints for map data integration
 - **Organization-Scoped**: Complete data isolation per organization
 - **Audit Logging**: Full trail for all geography operations
 
@@ -35,11 +48,17 @@
 - Organization Admin → Geography Management
 - Dashboards → Map View
 
+**Setup Required:**
+- Free Mapbox account (50,000 map loads/month free tier)
+- Set `MAPBOX_ACCESS_TOKEN` environment variable
+- See "Mapbox Configuration" section below
+
 **Use Cases:**
 - Track KPIs across multiple office locations
-- Visualize performance by geographic region
+- Visualize performance by geographic region (entire countries highlighted!)
 - Identify location-specific trends and patterns
 - Multi-site companies with regional operations
+- Global organizations tracking country-level metrics
 
 ## ✨ What's New in v1.31.0 (March 2026)
 
@@ -623,7 +642,9 @@ pip install -r requirements.txt
 
 # Create environment file
 cp .env.example .env
-# Edit .env to set DATABASE_URL=postgresql://localhost/cisknavigator
+# Edit .env to set:
+#   DATABASE_URL=postgresql://localhost/cisknavigator
+#   MAPBOX_ACCESS_TOKEN=pk.YOUR_TOKEN_HERE (see Mapbox Configuration below)
 
 # Run database migrations
 flask db upgrade
@@ -634,6 +655,70 @@ flask run --port 5003
 # Open browser
 open http://localhost:5003
 ```
+
+## 🗺️ Mapbox Configuration (Required for Maps)
+
+The map dashboard requires a free Mapbox account. **Without this token, the map will appear empty.**
+
+### 1. Get Your FREE Mapbox Token (2 minutes)
+
+1. Go to **https://account.mapbox.com/**
+2. **Sign up** (no credit card required)
+3. Click **"Create a token"** or use the default public token
+4. **Copy the token** (starts with `pk.`)
+5. **Free tier includes 50,000 map loads/month** - plenty for most use cases!
+
+### 2. Configure the Token
+
+**Local Development:**
+
+Add to your `.env` file:
+```bash
+MAPBOX_ACCESS_TOKEN=pk.YOUR_TOKEN_HERE
+```
+
+Or set in terminal:
+```bash
+export MAPBOX_ACCESS_TOKEN="pk.YOUR_TOKEN_HERE"
+```
+
+**Production (Render):**
+
+1. Go to **Render Dashboard**: https://dashboard.render.com/
+2. Select your **CISK-Navigator web service**
+3. Click **"Environment"** in left sidebar
+4. Click **"Add Environment Variable"**
+5. Add:
+   - **Key**: `MAPBOX_ACCESS_TOKEN`
+   - **Value**: `pk.YOUR_TOKEN_HERE`
+6. Click **"Save Changes"** (Render will auto-redeploy)
+
+### 3. Restart and Test
+
+**Local:**
+```bash
+# Stop Flask (Ctrl+C)
+source venv/bin/activate
+flask run --port 5003
+```
+
+**Production:**
+- Render automatically restarts after saving environment variable
+
+### 4. Verify It's Working
+
+Go to: http://localhost:5003/map
+
+**You should see:**
+- ✅ **Countries with KPIs = Bright green fills** (entire country polygons)
+- ✅ **Countries without KPIs = Light gray**
+- ✅ **KPI markers** with values (blue=region, green=country, purple=site)
+- ✅ Professional map with zoom controls
+
+**If map is still empty:**
+- Check browser console (F12) for error messages
+- Verify token starts with `pk.`
+- Ensure Flask was restarted after adding token
 
 ### Default Credentials
 
