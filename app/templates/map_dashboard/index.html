@@ -243,6 +243,292 @@
 .kpi-list-item:nth-child(4) { animation-delay: 0.2s; }
 .kpi-list-item:nth-child(5) { animation-delay: 0.25s; }
 
+/* Details Panel - Slide from Right */
+.details-panel {
+    position: fixed;
+    top: 0;
+    right: -450px;
+    width: 450px;
+    height: 100vh;
+    background: white;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+    z-index: 2000;
+    transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.details-panel.open {
+    right: 0;
+}
+
+.details-panel-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.details-panel-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+.details-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.details-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.details-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.details-kpi-name {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0 40px 8px 0;
+    line-height: 1.3;
+}
+
+.details-kpi-code {
+    font-size: 13px;
+    opacity: 0.9;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.details-body {
+    flex: 1;
+    padding: 30px;
+}
+
+.detail-section {
+    margin-bottom: 30px;
+}
+
+.detail-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #999;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+.value-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.value-main {
+    font-size: 48px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.value-unit {
+    font-size: 18px;
+    color: #999;
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    margin: 20px 0;
+}
+
+.progress-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.progress-bar-labels span {
+    color: #666;
+}
+
+.progress-bar-labels strong {
+    color: #667eea;
+}
+
+.progress-bar {
+    height: 12px;
+    background: #f0f0f0;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea, #764ba2);
+    border-radius: 6px;
+    transition: width 0.6s ease;
+    position: relative;
+}
+
+.progress-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.location-hierarchy {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.location-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.location-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.location-icon.region {
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+}
+
+.location-icon.country {
+    background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.location-icon.site {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+.location-info {
+    flex: 1;
+}
+
+.location-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #999;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.location-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 20px 30px 30px;
+    border-top: 2px solid #f0f0f0;
+}
+
+.detail-action-btn {
+    padding: 14px 20px;
+    border-radius: 10px;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+}
+
+.detail-action-btn.primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
+
+.detail-action-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.detail-action-btn.secondary {
+    background: #f8f9fa;
+    color: #667eea;
+}
+
+.detail-action-btn.secondary:hover {
+    background: #e9ecef;
+}
+
+.kpi-description {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+}
+
 /* Map Container */
 .map-container {
     flex: 1;
@@ -267,15 +553,53 @@
     right: 10px;
     z-index: 1000;
     background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    max-width: 250px;
+}
+
+.map-stats.collapsed {
+    background: transparent;
+    box-shadow: none;
+}
+
+.map-stats-toggle {
+    padding: 10px 14px;
+    background: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+    color: #667eea;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.map-stats-toggle:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.map-stats-content {
     padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    min-width: 200px;
+    transition: all 0.3s ease;
+}
+
+.map-stats.collapsed .map-stats-content {
+    display: none;
 }
 
 .map-stats h6 {
     margin: 0 0 0.5rem 0;
     font-weight: 700;
+    font-size: 13px;
 }
 
 .stat-item {
@@ -339,9 +663,72 @@
     cursor: pointer;
 }
 
-.mapbox-kpi-marker:hover {
-    z-index: 1000 !important;
-    transform: scale(1.05);
+.kpi-marker-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 0 0 0 currentColor;
+}
+
+.kpi-marker-dot::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0.9;
+}
+
+.kpi-marker-dot::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.3;
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-ring {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.8);
+        opacity: 0.2;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(2.5);
+        opacity: 0;
+    }
+}
+
+.mapbox-kpi-marker:hover .kpi-marker-dot {
+    width: 24px;
+    height: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.mapbox-kpi-marker:hover .kpi-marker-dot::before {
+    width: 10px;
+    height: 10px;
+}
+
+.mapbox-kpi-marker:hover .kpi-marker-dot::after {
+    animation: none;
+    opacity: 0;
 }
 </style>
 {% endblock %}
@@ -409,74 +796,138 @@
         </div>
         {% endif %}
 
-        <div class="map-stats">
-            <h6><i class="bi bi-map-fill"></i> Map Controls</h6>
-
-            <button id="toggleKPIs" class="btn btn-sm btn-primary w-100 mb-3" style="font-size: 12px;">
-                <i class="bi bi-eye-slash"></i> Hide KPI Markers
+        <div class="map-stats" id="mapStats">
+            <button class="map-stats-toggle" id="toggleMapStats">
+                <i class="bi bi-map"></i>
+                <span>Map Controls</span>
+                <i class="bi bi-chevron-down"></i>
             </button>
 
-            <p style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 8px; text-transform: uppercase;">Countries</p>
-            <div style="margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
-                    <div style="width: 30px; height: 18px; background: #00ff00; border: 2px solid #00aa00; opacity: 0.7;"></div>
-                    <small>With KPIs</small>
+            <div class="map-stats-content">
+                <button id="toggleKPIs" class="btn btn-sm btn-primary w-100 mb-3" style="font-size: 12px;">
+                    <i class="bi bi-eye-slash"></i> Hide Markers
+                </button>
+
+                <p style="font-size: 10px; font-weight: 700; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Countries</p>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+                        <div style="width: 24px; height: 14px; background: #10b981; border: 1px solid #059669; border-radius: 2px;"></div>
+                        <small style="font-size: 12px;">With KPIs</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
+                        <div style="width: 24px; height: 14px; background: #e0e0e0; border: 1px solid #ccc; border-radius: 2px;"></div>
+                        <small style="font-size: 12px; color: #999;">No KPIs</small>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
-                    <div style="width: 30px; height: 18px; background: rgba(224, 224, 224, 0.2); border: 1px solid #ccc;"></div>
-                    <small class="text-muted">No KPIs</small>
+
+                <p style="font-size: 10px; font-weight: 700; color: #999; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">KPI Levels</p>
+                <div style="margin-bottom: 1rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+                        <div style="width: 10px; height: 10px; background: #3b82f6; border-radius: 50%;"></div>
+                        <small style="font-size: 12px;">Region</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.3rem;">
+                        <div style="width: 10px; height: 10px; background: #10b981; border-radius: 50%;"></div>
+                        <small style="font-size: 12px;">Country</small>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem;">
+                        <div style="width: 10px; height: 10px; background: #667eea; border-radius: 50%;"></div>
+                        <small style="font-size: 12px;">Site</small>
+                    </div>
+                </div>
+
+                <div class="stat-item" style="margin-bottom: 0.3rem;">
+                    <span class="stat-label" style="font-size: 12px;">Total Sites</span>
+                    <span class="stat-value" style="font-size: 13px;">
+                        {% set site_count = namespace(value=0) %}
+                        {% for region in regions %}
+                            {% for country in region.countries %}
+                                {% set site_count.value = site_count.value + country.sites|length %}
+                            {% endfor %}
+                        {% endfor %}
+                        {{ site_count.value }}
+                    </span>
+                </div>
+                <div class="stat-item" style="margin-bottom: 0.6rem;">
+                    <span class="stat-label" style="font-size: 12px;">KPIs</span>
+                    <span class="stat-value" style="font-size: 13px;">{{ total_kpis }}</span>
+                </div>
+
+                <small class="text-muted" style="font-size: 11px; display: block; text-align: center;">
+                    <i class="bi bi-info-circle"></i> Click markers for details
+                </small>
+            </div>
+        </div>
+        </div>
+    </div>
+
+    <!-- Details Panel Overlay -->
+    <div class="details-panel-overlay" id="detailsOverlay"></div>
+
+    <!-- Details Panel -->
+    <div class="details-panel" id="detailsPanel">
+        <div class="details-header">
+            <button class="details-close" id="closeDetails">
+                <i class="bi bi-x"></i>
+            </button>
+            <h3 class="details-kpi-name" id="detailsKpiName">KPI Name</h3>
+            <span class="details-kpi-code" id="detailsKpiCode">KPI-CODE</span>
+        </div>
+
+        <div class="details-body">
+            <!-- Value Section -->
+            <div class="detail-section">
+                <div class="detail-section-title">Current Value</div>
+                <div class="value-display">
+                    <span class="value-main" id="detailsValue">0</span>
+                    <span class="value-unit" id="detailsUnit"></span>
+                </div>
+
+                <!-- Progress Bar (if target exists) -->
+                <div class="progress-bar-container" id="detailsProgressContainer" style="display: none;">
+                    <div class="progress-bar-labels">
+                        <span>Progress to Target</span>
+                        <strong id="detailsProgressPercent">0%</strong>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" id="detailsProgressFill" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
-            <p style="font-size: 11px; font-weight: 600; color: #666; margin-bottom: 8px; text-transform: uppercase;">KPI Levels</p>
-            <div style="margin-bottom: 1rem;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
-                    <div style="width: 50px; height: 26px; background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-                                border-radius: 13px; border: 2px solid #1e40af; display: flex; align-items: center;
-                                justify-content: center; color: white; font-size: 10px; font-weight: bold;">
-                        🌍
-                    </div>
-                    <small><strong>Region Level</strong></small>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem;">
-                    <div style="width: 46px; height: 24px; background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-                                border-radius: 12px; border: 2px solid #059669; display: flex; align-items: center;
-                                justify-content: center; color: white; font-size: 10px; font-weight: bold;">
-                        🏳️
-                    </div>
-                    <small><strong>Country Level</strong></small>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.8rem;">
-                    <div style="width: 42px; height: 22px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                border-radius: 11px; border: 2px solid #764ba2; display: flex; align-items: center;
-                                justify-content: center; color: white; font-size: 9px; font-weight: bold;">
-                        📍
-                    </div>
-                    <small><strong>Site Level</strong></small>
+            <!-- Description Section -->
+            <div class="detail-section" id="detailsDescriptionSection" style="display: none;">
+                <div class="detail-section-title">Description</div>
+                <div class="kpi-description" id="detailsDescription"></div>
+            </div>
+
+            <!-- Location Section -->
+            <div class="detail-section">
+                <div class="detail-section-title">Location Hierarchy</div>
+                <div class="location-hierarchy" id="detailsLocation">
+                    <!-- Populated dynamically -->
                 </div>
             </div>
-            <hr>
-            <div class="stat-item">
-                <span class="stat-label">Total Sites</span>
-                <span class="stat-value">
-                    {% set site_count = namespace(value=0) %}
-                    {% for region in regions %}
-                        {% for country in region.countries %}
-                            {% set site_count.value = site_count.value + country.sites|length %}
-                        {% endfor %}
-                    {% endfor %}
-                    {{ site_count.value }}
-                </span>
+
+            <!-- Period Section -->
+            <div class="detail-section" id="detailsPeriodSection" style="display: none;">
+                <div class="detail-section-title">Reporting Period</div>
+                <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 14px; color: #666;">
+                    <i class="bi bi-calendar3"></i> <span id="detailsPeriod"></span>
+                </div>
             </div>
-            <div class="stat-item">
-                <span class="stat-label">KPIs with Location</span>
-                <span class="stat-value">{{ total_kpis }}</span>
-            </div>
-            <hr>
-            <small class="text-muted">
-                <i class="bi bi-info-circle"></i> Hover over countries and click for details
-            </small>
         </div>
+
+        <!-- Action Buttons -->
+        <div class="detail-actions">
+            <a href="#" class="detail-action-btn primary" id="detailsViewBtn">
+                <i class="bi bi-box-arrow-up-right"></i>
+                View Full KPI Details
+            </a>
+            <button class="detail-action-btn secondary" id="detailsMapBtn">
+                <i class="bi bi-geo-alt"></i>
+                Center on Map
+            </button>
         </div>
     </div>
 </div>
@@ -633,9 +1084,10 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
             // Add hover effect with single popup instance
             let countryPopup = null;
+            let isMarkerPopupOpen = false; // Track if marker popup is showing
 
             map.on('mouseenter', 'country-fills', (e) => {
-                if (e.features.length > 0) {
+                if (e.features.length > 0 && !isMarkerPopupOpen) {
                     map.getCanvas().style.cursor = 'pointer';
 
                     const feature = e.features[0];
@@ -690,105 +1142,58 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                 const coords = feature.geometry.coordinates;
                 const props = feature.properties;
 
-                // Different styles for different location types
-                let bgGradient, borderColor, iconSize, fontSize, icon;
+                // Different colors for different location types
+                let color, icon;
 
                 if (props.location_type === 'region') {
-                    // Region-level: Compact blue
-                    bgGradient = 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)';
-                    borderColor = '#1e40af';
-                    iconSize = 'padding: 4px 8px;';
-                    fontSize = '11px';
+                    color = '#3b82f6';
                     icon = '🌍';
                 } else if (props.location_type === 'country') {
-                    // Country-level: Compact green
-                    bgGradient = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-                    borderColor = '#059669';
-                    iconSize = 'padding: 4px 7px;';
-                    fontSize = '10px';
+                    color = '#10b981';
                     icon = '🏳️';
                 } else {
-                    // Site-level: Compact purple
-                    bgGradient = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                    borderColor = '#764ba2';
-                    iconSize = 'padding: 3px 6px;';
-                    fontSize = '9px';
+                    color = '#667eea';
                     icon = '📍';
                 }
 
-                // Create marker element
+                // Create marker element - minimal glowing dot
                 const el = document.createElement('div');
                 el.className = 'mapbox-kpi-marker';
                 el.innerHTML = `
-                    <div style="background: ${bgGradient};
-                                color: white;
-                                ${iconSize}
-                                border-radius: 8px;
-                                font-weight: bold;
-                                font-size: ${fontSize};
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                                border: 2px solid ${borderColor};
-                                white-space: nowrap;
-                                text-align: center;
-                                cursor: pointer;
-                                position: relative;">
-                        <div style="font-size: 8px; opacity: 0.85;">${icon}</div>
-                        <div style="font-size: ${fontSize}; font-weight: 900; margin-top: 1px;">${props.value}</div>
-                    </div>
+                    <div class="kpi-marker-dot" style="background: ${color}; color: ${color};"></div>
                 `;
 
-                // Determine popup color based on level
-                let popupColor = props.location_type === 'region' ? '#3b82f6' :
-                                props.location_type === 'country' ? '#10b981' : '#667eea';
+                // Store feature reference on element for click handler
+                el.kpiFeature = feature;
 
-                // Create popup
-                const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
-                    <div style="min-width: 260px; padding: 12px;">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                            <h5 style="margin: 0; color: ${popupColor}; flex: 1;">
-                                <i class="bi bi-graph-up"></i> ${props.kpi_name}
-                            </h5>
-                            <span style="background: ${bgGradient}; color: white; padding: 4px 8px; border-radius: 8px; font-size: 10px; font-weight: bold; text-transform: uppercase; white-space: nowrap;">
-                                ${icon} ${props.location_type}
-                            </span>
+                // Add click handler to open details panel
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    openDetailsPanel(feature);
+                });
+
+                // Create popup (on hover only, click opens details panel)
+                const popup = new mapboxgl.Popup({
+                    offset: 15,
+                    closeButton: false,
+                    closeOnClick: false
+                }).setHTML(`
+                    <div style="padding: 10px; min-width: 180px;">
+                        <div style="font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px;">
+                            ${props.kpi_name}
                         </div>
-                        <table style="width: 100%; font-size: 14px; border-collapse: separate; border-spacing: 0 4px;">
-                            <tr>
-                                <td style="padding: 6px 8px; color: #666; font-weight: 500;">Code:</td>
-                                <td style="padding: 6px 8px; font-weight: bold;">${props.kpi_code || 'N/A'}</td>
-                            </tr>
-                            <tr style="background: rgba(102, 126, 234, 0.05);">
-                                <td style="padding: 6px 8px; color: #666; font-weight: 500;">Value:</td>
-                                <td style="padding: 6px 8px;">
-                                    <span style="font-size: 22px; font-weight: 900; color: ${popupColor};">
-                                        ${props.value}
-                                    </span>
-                                    ${props.unit ? ` <small style="color: #666;">${props.unit}</small>` : ''}
-                                </td>
-                            </tr>
-                            ${props.target ? `
-                            <tr>
-                                <td style="padding: 6px 8px; color: #666; font-weight: 500;">Target:</td>
-                                <td style="padding: 6px 8px; font-weight: 600;">${props.target}</td>
-                            </tr>
-                            ` : ''}
-                            ${props.period ? `
-                            <tr>
-                                <td style="padding: 6px 8px; color: #666; font-weight: 500;">Period:</td>
-                                <td style="padding: 6px 8px;">${props.period}</td>
-                            </tr>
-                            ` : ''}
-                            <tr style="background: rgba(102, 126, 234, 0.05);">
-                                <td style="padding: 6px 8px; color: #666; font-weight: 500;">Location:</td>
-                                <td style="padding: 6px 8px; font-weight: 600;">${props.location_name}</td>
-                            </tr>
-                        </table>
-                        <hr style="margin: 12px 0; border: none; border-top: 2px solid #f0f0f0;">
-                        <a href="{{ url_for('workspace.index') }}?kpi_id=${props.kpi_id}"
-                           class="btn btn-sm w-100"
-                           style="background: ${popupColor}; color: white; border: none; padding: 8px; font-weight: 600;">
-                            <i class="bi bi-box-arrow-up-right"></i> View KPI Details
-                        </a>
+                        <div style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 6px;">
+                            <span style="font-size: 22px; font-weight: 900; color: ${color};">
+                                ${props.value}
+                            </span>
+                            ${props.unit ? `<span style="color: #999; font-size: 12px;">${props.unit}</span>` : ''}
+                        </div>
+                        <div style="font-size: 11px; color: #999; margin-bottom: 8px;">
+                            ${icon} ${props.location_name}
+                        </div>
+                        <div style="padding: 6px; background: rgba(102, 126, 234, 0.08); border-radius: 6px; text-align: center; font-size: 11px; color: #667eea; font-weight: 600;">
+                            <i class="bi bi-cursor"></i> Click for details
+                        </div>
                     </div>
                 `);
 
@@ -797,6 +1202,22 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                     .setLngLat(coords)
                     .setPopup(popup)
                     .addTo(map);
+
+                // Show popup on hover
+                el.addEventListener('mouseenter', () => {
+                    // Close country popup if open
+                    if (countryPopup) {
+                        countryPopup.remove();
+                        countryPopup = null;
+                    }
+                    isMarkerPopupOpen = true;
+                    marker.togglePopup();
+                });
+
+                el.addEventListener('mouseleave', () => {
+                    isMarkerPopupOpen = false;
+                    marker.togglePopup();
+                });
 
                 kpiMarkers.push(marker);
                         });
@@ -826,8 +1247,24 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                             }
                         });
                         this.innerHTML = markersVisible
-                            ? '<i class="bi bi-eye-slash"></i> Hide KPI Markers'
-                            : '<i class="bi bi-eye"></i> Show KPI Markers';
+                            ? '<i class="bi bi-eye-slash"></i> Hide Markers'
+                            : '<i class="bi bi-eye"></i> Show Markers';
+                    });
+
+                    // Map stats collapse/expand
+                    document.getElementById('toggleMapStats').addEventListener('click', function() {
+                        const stats = document.getElementById('mapStats');
+                        const icon = this.querySelector('.bi-chevron-down, .bi-chevron-up');
+
+                        stats.classList.toggle('collapsed');
+
+                        if (stats.classList.contains('collapsed')) {
+                            icon.classList.remove('bi-chevron-down');
+                            icon.classList.add('bi-chevron-up');
+                        } else {
+                            icon.classList.remove('bi-chevron-up');
+                            icon.classList.add('bi-chevron-down');
+                        }
                     });
 
                     // Setup sidebar interactions
@@ -892,7 +1329,7 @@ function renderKPIList(kpis) {
         const index = parseInt(item.dataset.kpiIndex);
 
         item.addEventListener('click', () => {
-            zoomToKPI(kpis[index]);
+            openDetailsPanel(kpis[index]);
         });
 
         item.addEventListener('mouseenter', () => {
@@ -984,6 +1421,134 @@ function zoomToKPI(kpi) {
     });
 }
 
-console.log('===== MODERN MAP DASHBOARD WITH SIDEBAR READY =====');
+// ===== DETAILS PANEL FUNCTIONS =====
+
+let currentDetailKPI = null;
+
+function openDetailsPanel(kpi) {
+    currentDetailKPI = kpi;
+    const props = kpi.properties;
+
+    // Update header
+    document.getElementById('detailsKpiName').textContent = props.kpi_name;
+    document.getElementById('detailsKpiCode').textContent = props.kpi_code || 'N/A';
+
+    // Update value
+    document.getElementById('detailsValue').textContent = props.value;
+    document.getElementById('detailsUnit').textContent = props.unit || '';
+
+    // Update progress bar (if target exists)
+    if (props.target) {
+        const current = parseFloat(props.value) || 0;
+        const target = parseFloat(props.target) || 1;
+        const percent = Math.min(Math.round((current / target) * 100), 100);
+
+        document.getElementById('detailsProgressContainer').style.display = 'block';
+        document.getElementById('detailsProgressPercent').textContent = percent + '%';
+        document.getElementById('detailsProgressFill').style.width = percent + '%';
+    } else {
+        document.getElementById('detailsProgressContainer').style.display = 'none';
+    }
+
+    // Update description (if available)
+    if (props.description) {
+        document.getElementById('detailsDescriptionSection').style.display = 'block';
+        document.getElementById('detailsDescription').textContent = props.description;
+    } else {
+        document.getElementById('detailsDescriptionSection').style.display = 'none';
+    }
+
+    // Update location hierarchy
+    const locationHTML = buildLocationHierarchy(props);
+    document.getElementById('detailsLocation').innerHTML = locationHTML;
+
+    // Update period (if available)
+    if (props.period) {
+        document.getElementById('detailsPeriodSection').style.display = 'block';
+        document.getElementById('detailsPeriod').textContent = props.period;
+    } else {
+        document.getElementById('detailsPeriodSection').style.display = 'none';
+    }
+
+    // Update action button
+    document.getElementById('detailsViewBtn').href =
+        '{{ url_for("workspace.index") }}?kpi_id=' + props.kpi_id;
+
+    // Show panel
+    document.getElementById('detailsPanel').classList.add('open');
+    document.getElementById('detailsOverlay').classList.add('visible');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDetailsPanel() {
+    document.getElementById('detailsPanel').classList.remove('open');
+    document.getElementById('detailsOverlay').classList.remove('visible');
+    document.body.style.overflow = '';
+    currentDetailKPI = null;
+}
+
+function buildLocationHierarchy(props) {
+    const locationType = props.location_type;
+    const locationName = props.location_name;
+
+    let html = '';
+
+    // Build based on location type
+    if (locationType === 'region') {
+        html = `
+            <div class="location-item">
+                <div class="location-icon region">🌍</div>
+                <div class="location-info">
+                    <div class="location-type">Region</div>
+                    <div class="location-name">${locationName}</div>
+                </div>
+            </div>
+        `;
+    } else if (locationType === 'country') {
+        html = `
+            <div class="location-item">
+                <div class="location-icon country">🏳️</div>
+                <div class="location-info">
+                    <div class="location-type">Country</div>
+                    <div class="location-name">${locationName}</div>
+                </div>
+            </div>
+        `;
+    } else if (locationType === 'site') {
+        html = `
+            <div class="location-item">
+                <div class="location-icon site">📍</div>
+                <div class="location-info">
+                    <div class="location-type">Site</div>
+                    <div class="location-name">${locationName}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    return html;
+}
+
+// Close button handler
+document.getElementById('closeDetails').addEventListener('click', closeDetailsPanel);
+
+// Overlay click to close
+document.getElementById('detailsOverlay').addEventListener('click', closeDetailsPanel);
+
+// Map button handler
+document.getElementById('detailsMapBtn').addEventListener('click', () => {
+    if (currentDetailKPI) {
+        zoomToKPI(currentDetailKPI);
+    }
+});
+
+// ESC key to close
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeDetailsPanel();
+    }
+});
+
+console.log('===== MODERN MAP DASHBOARD WITH SIDEBAR AND DETAILS PANEL READY =====');
 </script>
 {% endblock %}
