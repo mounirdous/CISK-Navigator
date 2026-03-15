@@ -463,7 +463,8 @@ document.getElementById('saveMapColors').addEventListener('click', async () => {
         const response = await fetch('{{ url_for("geography.save_map_colors") }}', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
             },
             body: JSON.stringify({
                 color_with_kpis: colorWithKPIs,
