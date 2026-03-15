@@ -3150,6 +3150,8 @@ def initiative_form(initiative_id):
             "team_members": initiative.team_members,
             "handover_organization": initiative.handover_organization,
             "deliverables": initiative.deliverables,
+            "impact_on_challenge": initiative.impact_on_challenge,
+            "impact_rationale": initiative.impact_rationale,
         }
 
         # Update fields
@@ -3159,6 +3161,8 @@ def initiative_form(initiative_id):
         initiative.team_members = request.form.get("team_members")
         initiative.handover_organization = request.form.get("handover_organization")
         initiative.deliverables = request.form.get("deliverables")
+        initiative.impact_on_challenge = request.form.get("impact_on_challenge")
+        initiative.impact_rationale = request.form.get("impact_rationale")
 
         # Audit log
         new_values = {
@@ -3168,6 +3172,8 @@ def initiative_form(initiative_id):
             "team_members": initiative.team_members,
             "handover_organization": initiative.handover_organization,
             "deliverables": initiative.deliverables,
+            "impact_on_challenge": initiative.impact_on_challenge,
+            "impact_rationale": initiative.impact_rationale,
         }
         AuditService.log_update("Initiative Form", initiative.id, initiative.name, old_values, new_values)
 

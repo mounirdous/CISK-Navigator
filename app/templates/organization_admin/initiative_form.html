@@ -415,6 +415,39 @@
                                 </div>
                             </td>
                         </tr>
+
+                        <!-- IMPACT Section -->
+                        <tr>
+                            <td rowspan="2" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #fce4ec; font-size: 1rem; border-right: 3px solid #e91e63;">
+                                Impact
+                            </td>
+                            <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa; vertical-align: top;">
+                                Impact Level
+                            </td>
+                            <td style="padding: 0.5rem;">
+                                <select class="form-select" name="impact_on_challenge">
+                                    <option value="not_assessed" {% if not initiative.impact_on_challenge or initiative.impact_on_challenge == 'not_assessed' %}selected{% endif %}>⚪ Not Assessed</option>
+                                    <option value="low" {% if initiative.impact_on_challenge == 'low' %}selected{% endif %}>🔵 Low Impact</option>
+                                    <option value="medium" {% if initiative.impact_on_challenge == 'medium' %}selected{% endif %}>🟡 Medium Impact</option>
+                                    <option value="high" {% if initiative.impact_on_challenge == 'high' %}selected{% endif %}>🟢 High Impact</option>
+                                    <option value="no_consensus" {% if initiative.impact_on_challenge == 'no_consensus' %}selected{% endif %}>⚠️ No Consensus</option>
+                                </select>
+                                <div style="font-size: 0.8rem; color: #6c757d; margin-top: 0.25rem; font-style: italic;">
+                                    How much does this initiative impact the challenge?
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa; vertical-align: top;">
+                                Rationale
+                            </td>
+                            <td style="padding: 0.5rem;">
+                                <textarea class="form-control" name="impact_rationale" rows="4" placeholder="Explain the impact assessment. If 'No Consensus', include different opinions and perspectives...">{{ initiative.impact_rationale or '' }}</textarea>
+                                <div style="font-size: 0.8rem; color: #6c757d; margin-top: 0.25rem; font-style: italic;">
+                                    Capture all opinions and contributions about the impact
+                                </div>
+                            </td>
+                        </tr>
                     </table>
                 </div>
 
@@ -576,6 +609,45 @@
                                 </table>
                             {% else %}
                                 <span style="color: #6c757d; font-style: italic;">No steps defined</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- IMPACT Section (View Mode) -->
+                    <tr>
+                        <td rowspan="2" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #fce4ec; font-size: 1rem; border-right: 3px solid #e91e63;">
+                            Impact
+                        </td>
+                        <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa; vertical-align: top;">
+                            Impact Level
+                        </td>
+                        <td style="padding: 0.5rem;">
+                            {% if initiative.impact_on_challenge %}
+                                {% if initiative.impact_on_challenge == 'not_assessed' %}
+                                    <span style="color: #999; font-style: italic;">⚪ Not Assessed</span>
+                                {% elif initiative.impact_on_challenge == 'low' %}
+                                    <span style="color: #2196f3; font-weight: 600;">🔵 Low Impact</span>
+                                {% elif initiative.impact_on_challenge == 'medium' %}
+                                    <span style="color: #ff9800; font-weight: 600;">🟡 Medium Impact</span>
+                                {% elif initiative.impact_on_challenge == 'high' %}
+                                    <span style="color: #4caf50; font-weight: 600;">🟢 High Impact</span>
+                                {% elif initiative.impact_on_challenge == 'no_consensus' %}
+                                    <span style="color: #e91e63; font-weight: 600;">⚠️ No Consensus</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: #6c757d; font-style: italic;">Not assessed yet</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa; vertical-align: top;">
+                            Rationale
+                        </td>
+                        <td style="white-space: pre-wrap; padding: 0.5rem;">
+                            {% if initiative.impact_rationale %}
+                                {{ initiative.impact_rationale }}
+                            {% else %}
+                                <span style="color: #6c757d; font-style: italic;">No rationale provided</span>
                             {% endif %}
                         </td>
                     </tr>

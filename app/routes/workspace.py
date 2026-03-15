@@ -145,6 +145,9 @@ def dashboard():
         .count(),
         "value_types": ValueType.query.filter_by(organization_id=org_id, is_active=True).count(),
         "governance_bodies": GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count(),
+        "initiatives_no_consensus": Initiative.query.filter_by(
+            organization_id=org_id, impact_on_challenge="no_consensus"
+        ).count(),
     }
 
     # Check if organization needs onboarding (empty org + user has admin permissions)
