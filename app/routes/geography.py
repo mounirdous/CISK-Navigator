@@ -635,6 +635,74 @@ def api_countries_json():
     return jsonify({"type": "FeatureCollection", "features": features})
 
 
+@bp.route("/api/map-kpis.json")
+@login_required
+@organization_required
+def api_map_kpis():
+    """Return all KPIs with their geographic locations and latest values for map display"""
+    from app.models import KPI
+    from sqlalchemy import desc
+
+    org_id = session.get("organization_id")
+
+    # Get all KPIs with geography assignments in this organization
+    kpis = (
+        KPI.query.join(KPI.geography_assignments)
+        .join(GeographyCountry, KPIGeographyAssignment.country_id == GeographyCountry.id, isouter=True)
+        .join(GeographySite, KPIGeographyAssignment.site_id == GeographySite.id, isouter=True)
+        .join(GeographyRegion, KPIGeographyAssignment.region_id == GeographyRegion.id, isouter=True)
+        .filter(KPI.organization_id == org_id)
+        .distinct()
+        .all()
+    )
+
+    features = []
+    for kpi in kpis:
+        # Get latest snapshot value
+        latest_snapshot = kpi.snapshots.order_by(desc("period")).first() if hasattr(kpi, "snapshots") else None
+
+        # Get geographic location for this KPI
+        for assignment in kpi.geography_assignments:
+            lat, lon, location_name, location_type = None, None, None, None
+
+            if assignment.site_id and assignment.site:
+                lat, lon = assignment.site.latitude, assignment.site.longitude
+                location_name = assignment.site.name
+                location_type = "site"
+            elif assignment.country_id and assignment.country:
+                lat, lon = assignment.country.latitude, assignment.country.longitude
+                location_name = assignment.country.name
+                location_type = "country"
+            elif assignment.region_id and assignment.region:
+                # For regions, use first country's coordinates
+                if assignment.region.countries:
+                    first_country = assignment.region.countries[0]
+                    lat, lon = first_country.latitude, first_country.longitude
+                    location_name = assignment.region.name
+                    location_type = "region"
+
+            if lat and lon:
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [float(lon), float(lat)]},
+                        "properties": {
+                            "kpi_id": kpi.id,
+                            "kpi_name": kpi.name,
+                            "kpi_code": kpi.code,
+                            "location_name": location_name,
+                            "location_type": location_type,
+                            "value": str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value else "No data",
+                            "period": latest_snapshot.period.strftime("%Y-%m") if latest_snapshot else None,
+                            "target": kpi.target,
+                            "unit": kpi.unit,
+                        },
+                    }
+                )
+
+    return jsonify({"type": "FeatureCollection", "features": features})
+
+
 @bp.route("/api/countries/search")
 @login_required
 def api_countries_search():

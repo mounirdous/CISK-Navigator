@@ -91,6 +91,16 @@
     transform: scale(1.2);
     box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 }
+
+.kpi-marker-label {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.kpi-marker-label:hover {
+    z-index: 1000 !important;
+}
 </style>
 {% endblock %}
 
@@ -132,16 +142,20 @@
             <h6><i class="bi bi-map-fill"></i> Map Legend</h6>
             <div style="margin-bottom: 1rem;">
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <div style="width: 30px; height: 20px; background: rgba(40, 167, 69, 0.7); border: 2px solid #1e7e34;"></div>
+                    <div style="width: 30px; height: 20px; background: #00ff00; border: 2px solid #00aa00; opacity: 0.8;"></div>
                     <small><strong>Country with KPIs</strong></small>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                    <div style="width: 16px; height: 16px; border-radius: 50%; background: #dc3545; border: 2px solid white;"></div>
-                    <small><strong>Site location</strong></small>
+                    <div style="width: 50px; height: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                border-radius: 12px; border: 2px solid white; display: flex; align-items: center;
+                                justify-content: center; color: white; font-size: 10px; font-weight: bold;">
+                        KPI
+                    </div>
+                    <small><strong>KPI with value</strong></small>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
-                    <div style="width: 30px; height: 20px; background: rgba(224, 224, 224, 0.3); border: 1px solid #999;"></div>
-                    <small class="text-muted">Country without KPIs</small>
+                    <div style="width: 30px; height: 20px; background: rgba(224, 224, 224, 0.2); border: 1px solid #ccc;"></div>
+                    <small class="text-muted">Other countries</small>
                 </div>
             </div>
             <hr>
@@ -342,35 +356,103 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
         console.log('GeoJSON layer added successfully!');
 
-        // Step 6: Add sites
-        return fetch('{{ url_for("geography.api_sites_json") }}');
+        // Step 6: Add KPI markers with values
+        return fetch('{{ url_for("geography.api_map_kpis") }}');
     })
     .then(response => response.json())
     .then(data => {
+        console.log('KPI data received:', data);
+
         if (data.features && data.features.length > 0) {
             data.features.forEach(feature => {
                 const coords = feature.geometry.coordinates;
                 const props = feature.properties;
 
-                const marker = L.circleMarker([coords[1], coords[0]], {
-                    radius: 8,
-                    fillColor: '#dc3545',
-                    color: '#fff',
-                    weight: 2,
-                    fillOpacity: 0.9
+                // Create custom div icon with KPI value
+                const iconHtml = `
+                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                color: white;
+                                padding: 8px 12px;
+                                border-radius: 20px;
+                                font-weight: bold;
+                                font-size: 14px;
+                                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                                border: 2px solid white;
+                                white-space: nowrap;
+                                text-align: center;">
+                        <div style="font-size: 11px; opacity: 0.9;">${props.kpi_code || 'KPI'}</div>
+                        <div style="font-size: 16px; font-weight: 900;">${props.value}</div>
+                        ${props.unit ? `<div style="font-size: 10px; opacity: 0.8;">${props.unit}</div>` : ''}
+                    </div>
+                `;
+
+                const icon = L.divIcon({
+                    html: iconHtml,
+                    className: 'kpi-marker-label',
+                    iconSize: null,
+                    iconAnchor: [50, 25]
                 });
 
-                marker.bindPopup(`
-                    <div>
-                        <h5><i class="bi bi-geo-alt-fill text-danger"></i> ${props.name}</h5>
-                        <p><strong>Country:</strong> ${props.country}</p>
-                        <p><strong>KPIs:</strong> <span class="badge bg-danger">${props.kpi_count || 0}</span></p>
-                    </div>
-                `);
+                const marker = L.marker([coords[1], coords[0]], { icon: icon });
 
+                // Detailed popup
+                const popupContent = `
+                    <div style="min-width: 250px;">
+                        <h5 style="margin: 0 0 10px 0; color: #667eea;">
+                            <i class="bi bi-graph-up"></i> ${props.kpi_name}
+                        </h5>
+                        <table style="width: 100%; font-size: 14px;">
+                            <tr>
+                                <td style="padding: 4px 8px; color: #666;">Code:</td>
+                                <td style="padding: 4px 8px; font-weight: bold;">${props.kpi_code || 'N/A'}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 4px 8px; color: #666;">Value:</td>
+                                <td style="padding: 4px 8px;">
+                                    <span style="font-size: 20px; font-weight: 900; color: #667eea;">
+                                        ${props.value}
+                                    </span>
+                                    ${props.unit ? ` <small>${props.unit}</small>` : ''}
+                                </td>
+                            </tr>
+                            ${props.target ? `
+                            <tr>
+                                <td style="padding: 4px 8px; color: #666;">Target:</td>
+                                <td style="padding: 4px 8px; font-weight: bold;">${props.target}</td>
+                            </tr>
+                            ` : ''}
+                            ${props.period ? `
+                            <tr>
+                                <td style="padding: 4px 8px; color: #666;">Period:</td>
+                                <td style="padding: 4px 8px;">${props.period}</td>
+                            </tr>
+                            ` : ''}
+                            <tr>
+                                <td style="padding: 4px 8px; color: #666;">Location:</td>
+                                <td style="padding: 4px 8px;">
+                                    <i class="bi bi-${props.location_type === 'site' ? 'geo-alt-fill' : 'flag-fill'}"></i>
+                                    ${props.location_name}
+                                </td>
+                            </tr>
+                        </table>
+                        <hr style="margin: 10px 0;">
+                        <a href="{{ url_for('workspace.index') }}?kpi_id=${props.kpi_id}"
+                           class="btn btn-sm btn-primary w-100">
+                            <i class="bi bi-box-arrow-up-right"></i> View KPI Details
+                        </a>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent, { maxWidth: 300 });
                 marker.addTo(map);
                 allMarkers.push(marker);
             });
+        }
+
+        // Auto-zoom to show all markers
+        if (allMarkers.length > 0) {
+            const group = new L.featureGroup(allMarkers);
+            map.fitBounds(group.getBounds().pad(0.2));
         }
 
         console.log('===== MAP INITIALIZATION COMPLETE =====');
