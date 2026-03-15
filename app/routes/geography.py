@@ -80,7 +80,7 @@ def save_map_colors():
         organization = Organization.query.get_or_404(org_id)
 
         # Check if user has permission (org admin)
-        membership = current_user.get_organization_membership(org_id)
+        membership = current_user.get_membership(org_id)
         if not membership or not membership.is_org_admin:
             return jsonify({"success": False, "message": "Permission denied"}), 403
 

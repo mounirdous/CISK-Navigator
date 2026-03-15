@@ -460,11 +460,12 @@ document.getElementById('saveMapColors').addEventListener('click', async () => {
     button.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
 
     try {
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
         const response = await fetch('{{ url_for("geography.save_map_colors") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': '{{ csrf_token }}'
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify({
                 color_with_kpis: colorWithKPIs,
