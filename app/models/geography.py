@@ -43,7 +43,9 @@ class GeographyRegion(db.Model):
         # Direct region assignments
         direct_count = len(self.geography_assignments)
         # From all countries in this region (direct + from their sites)
-        countries_count = sum(country.get_kpi_count() for country in self.countries)
+        countries_count = 0
+        if self.countries:
+            countries_count = sum(country.get_kpi_count() for country in self.countries)
         return direct_count + countries_count
 
 
@@ -92,10 +94,19 @@ class GeographyCountry(db.Model):
         """Get total number of KPIs (direct + inherited from region + from all sites)"""
         # Direct country assignments
         direct_count = len(self.geography_assignments)
-        # Inherited from parent region
-        region_count = len([a for a in self.region.geography_assignments if a.region_id == self.region_id])
+
+        # Inherited from parent region (if region exists)
+        region_count = 0
+        if self.region and hasattr(self.region, "geography_assignments"):
+            region_count = len([a for a in self.region.geography_assignments if a.region_id == self.region_id])
+
         # From all sites in this country
-        sites_count = sum(len(site.geography_assignments) for site in self.sites)
+        sites_count = 0
+        if self.sites:
+            sites_count = sum(
+                len(site.geography_assignments) for site in self.sites if hasattr(site, "geography_assignments")
+            )
+
         return direct_count + region_count + sites_count
 
 
@@ -139,12 +150,19 @@ class GeographySite(db.Model):
         """Get number of KPIs assigned to this site (includes direct + inherited from country/region)"""
         # Direct site assignments
         direct_count = len(self.geography_assignments)
-        # Inherited from country level
-        country_count = len([a for a in self.country.geography_assignments if a.country_id == self.country_id])
-        # Inherited from region level
-        region_count = len(
-            [a for a in self.country.region.geography_assignments if a.region_id == self.country.region_id]
-        )
+
+        # Inherited from country level (if country exists)
+        country_count = 0
+        if self.country and hasattr(self.country, "geography_assignments"):
+            country_count = len([a for a in self.country.geography_assignments if a.country_id == self.country_id])
+
+        # Inherited from region level (if country and region exist)
+        region_count = 0
+        if self.country and self.country.region and hasattr(self.country.region, "geography_assignments"):
+            region_count = len(
+                [a for a in self.country.region.geography_assignments if a.region_id == self.country.region_id]
+            )
+
         return direct_count + country_count + region_count
 
     def get_coordinates_dict(self):
