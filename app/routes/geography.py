@@ -4,7 +4,7 @@ Geography management routes for regions, countries, and sites
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
-from flask_wtf.csrf import CSRFProtect, generate_csrf
+from flask_wtf.csrf import csrf_exempt, generate_csrf
 
 from app.extensions import db
 from app.forms.geography_forms import GeographyCountryForm, GeographyRegionForm, GeographySiteForm
@@ -12,7 +12,6 @@ from app.models import GeographyCountry, GeographyRegion, GeographySite, KPIGeog
 from app.services import AuditService
 
 bp = Blueprint("geography", __name__, url_prefix="/org-admin/geography")
-csrf = CSRFProtect()
 
 
 def organization_required(f):
@@ -70,50 +69,69 @@ def index():
 
 
 @bp.route("/save-map-colors", methods=["POST"])
-@csrf.exempt
 @login_required
 @organization_required
+@csrf_exempt
 def save_map_colors():
     """Save map color preferences for the organization"""
     from flask import jsonify, request
     from flask_login import current_user
     import re
+    import logging
 
-    org_id = session.get("organization_id")
-    organization = Organization.query.get_or_404(org_id)
+    logger = logging.getLogger(__name__)
+    logger.info("=== save_map_colors called ===")
 
-    # Check if user has permission (org admin)
-    membership = current_user.get_organization_membership(org_id)
-    if not membership or not membership.is_org_admin:
-        return jsonify({"success": False, "message": "Permission denied. Only org admins can change map colors."}), 403
+    try:
+        org_id = session.get("organization_id")
+        logger.info(f"Organization ID: {org_id}")
+        organization = Organization.query.get_or_404(org_id)
 
-    data = request.get_json()
-    color_with_kpis = data.get("color_with_kpis")
-    color_no_kpis = data.get("color_no_kpis")
+        # Check if user has permission (org admin)
+        membership = current_user.get_organization_membership(org_id)
+        logger.info(f"User membership: {membership}, is_org_admin: {membership.is_org_admin if membership else 'None'}")
 
-    # Validate hex colors
-    hex_pattern = re.compile(r"^#[0-9a-fA-F]{6}$")
-    if color_with_kpis and not hex_pattern.match(color_with_kpis):
-        return jsonify({"success": False, "message": "Invalid hex color for countries with KPIs"}), 400
-    if color_no_kpis and not hex_pattern.match(color_no_kpis):
-        return jsonify({"success": False, "message": "Invalid hex color for countries without KPIs"}), 400
+        if not membership or not membership.is_org_admin:
+            logger.warning("Permission denied - user is not org admin")
+            return jsonify({"success": False, "message": "Permission denied. Only org admins can change map colors."}), 403
 
-    # Update colors
-    if color_with_kpis:
-        organization.map_country_color_with_kpis = color_with_kpis
-    if color_no_kpis:
-        organization.map_country_color_no_kpis = color_no_kpis
+        data = request.get_json()
+        logger.info(f"Received data: {data}")
+        color_with_kpis = data.get("color_with_kpis")
+        color_no_kpis = data.get("color_no_kpis")
 
-    db.session.commit()
+        # Validate hex colors
+        hex_pattern = re.compile(r"^#[0-9a-fA-F]{6}$")
+        if color_with_kpis and not hex_pattern.match(color_with_kpis):
+            logger.warning(f"Invalid hex color for with_kpis: {color_with_kpis}")
+            return jsonify({"success": False, "message": "Invalid hex color for countries with KPIs"}), 400
+        if color_no_kpis and not hex_pattern.match(color_no_kpis):
+            logger.warning(f"Invalid hex color for no_kpis: {color_no_kpis}")
+            return jsonify({"success": False, "message": "Invalid hex color for countries without KPIs"}), 400
 
-    return jsonify(
-        {
-            "success": True,
-            "message": "Map colors updated successfully",
-            "color_with_kpis": organization.map_country_color_with_kpis,
-            "color_no_kpis": organization.map_country_color_no_kpis,
-        }
-    )
+        # Update colors
+        if color_with_kpis:
+            organization.map_country_color_with_kpis = color_with_kpis
+            logger.info(f"Updated color_with_kpis to: {color_with_kpis}")
+        if color_no_kpis:
+            organization.map_country_color_no_kpis = color_no_kpis
+            logger.info(f"Updated color_no_kpis to: {color_no_kpis}")
+
+        db.session.commit()
+        logger.info("Colors saved to database successfully")
+
+        return jsonify(
+            {
+                "success": True,
+                "message": "Map colors updated successfully",
+                "color_with_kpis": organization.map_country_color_with_kpis,
+                "color_no_kpis": organization.map_country_color_no_kpis,
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error saving map colors: {str(e)}", exc_info=True)
+        db.session.rollback()
+        return jsonify({"success": False, "message": f"Server error: {str(e)}"}), 500
 
 
 @bp.route("/import-csv", methods=["GET", "POST"])

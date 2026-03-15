@@ -471,7 +471,21 @@ document.getElementById('saveMapColors').addEventListener('click', async () => {
             })
         });
 
+        // Log full response for debugging
+        console.log('Response status:', response.status);
+        console.log('Response headers:', response.headers);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error response:', errorText);
+            alert('❌ Server error (status ' + response.status + '): ' + errorText.substring(0, 200));
+            button.innerHTML = originalHTML;
+            button.disabled = false;
+            return;
+        }
+
         const result = await response.json();
+        console.log('Result:', result);
 
         if (result.success) {
             // Show success message
@@ -497,8 +511,8 @@ document.getElementById('saveMapColors').addEventListener('click', async () => {
             button.disabled = false;
         }
     } catch (error) {
-        console.error('Error saving colors:', error);
-        alert('❌ Failed to save colors. Please try again.');
+        console.error('Error saving colors - full error:', error);
+        alert('❌ Failed to save colors. Check browser console for details.');
         button.innerHTML = originalHTML;
         button.disabled = false;
     }
