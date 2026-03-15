@@ -1,12 +1,50 @@
-# 🧭 CISK Navigator v1.32.0
+# 🧭 CISK Navigator v1.33.32
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.32.0-blue)
+![Version](https://img.shields.io/badge/version-1.33.32-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-96%20passing-success)
+
+## ✨ What's New in v1.33.32 (March 2026)
+
+### 🔗 **Entity Links & Resources**
+- **Attach URLs to Any Entity**: Link documents, wikis, Jira tickets, GitHub repos, or any web resource to Spaces, Challenges, Initiatives, Systems, or KPIs
+- **Public/Private Sharing**:
+  - **Public links**: Visible to entire organization
+  - **Private links**: Visible only to creator
+- **Smart Icon Detection**: Automatically recognizes and displays appropriate icons for:
+  - 📄 Google Docs, Sheets, Slides
+  - 🐙 GitHub repositories and issues
+  - 📑 PDF files
+  - 🖼️ Images
+  - 🌐 Generic web pages
+- **Workspace Integration**:
+  - Link icon (🔗) appears next to entities that have links
+  - Hover to see popup with all clickable links
+  - Persistent hover: popup stays visible when moving mouse to click
+- **Edit Page Management**:
+  - Links section on all entity edit pages
+  - Add new links inline without leaving the page
+  - Delete your own links
+  - Manual reordering support
+- **URL Validation**: Enforces valid URLs (http://, https://, ftp://)
+- **Use Cases**:
+  - Link to project documentation (Google Docs, Confluence)
+  - Reference Jira tickets or GitHub issues
+  - Connect to external dashboards or reports
+  - Attach meeting notes or presentations
+  - Share relevant resources with team
+
+### 🎨 **UI/UX Improvements**
+- **Consistent Edit Icons**: All entities now use pencil icon (✏️) for editing
+- **Fixed Space Edit**: Pencil button now properly navigates to space edit page
+
+### 🐛 **Bug Fixes**
+- Fixed workspace AttributeError when displaying KPIs
+- Improved CSRF token handling for entity links
 
 ## ✨ What's New in v1.32.0 (March 2026)
 

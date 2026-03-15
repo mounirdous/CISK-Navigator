@@ -5,6 +5,33 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.33.32] - 2026-03-15
+
+### Added
+- **🔗 Entity Links & Resources**: Attach URLs and documents to any entity
+  - Link any web resource (documents, wikis, Jira, GitHub, etc.) to Spaces, Challenges, Initiatives, Systems, or KPIs
+  - **Public/Private links**: Share across organization or keep private
+  - **Smart icon detection**: Automatically recognizes Google Docs, GitHub, PDFs, images, and more
+  - **Workspace integration**: Link icon with hover popover shows all links next to entity names
+  - **Edit page integration**: Links section on all entity edit pages (Spaces, Challenges, Initiatives, Systems, KPIs)
+  - **Inline management**: Add, edit, delete links without leaving the page
+  - **URL validation**: Enforces valid URLs (http://, https://, ftp://)
+  - **Display ordering**: Manual reordering support for link organization
+  - **Clickable popovers**: Hover persistence allows clicking links in workspace tree view
+
+### Changed
+- **Edit icons consistency**: Changed KPI edit icon from sliders (⚙️) to pencil (✏️) to match other entities
+- **Edit Space navigation**: Fixed pencil button to properly navigate to edit page
+
+### Fixed
+- **Workspace AttributeError**: Fixed `system.kpis` error by correctly accessing `sys_link.kpis`
+- **Entity links routes**: Switched from JSON API to form POST for better CSRF handling
+
+### Database
+- **Migration**: `fcbf234294da_add_entity_links_table_for_urls.py`
+- **New table**: `entity_links` with polymorphic entity_type/entity_id design
+- **Indexes**: Composite index on (entity_type, entity_id) and index on created_by for performance
+
 ## [1.33.0] - 2026-03-15
 
 ### Added

@@ -1,11 +1,90 @@
 # CISK Navigator v1.33 - Feature Updates
 
-**Latest Version**: v1.33.0 (March 15, 2026)
+**Latest Version**: v1.33.32 (March 15, 2026)
 **Status**: ✅ **DEPLOYED TO PRODUCTION**
 
 ---
 
 ## 🆕 Features Added in v1.33
+
+### Entity Links & Resources (v1.33.32)
+
+**Purpose**: Attach URLs and web resources to any entity (Spaces, Challenges, Initiatives, Systems, KPIs) for documentation, collaboration, and reference.
+
+**Features:**
+
+1. **Universal Link Attachment**:
+   - Link any web resource to Spaces, Challenges, Initiatives, Systems, or KPIs
+   - Support for documents, wikis, Jira tickets, GitHub repos, dashboards, etc.
+   - URL validation enforces http://, https://, or ftp:// protocols
+   - Optional title field for custom link descriptions
+
+2. **Public/Private Sharing**:
+   - **Public links**: Visible to all organization members
+   - **Private links**: Visible only to link creator
+   - Checkbox toggle during link creation
+   - Privacy filter enforced at query level
+
+3. **Smart Icon Detection**:
+   - Automatically recognizes and displays appropriate icons:
+     - 📄 Google Docs, Sheets, Slides
+     - 🐙 GitHub repositories and issues
+     - 📑 PDF files
+     - 🖼️ Images (jpg, png, gif, svg)
+     - 🌐 Generic web pages (fallback)
+   - Icon detection via URL pattern matching
+   - Visual distinction between link types
+
+4. **Workspace Integration**:
+   - Link icon (🔗) appears next to entities with attached links
+   - Hover to display popup with all links
+   - Persistent hover: popup remains when mouse moves to click links
+   - Links open in new tab/window
+   - Bootstrap popover with 100ms timeout for smooth UX
+
+5. **Edit Page Management**:
+   - Links section on all entity edit pages (purple gradient header)
+   - Add new links inline without page reload
+   - Delete own links with confirmation
+   - Display shows: URL/title, public/private status, creator name
+   - Manual reordering support (display_order field)
+
+6. **Entity Links Routes** (`/entity-links`):
+   - `POST /add`: Create new link (form POST with CSRF protection)
+   - `POST /delete`: Delete link (creator only)
+   - `POST /update`: Update link (creator or public link editors)
+   - `POST /reorder`: Manual link ordering
+
+**Database Schema:**
+```sql
+CREATE TABLE entity_links (
+    id SERIAL PRIMARY KEY,
+    entity_type VARCHAR(20) NOT NULL,  -- 'space', 'challenge', 'initiative', 'system', 'kpi'
+    entity_id INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    title VARCHAR(200),
+    is_public BOOLEAN NOT NULL DEFAULT FALSE,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_entity_links_entity ON entity_links(entity_type, entity_id);
+CREATE INDEX idx_entity_links_created_by ON entity_links(created_by);
+```
+
+**Migrations**: `fcbf234294da_add_entity_links_table_for_urls.py`
+
+**Use Cases:**
+- Link to project documentation (Google Docs, Confluence)
+- Reference Jira tickets or GitHub issues
+- Connect to external dashboards or BI reports
+- Attach meeting notes or presentations
+- Share relevant resources with team members
+- Organize supporting materials per entity
+
+---
 
 ### Impact Assessment for Initiatives (v1.33.0)
 
