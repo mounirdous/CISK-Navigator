@@ -1,12 +1,45 @@
-# 🧭 CISK Navigator v1.31.0
+# 🧭 CISK Navigator v1.32.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.31.0-blue)
+![Version](https://img.shields.io/badge/version-1.32.0-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-96%20passing-success)
+
+## ✨ What's New in v1.32.0 (March 2026)
+
+### 🗺️ **Complete Geography Management System**
+- **3-Tier Hierarchy**: Regions → Countries → Sites for organizing KPIs by location
+- **Interactive Map Dashboard**: Leaflet.js-powered world map with circle markers
+  - Markers sized by KPI count
+  - Click markers for site details and KPI links
+  - Auto-fit bounds to show all sites
+  - Statistics overlay (sites, KPIs with location)
+- **KPI-Site Assignment**: Optional multi-site assignment in KPI forms
+  - Hierarchical checkbox interface
+  - Coordinate display next to site names
+  - Link to geography management if empty
+- **Full CRUD Admin UI**: Modern tree view with color-coded hierarchy
+  - Purple gradients for regions
+  - Green for countries
+  - Red for sites with coordinate display
+  - Statistics cards (regions, countries, sites)
+  - Cascade delete protection
+- **GeoJSON API**: RESTful endpoint for map data integration
+- **Organization-Scoped**: Complete data isolation per organization
+- **Audit Logging**: Full trail for all geography operations
+
+**Navigation:**
+- Organization Admin → Geography Management
+- Dashboards → Map View
+
+**Use Cases:**
+- Track KPIs across multiple office locations
+- Visualize performance by geographic region
+- Identify location-specific trends and patterns
+- Multi-site companies with regional operations
 
 ## ✨ What's New in v1.31.0 (March 2026)
 

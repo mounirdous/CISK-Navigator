@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Geography - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4 fade-in">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="bi bi-geo-alt-fill"></i> {{ title }}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                {{ form.country_id.label(class="form-label") }}
+                                <span class="text-danger">*</span>
+                                {{ form.country_id(class="form-select" ~ (" is-invalid" if form.country_id.errors else "")) }}
+                                {% if form.country_id.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.country_id.errors[0] }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Which country is this site located in?</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                {{ form.name.label(class="form-label") }}
+                                <span class="text-danger">*</span>
+                                {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else ""), placeholder="e.g., Paris Headquarters, Lyon Office") }}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.name.errors[0] }}
+                                    </div>
+                                {% endif %}
+                                <small class="form-text text-muted">Full site name</small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                {{ form.code.label(class="form-label") }}
+                                {{ form.code(class="form-control", placeholder="e.g., PAR-HQ, LYN-OFF") }}
+                                <small class="form-text text-muted">Short code</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.address.label(class="form-label") }}
+                            {{ form.address(class="form-control", rows=3, placeholder="123 Rue Example, 75001 Paris, France") }}
+                            <small class="form-text text-muted">Physical address (optional)</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <strong>Coordinates for Map Display:</strong> Enter latitude and longitude to show this site on the map dashboard.
+                            You can find coordinates by searching the address on <a href="https://www.google.com/maps" target="_blank">Google Maps</a> and clicking on the location.
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.latitude.label(class="form-label") }}
+                                {{ form.latitude(class="form-control", placeholder="e.g., 48.8566 (Paris)", step="0.00000001") }}
+                                <small class="form-text text-muted">Decimal degrees (-90 to 90)</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                {{ form.longitude.label(class="form-label") }}
+                                {{ form.longitude(class="form-control", placeholder="e.g., 2.3522 (Paris)", step="0.00000001") }}
+                                <small class="form-text text-muted">Decimal degrees (-180 to 180)</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check form-switch">
+                                    {{ form.is_active(class="form-check-input", role="switch") }}
+                                    {{ form.is_active.label(class="form-check-label") }}
+                                </div>
+                                <small class="form-text text-muted">Inactive sites are hidden from filters and maps</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                {{ form.display_order.label(class="form-label") }}
+                                {{ form.display_order(class="form-control") }}
+                                <small class="form-text text-muted">Lower numbers appear first</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('geography.index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            {{ form.submit(class="btn btn-danger") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

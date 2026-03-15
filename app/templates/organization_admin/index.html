@@ -111,6 +111,64 @@
     </div>
 </div>
 
+<!-- Geography Management Section -->
+<div class="row g-4 mb-5">
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <i class="bi bi-globe-americas" style="color: white;"></i>
+            </div>
+            <div class="admin-card-title">
+                <i class="bi bi-globe-americas"></i> Geography Management
+            </div>
+            <div class="admin-card-desc">
+                Organize KPIs by geographic location with regions, countries, and sites. View distribution on interactive maps.
+                {% if stats.geography_regions > 0 or stats.geography_countries > 0 or stats.geography_sites > 0 %}
+                <div class="mt-2">
+                    <span class="badge bg-primary">{{ stats.geography_regions }} Regions</span>
+                    <span class="badge bg-success">{{ stats.geography_countries }} Countries</span>
+                    <span class="badge bg-danger">{{ stats.geography_sites }} Sites</span>
+                </div>
+                {% else %}
+                <div class="mt-2 text-muted small">
+                    <i class="bi bi-info-circle"></i> No geography data yet - click to set up
+                </div>
+                {% endif %}
+            </div>
+            <div class="admin-card-actions">
+                <a href="{{ url_for('geography.index') }}" class="btn btn-primary">
+                    <i class="bi bi-map-fill"></i> Manage Geographies
+                </a>
+                <a href="{{ url_for('map_dashboard.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-pin-map-fill"></i> View Map
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <i class="bi bi-diagram-3-fill" style="color: white;"></i>
+            </div>
+            <div class="admin-card-title">
+                <i class="bi bi-diagram-3"></i> Structure Management
+            </div>
+            <div class="admin-card-desc">
+                Manage your organizational structure: Spaces, Challenges, Initiatives, Systems, KPIs, and Value Types.
+            </div>
+            <div class="admin-card-actions">
+                <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-primary">
+                    <i class="bi bi-diagram-3-fill"></i> Manage Structure
+                </a>
+                <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-tags"></i> Value Types
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Danger Zone - Separated and Distinct -->
 <div style="margin-top: 4rem; padding-top: 3rem; border-top: 3px dashed #dc3545;">
     <div class="mb-4 text-center">

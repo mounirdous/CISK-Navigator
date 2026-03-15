@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}Geography Management - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--border-subtle);
+}
+
+.page-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+/* Stats cards */
+.stat-card {
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.5rem;
+}
+
+/* Geography tree */
+.geography-tree {
+    background: var(--bg-primary);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.region-section {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.region-section:last-child {
+    border-bottom: none;
+}
+
+.region-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.region-header:hover {
+    opacity: 0.9;
+}
+
+.region-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.country-list {
+    background: var(--bg-secondary);
+    padding: 0.5rem 0;
+}
+
+.country-item {
+    padding: 0.75rem 2rem 0.75rem 3rem;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background-color 0.2s;
+}
+
+.country-item:hover {
+    background-color: var(--hover-bg);
+}
+
+.country-item:last-child {
+    border-bottom: none;
+}
+
+.country-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+}
+
+.site-list {
+    padding: 0.25rem 0;
+    margin-top: 0.5rem;
+    background: var(--bg-primary);
+    border-radius: 8px;
+}
+
+.site-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+    transition: background-color 0.2s;
+    border-radius: 6px;
+    margin: 0.25rem 0.5rem;
+}
+
+.site-item:hover {
+    background-color: var(--hover-bg);
+}
+
+.site-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.site-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.icon-btn {
+    padding: 0.25rem 0.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    transition: color 0.2s;
+}
+
+.icon-btn:hover {
+    color: var(--accent-primary);
+}
+
+.icon-btn.text-danger:hover {
+    color: #dc3545 !important;
+}
+
+.icon-btn.text-success:hover {
+    color: #198754 !important;
+}
+
+.coordinates-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-secondary);
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <!-- Header -->
+    <div class="page-title">
+        <h2>
+            <i class="bi bi-globe-americas"></i>
+            Geography Management
+        </h2>
+        <div class="d-flex gap-2">
+            <div class="dropdown">
+                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-plus-circle-fill"></i> Create
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ url_for('geography.create_region') }}">
+                        <i class="bi bi-map-fill text-primary"></i> Region
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('geography.create_country') }}">
+                        <i class="bi bi-flag-fill text-success"></i> Country
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('geography.create_site') }}">
+                        <i class="bi bi-geo-alt-fill text-danger"></i> Site
+                    </a></li>
+                </ul>
+            </div>
+            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Admin
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <p class="stat-number text-primary">{{ total_regions }}</p>
+                <p class="stat-label"><i class="bi bi-map-fill"></i> Regions</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <p class="stat-number text-success">{{ total_countries }}</p>
+                <p class="stat-label"><i class="bi bi-flag-fill"></i> Countries</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <p class="stat-number text-danger">{{ total_sites }}</p>
+                <p class="stat-label"><i class="bi bi-geo-alt-fill"></i> Sites</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <p class="stat-number text-info">{{ total_kpis_with_geography }}</p>
+                <p class="stat-label"><i class="bi bi-pin-map-fill"></i> KPIs with Location</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Info -->
+    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <i class="bi bi-lightbulb-fill"></i>
+        <strong>Geography Hierarchy:</strong> Regions → Countries → Sites. Assign sites to KPIs when creating/editing them. View geographic distribution on the Map dashboard.
+    </div>
+
+    <!-- Geography Tree -->
+    <div class="geography-tree">
+        {% if not regions %}
+        <div class="empty-state">
+            <i class="bi bi-globe-americas"></i>
+            <h4>No Geography Data Yet</h4>
+            <p>Create your first region to get started organizing KPIs by location.</p>
+            <a href="{{ url_for('geography.create_region') }}" class="btn btn-primary mt-3">
+                <i class="bi bi-plus-circle-fill"></i> Create First Region
+            </a>
+        </div>
+        {% else %}
+            {% for region in regions %}
+            <div class="region-section">
+                <!-- Region Header -->
+                <div class="region-header">
+                    <div class="region-title">
+                        <i class="bi bi-map-fill"></i>
+                        <span>{{ region.name }}</span>
+                        {% if region.code %}
+                        <span class="badge bg-light text-dark">{{ region.code }}</span>
+                        {% endif %}
+                        <span class="badge bg-white bg-opacity-25">{{ region.countries|length }} countries</span>
+                    </div>
+                    <div class="action-buttons">
+                        <a href="{{ url_for('geography.edit_region', region_id=region.id) }}" class="btn btn-sm btn-light" title="Edit Region">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('geography.delete_region', region_id=region.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                            <button type="submit" class="btn btn-sm btn-light" onclick="return confirm('Delete region {{ region.name }}? All countries and sites will be deleted.')" title="Delete Region">
+                                <i class="bi bi-trash text-danger"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Countries -->
+                {% if region.countries %}
+                <div class="country-list">
+                    {% for country in region.countries %}
+                    <div class="country-item">
+                        <div>
+                            <div class="country-name">
+                                <i class="bi bi-flag-fill text-success"></i>
+                                <strong>{{ country.name }}</strong>
+                                {% if country.code %}
+                                <span class="badge bg-secondary">{{ country.code }}</span>
+                                {% endif %}
+                                {% if country.iso_code %}
+                                <span class="badge bg-info">ISO: {{ country.iso_code }}</span>
+                                {% endif %}
+                                <span class="badge bg-light text-dark">{{ country.sites|length }} sites</span>
+                            </div>
+
+                            <!-- Sites -->
+                            {% if country.sites %}
+                            <div class="site-list">
+                                {% for site in country.sites %}
+                                <div class="site-item">
+                                    <div class="site-info">
+                                        <i class="bi bi-geo-alt-fill text-danger"></i>
+                                        <strong>{{ site.name }}</strong>
+                                        {% if site.code %}
+                                        <span class="badge bg-secondary site-badge">{{ site.code }}</span>
+                                        {% endif %}
+                                        {% if not site.is_active %}
+                                        <span class="badge bg-warning site-badge">Inactive</span>
+                                        {% endif %}
+                                        {% if site.latitude and site.longitude %}
+                                        <span class="coordinates-tag">
+                                            <i class="bi bi-pin-map-fill"></i> {{ "%.4f"|format(site.latitude) }}, {{ "%.4f"|format(site.longitude) }}
+                                        </span>
+                                        {% endif %}
+                                        <span class="badge bg-info site-badge">{{ site.get_kpi_count() }} KPIs</span>
+                                    </div>
+                                    <div class="action-buttons">
+                                        <a href="{{ url_for('geography.edit_site', site_id=site.id) }}" class="icon-btn" title="Edit Site">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('geography.delete_site', site_id=site.id) }}" style="display:inline;">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                            <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete site {{ site.name }}?')" title="Delete Site">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="action-buttons">
+                            <a href="{{ url_for('geography.edit_country', country_id=country.id) }}" class="icon-btn" title="Edit Country">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('geography.delete_country', country_id=country.id) }}" style="display:inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                                <button type="submit" class="icon-btn text-danger" onclick="return confirm('Delete country {{ country.name }}? All sites will be deleted.')" title="Delete Country">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

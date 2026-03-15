@@ -5,6 +5,39 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.0] - 2026-03-15
+
+### Added
+- **🗺️ Complete Geography Management System**: Track KPIs by physical location
+  - **3-tier hierarchy**: Regions → Countries → Sites (organization-scoped)
+  - **Database schema**: 4 new tables with full cascade delete support
+  - **Admin UI**: Full CRUD for geography entities with modern tree view
+  - **KPI Assignment**: Optional multi-site assignment in KPI create/edit forms
+  - **Interactive Map Dashboard**: Leaflet.js-powered map with circle markers
+  - **GeoJSON API**: `/org-admin/geography/api/sites.json` for map data
+  - **Coordinate support**: Latitude/longitude for precise site locations
+  - **Visual hierarchy**: Purple gradients (regions), green (countries), red (sites)
+  - **Statistics display**: Region/country/site counts in org admin dashboard
+  - **Active/inactive sites**: Control site visibility and map display
+  - **Empty states**: Helpful setup instructions when no geography data exists
+  - **Audit logging**: Complete audit trail for all geography operations
+
+### Changed
+- **Organization Admin Dashboard**: Added Geography Management card
+- **Map Dashboard**: Added to Dashboards dropdown (Overview, Executive, Analytics, Map View)
+- **Navigation**: Geography accessed via Organization Administration section
+
+### Database
+- **Migration**: `5553507a4208_add_geography_hierarchy_regions_.py`
+- **New tables**: `geography_regions`, `geography_countries`, `geography_sites`, `kpi_site_assignments`
+- **Indexes**: All foreign keys indexed for performance
+- **Cascade delete**: Full cascade support (region → countries → sites → assignments)
+
+### Documentation
+- **GEOGRAPHY_FEATURE.md**: Complete technical documentation (45 pages)
+- **GEOGRAPHY_QUICKSTART.md**: 60-second setup guide for users
+- **Future roadmap**: Workspace filtering, geographic rollups, CSV import (Phases 6-9)
+
 ## [1.31.0] - 2026-03-14
 
 ### Added

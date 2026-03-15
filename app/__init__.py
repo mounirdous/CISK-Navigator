@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "1.31.0"
+__version__ = "1.32.0"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -64,15 +64,28 @@ def create_app(config_name=None):
             return None
 
     # Register blueprints
-    from app.routes import analytics, auth, executive, global_admin, logo, organization_admin, super_admin, workspace
+    from app.routes import (
+        analytics,
+        auth,
+        executive,
+        geography,
+        global_admin,
+        logo,
+        map_dashboard,
+        organization_admin,
+        super_admin,
+        workspace,
+    )
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(super_admin.bp)
     app.register_blueprint(global_admin.bp)
     app.register_blueprint(organization_admin.bp)
+    app.register_blueprint(geography.bp)
     app.register_blueprint(workspace.bp)
     app.register_blueprint(analytics.bp)
     app.register_blueprint(executive.bp)
+    app.register_blueprint(map_dashboard.bp)
     app.register_blueprint(logo.bp)
 
     # Register test error routes (REMOVE IN PRODUCTION)

@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Map Dashboard - {{ organization.name }}{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+
+<style>
+#map {
+    height: calc(100vh - 200px);
+    width: 100%;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.map-container {
+    position: relative;
+}
+
+.map-stats {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    min-width: 200px;
+}
+
+.map-stats h6 {
+    margin: 0 0 0.5rem 0;
+    font-weight: 700;
+}
+
+.stat-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.stat-label {
+    color: #666;
+}
+
+.stat-value {
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+.page-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 3px solid var(--border-subtle);
+}
+
+.page-title h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0;
+}
+
+.leaflet-popup-content h5 {
+    margin: 0 0 0.5rem 0;
+}
+
+.leaflet-popup-content p {
+    margin: 0.25rem 0;
+    font-size: 0.875rem;
+}
+
+.kpi-marker {
+    background: #0d6efd;
+    border: 3px solid white;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.kpi-marker:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="page-title">
+        <h2>
+            <i class="bi bi-map-fill"></i>
+            Geographic KPI Distribution
+        </h2>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('geography.index') }}" class="btn btn-outline-primary">
+                <i class="bi bi-globe-americas"></i> Manage Geography
+            </a>
+            <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if total_kpis == 0 %}
+    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
+        <h4><i class="bi bi-info-circle-fill"></i> No Geographic Data Yet</h4>
+        <p class="mb-3">To see KPIs on the map, you need to:</p>
+        <ol>
+            <li><a href="{{ url_for('geography.index') }}">Create regions, countries, and sites</a> with coordinates</li>
+            <li>Assign sites to KPIs when creating or editing them</li>
+            <li>Return here to view your geographic KPI distribution</li>
+        </ol>
+        <a href="{{ url_for('geography.index') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle-fill"></i> Set Up Geography
+        </a>
+    </div>
+    {% else %}
+    <div class="map-container">
+        <div id="map"></div>
+
+        <div class="map-stats">
+            <h6><i class="bi bi-pin-map-fill"></i> Map Statistics</h6>
+            <div class="stat-item">
+                <span class="stat-label">Total Sites</span>
+                <span class="stat-value">{{ regions|sum(attribute='countries')|sum(attribute='sites')|length }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">KPIs with Location</span>
+                <span class="stat-value">{{ total_kpis }}</span>
+            </div>
+            <hr>
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i> Click markers for details
+            </small>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+     crossorigin=""></script>
+
+<script>
+{% if total_kpis > 0 %}
+// Initialize map
+const map = L.map('map').setView([48.8566, 2.3522], 4); // Center on Europe
+
+// Add OpenStreetMap tiles
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
+}).addTo(map);
+
+// Fetch site data from API
+fetch('{{ url_for("geography.api_sites_json") }}')
+    .then(response => response.json())
+    .then(data => {
+        if (data.features && data.features.length > 0) {
+            // Create marker cluster group
+            const markers = [];
+
+            // Add markers for each site
+            data.features.forEach(feature => {
+                const coords = feature.geometry.coordinates;
+                const props = feature.properties;
+
+                // Create custom marker icon based on KPI count
+                const kpiCount = props.kpi_count || 0;
+                const iconSize = Math.max(20, Math.min(40, 20 + (kpiCount * 3)));
+
+                const marker = L.circleMarker([coords[1], coords[0]], {
+                    radius: iconSize / 2,
+                    fillColor: kpiCount > 0 ? '#0d6efd' : '#6c757d',
+                    color: '#fff',
+                    weight: 3,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+
+                // Create popup content
+                const popupContent = `
+                    <div>
+                        <h5><i class="bi bi-geo-alt-fill text-danger"></i> ${props.name}</h5>
+                        <p><strong>Region:</strong> ${props.region}</p>
+                        <p><strong>Country:</strong> ${props.country}</p>
+                        ${props.code ? `<p><strong>Code:</strong> <span class="badge bg-secondary">${props.code}</span></p>` : ''}
+                        <p><strong>KPIs:</strong> <span class="badge bg-primary">${kpiCount}</span></p>
+                        ${props.address ? `<p class="text-muted small">${props.address}</p>` : ''}
+                        <hr style="margin: 0.5rem 0;">
+                        <a href="{{ url_for('workspace.index') }}?site_id=${props.id}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-grid-3x3-gap"></i> View KPIs
+                        </a>
+                    </div>
+                `;
+
+                marker.bindPopup(popupContent);
+                marker.addTo(map);
+                markers.push(marker);
+            });
+
+            // Fit map to show all markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error loading site data:', error);
+    });
+{% endif %}
+</script>
+{% endblock %}

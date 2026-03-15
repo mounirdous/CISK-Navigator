@@ -239,6 +239,24 @@ def index():
         .count()
     )
 
+    # Count geography entities
+    from app.models import GeographyCountry, GeographyRegion, GeographySite
+
+    geography_regions_count = GeographyRegion.query.filter_by(organization_id=org_id).count()
+    geography_countries_count = (
+        db.session.query(GeographyCountry)
+        .join(GeographyRegion)
+        .filter(GeographyRegion.organization_id == org_id)
+        .count()
+    )
+    geography_sites_count = (
+        db.session.query(GeographySite)
+        .join(GeographyCountry)
+        .join(GeographyRegion)
+        .filter(GeographyRegion.organization_id == org_id)
+        .count()
+    )
+
     stats = {
         "spaces": spaces_count,
         "challenges": challenges_count,
@@ -247,6 +265,9 @@ def index():
         "kpis": kpis_count,
         "value_types": value_types_count,
         "governance_bodies": governance_bodies_count,
+        "geography_regions": geography_regions_count,
+        "geography_countries": geography_countries_count,
+        "geography_sites": geography_sites_count,
     }
 
     # Create empty form for CSRF token
@@ -1600,6 +1621,13 @@ def create_kpi(link_id):
         .all()
     )
 
+    # Get active geography sites for selection (optional)
+    from app.models import GeographyRegion
+
+    geography_regions = (
+        GeographyRegion.query.filter_by(organization_id=org_id).order_by(GeographyRegion.display_order).all()
+    )
+
     # Check prerequisites: Value Types must exist
     if not value_types:
         # Store return context in session
@@ -1643,6 +1671,14 @@ def create_kpi(link_id):
         for gb_id in selected_gb_ids:
             gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=int(gb_id))
             db.session.add(gb_link)
+
+        # Link to geography sites (optional)
+        selected_site_ids = request.form.getlist("site_ids")
+        for site_id in selected_site_ids:
+            from app.models import KPISiteAssignment
+
+            site_assignment = KPISiteAssignment(kpi_id=kpi.id, site_id=int(site_id))
+            db.session.add(site_assignment)
 
         # Link selected value types with colors
         selected_vt_ids = request.form.getlist("value_type_ids")
@@ -1822,6 +1858,7 @@ def create_kpi(link_id):
         system=link.system,
         value_types=value_types,
         governance_bodies=governance_bodies,
+        geography_regions=geography_regions,
         preselect_value_types=preselect_value_types,
         preselect_governance_bodies=preselect_governance_bodies,
         entity_defaults=entity_defaults,
@@ -1851,6 +1888,16 @@ def edit_kpi(kpi_id):
 
     # Get current governance body IDs for this KPI
     current_gb_ids = [link.governance_body_id for link in kpi.governance_body_links]
+
+    # Get active geography sites for selection (optional)
+    from app.models import GeographyRegion
+
+    geography_regions = (
+        GeographyRegion.query.filter_by(organization_id=org_id).order_by(GeographyRegion.display_order).all()
+    )
+
+    # Get current site IDs for this KPI
+    current_site_ids = [assignment.site_id for assignment in kpi.site_assignments]
 
     form = KPIEditForm(obj=kpi)
     if form.validate_on_submit():
@@ -1973,6 +2020,20 @@ def edit_kpi(kpi_id):
             gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=int(gb_id))
             db.session.add(gb_link)
 
+        # Update geography site assignments
+        from app.models import KPISiteAssignment
+
+        # Get selected sites
+        selected_site_ids = request.form.getlist("site_ids")
+        # Remove all existing site assignments
+        KPISiteAssignment.query.filter_by(kpi_id=kpi.id).delete()
+        # Flush deletes before adding new ones
+        db.session.flush()
+        # Add new site assignments
+        for site_id in selected_site_ids:
+            site_assignment = KPISiteAssignment(kpi_id=kpi.id, site_id=int(site_id))
+            db.session.add(site_assignment)
+
         # Audit log
         new_values = {"name": kpi.name, "description": kpi.description, "governance_bodies_count": len(selected_gb_ids)}
         AuditService.log_update("KPI", kpi.id, kpi.name, old_values, new_values)
@@ -2000,6 +2061,8 @@ def edit_kpi(kpi_id):
         kpi=kpi,
         governance_bodies=governance_bodies,
         current_gb_ids=current_gb_ids,
+        geography_regions=geography_regions,
+        current_site_ids=current_site_ids,
         entity_defaults=entity_defaults,
     )
 
