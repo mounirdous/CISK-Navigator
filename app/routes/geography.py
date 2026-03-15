@@ -224,6 +224,8 @@ def create_country():
             name=form.name.data,
             code=form.code.data,
             iso_code=form.iso_code.data,
+            latitude=form.latitude.data,
+            longitude=form.longitude.data,
             display_order=form.display_order.data or 0,
         )
         db.session.add(country)
@@ -234,7 +236,13 @@ def create_country():
             entity_type="GeographyCountry",
             entity_id=country.id,
             entity_name=country.name,
-            new_value={"name": country.name, "code": country.code, "iso_code": country.iso_code},
+            new_value={
+                "name": country.name,
+                "code": country.code,
+                "iso_code": country.iso_code,
+                "latitude": float(country.latitude) if country.latitude else None,
+                "longitude": float(country.longitude) if country.longitude else None,
+            },
         )
 
         flash(f"Country '{country.name}' created successfully!", "success")
@@ -269,12 +277,20 @@ def edit_country(country_id):
     ]
 
     if form.validate_on_submit():
-        old_values = {"name": country.name, "code": country.code, "iso_code": country.iso_code}
+        old_values = {
+            "name": country.name,
+            "code": country.code,
+            "iso_code": country.iso_code,
+            "latitude": float(country.latitude) if country.latitude else None,
+            "longitude": float(country.longitude) if country.longitude else None,
+        }
 
         country.region_id = form.region_id.data
         country.name = form.name.data
         country.code = form.code.data
         country.iso_code = form.iso_code.data
+        country.latitude = form.latitude.data
+        country.longitude = form.longitude.data
         country.display_order = form.display_order.data
 
         db.session.commit()
@@ -285,7 +301,13 @@ def edit_country(country_id):
             entity_id=country.id,
             entity_name=country.name,
             old_value=old_values,
-            new_value={"name": country.name, "code": country.code, "iso_code": country.iso_code},
+            new_value={
+                "name": country.name,
+                "code": country.code,
+                "iso_code": country.iso_code,
+                "latitude": float(country.latitude) if country.latitude else None,
+                "longitude": float(country.longitude) if country.longitude else None,
+            },
         )
 
         flash(f"Country '{country.name}' updated successfully!", "success")
@@ -568,3 +590,36 @@ def api_sites_json():
             )
 
     return jsonify({"type": "FeatureCollection", "features": features})
+
+
+@bp.route("/api/countries/search")
+@login_required
+def api_countries_search():
+    """Search countries from reference database for autocomplete"""
+    import json
+    import os
+
+    query = request.args.get("q", "").lower()
+    if len(query) < 2:
+        return jsonify([])
+
+    # Load countries from JSON file
+    json_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "countries.json")
+    with open(json_path, "r") as f:
+        countries = json.load(f)
+
+    # Filter countries matching query
+    results = [
+        {
+            "name": country["name"],
+            "iso2": country["iso2"],
+            "iso3": country["iso3"],
+            "lat": country["lat"],
+            "lon": country["lon"],
+        }
+        for country in countries
+        if query in country["name"].lower() or query in country["iso2"].lower() or query in country["iso3"].lower()
+    ]
+
+    # Limit to 10 results
+    return jsonify(results[:10])

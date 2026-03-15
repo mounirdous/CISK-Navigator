@@ -31,13 +31,18 @@
                         <div class="mb-3">
                             {{ form.name.label(class="form-label") }}
                             <span class="text-danger">*</span>
-                            {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else ""), placeholder="e.g., France, Germany, Spain") }}
+                            <span class="badge bg-info">🔍 Live Search</span>
+                            {{ form.name(class="form-control" ~ (" is-invalid" if form.name.errors else ""),
+                                placeholder="Start typing country name (e.g., France, Germany)...",
+                                autocomplete="off",
+                                id="country-name-input") }}
                             {% if form.name.errors %}
                                 <div class="invalid-feedback">
                                     {{ form.name.errors[0] }}
                                 </div>
                             {% endif %}
-                            <small class="form-text text-muted">Full country name</small>
+                            <div id="country-suggestions" class="list-group" style="position: absolute; z-index: 1000; width: calc(100% - 30px); max-height: 300px; overflow-y: auto; display: none;"></div>
+                            <small class="form-text text-muted">Type to search from 195+ countries with real coordinates</small>
                         </div>
 
                         <div class="row">
@@ -51,6 +56,18 @@
                                 {{ form.iso_code.label(class="form-label") }}
                                 {{ form.iso_code(class="form-control", placeholder="e.g., FRA, DEU, ESP") }}
                                 <small class="form-text text-muted">ISO 3166-1 code (optional)</small>
+                            </div>
+                        </div>
+
+                        <!-- Hidden coordinate fields (auto-populated by autocomplete) -->
+                        <div class="row d-none">
+                            <div class="col-md-6 mb-3">
+                                {{ form.latitude.label(class="form-label") }}
+                                {{ form.latitude(class="form-control", readonly=True) }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.longitude.label(class="form-label") }}
+                                {{ form.longitude(class="form-control", readonly=True) }}
                             </div>
                         </div>
 
@@ -72,4 +89,130 @@
         </div>
     </div>
 </div>
+
+<script>
+// Country autocomplete with live search
+const countryInput = document.getElementById('country-name-input');
+const suggestionsList = document.getElementById('country-suggestions');
+const codeInput = document.getElementById('{{ form.code.id }}');
+const isoCodeInput = document.getElementById('{{ form.iso_code.id }}');
+const latInput = document.getElementById('{{ form.latitude.id }}');
+const lonInput = document.getElementById('{{ form.longitude.id }}');
+
+let searchTimeout;
+
+countryInput.addEventListener('input', function() {
+    const query = this.value.trim();
+
+    // Clear previous timeout
+    clearTimeout(searchTimeout);
+
+    if (query.length < 2) {
+        suggestionsList.style.display = 'none';
+        return;
+    }
+
+    // Debounce search
+    searchTimeout = setTimeout(() => {
+        fetch(`{{ url_for('geography.api_countries_search') }}?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(countries => {
+                if (countries.length === 0) {
+                    suggestionsList.innerHTML = '<div class="list-group-item text-muted">No countries found</div>';
+                    suggestionsList.style.display = 'block';
+                    return;
+                }
+
+                suggestionsList.innerHTML = countries.map(country => `
+                    <a href="#" class="list-group-item list-group-item-action country-suggestion"
+                       data-name="${country.name}"
+                       data-iso2="${country.iso2}"
+                       data-iso3="${country.iso3}"
+                       data-lat="${country.lat}"
+                       data-lon="${country.lon}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${country.name}</strong>
+                                <small class="text-muted ms-2">${country.iso2} / ${country.iso3}</small>
+                            </div>
+                            <small class="text-muted" style="font-family: monospace;">
+                                ${country.lat.toFixed(4)}, ${country.lon.toFixed(4)}
+                            </small>
+                        </div>
+                    </a>
+                `).join('');
+
+                suggestionsList.style.display = 'block';
+
+                // Add click handlers to suggestions
+                document.querySelectorAll('.country-suggestion').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+
+                        // Fill form with selected country data
+                        countryInput.value = this.dataset.name;
+                        codeInput.value = this.dataset.iso2;
+                        isoCodeInput.value = this.dataset.iso3;
+                        latInput.value = this.dataset.lat;
+                        lonInput.value = this.dataset.lon;
+
+                        // Hide suggestions
+                        suggestionsList.style.display = 'none';
+
+                        // Visual feedback
+                        countryInput.classList.add('is-valid');
+                        codeInput.classList.add('is-valid');
+                        isoCodeInput.classList.add('is-valid');
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Country search error:', error);
+                suggestionsList.innerHTML = '<div class="list-group-item text-danger">Error loading countries</div>';
+                suggestionsList.style.display = 'block';
+            });
+    }, 300); // 300ms debounce
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener('click', function(e) {
+    if (!countryInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+        suggestionsList.style.display = 'none';
+    }
+});
+
+// Show info about coordinates on form load
+window.addEventListener('DOMContentLoaded', function() {
+    const helpText = document.createElement('div');
+    helpText.className = 'alert alert-info mt-3';
+    helpText.innerHTML = `
+        <i class="bi bi-info-circle-fill"></i>
+        <strong>Smart Country Selection:</strong> Type any country name to search from our database of 195+ countries.
+        When you select a country, the system will automatically fill in the ISO codes and geographic coordinates for accurate map display.
+    `;
+    countryInput.closest('.mb-3').appendChild(helpText);
+});
+</script>
+
+<style>
+#country-suggestions .list-group-item {
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.2s;
+}
+
+#country-suggestions .list-group-item:hover {
+    background-color: var(--hover-bg, #f8f9fa);
+    border-left-color: var(--bs-success);
+}
+
+.is-valid {
+    border-color: #28a745 !important;
+    padding-right: calc(1.5em + 0.75rem);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+</style>
 {% endblock %}

@@ -33,6 +33,18 @@ class GeographyCountryForm(FlaskForm):
         validators=[Optional(), Length(max=3)],
         description="ISO 3166-1 alpha-2/3 code",
     )
+    latitude = DecimalField(
+        "Latitude",
+        validators=[Optional(), NumberRange(min=-90, max=90)],
+        places=8,
+        description="Country center latitude (auto-filled from search)",
+    )
+    longitude = DecimalField(
+        "Longitude",
+        validators=[Optional(), NumberRange(min=-180, max=180)],
+        places=8,
+        description="Country center longitude (auto-filled from search)",
+    )
     display_order = IntegerField("Display Order", default=0)
     submit = SubmitField("Save Country")
 
