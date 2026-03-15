@@ -185,7 +185,7 @@ def delete_region(region_id):
         entity_type="GeographyRegion",
         entity_id=region.id,
         entity_name=region_name,
-        old_values={"name": region.name, "code": region.code},
+        old_value={"name": region.name, "code": region.code},
     )
 
     db.session.delete(region)
@@ -328,7 +328,7 @@ def delete_country(country_id):
         entity_type="GeographyCountry",
         entity_id=country.id,
         entity_name=country_name,
-        old_values={"name": country.name, "code": country.code, "iso_code": country.iso_code},
+        old_value={"name": country.name, "code": country.code, "iso_code": country.iso_code},
     )
 
     db.session.delete(country)
@@ -510,7 +510,7 @@ def delete_site(site_id):
         entity_type="GeographySite",
         entity_id=site.id,
         entity_name=site_name,
-        old_values={
+        old_value={
             "name": site.name,
             "code": site.code,
             "address": site.address,
