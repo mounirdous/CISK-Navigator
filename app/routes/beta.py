@@ -457,67 +457,79 @@ def workspace():
         value_type_ids_with_data = set(
             [row[0] for row in value_types_with_contributions.all()] + [row[0] for row in value_types_with_formulas.all()]
         )
-
-        # Get value types in correct order
-        value_types = (
-            ValueType.query.filter(
-                ValueType.id.in_(value_type_ids_with_data),
-                ValueType.organization_id == org_id,
-                ValueType.is_active.is_(True),
-            )
-            .order_by(ValueType.display_order, ValueType.name)
-            .all()
-        )
     else:
-        # No spaces selected - show no value types
-        value_types = []
+        value_type_ids_with_data = set()
 
-    # Get KPI link status for forms (Porter's, Ansoff, Impacts)
-    from app.models import KPIGovernanceBodyLink, KPILink
+    # Get all active value types
+    all_value_types = (
+        ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.display_order).all()
+    )
 
+    # Get value types - apply smart filtering unless show_all_columns is enabled
+    if show_all_columns:
+        # Show all columns override - show everything
+        value_types = all_value_types
+        hidden_value_types = []
+    else:
+        # Smart filtering: only show columns with actual contribution data
+        if value_type_ids_with_data:
+            # Filter to show only columns with data
+            value_types = [vt for vt in all_value_types if vt.id in value_type_ids_with_data]
+            hidden_value_types = [vt for vt in all_value_types if vt.id not in value_type_ids_with_data]
+        elif not space_ids:
+            # No spaces at all - show all columns (nothing to filter)
+            value_types = all_value_types
+            hidden_value_types = []
+        else:
+            # Have spaces but no data - hide all columns
+            value_types = []
+            hidden_value_types = all_value_types
+
+    # Get level visibility controls (default all visible)
+    show_levels = {
+        "spaces": request.args.get("show_spaces", "1") == "1",
+        "challenges": request.args.get("show_challenges", "1") == "1",
+        "initiatives": request.args.get("show_initiatives", "1") == "1",
+        "systems": request.args.get("show_systems", "1") == "1",
+        "kpis": request.args.get("show_kpis", "1") == "1",
+    }
+
+    # Get entity links for workspace view
+    from app.models import EntityLink
+
+    challenge_links = {}
+    initiative_links = {}
+    system_links = {}
     kpi_links = {}
-    if space_ids:
-        # Get all KPIs in filtered spaces
-        all_kpis_query = (
-            db.session.query(KPI)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(Challenge.space_id.in_(space_ids))
-        )
 
-        # Apply governance body filter
-        if selected_governance_body_ids:
-            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
-            all_kpis_query = all_kpis_query.join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id).filter(
-                KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int)
-            )
+    for space in spaces:
+        for challenge in space.challenges:
+            # Get challenge links
+            links = EntityLink.get_links_for_entity("challenge", challenge.id, current_user.id, include_private=True)
+            if links:
+                challenge_links[challenge.id] = links
 
-        # Apply group filter
-        if selected_group_labels:
-            all_kpis_query = all_kpis_query.filter(
-                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
-            )
+            # Get initiative links
+            for init_link in challenge.initiative_links:
+                initiative = init_link.initiative
+                links = EntityLink.get_links_for_entity(
+                    "initiative", initiative.id, current_user.id, include_private=True
+                )
+                if links:
+                    initiative_links[initiative.id] = links
 
-        # Apply impact filter
-        if selected_impact_levels:
-            all_kpis_query = all_kpis_query.filter(Initiative.impact_on_challenge.in_(selected_impact_levels))
+                # Get system links
+                for sys_link in initiative.system_links:
+                    system = sys_link.system
+                    links = EntityLink.get_links_for_entity("system", system.id, current_user.id, include_private=True)
+                    if links:
+                        system_links[system.id] = links
 
-        # Apply archived filter
-        if not show_archived:
-            all_kpis_query = all_kpis_query.filter(KPI.is_archived.is_(False))
-
-        all_kpis = all_kpis_query.all()
-
-        # Build link status for each KPI
-        for kpi in all_kpis:
-            links = KPILink.query.filter_by(kpi_id=kpi.id).all()
-            kpi_links[kpi.id] = {
-                "has_porter": any(link.link_type == "porter" for link in links),
-                "has_ansoff": any(link.link_type == "ansoff" for link in links),
-                "has_impacts": any(link.link_type == "impact" for link in links),
-            }
+                    # Get KPI links
+                    for kpi in sys_link.kpis:
+                        links = EntityLink.get_links_for_entity("kpi", kpi.id, current_user.id, include_private=True)
+                        if links:
+                            kpi_links[kpi.id] = links
 
     # Calculate counts for initiative group labels (A, B, C, D)
     group_counts = {}
@@ -668,12 +680,6 @@ def workspace():
                 active_preset = preset
                 break
 
-    # Get organization logo
-    org = Organization.query.get(org_id)
-    org_logo = None
-    if org and org.logo_data:
-        org_logo = f"data:{org.logo_mime_type};base64,{base64.b64encode(org.logo_data).decode('utf-8')}"
-
     # Get entity type defaults (for logos in tree)
     entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
     entity_defaults = {}
@@ -688,27 +694,39 @@ def workspace():
             "logo": logo_url,
         }
 
+    # Get organization object and logo for template
+    organization = Organization.query.get(org_id)
+    org_logo = None
+    if organization and organization.logo_data:
+        org_logo = f"data:{organization.logo_mime_type};base64,{base64.b64encode(organization.logo_data).decode('utf-8')}"
+
     return render_template(
         "beta/workspace.html",
+        org_id=org_id,
         org_name=org_name,
         org_logo=org_logo,
+        organization=organization,
         entity_defaults=entity_defaults,
         spaces=spaces,
         value_types=value_types,
-        show_all_columns=show_all_columns,
-        show_archived=show_archived,
+        hidden_value_types=hidden_value_types,
         governance_bodies=governance_bodies,
         selected_governance_body_ids=selected_governance_body_ids,
         selected_group_labels=selected_group_labels,
         selected_impact_levels=selected_impact_levels,
+        show_archived=show_archived,
+        show_levels=show_levels,
         space_type_filter=space_type_filter,
         all_spaces_count=all_spaces_count,
         public_spaces_count=public_spaces_count,
         private_spaces_count=private_spaces_count,
-        csrf_token=generate_csrf,
+        show_all_columns=show_all_columns,
         group_counts=group_counts,
         impact_counts=impact_counts,
         gb_kpi_counts=gb_kpi_counts,
+        challenge_links=challenge_links,
+        initiative_links=initiative_links,
+        system_links=system_links,
         kpi_links=kpi_links,
         level_counts=level_counts,
         archived_kpis_count=archived_kpis_count,
