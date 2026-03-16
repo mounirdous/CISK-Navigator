@@ -3393,6 +3393,9 @@ function workspaceV2(orgId, filterPresets) {
 
             console.log('✅ KPI Found:', foundKPI.name);
 
+            // 🎬 Close filters panel to show the spotlight effect!
+            this.filtersExpanded = false;
+
             // Expand all parents to make KPI visible
             const [space, challenge, initiative, system, kpi] = kpiPath;
             space.collapsed = false;
@@ -3405,38 +3408,41 @@ function workspaceV2(orgId, filterPresets) {
                 this.showArchived = true;
             }
 
-            // Wait for DOM to update with expanded entities
+            // Wait for DOM to update with expanded entities AND closed filters
             this.$nextTick(() => {
-                // Find the KPI row element
-                const kpiRow = document.querySelector(`[data-kpi-id="${kpiId}"]`);
-
-                if (!kpiRow) {
-                    console.log('❌ KPI row element not found in DOM');
-                    return;
-                }
-
-                // Smooth scroll to the KPI
-                kpiRow.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'center',
-                    inline: 'nearest'
-                });
-
-                // Apply spotlight animation after scroll
+                // Wait for filter panel close animation to complete (150ms transition + buffer)
                 setTimeout(() => {
-                    kpiRow.classList.add('kpi-spotlight');
+                    // Find the KPI row element
+                    const kpiRow = document.querySelector(`[data-kpi-id="${kpiId}"]`);
 
-                    // Remove animation class after it completes
+                    if (!kpiRow) {
+                        console.log('❌ KPI row element not found in DOM');
+                        return;
+                    }
+
+                    // Smooth scroll to the KPI
+                    kpiRow.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+
+                    // Apply spotlight animation after scroll
                     setTimeout(() => {
-                        kpiRow.classList.remove('kpi-spotlight');
-                        // Clean up URL parameter
-                        const newUrl = new URL(window.location);
-                        newUrl.searchParams.delete('kpi_id');
-                        window.history.replaceState({}, '', newUrl);
-                    }, 3000);
-                }, 500);
+                        kpiRow.classList.add('kpi-spotlight');
 
-                console.log('🎯✨ KPI Spotlight Applied!');
+                        // Remove animation class after it completes
+                        setTimeout(() => {
+                            kpiRow.classList.remove('kpi-spotlight');
+                            // Clean up URL parameter
+                            const newUrl = new URL(window.location);
+                            newUrl.searchParams.delete('kpi_id');
+                            window.history.replaceState({}, '', newUrl);
+                        }, 3000);
+                    }, 600);
+
+                    console.log('🎯✨ KPI Spotlight Applied!');
+                }, 250); // Wait for filter panel close animation
             });
         },
 

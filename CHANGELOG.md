@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-03-16
+
+### Fixed
+- **🎬 KPI Spotlight now visible**: Auto-closes filters panel when highlighting a KPI
+  - Root cause: Filters panel was covering the entire view, hiding the spotlight animation
+  - Solution: Sets `filtersExpanded = false` before highlighting
+  - Added 250ms delay to wait for filter panel close animation to complete
+  - Ensures spotlight effect is fully visible in the center of the screen
+  - Timing: Filter close (150ms) → DOM update → Scroll (smooth) → Spotlight (600ms delay)
+
 ## [2.3.0] - 2026-03-16
 
 ### Added
