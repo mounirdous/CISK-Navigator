@@ -7,43 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.5.18] - 2026-03-16
 
-### Added - Live Search on Search Results Page
-**Feature**: Auto-submit search as user types (debounced)
+### Reverted - Live Search on Search Results Page (Bad UX)
+**Issue**: Attempted to add live search to search results page, but page reloads cleared search box
 
-**Issue**: Search results page required clicking "Search" button, unlike navbar which has live search
+**Why It Failed**:
+- Full page reloads on every keystroke = bad UX
+- Clears search input, loses scroll position
+- Navbar uses dropdown (no reload), search page uses full page (reloads)
 
-**The Solution**: Added JavaScript live search with debounce
-- Auto-submits form 500ms after user stops typing
-- Only triggers for queries ≥2 characters (or empty to clear)
-- Enter key submits immediately (no debounce)
-
-**Benefits**:
-1. **Consistent UX**: Both navbar and search page have live search
-2. **Faster Workflow**: No need to click "Search" button
-3. **Immediate Feedback**: Results update as you type
-4. **Smart Debounce**: Reduces server load (waits for pause)
+**Decision**: Keep manual "Search" button for search results page
+- Navbar: Live search with dropdown (no reload) ✓
+- Search page: Manual button with page reload ✓
+- Different UI patterns for different contexts
 
 **Files Modified**:
-- `app/templates/workspace/search.html`:
-  - Added `id="searchForm"` and `id="searchInput"` to form elements
-  - Added JavaScript debounced auto-submit (500ms delay)
-  - Enter key handler for immediate submit
+- `app/templates/workspace/search.html` - Removed live search JavaScript
 - `app/__init__.py` - Version bump to 2.5.18
 
-**Technical Details**:
-```javascript
-// Debounce: wait 500ms after user stops typing
-searchInput.addEventListener('input', function() {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(function() {
-        if (query.length >= 2 || query.length === 0) {
-            searchForm.submit();
-        }
-    }, 500);
-});
-```
-
-**Impact**: Search results page now matches navbar's live search behavior
+**Lesson**: Live search only works well with AJAX/no page reload
 
 ---
 
