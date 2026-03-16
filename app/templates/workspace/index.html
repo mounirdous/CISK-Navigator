@@ -1127,7 +1127,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="workspace-v2" x-data="workspaceV2({{ org_id }})" x-init="init(); loadData()">
+<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, {{ filter_presets|tojson }})" x-init="init(); loadData()">
     <!-- Toolbar - Commands Band -->
     <div class="ws-header" :class="{'edit-mode': editMode}">
         <div style="display: flex; align-items: center; gap: 1.5rem;">
@@ -1236,12 +1236,15 @@
             <!-- Filter Presets Section - ALWAYS VISIBLE -->
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; color: white;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                         <i class="bi bi-bookmark-star-fill" style="font-size: 1.2rem;"></i>
                         <span style="font-weight: 600; font-size: 1rem;">Filter Presets</span>
                         {% if filter_presets %}
                         <span style="background: rgba(255,255,255,0.3); padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem;">{{ filter_presets|length }} saved</span>
                         {% endif %}
+                        <span x-show="activePresetName"
+                              x-text="'Active: ' + activePresetName"
+                              style="background: rgba(255,255,255,0.25); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem; font-weight: 500; border: 1px solid rgba(255,255,255,0.4);"></span>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <button @click="showSavePresetModal = true"
@@ -2530,13 +2533,16 @@ document.addEventListener('DOMContentLoaded', function() {
 <script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 
 <script>
-function workspaceV2(orgId) {
+function workspaceV2(orgId, filterPresets) {
     return {
         // Organization Info
         orgName: '{{ org_name|safe }}',
         orgLogo: {% if org_logo %}'{{ org_logo|safe }}'{% else %}null{% endif %},
         portersUrl: '{{ url_for("organization_admin.organization_porters") }}',
         portersCompletion: {% if porters_completion %}{{ porters_completion|tojson }}{% else %}null{% endif %},
+
+        // Filter Presets
+        filterPresets: filterPresets || [],
 
         // Data
         spaces: [],
@@ -2696,6 +2702,41 @@ function workspaceV2(orgId) {
             if (this.selectedGroups.length > 0) count++;
             if (this.selectedImpactLevels.length > 0) count++;
             return count;
+        },
+
+        get activePresetName() {
+            if (!this.hasActiveFilters || !this.filterPresets.length) {
+                return null;
+            }
+
+            const currentFilters = this.getCurrentFilters();
+
+            // Find preset that matches current filters
+            const matchingPreset = this.filterPresets.find(preset => {
+                const presetFilters = preset.filters || {};
+
+                // Compare each filter property
+                if ((currentFilters.spaceTypeFilter || 'all') !== (presetFilters.spaceTypeFilter || 'all')) return false;
+
+                // Compare arrays (order doesn't matter)
+                const arraysMatch = (a, b) => {
+                    if (!a && !b) return true;
+                    if (!a || !b) return false;
+                    if (a.length !== b.length) return false;
+                    const sortedA = [...a].sort();
+                    const sortedB = [...b].sort();
+                    return sortedA.every((val, idx) => val == sortedB[idx]);
+                };
+
+                if (!arraysMatch(currentFilters.selectedGovernanceBodies, presetFilters.selectedGovernanceBodies)) return false;
+                if (!arraysMatch(currentFilters.selectedSpaces, presetFilters.selectedSpaces)) return false;
+                if (!arraysMatch(currentFilters.selectedGroups, presetFilters.selectedGroups)) return false;
+                if (!arraysMatch(currentFilters.selectedImpactLevels, presetFilters.selectedImpactLevels)) return false;
+
+                return true;
+            });
+
+            return matchingPreset ? matchingPreset.name : null;
         },
 
         get filterSummary() {
@@ -2983,8 +3024,19 @@ function workspaceV2(orgId) {
                 });
 
                 if (response.ok) {
+                    const preset = await response.json();
                     alert(`Filter preset "${name}" saved successfully!`);
-                    location.reload();  // Reload to show new preset in database list
+
+                    // Redirect to workspace with filter params to keep filters active
+                    const params = new URLSearchParams();
+                    for (const [key, value] of Object.entries(filters)) {
+                        if (Array.isArray(value)) {
+                            value.forEach(v => params.append(key, v));
+                        } else {
+                            params.append(key, value);
+                        }
+                    }
+                    window.location.href = '/workspace/?' + params.toString();
                 } else {
                     const error = await response.json();
                     alert('Error: ' + (error.error || 'Failed to save preset'));
