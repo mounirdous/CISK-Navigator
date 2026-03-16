@@ -339,10 +339,9 @@ class SearchService:
         # Base query
         base_query = db.session.query(Initiative).filter(Initiative.organization_id == organization_id)
 
-        # Apply modifiers
-        if "archived" not in modifiers:
-            base_query = base_query.filter(Initiative.is_archived is False)
+        # Note: Initiative model doesn't have is_archived field
 
+        # Apply modifiers
         if "no_consensus" in modifiers:
             base_query = base_query.filter(Initiative.impact_on_challenge == "no_consensus")
 
@@ -367,7 +366,6 @@ class SearchService:
                         "description": initiative.description,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "match_score": match_score,
-                        "is_archived": initiative.is_archived,
                         "updated_at": initiative.updated_at.isoformat() if initiative.updated_at else None,
                     }
                 )

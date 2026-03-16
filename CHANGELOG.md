@@ -5,6 +5,39 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.7] - 2026-03-16
+
+### Fixed - FINAL FIX: Initiative Also Missing is_archived
+**Issue**: Search still broken - `AttributeError: type object 'Initiative' has no attribute 'is_archived'`
+
+**Root Cause**: I incorrectly assumed Initiative had is_archived field
+**Reality**: ONLY KPI model has is_archived field - checked with grep across all models
+
+**The Truth**:
+```bash
+grep -r "is_archived.*=.*db.Column" app/models/
+# Result: ONLY app/models/kpi.py has is_archived
+```
+
+**Models WITH is_archived**:
+- ✅ KPI ONLY
+
+**Models WITHOUT is_archived** (ALL OTHERS):
+- ❌ Initiative
+- ❌ System
+- ❌ Challenge
+- ❌ Space
+
+**Files Modified**:
+- `app/services/search_service.py` - Removed is_archived from Initiative search
+
+**The Fix**:
+1. Removed `.filter(Initiative.is_archived is False)` from line 344
+2. Removed `"is_archived": initiative.is_archived` from line 370
+3. Added comment: "Note: Initiative model doesn't have is_archived field"
+
+**Lesson**: Should have checked ALL model files FIRST before implementing search filters
+
 ## [2.5.6] - 2026-03-16
 
 ### Fixed - CRITICAL: AttributeError on is_archived Fields (HOTFIX)
