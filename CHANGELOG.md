@@ -5,6 +5,26 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.5] - 2026-03-16
+
+### Improved
+- **🎨 Thick border highlight around entire KPI row**: Full row border instead of just left side
+  - Changed from `border-left: 5px` to `border: 4px solid` on all sides
+  - Added `border-radius: 8px` for rounded corners
+  - Added animated border glow effect with color shifting
+  - Outer glow ring: `box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3)`
+  - Border pulses between purple (#667eea) and magenta (#764ba2)
+  - Glow ring expands from 2px → 4px → 6px during animation
+  - Changed `overflow: hidden` to `overflow: visible` so border shows fully
+  - Added `!important` to ensure border always shows
+  - Dual animations: `kpiSpotlight` (background/glow) + `kpiBorderGlow` (border pulse)
+
+### Visual Impact
+- **Much more visible**: Entire row is framed with thick colored border
+- **Professional look**: Rounded corners give polished appearance
+- **Dynamic effect**: Border color shifts and glows during animation
+- **Clear boundaries**: Easy to see exactly which row is highlighted
+
 ## [2.3.4] - 2026-03-16
 
 ### Fixed
