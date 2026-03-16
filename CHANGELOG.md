@@ -5,6 +5,24 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.6] - 2026-03-16
+
+### Fixed
+- **🐛 Mobile navigation click-through issue**: Fixed clicks on menu items triggering profile button behind
+  - Root cause: Mobile menu (navbar-collapse) had insufficient z-index stacking
+  - Clicks on "Analytics" and other menu items would accidentally trigger profile dropdown
+  - Solution: Added comprehensive z-index hierarchy for mobile menu (z-index: 1070+)
+  - Added semi-transparent backdrop overlay to prevent interaction with elements behind
+  - Set explicit `pointer-events: auto` on nav items to ensure clickability
+  - Applied only on mobile breakpoint (@media max-width: 991.98px)
+
+### Improved
+- **Mobile menu visual polish**:
+  - Added backdrop blur effect for better visual separation
+  - Rounded bottom corners (border-radius: 12px)
+  - Enhanced shadow for depth perception
+  - Background: `rgba(33, 37, 41, 0.98)` with backdrop-filter blur
+
 ## [2.1.5] - 2026-03-16
 
 ### Improved

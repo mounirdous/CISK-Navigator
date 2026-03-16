@@ -147,6 +147,65 @@
         position: relative;
     }
 
+    /* Mobile menu: Prevent click-through to elements behind */
+    @media (max-width: 991.98px) {
+        .navbar-collapse {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(33, 37, 41, 0.98);
+            backdrop-filter: blur(10px);
+            z-index: 1070 !important;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            border-radius: 0 0 12px 12px;
+            padding: 1rem;
+            margin: 0;
+        }
+
+        .navbar-collapse.show {
+            z-index: 1070 !important;
+        }
+
+        /* Add backdrop to prevent interaction with elements behind */
+        .navbar-collapse.show::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+            backdrop-filter: blur(2px);
+        }
+
+        /* Ensure nav items are clickable and not bleeding through */
+        .navbar-nav {
+            position: relative;
+            z-index: 1071;
+            background: rgba(33, 37, 41, 0.95);
+            border-radius: 8px;
+            padding: 0.5rem;
+        }
+
+        .navbar-nav .nav-link {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.25rem;
+            position: relative;
+            z-index: 1072;
+            pointer-events: auto;
+        }
+
+        .navbar-nav .dropdown-menu {
+            position: relative !important;
+            box-shadow: none;
+            margin-top: 0.5rem;
+            z-index: 1073 !important;
+        }
+    }
+
     @keyframes dropdownSlideIn {
         from {
             opacity: 0;
