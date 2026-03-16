@@ -1093,6 +1093,11 @@ def edit_space_swot(space_id):
 
         db.session.commit()
         flash(f"SWOT analysis for {space.name} updated successfully", "success")
+
+        # Check if we should return to action items page
+        if request.args.get("return_to") == "action_items":
+            return redirect(url_for("action_items"))
+
         return redirect(url_for("organization_admin.space_swot", space_id=space.id))
 
     return render_template("organization_admin/edit_space_swot.html", space=space)
@@ -1544,6 +1549,11 @@ def edit_system(system_id):
 
         db.session.commit()
         flash(f"System {system.name} updated successfully", "success")
+
+        # Check if we should return to action items page
+        if request.args.get("return_to") == "action_items":
+            return redirect(url_for("action_items"))
+
         return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
@@ -2093,6 +2103,11 @@ def edit_kpi(kpi_id):
 
         db.session.commit()
         flash(f"KPI {kpi.name} updated successfully", "success")
+
+        # Check if we should return to action items page
+        if request.args.get("return_to") == "action_items":
+            return redirect(url_for("action_items"))
+
         return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get entity type defaults with logos
@@ -3210,6 +3225,11 @@ def initiative_form(initiative_id):
 
         db.session.commit()
         flash(f"Initiative form for '{initiative.name}' updated successfully", "success")
+
+        # Check if we should return to action items page
+        if request.args.get("return_to") == "action_items":
+            return redirect(url_for("action_items"))
+
         return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative.id))
 
     # Prepare KPI data with values

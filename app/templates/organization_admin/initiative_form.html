@@ -311,13 +311,19 @@
             </div>
             <div class="form-header-actions">
                 {% if can_edit and not edit_mode %}
-                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-outline-light">
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1, return_to=request.args.get('return_to')) }}" class="btn btn-outline-light">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
                 {% endif %}
+                {% if request.args.get('return_to') == 'action_items' %}
+                <a href="{{ url_for('action_items') }}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left"></i> Back to Action Items
+                </a>
+                {% else %}
                 <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left"></i> Back to Workspace
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -704,13 +710,19 @@
         <div style="padding: 2rem; border-top: 2px solid var(--border-color); background: var(--light-bg);">
             <div style="display: flex; gap: 1rem; justify-content: center;">
                 {% if can_edit %}
-                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1) }}" class="btn btn-primary">
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1, return_to=request.args.get('return_to')) }}" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Edit Initiative Form
                 </a>
                 {% endif %}
+                {% if request.args.get('return_to') == 'action_items' %}
+                <a href="{{ url_for('action_items') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Action Items
+                </a>
+                {% else %}
                 <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Workspace
                 </a>
+                {% endif %}
             </div>
         </div>
         {% endif %}

@@ -5,6 +5,42 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.35.0] - 2026-03-16
+
+### Added
+- **📋 Action Items - Quality Dashboard**: Comprehensive data quality monitoring
+  - Lists all incomplete and problematic items requiring attention
+  - **5 quality checks**: No consensus initiatives, incomplete forms, missing SWOT, systems without KPIs, KPIs without governance
+  - **Smart filtering**: Only shows sections with actual items (empty sections hidden)
+  - **Direct edit links**: One-click access to fix each issue with automatic return navigation
+  - **Dashboard alert**: Shows total action items count for all users
+  - **Navigation**: Added to Dashboards dropdown menu
+  - **Progress indicators**: Visual progress bars for incomplete forms and SWOT analysis
+  - **Priority color coding**: Critical (red), High (orange), Medium (yellow), Low (cyan)
+  - **Return-to navigation**: After editing from action items, automatically returns to action items page
+  - Template support in initiative forms, SWOT editing, system editing, and KPI editing
+
+### Added (Documentation)
+- **BETA_WORKFLOW.md**: Complete guide for developing and releasing beta features
+  - Phase 1: Development with beta restrictions
+  - Phase 2: Public release process
+  - Best practices and common pitfalls
+  - Return-to pattern implementation
+  - Testing checklists
+  - Real example using Action Items feature
+
+### Changed
+- **Beta program**: Action Items graduated from beta to public release
+- **Dashboard alert**: Replaced "No Consensus" alert with comprehensive "Action Items" alert
+- **Initiative forms**: Back button text changes based on return_to parameter
+- **SWOT editing**: Back button text changes based on return_to parameter
+
+### Technical
+- Route: `/action-items` at root level in `app/__init__.py`
+- Template: `app/templates/workspace/action_items.html`
+- Return-to support added to: `initiative_form.html`, `edit_space_swot.html`
+- Backend logic in workspace.dashboard() for action items calculation
+
 ## [1.33.32] - 2026-03-15
 
 ### Added

@@ -114,9 +114,15 @@
             </div>
 
             <div style="display: flex; justify-content: flex-end; padding: 1rem 1.5rem; gap: 0.5rem; border-bottom: 1px solid var(--border-color);">
+                {% if request.args.get('return_to') == 'action_items' %}
+                <a href="{{ url_for('action_items') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Action Items
+                </a>
+                {% else %}
                 <a href="{{ url_for('workspace.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Workspace
                 </a>
+                {% endif %}
             </div>
 
             <div class="card-body" style="padding: 2.5rem;">

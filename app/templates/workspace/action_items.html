@@ -1,6 +1,6 @@
-{% extends "beta/base_beta.html" %}
+{% extends "base.html" %}
 
-{% block title %}Action Items{% endblock %}
+{% block title %}Action Items - {{ org_name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -17,7 +17,8 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 2rem 1rem;
-        margin: -1rem -1rem 1.5rem -1rem;
+        margin-bottom: 1.5rem;
+        border-radius: 12px;
         text-align: center;
     }
 
@@ -233,36 +234,16 @@
         margin-bottom: 1rem;
         padding-left: 2.5rem;
     }
-
-    .back-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: white;
-        text-decoration: none;
-        font-size: 0.9rem;
-        margin-bottom: 1rem;
-        opacity: 0.9;
-    }
-
-    .back-link:hover {
-        opacity: 1;
-        color: white;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="action-header">
-    <a href="{{ url_for('workspace.dashboard') }}" class="back-link">
-        <i class="bi bi-arrow-left"></i> Back to Dashboard
-    </a>
-    <h1><i class="bi bi-exclamation-triangle-fill"></i> Action Items</h1>
-    <div class="total-issues">{{ total_issues }}</div>
-    <div class="issues-label">Items Need Attention</div>
-</div>
-
 <div class="container-fluid px-3 pb-4">
+    <div class="action-header">
+        <h1><i class="bi bi-exclamation-triangle-fill"></i> Action Items</h1>
+        <div class="total-issues">{{ total_issues }}</div>
+        <div class="issues-label">Items Need Attention</div>
+    </div>
     {% if total_issues == 0 %}
     <div class="empty-state">
         <i class="bi bi-check-circle-fill text-success"></i>
@@ -272,6 +253,7 @@
     {% else %}
 
     <!-- Initiatives with No Consensus -->
+    {% if initiatives_no_consensus|length > 0 %}
     <div class="section-card critical">
         <div class="section-header" data-bs-toggle="collapse" data-bs-target="#noConsensusSection" aria-expanded="true">
             <div class="section-title">
@@ -285,7 +267,6 @@
             These initiatives lack agreement on their impact level and need stakeholder alignment.
         </div>
         <div class="collapse show" id="noConsensusSection">
-            {% if initiatives_no_consensus %}
             <ul class="item-list">
                 {% for initiative in initiatives_no_consensus %}
                 <li class="item-row">
@@ -299,22 +280,19 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="action-btn" title="Edit Initiative">
+                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, return_to='action_items') }}" class="action-btn" title="Edit Initiative">
                             <i class="bi bi-pencil-fill"></i>
                         </a>
                     </div>
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}
-            <div class="empty-state">
-                <p>No initiatives without consensus</p>
-            </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     <!-- Initiatives with Incomplete Forms -->
+    {% if initiatives_incomplete|length > 0 %}
     <div class="section-card high">
         <div class="section-header" data-bs-toggle="collapse" data-bs-target="#incompleteInitiatives" aria-expanded="false">
             <div class="section-title">
@@ -328,7 +306,6 @@
             These initiatives have missing information in their forms (mission, team, deliverables, etc.).
         </div>
         <div class="collapse" id="incompleteInitiatives">
-            {% if initiatives_incomplete %}
             <ul class="item-list">
                 {% for item in initiatives_incomplete %}
                 <li class="item-row">
@@ -343,22 +320,19 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=item.initiative.id) }}" class="action-btn" title="Complete Form">
+                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=item.initiative.id, return_to='action_items') }}" class="action-btn" title="Complete Form">
                             <i class="bi bi-pencil-fill"></i>
                         </a>
                     </div>
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}
-            <div class="empty-state">
-                <p>All initiative forms are complete</p>
-            </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     <!-- Spaces without SWOT -->
+    {% if spaces_no_swot|length > 0 %}
     <div class="section-card medium">
         <div class="section-header" data-bs-toggle="collapse" data-bs-target="#spacesNoSwot" aria-expanded="false">
             <div class="section-title">
@@ -372,7 +346,6 @@
             These spaces are missing their SWOT analysis (Strengths, Weaknesses, Opportunities, Threats).
         </div>
         <div class="collapse" id="spacesNoSwot">
-            {% if spaces_no_swot %}
             <ul class="item-list">
                 {% for item in spaces_no_swot %}
                 <li class="item-row">
@@ -387,7 +360,7 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <a href="{{ url_for('organization_admin.edit_space_swot', space_id=item.space.id) }}" class="action-btn" title="Edit SWOT">
+                        <a href="{{ url_for('organization_admin.edit_space_swot', space_id=item.space.id, return_to='action_items') }}" class="action-btn" title="Edit SWOT">
                             <i class="bi bi-pencil-fill"></i>
                         </a>
                         <a href="{{ url_for('organization_admin.space_swot', space_id=item.space.id) }}" class="action-btn view" title="View SWOT">
@@ -397,15 +370,12 @@
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}
-            <div class="empty-state">
-                <p>All spaces have SWOT analysis</p>
-            </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     <!-- Systems without KPIs -->
+    {% if systems_without_kpis|length > 0 %}
     <div class="section-card low">
         <div class="section-header" data-bs-toggle="collapse" data-bs-target="#systemsNoKpis" aria-expanded="false">
             <div class="section-title">
@@ -419,7 +389,6 @@
             These systems exist but have no KPIs defined to measure their performance.
         </div>
         <div class="collapse" id="systemsNoKpis">
-            {% if systems_without_kpis %}
             <ul class="item-list">
                 {% for system in systems_without_kpis %}
                 <li class="item-row">
@@ -430,23 +399,20 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <a href="{{ url_for('organization_admin.system_detail', system_id=system.id) }}" class="action-btn view" title="View System">
-                            <i class="bi bi-eye-fill"></i>
+                        <a href="{{ url_for('organization_admin.edit_system', system_id=system.id, return_to='action_items') }}" class="action-btn" title="Edit System">
+                            <i class="bi bi-pencil-fill"></i>
                         </a>
                     </div>
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}
-            <div class="empty-state">
-                <p>All systems have KPIs defined</p>
-            </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     <!-- KPIs without Governance Bodies -->
-    <div class="section-card {% if kpis_without_gb|length == 0 %}empty{% else %}low{% endif %}">
+    {% if kpis_without_gb|length > 0 %}
+    <div class="section-card low">
         <div class="section-header" data-bs-toggle="collapse" data-bs-target="#kpisNoGb" aria-expanded="false">
             <div class="section-title">
                 <span class="section-icon">👥</span>
@@ -459,7 +425,6 @@
             These KPIs don't have a governance body assigned to oversee and approve their data.
         </div>
         <div class="collapse" id="kpisNoGb">
-            {% if kpis_without_gb %}
             <ul class="item-list">
                 {% for kpi in kpis_without_gb %}
                 <li class="item-row">
@@ -470,20 +435,16 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <a href="{{ url_for('organization_admin.kpi_detail', kpi_id=kpi.id) }}" class="action-btn view" title="View KPI">
-                            <i class="bi bi-eye-fill"></i>
+                        <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=kpi.id, return_to='action_items') }}" class="action-btn" title="Edit KPI">
+                            <i class="bi bi-pencil-fill"></i>
                         </a>
                     </div>
                 </li>
                 {% endfor %}
             </ul>
-            {% else %}
-            <div class="empty-state">
-                <p>All KPIs have governance bodies assigned</p>
-            </div>
-            {% endif %}
         </div>
     </div>
+    {% endif %}
 
     {% endif %}
 </div>
