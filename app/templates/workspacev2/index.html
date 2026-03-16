@@ -1,0 +1,994 @@
+{% extends "base.html" %}
+
+{% block title %}Workspace V2 (Beta) - {{ org_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --header-height: 60px;
+        --cell-height: 32px;
+        --space-bg: #f8f9fa;
+        --challenge-bg: #ffffff;
+        --initiative-bg: #fafbfc;
+        --system-bg: #f5f7f9;
+        --kpi-bg: #ffffff;
+        --border-color: #dee2e6;
+        --hover-bg: #e8f4f8;
+        --drag-over: #e3f2fd;
+        --indent-base: 1.5rem;
+    }
+
+    .workspace-v2 {
+        height: calc(100vh - 60px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    /* Header */
+    .ws-header {
+        height: var(--header-height);
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        flex-shrink: 0;
+    }
+
+    .ws-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .beta-badge {
+        background: #ffc107;
+        color: #000;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-left: 1rem;
+    }
+
+    /* Filters Bar */
+    .ws-filters {
+        height: var(--filters-height);
+        background: white;
+        border-bottom: 2px solid var(--border-color);
+        padding: 1rem 1.5rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        overflow-x: auto;
+        flex-shrink: 0;
+    }
+
+    .filter-group {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #495057;
+        white-space: nowrap;
+    }
+
+    .filter-pill {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        border: 2px solid #dee2e6;
+        background: white;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .filter-pill:hover {
+        background: #f8f9fa;
+        border-color: #adb5bd;
+    }
+
+    .filter-pill.active {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+
+    /* Grid Container */
+    .ws-grid-container {
+        flex: 1;
+        overflow: auto;
+        background: #f8f9fa;
+    }
+
+    .ws-grid {
+        display: table;
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    /* Column Headers */
+    .ws-header-row {
+        display: table-row;
+        position: sticky;
+        top: 0;
+        z-index: 20;
+    }
+
+    .ws-header-cell {
+        display: table-cell;
+        background: white;
+        border-bottom: 3px solid var(--border-color);
+        padding: 0.5rem 0.75rem;
+        font-weight: 700;
+        text-align: center;
+        min-width: 100px;
+        max-width: 120px;
+        position: sticky;
+        top: 0;
+        vertical-align: middle;
+        font-size: 0.8rem;
+    }
+
+    .ws-header-cell:first-child {
+        min-width: 300px;
+        max-width: 400px;
+        text-align: left;
+        position: sticky;
+        left: 0;
+        z-index: 21;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.08);
+    }
+
+    /* Rows */
+    .ws-row {
+        display: table-row;
+        transition: background 0.15s;
+    }
+
+    .ws-row.level-0 { background: var(--space-bg); }
+    .ws-row.level-1 { background: var(--challenge-bg); }
+    .ws-row.level-2 { background: var(--initiative-bg); }
+    .ws-row.level-3 { background: var(--system-bg); }
+    .ws-row.level-4 { background: var(--kpi-bg); }
+
+    .ws-row:hover {
+        background: var(--hover-bg) !important;
+    }
+
+    .ws-cell {
+        display: table-cell;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0.4rem 0.75rem;
+        height: var(--cell-height);
+        vertical-align: middle;
+        font-size: 0.85rem;
+    }
+
+    .ws-cell:first-child {
+        position: sticky;
+        left: 0;
+        background: inherit;
+        z-index: 10;
+        box-shadow: 2px 0 8px rgba(0,0,0,0.05);
+    }
+
+    /* Entity Name Styling */
+    .entity-name {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 500;
+    }
+
+    .entity-name.level-0 {
+        font-weight: 700;
+        font-size: 1.05rem;
+        color: #2c3e50;
+        padding-left: calc(var(--indent-base) * 0);
+    }
+
+    .entity-name.level-1 {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #34495e;
+        padding-left: calc(var(--indent-base) * 1);
+    }
+
+    .entity-name.level-2 {
+        font-weight: 500;
+        font-size: 0.9rem;
+        color: #495057;
+        padding-left: calc(var(--indent-base) * 2);
+    }
+
+    .entity-name.level-3 {
+        font-weight: 500;
+        font-size: 0.88rem;
+        color: #5a6268;
+        padding-left: calc(var(--indent-base) * 3);
+    }
+
+    .entity-name.level-4 {
+        font-weight: 400;
+        font-size: 0.85rem;
+        color: #6c757d;
+        padding-left: calc(var(--indent-base) * 4);
+    }
+
+    .expand-icon {
+        cursor: pointer;
+        transition: transform 0.2s;
+        color: #667eea;
+        font-size: 1rem;
+        min-width: 1rem;
+    }
+
+    .expand-icon.collapsed {
+        transform: rotate(-90deg);
+    }
+
+    .expand-icon.empty {
+        opacity: 0;
+        cursor: default;
+    }
+
+    .value-cell {
+        text-align: center;
+        font-weight: 500;
+        font-size: 0.88rem;
+    }
+
+    .value-cell.numeric {
+        font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+    }
+
+    .value-display {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    /* Loading State */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    /* Drag Handles */
+    .drag-handle {
+        cursor: move;
+        opacity: 0;
+        transition: opacity 0.2s;
+        color: #adb5bd;
+    }
+
+    .ws-row:hover .drag-handle {
+        opacity: 0.5;
+    }
+
+    .drag-handle:hover {
+        opacity: 1 !important;
+        color: #667eea;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        opacity: 0.3;
+        margin-bottom: 1rem;
+    }
+
+    /* Icons */
+    .entity-icon {
+        opacity: 0.6;
+        font-size: 0.9rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+        .ws-header h1 {
+            font-size: 1.2rem;
+        }
+
+        .beta-badge {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+        }
+
+        .ws-filters {
+            height: auto;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .ws-header-cell {
+            min-width: 110px;
+            padding: 0.6rem;
+            font-size: 0.8rem;
+        }
+
+        .ws-header-cell:first-child {
+            min-width: 250px;
+        }
+
+        .ws-cell {
+            padding: 0.5rem 0.6rem;
+            font-size: 0.82rem;
+        }
+
+        :root {
+            --indent-base: 1rem;
+        }
+
+        .drag-handle {
+            display: none;
+        }
+    }
+
+    /* Drag and Drop Styles */
+    .draggable-column {
+        cursor: grab;
+        transition: all 0.2s;
+    }
+
+    .draggable-column:active {
+        cursor: grabbing;
+    }
+
+    .draggable-column.dragging {
+        opacity: 0.5;
+        background: #e3f2fd !important;
+    }
+
+    .draggable-column.drag-over {
+        background: #fff3cd !important;
+        border-left: 3px solid #ffc107;
+    }
+
+    /* Row drag and drop styles */
+    .ws-row {
+        transition: background 0.15s, opacity 0.2s;
+    }
+
+    .ws-row.dragging-row {
+        opacity: 0.5;
+        background: #e3f2fd !important;
+    }
+
+    .ws-row.drag-over-row {
+        border-top: 3px solid #ffc107;
+        background: #fff3cd !important;
+    }
+
+    .drag-handle {
+        opacity: 0.3;
+        margin-right: 0.5rem;
+        cursor: grab;
+    }
+
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="workspace-v2" x-data="workspaceV2({{ org_id }})" x-init="loadData()">
+    <!-- Header -->
+    <div class="ws-header">
+        <div style="display: flex; align-items: center;">
+            <h1>
+                <i class="bi bi-diagram-3"></i> Workspace V2
+                <span class="beta-badge">Beta</span>
+            </h1>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <span x-show="!loading" x-text="`${totalCount} items`" style="font-size: 0.9rem; opacity: 0.9;"></span>
+            <button @click="editMode = !editMode"
+                    class="btn btn-sm"
+                    :class="editMode ? 'btn-warning' : 'btn-outline-light'"
+                    style="color: inherit;">
+                <i class="bi bi-pencil-square"></i>
+                <span x-text="editMode ? 'Exit Edit Mode' : 'Edit Mode'"></span>
+            </button>
+            <a href="{{ url_for('workspace.index') }}" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-arrow-left"></i> Classic View
+            </a>
+        </div>
+    </div>
+
+
+    <!-- Grid -->
+    <div class="ws-grid-container">
+        <!-- Loading State -->
+        <div x-show="loading" class="loading-overlay">
+            <div style="text-align: center;">
+                <div class="spinner"></div>
+                <p class="mt-3" style="font-weight: 600;">Loading workspace...</p>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div x-show="!loading && filteredSpaces.length === 0" class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h3>No data found</h3>
+            <p>Try adjusting your filters or create a space to get started.</p>
+            <p style="font-size: 0.8rem; opacity: 0.5; margin-top: 1rem;">
+                Debug: <span x-text="spaces.length"></span> spaces loaded,
+                <span x-text="valueTypes.length"></span> value types
+            </p>
+        </div>
+
+        <!-- Data Grid -->
+        <div x-show="!loading && filteredSpaces.length > 0" class="ws-grid">
+            <!-- Header Row -->
+            <div class="ws-header-row">
+                <div class="ws-header-cell">
+                    <i class="bi bi-diagram-3"></i> Hierarchy
+                </div>
+                <template x-for="(vt, index) in valueTypes" :key="vt.id">
+                    <div class="ws-header-cell"
+                         :class="{'draggable-column': editMode}"
+                         :draggable="editMode"
+                         @dragstart="dragColumnStart($event, index)"
+                         @dragover.prevent="dragColumnOver($event, index)"
+                         @drop="dragColumnDrop($event, index)"
+                         @dragend="dragColumnEnd($event)">
+                        <div x-show="editMode" style="display: inline-block; opacity: 0.3; margin-right: 0.5rem; cursor: grab;">
+                            <i class="bi bi-grip-vertical"></i>
+                        </div>
+                        <div x-text="vt.name"></div>
+                        <div style="font-size: 0.75rem; font-weight: 400; opacity: 0.7; margin-top: 0.25rem;" x-text="vt.unit_label"></div>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Data Rows -->
+            <template x-for="space in filteredSpaces" :key="space.id">
+                <div style="display: contents;">
+                    <!-- Space Row -->
+                    <div class="ws-row level-0"
+                         :draggable="editMode"
+                         @dragstart="dragRowStart($event, space, 'space', null)"
+                         @dragover.prevent="dragRowOver($event, space, 'space', null)"
+                         @dragleave="dragRowLeave($event)"
+                         @drop="dragRowDrop($event, space, 'space', null)"
+                         @dragend="dragRowEnd($event)">
+                        <div class="ws-cell">
+                            <div class="entity-name level-0">
+                                <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
+                                <i class="bi bi-chevron-down expand-icon"
+                                   :class="{'collapsed': space.collapsed, 'empty': space.challenges.length === 0}"
+                                   @click="space.collapsed = !space.collapsed"
+                                   x-show="space.challenges.length > 0"></i>
+                                <i class="bi bi-folder-fill entity-icon" style="color: #667eea;"></i>
+                                <span x-text="space.name"></span>
+                                <i x-show="space.is_private" class="bi bi-lock-fill" style="font-size: 0.85rem; opacity: 0.5;"></i>
+                            </div>
+                        </div>
+                        <template x-for="vt in valueTypes" :key="vt.id">
+                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
+                                <template x-if="space.rollup_values && space.rollup_values[String(vt.id)]">
+                                    <span class="value-display" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                                </template>
+                                <template x-if="!space.rollup_values || !space.rollup_values[String(vt.id)]">
+                                    <span style="opacity: 0.25;">—</span>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Challenges -->
+                    <template x-for="challenge in space.challenges" :key="challenge.id">
+                        <div style="display: contents;">
+                            <!-- Challenge Row -->
+                            <div class="ws-row level-1" x-show="!space.collapsed"
+                                 :draggable="editMode"
+                                 @dragstart="dragRowStart($event, challenge, 'challenge', space)"
+                                 @dragover.prevent="dragRowOver($event, challenge, 'challenge', space)"
+                                 @dragleave="dragRowLeave($event)"
+                                 @drop="dragRowDrop($event, challenge, 'challenge', space)"
+                                 @dragend="dragRowEnd($event)">
+                                <div class="ws-cell">
+                                    <div class="entity-name level-1">
+                                        <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
+                                        <i class="bi bi-chevron-down expand-icon"
+                                           :class="{'collapsed': challenge.collapsed, 'empty': challenge.initiatives.length === 0}"
+                                           @click="challenge.collapsed = !challenge.collapsed"
+                                           x-show="challenge.initiatives.length > 0"></i>
+                                        <i class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
+                                        <span x-text="challenge.name"></span>
+                                    </div>
+                                </div>
+                                <template x-for="vt in valueTypes" :key="vt.id">
+                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
+                                        <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
+                                            <span class="value-display" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
+                                        </template>
+                                        <template x-if="!challenge.rollup_values || !challenge.rollup_values[String(vt.id)]">
+                                            <span style="opacity: 0.25;">—</span>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Initiatives -->
+                            <template x-for="initiative in challenge.initiatives" :key="initiative.id">
+                                <div style="display: contents;">
+                                    <!-- Initiative Row -->
+                                    <div class="ws-row level-2" x-show="!space.collapsed && !challenge.collapsed"
+                                         :draggable="editMode"
+                                         @dragstart="dragRowStart($event, initiative, 'initiative', challenge)"
+                                         @dragover.prevent="dragRowOver($event, initiative, 'initiative', challenge)"
+                                         @dragleave="dragRowLeave($event)"
+                                         @drop="dragRowDrop($event, initiative, 'initiative', challenge)"
+                                         @dragend="dragRowEnd($event)">
+                                        <div class="ws-cell">
+                                            <div class="entity-name level-2">
+                                                <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
+                                                <i class="bi bi-chevron-down expand-icon"
+                                                   :class="{'collapsed': initiative.collapsed, 'empty': initiative.systems.length === 0}"
+                                                   @click="initiative.collapsed = !initiative.collapsed"
+                                                   x-show="initiative.systems.length > 0"></i>
+                                                <i class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
+                                                <span x-text="initiative.name"></span>
+                                            </div>
+                                        </div>
+                                        <template x-for="vt in valueTypes" :key="vt.id">
+                                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
+                                                <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
+                                                    <span class="value-display" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                                </template>
+                                                <template x-if="!initiative.rollup_values || !initiative.rollup_values[String(vt.id)]">
+                                                    <span style="opacity: 0.25;">—</span>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+
+                                    <!-- Systems -->
+                                    <template x-for="system in initiative.systems" :key="system.id">
+                                        <div style="display: contents;">
+                                            <!-- System Row -->
+                                            <div class="ws-row level-3" x-show="!space.collapsed && !challenge.collapsed && !initiative.collapsed"
+                                                 :draggable="editMode"
+                                                 @dragstart="dragRowStart($event, system, 'system', initiative)"
+                                                 @dragover.prevent="dragRowOver($event, system, 'system', initiative)"
+                                                 @dragleave="dragRowLeave($event)"
+                                                 @drop="dragRowDrop($event, system, 'system', initiative)"
+                                                 @dragend="dragRowEnd($event)">
+                                                <div class="ws-cell">
+                                                    <div class="entity-name level-3">
+                                                        <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
+                                                        <i class="bi bi-chevron-down expand-icon"
+                                                           :class="{'collapsed': system.collapsed, 'empty': system.kpis.length === 0}"
+                                                           @click="system.collapsed = !system.collapsed"
+                                                           x-show="system.kpis.length > 0"></i>
+                                                        <i class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
+                                                        <span x-text="system.name"></span>
+                                                    </div>
+                                                </div>
+                                                <template x-for="vt in valueTypes" :key="vt.id">
+                                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
+                                                        <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
+                                                            <span class="value-display" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                        </template>
+                                                        <template x-if="!system.rollup_values || !system.rollup_values[String(vt.id)]">
+                                                            <span style="opacity: 0.25;">—</span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+
+                                            <!-- KPIs -->
+                                            <template x-for="kpi in system.kpis" :key="kpi.id">
+                                                <div class="ws-row level-4" x-show="!space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
+                                                     :draggable="editMode"
+                                                     @dragstart="dragRowStart($event, kpi, 'kpi', system)"
+                                                     @dragover.prevent="dragRowOver($event, kpi, 'kpi', system)"
+                                                     @dragleave="dragRowLeave($event)"
+                                                     @drop="dragRowDrop($event, kpi, 'kpi', system)"
+                                                     @dragend="dragRowEnd($event)">
+                                                    <div class="ws-cell">
+                                                        <div class="entity-name level-4">
+                                                            <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
+                                                            <i class="bi bi-graph-up entity-icon" style="color: #2ecc71;"></i>
+                                                            <span x-text="kpi.name"></span>
+                                                        </div>
+                                                    </div>
+                                                    <template x-for="vt in valueTypes" :key="vt.id">
+                                                        <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
+                                                            <template x-if="kpi.values && kpi.values[String(vt.id)]">
+                                                                <span class="value-display"
+                                                                      :style="kpi.values[String(vt.id)].color ? `background-color: ${kpi.values[String(vt.id)].color}15; color: ${kpi.values[String(vt.id)].color}` : ''"
+                                                                      x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
+                                                            </template>
+                                                            <template x-if="!kpi.values || !kpi.values[String(vt.id)]">
+                                                                <span style="opacity: 0.25;">—</span>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </div>
+</div>
+
+<script>
+function workspaceV2(orgId) {
+    return {
+        // Data
+        spaces: [],
+        valueTypes: [],
+        governanceBodies: [],
+        groups: [],
+        impactLevels: [],
+
+        // UI State
+        loading: true,
+        spaceTypeFilter: 'all',
+        editMode: false,
+        draggedColumnIndex: null,
+        draggedRow: null,
+        dragOverRow: null,
+
+        // Computed
+        get filteredSpaces() {
+            return this.spaces.filter(space => {
+                if (this.spaceTypeFilter === 'public' && space.is_private) return false;
+                if (this.spaceTypeFilter === 'private' && !space.is_private) return false;
+                return true;
+            });
+        },
+
+        get totalCount() {
+            let count = this.filteredSpaces.length;
+            this.filteredSpaces.forEach(space => {
+                count += space.challenges.length;
+                space.challenges.forEach(challenge => {
+                    count += challenge.initiatives.length;
+                    challenge.initiatives.forEach(initiative => {
+                        count += initiative.systems.length;
+                        initiative.systems.forEach(system => {
+                            count += system.kpis.length;
+                        });
+                    });
+                });
+            });
+            return count;
+        },
+
+        // Methods
+        async loadData() {
+            this.loading = true;
+            try {
+                const response = await fetch('{{ url_for("workspacev2.get_data") }}');
+                const data = await response.json();
+
+                console.log('=== WORKSPACE V2 DATA v1.36.4 ===');
+                console.log('Spaces:', data.spaces.length);
+                console.log('Value Types:', data.valueTypes.length);
+                console.log('Raw data:', data);
+
+                // Add UI state to all entities
+                this.spaces = data.spaces.map(space => ({
+                    ...space,
+                    collapsed: false,
+                    challenges: space.challenges.map(challenge => ({
+                        ...challenge,
+                        collapsed: false,
+                        initiatives: challenge.initiatives.map(initiative => ({
+                            ...initiative,
+                            collapsed: false,
+                            systems: initiative.systems.map(system => ({
+                                ...system,
+                                collapsed: false
+                            }))
+                        }))
+                    }))
+                }));
+
+                this.valueTypes = data.valueTypes;
+                this.governanceBodies = data.governanceBodies;
+                this.groups = data.groups;
+                this.impactLevels = data.impactLevels;
+
+                console.log('Processed spaces:', this.spaces.length);
+                console.log('Filtered spaces:', this.filteredSpaces.length);
+                console.log('First space:', this.spaces[0]);
+
+                // Deep dive into KPI values
+                if (this.spaces[0]) {
+                    const space = this.spaces[0];
+                    console.log('First space rollup_values:', space.rollup_values);
+
+                    if (space.challenges.length > 0) {
+                        const challenge = space.challenges[0];
+                        console.log('First challenge:', challenge);
+
+                        if (challenge.initiatives.length > 0) {
+                            const initiative = challenge.initiatives[0];
+                            console.log('First initiative:', initiative);
+
+                            if (initiative.systems.length > 0) {
+                                const system = initiative.systems[0];
+                                console.log('First system:', system);
+                                console.log('System rollup_values:', system.rollup_values);
+
+                                if (system.kpis.length > 0) {
+                                    const kpi = system.kpis[0];
+                                    console.log('🔥 FIRST KPI:', JSON.parse(JSON.stringify(kpi)));
+                                    console.log('🔥 KPI VALUES:', JSON.parse(JSON.stringify(kpi.values)));
+                                    console.log('🔥 Value Types:', JSON.parse(JSON.stringify(this.valueTypes)));
+
+                                    // Check if values match value type IDs
+                                    console.log('🔥 KPI VALUES KEYS:', Object.keys(kpi.values || {}));
+                                    console.log('🔥 VALUE TYPE IDS:', this.valueTypes.map(vt => vt.id));
+
+                                    // Check the actual value for ID 136
+                                    if (kpi.values && kpi.values[136]) {
+                                        const val136 = JSON.parse(JSON.stringify(kpi.values[136]));
+                                        console.log('🔥 VALUE FOR ID 136:', val136);
+                                        console.log('🔥 formatted_value:', val136.formatted_value);
+                                        console.log('🔥 color:', val136.color);
+                                    } else {
+                                        console.log('🔥 NO VALUE FOR ID 136!');
+                                    }
+
+                                    // Test the condition
+                                    console.log('🔥 TEST: kpi.values exists?', !!kpi.values);
+                                    console.log('🔥 TEST: kpi.values[136] exists?', !!(kpi.values && kpi.values[136]));
+
+                                    // Check types
+                                    console.log('🔥 TYPE CHECK:');
+                                    console.log('  - vt.id type:', typeof this.valueTypes[0].id, 'value:', this.valueTypes[0].id);
+                                    console.log('  - kpi.values key type:', typeof Object.keys(kpi.values)[0], 'value:', Object.keys(kpi.values)[0]);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load workspace data:', error);
+                alert('Failed to load workspace data. Please refresh the page.');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        clearAllFilters() {
+            this.spaceTypeFilter = 'all';
+        },
+
+        // Column drag and drop
+        dragColumnStart(e, index) {
+            if (!this.editMode) return;
+            this.draggedColumnIndex = index;
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.classList.add('dragging');
+        },
+
+        dragColumnOver(e, index) {
+            if (!this.editMode || this.draggedColumnIndex === null) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            // Remove drag-over from all columns first
+            document.querySelectorAll('.ws-header-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+            // Add to current column only if different from dragged
+            if (this.draggedColumnIndex !== index) {
+                e.currentTarget.classList.add('drag-over');
+            }
+        },
+
+        async dragColumnDrop(e, dropIndex) {
+            if (!this.editMode || this.draggedColumnIndex === null) return;
+            e.preventDefault();
+
+            const dragIndex = this.draggedColumnIndex;
+            if (dragIndex === dropIndex) return;
+
+            // Reorder valueTypes array
+            const draggedItem = this.valueTypes[dragIndex];
+            this.valueTypes.splice(dragIndex, 1);
+            this.valueTypes.splice(dropIndex, 0, draggedItem);
+
+            console.log('Column reordered:', draggedItem.name, 'to position', dropIndex);
+
+            // Save new order to backend
+            try {
+                const value_type_ids = this.valueTypes.map(vt => vt.id);
+                const response = await fetch('/workspace/api/value-types/reorder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ value_type_ids })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Column order saved to database');
+                } else {
+                    console.error('Failed to save column order:', result.error);
+                    alert('Failed to save column order: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error saving column order:', error);
+                alert('Error saving column order. Please try again.');
+            }
+        },
+
+        dragColumnEnd(e) {
+            e.target.classList.remove('dragging');
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            this.draggedColumnIndex = null;
+        },
+
+        // Row drag and drop
+        dragRowStart(e, entity, entityType, parent) {
+            if (!this.editMode) return;
+            this.draggedRow = { entity, entityType, parent };
+            e.dataTransfer.effectAllowed = 'move';
+            e.target.closest('.ws-row').classList.add('dragging-row');
+            console.log('Dragging:', entityType, entity.name);
+        },
+
+        dragRowOver(e, targetEntity, targetEntityType, parent) {
+            if (!this.editMode || !this.draggedRow) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+
+            // Only allow dropping on same type and same parent
+            if (this.draggedRow.entityType === targetEntityType &&
+                this.draggedRow.parent === parent) {
+                e.target.closest('.ws-row').classList.add('drag-over-row');
+            }
+        },
+
+        dragRowLeave(e) {
+            e.target.closest('.ws-row')?.classList.remove('drag-over-row');
+        },
+
+        async dragRowDrop(e, targetEntity, targetEntityType, parent) {
+            if (!this.editMode || !this.draggedRow) return;
+            e.preventDefault();
+
+            const draggedEntity = this.draggedRow.entity;
+
+            // Only allow same type and same parent
+            if (this.draggedRow.entityType !== targetEntityType ||
+                this.draggedRow.parent !== parent ||
+                draggedEntity.id === targetEntity.id) {
+                return;
+            }
+
+            console.log('Dropped:', draggedEntity.name, 'onto', targetEntity.name);
+
+            // Find the array containing these entities
+            let entitiesArray = null;
+            switch (targetEntityType) {
+                case 'space':
+                    entitiesArray = this.spaces;
+                    break;
+                case 'challenge':
+                    entitiesArray = parent.challenges;
+                    break;
+                case 'initiative':
+                    entitiesArray = parent.initiatives;
+                    break;
+                case 'system':
+                    entitiesArray = parent.systems;
+                    break;
+                case 'kpi':
+                    entitiesArray = parent.kpis;
+                    break;
+            }
+
+            if (!entitiesArray) return;
+
+            // Reorder the array
+            const dragIndex = entitiesArray.findIndex(e => e.id === draggedEntity.id);
+            const dropIndex = entitiesArray.findIndex(e => e.id === targetEntity.id);
+
+            if (dragIndex === -1 || dropIndex === -1) return;
+
+            entitiesArray.splice(dragIndex, 1);
+            entitiesArray.splice(dropIndex, 0, draggedEntity);
+
+            // Save to backend
+            await this.saveRowOrder(targetEntityType, entitiesArray, parent);
+        },
+
+        dragRowEnd(e) {
+            e.target.closest('.ws-row')?.classList.remove('dragging-row');
+            document.querySelectorAll('.drag-over-row').forEach(el => el.classList.remove('drag-over-row'));
+            this.draggedRow = null;
+        },
+
+        async saveRowOrder(entityType, entitiesArray, parent) {
+            try {
+                const ids = entitiesArray.map(e => e.id);
+                let url = `/workspace/api/reorder/${entityType}`;
+                let payload = { ids: ids };
+
+                // Add parent_id if there is a parent
+                if (parent) {
+                    payload.parent_id = parent.id;
+                }
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Row order saved:', entityType);
+                } else {
+                    console.error('Failed to save row order:', result.error);
+                    alert('Failed to save order: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error saving row order:', error);
+                alert('Error saving order. Please try again.');
+            }
+        }
+    }
+}
+</script>
+{% endblock %}
