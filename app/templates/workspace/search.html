@@ -16,9 +16,9 @@
 <!-- Search Bar -->
 <div class="row mb-4">
     <div class="col-md-8 offset-md-2">
-        <form method="GET" action="{{ url_for('workspace.search_page') }}">
+        <form method="GET" action="{{ url_for('workspace.search_page') }}" id="searchForm">
             <div class="input-group input-group-lg">
-                <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search across all data..." autofocus>
+                <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search across all data..." autofocus id="searchInput">
                 <button class="btn btn-primary" type="submit">
                     <i class="bi bi-search"></i> Search
                 </button>
@@ -405,4 +405,38 @@ body.dark-mode .list-group-item:hover a.flex-grow-1 {
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
 }
 </style>
+
+<script>
+// Live search: Auto-submit form as user types (with debounce)
+(function() {
+    const searchInput = document.getElementById('searchInput');
+    const searchForm = document.getElementById('searchForm');
+    let debounceTimer;
+
+    if (searchInput && searchForm) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+
+            // Debounce: wait 500ms after user stops typing
+            debounceTimer = setTimeout(function() {
+                const query = searchInput.value.trim();
+
+                // Only auto-submit if query has 2+ characters OR is empty (to clear results)
+                if (query.length >= 2 || query.length === 0) {
+                    searchForm.submit();
+                }
+            }, 500);
+        });
+
+        // Submit immediately on Enter key (no debounce)
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(debounceTimer);
+                e.preventDefault();
+                searchForm.submit();
+            }
+        });
+    }
+})();
+</script>
 {% endblock %}

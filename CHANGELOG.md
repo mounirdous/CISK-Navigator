@@ -5,6 +5,48 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.18] - 2026-03-16
+
+### Added - Live Search on Search Results Page
+**Feature**: Auto-submit search as user types (debounced)
+
+**Issue**: Search results page required clicking "Search" button, unlike navbar which has live search
+
+**The Solution**: Added JavaScript live search with debounce
+- Auto-submits form 500ms after user stops typing
+- Only triggers for queries ≥2 characters (or empty to clear)
+- Enter key submits immediately (no debounce)
+
+**Benefits**:
+1. **Consistent UX**: Both navbar and search page have live search
+2. **Faster Workflow**: No need to click "Search" button
+3. **Immediate Feedback**: Results update as you type
+4. **Smart Debounce**: Reduces server load (waits for pause)
+
+**Files Modified**:
+- `app/templates/workspace/search.html`:
+  - Added `id="searchForm"` and `id="searchInput"` to form elements
+  - Added JavaScript debounced auto-submit (500ms delay)
+  - Enter key handler for immediate submit
+- `app/__init__.py` - Version bump to 2.5.18
+
+**Technical Details**:
+```javascript
+// Debounce: wait 500ms after user stops typing
+searchInput.addEventListener('input', function() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(function() {
+        if (query.length >= 2 || query.length === 0) {
+            searchForm.submit();
+        }
+    }, 500);
+});
+```
+
+**Impact**: Search results page now matches navbar's live search behavior
+
+---
+
 ## [2.5.17] - 2026-03-16
 
 ### Changed - Unified Search Experience (Search Results Page Now Uses SearchService)
