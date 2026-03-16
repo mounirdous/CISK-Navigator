@@ -2938,26 +2938,37 @@ function workspaceV2(orgId, filterPresets) {
             if (!hash) return;
 
             const targetId = hash.substring(1); // Remove the #
-            const targetElement = document.getElementById(targetId);
 
-            if (targetElement) {
-                // Expand parent entities to reveal the target
-                this.expandParentsForTarget(targetId);
+            // Expand parent entities first
+            this.expandParentsForTarget(targetId);
 
-                // Wait a bit for expansion animations, then scroll
-                setTimeout(() => {
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Wait longer for Alpine to render the expanded elements
+            setTimeout(() => {
+                const targetElement = document.getElementById(targetId);
+
+                if (targetElement) {
+                    console.log('Scrolling to:', targetId, targetElement);
+
+                    // Smooth scroll to target
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
 
                     // Add modern highlight effect with pulse and glow
                     setTimeout(() => {
+                        console.log('Adding highlight to:', targetId);
                         targetElement.classList.add('search-highlight');
                         // Remove class after animation completes
                         setTimeout(() => {
                             targetElement.classList.remove('search-highlight');
                         }, 2500);
-                    }, 300);
-                }, 100);
-            }
+                    }, 600);
+                } else {
+                    console.warn('Target element not found:', targetId);
+                }
+            }, 500);
         },
 
         expandParentsForTarget(targetId) {
@@ -3149,6 +3160,20 @@ function workspaceV2(orgId, filterPresets) {
 
         // Filter Presets
         init() {
+            // Prevent browser's automatic hash scroll jump
+            // We'll handle scrolling ourselves after data loads
+            if (window.location.hash) {
+                // Save hash and temporarily clear it to prevent auto-scroll
+                const savedHash = window.location.hash;
+                history.replaceState(null, null, ' ');
+                // Scroll to top to prevent any jump
+                window.scrollTo(0, 0);
+                // Restore hash after a moment
+                setTimeout(() => {
+                    history.replaceState(null, null, savedHash);
+                }, 50);
+            }
+
             // Read filters from URL params (when loading a preset)
             const urlParams = new URLSearchParams(window.location.search);
 
