@@ -1295,28 +1295,6 @@
                     </div>
                 </div>
                 {% endif %}
-
-                <!-- Saved Presets List (localStorage - remove after migration) -->
-                <div x-show="savedPresets.length > 0" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
-                    <template x-for="preset in savedPresets" :key="preset.id">
-                        <div @click="loadPreset(preset)"
-                             style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 0.4rem 0.75rem; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.3);"
-                             @mouseenter="$el.style.background = 'rgba(255,255,255,0.3)'"
-                             @mouseleave="$el.style.background = 'rgba(255,255,255,0.2)'">
-                            <span style="font-size: 0.85rem; font-weight: 500;" x-text="preset.name"></span>
-                            <button @click.stop="deletePreset(preset.id)"
-                                    style="background: none; border: none; padding: 0; opacity: 0.7; cursor: pointer; color: white; display: flex; align-items: center;"
-                                    title="Delete preset"
-                                    @mouseenter="$el.style.opacity = '1'"
-                                    @mouseleave="$el.style.opacity = '0.7'">
-                                <i class="bi bi-x-lg" style="font-size: 0.9rem;"></i>
-                            </button>
-                        </div>
-                    </template>
-                </div>
-                <div x-show="savedPresets.length === 0" style="text-align: center; padding: 1rem 0; opacity: 0.8; font-size: 0.9rem;">
-                    <i class="bi bi-info-circle"></i> Apply filters above, then click "Save Current" to create a preset
-                </div>
             </div>
 
             <!-- Data Filters -->
@@ -2592,10 +2570,8 @@ function workspaceV2(orgId) {
         showBadges: true,  // Toggle for all badges/decorations (governance badges, icons, etc.)
 
         // Filter Presets
-        savedPresets: [],
         showSavePresetModal: false,
         newPresetName: '',
-        presetSearchQuery: '',
 
         // Computed
         get filteredSpaces() {
@@ -2719,17 +2695,6 @@ function workspaceV2(orgId) {
             const totalSpaces = this.spaces.length;
             const filteredSpaces = this.filteredSpaces.length;
             return `${this.totalCount} items (${filteredSpaces}/${totalSpaces} spaces)`;
-        },
-
-        get filteredPresets() {
-            if (!this.presetSearchQuery.trim()) {
-                return this.savedPresets;
-            }
-            const query = this.presetSearchQuery.toLowerCase();
-            return this.savedPresets.filter(preset => {
-                return preset.name.toLowerCase().includes(query) ||
-                       this.getPresetDescription(preset).toLowerCase().includes(query);
-            });
         },
 
         // Methods
@@ -2920,15 +2885,36 @@ function workspaceV2(orgId) {
 
         // Filter Presets
         init() {
-            // Load saved presets from localStorage
-            const saved = localStorage.getItem('workspacev2_filter_presets');
-            if (saved) {
-                try {
-                    this.savedPresets = JSON.parse(saved);
-                } catch (e) {
-                    console.error('Failed to load saved presets:', e);
-                    this.savedPresets = [];
-                }
+            // Read filters from URL params (when loading a preset)
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.has('spaceTypeFilter')) {
+                this.spaceTypeFilter = urlParams.get('spaceTypeFilter');
+            }
+
+            const gbParams = urlParams.getAll('selectedGovernanceBodies');
+            if (gbParams.length > 0) {
+                this.selectedGovernanceBodies = gbParams.map(id => parseInt(id));
+            }
+
+            const spaceParams = urlParams.getAll('selectedSpaces');
+            if (spaceParams.length > 0) {
+                this.selectedSpaces = spaceParams.map(id => parseInt(id));
+            }
+
+            const groupParams = urlParams.getAll('selectedGroups');
+            if (groupParams.length > 0) {
+                this.selectedGroups = groupParams;
+            }
+
+            const impactParams = urlParams.getAll('selectedImpactLevels');
+            if (impactParams.length > 0) {
+                this.selectedImpactLevels = impactParams;
+            }
+
+            // Expand filters if any were loaded from URL
+            if (urlParams.toString()) {
+                this.filtersExpanded = true;
             }
 
             // Load action items count
@@ -2943,19 +2929,6 @@ function workspaceV2(orgId) {
                 selectedGroups: [...this.selectedGroups],
                 selectedImpactLevels: [...this.selectedImpactLevels]
             };
-        },
-
-        getPresetDescription(preset) {
-            const filters = preset.filters;
-            let count = 0;
-
-            if (filters.spaceTypeFilter && filters.spaceTypeFilter !== 'all') count++;
-            if (filters.selectedGovernanceBodies && filters.selectedGovernanceBodies.length > 0) count++;
-            if (filters.selectedSpaces && filters.selectedSpaces.length > 0) count++;
-            if (filters.selectedGroups && filters.selectedGroups.length > 0) count++;
-            if (filters.selectedImpactLevels && filters.selectedImpactLevels.length > 0) count++;
-
-            return count === 1 ? '1 filter' : `${count} filters`;
         },
 
         getPresetDescriptionDetailed(filters) {
@@ -3012,39 +2985,6 @@ function workspaceV2(orgId) {
             }
         },
 
-        loadPreset(preset) {
-            // Apply all filters from the preset
-            const filters = preset.filters;
-
-            this.spaceTypeFilter = filters.spaceTypeFilter || 'all';
-            this.selectedGovernanceBodies = filters.selectedGovernanceBodies || [];
-            this.selectedSpaces = filters.selectedSpaces || [];
-            this.selectedGroups = filters.selectedGroups || [];
-            this.selectedImpactLevels = filters.selectedImpactLevels || [];
-
-            // Expand filters panel to show what was loaded
-            this.filtersExpanded = true;
-
-            console.log('Loaded preset:', preset.name);
-        },
-
-        deletePreset(presetId) {
-            if (!confirm('Delete this filter preset?')) {
-                return;
-            }
-
-            this.savedPresets = this.savedPresets.filter(p => p.id !== presetId);
-            this.savePresetsToStorage();
-        },
-
-        savePresetsToStorage() {
-            try {
-                localStorage.setItem('workspacev2_filter_presets', JSON.stringify(this.savedPresets));
-            } catch (e) {
-                console.error('Failed to save presets:', e);
-                alert('Failed to save presets to browser storage');
-            }
-        },
 
         // Column drag and drop
         dragColumnStart(e, index) {
@@ -3658,25 +3598,40 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Load preset on click
+    // Load preset on click (match V1 implementation)
     dropdown.querySelectorAll('.preset-dropdown-item-v2').forEach(item => {
-        item.addEventListener('click', function() {
-            const filters = JSON.parse(this.dataset.presetFilters);
-            const workspaceComponent = Alpine.$data(document.querySelector('[x-data]'));
+        item.addEventListener('click', async function() {
+            const presetId = this.dataset.presetId;
+            const presetName = this.querySelector('.preset-item-name').textContent;
 
-            // Apply filters to Alpine component
-            if (filters.spaceTypeFilter) workspaceComponent.spaceTypeFilter = filters.spaceTypeFilter;
-            if (filters.selectedGovernanceBodies) workspaceComponent.selectedGovernanceBodies = filters.selectedGovernanceBodies || [];
-            if (filters.selectedSpaces) workspaceComponent.selectedSpaces = filters.selectedSpaces || [];
-            if (filters.selectedGroups) workspaceComponent.selectedGroups = filters.selectedGroups || [];
-            if (filters.selectedImpactLevels) workspaceComponent.selectedImpactLevels = filters.selectedImpactLevels || [];
+            if (confirm(`Load filter preset "${presetName}"?`)) {
+                try {
+                    // Mark as last used
+                    await fetch(`/workspace/api/filter-presets/${presetId}/set-last-used`, {
+                        method: 'POST'
+                    });
 
-            // Expand filters to show what was loaded
-            workspaceComponent.filtersExpanded = true;
+                    // Fetch preset and navigate with filters as URL params
+                    const response = await fetch(`/workspace/api/filter-presets`);
+                    const presets = await response.json();
+                    const preset = presets.find(p => p.id == presetId);
 
-            // Close dropdown
-            dropdown.style.display = 'none';
-            searchInput.value = '';
+                    if (preset && preset.filters) {
+                        const params = new URLSearchParams();
+                        for (const [key, value] of Object.entries(preset.filters)) {
+                            if (Array.isArray(value)) {
+                                value.forEach(v => params.append(key, v));
+                            } else {
+                                params.append(key, value);
+                            }
+                        }
+                        window.location.href = '/workspacev2/?' + params.toString();
+                    }
+                } catch (err) {
+                    console.error('Error loading preset:', err);
+                    alert('Failed to load preset');
+                }
+            }
         });
     });
 
