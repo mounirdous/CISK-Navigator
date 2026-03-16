@@ -289,7 +289,7 @@
                     {% endif %}
                 </div>
                 {% if current_user.can_manage_value_types(session.organization_id) %}
-                <a href="{{ url_for('organization_admin.edit_value_type', value_type_id=vt.id) }}"
+                <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}"
                    class="btn btn-sm btn-outline-primary ms-2"
                    title="Edit Value Type"
                    onclick="event.stopPropagation();">
