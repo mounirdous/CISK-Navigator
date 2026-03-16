@@ -182,6 +182,102 @@
         opacity: 0.6;
     }
 
+    /* Cell content styling */
+    .ws-cell.value-cell {
+        position: relative;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .ws-cell.value-cell:hover {
+        background: rgba(49, 130, 206, 0.05) !important;
+    }
+
+    /* Consensus visual indicators */
+    .ws-cell.consensus-strong {
+        border-left: 4px solid #28a745 !important;
+        background: rgba(40, 167, 69, 0.08) !important;
+    }
+
+    .ws-cell.consensus-weak {
+        border-left: 3px solid #ffc107 !important;
+        background: rgba(255, 193, 7, 0.08) !important;
+    }
+
+    .ws-cell.consensus-single {
+        border-left: 2px solid #17a2b8 !important;
+        background: rgba(23, 162, 184, 0.08) !important;
+    }
+
+    .ws-cell.consensus-none {
+        border-left: 2px solid #dc3545 !important;
+        background: rgba(220, 53, 69, 0.05) !important;
+    }
+
+    .ws-cell.consensus-no-data {
+        border-left: 1px solid #6c757d !important;
+    }
+
+    /* Calculation type badge */
+    .calc-type-badge {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        font-size: 0.7rem;
+        opacity: 0.7;
+        z-index: 1;
+        transition: opacity 0.2s;
+        text-decoration: none;
+    }
+
+    .calc-type-badge:hover {
+        opacity: 1;
+    }
+
+    /* Comment icon */
+    .comment-icon {
+        position: absolute;
+        bottom: 2px;
+        right: 2px;
+        font-size: 0.85rem;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+        cursor: pointer;
+        z-index: 1;
+    }
+
+    .comment-icon:hover {
+        opacity: 1;
+    }
+
+    /* Rollup formula indicator */
+    .rollup-indicator {
+        font-size: 0.7rem;
+        opacity: 0.7;
+        vertical-align: super;
+        margin-right: 0.2rem;
+    }
+
+    /* Formula config icon */
+    .formula-config-icon {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 0.7rem;
+        opacity: 0.5;
+        text-decoration: none;
+        transition: opacity 0.2s;
+        display: none;
+    }
+
+    .ws-header.edit-mode ~ .ws-grid-container .formula-config-icon {
+        display: inline;
+    }
+
+    .formula-config-icon:hover {
+        opacity: 1;
+    }
+
     /* Toolbar - Commands Band */
     .ws-header {
         height: var(--header-height);
@@ -1394,8 +1490,36 @@
         <div x-show="!loading && filteredSpaces.length > 0" class="ws-grid">
             <!-- Header Row -->
             <div class="ws-header-row">
-                <div class="ws-header-cell">
-                    <i class="bi bi-diagram-3"></i> Hierarchy
+                <div class="ws-header-cell" style="font-size: 1.1rem; font-weight: 700;">
+                    <template x-if="orgLogo">
+                        <img :src="orgLogo" :alt="orgName" style="height: 1.5rem; width: auto; margin-right: 0.5rem; vertical-align: middle;">
+                    </template>
+                    <template x-if="!orgLogo">
+                        <i class="bi bi-building"></i>
+                    </template>
+                    <span x-text="orgName"></span>
+                    <!-- Porter's Five Forces Link and Completion -->
+                    <template x-if="portersUrl">
+                        <span class="form-view-icon ms-2">
+                            <a :href="portersUrl" class="text-info" title="Porter's Five Forces Analysis" @click.stop>
+                                <i class="bi bi-diagram-3"></i>
+                            </a>
+                            <!-- Completion badge -->
+                            <template x-if="portersCompletion">
+                                <template x-if="portersCompletion.status === 'empty'">
+                                    <span class="completion-badge badge-empty" title="Porter's Five Forces not filled">!</span>
+                                </template>
+                                <template x-if="portersCompletion.status === 'partial'">
+                                    <span class="completion-badge badge-partial" :title="'Porter\'s Five Forces partially filled'" x-text="portersCompletion.filled + '/' + portersCompletion.total"></span>
+                                </template>
+                                <template x-if="portersCompletion.status === 'complete'">
+                                    <span class="completion-badge badge-complete" title="Porter's Five Forces complete">
+                                        <i class="bi bi-check-lg"></i>
+                                    </span>
+                                </template>
+                            </template>
+                        </span>
+                    </template>
                 </div>
                 <template x-for="(vt, index) in valueTypes" :key="vt.id">
                     <div class="ws-header-cell"
@@ -1514,15 +1638,42 @@
                             </div>
                         </div>
                         <template x-for="vt in valueTypes" :key="vt.id">
-                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                            <div class="ws-cell value-cell text-center"
+                                 :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
+                                 :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'">
                                 <template x-if="!vt.collapsed">
                                     <template x-if="space.rollup_values && space.rollup_values[String(vt.id)]">
-                                        <span class="value-display" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                                        <div>
+                                            <!-- Formula config icon (edit mode only) -->
+                                            <template x-if="editMode && vt.kind === 'numeric'">
+                                                <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/space?return_to=workspacev2`"
+                                                   class="formula-config-icon"
+                                                   :title="'Configure rollup for ' + vt.name"
+                                                   @click.stop>
+                                                    <i class="bi bi-calculator"></i>
+                                                </a>
+                                            </template>
+                                            <!-- Formula indicator -->
+                                            <span class="rollup-indicator" x-show="space.rollup_values[String(vt.id)].formula"
+                                                  :title="space.rollup_values[String(vt.id)].formula">
+                                                <span x-show="space.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
+                                                <span x-show="space.rollup_values[String(vt.id)].formula === 'max'">↑</span>
+                                                <span x-show="space.rollup_values[String(vt.id)].formula === 'min'">↓</span>
+                                                <span x-show="space.rollup_values[String(vt.id)].formula === 'avg'">≈</span>
+                                                <span x-show="space.rollup_values[String(vt.id)].formula === 'median'">m</span>
+                                                <span x-show="space.rollup_values[String(vt.id)].formula === 'count'">#</span>
+                                            </span>
+                                            <!-- Value with color -->
+                                            <span :style="'color: ' + (space.rollup_values[String(vt.id)].color || '#6c757d')" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                                            <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                            <!-- Completeness indicator -->
+                                            <small class="ms-1" x-text="space.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                        </div>
                                     </template>
                                 </template>
                                 <template x-if="!vt.collapsed">
                                     <template x-if="!space.rollup_values || !space.rollup_values[String(vt.id)]">
-                                        <span style="opacity: 0.25;">—</span>
+                                        <small class="text-muted">—</small>
                                     </template>
                                 </template>
                             </div>
@@ -1587,15 +1738,36 @@
                                     </div>
                                 </div>
                                 <template x-for="vt in valueTypes" :key="vt.id">
-                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                    <div class="ws-cell value-cell text-center"
+                                         :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
+                                         :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'">
                                         <template x-if="!vt.collapsed">
                                             <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
-                                                <span class="value-display" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
+                                                <div>
+                                                    <template x-if="editMode && vt.kind === 'numeric'">
+                                                        <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/challenge?return_to=workspacev2`"
+                                                           class="formula-config-icon"
+                                                           @click.stop>
+                                                            <i class="bi bi-calculator"></i>
+                                                        </a>
+                                                    </template>
+                                                    <span class="rollup-indicator" x-show="challenge.rollup_values[String(vt.id)].formula">
+                                                        <span x-show="challenge.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
+                                                        <span x-show="challenge.rollup_values[String(vt.id)].formula === 'max'">↑</span>
+                                                        <span x-show="challenge.rollup_values[String(vt.id)].formula === 'min'">↓</span>
+                                                        <span x-show="challenge.rollup_values[String(vt.id)].formula === 'avg'">≈</span>
+                                                        <span x-show="challenge.rollup_values[String(vt.id)].formula === 'median'">m</span>
+                                                        <span x-show="challenge.rollup_values[String(vt.id)].formula === 'count'">#</span>
+                                                    </span>
+                                                    <span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
+                                                    <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                    <small class="ms-1" x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                                </div>
                                             </template>
                                         </template>
                                         <template x-if="!vt.collapsed">
                                             <template x-if="!challenge.rollup_values || !challenge.rollup_values[String(vt.id)]">
-                                                <span style="opacity: 0.25;">—</span>
+                                                <small class="text-muted">—</small>
                                             </template>
                                         </template>
                                     </div>
@@ -1679,15 +1851,36 @@
                                             </div>
                                         </div>
                                         <template x-for="vt in valueTypes" :key="vt.id">
-                                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                            <div class="ws-cell value-cell text-center"
+                                                 :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
+                                                 :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'">
                                                 <template x-if="!vt.collapsed">
                                                     <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
-                                                        <span class="value-display" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                                        <div>
+                                                            <template x-if="editMode && vt.kind === 'numeric'">
+                                                                <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/initiative?return_to=workspacev2`"
+                                                                   class="formula-config-icon"
+                                                                   @click.stop>
+                                                                    <i class="bi bi-calculator"></i>
+                                                                </a>
+                                                            </template>
+                                                            <span class="rollup-indicator" x-show="initiative.rollup_values[String(vt.id)].formula">
+                                                                <span x-show="initiative.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
+                                                                <span x-show="initiative.rollup_values[String(vt.id)].formula === 'max'">↑</span>
+                                                                <span x-show="initiative.rollup_values[String(vt.id)].formula === 'min'">↓</span>
+                                                                <span x-show="initiative.rollup_values[String(vt.id)].formula === 'avg'">≈</span>
+                                                                <span x-show="initiative.rollup_values[String(vt.id)].formula === 'median'">m</span>
+                                                                <span x-show="initiative.rollup_values[String(vt.id)].formula === 'count'">#</span>
+                                                            </span>
+                                                            <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                                            <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                            <small class="ms-1" x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                                        </div>
                                                     </template>
                                                 </template>
                                                 <template x-if="!vt.collapsed">
                                                     <template x-if="!initiative.rollup_values || !initiative.rollup_values[String(vt.id)]">
-                                                        <span style="opacity: 0.25;">—</span>
+                                                        <small class="text-muted">—</small>
                                                     </template>
                                                 </template>
                                             </div>
@@ -1752,15 +1945,36 @@
                                                     </div>
                                                 </div>
                                                 <template x-for="vt in valueTypes" :key="vt.id">
-                                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                                    <div class="ws-cell value-cell text-center"
+                                                         :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
+                                                         :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'">
                                                         <template x-if="!vt.collapsed">
                                                             <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
-                                                                <span class="value-display" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                                <div>
+                                                                    <template x-if="editMode && vt.kind === 'numeric'">
+                                                                        <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/system?return_to=workspacev2`"
+                                                                           class="formula-config-icon"
+                                                                           @click.stop>
+                                                                            <i class="bi bi-calculator"></i>
+                                                                        </a>
+                                                                    </template>
+                                                                    <span class="rollup-indicator" x-show="system.rollup_values[String(vt.id)].formula">
+                                                                        <span x-show="system.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
+                                                                        <span x-show="system.rollup_values[String(vt.id)].formula === 'max'">↑</span>
+                                                                        <span x-show="system.rollup_values[String(vt.id)].formula === 'min'">↓</span>
+                                                                        <span x-show="system.rollup_values[String(vt.id)].formula === 'avg'">≈</span>
+                                                                        <span x-show="system.rollup_values[String(vt.id)].formula === 'median'">m</span>
+                                                                        <span x-show="system.rollup_values[String(vt.id)].formula === 'count'">#</span>
+                                                                    </span>
+                                                                    <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                                    <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                                    <small class="ms-1" x-text="system.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                                                </div>
                                                             </template>
                                                         </template>
                                                         <template x-if="!vt.collapsed">
                                                             <template x-if="!system.rollup_values || !system.rollup_values[String(vt.id)]">
-                                                                <span style="opacity: 0.25;">—</span>
+                                                                <small class="text-muted">—</small>
                                                             </template>
                                                         </template>
                                                     </div>
@@ -1854,18 +2068,158 @@
                                                         </div>
                                                     </div>
                                                     <template x-for="vt in valueTypes" :key="vt.id">
-                                                        <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
-                                                            <template x-if="!vt.collapsed">
-                                                                <template x-if="kpi.values && kpi.values[String(vt.id)]">
-                                                                    <span class="value-display"
-                                                                          :style="kpi.values[String(vt.id)].color ? `background-color: ${kpi.values[String(vt.id)].color}15; color: ${kpi.values[String(vt.id)].color}` : ''"
-                                                                          x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
+                                                        <!-- KPI Cell: Show with consensus styling if config exists, otherwise clean N/A -->
+                                                        <div class="ws-cell text-center"
+                                                             :class="{
+                                                                 'value-cell': kpi.values && kpi.values[String(vt.id)],
+                                                                 'column-collapsed': vt.collapsed,
+                                                                 'consensus-strong': kpi.values && kpi.values[String(vt.id)] && kpi.values[String(vt.id)].consensus_status === 'strong_consensus',
+                                                                 'consensus-weak': kpi.values && kpi.values[String(vt.id)] && kpi.values[String(vt.id)].consensus_status === 'weak_consensus',
+                                                                 'consensus-single': kpi.values && kpi.values[String(vt.id)] && kpi.values[String(vt.id)].consensus_status === 'single',
+                                                                 'consensus-none': kpi.values && kpi.values[String(vt.id)] && kpi.values[String(vt.id)].consensus_status === 'no_consensus',
+                                                                 'consensus-no-data': kpi.values && kpi.values[String(vt.id)] && kpi.values[String(vt.id)].consensus_status === 'no_data'
+                                                             }"
+                                                             :data-config-id="kpi.values && kpi.values[String(vt.id)] ? kpi.values[String(vt.id)].config_id : null"
+                                                             :title="kpi.values && kpi.values[String(vt.id)] ? (kpi.values[String(vt.id)].consensus_status === 'strong_consensus' ? 'Strong consensus: ' + kpi.values[String(vt.id)].consensus_count + ' contributors' : kpi.values[String(vt.id)].consensus_status === 'weak_consensus' ? 'Weak consensus: ' + kpi.values[String(vt.id)].consensus_count + ' contributors' : kpi.values[String(vt.id)].consensus_status === 'single' ? 'Single contributor' : kpi.values[String(vt.id)].consensus_status === 'no_consensus' ? 'No consensus: ' + kpi.values[String(vt.id)].consensus_count + ' conflicting values' : 'No data') : ''"
+                                                             :style="kpi.values && kpi.values[String(vt.id)] ? 'position: relative; padding-top: 8px;' : ''">
+                                                            <template x-if="!vt.collapsed && kpi.values && kpi.values[String(vt.id)]">
+                                                                    <div>
+                                                                        <!-- Calculation Type Badge (top-left) -->
+                                                                        <template x-if="kpi.values[String(vt.id)].calculation_type === 'formula'">
+                                                                            <template x-if="editMode">
+                                                                                <a :href="`/organization_admin/kpis/${kpi.id}/edit`"
+                                                                                   class="calc-type-badge"
+                                                                                   title="Formula KPI - Click to edit"
+                                                                                   @click.stop>📐</a>
+                                                                            </template>
+                                                                            <template x-if="!editMode">
+                                                                                <span class="calc-type-badge" title="Formula KPI">📐</span>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template x-if="kpi.values[String(vt.id)].calculation_type === 'linked'">
+                                                                            <template x-if="editMode">
+                                                                                <a :href="`/organization_admin/kpis/${kpi.id}/edit`"
+                                                                                   class="calc-type-badge"
+                                                                                   title="Linked KPI - Click to edit"
+                                                                                   @click.stop>🔗</a>
+                                                                            </template>
+                                                                            <template x-if="!editMode">
+                                                                                <span class="calc-type-badge" title="Linked KPI">🔗</span>
+                                                                            </template>
+                                                                        </template>
+                                                                        <template x-if="kpi.values[String(vt.id)].calculation_type === 'manual' && editMode">
+                                                                            <a :href="`/organization_admin/kpis/${kpi.id}/edit`"
+                                                                               class="calc-type-badge"
+                                                                               style="color: var(--bs-secondary);"
+                                                                               title="Manual entry - Click to edit"
+                                                                               @click.stop>
+                                                                                <i class="bi bi-pencil-square"></i>
+                                                                            </a>
+                                                                        </template>
+
+                                                                        <!-- Cell Value (clickable to detail) -->
+                                                                        <div :style="'cursor: pointer;'"
+                                                                             @click="window.location.href = `/workspace/kpis/${kpi.id}/value-types/${vt.id}`">
+                                                                            <!-- No Data -->
+                                                                            <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_data'">
+                                                                                <span class="badge bg-secondary" style="font-size: 0.8rem;">Click to enter</span>
+                                                                            </template>
+                                                                            <!-- Has Value -->
+                                                                            <template x-if="kpi.values[String(vt.id)].value != null && kpi.values[String(vt.id)].consensus_status !== 'no_data'">
+                                                                                <div>
+                                                                                    <!-- Numeric values -->
+                                                                                    <template x-if="vt.kind === 'numeric'">
+                                                                                        <span>
+                                                                                            <strong>
+                                                                                                <span :style="'color: ' + (kpi.values[String(vt.id)].color || '#333')" x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
+                                                                                                <span x-show="vt.unit_label" x-text="' ' + vt.unit_label"></span>
+                                                                                            </strong>
+                                                                                            <!-- Target indicator -->
+                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'"
+                                                                                                      :title="'Target: ' + kpi.values[String(vt.id)].target_progress + '% achieved (Goal: ' + kpi.values[String(vt.id)].target_value + (kpi.values[String(vt.id)].target_date ? ' by ' + kpi.values[String(vt.id)].target_date : '') + ')'">🎯</span>
+                                                                                            </template>
+                                                                                        </span>
+                                                                                    </template>
+                                                                                    <!-- Risk values -->
+                                                                                    <template x-if="vt.kind === 'risk'">
+                                                                                        <strong>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">!</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">!!</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 3">!!!</span>
+                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress">🎯</span>
+                                                                                            </template>
+                                                                                        </strong>
+                                                                                    </template>
+                                                                                    <!-- Positive Impact values -->
+                                                                                    <template x-if="vt.kind === 'positive_impact'">
+                                                                                        <strong>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">★</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">★★</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 3">★★★</span>
+                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                            </template>
+                                                                                        </strong>
+                                                                                    </template>
+                                                                                    <!-- Negative Impact values -->
+                                                                                    <template x-if="vt.kind === 'negative_impact'">
+                                                                                        <strong>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">▼</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">▼▼</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 3">▼▼▼</span>
+                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                            </template>
+                                                                                        </strong>
+                                                                                    </template>
+                                                                                    <!-- Level values -->
+                                                                                    <template x-if="vt.kind === 'level'">
+                                                                                        <strong>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">●</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">●●</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 3">●●●</span>
+                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                            </template>
+                                                                                        </strong>
+                                                                                    </template>
+                                                                                    <!-- Sentiment values -->
+                                                                                    <template x-if="vt.kind === 'sentiment'">
+                                                                                        <strong>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">☹️</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">😐</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 3">😊</span>
+                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                            </template>
+                                                                                        </strong>
+                                                                                    </template>
+                                                                                    <!-- Other types -->
+                                                                                    <template x-if="!['numeric', 'risk', 'positive_impact', 'negative_impact', 'level', 'sentiment'].includes(vt.kind)">
+                                                                                        <strong x-text="kpi.values[String(vt.id)].value"></strong>
+                                                                                    </template>
+                                                                                </div>
+                                                                            </template>
+                                                                            <!-- No Consensus -->
+                                                                            <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_consensus'">
+                                                                                <div>
+                                                                                    <small class="text-muted" x-text="kpi.values[String(vt.id)].consensus_count + ' conflicting values'"></small>
+                                                                                </div>
+                                                                            </template>
+                                                                        </div>
+                                                                        <!-- Comment Icon (bottom-right) -->
+                                                                        <span class="comment-icon"
+                                                                              @click.stop="alert('Comments modal - to be implemented')"
+                                                                              title="Add/View Comments">
+                                                                            💬
+                                                                        </span>
+                                                                    </div>
                                                                 </template>
-                                                            </template>
-                                                            <template x-if="!vt.collapsed">
-                                                                <template x-if="!kpi.values || !kpi.values[String(vt.id)]">
-                                                                    <span style="opacity: 0.25;">—</span>
-                                                                </template>
+                                                            <!-- No Config: Show clean N/A -->
+                                                            <template x-if="!vt.collapsed && (!kpi.values || !kpi.values[String(vt.id)])">
+                                                                <small class="text-muted">N/A</small>
                                                             </template>
                                                         </div>
                                                     </template>
@@ -1929,6 +2283,12 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 function workspaceV2(orgId) {
     return {
+        // Organization Info
+        orgName: '{{ org_name|safe }}',
+        orgLogo: {% if org_logo %}'{{ org_logo|safe }}'{% else %}null{% endif %},
+        portersUrl: '{{ url_for("organization_admin.organization_porters") }}',
+        portersCompletion: {% if porters_completion %}{{ porters_completion|tojson }}{% else %}null{% endif %},
+
         // Data
         spaces: [],
         valueTypes: [],

@@ -20,6 +20,7 @@ from app.models import (
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
+    Organization,
     Space,
     System,
     SystemSetting,
@@ -67,10 +68,25 @@ def index():
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
+    # Get organization for logo and Porter's completion
+    org = Organization.query.get(org_id)
+    org_logo = None
+    porters_completion = None
+    if org:
+        if org.logo_data:
+            org_logo = f"data:{org.logo_mime_type};base64,{base64.b64encode(org.logo_data).decode('utf-8')}"
+
+        # Get Porter's Five Forces completion
+        filled, total, status = org.get_porters_completion()
+        porters_completion = {"filled": filled, "total": total, "status": status}
+
     return render_template(
         "workspacev2/index.html",
         org_name=org_name,
         org_id=org_id,
+        organization=org,
+        org_logo=org_logo,
+        porters_completion=porters_completion,
         csrf_token=generate_csrf,
     )
 
@@ -169,6 +185,8 @@ def get_data():
                     "formatted_value": rollup_data.get("formatted_value"),
                     "unit_label": vt.unit_label,
                     "color": rollup_data.get("color", "#6c757d"),
+                    "formula": rollup_data.get("formula"),
+                    "is_complete": rollup_data.get("is_complete", False),
                 }
 
         # Get space SWOT completion
@@ -194,6 +212,8 @@ def get_data():
                         "formatted_value": rollup_data.get("formatted_value"),
                         "unit_label": vt.unit_label,
                         "color": rollup_data.get("color", "#6c757d"),
+                        "formula": rollup_data.get("formula"),
+                        "is_complete": rollup_data.get("is_complete", False),
                     }
 
             # Get challenge entity links
@@ -214,6 +234,8 @@ def get_data():
                             "formatted_value": rollup_data.get("formatted_value"),
                             "unit_label": vt.unit_label,
                             "color": rollup_data.get("color", "#6c757d"),
+                            "formula": rollup_data.get("formula"),
+                            "is_complete": rollup_data.get("is_complete", False),
                         }
 
                 # Get initiative form completion
@@ -242,6 +264,8 @@ def get_data():
                                 "formatted_value": rollup_data.get("formatted_value"),
                                 "unit_label": vt.unit_label,
                                 "color": rollup_data.get("color", "#6c757d"),
+                                "formula": rollup_data.get("formula"),
+                                "is_complete": rollup_data.get("is_complete", False),
                             }
 
                     # Get system entity links
@@ -250,20 +274,62 @@ def get_data():
                     # Get KPIs under this system
                     kpis_data = []
                     for kpi in sys_link.kpis:
-                        # Get KPI values
+                        # Get KPI values with full details for rendering
                         kpi_values = {}
                         for vt in value_types:
                             # Find config for this value type
                             config = next((c for c in kpi.value_type_configs if c.value_type_id == vt.id), None)
                             if config:
                                 consensus = config.get_consensus_value()
-                                if consensus:
-                                    kpi_values[vt.id] = {
-                                        "value": consensus.get("value"),
-                                        "formatted_value": consensus.get("formatted_value"),
-                                        "unit_label": vt.unit_label,
-                                        "color": config.get_value_color(consensus.get("value")),
-                                    }
+
+                                # Calculate target progress if target exists
+                                target_progress = None
+                                target_color = None
+                                if config.target_value is not None and consensus and consensus.get("value") is not None:
+                                    target_dir = config.target_direction or "maximize"
+                                    target_val = float(config.target_value)
+                                    current_val = float(consensus.get("value"))
+
+                                    if target_dir == "minimize":
+                                        progress = int((target_val / current_val) * 100) if current_val != 0 else 100
+                                    elif target_dir == "exact":
+                                        tolerance = target_val * (config.target_tolerance_pct or 10) / 100
+                                        diff = abs(current_val - target_val)
+                                        if diff <= tolerance:
+                                            progress = 100
+                                        else:
+                                            progress = max(0, int(100 - ((diff - tolerance) / target_val * 100)))
+                                    else:  # maximize
+                                        progress = int((current_val / target_val) * 100)
+
+                                    target_progress = progress
+                                    if progress >= 90:
+                                        target_color = "#28a745"
+                                    elif progress >= 60:
+                                        target_color = "#ffc107"
+                                    else:
+                                        target_color = "#dc3545"
+
+                                kpi_values[vt.id] = {
+                                    "config_id": config.id,
+                                    "value": consensus.get("value") if consensus else None,
+                                    "formatted_value": consensus.get("formatted_value") if consensus else None,
+                                    "unit_label": vt.unit_label,
+                                    "color": config.get_value_color(consensus.get("value")) if consensus else None,
+                                    "calculation_type": config.calculation_type,
+                                    "consensus_status": consensus.get("status") if consensus else "no_data",
+                                    "consensus_count": consensus.get("count") if consensus else 0,
+                                    "has_target": config.target_value is not None,
+                                    "target_value": config.target_value,
+                                    "target_date": (
+                                        config.target_date.strftime("%Y-%m-%d") if config.target_date else None
+                                    ),
+                                    "target_direction": (
+                                        config.target_direction or "maximize" if config.target_value else None
+                                    ),
+                                    "target_progress": target_progress,
+                                    "target_color": target_color,
+                                }
 
                         # Get governance body info (full details for badges)
                         governance_bodies_data = []
