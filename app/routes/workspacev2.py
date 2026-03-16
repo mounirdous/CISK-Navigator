@@ -16,6 +16,7 @@ from app.models import (
     KPI,
     Challenge,
     ChallengeInitiativeLink,
+    EntityTypeDefault,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
@@ -110,6 +111,28 @@ def get_data():
         .all()
     )
 
+    # Get entity type defaults for logo fallbacks
+    entity_defaults = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    default_logos = {}
+    for default in entity_defaults:
+        if default.default_logo_data and default.default_logo_mime_type:
+            default_logos[default.entity_type] = (
+                f"data:{default.default_logo_mime_type};base64,"
+                f"{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+            )
+
+    # Helper function to get logo URL for an entity
+    def get_logo_url(entity, entity_type):
+        """Get logo URL - entity's own logo or default logo for the type"""
+        if (
+            hasattr(entity, "logo_data")
+            and entity.logo_data
+            and hasattr(entity, "logo_mime_type")
+            and entity.logo_mime_type
+        ):
+            return f"data:{entity.logo_mime_type};base64,{base64.b64encode(entity.logo_data).decode('utf-8')}"
+        return default_logos.get(entity_type)
+
     # Build full hierarchical tree: Spaces → Challenges → Initiatives → Systems → KPIs
     spaces_data = []
     for space in spaces:
@@ -194,28 +217,14 @@ def get_data():
                                         "color": config.get_value_color(consensus.get("value")),
                                     }
 
-                        # Get KPI logo
-                        kpi_logo_url = None
-                        if kpi.logo_data and kpi.logo_mime_type:
-                            kpi_logo_url = (
-                                f"data:{kpi.logo_mime_type};base64,{base64.b64encode(kpi.logo_data).decode('utf-8')}"
-                            )
-
                         kpis_data.append(
                             {
                                 "id": kpi.id,
                                 "name": kpi.name,
                                 "display_order": kpi.display_order,
-                                "logo_url": kpi_logo_url,
+                                "logo_url": get_logo_url(kpi, "kpi"),
                                 "values": kpi_values,
                             }
-                        )
-
-                    # Get system logo
-                    system_logo_url = None
-                    if system.logo_data and system.logo_mime_type:
-                        system_logo_url = (
-                            f"data:{system.logo_mime_type};base64,{base64.b64encode(system.logo_data).decode('utf-8')}"
                         )
 
                     systems_data.append(
@@ -223,23 +232,18 @@ def get_data():
                             "id": system.id,
                             "link_id": sys_link.id,  # For parent change operations
                             "name": system.name,
-                            "logo_url": system_logo_url,
+                            "logo_url": get_logo_url(system, "system"),
                             "rollup_values": system_rollup_values,
                             "kpis": kpis_data,
                         }
                     )
-
-                # Get initiative logo
-                initiative_logo_url = None
-                if initiative.logo_data and initiative.logo_mime_type:
-                    initiative_logo_url = f"data:{initiative.logo_mime_type};base64,{base64.b64encode(initiative.logo_data).decode('utf-8')}"
 
                 initiatives_data.append(
                     {
                         "id": initiative.id,
                         "link_id": link.id,  # For parent change operations
                         "name": initiative.name,
-                        "logo_url": initiative_logo_url,
+                        "logo_url": get_logo_url(initiative, "initiative"),
                         "group_label": initiative.group_label,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "rollup_values": initiative_rollup_values,
@@ -247,34 +251,22 @@ def get_data():
                     }
                 )
 
-            # Get challenge logo
-            challenge_logo_url = None
-            if challenge.logo_data and challenge.logo_mime_type:
-                challenge_logo_url = (
-                    f"data:{challenge.logo_mime_type};base64,{base64.b64encode(challenge.logo_data).decode('utf-8')}"
-                )
-
             challenges_data.append(
                 {
                     "id": challenge.id,
                     "name": challenge.name,
-                    "logo_url": challenge_logo_url,
+                    "logo_url": get_logo_url(challenge, "challenge"),
                     "display_order": challenge.display_order,
                     "rollup_values": challenge_rollup_values,
                     "initiatives": initiatives_data,
                 }
             )
 
-        # Get space logo
-        space_logo_url = None
-        if space.logo_data and space.logo_mime_type:
-            space_logo_url = f"data:{space.logo_mime_type};base64,{base64.b64encode(space.logo_data).decode('utf-8')}"
-
         spaces_data.append(
             {
                 "id": space.id,
                 "name": space.name,
-                "logo_url": space_logo_url,
+                "logo_url": get_logo_url(space, "space"),
                 "display_order": space.display_order,
                 "is_private": space.is_private,
                 "rollup_values": space_rollup_values,
