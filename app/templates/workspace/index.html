@@ -1295,16 +1295,13 @@
 
     @keyframes kpiBorderGlow {
         0%, 100% {
-            border-color: #667eea;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+            border-left-color: transparent;
         }
         20%, 80% {
-            border-color: #764ba2;
-            box-shadow: 0 0 0 4px rgba(118, 75, 162, 0.5);
+            border-left-color: #667eea;
         }
         50% {
-            border-color: #667eea;
-            box-shadow: 0 0 0 6px rgba(102, 126, 234, 0.7);
+            border-left-color: #764ba2;
         }
     }
 
@@ -1318,13 +1315,11 @@
     }
 
     .kpi-spotlight {
-        animation: kpiSpotlight 3s ease-in-out, kpiBorderGlow 3s ease-in-out;
-        border: 4px solid #667eea !important;
-        border-radius: 8px;
+        animation: kpiSpotlight 3s ease-in-out;
+        border-left: 5px solid #667eea;
         position: relative;
         z-index: 15;
-        overflow: visible;
-        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+        overflow: hidden;
     }
 
     .kpi-spotlight::before {
