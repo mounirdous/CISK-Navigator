@@ -2252,8 +2252,8 @@
                                                                              @click="window.location.href = `/workspace/kpis/${kpi.id}/value-types/${vt.id}`">
                                                                             <!-- No Data -->
                                                                             <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_data'">
-                                                                                <small class="text-muted" style="font-size: 0.75rem;">
-                                                                                    <i class="bi bi-pencil" style="opacity: 0.5;"></i>
+                                                                                <small style="color: #6c757d; font-size: 0.85rem;">
+                                                                                    <i class="bi bi-pencil-square"></i>
                                                                                 </small>
                                                                             </template>
                                                                             <!-- Has Value -->
@@ -2268,8 +2268,14 @@
                                                                                             </strong>
                                                                                             <!-- Target indicator -->
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'"
-                                                                                                      :title="'Target: ' + kpi.values[String(vt.id)].target_progress + '% achieved (Goal: ' + kpi.values[String(vt.id)].target_value + (kpi.values[String(vt.id)].target_date ? ' by ' + kpi.values[String(vt.id)].target_date : '') + ')'">🎯</span>
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                   @click.stop
+                                                                                                   style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                                                                                   @mouseover="$el.style.opacity='0.7'"
+                                                                                                   @mouseout="$el.style.opacity='1'">
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'"
+                                                                                                          :title="'Target: ' + kpi.values[String(vt.id)].target_progress + '% achieved (Goal: ' + kpi.values[String(vt.id)].target_value + (kpi.values[String(vt.id)].target_date ? ' by ' + kpi.values[String(vt.id)].target_date : '') + ') - Click to edit target'">🎯</span>
+                                                                                                </a>
                                                                                             </template>
                                                                                         </span>
                                                                                     </template>
@@ -2280,7 +2286,13 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">!!</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">!!!</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress">🎯</span>
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                   @click.stop
+                                                                                                   style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                                                                                   @mouseover="$el.style.opacity='0.7'"
+                                                                                                   @mouseout="$el.style.opacity='1'">
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress - Click to edit">🎯</span>
+                                                                                                </a>
                                                                                             </template>
                                                                                         </strong>
                                                                                     </template>
@@ -2291,7 +2303,13 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">★★</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">★★★</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                   @click.stop
+                                                                                                   style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                                                                                   @mouseover="$el.style.opacity='0.7'"
+                                                                                                   @mouseout="$el.style.opacity='1'">
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress - Click to edit">🎯</span>
+                                                                                                </a>
                                                                                             </template>
                                                                                         </strong>
                                                                                     </template>
@@ -2302,7 +2320,13 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">▼▼</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">▼▼▼</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                   @click.stop
+                                                                                                   style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                                                                                   @mouseover="$el.style.opacity='0.7'"
+                                                                                                   @mouseout="$el.style.opacity='1'">
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress - Click to edit">🎯</span>
+                                                                                                </a>
                                                                                             </template>
                                                                                         </strong>
                                                                                     </template>
@@ -2313,7 +2337,13 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">●●</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">●●●</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                   @click.stop
+                                                                                                   style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                                                                                   @mouseover="$el.style.opacity='0.7'"
+                                                                                                   @mouseout="$el.style.opacity='1'">
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress - Click to edit">🎯</span>
+                                                                                                </a>
                                                                                             </template>
                                                                                         </strong>
                                                                                     </template>
@@ -2324,7 +2354,13 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">😐</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">😊</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'">🎯</span>
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                   @click.stop
+                                                                                                   style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
+                                                                                                   @mouseover="$el.style.opacity='0.7'"
+                                                                                                   @mouseout="$el.style.opacity='1'">
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'" title="Target progress - Click to edit">🎯</span>
+                                                                                                </a>
                                                                                             </template>
                                                                                         </strong>
                                                                                     </template>
