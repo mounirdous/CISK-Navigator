@@ -1832,7 +1832,7 @@
                                                 </a>
                                             </template>
                                             <!-- Formula indicator -->
-                                            <span class="rollup-indicator" x-show="space.rollup_values[String(vt.id)].formula"
+                                            <span class="rollup-indicator" x-show="showBadges && space.rollup_values[String(vt.id)].formula"
                                                   :title="space.rollup_values[String(vt.id)].formula">
                                                 <span x-show="space.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                 <span x-show="space.rollup_values[String(vt.id)].formula === 'max'">↑</span>
@@ -1884,7 +1884,7 @@
                                                 </span>
                                             </template>
                                             <!-- Completeness indicator -->
-                                            <small class="ms-1" x-text="space.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                            <small class="ms-1" x-show="showBadges" x-text="space.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                         </div>
                                     </template>
                                 </template>
@@ -1977,7 +1977,7 @@
                                                             <i class="bi bi-calculator"></i>
                                                         </a>
                                                     </template>
-                                                    <span class="rollup-indicator" x-show="challenge.rollup_values[String(vt.id)].formula">
+                                                    <span class="rollup-indicator" x-show="showBadges && challenge.rollup_values[String(vt.id)].formula">
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'max'">↑</span>
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'min'">↓</span>
@@ -1994,7 +1994,7 @@
                                                     <template x-if="vt.kind === 'negative_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">▼▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">▼▼▼</span></span></template>
                                                     <template x-if="vt.kind === 'level'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">●●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">●●●</span></span></template>
                                                     <template x-if="vt.kind === 'sentiment'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">☹️</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">😐</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">😊</span></span></template>
-                                                    <small class="ms-1" x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                                    <small class="ms-1" x-show="showBadges" x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                 </div>
                                             </template>
                                         </template>
@@ -2106,7 +2106,7 @@
                                                                     <i class="bi bi-calculator"></i>
                                                                 </a>
                                                             </template>
-                                                            <span class="rollup-indicator" x-show="initiative.rollup_values[String(vt.id)].formula">
+                                                            <span class="rollup-indicator" x-show="showBadges && initiative.rollup_values[String(vt.id)].formula">
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'max'">↑</span>
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'min'">↓</span>
@@ -2155,7 +2155,7 @@
                                                                     <span x-show="initiative.rollup_values[String(vt.id)].value == 3">😊</span>
                                                                 </span>
                                                             </template>
-                                                            <small class="ms-1" x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                                            <small class="ms-1" x-show="showBadges" x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                         </div>
                                                     </template>
                                                 </template>
@@ -2248,7 +2248,7 @@
                                                                             <i class="bi bi-calculator"></i>
                                                                         </a>
                                                                     </template>
-                                                                    <span class="rollup-indicator" x-show="system.rollup_values[String(vt.id)].formula">
+                                                                    <span class="rollup-indicator" x-show="showBadges && system.rollup_values[String(vt.id)].formula">
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'max'">↑</span>
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'min'">↓</span>
@@ -2297,7 +2297,7 @@
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 3">😊</span>
                                                                         </span>
                                                                     </template>
-                                                                    <small class="ms-1" x-text="system.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
+                                                                    <small class="ms-1" x-show="showBadges" x-text="system.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                                 </div>
                                                             </template>
                                                         </template>
