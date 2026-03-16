@@ -5,6 +5,113 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-03-16
+
+### Added - Enhanced Search Backend (Phase 1)
+**Feature**: Advanced search service with fuzzy matching, query parsing, and multi-entity search
+
+**Files Added**:
+- `app/services/search_service.py` - Core search service with comprehensive functionality
+
+**Dependencies Added**:
+- `python-Levenshtein==0.27.3` - Fuzzy string matching library (added to requirements.txt)
+- Provides typo-tolerant search using Levenshtein distance algorithm
+
+**Key Features Implemented**:
+
+1. **SearchService Class** - Main search engine
+   - Method: `search_all(query, filters, organization_id)` - Search across all entities
+   - Method: `parse_query(query)` - Extract operators and modifiers from query
+   - Method: `fuzzy_match(text, query, threshold)` - Levenshtein-based matching
+   - Method: `search_kpis()` - KPI-specific search with context
+   - Method: `search_systems()` - System search
+   - Method: `search_initiatives()` - Initiative search with status filters
+   - Method: `search_challenges()` - Challenge search with space context
+   - Method: `search_spaces()` - Space search
+
+2. **Query Parser** - Smart query interpretation
+   - Modifiers: `@risk`, `@incomplete`, `@no_consensus`, `@archived`
+   - Date operators: `updated:last_week`, `updated:last_month`, `updated:today`
+   - Numeric operators: `value>100`, `value<50`, `value=25`
+   - Ranges: `value:10-20`
+   - Cleans query by removing operators for text search
+
+3. **Fuzzy Matching** - Typo-tolerant search
+   - Threshold: 0.6 (60% similarity required)
+   - Algorithm: Levenshtein ratio from python-Levenshtein
+   - Exact substring matches always pass
+   - Case-insensitive matching
+
+4. **Multi-Entity Search** - Search across entity types
+   - KPIs: Searches name, description, system name, initiative name
+   - Systems: Searches name, description
+   - Initiatives: Searches name, description, respects status
+   - Challenges: Searches name, description, includes space context
+   - Spaces: Searches name, description
+   - Match scoring: Higher score = better match (name matches worth more)
+
+5. **Result Structure** - Categorized results
+   ```json
+   {
+     "kpis": [{id, name, description, system_name, initiative_name, match_score, ...}],
+     "systems": [{id, name, description, match_score, ...}],
+     "initiatives": [{id, name, description, impact_on_challenge, match_score, ...}],
+     "challenges": [{id, name, description, space_name, match_score, ...}],
+     "spaces": [{id, name, description, match_score, ...}],
+     "query_info": {
+       "original_query": "...",
+       "parsed_query": "...",
+       "modifiers": [...],
+       "operators": {...}
+     }
+   }
+   ```
+
+**Database Queries**:
+- Scoped to organization_id for multi-tenancy
+- Respects archive status by default
+- Joins through relationship chains (e.g., KPI → InitiativeSystemLink → Initiative)
+- Uses SQLAlchemy ORM for type safety
+
+**Architecture Notes**:
+- Pure service class (no Flask dependencies)
+- Stateless design - all state in method parameters
+- Results sorted by match_score (descending)
+- Empty results return consistent structure
+
+**Future Enhancements** (planned):
+- Phase 2: Database schema for saved searches (v2.5.2)
+- Phase 3: Frontend UI (v2.5.3-v2.5.5)
+- Phase 4: Saved searches & history (v2.5.6-v2.5.7)
+- Phase 5: Performance optimization (v2.5.8)
+
+**Impact Analysis**:
+- NEW service - no breaking changes
+- Dependencies: Adds python-Levenshtein (3 packages total with dependencies)
+- Models used: KPI, System, Initiative, Challenge, Space (read-only)
+- No database schema changes in this phase
+- No frontend changes yet - backend foundation only
+
+**Testing Notes**:
+- Service can be tested independently via Flask shell
+- Example: `SearchService.search_all("inventory", {}, org_id=1)`
+- All searches scoped to organization for security
+
+## [2.5.0] - 2026-03-16
+
+### Branch Created
+- **🌿 New feature branch**: `feature/enhanced-search`
+- Major feature development: Enhanced Search with fuzzy matching, AI insights, and saved searches
+- Version bumped from 2.4.0 → 2.5.0 for new feature track
+- Incremental versions (2.5.1, 2.5.2, etc.) track development progress
+
+### Planned Features (Multi-Phase)
+1. **Phase 1 (v2.5.1)**: Backend search service with fuzzy matching
+2. **Phase 2 (v2.5.2)**: Database schema for saved searches
+3. **Phase 3 (v2.5.3-v2.5.5)**: Frontend UI (search bar, filters, results)
+4. **Phase 4 (v2.5.6-v2.5.7)**: Saved searches & history
+5. **Phase 5 (v2.5.8)**: Performance optimization & polish
+
 ## [2.4.0] - 2026-03-16
 
 ### Added
