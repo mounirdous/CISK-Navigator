@@ -179,9 +179,9 @@
                         </div>
                     </div>
                     <form id="betaToggleForm" method="POST" action="{{ url_for('super_admin.toggle_beta') }}" style="display: none;"></form>
-                    <p class="small text-muted mb-0">
-                        <i class="bi bi-info-circle"></i> Users must have beta_tester flag AND beta must be enabled globally
-                    </p>
+                    <a href="{{ url_for('beta.index') }}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-flask"></i> View Beta Page
+                    </a>
                 </div>
             </div>
         </div>
