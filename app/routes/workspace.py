@@ -261,11 +261,15 @@ def index():
         porters_completion = {"filled": filled, "total": total, "status": status}
 
     # Get filter presets for this user (from database)
-    filter_presets = (
+    filter_presets_objs = (
         UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
         .order_by(UserFilterPreset.name)
         .all()
     )
+
+    # Convert to dicts for JSON serialization in template
+    filter_presets = filter_presets_objs
+    filter_presets_json = [preset.to_dict() for preset in filter_presets_objs]
 
     return render_template(
         "workspace/index.html",
@@ -275,6 +279,7 @@ def index():
         org_logo=org_logo,
         porters_completion=porters_completion,
         filter_presets=filter_presets,
+        filter_presets_json=filter_presets_json,
         csrf_token=generate_csrf,
     )
 

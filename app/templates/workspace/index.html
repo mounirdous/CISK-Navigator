@@ -1127,7 +1127,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, {{ filter_presets|tojson }})" x-init="init(); loadData()">
+<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, {{ filter_presets_json|tojson }})" x-init="init(); loadData()">
     <!-- Toolbar - Commands Band -->
     <div class="ws-header" :class="{'edit-mode': editMode}">
         <div style="display: flex; align-items: center; gap: 1.5rem;">
