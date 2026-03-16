@@ -3,6 +3,7 @@
 {% block title %}Workspace - {{ org_name }}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
 <style>
     /* Entity type colors from database */
     :root {
@@ -2253,7 +2254,7 @@
                                                                         </template>
 
                                                                         <!-- Cell Value (clickable to detail) -->
-                                                                        <div :style="'cursor: pointer;'"
+                                                                        <div :style="'cursor: pointer; display: inline-block; width: 100%;'"
                                                                              @click="window.location.href = `/workspace/kpis/${kpi.id}/value-types/${vt.id}`">
                                                                             <!-- No Data -->
                                                                             <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_data'">
@@ -2263,7 +2264,7 @@
                                                                             </template>
                                                                             <!-- Has Value -->
                                                                             <template x-if="kpi.values[String(vt.id)].value != null && kpi.values[String(vt.id)].consensus_status !== 'no_data'">
-                                                                                <div>
+                                                                                <span style="display: inline-block; white-space: nowrap;">
                                                                                     <!-- Numeric values -->
                                                                                     <template x-if="vt.kind === 'numeric'">
                                                                                         <span>
@@ -2373,13 +2374,13 @@
                                                                                     <template x-if="!['numeric', 'risk', 'positive_impact', 'negative_impact', 'level', 'sentiment'].includes(vt.kind)">
                                                                                         <strong x-text="kpi.values[String(vt.id)].value"></strong>
                                                                                     </template>
-                                                                                </div>
+                                                                                </span>
                                                                             </template>
                                                                             <!-- No Consensus -->
                                                                             <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_consensus'">
-                                                                                <div>
+                                                                                <span style="display: inline-block; white-space: nowrap;">
                                                                                     <small class="text-muted" x-text="kpi.values[String(vt.id)].consensus_count + ' conflicting values'"></small>
-                                                                                </div>
+                                                                                </span>
                                                                             </template>
                                                                         </div>
                                                                         <!-- Comment Icon (bottom-right) -->
@@ -2761,7 +2762,13 @@ function workspaceV2(orgId) {
                             trendSpan.innerHTML = ` ${icon}`;
                             trendSpan.title = `${trend.direction === 'up' ? 'Increasing' : trend.direction === 'down' ? 'Decreasing' : 'Stable'}: ${trend.change > 0 ? '+' : ''}${trend.change.toFixed(2)} (${trend.percent_change > 0 ? '+' : ''}${trend.percent_change.toFixed(1)}%)`;
 
-                            cell.appendChild(trendSpan);
+                            // Append to the clickable wrapper div (first child), not the cell
+                            const wrapper = cell.querySelector('div[style*="cursor: pointer"]');
+                            if (wrapper) {
+                                wrapper.appendChild(trendSpan);
+                            } else {
+                                cell.appendChild(trendSpan);
+                            }
                         }
                     })
                     .catch(err => {
