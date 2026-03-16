@@ -1123,6 +1123,47 @@
     .toggle-label:hover input:checked + .toggle-slider {
         background-color: #2c5282;
     }
+
+    /* Search result highlight animation */
+    @keyframes searchHighlight {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            background-color: inherit;
+        }
+        15% {
+            transform: scale(1.01);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4), 0 4px 20px rgba(59, 130, 246, 0.3);
+            background-color: rgba(219, 234, 254, 0.6);
+        }
+        30% {
+            transform: scale(1);
+            box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.2), 0 4px 20px rgba(59, 130, 246, 0.2);
+            background-color: rgba(219, 234, 254, 0.8);
+        }
+        50% {
+            transform: scale(1.005);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 4px 20px rgba(59, 130, 246, 0.15);
+            background-color: rgba(219, 234, 254, 0.6);
+        }
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.1), 0 4px 20px rgba(59, 130, 246, 0.1);
+            background-color: rgba(219, 234, 254, 0.3);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            background-color: inherit;
+        }
+    }
+
+    .search-highlight {
+        animation: searchHighlight 2.5s ease-in-out;
+        border-left: 4px solid #3b82f6;
+        position: relative;
+        z-index: 10;
+    }
 </style>
 {% endblock %}
 
@@ -2828,13 +2869,15 @@ function workspaceV2(orgId, filterPresets) {
                 // Wait a bit for expansion animations, then scroll
                 setTimeout(() => {
                     targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Add highlight effect
-                    targetElement.style.transition = 'background-color 0.5s';
-                    const originalBg = window.getComputedStyle(targetElement).backgroundColor;
-                    targetElement.style.backgroundColor = '#fff3cd';
+
+                    // Add modern highlight effect with pulse and glow
                     setTimeout(() => {
-                        targetElement.style.backgroundColor = originalBg;
-                    }, 2000);
+                        targetElement.classList.add('search-highlight');
+                        // Remove class after animation completes
+                        setTimeout(() => {
+                            targetElement.classList.remove('search-highlight');
+                        }, 2500);
+                    }, 300);
                 }, 100);
             }
         },
