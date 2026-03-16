@@ -18,6 +18,7 @@ from app.models import (
     KPI,
     CellComment,
     Challenge,
+    ChallengeInitiativeLink,
     EntityTypeDefault,
     GovernanceBody,
     Initiative,
@@ -198,7 +199,6 @@ def workspace():
         }
 
     # Get all spaces with full hierarchy
-    # Note: Only Organization has is_deleted - all other models use hard deletes (CASCADE)
     spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order).all()
 
     # Build hierarchy data
@@ -208,34 +208,27 @@ def workspace():
 
         challenges_data = []
         for challenge in challenges:
-            # Get initiatives for this challenge
-            initiatives = (
-                Initiative.query.filter_by(organization_id=org_id, challenge_id=challenge.id)
-                .order_by(Initiative.display_order)
-                .all()
-            )
+            # Get initiatives through ChallengeInitiativeLink (many-to-many)
+            challenge_links = sorted(challenge.initiative_links, key=lambda x: x.display_order)
 
             initiatives_data = []
-            for initiative in initiatives:
+            for challenge_link in challenge_links:
+                initiative = challenge_link.initiative
+                if not initiative:
+                    continue
+
                 # Get systems for this initiative
-                systems_links = (
-                    InitiativeSystemLink.query.filter_by(initiative_id=initiative.id)
-                    .order_by(InitiativeSystemLink.display_order)
-                    .all()
+                systems_links = sorted(
+                    [link for link in initiative.system_links if link.system], key=lambda x: x.display_order
                 )
 
                 systems_data = []
-                for link in systems_links:
-                    system = link.system
-                    if system:
-                        # Get KPIs for this system
-                        kpis = (
-                            KPI.query.filter_by(initiative_system_link_id=link.id)
-                            .order_by(KPI.display_order)
-                            .all()
-                        )
+                for sys_link in systems_links:
+                    system = sys_link.system
+                    # Count KPIs for this system
+                    kpi_count = len([kpi for kpi in sys_link.kpis if not kpi.is_archived])
 
-                        systems_data.append({"system": system, "kpi_count": len(kpis)})
+                    systems_data.append({"system": system, "kpi_count": kpi_count})
 
                 initiatives_data.append(
                     {"initiative": initiative, "systems_count": len(systems_data), "systems": systems_data}
