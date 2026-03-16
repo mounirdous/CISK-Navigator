@@ -179,12 +179,29 @@ def get_data():
         space_rollup_values = {}
         for vt in value_types:
             rollup_data = space.get_rollup_value(vt.id)
-            if rollup_data:
+            if rollup_data and rollup_data.get("value") is not None:
+                # Get color config for formatting
+                color_config = space.get_color_config(vt.id)
+
+                # Format the value using the Jinja filter
+                from flask import current_app
+
+                formatted_value = current_app.jinja_env.filters["format_value"](
+                    rollup_data.get("value"), vt, color_config
+                )
+
+                # Get color from config
+                if color_config and hasattr(color_config, "get_value_color"):
+                    color = color_config.get_value_color(rollup_data.get("value"))
+                else:
+                    # Use default color filter
+                    color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
                 space_rollup_values[vt.id] = {
                     "value": rollup_data.get("value"),
-                    "formatted_value": rollup_data.get("formatted_value"),
+                    "formatted_value": formatted_value,
                     "unit_label": vt.unit_label,
-                    "color": rollup_data.get("color", "#6c757d"),
+                    "color": color or "#6c757d",
                     "formula": rollup_data.get("formula"),
                     "is_complete": rollup_data.get("is_complete", False),
                 }
@@ -206,12 +223,23 @@ def get_data():
             challenge_rollup_values = {}
             for vt in value_types:
                 rollup_data = challenge.get_rollup_value(vt.id)
-                if rollup_data:
+                if rollup_data and rollup_data.get("value") is not None:
+                    color_config = challenge.get_color_config(vt.id)
+                    from flask import current_app
+
+                    formatted_value = current_app.jinja_env.filters["format_value"](
+                        rollup_data.get("value"), vt, color_config
+                    )
+                    if color_config and hasattr(color_config, "get_value_color"):
+                        color = color_config.get_value_color(rollup_data.get("value"))
+                    else:
+                        color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
                     challenge_rollup_values[vt.id] = {
                         "value": rollup_data.get("value"),
-                        "formatted_value": rollup_data.get("formatted_value"),
+                        "formatted_value": formatted_value,
                         "unit_label": vt.unit_label,
-                        "color": rollup_data.get("color", "#6c757d"),
+                        "color": color or "#6c757d",
                         "formula": rollup_data.get("formula"),
                         "is_complete": rollup_data.get("is_complete", False),
                     }
@@ -228,12 +256,23 @@ def get_data():
                 initiative_rollup_values = {}
                 for vt in value_types:
                     rollup_data = initiative.get_rollup_value(vt.id)
-                    if rollup_data:
+                    if rollup_data and rollup_data.get("value") is not None:
+                        color_config = initiative.get_color_config(vt.id)
+                        from flask import current_app
+
+                        formatted_value = current_app.jinja_env.filters["format_value"](
+                            rollup_data.get("value"), vt, color_config
+                        )
+                        if color_config and hasattr(color_config, "get_value_color"):
+                            color = color_config.get_value_color(rollup_data.get("value"))
+                        else:
+                            color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
                         initiative_rollup_values[vt.id] = {
                             "value": rollup_data.get("value"),
-                            "formatted_value": rollup_data.get("formatted_value"),
+                            "formatted_value": formatted_value,
                             "unit_label": vt.unit_label,
-                            "color": rollup_data.get("color", "#6c757d"),
+                            "color": color or "#6c757d",
                             "formula": rollup_data.get("formula"),
                             "is_complete": rollup_data.get("is_complete", False),
                         }
@@ -258,12 +297,23 @@ def get_data():
                     system_rollup_values = {}
                     for vt in value_types:
                         rollup_data = sys_link.get_rollup_value(vt.id)
-                        if rollup_data:
+                        if rollup_data and rollup_data.get("value") is not None:
+                            color_config = sys_link.get_color_config(vt.id)
+                            from flask import current_app
+
+                            formatted_value = current_app.jinja_env.filters["format_value"](
+                                rollup_data.get("value"), vt, color_config
+                            )
+                            if color_config and hasattr(color_config, "get_value_color"):
+                                color = color_config.get_value_color(rollup_data.get("value"))
+                            else:
+                                color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
                             system_rollup_values[vt.id] = {
                                 "value": rollup_data.get("value"),
-                                "formatted_value": rollup_data.get("formatted_value"),
+                                "formatted_value": formatted_value,
                                 "unit_label": vt.unit_label,
-                                "color": rollup_data.get("color", "#6c757d"),
+                                "color": color or "#6c757d",
                                 "formula": rollup_data.get("formula"),
                                 "is_complete": rollup_data.get("is_complete", False),
                             }
@@ -310,10 +360,19 @@ def get_data():
                                     else:
                                         target_color = "#dc3545"
 
+                                # Format the value using config settings
+                                formatted_value = None
+                                if consensus and consensus.get("value") is not None:
+                                    from flask import current_app
+
+                                    formatted_value = current_app.jinja_env.filters["format_value"](
+                                        consensus.get("value"), vt, config
+                                    )
+
                                 kpi_values[vt.id] = {
                                     "config_id": config.id,
                                     "value": consensus.get("value") if consensus else None,
-                                    "formatted_value": consensus.get("formatted_value") if consensus else None,
+                                    "formatted_value": formatted_value,
                                     "unit_label": vt.unit_label,
                                     "color": config.get_value_color(consensus.get("value")) if consensus else None,
                                     "calculation_type": config.calculation_type,
