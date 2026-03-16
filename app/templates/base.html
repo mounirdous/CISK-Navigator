@@ -379,6 +379,14 @@
                                 </li>
                             </ul>
                         </li>
+                        {# Beta Testing Menu - Only visible to beta testers #}
+                        {% if current_user.beta_tester or current_user.is_super_admin %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('beta.index') }}" style="color: #ffc107;">
+                                <i class="bi bi-flask"></i> Beta
+                            </a>
+                        </li>
+                        {% endif %}
                         {% set org_id = session.get('organization_id') %}
                         {% set has_org_admin_access = current_user.is_global_admin or current_user.is_super_admin or (org_id and (current_user.can_manage_spaces(org_id) or current_user.can_manage_value_types(org_id) or current_user.can_manage_governance_bodies(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id))) %}
                         {% if has_org_admin_access %}

@@ -1,0 +1,495 @@
+{% extends "beta/base_beta.html" %}
+
+{% block title %}Workspace (Beta) - {{ org_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Mobile Workspace - Card-Based Drill-Down Design */
+
+.mobile-workspace-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg-primary);
+    padding: 1rem;
+    border-bottom: 2px solid var(--border-color);
+    margin: -1rem -1rem 1rem -1rem;
+}
+
+.mobile-workspace-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.mobile-workspace-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Entity Cards */
+.entity-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+
+.entity-card-header {
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    min-height: 64px;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.entity-card-header:active {
+    background-color: var(--hover-bg);
+}
+
+.entity-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-right: 1rem;
+    flex-shrink: 0;
+}
+
+.entity-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.entity-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.entity-meta {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.entity-badge {
+    background: rgba(102, 126, 234, 0.1);
+    color: #667eea;
+    padding: 0.125rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.entity-expand {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: transform 0.3s, background-color 0.2s;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.entity-card-header[aria-expanded="true"] .entity-expand {
+    transform: rotate(90deg);
+    background-color: var(--hover-bg);
+}
+
+/* Entity Body - Nested children */
+.entity-body {
+    padding: 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.entity-children {
+    padding: 0.5rem 1rem 1rem 1rem;
+}
+
+/* Nested Entity Cards (Challenges, Initiatives, Systems) */
+.nested-entity-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 0.5rem;
+}
+
+.nested-entity-card-header {
+    padding: 0.875rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    min-height: 56px;
+}
+
+.nested-entity-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-right: 0.875rem;
+    flex-shrink: 0;
+}
+
+.nested-entity-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+}
+
+.nested-entity-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.nested-entity-expand {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    transition: transform 0.3s;
+    flex-shrink: 0;
+    margin-left: 0.5rem;
+}
+
+.nested-entity-card-header[aria-expanded="true"] .nested-entity-expand {
+    transform: rotate(90deg);
+}
+
+.nested-entity-body {
+    padding: 0.5rem 0.875rem 0.875rem 0.875rem;
+    border-top: 1px solid var(--border-subtle);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--text-secondary);
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+}
+
+.empty-state-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state-desc {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+/* System List Item */
+.system-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.system-item-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.system-item-content {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.system-item-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 0.125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.system-item-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Quick Actions FAB */
+.mobile-fab {
+    position: fixed;
+    bottom: 80px;
+    right: 1rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    z-index: 999;
+}
+
+/* Private/Public Badge */
+.privacy-badge {
+    font-size: 0.7rem;
+    padding: 0.125rem 0.375rem;
+    border-radius: 6px;
+}
+
+.privacy-badge-private {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.privacy-badge-public {
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mobile-workspace-header">
+    <div class="mobile-workspace-title">
+        {% if org_logo %}
+        <img src="{{ org_logo }}" alt="{{ org_name }}" style="height: 1.25rem; width: auto; margin-right: 0.5rem;">
+        {% else %}
+        <i class="bi bi-grid-3x3-gap me-2" style="color: var(--accent-primary);"></i>
+        {% endif %}
+        {{ org_name }}
+    </div>
+    <div class="mobile-workspace-subtitle">
+        Tap to explore spaces, challenges, initiatives
+    </div>
+</div>
+
+<div style="padding-bottom: 100px;">
+
+    {% if spaces_data %}
+        <!-- Spaces List -->
+        <div id="spaces-container">
+            {% for space_data in spaces_data %}
+            {% set space = space_data.space %}
+            {% set space_id = "space-" ~ space.id %}
+
+            <div class="entity-card">
+                <div class="entity-card-header"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#{{ space_id }}"
+                     aria-expanded="false"
+                     aria-controls="{{ space_id }}">
+
+                    <!-- Space Icon -->
+                    <div class="entity-icon" style="background: {{ entity_defaults.space.color if entity_defaults.space else '#667eea' }}20;">
+                        {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                        <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 28px; height: 28px;">
+                        {% else %}
+                        <i class="bi bi-grid-3x3-gap" style="color: {{ entity_defaults.space.color if entity_defaults.space else '#667eea' }};"></i>
+                        {% endif %}
+                    </div>
+
+                    <!-- Space Content -->
+                    <div class="entity-content">
+                        <div class="entity-name">{{ space.name }}</div>
+                        <div class="entity-meta">
+                            <span class="entity-badge">
+                                <i class="bi bi-folder"></i> {{ space_data.challenges_count }} challenge{{ 's' if space_data.challenges_count != 1 }}
+                            </span>
+                            {% if space.is_private %}
+                            <span class="privacy-badge privacy-badge-private">
+                                <i class="bi bi-lock-fill"></i> Private
+                            </span>
+                            {% else %}
+                            <span class="privacy-badge privacy-badge-public">
+                                <i class="bi bi-globe"></i> Public
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Expand Icon -->
+                    <div class="entity-expand">
+                        <i class="bi bi-chevron-right"></i>
+                    </div>
+                </div>
+
+                <!-- Space Body (Challenges) -->
+                <div class="collapse entity-body" id="{{ space_id }}">
+                    <div class="entity-children">
+                        {% if space_data.challenges %}
+                            {% for challenge_data in space_data.challenges %}
+                            {% set challenge = challenge_data.challenge %}
+                            {% set challenge_id = "challenge-" ~ challenge.id %}
+
+                            <div class="nested-entity-card">
+                                <div class="nested-entity-card-header"
+                                     data-bs-toggle="collapse"
+                                     data-bs-target="#{{ challenge_id }}"
+                                     aria-expanded="false"
+                                     aria-controls="{{ challenge_id }}">
+
+                                    <!-- Challenge Icon -->
+                                    <div class="nested-entity-icon" style="background: {{ entity_defaults.challenge.color if entity_defaults.challenge else '#f59e0b' }}20;">
+                                        {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
+                                        <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 24px; height: 24px;">
+                                        {% else %}
+                                        <span style="color: {{ entity_defaults.challenge.color if entity_defaults.challenge else '#f59e0b' }}; font-weight: bold; font-style: italic;">ƒ</span>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Challenge Content -->
+                                    <div class="entity-content">
+                                        <div class="nested-entity-name">{{ challenge.name }}</div>
+                                        <div class="nested-entity-meta">
+                                            {{ challenge_data.initiatives_count }} initiative{{ 's' if challenge_data.initiatives_count != 1 }}
+                                        </div>
+                                    </div>
+
+                                    <!-- Expand Icon -->
+                                    <div class="nested-entity-expand">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Challenge Body (Initiatives) -->
+                                <div class="collapse nested-entity-body" id="{{ challenge_id }}">
+                                    {% if challenge_data.initiatives_count > 0 %}
+                                        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                            <i class="bi bi-info-circle"></i> Initiatives for this challenge:
+                                        </div>
+                                        {% for initiative_data in challenge_data.initiatives %}
+                                        {% set initiative = initiative_data.initiative %}
+                                        <div class="system-item">
+                                            <div class="system-item-icon" style="background: {{ entity_defaults.initiative.color if entity_defaults.initiative else '#8b5cf6' }}20;">
+                                                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                                                <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 22px; height: 22px;">
+                                                {% else %}
+                                                <span style="color: {{ entity_defaults.initiative.color if entity_defaults.initiative else '#8b5cf6' }}; font-weight: bold;">δ</span>
+                                                {% endif %}
+                                            </div>
+                                            <div class="system-item-content">
+                                                <div class="system-item-name">{{ initiative.name }}</div>
+                                                <div class="system-item-meta">
+                                                    {{ initiative_data.systems_count }} system{{ 's' if initiative_data.systems_count != 1 }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div style="padding: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
+                                            <i class="bi bi-inbox"></i><br>
+                                            No initiatives yet
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div style="padding: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.85rem;">
+                                <i class="bi bi-inbox"></i><br>
+                                No challenges in this space
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <div class="empty-state-title">No Spaces Yet</div>
+            <div class="empty-state-desc">
+                Your workspace is empty. Start by creating your first space to organize challenges and initiatives.
+            </div>
+            {% if current_user.can_manage_spaces(org_id) %}
+            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-primary" style="min-height: 48px; padding: 0.75rem 1.5rem;">
+                <i class="bi bi-plus-circle"></i> Create First Space
+            </a>
+            {% endif %}
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- FAB - Desktop Workspace Link -->
+<button class="mobile-fab" onclick="window.location.href='{{ url_for('workspace.index') }}'" title="Switch to Desktop View">
+    <i class="bi bi-laptop"></i>
+</button>
+
+<script>
+// Track expanded state in localStorage for persistence
+document.addEventListener('DOMContentLoaded', function() {
+    // Restore expanded state
+    const expandedItems = JSON.parse(localStorage.getItem('beta_workspace_expanded') || '[]');
+    expandedItems.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            const trigger = document.querySelector(`[data-bs-target="#${id}"]`);
+            if (trigger) {
+                trigger.setAttribute('aria-expanded', 'true');
+                element.classList.add('show');
+            }
+        }
+    });
+
+    // Save expanded state on change
+    document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(trigger => {
+        trigger.addEventListener('click', function() {
+            setTimeout(() => {
+                const expanded = Array.from(document.querySelectorAll('.collapse.show')).map(el => el.id);
+                localStorage.setItem('beta_workspace_expanded', JSON.stringify(expanded));
+            }, 100);
+        });
+    });
+});
+</script>
+{% endblock %}
