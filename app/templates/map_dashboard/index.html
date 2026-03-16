@@ -1107,6 +1107,9 @@
             Geographic KPI Distribution
         </h2>
         <div class="d-flex gap-2">
+            <button id="toggle3D" class="btn btn-outline-info" title="Toggle 2D/3D View">
+                <i class="bi bi-globe"></i> <span id="viewModeText">3D View</span>
+            </button>
             <a href="{{ url_for('geography.index') }}" class="btn btn-outline-primary">
                 <i class="bi bi-globe-americas"></i> Manage Geography
             </a>
@@ -1340,13 +1343,36 @@ mapboxgl.accessToken = '{{ config.get("MAPBOX_ACCESS_TOKEN", "pk.YOUR_TOKEN_HERE
 
 console.log('=== MAPBOX MAP INITIALIZATION ===');
 
-// Initialize Mapbox map (2D)
+// Initialize Mapbox map (2D by default)
 const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/light-v11', // Light background
     center: [10, 45], // Europe
     zoom: 3,
-    projection: 'mercator' // 2D map
+    projection: 'mercator' // 2D map (mercator)
+});
+
+// 2D/3D Toggle State
+let is3DMode = false;
+
+// 2D/3D Toggle Button Handler
+document.getElementById('toggle3D').addEventListener('click', function() {
+    is3DMode = !is3DMode;
+    const projection = is3DMode ? 'globe' : 'mercator';
+    const buttonText = is3DMode ? '2D View' : '3D View';
+
+    console.log(`Switching to ${is3DMode ? '3D' : '2D'} mode (projection: ${projection})`);
+
+    // Update map projection
+    map.setProjection(projection);
+
+    // Update button text
+    document.getElementById('viewModeText').textContent = buttonText;
+
+    // Optional: Adjust zoom for better 3D view
+    if (is3DMode) {
+        map.easeTo({ zoom: Math.max(map.getZoom() - 0.5, 2), duration: 1000 });
+    }
 });
 
 let countryKPIs = {};

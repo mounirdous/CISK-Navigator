@@ -5,6 +5,24 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-03-16
+
+### Added
+- **🌍 2D/3D Map Toggle (EXPERIMENTAL)**: Test 3D globe view in Map Dashboard
+  - New toggle button in page title: "3D View" / "2D View"
+  - Switches between Mapbox projections:
+    - 2D: `projection: 'mercator'` (flat map)
+    - 3D: `projection: 'globe'` (interactive globe)
+  - Smooth zoom adjustment when entering 3D mode
+  - **Purpose**: Test if mobile optimizations work with 3D view
+  - **Note**: May be reverted if issues found on mobile
+
+### Technical
+- Added `map.setProjection()` to dynamically switch projections
+- State tracking with `is3DMode` boolean flag
+- Button text updates dynamically based on current mode
+- Console logging for debugging projection changes
+
 ## [2.2.0] - 2026-03-16
 
 ### Improved
