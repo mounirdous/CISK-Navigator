@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-03-16
+
+### Fixed
+- **📜 KPI Spotlight scroll positioning**: KPI now fully visible, not cut off
+  - Problem: `scrollIntoView({block: 'center'})` was scrolling too far, hiding part of the KPI
+  - Solution: Custom scroll calculation positions KPI at 20% from top of viewport
+  - Uses `getBoundingClientRect()` to calculate precise positioning
+  - Formula: `targetScroll = kpiRow.offsetTop - (viewportHeight * 0.2)`
+  - Ensures full KPI row is visible with comfortable spacing above
+  - Still uses smooth scroll animation
+
 ## [2.3.1] - 2026-03-16
 
 ### Fixed

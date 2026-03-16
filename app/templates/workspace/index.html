@@ -3420,11 +3420,23 @@ function workspaceV2(orgId, filterPresets) {
                         return;
                     }
 
-                    // Smooth scroll to the KPI
-                    kpiRow.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                        inline: 'nearest'
+                    // Smooth scroll to the KPI with proper spacing
+                    // Use 'nearest' to prevent over-scrolling, then adjust if needed
+                    const container = document.querySelector('.ws-grid-container');
+                    const rowRect = kpiRow.getBoundingClientRect();
+                    const containerRect = container.getBoundingClientRect();
+
+                    // Calculate if row is visible and how much space we have
+                    const rowTop = rowRect.top - containerRect.top;
+                    const rowBottom = rowRect.bottom - containerRect.top;
+                    const viewportHeight = containerRect.height;
+
+                    // Scroll to position the row with 20% padding from top
+                    const targetScroll = kpiRow.offsetTop - (viewportHeight * 0.2);
+
+                    container.scrollTo({
+                        top: Math.max(0, targetScroll),
+                        behavior: 'smooth'
                     });
 
                     // Apply spotlight animation after scroll
