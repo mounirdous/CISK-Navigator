@@ -244,515 +244,38 @@ def dashboard():
 @login_required
 @organization_required
 def index():
-    """
-    Main workspace view: tree/grid navigation.
-
-    Shows spaces (collapsed by default) with roll-up values visible.
-    """
+    """Workspace - Fully reactive Alpine.js interface"""
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
-    # Check if user wants to skip auto-loading presets (e.g., after clicking "Clear All")
-    skip_default = request.args.get("skip_default") == "1"
+    # Get organization for logo and Porter's completion
+    org = Organization.query.get(org_id)
+    org_logo = None
+    porters_completion = None
+    if org:
+        if org.logo_data:
+            org_logo = f"data:{org.logo_mime_type};base64,{base64.b64encode(org.logo_data).decode('utf-8')}"
 
-    # Check if user has a last-used filter preset and no query params (first load)
-    # Skip if user explicitly cleared all filters
-    if not skip_default and not request.args:
-        # Check for last used preset (stored in membership)
-        membership = UserOrganizationMembership.query.filter_by(user_id=current_user.id, organization_id=org_id).first()
+        # Get Porter's Five Forces completion
+        filled, total, status = org.get_porters_completion()
+        porters_completion = {"filled": filled, "total": total, "status": status}
 
-        last_preset = None
-        if membership and membership.last_workspace_preset_id:
-            last_preset = UserFilterPreset.query.get(membership.last_workspace_preset_id)
-            # Verify it still exists and belongs to this user/org
-            if last_preset and (last_preset.user_id != current_user.id or last_preset.organization_id != org_id):
-                last_preset = None
-                # Clear invalid reference
-                membership.last_workspace_preset_id = None
-                db.session.commit()
-
-        # If we have a valid last preset, use it
-        if last_preset and last_preset.filters:
-            return redirect(url_for("workspace.index", **last_preset.filters))
-
-    # Get space type filter (all, private, public)
-    space_type_filter = request.args.get("space_type", "all")
-
-    # Get space counts for filter pills (with privacy filtering)
-    base_spaces_query = Space.query.filter_by(organization_id=org_id)
-    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
-        # Regular user: only count spaces they can see
-        base_spaces_query = base_spaces_query.filter(
-            or_(Space.is_private.is_(False), Space.created_by == current_user.id)
-        )
-    all_spaces_count = base_spaces_query.count()
-    public_spaces_count = base_spaces_query.filter_by(is_private=False).count()
-    private_spaces_count = base_spaces_query.filter_by(is_private=True).count()
-
-    # ALWAYS show all columns - user requested removal of column hiding feature
-    # Keeping parameter for backwards compatibility but always defaulting to True
-    show_all_columns = True
-
-    # Get active governance bodies for filter
-    from app.models import GovernanceBody
-
-    governance_bodies = (
-        GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
-        .order_by(GovernanceBody.display_order)
-        .all()
-    )
-
-    # Get selected governance body IDs from query params
-    selected_governance_body_ids = request.args.getlist("gb")
-
-    # Smart default: if no governance bodies selected and some exist, select all
-    # This fixes the bug where unchecking all filters still shows KPIs
-    if not selected_governance_body_ids and governance_bodies:
-        selected_governance_body_ids = [str(gb.id) for gb in governance_bodies]
-
-    # Get initiative group filter
-    selected_group_labels = request.args.getlist("group")
-
-    # Get initiative impact filter
-    selected_impact_levels = request.args.getlist("impact")
-
-    # Get show_archived flag
-    show_archived = request.args.get("show_archived") == "1"
-
-    # Get all spaces for space selector filter (with privacy filtering)
-    filter_spaces_query = Space.query.filter_by(organization_id=org_id)
-    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
-        # Regular user: only show spaces they can see
-        filter_spaces_query = filter_spaces_query.filter(
-            or_(Space.is_private.is_(False), Space.created_by == current_user.id)
-        )
-    all_spaces_for_filter = filter_spaces_query.order_by(Space.display_order, Space.name).all()
-
-    # Get selected space IDs (new space filter)
-    selected_space_ids = request.args.getlist("space")
-
-    # Get spaces based on filters
-    spaces_query = Space.query.filter_by(organization_id=org_id)
-
-    # SECURITY: Filter private spaces based on user permissions
-    # Private spaces are only visible to:
-    # 1. The creator/owner
-    # 2. Global admins
-    # 3. Organization admins
-    # 4. Super admins
-    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
-        # Regular user: only show public spaces OR private spaces they created
-        spaces_query = spaces_query.filter(or_(Space.is_private.is_(False), Space.created_by == current_user.id))
-
-    # Apply space type filter (all, private, public)
-    if space_type_filter == "private":
-        spaces_query = spaces_query.filter_by(is_private=True)
-    elif space_type_filter == "public":
-        spaces_query = spaces_query.filter_by(is_private=False)
-
-    # Apply individual space selection filter
-    if selected_space_ids:
-        space_ids_int = [int(sid) for sid in selected_space_ids]
-        spaces_query = spaces_query.filter(Space.id.in_(space_ids_int))
-
-    spaces = spaces_query.order_by(Space.display_order, Space.name).all()
-
-    # Filter initiatives by group and impact in Python (cleaner than template logic)
-    if selected_group_labels or selected_impact_levels:
-        for space in spaces:
-            for challenge in space.challenges:
-                # Filter initiative_links
-                challenge.initiative_links = [
-                    link
-                    for link in challenge.initiative_links
-                    if (
-                        # Group filter: if no group labels selected OR initiative matches selected groups or is ungrouped
-                        (
-                            not selected_group_labels
-                            or (not link.initiative.group_label or link.initiative.group_label in selected_group_labels)
-                        )
-                        and
-                        # Impact filter: if no impact levels selected OR initiative matches selected impact levels
-                        (not selected_impact_levels or (link.initiative.impact_on_challenge in selected_impact_levels))
-                    )
-                ]
-
-    # Get space IDs for filtering value types
-    space_ids = [space.id for space in spaces]
-
-    # Get active value types that have displayable rollup values in the FILTERED spaces
-    # Check for value types with actual contribution data (what creates rollups)
-    from app.models import Contribution, KPIGovernanceBodyLink
-
-    if space_ids:
-        # Build query to find value types that have data in filtered spaces
-        # This includes both manual KPIs (with contributions) and formula KPIs (calculated values)
-
-        # Query 1: Value types with contributions (manual KPIs)
-        value_types_with_contributions = (
-            db.session.query(ValueType.id)
-            .join(KPIValueTypeConfig, ValueType.id == KPIValueTypeConfig.value_type_id)
-            .join(Contribution, KPIValueTypeConfig.id == Contribution.kpi_value_type_config_id)
-            .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(
-                Challenge.space_id.in_(space_ids), ValueType.organization_id == org_id, ValueType.is_active.is_(True)
-            )
-        )
-
-        # Apply filters to contributions query
-        if selected_governance_body_ids:
-            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
-            value_types_with_contributions = value_types_with_contributions.join(
-                KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id
-            ).filter(KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int))
-
-        if selected_group_labels:
-            value_types_with_contributions = value_types_with_contributions.filter(
-                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
-            )
-
-        if selected_impact_levels:
-            value_types_with_contributions = value_types_with_contributions.filter(
-                Initiative.impact_on_challenge.in_(selected_impact_levels)
-            )
-
-        if not show_archived:
-            value_types_with_contributions = value_types_with_contributions.filter(KPI.is_archived.is_(False))
-
-        # Query 2: Value types with formula KPIs (calculated values)
-        value_types_with_formulas = (
-            db.session.query(ValueType.id)
-            .join(KPIValueTypeConfig, ValueType.id == KPIValueTypeConfig.value_type_id)
-            .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(
-                Challenge.space_id.in_(space_ids),
-                ValueType.organization_id == org_id,
-                ValueType.is_active.is_(True),
-                KPIValueTypeConfig.calculation_type.in_(["formula", "linked"]),
-            )
-        )
-
-        # Apply filters to formulas query
-        if selected_governance_body_ids:
-            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
-            value_types_with_formulas = value_types_with_formulas.join(
-                KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id
-            ).filter(KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int))
-
-        if selected_group_labels:
-            value_types_with_formulas = value_types_with_formulas.filter(
-                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
-            )
-
-        if selected_impact_levels:
-            value_types_with_formulas = value_types_with_formulas.filter(
-                Initiative.impact_on_challenge.in_(selected_impact_levels)
-            )
-
-        if not show_archived:
-            value_types_with_formulas = value_types_with_formulas.filter(KPI.is_archived.is_(False))
-
-        # Combine both queries with UNION
-        value_types_query = value_types_with_contributions.union(value_types_with_formulas)
-
-        value_types_with_data = value_types_query.distinct().all()
-        value_type_ids_with_data = {vt_id for (vt_id,) in value_types_with_data}
-    else:
-        value_type_ids_with_data = set()
-
-    # Get all active value types
-    all_value_types = (
-        ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.display_order).all()
-    )
-
-    # Get value types - apply smart filtering unless show_all_columns is enabled
-    if show_all_columns:
-        # Show all columns override - show everything
-        value_types = all_value_types
-        hidden_value_types = []
-    else:
-        # Smart filtering: only show columns with actual contribution data
-        if value_type_ids_with_data:
-            # Filter to show only columns with data
-            value_types = [vt for vt in all_value_types if vt.id in value_type_ids_with_data]
-            hidden_value_types = [vt for vt in all_value_types if vt.id not in value_type_ids_with_data]
-        elif not space_ids:
-            # No spaces at all - show all columns (nothing to filter)
-            value_types = all_value_types
-            hidden_value_types = []
-        else:
-            # Have spaces but no data - hide all columns
-            value_types = []
-            hidden_value_types = all_value_types
-
-    # Get level visibility controls (default all visible)
-    show_levels = {
-        "spaces": request.args.get("show_spaces", "1") == "1",
-        "challenges": request.args.get("show_challenges", "1") == "1",
-        "initiatives": request.args.get("show_initiatives", "1") == "1",
-        "systems": request.args.get("show_systems", "1") == "1",
-        "kpis": request.args.get("show_kpis", "1") == "1",
-    }
-
-    # Calculate counts for initiative groups (A, B, C, D)
-    group_counts = {}
-    if space_ids:
-        for group_label in ["A", "B", "C", "D"]:
-            count = (
-                db.session.query(Initiative.id)
-                .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-                .filter(Challenge.space_id.in_(space_ids), Initiative.group_label == group_label)
-                .distinct()
-                .count()
-            )
-            group_counts[group_label] = count
-    else:
-        group_counts = {"A": 0, "B": 0, "C": 0, "D": 0}
-
-    # Calculate counts for initiative impact levels
-    impact_counts = {}
-    if space_ids:
-        for impact_level in ["not_assessed", "low", "medium", "high", "no_consensus"]:
-            count = (
-                db.session.query(Initiative.id)
-                .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-                .filter(Challenge.space_id.in_(space_ids), Initiative.impact_on_challenge == impact_level)
-                .distinct()
-                .count()
-            )
-            impact_counts[impact_level] = count
-    else:
-        impact_counts = {
-            "not_assessed": 0,
-            "low": 0,
-            "medium": 0,
-            "high": 0,
-            "no_consensus": 0,
-        }
-
-    # Calculate KPI counts per governance body
-    gb_kpi_counts = {}
-    if space_ids:
-        from app.models import KPIGovernanceBodyLink
-
-        for gb in governance_bodies:
-            count = (
-                db.session.query(KPI.id)
-                .join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
-                .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-                .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-                .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-                .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-                .filter(Challenge.space_id.in_(space_ids), KPIGovernanceBodyLink.governance_body_id == gb.id)
-                .distinct()
-                .count()
-            )
-            gb_kpi_counts[gb.id] = count
-    else:
-        gb_kpi_counts = {gb.id: 0 for gb in governance_bodies}
-
-    # Calculate level counts (for Show Levels section)
-    level_counts = {}
-    if space_ids:
-        # Spaces count (already calculated)
-        level_counts["spaces"] = (
-            all_spaces_count
-            if space_type_filter == "all"
-            else (public_spaces_count if space_type_filter == "public" else private_spaces_count)
-        )
-
-        # Challenges count
-        level_counts["challenges"] = db.session.query(Challenge.id).filter(Challenge.space_id.in_(space_ids)).count()
-
-        # Initiatives count
-        initiatives_query = (
-            db.session.query(Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(Challenge.space_id.in_(space_ids))
-        )
-        if selected_group_labels:
-            initiatives_query = initiatives_query.filter(
-                or_(Initiative.group_label.in_(selected_group_labels), Initiative.group_label.is_(None))
-            )
-        level_counts["initiatives"] = initiatives_query.distinct().count()
-
-        # Systems count
-        level_counts["systems"] = (
-            db.session.query(System.id)
-            .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(Challenge.space_id.in_(space_ids))
-            .distinct()
-            .count()
-        )
-
-        # KPIs count
-        kpis_query = (
-            db.session.query(KPI.id)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(Challenge.space_id.in_(space_ids))
-        )
-        if selected_governance_body_ids:
-            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
-            kpis_query = kpis_query.join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id).filter(
-                KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int)
-            )
-        if not show_archived:
-            kpis_query = kpis_query.filter(KPI.is_archived.is_(False))
-        level_counts["kpis"] = kpis_query.distinct().count()
-    else:
-        level_counts = {"spaces": 0, "challenges": 0, "initiatives": 0, "systems": 0, "kpis": 0}
-
-    # Calculate archived KPIs count
-    archived_kpis_count = 0
-    if space_ids:
-        archived_query = (
-            db.session.query(KPI.id)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
-            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
-            .filter(Challenge.space_id.in_(space_ids), KPI.is_archived.is_(True))
-        )
-        if selected_governance_body_ids:
-            gb_ids_int = [int(gb_id) for gb_id in selected_governance_body_ids]
-            archived_query = archived_query.join(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id).filter(
-                KPIGovernanceBodyLink.governance_body_id.in_(gb_ids_int)
-            )
-        archived_kpis_count = archived_query.distinct().count()
-
-    # Get filter presets for this user
+    # Get filter presets for this user (from database)
     filter_presets = (
         UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
         .order_by(UserFilterPreset.name)
         .all()
     )
 
-    # Detect if current filters match a saved preset
-    active_preset = None
-    # Get all parameters as lists (preserves multiple values)
-    current_filters = request.args.to_dict(flat=False)
-
-    # Compare with each preset
-    for preset in filter_presets:
-        preset_filters = preset.filters.copy() if preset.filters else {}
-
-        # Check if they match (normalization happens in _filters_match)
-        if _filters_match(current_filters, preset_filters):
-            active_preset = preset
-            break
-
-    # Get organization object for Porter's completion
-    organization = Organization.query.get(org_id)
-
-    # Get organization logo
-    org_logo = None
-    if organization and organization.logo_data:
-        org_logo = (
-            f"data:{organization.logo_mime_type};base64,{base64.b64encode(organization.logo_data).decode('utf-8')}"
-        )
-
-    # Get entity type defaults (for icons/logos in tree view)
-    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
-    entity_defaults = {}
-    for default in entity_defaults_raw:
-        logo_url = None
-        if default.default_logo_data and default.default_logo_mime_type:
-            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
-
-        entity_defaults[default.entity_type] = {
-            "color": default.default_color,
-            "icon": default.default_icon,
-            "logo": logo_url,
-        }
-
-    # Get entity links for workspace view
-    from app.models import EntityLink
-
-    challenge_links = {}
-    initiative_links = {}
-    system_links = {}
-    kpi_links = {}
-
-    for space in spaces:
-        for challenge in space.challenges:
-            # Get challenge links
-            links = EntityLink.get_links_for_entity("challenge", challenge.id, current_user.id, include_private=True)
-            if links:
-                challenge_links[challenge.id] = links
-
-            # Get initiative links
-            for init_link in challenge.initiative_links:
-                initiative = init_link.initiative
-                links = EntityLink.get_links_for_entity(
-                    "initiative", initiative.id, current_user.id, include_private=True
-                )
-                if links:
-                    initiative_links[initiative.id] = links
-
-                # Get system links
-                for sys_link in initiative.system_links:
-                    system = sys_link.system
-                    links = EntityLink.get_links_for_entity("system", system.id, current_user.id, include_private=True)
-                    if links:
-                        system_links[system.id] = links
-
-                    # Get KPI links
-                    for kpi in sys_link.kpis:
-                        links = EntityLink.get_links_for_entity("kpi", kpi.id, current_user.id, include_private=True)
-                        if links:
-                            kpi_links[kpi.id] = links
-
     return render_template(
         "workspace/index.html",
-        org_id=org_id,
         org_name=org_name,
+        org_id=org_id,
+        organization=org,
         org_logo=org_logo,
-        organization=organization,
-        entity_defaults=entity_defaults,
-        spaces=spaces,
-        value_types=value_types,
-        hidden_value_types=hidden_value_types,
-        governance_bodies=governance_bodies,
-        selected_governance_body_ids=selected_governance_body_ids,
-        selected_group_labels=selected_group_labels,
-        selected_impact_levels=selected_impact_levels,
-        show_archived=show_archived,
-        show_levels=show_levels,
-        space_type_filter=space_type_filter,
-        all_spaces_count=all_spaces_count,
-        public_spaces_count=public_spaces_count,
-        private_spaces_count=private_spaces_count,
-        show_all_columns=show_all_columns,
-        group_counts=group_counts,
-        impact_counts=impact_counts,
-        gb_kpi_counts=gb_kpi_counts,
-        challenge_links=challenge_links,
-        initiative_links=initiative_links,
-        system_links=system_links,
-        kpi_links=kpi_links,
-        level_counts=level_counts,
-        archived_kpis_count=archived_kpis_count,
+        porters_completion=porters_completion,
         filter_presets=filter_presets,
-        active_preset=active_preset,
-        all_spaces_for_filter=all_spaces_for_filter,
-        selected_space_ids=selected_space_ids,
+        csrf_token=generate_csrf,
     )
 
 
@@ -3609,3 +3132,561 @@ def acknowledge_announcement(announcement_id):
         db.session.commit()
 
     return jsonify({"success": True})
+
+
+@bp.route("/data")
+@login_required
+def get_data():
+    """
+    API endpoint that returns ALL workspace data as JSON for Alpine.js to handle
+
+    Returns:
+    {
+        "spaces": [...],
+        "valueTypes": [...],
+        "governanceBodies": [...],
+        "groups": [...],
+        "impactLevels": [...]
+    }
+    """
+    org_id = session.get("organization_id")
+
+    # Get spaces with privacy filtering
+    spaces_query = Space.query.filter_by(organization_id=org_id)
+    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
+        spaces_query = spaces_query.filter(or_(Space.is_private.is_(False), Space.created_by == current_user.id))
+
+    spaces = spaces_query.order_by(Space.display_order, Space.name).all()
+
+    # Get value types
+    value_types = (
+        ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.display_order).all()
+    )
+
+    # Get governance bodies
+    governance_bodies = (
+        GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
+        .order_by(GovernanceBody.display_order)
+        .all()
+    )
+
+    # Get entity type defaults for logo fallbacks
+    entity_defaults = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    default_logos = {}
+    for default in entity_defaults:
+        if default.default_logo_data and default.default_logo_mime_type:
+            default_logos[default.entity_type] = (
+                f"data:{default.default_logo_mime_type};base64,"
+                f"{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+            )
+
+    # Helper function to get logo URL for an entity
+    def get_logo_url(entity, entity_type):
+        """Get logo URL - entity's own logo or default logo for the type"""
+        if (
+            hasattr(entity, "logo_data")
+            and entity.logo_data
+            and hasattr(entity, "logo_mime_type")
+            and entity.logo_mime_type
+        ):
+            return f"data:{entity.logo_mime_type};base64,{base64.b64encode(entity.logo_data).decode('utf-8')}"
+        return default_logos.get(entity_type)
+
+    # Helper function to get entity links
+    from app.models import EntityLink
+
+    def get_entity_links(entity_type, entity_id):
+        """Get all links for a specific entity"""
+        links = (
+            EntityLink.query.filter_by(entity_type=entity_type, entity_id=entity_id)
+            .order_by(EntityLink.display_order)
+            .all()
+        )
+        result = []
+        for link in links:
+            result.append(
+                {
+                    "id": link.id,
+                    "title": link.title,
+                    "url": link.url,
+                    "icon": link.get_display_icon(),
+                }
+            )
+        return result
+
+    # Build full hierarchical tree: Spaces → Challenges → Initiatives → Systems → KPIs
+    spaces_data = []
+    for space in spaces:
+        # Get space rollup values
+        space_rollup_values = {}
+        for vt in value_types:
+            rollup_data = space.get_rollup_value(vt.id)
+            if rollup_data and rollup_data.get("value") is not None:
+                # Get color config for formatting
+                color_config = space.get_color_config(vt.id)
+
+                # Format the value using the Jinja filter
+                from flask import current_app
+
+                formatted_value = current_app.jinja_env.filters["format_value"](
+                    rollup_data.get("value"), vt, color_config
+                )
+
+                # Get color from config
+                if color_config and hasattr(color_config, "get_value_color"):
+                    color = color_config.get_value_color(rollup_data.get("value"))
+                else:
+                    # Use default color filter
+                    color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
+                space_rollup_values[vt.id] = {
+                    "value": rollup_data.get("value"),
+                    "formatted_value": formatted_value,
+                    "unit_label": vt.unit_label,
+                    "color": color or "#6c757d",
+                    "formula": rollup_data.get("formula"),
+                    "is_complete": rollup_data.get("is_complete", False),
+                }
+
+        # Get space SWOT completion
+        swot_filled, swot_total, swot_status = space.get_swot_completion()
+        swot_completion = {
+            "filled": swot_filled,
+            "total": swot_total,
+            "status": swot_status,  # 'empty', 'partial', 'complete'
+        }
+
+        # Get space entity links
+        space_entity_links = get_entity_links("space", space.id)
+
+        challenges_data = []
+        for challenge in space.challenges:
+            # Get challenge rollup values
+            challenge_rollup_values = {}
+            for vt in value_types:
+                rollup_data = challenge.get_rollup_value(vt.id)
+                if rollup_data and rollup_data.get("value") is not None:
+                    color_config = challenge.get_color_config(vt.id)
+                    from flask import current_app
+
+                    formatted_value = current_app.jinja_env.filters["format_value"](
+                        rollup_data.get("value"), vt, color_config
+                    )
+                    if color_config and hasattr(color_config, "get_value_color"):
+                        color = color_config.get_value_color(rollup_data.get("value"))
+                    else:
+                        color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
+                    challenge_rollup_values[vt.id] = {
+                        "value": rollup_data.get("value"),
+                        "formatted_value": formatted_value,
+                        "unit_label": vt.unit_label,
+                        "color": color or "#6c757d",
+                        "formula": rollup_data.get("formula"),
+                        "is_complete": rollup_data.get("is_complete", False),
+                    }
+
+            # Get challenge entity links
+            challenge_entity_links = get_entity_links("challenge", challenge.id)
+
+            # Get initiatives under this challenge
+            initiatives_data = []
+            for link in challenge.initiative_links:
+                initiative = link.initiative
+
+                # Get initiative rollup values
+                initiative_rollup_values = {}
+                for vt in value_types:
+                    rollup_data = initiative.get_rollup_value(vt.id)
+                    if rollup_data and rollup_data.get("value") is not None:
+                        color_config = initiative.get_color_config(vt.id)
+                        from flask import current_app
+
+                        formatted_value = current_app.jinja_env.filters["format_value"](
+                            rollup_data.get("value"), vt, color_config
+                        )
+                        if color_config and hasattr(color_config, "get_value_color"):
+                            color = color_config.get_value_color(rollup_data.get("value"))
+                        else:
+                            color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
+                        initiative_rollup_values[vt.id] = {
+                            "value": rollup_data.get("value"),
+                            "formatted_value": formatted_value,
+                            "unit_label": vt.unit_label,
+                            "color": color or "#6c757d",
+                            "formula": rollup_data.get("formula"),
+                            "is_complete": rollup_data.get("is_complete", False),
+                        }
+
+                # Get initiative form completion
+                form_filled, form_total, form_status = initiative.get_form_completion()
+                form_completion = {
+                    "filled": form_filled,
+                    "total": form_total,
+                    "status": form_status,  # 'empty', 'partial', 'complete'
+                }
+
+                # Get initiative entity links
+                initiative_entity_links = get_entity_links("initiative", initiative.id)
+
+                # Get systems under this initiative
+                systems_data = []
+                for sys_link in initiative.system_links:
+                    system = sys_link.system
+
+                    # Get system rollup values
+                    system_rollup_values = {}
+                    for vt in value_types:
+                        rollup_data = sys_link.get_rollup_value(vt.id)
+                        if rollup_data and rollup_data.get("value") is not None:
+                            color_config = sys_link.get_color_config(vt.id)
+                            from flask import current_app
+
+                            formatted_value = current_app.jinja_env.filters["format_value"](
+                                rollup_data.get("value"), vt, color_config
+                            )
+                            if color_config and hasattr(color_config, "get_value_color"):
+                                color = color_config.get_value_color(rollup_data.get("value"))
+                            else:
+                                color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
+
+                            system_rollup_values[vt.id] = {
+                                "value": rollup_data.get("value"),
+                                "formatted_value": formatted_value,
+                                "unit_label": vt.unit_label,
+                                "color": color or "#6c757d",
+                                "formula": rollup_data.get("formula"),
+                                "is_complete": rollup_data.get("is_complete", False),
+                            }
+
+                    # Get system entity links
+                    system_entity_links = get_entity_links("system", system.id)
+
+                    # Get KPIs under this system
+                    kpis_data = []
+                    for kpi in sys_link.kpis:
+                        # Get KPI values with full details for rendering
+                        kpi_values = {}
+                        for vt in value_types:
+                            # Find config for this value type
+                            config = next((c for c in kpi.value_type_configs if c.value_type_id == vt.id), None)
+                            if config:
+                                consensus = config.get_consensus_value()
+
+                                # Calculate target progress if target exists
+                                target_progress = None
+                                target_color = None
+                                if config.target_value is not None and consensus and consensus.get("value") is not None:
+                                    target_dir = config.target_direction or "maximize"
+                                    target_val = float(config.target_value)
+                                    current_val = float(consensus.get("value"))
+
+                                    if target_dir == "minimize":
+                                        progress = int((target_val / current_val) * 100) if current_val != 0 else 100
+                                    elif target_dir == "exact":
+                                        tolerance = target_val * (config.target_tolerance_pct or 10) / 100
+                                        diff = abs(current_val - target_val)
+                                        if diff <= tolerance:
+                                            progress = 100
+                                        else:
+                                            progress = max(0, int(100 - ((diff - tolerance) / target_val * 100)))
+                                    else:  # maximize
+                                        progress = int((current_val / target_val) * 100)
+
+                                    target_progress = progress
+                                    if progress >= 90:
+                                        target_color = "#28a745"
+                                    elif progress >= 60:
+                                        target_color = "#ffc107"
+                                    else:
+                                        target_color = "#dc3545"
+
+                                # Format the value using config settings
+                                formatted_value = None
+                                if consensus and consensus.get("value") is not None:
+                                    from flask import current_app
+
+                                    formatted_value = current_app.jinja_env.filters["format_value"](
+                                        consensus.get("value"), vt, config
+                                    )
+
+                                kpi_values[vt.id] = {
+                                    "config_id": config.id,
+                                    "value": consensus.get("value") if consensus else None,
+                                    "formatted_value": formatted_value,
+                                    "unit_label": vt.unit_label,
+                                    "color": config.get_value_color(consensus.get("value")) if consensus else None,
+                                    "calculation_type": config.calculation_type,
+                                    "consensus_status": consensus.get("status") if consensus else "no_data",
+                                    "consensus_count": consensus.get("count") if consensus else 0,
+                                    "has_target": config.target_value is not None,
+                                    "target_value": config.target_value,
+                                    "target_date": (
+                                        config.target_date.strftime("%Y-%m-%d") if config.target_date else None
+                                    ),
+                                    "target_direction": (
+                                        config.target_direction or "maximize" if config.target_value else None
+                                    ),
+                                    "target_progress": target_progress,
+                                    "target_color": target_color,
+                                }
+
+                        # Get governance body info (full details for badges)
+                        governance_bodies_data = []
+                        for gb_link in kpi.governance_body_links:
+                            governance_bodies_data.append(
+                                {
+                                    "id": gb_link.governance_body.id,
+                                    "name": gb_link.governance_body.name,
+                                    "abbreviation": gb_link.governance_body.abbreviation,
+                                    "color": gb_link.governance_body.color,
+                                }
+                            )
+
+                        # Get target direction from configs (if any has a target)
+                        target_direction = None
+                        for config in kpi.value_type_configs:
+                            if config.target_value is not None:
+                                target_direction = config.target_direction or "maximize"
+                                break
+
+                        # Check if KPI has linked sources
+                        has_linked_sources = any(config.linked_source_kpi_id for config in kpi.value_type_configs)
+
+                        # Get KPI entity links
+                        kpi_entity_links = get_entity_links("kpi", kpi.id)
+
+                        kpis_data.append(
+                            {
+                                "id": kpi.id,
+                                "name": kpi.name,
+                                "display_order": kpi.display_order,
+                                "logo_url": get_logo_url(kpi, "kpi"),
+                                "values": kpi_values,
+                                "is_archived": kpi.is_archived,
+                                "archived_at": kpi.archived_at.strftime("%Y-%m-%d") if kpi.archived_at else None,
+                                "governance_bodies": governance_bodies_data,
+                                "target_direction": target_direction,
+                                "has_linked_sources": has_linked_sources,
+                                "entity_links": kpi_entity_links,
+                            }
+                        )
+
+                    systems_data.append(
+                        {
+                            "id": system.id,
+                            "link_id": sys_link.id,  # For parent change operations
+                            "name": system.name,
+                            "logo_url": get_logo_url(system, "system"),
+                            "rollup_values": system_rollup_values,
+                            "entity_links": system_entity_links,
+                            "kpis": kpis_data,
+                        }
+                    )
+
+                initiatives_data.append(
+                    {
+                        "id": initiative.id,
+                        "link_id": link.id,  # For parent change operations
+                        "name": initiative.name,
+                        "logo_url": get_logo_url(initiative, "initiative"),
+                        "group_label": initiative.group_label,
+                        "impact_on_challenge": initiative.impact_on_challenge,
+                        "rollup_values": initiative_rollup_values,
+                        "form_completion": form_completion,
+                        "entity_links": initiative_entity_links,
+                        "systems": systems_data,
+                    }
+                )
+
+            challenges_data.append(
+                {
+                    "id": challenge.id,
+                    "name": challenge.name,
+                    "logo_url": get_logo_url(challenge, "challenge"),
+                    "display_order": challenge.display_order,
+                    "rollup_values": challenge_rollup_values,
+                    "entity_links": challenge_entity_links,
+                    "initiatives": initiatives_data,
+                }
+            )
+
+        spaces_data.append(
+            {
+                "id": space.id,
+                "name": space.name,
+                "logo_url": get_logo_url(space, "space"),
+                "display_order": space.display_order,
+                "is_private": space.is_private,
+                "space_label": space.space_label,
+                "rollup_values": space_rollup_values,
+                "swot_completion": swot_completion,
+                "entity_links": space_entity_links,
+                "challenges": challenges_data,
+            }
+        )
+
+    # Build value types data
+    value_types_data = [
+        {
+            "id": vt.id,
+            "name": vt.name,
+            "display_order": vt.display_order,
+            "unit_label": vt.unit_label,
+            "kind": vt.kind,
+        }
+        for vt in value_types
+    ]
+
+    # Build governance bodies data
+    governance_bodies_data = [{"id": gb.id, "name": gb.name} for gb in governance_bodies]
+
+    # Get unique initiative groups
+    groups = (
+        db.session.query(Initiative.group_label)
+        .filter(Initiative.organization_id == org_id, Initiative.group_label.isnot(None))
+        .distinct()
+        .all()
+    )
+    groups_data = [g[0] for g in groups]
+
+    # Impact levels
+    impact_levels_data = [
+        {"value": "not_assessed", "label": "Not Assessed"},
+        {"value": "low", "label": "Low"},
+        {"value": "medium", "label": "Medium"},
+        {"value": "high", "label": "High"},
+        {"value": "no_consensus", "label": "No Consensus"},
+    ]
+
+    return jsonify(
+        {
+            "spaces": spaces_data,
+            "valueTypes": value_types_data,
+            "governanceBodies": governance_bodies_data,
+            "groups": groups_data,
+            "impactLevels": impact_levels_data,
+        }
+    )
+
+
+@bp.route("/api/action-items-count")
+@login_required
+def get_action_items_count():
+    """Get count of action items requiring attention"""
+    org_id = session.get("organization_id")
+
+    # Get initiatives with no consensus
+    initiatives_no_consensus = Initiative.query.filter_by(
+        organization_id=org_id, impact_on_challenge="no_consensus"
+    ).count()
+
+    # Get initiatives with incomplete forms
+    all_initiatives = Initiative.query.filter_by(organization_id=org_id).all()
+    initiatives_incomplete = 0
+    for initiative in all_initiatives:
+        filled, total, status = initiative.get_form_completion()
+        if status != "complete":
+            initiatives_incomplete += 1
+
+    # Get spaces without SWOT (empty or partial)
+    all_spaces = Space.query.filter_by(organization_id=org_id).all()
+    spaces_no_swot = 0
+    for space in all_spaces:
+        filled, total, status = space.get_swot_completion()
+        if status != "complete":
+            spaces_no_swot += 1
+
+    # Get systems without KPIs
+    systems_without_kpis = (
+        db.session.query(System)
+        .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
+        .filter(Initiative.organization_id == org_id, KPI.id.is_(None))
+        .distinct()
+        .count()
+    )
+
+    # Get KPIs without governance bodies
+    from app.models import KPIGovernanceBodyLink
+
+    kpis_without_gb = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .outerjoin(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
+        .filter(Initiative.organization_id == org_id, KPIGovernanceBodyLink.id.is_(None))
+        .count()
+    )
+
+    # Calculate total
+    total_issues = (
+        initiatives_no_consensus + initiatives_incomplete + spaces_no_swot + systems_without_kpis + kpis_without_gb
+    )
+
+    return jsonify({"total_issues": total_issues})
+
+
+@bp.route("/api/change-parent/<entity_type>", methods=["POST"])
+@login_required
+def change_parent(entity_type):
+    """Change the parent of an entity (move to different parent)"""
+    try:
+        org_id = session.get("organization_id")
+        data = request.get_json()
+
+        entity_id = data.get("entity_id")
+        new_parent_id = data.get("new_parent_id")
+
+        if not entity_id or not new_parent_id:
+            return jsonify({"error": "Missing entity_id or new_parent_id"}), 400
+
+        if entity_type == "challenge":
+            # Move challenge to different space
+            challenge = Challenge.query.filter_by(id=entity_id, organization_id=org_id).first()
+            if not challenge:
+                return jsonify({"error": "Challenge not found"}), 404
+
+            challenge.space_id = new_parent_id
+
+        elif entity_type == "initiative":
+            # Move initiative to different challenge
+            link = ChallengeInitiativeLink.query.filter_by(id=entity_id).first()
+            if not link or link.initiative.organization_id != org_id:
+                return jsonify({"error": "Initiative link not found"}), 404
+
+            link.challenge_id = new_parent_id
+
+        elif entity_type == "system":
+            # Move system to different initiative
+            link = InitiativeSystemLink.query.filter_by(id=entity_id).first()
+            if not link or link.system.organization_id != org_id:
+                return jsonify({"error": "System link not found"}), 404
+
+            link.initiative_id = new_parent_id
+
+        elif entity_type == "kpi":
+            # Move KPI to different system (system is a link)
+            kpi = KPI.query.filter_by(id=entity_id).first()
+            if not kpi:
+                return jsonify({"error": "KPI not found"}), 404
+
+            # Verify ownership through system link
+            old_link = InitiativeSystemLink.query.get(kpi.initiative_system_link_id)
+            if not old_link or old_link.system.organization_id != org_id:
+                return jsonify({"error": "Unauthorized"}), 403
+
+            # new_parent_id is the InitiativeSystemLink id
+            kpi.initiative_system_link_id = new_parent_id
+
+        else:
+            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
+
+        db.session.commit()
+        return jsonify({"success": True, "message": f"{entity_type.capitalize()} parent changed"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
