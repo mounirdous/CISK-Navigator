@@ -280,7 +280,6 @@ class SearchService:
             list: Matching System records
         """
         query = parsed["clean_query"]
-        modifiers = parsed["modifiers"]
 
         # Base query
         base_query = (
@@ -291,9 +290,8 @@ class SearchService:
             .distinct()
         )
 
-        # Apply modifiers
-        if "archived" not in modifiers:
-            base_query = base_query.filter(System.is_archived is False)
+        # Note: System model doesn't have is_archived field
+        # Systems are always active
 
         all_systems = base_query.all()
 
@@ -315,7 +313,6 @@ class SearchService:
                         "name": system.name,
                         "description": system.description,
                         "match_score": match_score,
-                        "is_archived": system.is_archived,
                         "updated_at": system.updated_at.isoformat() if system.updated_at else None,
                     }
                 )
@@ -394,12 +391,9 @@ class SearchService:
         query = parsed["clean_query"]
 
         # Get all challenges for organization
+        # Note: Challenge model doesn't have is_archived field
         all_challenges = (
-            db.session.query(Challenge)
-            .join(Challenge.space)
-            .filter(Space.organization_id == organization_id)
-            .filter(Challenge.is_archived is False)
-            .all()
+            db.session.query(Challenge).join(Challenge.space).filter(Space.organization_id == organization_id).all()
         )
 
         # Filter by fuzzy match
@@ -444,12 +438,8 @@ class SearchService:
         query = parsed["clean_query"]
 
         # Get all spaces for organization
-        all_spaces = (
-            db.session.query(Space)
-            .filter(Space.organization_id == organization_id)
-            .filter(Space.is_archived is False)
-            .all()
-        )
+        # Note: Space model doesn't have is_archived field
+        all_spaces = db.session.query(Space).filter(Space.organization_id == organization_id).all()
 
         # Filter by fuzzy match
         results = []

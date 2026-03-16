@@ -5,6 +5,56 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.6] - 2026-03-16
+
+### Fixed - CRITICAL: AttributeError on is_archived Fields (HOTFIX)
+**Issue**: Search still broken - `AttributeError: type object 'System' has no attribute 'is_archived'`
+**Error**: 500 INTERNAL SERVER ERROR on all searches
+
+**Root Cause**:
+- SearchService trying to filter by `is_archived` on models that don't have this field
+- Only KPI and Initiative models have `is_archived`
+- System, Challenge, and Space models DO NOT have `is_archived`
+
+**Models WITHOUT is_archived**:
+- ❌ System - no archiving concept
+- ❌ Challenge - no archiving concept
+- ❌ Space - no archiving concept
+
+**Models WITH is_archived**:
+- ✅ KPI - has is_archived field
+- ✅ Initiative - has is_archived field
+
+**Files Modified**:
+- `app/services/search_service.py` - Removed is_archived checks from System, Challenge, Space search
+
+**The Fix**:
+1. **System search** - Removed `.filter(System.is_archived is False)` + result field
+2. **Challenge search** - Removed `.filter(Challenge.is_archived is False)`
+3. **Space search** - Removed `.filter(Space.is_archived is False)`
+4. Added comments: "Note: [Model] doesn't have is_archived field"
+
+**Before (BROKEN)**:
+```python
+# System
+.filter(System.is_archived is False)  # ❌ AttributeError
+
+# Challenge
+.filter(Challenge.is_archived is False)  # ❌ AttributeError
+
+# Space
+.filter(Space.is_archived is False)  # ❌ AttributeError
+```
+
+**After (WORKING)**:
+```python
+# System, Challenge, Space
+# Note: These models don't have is_archived field
+# All records are always "active"
+```
+
+**Impact**: Search should now fully work without 500 errors
+
 ## [2.5.5] - 2026-03-16
 
 ### Fixed - CRITICAL: SQLAlchemy Join Error Breaking Search (HOTFIX)
