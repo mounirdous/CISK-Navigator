@@ -223,3 +223,109 @@ def dashboard():
         csrf_token=generate_csrf,
         is_prototype=True,
     )
+
+
+@bp.route("/action-items")
+@login_required
+@beta_required
+def action_items():
+    """
+    Quality Dashboard - Lists all incomplete/problematic items that need attention.
+
+    Shows:
+    - Initiatives with no consensus
+    - Initiatives with incomplete forms
+    - Spaces without SWOT analysis
+    - Systems without KPIs
+    - KPIs without governance bodies
+    """
+    org_id = session.get("organization_id")
+    org_name = session.get("organization_name")
+
+    # Get initiatives with no consensus
+    initiatives_no_consensus = (
+        Initiative.query.filter_by(organization_id=org_id, impact_on_challenge="no_consensus")
+        .order_by(Initiative.name)
+        .all()
+    )
+
+    # Get initiatives with incomplete forms
+    all_initiatives = Initiative.query.filter_by(organization_id=org_id).order_by(Initiative.name).all()
+    initiatives_incomplete = []
+    for initiative in all_initiatives:
+        filled, total, status = initiative.get_form_completion()
+        if status != "complete":
+            initiatives_incomplete.append(
+                {
+                    "initiative": initiative,
+                    "filled": filled,
+                    "total": total,
+                    "status": status,
+                    "completion_percent": int((filled / total) * 100) if total > 0 else 0,
+                }
+            )
+
+    # Get spaces without SWOT (empty or partial)
+    all_spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.name).all()
+    spaces_no_swot = []
+    for space in all_spaces:
+        filled, total, status = space.get_swot_completion()
+        if status != "complete":
+            spaces_no_swot.append(
+                {
+                    "space": space,
+                    "filled": filled,
+                    "total": total,
+                    "status": status,
+                    "completion_percent": int((filled / total) * 100) if total > 0 else 0,
+                }
+            )
+
+    # Get systems without KPIs
+    from app.models import InitiativeSystemLink
+
+    systems_without_kpis = (
+        db.session.query(System)
+        .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
+        .filter(Initiative.organization_id == org_id, KPI.id.is_(None))
+        .distinct()
+        .order_by(System.name)
+        .all()
+    )
+
+    # Get KPIs without governance bodies
+    from app.models import KPIGovernanceBodyLink
+
+    kpis_without_gb = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .outerjoin(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
+        .filter(Initiative.organization_id == org_id, KPIGovernanceBodyLink.id.is_(None))
+        .order_by(KPI.name)
+        .all()
+    )
+
+    # Calculate totals and priorities
+    total_issues = (
+        len(initiatives_no_consensus)
+        + len(initiatives_incomplete)
+        + len(spaces_no_swot)
+        + len(systems_without_kpis)
+        + len(kpis_without_gb)
+    )
+
+    return render_template(
+        "beta/action_items.html",
+        org_name=org_name,
+        initiatives_no_consensus=initiatives_no_consensus,
+        initiatives_incomplete=initiatives_incomplete,
+        spaces_no_swot=spaces_no_swot,
+        systems_without_kpis=systems_without_kpis,
+        kpis_without_gb=kpis_without_gb,
+        total_issues=total_issues,
+        csrf_token=generate_csrf,
+        is_prototype=True,
+    )

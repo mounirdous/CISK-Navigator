@@ -69,6 +69,63 @@
     margin-left: auto;
     margin-right: auto;
 }
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.feature-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.feature-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+    border-color: #667eea;
+}
+
+.feature-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.feature-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: #333;
+}
+
+.feature-desc {
+    font-size: 0.95rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.feature-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: #667eea;
+    color: white;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.feature-badge.new {
+    background: #10b981;
+}
 </style>
 {% endblock %}
 
@@ -85,20 +142,36 @@
         </div>
     </div>
 
-    <!-- Empty State -->
-    <div class="empty-state-card">
-        <div class="empty-state-icon">
-            <i class="bi bi-inbox"></i>
-        </div>
-        <div class="empty-state-title">
-            No Beta Features Available
-        </div>
-        <div class="empty-state-desc">
-            There are currently no beta features to test. Check back later or contact your administrator for more information about upcoming features.
-        </div>
-        <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-lg btn-primary">
-            <i class="bi bi-arrow-left-circle me-2"></i> Back to Dashboard
+    <!-- Beta Features -->
+    <div class="feature-grid">
+        <!-- Action Items / Quality Dashboard -->
+        <a href="{{ url_for('beta.action_items') }}" class="feature-card">
+            <div class="feature-icon">🔧</div>
+            <div class="feature-title">Action Items</div>
+            <div class="feature-desc">
+                Quality dashboard showing incomplete forms, missing data, and items that need your attention.
+            </div>
+            <span class="feature-badge new">New</span>
         </a>
+
+        <!-- Placeholder for future features -->
+        <div class="feature-card" style="opacity: 0.5; cursor: not-allowed;">
+            <div class="feature-icon">📱</div>
+            <div class="feature-title">Mobile Workspace</div>
+            <div class="feature-desc">
+                Optimized mobile experience for managing your workspace on the go.
+            </div>
+            <span class="feature-badge">Coming Soon</span>
+        </div>
+
+        <div class="feature-card" style="opacity: 0.5; cursor: not-allowed;">
+            <div class="feature-icon">📊</div>
+            <div class="feature-title">Advanced Analytics</div>
+            <div class="feature-desc">
+                Deep insights and visualizations for your data with AI-powered suggestions.
+            </div>
+            <span class="feature-badge">Coming Soon</span>
+        </div>
     </div>
 
 </div>

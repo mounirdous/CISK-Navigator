@@ -1,0 +1,490 @@
+{% extends "beta/base_beta.html" %}
+
+{% block title %}Action Items{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Mobile-first quality dashboard */
+    :root {
+        --priority-critical: #dc3545;
+        --priority-high: #fd7e14;
+        --priority-medium: #ffc107;
+        --priority-low: #0dcaf0;
+        --success-color: #198754;
+    }
+
+    .action-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 1rem;
+        margin: -1rem -1rem 1.5rem -1rem;
+        text-align: center;
+    }
+
+    .action-header h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .total-issues {
+        font-size: 3rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .issues-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        border-left: 4px solid;
+    }
+
+    .section-card.critical { border-left-color: var(--priority-critical); }
+    .section-card.high { border-left-color: var(--priority-high); }
+    .section-card.medium { border-left-color: var(--priority-medium); }
+    .section-card.low { border-left-color: var(--priority-low); }
+    .section-card.empty { border-left-color: #6c757d; opacity: 0.6; }
+
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .section-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 28px;
+        background: var(--priority-critical);
+        color: white;
+        border-radius: 50%;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 0 0.5rem;
+    }
+
+    .section-card.high .section-badge { background: var(--priority-high); }
+    .section-card.medium .section-badge { background: var(--priority-medium); color: #000; }
+    .section-card.low .section-badge { background: var(--priority-low); color: #000; }
+    .section-card.empty .section-badge { background: #6c757d; }
+
+    .section-icon {
+        font-size: 1.5rem;
+    }
+
+    .collapse-icon {
+        font-size: 1.2rem;
+        transition: transform 0.2s;
+    }
+
+    .section-header[aria-expanded="false"] .collapse-icon {
+        transform: rotate(-90deg);
+    }
+
+    .item-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .item-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+        gap: 0.75rem;
+    }
+
+    .item-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .item-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .item-detail {
+        font-size: 0.8rem;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .progress-bar-mini {
+        height: 4px;
+        background: #e9ecef;
+        border-radius: 2px;
+        overflow: hidden;
+        margin-top: 0.25rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: var(--priority-medium);
+        transition: width 0.3s;
+    }
+
+    .item-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .action-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: #667eea;
+        color: white;
+        text-decoration: none;
+        font-size: 1rem;
+        transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+        background: #5568d3;
+        transform: scale(1.05);
+        color: white;
+    }
+
+    .action-btn.view {
+        background: #0dcaf0;
+    }
+
+    .action-btn.view:hover {
+        background: #0bb5d7;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-badge.empty {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .status-badge.partial {
+        background: #fd7e14;
+        color: white;
+    }
+
+    .status-badge.no-consensus {
+        background: #dc3545;
+        color: white;
+    }
+
+    .section-description {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+        padding-left: 2.5rem;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: white;
+        text-decoration: none;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+        opacity: 0.9;
+    }
+
+    .back-link:hover {
+        opacity: 1;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="action-header">
+    <a href="{{ url_for('beta.index') }}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Beta Home
+    </a>
+    <h1><i class="bi bi-exclamation-triangle-fill"></i> Action Items</h1>
+    <div class="total-issues">{{ total_issues }}</div>
+    <div class="issues-label">Items Need Attention</div>
+</div>
+
+<div class="container-fluid px-3 pb-4">
+    {% if total_issues == 0 %}
+    <div class="empty-state">
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <h3>All Clear! 🎉</h3>
+        <p>No action items found. Your data quality is excellent!</p>
+    </div>
+    {% else %}
+
+    <!-- Initiatives with No Consensus -->
+    <div class="section-card critical">
+        <div class="section-header" data-bs-toggle="collapse" data-bs-target="#noConsensusSection" aria-expanded="true">
+            <div class="section-title">
+                <span class="section-icon">⚠️</span>
+                <span>Initiatives: No Consensus</span>
+                <span class="section-badge">{{ initiatives_no_consensus|length }}</span>
+            </div>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </div>
+        <div class="section-description">
+            These initiatives lack agreement on their impact level and need stakeholder alignment.
+        </div>
+        <div class="collapse show" id="noConsensusSection">
+            {% if initiatives_no_consensus %}
+            <ul class="item-list">
+                {% for initiative in initiatives_no_consensus %}
+                <li class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">{{ initiative.name }}</div>
+                        <div class="item-detail">
+                            <span class="status-badge no-consensus">No Consensus</span>
+                            {% if initiative.impact_rationale %}
+                            <span><i class="bi bi-chat-left-text"></i> Has rationale</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id) }}" class="action-btn" title="Edit Initiative">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>No initiatives without consensus</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Initiatives with Incomplete Forms -->
+    <div class="section-card high">
+        <div class="section-header" data-bs-toggle="collapse" data-bs-target="#incompleteInitiatives" aria-expanded="false">
+            <div class="section-title">
+                <span class="section-icon">📝</span>
+                <span>Initiatives: Incomplete Forms</span>
+                <span class="section-badge">{{ initiatives_incomplete|length }}</span>
+            </div>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </div>
+        <div class="section-description">
+            These initiatives have missing information in their forms (mission, team, deliverables, etc.).
+        </div>
+        <div class="collapse" id="incompleteInitiatives">
+            {% if initiatives_incomplete %}
+            <ul class="item-list">
+                {% for item in initiatives_incomplete %}
+                <li class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">{{ item.initiative.name }}</div>
+                        <div class="item-detail">
+                            <span class="status-badge {{ item.status }}">{{ item.filled }}/{{ item.total }} fields</span>
+                            <span>{{ item.completion_percent }}% complete</span>
+                        </div>
+                        <div class="progress-bar-mini">
+                            <div class="progress-fill" style="width: {{ item.completion_percent }}%"></div>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=item.initiative.id) }}" class="action-btn" title="Complete Form">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>All initiative forms are complete</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Spaces without SWOT -->
+    <div class="section-card medium">
+        <div class="section-header" data-bs-toggle="collapse" data-bs-target="#spacesNoSwot" aria-expanded="false">
+            <div class="section-title">
+                <span class="section-icon">📊</span>
+                <span>Spaces: Missing SWOT Analysis</span>
+                <span class="section-badge">{{ spaces_no_swot|length }}</span>
+            </div>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </div>
+        <div class="section-description">
+            These spaces are missing their SWOT analysis (Strengths, Weaknesses, Opportunities, Threats).
+        </div>
+        <div class="collapse" id="spacesNoSwot">
+            {% if spaces_no_swot %}
+            <ul class="item-list">
+                {% for item in spaces_no_swot %}
+                <li class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">{{ item.space.name }}</div>
+                        <div class="item-detail">
+                            <span class="status-badge {{ item.status }}">{{ item.filled }}/{{ item.total }} sections</span>
+                            <span>{{ item.completion_percent }}% complete</span>
+                        </div>
+                        <div class="progress-bar-mini">
+                            <div class="progress-fill" style="width: {{ item.completion_percent }}%"></div>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{{ url_for('organization_admin.space_swot_edit', space_id=item.space.id) }}" class="action-btn" title="Edit SWOT">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                        <a href="{{ url_for('organization_admin.space_swot', space_id=item.space.id) }}" class="action-btn view" title="View SWOT">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>All spaces have SWOT analysis</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Systems without KPIs -->
+    <div class="section-card low">
+        <div class="section-header" data-bs-toggle="collapse" data-bs-target="#systemsNoKpis" aria-expanded="false">
+            <div class="section-title">
+                <span class="section-icon">🔧</span>
+                <span>Systems: No KPIs Defined</span>
+                <span class="section-badge">{{ systems_without_kpis|length }}</span>
+            </div>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </div>
+        <div class="section-description">
+            These systems exist but have no KPIs defined to measure their performance.
+        </div>
+        <div class="collapse" id="systemsNoKpis">
+            {% if systems_without_kpis %}
+            <ul class="item-list">
+                {% for system in systems_without_kpis %}
+                <li class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">{{ system.name }}</div>
+                        <div class="item-detail">
+                            <span class="status-badge empty">No KPIs</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{{ url_for('organization_admin.system_detail', system_id=system.id) }}" class="action-btn view" title="View System">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>All systems have KPIs defined</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- KPIs without Governance Bodies -->
+    <div class="section-card {% if kpis_without_gb|length == 0 %}empty{% else %}low{% endif %}">
+        <div class="section-header" data-bs-toggle="collapse" data-bs-target="#kpisNoGb" aria-expanded="false">
+            <div class="section-title">
+                <span class="section-icon">👥</span>
+                <span>KPIs: No Governance Body</span>
+                <span class="section-badge">{{ kpis_without_gb|length }}</span>
+            </div>
+            <i class="bi bi-chevron-down collapse-icon"></i>
+        </div>
+        <div class="section-description">
+            These KPIs don't have a governance body assigned to oversee and approve their data.
+        </div>
+        <div class="collapse" id="kpisNoGb">
+            {% if kpis_without_gb %}
+            <ul class="item-list">
+                {% for kpi in kpis_without_gb %}
+                <li class="item-row">
+                    <div class="item-info">
+                        <div class="item-name">{{ kpi.name }}</div>
+                        <div class="item-detail">
+                            <span class="status-badge empty">No Governance</span>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <a href="{{ url_for('organization_admin.kpi_detail', kpi_id=kpi.id) }}" class="action-btn view" title="View KPI">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="empty-state">
+                <p>All KPIs have governance bodies assigned</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
