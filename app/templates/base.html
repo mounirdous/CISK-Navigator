@@ -1777,6 +1777,99 @@
         return div.innerHTML;
     }
 
+    // ========================================================================
+    // Auto-load Default Search on Page Load
+    // ========================================================================
+
+    function loadDefaultSearch() {
+        // Only auto-load on dashboard/workspace pages (not on search results page)
+        if (window.location.pathname.includes('/search')) {
+            return; // Don't auto-load on search results page
+        }
+
+        // Check localStorage to avoid loading default every time (user might have cleared search intentionally)
+        const skipDefault = sessionStorage.getItem('skipDefaultSearch');
+        if (skipDefault === 'true') {
+            return;
+        }
+
+        // Fetch default search
+        fetch('{{ url_for("workspace.get_saved_searches") }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.searches && data.searches.length > 0) {
+                    const defaultSearch = data.searches.find(s => s.is_default);
+
+                    if (defaultSearch) {
+                        const searchInput = document.getElementById('liveSearchInput');
+
+                        // Only populate if search input is empty
+                        if (searchInput && !searchInput.value.trim()) {
+                            // Set the search query (but don't execute search automatically)
+                            searchInput.value = defaultSearch.query;
+
+                            // Apply filters if present
+                            if (defaultSearch.filters) {
+                                window.searchFilters = defaultSearch.filters;
+                                updateFilterIndicator();
+
+                                // Update filter UI
+                                if (defaultSearch.filters.entity_types) {
+                                    document.getElementById('filter_kpis').checked = defaultSearch.filters.entity_types.includes('kpis');
+                                    document.getElementById('filter_systems').checked = defaultSearch.filters.entity_types.includes('systems');
+                                    document.getElementById('filter_initiatives').checked = defaultSearch.filters.entity_types.includes('initiatives');
+                                    document.getElementById('filter_challenges').checked = defaultSearch.filters.entity_types.includes('challenges');
+                                    document.getElementById('filter_spaces').checked = defaultSearch.filters.entity_types.includes('spaces');
+                                }
+
+                                if (defaultSearch.filters.date_range) {
+                                    document.getElementById('filter_date').value = defaultSearch.filters.date_range;
+                                }
+
+                                if (defaultSearch.filters.status) {
+                                    document.getElementById('filter_at_risk').checked = defaultSearch.filters.status.includes('at_risk');
+                                    document.getElementById('filter_incomplete').checked = defaultSearch.filters.status.includes('incomplete');
+                                    document.getElementById('filter_no_consensus').checked = defaultSearch.filters.status.includes('no_consensus');
+                                    document.getElementById('filter_archived').checked = defaultSearch.filters.status.includes('archived');
+                                }
+                            }
+
+                            // Show save button if query is long enough
+                            const saveBtn = document.getElementById('saveSearchBtn');
+                            if (saveBtn && defaultSearch.query.length >= 2) {
+                                saveBtn.style.display = 'inline-block';
+                            }
+
+                            // Add subtle visual indicator that default search was loaded
+                            searchInput.style.backgroundColor = 'rgba(255, 215, 0, 0.15)'; // Slight gold tint
+                            setTimeout(() => {
+                                searchInput.style.backgroundColor = 'rgba(255,255,255,0.1)';
+                            }, 2000);
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading default search:', error);
+            });
+    }
+
+    // Load default search when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDefaultSearch();
+
+        // Clear the skip flag when user manually clears search
+        const searchInput = document.getElementById('liveSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('blur', function() {
+                if (!this.value.trim()) {
+                    // User cleared the search - don't auto-load default again this session
+                    sessionStorage.setItem('skipDefaultSearch', 'true');
+                }
+            });
+        }
+    });
+
     // Initialize filters
     window.searchFilters = null;
     </script>

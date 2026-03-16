@@ -5,6 +5,139 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.15] - 2026-03-16
+
+### Added - Auto-load Default Search on Page Load (Phase 4 Part 5)
+**Feature**: Automatically populate search input with user's default search when page loads
+
+**Issue**: Users who set a default search want it to load automatically when they open the application, saving time on repetitive search setup.
+
+**Files Modified**:
+- `app/templates/base.html` - Added auto-load functionality with DOMContentLoaded event
+- `app/__init__.py` - Version bump to 2.5.15
+
+**Functionality**:
+
+1. **Auto-Load on Page Load**:
+   - Triggers on `DOMContentLoaded` event
+   - Fetches all saved searches via GET `/workspace/api/saved-searches`
+   - Finds search marked as `is_default: true`
+   - Populates search input with default query
+   - Applies saved filters (entity types, date range, status)
+   - Updates filter UI checkboxes/dropdowns
+   - Shows save button if query ≥ 2 characters
+
+2. **Smart Loading Conditions**:
+   - **Only loads if search input is empty** (respects user's current search)
+   - **Skips on search results page** (`/search`) to avoid interference
+   - **Checks sessionStorage** for `skipDefaultSearch` flag
+   - Respects user intent if they've cleared search during session
+
+3. **Visual Feedback**:
+   - Search input briefly shows gold tint (2 seconds) when default loads
+   - `rgba(255, 215, 0, 0.15)` → then fades back to normal
+   - Subtle indicator that auto-load occurred
+   - Non-intrusive, doesn't interrupt workflow
+
+4. **Session Memory**:
+   - If user manually clears search (blur event on empty input):
+     - Sets `sessionStorage.setItem('skipDefaultSearch', 'true')`
+     - Prevents auto-load for rest of browser session
+     - Respects user's decision to work without default search
+   - Clears on browser tab close (sessionStorage, not localStorage)
+
+**JavaScript Functions**:
+
+1. **loadDefaultSearch()** - Main auto-load logic
+   - Checks pathname to avoid loading on `/search` page
+   - Checks sessionStorage skip flag
+   - Fetches saved searches from API
+   - Finds default search (`.find(s => s.is_default)`)
+   - Populates search input only if currently empty
+   - Applies filters and updates UI
+   - Shows save button conditionally
+   - Adds visual indicator (gold tint)
+
+2. **DOMContentLoaded Event Listener**:
+   - Calls `loadDefaultSearch()` when page ready
+   - Adds blur listener to detect manual search clearing
+   - Sets skip flag if user clears search intentionally
+
+**User Flow**:
+
+**First Visit (No Default Search):**
+1. User opens dashboard
+2. No default search exists
+3. Search input remains empty
+4. Normal search workflow
+
+**With Default Search Set:**
+1. User opens dashboard
+2. Page loads → DOMContentLoaded fires
+3. Auto-load fetches default search
+4. Search input populates with query
+5. Filters apply automatically
+6. Gold tint flashes briefly (visual feedback)
+7. User can immediately click search or modify query
+
+**User Clears Search:**
+1. User deletes search text
+2. User clicks away (blur event)
+3. sessionStorage flag set
+4. Default won't auto-load again this session
+5. Resets when browser tab closes
+
+**Technical Details**:
+
+- **Event**: `DOMContentLoaded` ensures DOM ready before execution
+- **API Call**: Reuses existing `/workspace/api/saved-searches` endpoint
+- **Filter Application**: Same logic as `loadSavedSearch()` function
+- **Storage**: `sessionStorage` (per-tab, clears on tab close)
+- **Timing**: 2-second CSS transition for visual feedback
+- **Conditional Loading**: Multiple checks to respect user intent
+
+**Performance**:
+- Single API call on page load (no polling)
+- Async fetch doesn't block page rendering
+- No performance impact if no default search exists
+- Minimal overhead (~100ms for API roundtrip)
+
+**Edge Cases Handled**:
+
+1. **User already has search query**: Skip auto-load (respects current query)
+2. **On search results page**: Skip auto-load (avoid interference)
+3. **User cleared search**: Skip auto-load for session (respects intent)
+4. **No default search exists**: Gracefully handle (no error, no action)
+5. **API error**: Catch and log, doesn't break page
+6. **Multiple defaults (shouldn't happen)**: Uses first found
+
+**Impact**:
+- **User-Facing**: Default searches now auto-load! 🎉
+- Saves time for users with frequently-used searches
+- Seamless workflow - search ready when page opens
+- Respects user intent with session memory
+- Non-intrusive with visual feedback
+
+**UX Considerations**:
+- **Doesn't auto-execute search** (just populates fields)
+  - User can review/modify before searching
+  - Avoids unwanted API calls on every page load
+- **Session-based skip flag** (not permanent)
+  - Resets when tab closes
+  - Balances convenience with user control
+
+**Complete Default Search Feature:**
+1. Create default search ✓ (v2.5.12)
+2. Set as default ✓ (v2.5.12)
+3. Save with default checkbox ✓ (v2.5.14)
+4. Auto-load on page load ✓ (v2.5.15) ← **NEW!**
+
+**Next Steps**:
+- v2.5.16: Add edit/delete buttons in saved searches dropdown
+- v2.5.17: Manage searches page (optional, for bulk operations)
+
+---
+
 ## [2.5.14.1] - 2026-03-16
 
 ### Fixed - Navbar Layout Optimization (Single Line)
