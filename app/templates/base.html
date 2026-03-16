@@ -548,8 +548,12 @@
                             <input class="form-control" type="search" name="q" id="liveSearchInput" placeholder="Search... (Ctrl+K)"
                                    autocomplete="off"
                                    title="Try modifiers: @risk @incomplete @no_consensus"
-                                   style="border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
-                            <button class="btn btn-outline-light" type="submit" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
+                                   style="background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; border-radius: 0.375rem 0 0 0.375rem;">
+                            <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#searchFilters"
+                                    title="Advanced Filters" style="border-radius: 0; border-left: none; border-right: none;">
+                                <i class="bi bi-funnel"></i>
+                            </button>
+                            <button class="btn btn-outline-light" type="submit" style="border-radius: 0 0.375rem 0.375rem 0;">
                                 <i class="bi bi-search"></i>
                             </button>
                         </div>
@@ -873,6 +877,11 @@
 
             currentQuery = query;
 
+            // Get filters from global state or use defaults
+            const filters = window.searchFilters || {
+                entity_types: ['kpis', 'systems', 'initiatives', 'challenges', 'spaces']
+            };
+
             // Call new advanced search API with fuzzy matching
             fetch(`{{ url_for('workspace.advanced_search') }}`, {
                 method: 'POST',
@@ -881,9 +890,7 @@
                 },
                 body: JSON.stringify({
                     query: query,
-                    filters: {
-                        entity_types: ['kpis', 'systems', 'initiatives', 'challenges', 'spaces']
-                    }
+                    filters: filters
                 })
             })
                 .then(response => response.json())
@@ -1220,5 +1227,208 @@
     {% endif %}
 
     {% block extra_js %}{% endblock %}
+
+    <!-- Advanced Search Filters Panel -->
+    {% if session.organization_id %}
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="searchFilters" aria-labelledby="searchFiltersLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="searchFiltersLabel">
+                <i class="bi bi-funnel"></i> Advanced Search Filters
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="searchFiltersPanel">
+                <!-- Entity Types -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">Entity Types</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_kpis" checked>
+                        <label class="form-check-label" for="filter_kpis">
+                            <i class="bi bi-graph-up text-warning"></i> KPIs
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_systems" checked>
+                        <label class="form-check-label" for="filter_systems">
+                            <i class="bi bi-pc-display text-info"></i> Systems
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_initiatives" checked>
+                        <label class="form-check-label" for="filter_initiatives">
+                            <i class="bi bi-lightning text-success"></i> Initiatives
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_challenges" checked>
+                        <label class="form-check-label" for="filter_challenges">
+                            <i class="bi bi-flag text-danger"></i> Challenges
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_spaces" checked>
+                        <label class="form-check-label" for="filter_spaces">
+                            <i class="bi bi-grid-3x3-gap text-primary"></i> Spaces
+                        </label>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Date Modified -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">Date Modified</h6>
+                    <select class="form-select" id="filter_date">
+                        <option value="">Any time</option>
+                        <option value="today">Today</option>
+                        <option value="last_week">Last 7 days</option>
+                        <option value="last_month">Last 30 days</option>
+                        <option value="last_quarter">Last 90 days</option>
+                    </select>
+                </div>
+
+                <hr>
+
+                <!-- Status Filters -->
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">Status</h6>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_at_risk">
+                        <label class="form-check-label" for="filter_at_risk">
+                            <span class="badge bg-danger">At Risk</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_incomplete">
+                        <label class="form-check-label" for="filter_incomplete">
+                            <span class="badge bg-warning text-dark">Incomplete</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_no_consensus">
+                        <label class="form-check-label" for="filter_no_consensus">
+                            <span class="badge bg-secondary">No Consensus</span>
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_archived">
+                        <label class="form-check-label" for="filter_archived">
+                            <span class="badge bg-dark">Archived</span>
+                        </label>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Action Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-primary" onclick="applySearchFilters()">
+                        <i class="bi bi-check-lg"></i> Apply Filters
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="clearSearchFilters()">
+                        <i class="bi bi-x-lg"></i> Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Search Filters Management
+    function applySearchFilters() {
+        // Get entity types
+        const entityTypes = [];
+        if (document.getElementById('filter_kpis').checked) entityTypes.push('kpis');
+        if (document.getElementById('filter_systems').checked) entityTypes.push('systems');
+        if (document.getElementById('filter_initiatives').checked) entityTypes.push('initiatives');
+        if (document.getElementById('filter_challenges').checked) entityTypes.push('challenges');
+        if (document.getElementById('filter_spaces').checked) entityTypes.push('spaces');
+
+        // Get date filter
+        const dateFilter = document.getElementById('filter_date').value;
+
+        // Get status filters
+        const statusFilters = [];
+        if (document.getElementById('filter_at_risk').checked) statusFilters.push('at_risk');
+        if (document.getElementById('filter_incomplete').checked) statusFilters.push('incomplete');
+        if (document.getElementById('filter_no_consensus').checked) statusFilters.push('no_consensus');
+        if (document.getElementById('filter_archived').checked) statusFilters.push('archived');
+
+        // Store filters globally for use by search
+        window.searchFilters = {
+            entity_types: entityTypes,
+            date_range: dateFilter,
+            status: statusFilters
+        };
+
+        // Close the offcanvas
+        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('searchFilters'));
+        if (offcanvas) offcanvas.hide();
+
+        // Trigger search with current query
+        const searchInput = document.getElementById('liveSearchInput');
+        if (searchInput && searchInput.value.trim().length >= 2) {
+            searchInput.dispatchEvent(new Event('input'));
+        }
+
+        // Show filter indicator
+        updateFilterIndicator();
+    }
+
+    function clearSearchFilters() {
+        // Reset all checkboxes
+        document.getElementById('filter_kpis').checked = true;
+        document.getElementById('filter_systems').checked = true;
+        document.getElementById('filter_initiatives').checked = true;
+        document.getElementById('filter_challenges').checked = true;
+        document.getElementById('filter_spaces').checked = true;
+
+        document.getElementById('filter_date').value = '';
+
+        document.getElementById('filter_at_risk').checked = false;
+        document.getElementById('filter_incomplete').checked = false;
+        document.getElementById('filter_no_consensus').checked = false;
+        document.getElementById('filter_archived').checked = false;
+
+        // Clear global filters
+        window.searchFilters = null;
+
+        // Update indicator
+        updateFilterIndicator();
+
+        // Trigger search refresh
+        const searchInput = document.getElementById('liveSearchInput');
+        if (searchInput && searchInput.value.trim().length >= 2) {
+            searchInput.dispatchEvent(new Event('input'));
+        }
+    }
+
+    function updateFilterIndicator() {
+        const filterBtn = document.querySelector('[data-bs-target="#searchFilters"]');
+        if (!filterBtn) return;
+
+        const hasFilters = window.searchFilters && (
+            window.searchFilters.entity_types.length < 5 ||
+            window.searchFilters.date_range ||
+            window.searchFilters.status.length > 0
+        );
+
+        if (hasFilters) {
+            filterBtn.classList.add('btn-warning');
+            filterBtn.classList.remove('btn-outline-light');
+            filterBtn.innerHTML = '<i class="bi bi-funnel-fill"></i>';
+        } else {
+            filterBtn.classList.remove('btn-warning');
+            filterBtn.classList.add('btn-outline-light');
+            filterBtn.innerHTML = '<i class="bi bi-funnel"></i>';
+        }
+    }
+
+    // Initialize filters
+    window.searchFilters = null;
+    </script>
+    {% endif %}
+
 </body>
 </html>

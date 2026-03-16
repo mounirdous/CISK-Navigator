@@ -5,6 +5,93 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.10] - 2026-03-16
+
+### Added - Advanced Search Filters Panel (Phase 3 Part 2)
+**Feature**: Slide-in filters panel with entity types, date ranges, and status filters
+
+**Files Modified**:
+- `app/templates/base.html` - Added offcanvas panel + filters UI + state management
+
+**Key Features**:
+
+1. **Filters Button** - Added between search input and search button
+   - Icon: funnel (outline when no filters, filled when active)
+   - Opens Bootstrap offcanvas slide-in panel
+   - Changes to warning color when filters active
+
+2. **Entity Type Filters** - Checkboxes to include/exclude entity types
+   - KPIs (graph-up icon, warning color)
+   - Systems (pc-display icon, info color)
+   - Initiatives (lightning icon, success color)
+   - Challenges (flag icon, danger color)
+   - Spaces (grid icon, primary color)
+   - All checked by default
+
+3. **Date Modified Filter** - Dropdown with time ranges
+   - Any time (default)
+   - Today
+   - Last 7 days
+   - Last 30 days
+   - Last 90 days
+
+4. **Status Filters** - Checkboxes for status-based filtering
+   - At Risk (red badge)
+   - Incomplete (yellow badge)
+   - No Consensus (gray badge)
+   - Archived (dark badge)
+   - None checked by default
+
+5. **Action Buttons**
+   - Apply Filters (primary) - Closes panel, triggers search, shows indicator
+   - Clear All (secondary) - Resets all filters to defaults
+
+**Technical Implementation**:
+
+**HTML Structure**:
+- Bootstrap offcanvas component (slides from right)
+- Three sections: Entity Types, Date Modified, Status
+- Form controls: checkboxes + select dropdown
+- Responsive design with proper spacing
+
+**JavaScript Functions**:
+- `applySearchFilters()` - Collects filter state, stores in window.searchFilters, triggers search
+- `clearSearchFilters()` - Resets all filters to defaults
+- `updateFilterIndicator()` - Changes filter button appearance when filters active
+- `window.searchFilters` - Global state object passed to API
+
+**Filter State Structure**:
+```javascript
+window.searchFilters = {
+    entity_types: ['kpis', 'systems', ...],
+    date_range: 'last_week',
+    status: ['at_risk', 'incomplete']
+}
+```
+
+**Search Integration**:
+- Modified `performLiveSearch()` to use `window.searchFilters || defaults`
+- Filters passed to `/api/search/advanced` endpoint
+- Live search respects filter settings
+- Filters persist until cleared or page reload
+
+**User Experience**:
+- Click filter button → Panel slides in from right
+- Select filters → Click Apply → Panel closes, search updates
+- Filter indicator shows when non-default filters active
+- Clear All button resets everything
+
+**Visual Feedback**:
+- Filter button: outline → warning (filled) when filters active
+- Icon: funnel → funnel-fill when filters active
+- Smooth slide-in animation
+- Clear visual grouping with horizontal rules
+
+**Next Steps**:
+- Backend needs to handle date_range and status filters (currently parsed but not implemented)
+- Search results page (Phase 3 Part 3)
+- Saved searches (Phase 4)
+
 ## [2.5.9] - 2026-03-16
 
 ### Fixed - CRITICAL: SQLAlchemy Boolean Filter Bug (THE REAL FIX)
