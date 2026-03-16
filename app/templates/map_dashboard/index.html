@@ -1590,13 +1590,24 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
             // Now add KPI markers
             fetch('{{ url_for("geography.api_map_kpis") }}')
-                .then(response => response.json())
+                .then(response => {
+                    console.log('KPI fetch response status:', response.status);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     console.log('KPI data received:', data);
 
                     if (data.features && data.features.length > 0) {
                         allKPIs = data.features; // Store for sidebar
-                        renderKPIList(allKPIs); // Populate sidebar
+                        try {
+                            renderKPIList(allKPIs); // Populate sidebar
+                        } catch (renderError) {
+                            console.error('Error rendering KPI list:', renderError);
+                            throw renderError; // Re-throw to outer catch
+                        }
 
                         // Collect coordinates for auto-zoom
                         const bounds = new mapboxgl.LngLatBounds();
@@ -1662,16 +1673,22 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                         });
 
                         // Zoom to show ALL countries (not just KPIs) on initial load
+                        // Responsive padding for mobile vs desktop
+                        const isMobile = window.innerWidth <= 768;
+                        const fitBoundsPadding = isMobile
+                            ? { top: 60, bottom: 60, left: 40, right: 40 }
+                            : { top: 80, bottom: 80, left: 450, right: 80 }; // Account for sidebar on desktop
+
                         if (markerBounds && !markerBounds.isEmpty()) {
                             map.fitBounds(markerBounds, {
-                                padding: { top: 80, bottom: 80, left: 450, right: 80 }, // Account for sidebar
+                                padding: fitBoundsPadding,
                                 maxZoom: 6,
                                 duration: 1500
                             });
                         } else if (!bounds.isEmpty()) {
                             // Fallback to KPI markers if no geography bounds
                             map.fitBounds(bounds, {
-                                padding: { top: 80, bottom: 80, left: 450, right: 80 },
+                                padding: fitBoundsPadding,
                                 maxZoom: 6,
                                 duration: 1500
                             });
@@ -1709,8 +1726,13 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                     // Show All button
                     document.getElementById('showAll').addEventListener('click', function() {
                         if (markerBounds && !markerBounds.isEmpty()) {
+                            const isMobile = window.innerWidth <= 768;
+                            const fitBoundsPadding = isMobile
+                                ? { top: 60, bottom: 60, left: 40, right: 40 }
+                                : { top: 80, bottom: 80, left: 450, right: 80 };
+
                             map.fitBounds(markerBounds, {
-                                padding: { top: 80, bottom: 80, left: 450, right: 80 },
+                                padding: fitBoundsPadding,
                                 maxZoom: 6,
                                 duration: 1500
                             });
@@ -1734,14 +1756,25 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                     });
 
                     // Setup sidebar interactions
-                    setupSidebarInteractions();
+                    try {
+                        setupSidebarInteractions();
+                    } catch (setupError) {
+                        console.error('Error setting up sidebar interactions:', setupError);
+                        // Don't throw - sidebar is populated, just interactions might fail
+                    }
                 })
                 .catch(error => {
                     console.error('===== KPI MARKERS ERROR =====', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        type: error.constructor.name
+                    });
                     document.getElementById('kpiList').innerHTML = `
                         <div class="empty-state">
                             <i class="bi bi-exclamation-triangle"></i>
                             <p>Error loading KPIs</p>
+                            <small style="color: #6c757d; font-size: 11px;">${error.message || 'Unknown error'}</small>
                         </div>
                     `;
                 });

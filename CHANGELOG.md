@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.5] - 2026-03-16
+
+### Improved
+- **🔍 Enhanced error debugging for Map Dashboard KPI loading**
+  - Added detailed HTTP response status logging
+  - Show error messages in UI for troubleshooting
+  - Added try-catch blocks around renderKPIList and setupSidebarInteractions
+  - Better error context (message, stack, type) for debugging
+
+- **📱 Responsive map fitBounds for mobile**
+  - Reduced padding on mobile devices (40px instead of 450px left padding)
+  - Desktop: `{ top: 80, bottom: 80, left: 450, right: 80 }` (sidebar offset)
+  - Mobile: `{ top: 60, bottom: 60, left: 40, right: 40 }` (centered)
+  - Applies to both initial load and "Show All" button
+
 ## [2.1.4] - 2026-03-16
 
 ### Fixed
