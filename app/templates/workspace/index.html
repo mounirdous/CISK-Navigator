@@ -1253,6 +1253,134 @@
     }
 
     /* ============================================
+       KPI SPOTLIGHT HIGHLIGHT - Modern & Fun 🎯✨
+       ============================================ */
+
+    @keyframes kpiSpotlight {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7), inset 0 0 0 0 rgba(102, 126, 234, 0);
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+        }
+        10% {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 10px rgba(102, 126, 234, 0.5), inset 0 0 30px 10px rgba(102, 126, 234, 0.1);
+        }
+        20% {
+            transform: scale(1);
+            box-shadow: 0 0 0 20px rgba(102, 126, 234, 0.3), inset 0 0 30px 10px rgba(102, 126, 234, 0.15);
+        }
+        35% {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 10px rgba(102, 126, 234, 0.5), inset 0 0 40px 15px rgba(102, 126, 234, 0.2);
+        }
+        50% {
+            transform: scale(1);
+            box-shadow: 0 0 0 20px rgba(102, 126, 234, 0.3), inset 0 0 30px 10px rgba(102, 126, 234, 0.15);
+        }
+        65% {
+            transform: scale(1.01);
+            box-shadow: 0 0 0 15px rgba(102, 126, 234, 0.4), inset 0 0 30px 10px rgba(102, 126, 234, 0.1);
+        }
+        80% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(102, 126, 234, 0.2), inset 0 0 20px 5px rgba(102, 126, 234, 0.05);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(102, 126, 234, 0), inset 0 0 0 0 rgba(102, 126, 234, 0);
+            background: inherit;
+        }
+    }
+
+    @keyframes kpiBorderGlow {
+        0%, 100% {
+            border-left-color: transparent;
+        }
+        20%, 80% {
+            border-left-color: #667eea;
+        }
+        50% {
+            border-left-color: #764ba2;
+        }
+    }
+
+    @keyframes kpiShimmer {
+        0% {
+            background-position: -1000px 0;
+        }
+        100% {
+            background-position: 1000px 0;
+        }
+    }
+
+    .kpi-spotlight {
+        animation: kpiSpotlight 3s ease-in-out;
+        border-left: 5px solid #667eea;
+        position: relative;
+        z-index: 15;
+        overflow: hidden;
+    }
+
+    .kpi-spotlight::before {
+        content: '🎯';
+        position: absolute;
+        left: -35px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 24px;
+        animation: kpiTargetBounce 3s ease-in-out;
+        z-index: 20;
+    }
+
+    @keyframes kpiTargetBounce {
+        0%, 100% {
+            opacity: 0;
+            transform: translateY(-50%) scale(0);
+        }
+        10% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1.5) rotate(15deg);
+        }
+        20% {
+            transform: translateY(-50%) scale(1) rotate(0deg);
+        }
+        25%, 35%, 45% {
+            transform: translateY(-50%) scale(1.1) rotate(-5deg);
+        }
+        30%, 40%, 50% {
+            transform: translateY(-50%) scale(1) rotate(5deg);
+        }
+        60% {
+            transform: translateY(-50%) scale(1) rotate(0deg);
+        }
+        90% {
+            opacity: 1;
+            transform: translateY(-50%) scale(1) rotate(0deg);
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(-50%) scale(0.5);
+        }
+    }
+
+    .kpi-spotlight::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -100%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3) 50%,
+            transparent
+        );
+        animation: kpiShimmer 2s ease-in-out 0.5s;
+    }
+
+    /* ============================================
        MOBILE OPTIMIZATION - Option 3 Implementation
        ============================================ */
 
@@ -2569,6 +2697,7 @@
                                             <template x-for="kpi in system.kpis" :key="kpi.id">
                                                 <div class="ws-row level-4"
                                                      :id="'kpi-' + kpi.id"
+                                                     :data-kpi-id="kpi.id"
                                                      x-show="showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
                                                      :draggable="editMode"
                                                      @dragstart="dragRowStart($event, kpi, 'kpi', system)"
@@ -3221,7 +3350,94 @@ function workspaceV2(orgId, filterPresets) {
 
                 // Scroll to entity from hash (from global live search)
                 setTimeout(() => this.scrollToHashTarget(), 200);
+
+                // 🎯 Highlight KPI from URL (from map dashboard "View Full KPI Details")
+                setTimeout(() => this.highlightKPIFromURL(), 300);
             }
+        },
+
+        highlightKPIFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const kpiId = urlParams.get('kpi_id');
+
+            if (!kpiId) return;
+
+            console.log('🎯 KPI Spotlight: Looking for KPI ID', kpiId);
+
+            // Find the KPI in the hierarchy
+            let foundKPI = null;
+            let kpiPath = []; // Store the path: [space, challenge, initiative, system, kpi]
+
+            for (const space of this.spaces) {
+                for (const challenge of space.challenges) {
+                    for (const initiative of challenge.initiatives) {
+                        for (const system of initiative.systems) {
+                            const kpi = system.kpis.find(k => k.id == kpiId);
+                            if (kpi) {
+                                foundKPI = kpi;
+                                kpiPath = [space, challenge, initiative, system, kpi];
+                                break;
+                            }
+                        }
+                        if (foundKPI) break;
+                    }
+                    if (foundKPI) break;
+                }
+                if (foundKPI) break;
+            }
+
+            if (!foundKPI) {
+                console.log('❌ KPI not found with ID:', kpiId);
+                return;
+            }
+
+            console.log('✅ KPI Found:', foundKPI.name);
+
+            // Expand all parents to make KPI visible
+            const [space, challenge, initiative, system, kpi] = kpiPath;
+            space.collapsed = false;
+            challenge.collapsed = false;
+            initiative.collapsed = false;
+            system.collapsed = false;
+
+            // Clear any filters to ensure KPI is visible
+            if (this.showArchived === false && kpi.is_archived) {
+                this.showArchived = true;
+            }
+
+            // Wait for DOM to update with expanded entities
+            this.$nextTick(() => {
+                // Find the KPI row element
+                const kpiRow = document.querySelector(`[data-kpi-id="${kpiId}"]`);
+
+                if (!kpiRow) {
+                    console.log('❌ KPI row element not found in DOM');
+                    return;
+                }
+
+                // Smooth scroll to the KPI
+                kpiRow.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center',
+                    inline: 'nearest'
+                });
+
+                // Apply spotlight animation after scroll
+                setTimeout(() => {
+                    kpiRow.classList.add('kpi-spotlight');
+
+                    // Remove animation class after it completes
+                    setTimeout(() => {
+                        kpiRow.classList.remove('kpi-spotlight');
+                        // Clean up URL parameter
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.delete('kpi_id');
+                        window.history.replaceState({}, '', newUrl);
+                    }, 3000);
+                }, 500);
+
+                console.log('🎯✨ KPI Spotlight Applied!');
+            });
         },
 
         scrollToHashTarget() {

@@ -5,6 +5,47 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-03-16
+
+### Added
+- **🎯✨ KPI Spotlight Highlighting** - Modern, fun animation for "View Full KPI Details" from Map Dashboard
+  - Clicking "View Full KPI Details" in Map Dashboard now actually finds and highlights the KPI!
+  - **Multi-stage animation**:
+    1. 🔍 Searches entire hierarchy to find KPI by ID
+    2. 📂 Auto-expands all parent entities (Space → Challenge → Initiative → System)
+    3. 📜 Smooth scrolls to center the KPI row in viewport
+    4. 🎯 Target emoji bounces in from left with rotation
+    5. 💫 Pulsing glow effect (4 pulses over 3 seconds)
+    6. ✨ Shimmer light sweep across the row
+    7. 🌈 Gradient background animation with inset glow
+    8. 🎨 Animated border color (purple → magenta gradient)
+    9. 🧹 Auto-cleanup: Removes URL parameter after highlight
+  - **Smart handling**: Shows archived KPIs if the target is archived
+  - **Visual effects**:
+    - Pulsing outer glow (box-shadow rings)
+    - Inner glow/shimmer effect
+    - Subtle scale/bounce animation (1.02x at peak)
+    - 5px purple border on left side
+    - Light shimmer sweep effect
+  - **Console logging**: "🎯 KPI Spotlight Applied!" for debugging
+
+### Fixed
+- **Map Dashboard "View Full KPI Details" now functional** - Previously went to workspace but did nothing
+  - Added `?kpi_id=X` URL parameter handling in workspace
+  - Implements full KPI discovery and highlighting flow
+  - No more confusion about what the button does!
+
+### Technical
+- New CSS animations:
+  - `@keyframes kpiSpotlight` (3s pulsing glow effect)
+  - `@keyframes kpiBorderGlow` (color shift animation)
+  - `@keyframes kpiShimmer` (light sweep effect)
+  - `@keyframes kpiTargetBounce` (emoji bounce with rotation)
+- New JavaScript method: `highlightKPIFromURL()`
+- Added `data-kpi-id` attribute to KPI rows for DOM querying
+- Uses Alpine.js `$nextTick()` for DOM update synchronization
+- Auto-removes `kpi_id` URL parameter after 3 seconds
+
 ## [2.2.1] - 2026-03-16
 
 ### Added
