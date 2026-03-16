@@ -1270,9 +1270,10 @@
 
         /* Grid must be wider than viewport to enable scroll */
         .ws-grid {
+            /* Keep display: table for consistent column widths */
             width: auto !important;
             min-width: max-content; /* Grid expands beyond container */
-            display: inline-grid; /* Prevent grid from collapsing to container width */
+            /* Don't change display - table layout maintains column consistency */
         }
 
         /* Entity name column on mobile - NOT sticky to allow free scrolling */
@@ -1341,10 +1342,26 @@
             display: inline-block;
         }
 
-        /* Value cells: More padding for touch */
+        /* First column (entity names): Fixed width for consistency */
+        .ws-header-cell:first-child,
+        .ws-cell:first-child {
+            min-width: 250px !important;
+            width: 250px !important;
+            max-width: 250px !important;
+        }
+
+        /* Value cells: More padding for touch, fixed width for consistency */
         .ws-cell {
-            min-width: 100px;
+            min-width: 110px !important;
+            width: 110px !important;
+            max-width: 110px !important;
             padding: 0.75rem 0.5rem;
+        }
+
+        .ws-header-cell {
+            min-width: 110px !important;
+            width: 110px !important;
+            max-width: 110px !important;
         }
 
         /* Mobile filter pills: Smaller */
