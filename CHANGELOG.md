@@ -5,6 +5,84 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-03-16
+
+### Major Release - Workspace V2 Complete & Holiday Edition 🎄
+
+This major version brings the V2 workspace to full feature parity with V1, enhanced UX, and festive seasonal theming.
+
+### Added
+- **🎯 Global Search Auto-Scroll**: Click search results to smoothly scroll to entities
+  - Automatic parent expansion (spaces → challenges → initiatives → systems → KPIs)
+  - Modern pulse-glow highlight animation (2.5s blue glow with subtle scale)
+  - Smooth scroll behavior centers target entity on screen
+  - Works from both live search dropdown and "View all results" page
+  - Prevents browser's default hash jump for better UX
+
+- **🎄 Festive Christmas Theme**: Seasonal workspace decorations
+  - Custom CSS Christmas trees replace default entity icons
+  - Multi-layer green tree with gold star topper ⭐
+  - Three twinkling ornaments (red, gold, blue) with pulsing animation
+  - Shows on all entities: spaces, challenges, initiatives, systems, KPIs
+  - 🎄 Toolbar button toggles between festive trees and regular Bootstrap icons
+
+- **🎨 Badges Toggle Control**: Unified decoration management
+  - Single 🎄 button controls ALL workspace decorations
+  - **Toggles visibility of**:
+    - Entity icons/trees
+    - Rollup formula indicators (Σ, ↑, ↓, ≈, m, #)
+    - Target direction arrows (⬇️, 🎯, ⬆️)
+    - Target progress indicators in value cells
+    - Completeness indicators (✓, ⚠)
+    - Trend indicators (↗️, ↘️, →)
+    - Comment icons (💬)
+    - SWOT/form completion badges
+    - Governance body badges
+    - Private badges
+    - Entity link icons
+  - **OFF mode**: Clean, minimal view with only values and colors
+  - **ON mode**: Full decorative experience with all visual aids
+  - **Edit mode**: Always shows regular icons for clarity
+
+### Changed
+- **Workspace V2 = Workspace V1**: V2 now replaces V1 completely
+  - All V1 features fully implemented in V2
+  - Improved performance with Alpine.js 3.x
+  - Better filter management with database-backed presets
+  - Enhanced visual consistency
+
+- **Simplified Preset Management**: Removed complexity, improved reliability
+  - Presets save to database and use URL parameters for state
+  - Removed problematic active preset badge feature
+  - Focus on stable, working functionality over feature completeness
+
+### Fixed
+- **Search Page BuildError**: Fixed `edit_value_type` URL parameter (`vt_id` not `value_type_id`)
+- **Smooth Scroll Issues**: Prevented browser's automatic hash jump behavior
+- **Filter Preset Save**: Now properly saves to database and keeps filters active
+- **Governance Body Counts**: Fixed to use `kpi.governance_bodies` array
+- **JSON Serialization**: Removed complex filter_presets_json passing to avoid Alpine errors
+
+### Technical
+- Added `:id` attributes to all entity rows for hash-based navigation
+- Implemented `scrollToHashTarget()` and `expandParentsForTarget()` methods
+- Added CSS keyframe animation `@keyframes searchHighlight` for modern pulse effect
+- Added `data-badges-visible` attribute binding for CSS-based toggle control
+- Trend indicators and comment icons dynamically controlled via CSS selectors
+- Import fix: `from markupsafe import Markup` (Flask 2.x compatibility)
+
+### Performance
+- CSS-based visibility toggles (no JavaScript re-rendering needed)
+- Optimized element rendering with Alpine.js x-show directives
+- Reduced DOM manipulation for smoother UX
+
+### User Experience
+- **Holiday delight**: Festive theme brings seasonal cheer to workspace
+- **Clean focus mode**: Badges OFF provides distraction-free data view
+- **Smart defaults**: Badges ON by default for full visual experience
+- **Consistent behavior**: All decorative elements controlled by single toggle
+- **Smooth animations**: Modern transitions and effects throughout
+
 ## [1.35.0] - 2026-03-16
 
 ### Added
