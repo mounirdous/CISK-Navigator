@@ -176,9 +176,11 @@
     }
 
     .trend-indicator {
-        font-size: 0.9em;
-        margin-left: 4px;
+        display: inline;
+        font-size: 0.85em;
+        margin-left: 3px;
         cursor: help;
+        white-space: nowrap;
     }
 
     .linked-kpi-indicator {
@@ -787,6 +789,9 @@
         text-align: center;
         font-weight: 500;
         font-size: 0.88rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .value-cell.numeric {
