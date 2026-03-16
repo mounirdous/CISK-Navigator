@@ -5,6 +5,29 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-03-16
+
+### Added
+- **🏠 Home button in navbar**: Quick access to dashboard from anywhere
+  - Added home icon (house-fill) before "CISK" logo in top left
+  - Links to `workspace.dashboard`
+  - Only visible when organization is selected
+  - Clean icon-only design for minimal space usage
+
+### Changed
+- **📊 Organization name replaced with "Workspace" in navbar**
+  - Previous: Organization logo + name (e.g., "MIKRON")
+  - Now: Grid icon + "Workspace" text
+  - Links to `workspace.index` (the main workspace grid)
+  - Maintains same styling (blue pill background with hover effect)
+  - More intuitive navigation: "Workspace" clearly indicates where you'll go
+
+### Improved
+- **Better navigation clarity**: Users now understand navbar links better
+  - Home icon = Dashboard (overview/stats)
+  - Workspace = Grid view (Spaces/Challenges/Initiatives/Systems/KPIs)
+  - Organizations dropdown still available for switching orgs
+
 ## [2.3.6] - 2026-03-16
 
 ### Reverted
