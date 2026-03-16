@@ -254,8 +254,8 @@
 
 {% block content %}
 <div class="action-header">
-    <a href="{{ url_for('beta.index') }}" class="back-link">
-        <i class="bi bi-arrow-left"></i> Back to Beta Home
+    <a href="{{ url_for('workspace.dashboard') }}" class="back-link">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
     </a>
     <h1><i class="bi bi-exclamation-triangle-fill"></i> Action Items</h1>
     <div class="total-issues">{{ total_issues }}</div>
@@ -387,7 +387,7 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <a href="{{ url_for('organization_admin.space_swot_edit', space_id=item.space.id) }}" class="action-btn" title="Edit SWOT">
+                        <a href="{{ url_for('organization_admin.edit_space_swot', space_id=item.space.id) }}" class="action-btn" title="Edit SWOT">
                             <i class="bi bi-pencil-fill"></i>
                         </a>
                         <a href="{{ url_for('organization_admin.space_swot', space_id=item.space.id) }}" class="action-btn view" title="View SWOT">
