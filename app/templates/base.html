@@ -549,6 +549,21 @@
                                    autocomplete="off"
                                    title="Try modifiers: @risk @incomplete @no_consensus"
                                    style="background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; border-radius: 0.375rem 0 0 0.375rem;">
+                            <!-- Saved Searches Dropdown -->
+                            <div class="btn-group" role="group">
+                                <button class="btn btn-outline-light dropdown-toggle" type="button" id="savedSearchesDropdown"
+                                        data-bs-toggle="dropdown" aria-expanded="false" title="Saved Searches"
+                                        style="border-radius: 0; border-left: none; border-right: none;">
+                                    <i class="bi bi-bookmarks"></i>
+                                </button>
+                                <ul class="dropdown-menu" aria-labelledby="savedSearchesDropdown" id="savedSearchesList" style="min-width: 250px; max-height: 400px; overflow-y: auto;">
+                                    <li class="px-3 py-2 text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
                             <button class="btn btn-outline-light" type="button" data-bs-toggle="offcanvas" data-bs-target="#searchFilters"
                                     title="Advanced Filters" style="border-radius: 0; border-left: none; border-right: none;">
                                 <i class="bi bi-funnel"></i>
@@ -1423,6 +1438,154 @@
             filterBtn.classList.add('btn-outline-light');
             filterBtn.innerHTML = '<i class="bi bi-funnel"></i>';
         }
+    }
+
+    // ========================================================================
+    // Saved Searches Functionality
+    // ========================================================================
+
+    // Load saved searches when dropdown opens
+    document.getElementById('savedSearchesDropdown')?.addEventListener('show.bs.dropdown', function() {
+        loadSavedSearches();
+    });
+
+    function loadSavedSearches() {
+        const dropdownList = document.getElementById('savedSearchesList');
+        if (!dropdownList) return;
+
+        // Show loading spinner
+        dropdownList.innerHTML = `
+            <li class="px-3 py-2 text-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </li>
+        `;
+
+        // Fetch saved searches from API
+        fetch('{{ url_for("workspace.get_saved_searches") }}')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.searches || data.searches.length === 0) {
+                    // No saved searches
+                    dropdownList.innerHTML = `
+                        <li class="px-3 py-2 text-center text-muted">
+                            <i class="bi bi-bookmarks"></i><br>
+                            <small>No saved searches yet</small>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item" onclick="saveCurrentSearch()">
+                                <i class="bi bi-plus-circle"></i> Save Current Search
+                            </button>
+                        </li>
+                    `;
+                } else {
+                    // Display saved searches
+                    let html = '';
+
+                    data.searches.forEach(search => {
+                        const isDefault = search.is_default;
+                        const defaultBadge = isDefault ? '<span class="badge bg-primary badge-sm ms-1">Default</span>' : '';
+
+                        html += `
+                            <li>
+                                <a class="dropdown-item d-flex justify-content-between align-items-center"
+                                   href="#" onclick="loadSavedSearch(${search.id}); return false;">
+                                    <span>
+                                        <i class="bi bi-bookmark-fill text-warning"></i>
+                                        ${escapeHtml(search.name)}
+                                        ${defaultBadge}
+                                    </span>
+                                </a>
+                            </li>
+                        `;
+                    });
+
+                    html += `
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <button class="dropdown-item" onclick="saveCurrentSearch()">
+                                <i class="bi bi-plus-circle"></i> Save Current Search
+                            </button>
+                        </li>
+                    `;
+
+                    dropdownList.innerHTML = html;
+                }
+            })
+            .catch(error => {
+                console.error('Error loading saved searches:', error);
+                dropdownList.innerHTML = `
+                    <li class="px-3 py-2 text-center text-danger">
+                        <small>Error loading searches</small>
+                    </li>
+                `;
+            });
+    }
+
+    function loadSavedSearch(searchId) {
+        // Fetch the saved search
+        fetch(`{{ url_for('workspace.get_saved_search', search_id=0) }}`.replace('/0', `/${searchId}`))
+            .then(response => response.json())
+            .then(data => {
+                if (data.search) {
+                    const search = data.search;
+
+                    // Set the search query
+                    const searchInput = document.getElementById('liveSearchInput');
+                    if (searchInput) {
+                        searchInput.value = search.query;
+                    }
+
+                    // Apply filters if present
+                    if (search.filters) {
+                        window.searchFilters = search.filters;
+                        updateFilterIndicator();
+
+                        // Update filter UI if opened
+                        if (search.filters.entity_types) {
+                            document.getElementById('filter_kpis').checked = search.filters.entity_types.includes('kpis');
+                            document.getElementById('filter_systems').checked = search.filters.entity_types.includes('systems');
+                            document.getElementById('filter_initiatives').checked = search.filters.entity_types.includes('initiatives');
+                            document.getElementById('filter_challenges').checked = search.filters.entity_types.includes('challenges');
+                            document.getElementById('filter_spaces').checked = search.filters.entity_types.includes('spaces');
+                        }
+
+                        if (search.filters.date_range) {
+                            document.getElementById('filter_date').value = search.filters.date_range;
+                        }
+
+                        if (search.filters.status) {
+                            document.getElementById('filter_at_risk').checked = search.filters.status.includes('at_risk');
+                            document.getElementById('filter_incomplete').checked = search.filters.status.includes('incomplete');
+                            document.getElementById('filter_no_consensus').checked = search.filters.status.includes('no_consensus');
+                            document.getElementById('filter_archived').checked = search.filters.status.includes('archived');
+                        }
+                    }
+
+                    // Trigger search
+                    if (searchInput) {
+                        searchInput.dispatchEvent(new Event('input'));
+                        searchInput.focus();
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading saved search:', error);
+                alert('Error loading saved search');
+            });
+    }
+
+    function saveCurrentSearch() {
+        // TODO: Implement in next version (v2.5.14)
+        alert('Save Search feature coming in next version!');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     // Initialize filters

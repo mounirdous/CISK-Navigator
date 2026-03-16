@@ -5,6 +5,111 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.13] - 2026-03-16
+
+### Added - Saved Searches Dropdown UI (Phase 4 Part 3)
+**Feature**: Dropdown button in search bar to access and load saved searches
+
+**Issue**: Users need a UI to access their saved searches. This adds a dropdown with all saved searches, allowing users to click and load any saved search instantly.
+
+**Files Modified**:
+- `app/templates/base.html` - Added dropdown button + JavaScript for loading saved searches
+- `app/__init__.py` - Version bump to 2.5.13
+
+**UI Changes**:
+
+1. **Saved Searches Dropdown Button** - Added between search input and filter button
+   - Icon: bookmarks (three vertical bookmarks)
+   - Button position: In search bar input-group (left to right: input → saved → filters → search)
+   - Click to open dropdown with all saved searches
+   - Bootstrap dropdown component
+
+2. **Dropdown Contents**:
+   - Loading state: Spinner while fetching searches
+   - Empty state: "No saved searches yet" message + "Save Current Search" button
+   - Populated state: List of saved searches with:
+     - Bookmark icon (yellow filled)
+     - Search name
+     - "Default" badge (blue) if is_default=true
+     - Click to load the search
+   - Divider line
+   - "Save Current Search" button at bottom (placeholder for v2.5.14)
+
+**JavaScript Functions**:
+
+1. **loadSavedSearches()** - Fetches saved searches from API
+   - Called when dropdown opens (on 'show.bs.dropdown' event)
+   - GET `/workspace/api/saved-searches`
+   - Renders dropdown contents dynamically
+   - Error handling with fallback message
+
+2. **loadSavedSearch(searchId)** - Loads a saved search
+   - GET `/workspace/api/saved-searches/<id>`
+   - Sets search input value to saved query
+   - Applies saved filters (entity types, date range, status)
+   - Updates filter UI checkboxes/dropdowns
+   - Updates filter indicator button (warning color if filters active)
+   - Triggers search automatically (dispatches 'input' event)
+   - Focuses search input after loading
+
+3. **saveCurrentSearch()** - Placeholder for save functionality
+   - Shows alert: "Save Search feature coming in next version!"
+   - Will be implemented in v2.5.14
+
+4. **escapeHtml()** - Security utility
+   - Escapes HTML in search names to prevent XSS
+   - Uses DOM textContent for safe escaping
+
+**User Flow**:
+
+1. User clicks bookmarks button in search bar
+2. Dropdown opens, shows loading spinner
+3. API fetches saved searches
+4. Dropdown shows list of saved searches (or empty state)
+5. User clicks a saved search
+6. Search query + filters load instantly
+7. Search executes automatically
+8. Dropdown closes (Bootstrap default behavior)
+
+**Technical Details**:
+- Bootstrap 5 dropdown component with data-bs-toggle
+- AJAX fetch calls to API endpoints (no page reload)
+- Dynamic HTML generation with template literals
+- Event listener on dropdown show event
+- Security: HTML escaping for user-generated content (search names)
+- Responsive: max-height 400px with scrollbar for long lists
+- Minimum width: 250px for readability
+
+**Default Search Indicator**:
+- Searches marked as default show blue "Default" badge
+- Only one search can be default per user/org
+- Visual cue for users to identify their primary search
+
+**Error Handling**:
+- Network errors: Shows "Error loading searches" message
+- API errors: Console.error + user-friendly message
+- Graceful degradation: Dropdown works even if API fails
+
+**Impact**:
+- **User-Facing**: First visible saved searches feature!
+- Users can now access and load saved searches
+- Quick access to frequently-used searches
+- Reduces repetitive search + filter configuration
+- Improves workflow efficiency
+
+**Limitations (to be addressed in next versions)**:
+- Cannot save searches yet (coming in v2.5.14)
+- Cannot edit/delete searches from dropdown (coming in v2.5.16)
+- No default search auto-load on page load (coming in v2.5.15)
+- No search management UI (coming in future versions)
+
+**Next Steps**:
+- v2.5.14: Add "Save this search" modal with name input and default checkbox
+- v2.5.15: Auto-load default search on page load
+- v2.5.16: Add edit/delete buttons in dropdown for search management
+
+---
+
 ## [2.5.12] - 2026-03-16
 
 ### Added - Saved Searches API Endpoints (Phase 4 Part 2)
