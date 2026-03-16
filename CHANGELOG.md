@@ -5,6 +5,71 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.14.1] - 2026-03-16
+
+### Fixed - Navbar Layout Optimization (Single Line)
+**Issue**: Navbar wrapped to two lines, wasting vertical space and causing poor UX
+
+**Root Cause**: Search bar components (input + 4 buttons + save button) were too wide:
+- Search input: 400px
+- 5 buttons: saved searches, save, filters, search, plus external save button
+- Total width exceeded navbar available space
+
+**The Fix**: Optimized search bar for compact single-line layout
+
+**Changes Made**:
+
+1. **Reduced Input Width**: 400px → 340px
+   - Still readable and functional
+   - Shorter placeholder: "Search..." (Ctrl+K hint in title attribute)
+
+2. **Smaller Buttons**: Applied `btn-sm` class to all buttons
+   - Reduced padding: `0.25rem 0.4rem` (was default Bootstrap size)
+   - Icons remain clear and clickable
+
+3. **Save Button Optimization**:
+   - Moved inside input-group (was external, adding extra width)
+   - Hidden by default (`display: none`)
+   - Shows dynamically when search query ≥ 2 characters
+   - Only visible when relevant (has active search to save)
+
+4. **Reduced Margins**: Container margin `me-3` → `me-2`
+   - Saves additional horizontal space
+
+**JavaScript Enhancement**:
+- Added save button show/hide logic in search input event listener
+- `saveBtn.style.display = query.length >= 2 ? 'inline-block' : 'none'`
+- Button appears when user types search, hides when empty
+
+**Visual Result**:
+- **Before**: Navbar wrapped to 2 lines (search bar + nav items on separate lines)
+- **After**: Everything on single line, saving ~50px vertical space
+- Compact, professional appearance
+- All functionality preserved
+
+**Responsive Behavior**:
+- Buttons use icon-only design (no text labels)
+- Small button size maintains touch-target accessibility
+- Input width can be adjusted further if needed for smaller screens
+
+**Files Modified**:
+- `app/templates/base.html` - Search bar layout optimization + JS logic
+- `app/__init__.py` - Version bump to 2.5.14.1
+
+**Impact**:
+- **User-Facing**: More screen real estate for content
+- Better UX on smaller screens and laptops
+- Cleaner, more professional appearance
+- No functionality lost
+
+**Technical Details**:
+- Bootstrap `btn-sm` class: reduces button height from 38px to ~31px
+- `form-control-sm` class: reduces input height to match buttons
+- Dynamic visibility: save button appears only when needed
+- Maintains all keyboard shortcuts and functionality
+
+---
+
 ## [2.5.14] - 2026-03-16
 
 ### Added - Save Search Modal & Functionality (Phase 4 Part 4)
