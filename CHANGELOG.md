@@ -5,6 +5,24 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-03-16
+
+### Improved
+- **📱 Mobile dashboard layout optimization**: Consistent button widths and better layout
+  - Fixed inconsistent widths for "View" and "Compare" buttons in snapshot list
+  - Buttons now use `flex: 1` for equal width distribution (50/50 split)
+  - Snapshot items stack vertically on mobile instead of wrapping awkwardly
+  - Fixed lock badge wrapping below - now stays inline with date/label
+  - Metadata section uses flexbox with proper wrapping to prevent overflow
+  - Hero card "Download Excel" button now full width on mobile
+  - Reduced padding on hero card for better mobile fit (2.5rem → 1.5rem)
+
+### Technical
+- Added `@media (max-width: 768px)` styles for dashboard
+- Changed snapshot list from `justify-content-between` to vertical stacking
+- Buttons get equal width with `flex: 1` and `min-width: 0` for text truncation
+- Touch-friendly button padding: `0.6rem 0.75rem`
+
 ## [2.1.9] - 2026-03-16
 
 ### Changed

@@ -116,6 +116,54 @@
     font-weight: 600;
     transition: all 0.2s ease;
 }
+
+/* ============================================
+   MOBILE OPTIMIZATION - Dashboard
+   ============================================ */
+@media (max-width: 768px) {
+    /* Snapshot list items: Stack vertically on mobile */
+    .list-group-item .d-flex {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem;
+    }
+
+    /* Snapshot metadata section: Prevent badge wrapping */
+    .list-group-item .d-flex > div:first-child {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    /* Snapshot buttons: Full width with consistent sizing */
+    .list-group-item .d-flex > div:last-child {
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    /* View and Compare buttons: Equal width */
+    .list-group-item .btn-sm {
+        flex: 1;
+        min-width: 0;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.875rem;
+        white-space: nowrap;
+    }
+
+    /* Hero card: Less padding on mobile */
+    .hero-card {
+        padding: 1.5rem;
+    }
+
+    /* Download Excel button: Full width on mobile */
+    .hero-card .btn {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+}
 </style>
 {% endblock %}
 
