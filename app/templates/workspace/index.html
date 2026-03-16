@@ -177,11 +177,15 @@
     }
 
     .trend-indicator {
-        display: inline;
+        display: none; /* Hidden by default, shown only when badges are on */
         font-size: 0.85em;
         margin-left: 3px;
         cursor: help;
         white-space: nowrap;
+    }
+
+    .workspace-v2[data-badges-visible="true"] .trend-indicator {
+        display: inline;
     }
 
     .linked-kpi-indicator {
@@ -253,6 +257,11 @@
         transition: opacity 0.2s;
         cursor: pointer;
         z-index: 1;
+        display: none; /* Hidden by default, shown only when badges are on */
+    }
+
+    .workspace-v2[data-badges-visible="true"] .comment-icon {
+        display: block;
     }
 
     .comment-icon:hover {
@@ -1246,7 +1255,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, [])" x-init="init(); loadData()">
+<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, [])" x-init="init(); loadData()" :data-badges-visible="showBadges">
     <!-- Toolbar - Commands Band -->
     <div class="ws-header" :class="{'edit-mode': editMode}">
         <div style="display: flex; align-items: center; gap: 1.5rem;">
