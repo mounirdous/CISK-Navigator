@@ -2639,8 +2639,9 @@ function workspaceV2(orgId) {
             // Governance Bodies Filter
             if (this.selectedGovernanceBodies.length > 0) {
                 // Check if KPI has any of the selected GBs
-                const kpiGBIds = kpi.governance_body_ids || [];
-                const hasSelectedGB = this.selectedGovernanceBodies.some(gbId => kpiGBIds.includes(gbId));
+                const hasSelectedGB = kpi.governance_bodies && this.selectedGovernanceBodies.some(gbId =>
+                    kpi.governance_bodies.some(gb => gb.id === gbId)
+                );
                 if (!hasSelectedGB) {
                     return false;
                 }
@@ -2853,7 +2854,7 @@ function workspaceV2(orgId) {
                     challenge.initiatives.forEach(initiative => {
                         initiative.systems.forEach(system => {
                             system.kpis.forEach(kpi => {
-                                if (!kpi.is_archived && (kpi.governance_body_ids || []).includes(gbId)) {
+                                if (!kpi.is_archived && kpi.governance_bodies && kpi.governance_bodies.some(gb => gb.id === gbId)) {
                                     count++;
                                 }
                             });
