@@ -5,6 +5,44 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.5] - 2026-03-16
+
+### Fixed - CRITICAL: SQLAlchemy Join Error Breaking Search (HOTFIX)
+**Issue**: Search completely broken - no results appearing at all
+**Error**: `sqlalchemy.exc.ArgumentError: Join target, typically a FROM expression, or ORM relationship attribute expected, got 'initiative'.`
+
+**Root Cause**:
+- SearchService using string `.join("initiative")` instead of proper relationship
+- SQLAlchemy requires actual model relationships, not strings
+- Error occurred in both `search_kpis()` and `search_systems()` methods
+
+**Files Modified**:
+- `app/services/search_service.py` - Fixed SQLAlchemy joins
+
+**The Fix**:
+1. Added `InitiativeSystemLink` import
+2. Changed `.join("initiative")` → `.join(InitiativeSystemLink.initiative)`
+3. Fixed in both KPI and System search methods
+
+**Before (BROKEN)**:
+```python
+.join(KPI.initiative_system_link)
+.join("initiative")  # ❌ String - SQLAlchemy error
+```
+
+**After (WORKING)**:
+```python
+.join(KPI.initiative_system_link)
+.join(InitiativeSystemLink.initiative)  # ✅ Proper relationship
+```
+
+**Impact**:
+- v2.5.4 introduced this bug when adding fuzzy search backend
+- Search was completely non-functional (no results at all)
+- Now fixed: search works with fuzzy matching
+
+**Testing**: After Flask restart, "inventroy" should find "Inventory" results
+
 ## [2.5.4] - 2026-03-16
 
 ### Fixed - Live Search Now Uses Fuzzy Matching (CRITICAL BUG FIX)

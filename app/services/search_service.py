@@ -9,7 +9,7 @@ import re
 from Levenshtein import ratio
 
 from app.extensions import db
-from app.models import KPI, Challenge, Initiative, Space, System
+from app.models import KPI, Challenge, Initiative, InitiativeSystemLink, Space, System
 
 
 class SearchService:
@@ -207,7 +207,7 @@ class SearchService:
         base_query = (
             db.session.query(KPI)
             .join(KPI.initiative_system_link)
-            .join("initiative")
+            .join(InitiativeSystemLink.initiative)
             .filter(Initiative.organization_id == organization_id)
         )
 
@@ -286,7 +286,7 @@ class SearchService:
         base_query = (
             db.session.query(System)
             .join(System.initiative_links)
-            .join("initiative")
+            .join(InitiativeSystemLink.initiative)
             .filter(Initiative.organization_id == organization_id)
             .distinct()
         )
