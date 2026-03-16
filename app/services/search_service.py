@@ -182,7 +182,15 @@ class SearchService:
         if query in text:
             return True
 
-        # Calculate similarity ratio
+        # Check if query matches any individual word (for multi-word text)
+        # This allows "inventroy" to match "Inventory turns improvement"
+        words = text.split()
+        for word in words:
+            word_similarity = ratio(word, query)
+            if word_similarity >= threshold:
+                return True
+
+        # Fall back to comparing entire text (for short phrases)
         similarity = ratio(text, query)
 
         return similarity >= threshold

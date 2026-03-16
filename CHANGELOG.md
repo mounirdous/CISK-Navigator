@@ -5,6 +5,37 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.8] - 2026-03-16
+
+### Fixed - Fuzzy Matching Now Checks Individual Words
+**Issue**: "Inventory" search finds nothing even though "Inventory turns improvement" KPI exists
+
+**Root Cause**: Fuzzy matching compared entire phrase vs query
+- "Inventory turns improvement" vs "Inventory" = 44% similarity ❌ (fails 60% threshold)
+- Needed to check if ANY WORD in the phrase matches the query
+
+**The Fix**:
+Added word-by-word fuzzy matching in `fuzzy_match()` method:
+```python
+# Before: Only compared full text
+similarity = ratio(text, query)
+return similarity >= threshold
+
+# After: Check each word too
+words = text.split()
+for word in words:
+    if ratio(word, query) >= threshold:
+        return True  # Match found!
+```
+
+**Now Works**:
+- "Inventory" finds "Inventory turns improvement" ✓
+- "inventroy" (typo) finds "Inventory turns improvement" ✓ (89% word similarity)
+- "ERP" finds "ERP Consolidation Strategy" ✓
+
+**Files Modified**:
+- `app/services/search_service.py` - Enhanced fuzzy_match() to check words
+
 ## [2.5.7] - 2026-03-16
 
 ### Fixed - FINAL FIX: Initiative Also Missing is_archived
