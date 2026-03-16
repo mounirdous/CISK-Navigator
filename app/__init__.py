@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "2.1.6"
+__version__ = "2.1.7"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -91,11 +91,6 @@ def create_app(config_name=None):
     app.register_blueprint(logo.bp)
     app.register_blueprint(entity_links.bp)
     app.register_blueprint(beta.bp)  # Beta feature prototypes
-
-    # Workspace V2 - Fully reactive Alpine.js implementation (Beta)
-    from app.routes import workspacev2
-
-    app.register_blueprint(workspacev2.bp)
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":

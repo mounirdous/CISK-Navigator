@@ -1263,16 +1263,16 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
             scroll-behavior: smooth;
-        }
-
-        .ws-grid-container {
-            min-width: max-content;
+            /* CRITICAL: Container must be constrained to viewport to allow scrolling */
+            width: 100%;
+            max-width: 100vw;
         }
 
         /* Grid must be wider than viewport to enable scroll */
         .ws-grid {
             width: auto !important;
-            min-width: max-content;
+            min-width: max-content; /* Grid expands beyond container */
+            display: inline-grid; /* Prevent grid from collapsing to container width */
         }
 
         /* Entity name column on mobile - NOT sticky to allow free scrolling */

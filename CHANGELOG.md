@@ -5,6 +5,23 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.7] - 2026-03-16
+
+### Fixed
+- **🐛 Mobile horizontal scroll in workspace**: Fixed inability to scroll to see value columns on mobile
+  - Root cause: `.ws-grid-container` had `min-width: max-content` making it expand to fit content (no overflow)
+  - Container must be constrained to viewport width (`width: 100%; max-width: 100vw`) to allow scrolling
+  - Grid inside has `min-width: max-content` to expand beyond container, creating scrollable overflow
+  - Added `display: inline-grid` to grid to prevent collapsing to container width
+
+### Removed
+- **Workspace V2 route and templates**: Consolidated to single workspace implementation
+  - Deleted `/workspace/v2` route (`app/routes/workspacev2.py`)
+  - Deleted `app/templates/workspacev2/` directory
+  - Removed blueprint registration from `app/__init__.py`
+  - Updated beta page to show "No Beta Features Currently"
+  - Main `/workspace` route now uses modern Alpine.js implementation (was V2, now the only version)
+
 ## [2.1.6] - 2026-03-16
 
 ### Fixed
