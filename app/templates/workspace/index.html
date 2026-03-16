@@ -1258,7 +1258,7 @@
 
     @media (max-width: 768px) {
         /* Mobile Grid: Horizontal scroll with sticky entity column */
-        .ws-grid-wrapper {
+        .ws-grid-container {
             overflow-x: auto;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
@@ -1266,6 +1266,12 @@
         }
 
         .ws-grid-container {
+            min-width: max-content;
+        }
+
+        /* Grid must be wider than viewport to enable scroll */
+        .ws-grid {
+            width: auto !important;
             min-width: max-content;
         }
 
@@ -1382,26 +1388,26 @@
         }
 
         /* Mobile scrollbar styling */
-        .ws-grid-wrapper::-webkit-scrollbar {
+        .ws-grid-container::-webkit-scrollbar {
             height: 8px;
             width: 8px;
         }
 
-        .ws-grid-wrapper::-webkit-scrollbar-track {
+        .ws-grid-container::-webkit-scrollbar-track {
             background: #f1f1f1;
         }
 
-        .ws-grid-wrapper::-webkit-scrollbar-thumb {
+        .ws-grid-container::-webkit-scrollbar-thumb {
             background: #888;
             border-radius: 4px;
         }
 
-        .ws-grid-wrapper::-webkit-scrollbar-thumb:hover {
+        .ws-grid-container::-webkit-scrollbar-thumb:hover {
             background: #555;
         }
 
         /* Horizontal scroll indicator */
-        .ws-grid-wrapper::after {
+        .ws-grid-container::after {
             content: '← Swipe to see values →';
             position: sticky;
             left: 50%;
@@ -1421,7 +1427,7 @@
             z-index: 100;
         }
 
-        .ws-grid-wrapper.scrolled::after {
+        .ws-grid-container.scrolled::after {
             opacity: 0;
         }
     }
@@ -3481,17 +3487,17 @@ function workspaceV2(orgId, filterPresets) {
             // Only on mobile devices
             if (window.innerWidth <= 768) {
                 setTimeout(() => {
-                    const gridWrapper = document.querySelector('.ws-grid-wrapper');
-                    if (gridWrapper) {
+                    const gridContainer = document.querySelector('.ws-grid-container');
+                    if (gridContainer) {
                         let scrollTimeout;
-                        gridWrapper.addEventListener('scroll', () => {
+                        gridContainer.addEventListener('scroll', () => {
                             // Add scrolled class to hide indicator
-                            gridWrapper.classList.add('scrolled');
+                            gridContainer.classList.add('scrolled');
 
                             // Remove class after inactivity
                             clearTimeout(scrollTimeout);
                             scrollTimeout = setTimeout(() => {
-                                gridWrapper.classList.remove('scrolled');
+                                gridContainer.classList.remove('scrolled');
                             }, 2000);
                         });
                     }

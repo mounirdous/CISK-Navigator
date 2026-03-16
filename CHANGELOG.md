@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.2] - 2026-03-16
+
+### Fixed
+- **CRITICAL Mobile Scroll Fix**: Fixed CSS selector mismatch and grid width
+  - Changed `.ws-grid-wrapper` to `.ws-grid-container` in all mobile CSS
+  - Fixed `.ws-grid` width from `100%` to `auto` on mobile with `min-width: max-content`
+  - Updated JavaScript querySelector to use correct class name
+  - Grid now properly extends beyond viewport enabling horizontal scroll
+
+**Root Cause**: The grid table had `width: 100%` forcing it to viewport width, preventing overflow. Mobile CSS was also targeting wrong selector (`.ws-grid-wrapper` instead of `.ws-grid-container`).
+
 ## [2.1.1] - 2026-03-16
 
 ### Fixed
