@@ -5,6 +5,153 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.14] - 2026-03-16
+
+### Added - Save Search Modal & Functionality (Phase 4 Part 4)
+**Feature**: Complete "Save this search" functionality with modal dialog
+
+**Issue**: Users need to save their current search query and filters for quick access later. This completes the saved searches feature by enabling users to create new saved searches.
+
+**Files Modified**:
+- `app/templates/base.html` - Added save button, modal dialog, and JavaScript functions
+- `app/__init__.py` - Version bump to 2.5.14
+
+**UI Components Added**:
+
+1. **Save Search Button** - Next to search bar
+   - Icon: bookmark-plus (📑+)
+   - Position: Right after search form, before results
+   - Tooltip: "Save this search"
+   - Click opens modal dialog
+
+2. **Save Search Modal Dialog**:
+   - **Header**: "Save Search" with icon
+   - **Search Name Input**:
+     - Text input with placeholder "e.g., Q1 Inventory KPIs"
+     - Max length: 200 characters
+     - Required field with validation
+     - Shows error messages below input
+   - **Current Search Query Preview**:
+     - Shows the search text in a code block
+     - Read-only display
+   - **Active Filters Preview** (conditional):
+     - Only shows if filters are active
+     - Displays entity types, date range, status filters
+     - Formatted in light gray box
+   - **Set as Default Checkbox**:
+     - Option to make this search the default
+     - Help text: "This search will load automatically when you open the page"
+   - **Action Buttons**:
+     - Cancel (secondary)
+     - Save Search (primary, with icon)
+
+**JavaScript Functions**:
+
+1. **showSaveSearchModal()** - Opens the save modal
+   - Validates search query exists (min 2 chars)
+   - Populates modal with current search details
+   - Shows/hides filter preview based on active filters
+   - Focuses on name input after modal opens
+   - Called by save button and dropdown "Save Current Search" item
+
+2. **confirmSaveSearch()** - Saves the search
+   - Validates name (required, max 200 chars)
+   - Shows inline validation errors
+   - Disables button + shows spinner during save
+   - POST to `/workspace/api/saved-searches`
+   - Includes CSRF token
+   - Handles duplicate name errors from API
+   - On success:
+     - Closes modal
+     - Shows success alert
+     - Reloads saved searches dropdown
+     - Resets form
+   - On error: Shows error message, re-enables button
+
+3. **saveCurrentSearch()** - Updated wrapper
+   - Now calls showSaveSearchModal() instead of alert
+   - Used by dropdown "Save Current Search" button
+
+**Validation**:
+- Client-side:
+  - Search query must exist (min 2 chars)
+  - Name required
+  - Name max 200 characters
+  - Bootstrap .is-invalid styling for errors
+- Server-side (via API):
+  - Duplicate name detection
+  - Error messages shown in modal
+
+**User Flow**:
+
+1. User enters search query and/or applies filters
+2. User clicks save button (📑+) next to search bar
+3. Modal opens showing:
+   - Current search query
+   - Active filters (if any)
+   - Name input field (empty)
+   - Default checkbox (unchecked)
+4. User enters a descriptive name
+5. User optionally checks "Set as default"
+6. User clicks "Save Search"
+7. Button shows spinner during save
+8. On success:
+   - Modal closes
+   - Success alert shown
+   - Search now appears in saved searches dropdown
+   - If marked as default, becomes the default search
+9. On error (e.g., duplicate name):
+   - Error message shown below name input
+   - User can correct and retry
+
+**Bootstrap Integration**:
+- Uses Bootstrap 5 modal component
+- Bootstrap form validation styling (.is-invalid)
+- Bootstrap spinner for loading state
+- Bootstrap grid and spacing utilities
+- Responsive modal (works on mobile)
+
+**CSRF Protection**:
+- Includes `{{ csrf_token() }}` in POST request headers
+- Uses X-CSRFToken header (Flask-WTF standard)
+
+**Technical Details**:
+- Modal uses `bootstrap.Modal` JavaScript API
+- `new bootstrap.Modal()` to show programmatically
+- `bootstrap.Modal.getInstance()` to close after save
+- Async/await pattern with fetch() for API calls
+- Error handling with try-catch and .catch()
+- Form reset after successful save
+- Dynamic filter preview generation
+
+**Preview Display Logic**:
+- Shows entity types only if < 5 selected (not showing "all")
+- Formats date range: "last_30_days" → "last 30 days"
+- Shows status filters as comma-separated list
+- Hides entire filter preview section if no filters active
+
+**Impact**:
+- **User-Facing**: Users can now create saved searches! 🎉
+- Complete saved searches creation workflow
+- Users can save frequently-used searches for quick access
+- Default search option for auto-loading on page load
+- Duplicate name prevention
+- Clean, intuitive modal interface
+
+**What Works Now**:
+1. Create new saved searches ✓
+2. Access saved searches from dropdown ✓
+3. Load saved searches (query + filters) ✓
+4. Set default search ✓
+5. View all saved searches ✓
+
+**Next Steps**:
+- v2.5.15: Auto-load default search on page load
+- v2.5.16: Edit/delete saved searches from dropdown
+- Future: Manage searches page (bulk edit/delete, sharing)
+
+---
+
 ## [2.5.13.1] - 2026-03-16
 
 ### Fixed - Search Input Text Cropping

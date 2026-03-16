@@ -573,6 +573,11 @@
                             </button>
                         </div>
                     </form>
+                    <!-- Save Search Button -->
+                    <button class="btn btn-sm btn-outline-light ms-2" type="button" onclick="showSaveSearchModal()"
+                            title="Save this search" id="saveSearchBtn" style="opacity: 0.8;">
+                        <i class="bi bi-bookmark-plus"></i>
+                    </button>
                     <div id="liveSearchResults" class="position-absolute" style="display: none; top: 100%; left: 0; right: 0; z-index: 1050; margin-top: 4px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 70vh; overflow-y: auto;">
                         <!-- Live search results will appear here -->
                     </div>
@@ -1349,6 +1354,57 @@
         </div>
     </div>
 
+    <!-- Save Search Modal -->
+    <div class="modal fade" id="saveSearchModal" tabindex="-1" aria-labelledby="saveSearchModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="saveSearchModalLabel">
+                        <i class="bi bi-bookmark-plus"></i> Save Search
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saveSearchForm">
+                        <div class="mb-3">
+                            <label for="saveSearchName" class="form-label">Search Name</label>
+                            <input type="text" class="form-control" id="saveSearchName"
+                                   placeholder="e.g., Q1 Inventory KPIs" maxlength="200" required>
+                            <div class="form-text">Give your search a descriptive name (max 200 characters)</div>
+                            <div id="saveSearchNameError" class="invalid-feedback"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Current Search Query</label>
+                            <div class="p-2 bg-light border rounded">
+                                <code id="saveSearchQueryPreview"></code>
+                            </div>
+                        </div>
+
+                        <div class="mb-3" id="saveSearchFiltersPreview" style="display: none;">
+                            <label class="form-label">Active Filters</label>
+                            <div class="p-2 bg-light border rounded" id="saveSearchFiltersContent"></div>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="saveSearchSetDefault">
+                            <label class="form-check-label" for="saveSearchSetDefault">
+                                Set as default search
+                                <small class="text-muted d-block">This search will load automatically when you open the page</small>
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="confirmSaveSearch()">
+                        <i class="bi bi-bookmark-check"></i> Save Search
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
     // Search Filters Management
     function applySearchFilters() {
@@ -1578,8 +1634,135 @@
     }
 
     function saveCurrentSearch() {
-        // TODO: Implement in next version (v2.5.14)
-        alert('Save Search feature coming in next version!');
+        showSaveSearchModal();
+    }
+
+    function showSaveSearchModal() {
+        const searchInput = document.getElementById('liveSearchInput');
+        const query = searchInput ? searchInput.value.trim() : '';
+
+        if (!query || query.length < 2) {
+            alert('Please enter a search query first (at least 2 characters)');
+            return;
+        }
+
+        // Populate modal with current search details
+        document.getElementById('saveSearchName').value = '';
+        document.getElementById('saveSearchQueryPreview').textContent = query;
+        document.getElementById('saveSearchSetDefault').checked = false;
+
+        // Show active filters if any
+        const filtersPreviewDiv = document.getElementById('saveSearchFiltersPreview');
+        const filtersContentDiv = document.getElementById('saveSearchFiltersContent');
+
+        if (window.searchFilters) {
+            let filtersHtml = '<small>';
+
+            // Entity types
+            if (window.searchFilters.entity_types && window.searchFilters.entity_types.length < 5) {
+                filtersHtml += '<strong>Entity Types:</strong> ' + window.searchFilters.entity_types.join(', ') + '<br>';
+            }
+
+            // Date range
+            if (window.searchFilters.date_range) {
+                filtersHtml += '<strong>Date Range:</strong> ' + window.searchFilters.date_range.replace('_', ' ') + '<br>';
+            }
+
+            // Status filters
+            if (window.searchFilters.status && window.searchFilters.status.length > 0) {
+                filtersHtml += '<strong>Status:</strong> ' + window.searchFilters.status.join(', ');
+            }
+
+            filtersHtml += '</small>';
+            filtersContentDiv.innerHTML = filtersHtml;
+            filtersPreviewDiv.style.display = 'block';
+        } else {
+            filtersPreviewDiv.style.display = 'none';
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('saveSearchModal'));
+        modal.show();
+
+        // Focus on name input
+        setTimeout(() => {
+            document.getElementById('saveSearchName').focus();
+        }, 500);
+    }
+
+    function confirmSaveSearch() {
+        const nameInput = document.getElementById('saveSearchName');
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            nameInput.classList.add('is-invalid');
+            document.getElementById('saveSearchNameError').textContent = 'Please enter a name for this search';
+            return;
+        }
+
+        if (name.length > 200) {
+            nameInput.classList.add('is-invalid');
+            document.getElementById('saveSearchNameError').textContent = 'Name must be 200 characters or less';
+            return;
+        }
+
+        const searchInput = document.getElementById('liveSearchInput');
+        const query = searchInput.value.trim();
+        const isDefault = document.getElementById('saveSearchSetDefault').checked;
+
+        // Prepare data
+        const data = {
+            name: name,
+            query: query,
+            filters: window.searchFilters || {},
+            is_default: isDefault
+        };
+
+        // Disable save button during request
+        const saveBtn = event.target;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Saving...';
+
+        // Send to API
+        fetch('{{ url_for("workspace.create_saved_search") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                nameInput.classList.add('is-invalid');
+                document.getElementById('saveSearchNameError').textContent = data.error;
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-bookmark-check"></i> Save Search';
+            } else {
+                // Success! Close modal and reload saved searches list
+                const modal = bootstrap.Modal.getInstance(document.getElementById('saveSearchModal'));
+                modal.hide();
+
+                // Show success message
+                alert('Search saved successfully!');
+
+                // Reload saved searches dropdown if it's open
+                loadSavedSearches();
+
+                // Reset form
+                document.getElementById('saveSearchForm').reset();
+                nameInput.classList.remove('is-invalid');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="bi bi-bookmark-check"></i> Save Search';
+            }
+        })
+        .catch(error => {
+            console.error('Error saving search:', error);
+            alert('Error saving search. Please try again.');
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="bi bi-bookmark-check"></i> Save Search';
+        });
     }
 
     function escapeHtml(text) {
