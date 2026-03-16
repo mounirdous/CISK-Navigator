@@ -221,9 +221,9 @@ class SearchService:
 
         # Apply modifiers
         if "archived" not in modifiers:
-            base_query = base_query.filter(KPI.is_archived is False)
+            base_query = base_query.filter(KPI.is_archived == False)  # noqa: E712
         else:
-            base_query = base_query.filter(KPI.is_archived is True)
+            base_query = base_query.filter(KPI.is_archived == True)  # noqa: E712
 
         # Get all KPIs
         all_kpis = base_query.all()

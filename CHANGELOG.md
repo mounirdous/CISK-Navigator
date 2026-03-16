@@ -5,6 +5,48 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.9] - 2026-03-16
+
+### Fixed - CRITICAL: SQLAlchemy Boolean Filter Bug (THE REAL FIX)
+**Issue**: KPI search returned 0 results because of wrong SQL comparison operator
+
+**The Bug**:
+```python
+.filter(KPI.is_archived is False)  # Python identity check ❌
+# This NEVER matches any rows in SQL!
+```
+
+**Root Cause**: Used Python `is False` instead of SQL `== False`
+- Python `is` → Identity check (compares object memory addresses)
+- SQL `==` → Equality check (compares values)
+- SQLAlchemy needs `==` for database comparisons!
+
+**Test Results**:
+- `is False` → 0 results ❌
+- `== False` → 25 results ✓
+- `.is_(False)` → 25 results ✓ (SQLAlchemy method)
+
+**The Fix**:
+```python
+.filter(KPI.is_archived == False)  # SQL equality ✓
+# Added # noqa: E712 to suppress flake8 style warning
+```
+
+**Flake8 Warning History**:
+- Flake8 warned us about this in v2.5.1: "E712: comparison to False should be 'if not cond:'"
+- I "fixed" it by changing `== False` → `is False` (WRONG!)
+- Should have used `.is_(False)` or kept `== False` with noqa comment
+
+**Now Works**:
+- "Inventory" finds "Inventory turns improvement" ✓
+- "inventroy" (typo) finds "Inventory turns improvement" ✓
+- All KPI searches work correctly ✓
+
+**Files Modified**:
+- `app/services/search_service.py` - Changed `is False` → `== False` with noqa
+
+**Lesson**: SQLAlchemy uses `==` for SQL comparisons, not Python's `is`!
+
 ## [2.5.8] - 2026-03-16
 
 ### Fixed - Fuzzy Matching Now Checks Individual Words
