@@ -1269,13 +1269,9 @@
             min-width: max-content;
         }
 
-        /* Sticky entity name column on mobile */
+        /* Entity name column on mobile - NOT sticky to allow free scrolling */
         .ws-grid-container > div:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 10;
-            background: white;
-            box-shadow: 2px 0 4px rgba(0,0,0,0.1);
+            /* Removed sticky positioning - was blocking horizontal scroll */
         }
 
         /* Mobile Toolbar: Stack vertically */

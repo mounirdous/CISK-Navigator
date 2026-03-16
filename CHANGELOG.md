@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-03-16
+
+### Fixed
+- **Mobile Scroll Issue**: Removed sticky positioning from first column
+  - Sticky entity column was blocking horizontal scroll on mobile
+  - Now allows free horizontal scrolling across all columns
+  - Entity names scroll with content (no freeze pane)
+
 ## [2.1.0] - 2026-03-16
 
 ### Mobile Optimization - Option 3 Implementation 📱
@@ -15,7 +23,7 @@ Complete mobile-responsive overhaul implementing hybrid approach for optimal mob
 - **📱 Horizontal Scrollable Grid**: Touch-friendly workspace grid
   - iOS momentum scrolling (-webkit-overflow-scrolling: touch)
   - Smooth scroll behavior for natural feel
-  - Sticky entity name column while values scroll horizontally
+  - Free horizontal scrolling (no sticky columns blocking scroll)
   - Visual scroll indicator: "← Swipe to see values →"
   - Auto-hiding indicator after user scrolls
 
@@ -56,7 +64,7 @@ Complete mobile-responsive overhaul implementing hybrid approach for optimal mob
   - Adds/removes 'scrolled' class dynamically
   - 2-second timeout before re-showing indicator
 - **CSS Architecture**: Mobile-first with progressive enhancement
-- **Sticky Positioning**: First grid column fixed with z-index and shadow
+- **Scroll Architecture**: Removed sticky positioning to allow unrestricted horizontal scroll
 
 ### Fixed
 - **Button Overlap**: Snapshot controls no longer conflict with filters
