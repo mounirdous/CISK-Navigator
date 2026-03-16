@@ -32,6 +32,7 @@ from app.models import (
     Organization,
     RollupSnapshot,
     SavedChart,
+    SavedSearch,
     Space,
     System,
     SystemAnnouncement,
@@ -2429,6 +2430,220 @@ def advanced_search():
     results["total_results"] = total_results
 
     return jsonify(results)
+
+
+# ============================================================================
+# Saved Searches API Endpoints
+# ============================================================================
+
+
+@bp.route("/api/saved-searches", methods=["GET"])
+@login_required
+@organization_required
+def get_saved_searches():
+    """
+    Get all saved searches for the current user in the current organization.
+
+    Returns:
+        JSON array of saved search objects
+    """
+    org_id = session.get("organization_id")
+    user_id = current_user.id
+
+    searches = SavedSearch.get_user_searches(user_id, org_id)
+    return jsonify({"searches": [s.to_dict() for s in searches]})
+
+
+@bp.route("/api/saved-searches", methods=["POST"])
+@login_required
+@organization_required
+def create_saved_search():
+    """
+    Create a new saved search.
+
+    Expects JSON body:
+    {
+        "name": "Search name",
+        "query": "search text",
+        "filters": {"entity_types": [...], ...},
+        "is_default": false
+    }
+
+    Returns:
+        JSON with created search object
+    """
+    org_id = session.get("organization_id")
+    user_id = current_user.id
+    data = request.get_json()
+
+    if not data or "name" not in data or "query" not in data:
+        return jsonify({"error": "Name and query are required"}), 400
+
+    # Validate name length
+    if len(data["name"]) > 200:
+        return jsonify({"error": "Name must be 200 characters or less"}), 400
+
+    # Check for duplicate names
+    existing = (
+        db.session.query(SavedSearch).filter_by(user_id=user_id, organization_id=org_id, name=data["name"]).first()
+    )
+    if existing:
+        return jsonify({"error": "A saved search with this name already exists"}), 400
+
+    # Create new saved search
+    saved_search = SavedSearch(
+        user_id=user_id,
+        organization_id=org_id,
+        name=data["name"],
+        query=data["query"],
+        filters=data.get("filters"),
+        is_default=data.get("is_default", False),
+    )
+
+    db.session.add(saved_search)
+    db.session.commit()
+
+    return jsonify({"search": saved_search.to_dict()}), 201
+
+
+@bp.route("/api/saved-searches/<int:search_id>", methods=["GET"])
+@login_required
+@organization_required
+def get_saved_search(search_id):
+    """
+    Get a specific saved search by ID.
+
+    Returns:
+        JSON with search object or 404 if not found
+    """
+    org_id = session.get("organization_id")
+    user_id = current_user.id
+
+    saved_search = (
+        db.session.query(SavedSearch).filter_by(id=search_id, user_id=user_id, organization_id=org_id).first()
+    )
+
+    if not saved_search:
+        return jsonify({"error": "Saved search not found"}), 404
+
+    return jsonify({"search": saved_search.to_dict()})
+
+
+@bp.route("/api/saved-searches/<int:search_id>", methods=["PUT"])
+@login_required
+@organization_required
+def update_saved_search(search_id):
+    """
+    Update a saved search.
+
+    Expects JSON body with fields to update:
+    {
+        "name": "New name",
+        "query": "new search text",
+        "filters": {...},
+        "is_default": true
+    }
+
+    Returns:
+        JSON with updated search object
+    """
+    org_id = session.get("organization_id")
+    user_id = current_user.id
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    # Find the saved search
+    saved_search = (
+        db.session.query(SavedSearch).filter_by(id=search_id, user_id=user_id, organization_id=org_id).first()
+    )
+
+    if not saved_search:
+        return jsonify({"error": "Saved search not found"}), 404
+
+    # Update fields
+    if "name" in data:
+        if len(data["name"]) > 200:
+            return jsonify({"error": "Name must be 200 characters or less"}), 400
+
+        # Check for duplicate names (excluding current search)
+        existing = (
+            db.session.query(SavedSearch)
+            .filter_by(user_id=user_id, organization_id=org_id, name=data["name"])
+            .filter(SavedSearch.id != search_id)
+            .first()
+        )
+        if existing:
+            return jsonify({"error": "A saved search with this name already exists"}), 400
+
+        saved_search.name = data["name"]
+
+    if "query" in data:
+        saved_search.query = data["query"]
+
+    if "filters" in data:
+        saved_search.filters = data["filters"]
+
+    if "is_default" in data and data["is_default"]:
+        saved_search.set_as_default()
+    elif "is_default" in data and not data["is_default"]:
+        saved_search.is_default = False
+
+    db.session.commit()
+
+    return jsonify({"search": saved_search.to_dict()})
+
+
+@bp.route("/api/saved-searches/<int:search_id>", methods=["DELETE"])
+@login_required
+@organization_required
+def delete_saved_search(search_id):
+    """
+    Delete a saved search.
+
+    Returns:
+        JSON success message or 404 if not found
+    """
+    org_id = session.get("organization_id")
+    user_id = current_user.id
+
+    saved_search = (
+        db.session.query(SavedSearch).filter_by(id=search_id, user_id=user_id, organization_id=org_id).first()
+    )
+
+    if not saved_search:
+        return jsonify({"error": "Saved search not found"}), 404
+
+    db.session.delete(saved_search)
+    db.session.commit()
+
+    return jsonify({"message": "Saved search deleted successfully"})
+
+
+@bp.route("/api/saved-searches/<int:search_id>/set-default", methods=["POST"])
+@login_required
+@organization_required
+def set_default_search(search_id):
+    """
+    Set a saved search as the default.
+
+    Returns:
+        JSON success message or 404 if not found
+    """
+    org_id = session.get("organization_id")
+    user_id = current_user.id
+
+    saved_search = (
+        db.session.query(SavedSearch).filter_by(id=search_id, user_id=user_id, organization_id=org_id).first()
+    )
+
+    if not saved_search:
+        return jsonify({"error": "Saved search not found"}), 404
+
+    saved_search.set_as_default()
+
+    return jsonify({"message": "Default search set successfully", "search": saved_search.to_dict()})
 
 
 @bp.route("/api/kpi/<int:kpi_id>/status")

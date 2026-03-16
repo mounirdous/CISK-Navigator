@@ -5,6 +5,113 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.12] - 2026-03-16
+
+### Added - Saved Searches API Endpoints (Phase 4 Part 2)
+**Feature**: REST API for CRUD operations on saved searches
+
+**Issue**: Need API endpoints to manage saved searches (create, read, update, delete, set default) to enable the UI implementation in next version.
+
+**Files Modified**:
+- `app/routes/workspace.py` - Added SavedSearch import + 6 new API endpoints
+- `app/__init__.py` - Version bump to 2.5.12
+
+**API Endpoints Added**:
+
+1. **GET /workspace/api/saved-searches**
+   - List all saved searches for current user in current organization
+   - Returns: `{"searches": [...]}`
+   - Ordered by name (alphabetically)
+   - Scoped to user + organization
+
+2. **POST /workspace/api/saved-searches**
+   - Create a new saved search
+   - Body: `{"name": "...", "query": "...", "filters": {...}, "is_default": false}`
+   - Validation:
+     - Name required (max 200 chars)
+     - Query required
+     - Duplicate name check (per user/org)
+   - Returns: `{"search": {...}}` with 201 status
+
+3. **GET /workspace/api/saved-searches/<id>**
+   - Get a specific saved search by ID
+   - Returns: `{"search": {...}}` or 404 if not found
+   - Security: Verifies ownership (user_id + org_id match)
+
+4. **PUT /workspace/api/saved-searches/<id>**
+   - Update an existing saved search
+   - Body: Any combination of `{"name": "...", "query": "...", "filters": {...}, "is_default": true}`
+   - Validation:
+     - Name uniqueness check (excluding current search)
+     - If `is_default: true`, calls `set_as_default()` to unset others
+   - Returns: Updated search object
+
+5. **DELETE /workspace/api/saved-searches/<id>**
+   - Delete a saved search
+   - Returns: `{"message": "Saved search deleted successfully"}`
+   - Security: Verifies ownership before deletion
+
+6. **POST /workspace/api/saved-searches/<id>/set-default**
+   - Set a saved search as the default
+   - Automatically unsets all other defaults for user/org
+   - Returns: `{"message": "...", "search": {...}}`
+
+**Security Features**:
+- All endpoints require `@login_required` + `@organization_required`
+- All queries filter by `user_id` + `organization_id` (multi-tenant isolation)
+- Prevents users from accessing/modifying other users' searches
+- Prevents cross-organization access
+
+**Validation**:
+- Name length: max 200 characters
+- Duplicate name prevention (per user/org)
+- Required fields enforcement (name, query)
+- 404 errors for non-existent searches
+- 400 errors for invalid data
+
+**Technical Details**:
+- Uses `db.session.query(SavedSearch)` syntax (SQLAlchemy 2.x compatible)
+- JSON responses for all endpoints
+- RESTful URL structure: `/api/saved-searches` + `/api/saved-searches/<id>`
+- HTTP methods: GET, POST, PUT, DELETE
+- Status codes: 200 (success), 201 (created), 400 (bad request), 404 (not found)
+
+**Testing**:
+```python
+# All CRUD operations tested via Python API:
+✓ Create saved search with name, query, filters
+✓ Create multiple searches for same user
+✓ Get all user searches (ordered by name)
+✓ Update search (name, query, filters)
+✓ Set as default (verifies only one default exists)
+✓ Get specific search by ID
+✓ Delete search
+✓ Verify cleanup
+
+Result: All 8 tests passed ✓
+```
+
+**Default Search Logic**:
+- Only one search can be default per user/org
+- Setting `is_default: true` via PUT or POST to `/set-default`:
+  1. Unsets all other defaults for user/org
+  2. Sets this search as default
+  3. Commits atomically
+- If `is_default: false` in PUT, just updates flag (doesn't change other defaults)
+
+**Impact**:
+- No user-facing changes yet (API-only)
+- Prepares for Phase 4 Part 3: Saved Searches UI
+- Backend fully functional for upcoming UI features
+
+**Next Steps**:
+- v2.5.13: Add UI dropdown in search bar to access saved searches
+- v2.5.14: Add "Save this search" button and modal
+- v2.5.15: Add "Set as default" functionality with auto-load on page load
+- v2.5.16: Add "Edit search" and "Delete search" buttons in dropdown
+
+---
+
 ## [2.5.11] - 2026-03-16
 
 ### Added - Saved Searches Database & Model (Phase 4 Part 1)
