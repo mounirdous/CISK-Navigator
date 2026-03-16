@@ -3420,7 +3420,7 @@ function workspaceV2(orgId, filterPresets) {
                         return;
                     }
 
-                    // Smooth scroll to the KPI with gentle positioning
+                    // Smooth scroll to the KPI - minimal scroll, keep it visible
                     const container = document.querySelector('.ws-grid-container');
                     const rowRect = kpiRow.getBoundingClientRect();
                     const containerRect = container.getBoundingClientRect();
@@ -3430,8 +3430,8 @@ function workspaceV2(orgId, filterPresets) {
                     const rowTop = rowRect.top - containerRect.top + currentScroll;
                     const viewportHeight = containerRect.height;
 
-                    // Position row at 35% from top (more gentle, less scroll)
-                    const targetScroll = rowTop - (viewportHeight * 0.35);
+                    // Position row near middle (50% from top) - minimal scroll!
+                    const targetScroll = rowTop - (viewportHeight * 0.5);
 
                     container.scrollTo({
                         top: Math.max(0, targetScroll),

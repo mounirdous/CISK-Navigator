@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4] - 2026-03-16
+
+### Fixed
+- **📜 Perfect KPI centering**: Changed to 50% (true center) for maximum visibility
+  - User feedback: At 35%, KPI name "ERP Consolidation Story" barely visible at top, effect almost invisible
+  - Changed to 50% from top = **centered in viewport**
+  - Formula: `targetScroll = rowTop - (viewportHeight * 0.5)`
+  - **Minimal scroll** - KPI stays in comfortable viewing position
+  - Both KPI name AND spotlight effect fully visible
+
 ## [2.3.3] - 2026-03-16
 
 ### Fixed
