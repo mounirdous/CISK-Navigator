@@ -476,19 +476,19 @@
                     class="filter-pill"
                     :class="{'active': spaceTypeFilter === 'all'}">
                 <i class="bi bi-globe"></i> All
-                <span x-show="spaceTypeFilter === 'all'" x-text="`(${spaces.length})`"></span>
+                <span x-text="`(${spaces.length})`"></span>
             </button>
             <button @click="spaceTypeFilter = 'public'"
                     class="filter-pill"
                     :class="{'active': spaceTypeFilter === 'public'}">
                 <i class="bi bi-unlock"></i> Public
-                <span x-show="spaceTypeFilter === 'public'" x-text="`(${spaces.filter(s => !s.is_private).length})`"></span>
+                <span x-text="`(${spaces.filter(s => !s.is_private).length})`"></span>
             </button>
             <button @click="spaceTypeFilter = 'private'"
                     class="filter-pill"
                     :class="{'active': spaceTypeFilter === 'private'}">
                 <i class="bi bi-lock"></i> Private
-                <span x-show="spaceTypeFilter === 'private'" x-text="`(${spaces.filter(s => s.is_private).length})`"></span>
+                <span x-text="`(${spaces.filter(s => s.is_private).length})`"></span>
             </button>
         </div>
 
