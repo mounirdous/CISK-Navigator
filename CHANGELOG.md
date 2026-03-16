@@ -5,6 +5,80 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.3] - 2026-03-16
+
+### Added - Enhanced Search UI with Keyboard Shortcuts (Phase 3 - Part 1)
+**Feature**: Improved search bar with keyboard shortcuts and modifier hints
+
+**Files Modified**:
+- `app/templates/base.html` - Enhanced search input with keyboard shortcuts and hints
+
+**Key Features**:
+
+1. **Keyboard Shortcut: Ctrl+K / Cmd+K**
+   - Global shortcut to focus search from anywhere
+   - Works on Windows (Ctrl+K), Mac (Cmd+K), Linux (Ctrl+K)
+   - Auto-selects existing text for quick re-search
+   - Escape key to close search and blur input
+
+2. **Search Modifier Hints**
+   - Shows hint panel on empty search focus
+   - Displays available modifiers: @risk, @incomplete, @no_consensus, @archived
+   - Click-to-insert functionality for quick modifier addition
+   - Auto-hides when typing starts
+   - Styled with subtle background and rounded corners
+
+3. **Enhanced Placeholder**
+   - Updated from "Search KPIs, Systems..." to "Search... (Ctrl+K)"
+   - Tooltip shows modifier examples on hover
+   - Wider input (280px → 320px) for better visibility
+
+4. **User Experience Improvements**:
+   - Click outside to dismiss hints
+   - Hints don't interfere with live search results
+   - Smooth transitions between hint panel and results
+   - Modifier insertion triggers search immediately
+   - Z-index hierarchy: results (1050) > hints (1049)
+
+**Technical Implementation**:
+
+**HTML Changes** (lines 545-570):
+- Added search hints panel (`#searchHints`)
+- Clickable modifier badges with `onclick="insertModifier('@risk')"`
+- Styled with flexbox for responsive layout
+- Background: `rgba(255,255,255,0.95)` for subtle transparency
+
+**JavaScript Changes** (lines 1040-1102):
+- New IIFE for keyboard shortcuts and hints
+- `keydown` listener for Ctrl+K / Cmd+K global shortcut
+- `focus` listener to show/hide hints based on input state
+- `input` listener to hide hints when typing
+- `insertModifier()` function to add modifiers to search
+- Automatic search trigger after modifier insertion
+
+**Event Hierarchy**:
+1. Focus empty input → Show hints
+2. Focus with text (2+ chars) → Show results (existing logic)
+3. Type anything → Hide hints, show results (existing logic)
+4. Click modifier → Insert text, hide hints, trigger search
+5. Escape → Close hints/results, blur input
+6. Click outside → Close hints/results
+
+**Browser Compatibility**:
+- Modern browsers with addEventListener support
+- ES6 features: arrow functions, const/let
+- Works on all major browsers (Chrome, Firefox, Safari, Edge)
+
+**Accessibility**:
+- Keyboard navigation fully supported
+- Focus management (select on shortcut, blur on escape)
+- Visual indicators (cursor pointer on modifiers)
+- Screen reader compatible (semantic HTML)
+
+**Next Steps**:
+- Phase 3 Part 2 (v2.5.4): Advanced filters panel
+- Phase 3 Part 3 (v2.5.5): Search results page
+
 ## [2.5.2] - 2026-03-16
 
 ### Added - Enhanced Search API Endpoint (Phase 2)

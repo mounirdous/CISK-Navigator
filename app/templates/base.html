@@ -544,9 +544,10 @@
                 {% if session.organization_id %}
                 <div class="position-relative me-3">
                     <form class="d-flex" method="GET" action="{{ url_for('workspace.search_page') }}" id="searchForm">
-                        <div class="input-group" style="width: 280px;">
-                            <input class="form-control" type="search" name="q" id="liveSearchInput" placeholder="Search KPIs, Systems..."
+                        <div class="input-group" style="width: 320px;">
+                            <input class="form-control" type="search" name="q" id="liveSearchInput" placeholder="Search... (Ctrl+K)"
                                    autocomplete="off"
+                                   title="Try modifiers: @risk @incomplete @no_consensus"
                                    style="border-top-right-radius: 0; border-bottom-right-radius: 0; background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white;">
                             <button class="btn btn-outline-light" type="submit" style="border-top-left-radius: 0; border-bottom-left-radius: 0;">
                                 <i class="bi bi-search"></i>
@@ -555,6 +556,16 @@
                     </form>
                     <div id="liveSearchResults" class="position-absolute" style="display: none; top: 100%; left: 0; right: 0; z-index: 1050; margin-top: 4px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 70vh; overflow-y: auto;">
                         <!-- Live search results will appear here -->
+                    </div>
+                    <!-- Search hints (show on focus) -->
+                    <div id="searchHints" class="position-absolute" style="display: none; top: 100%; left: 0; right: 0; z-index: 1049; margin-top: 4px; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 8px 12px; font-size: 0.75rem; color: #6c757d;">
+                        <div style="margin-bottom: 4px;"><strong>Search modifiers:</strong></div>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@risk')">@risk</span>
+                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@incomplete')">@incomplete</span>
+                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@no_consensus')">@no_consensus</span>
+                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@archived')">@archived</span>
+                        </div>
                     </div>
                 </div>
                 {% endif %}
@@ -1023,6 +1034,68 @@
             }
         `;
         document.head.appendChild(style);
+    })();
+
+    // Keyboard shortcut: Ctrl+K / Cmd+K to focus search
+    (function() {
+        const searchInput = document.getElementById('liveSearchInput');
+        const searchHints = document.getElementById('searchHints');
+        const searchResults = document.getElementById('liveSearchResults');
+
+        // Global keyboard shortcut
+        document.addEventListener('keydown', function(e) {
+            // Check for Ctrl+K (Windows/Linux) or Cmd+K (Mac)
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+            }
+
+            // Escape to close search and blur
+            if (e.key === 'Escape') {
+                if (searchResults.style.display === 'block' || searchHints.style.display === 'block') {
+                    e.preventDefault();
+                    searchResults.style.display = 'none';
+                    searchHints.style.display = 'none';
+                    searchInput.blur();
+                }
+            }
+        });
+
+        // Show hints on focus (if empty)
+        searchInput.addEventListener('focus', function() {
+            if (this.value.trim().length === 0) {
+                searchHints.style.display = 'block';
+                searchResults.style.display = 'none';
+            } else if (this.value.trim().length >= 2) {
+                searchHints.style.display = 'none';
+                // Results will be shown by existing search logic
+            }
+        });
+
+        // Hide hints when typing starts
+        searchInput.addEventListener('input', function() {
+            if (this.value.trim().length > 0) {
+                searchHints.style.display = 'none';
+            }
+        });
+
+        // Hide hints when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchHints.contains(e.target)) {
+                searchHints.style.display = 'none';
+            }
+        });
+
+        // Function to insert modifier into search input
+        window.insertModifier = function(modifier) {
+            const currentValue = searchInput.value.trim();
+            searchInput.value = currentValue ? currentValue + ' ' + modifier : modifier;
+            searchInput.focus();
+            searchHints.style.display = 'none';
+            // Trigger input event to start search
+            searchInput.dispatchEvent(new Event('input'));
+        };
     })();
     </script>
     {% endif %}
