@@ -197,21 +197,20 @@ def workspace():
             "logo": logo_url,
         }
 
-    # Get all spaces with full hierarchy (Space doesn't have is_deleted)
+    # Get all spaces with full hierarchy
+    # Note: Only Organization has is_deleted - all other models use hard deletes (CASCADE)
     spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order).all()
 
     # Build hierarchy data
     spaces_data = []
     for space in spaces:
-        challenges = (
-            Challenge.query.filter_by(space_id=space.id, is_deleted=False).order_by(Challenge.display_order).all()
-        )
+        challenges = Challenge.query.filter_by(space_id=space.id).order_by(Challenge.display_order).all()
 
         challenges_data = []
         for challenge in challenges:
             # Get initiatives for this challenge
             initiatives = (
-                Initiative.query.filter_by(organization_id=org_id, challenge_id=challenge.id, is_deleted=False)
+                Initiative.query.filter_by(organization_id=org_id, challenge_id=challenge.id)
                 .order_by(Initiative.display_order)
                 .all()
             )
@@ -220,7 +219,7 @@ def workspace():
             for initiative in initiatives:
                 # Get systems for this initiative
                 systems_links = (
-                    InitiativeSystemLink.query.filter_by(initiative_id=initiative.id, is_deleted=False)
+                    InitiativeSystemLink.query.filter_by(initiative_id=initiative.id)
                     .order_by(InitiativeSystemLink.display_order)
                     .all()
                 )
@@ -228,10 +227,10 @@ def workspace():
                 systems_data = []
                 for link in systems_links:
                     system = link.system
-                    if system and not system.is_deleted:
+                    if system:
                         # Get KPIs for this system
                         kpis = (
-                            KPI.query.filter_by(initiative_system_link_id=link.id, is_deleted=False)
+                            KPI.query.filter_by(initiative_system_link_id=link.id)
                             .order_by(KPI.display_order)
                             .all()
                         )
