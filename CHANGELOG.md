@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.9] - 2026-03-16
+
+### Changed
+- **📱 First column no longer sticky on mobile workspace**: Entity names column now scrolls horizontally
+  - Removed `position: sticky` from first column on mobile
+  - Removed `left: 0` and `box-shadow` styling
+  - Changed to `position: relative` to allow free horizontal scrolling
+  - Users can now swipe to see the entire grid from left to right
+  - Desktop still has sticky first column for easy reference
+
 ## [2.1.8] - 2026-03-16
 
 ### Fixed

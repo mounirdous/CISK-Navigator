@@ -1342,12 +1342,16 @@
             display: inline-block;
         }
 
-        /* First column (entity names): Fixed width for consistency */
+        /* First column (entity names): Fixed width for consistency, NOT sticky */
         .ws-header-cell:first-child,
         .ws-cell:first-child {
             min-width: 250px !important;
             width: 250px !important;
             max-width: 250px !important;
+            /* Remove sticky positioning - allow horizontal scroll */
+            position: relative !important;
+            left: auto !important;
+            box-shadow: none !important;
         }
 
         /* Value cells: More padding for touch, fixed width for consistency */
