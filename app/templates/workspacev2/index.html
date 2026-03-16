@@ -175,6 +175,12 @@
         opacity: 0.7;
     }
 
+    .trend-indicator {
+        font-size: 0.9em;
+        margin-left: 4px;
+        cursor: help;
+    }
+
     .linked-kpi-indicator {
         color: #666;
         font-size: 0.8rem;
@@ -1646,7 +1652,7 @@
                                         <div>
                                             <!-- Formula config icon (edit mode only) -->
                                             <template x-if="editMode && vt.kind === 'numeric'">
-                                                <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/space?return_to=workspacev2`"
+                                                <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=space&return_to=workspacev2`"
                                                    class="formula-config-icon"
                                                    :title="'Configure rollup for ' + vt.name"
                                                    @click.stop>
@@ -1663,9 +1669,48 @@
                                                 <span x-show="space.rollup_values[String(vt.id)].formula === 'median'">m</span>
                                                 <span x-show="space.rollup_values[String(vt.id)].formula === 'count'">#</span>
                                             </span>
-                                            <!-- Value with color -->
-                                            <span :style="'color: ' + (space.rollup_values[String(vt.id)].color || '#6c757d')" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
-                                            <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                            <!-- Value display by type -->
+                                            <template x-if="vt.kind === 'numeric'">
+                                                <span>
+                                                    <span :style="'color: ' + (space.rollup_values[String(vt.id)].color || '#6c757d')" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                                                    <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                </span>
+                                            </template>
+                                            <template x-if="vt.kind === 'risk'">
+                                                <span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">!</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">!!</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 3">!!!</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="vt.kind === 'positive_impact'">
+                                                <span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">★</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">★★</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 3">★★★</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="vt.kind === 'negative_impact'">
+                                                <span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">▼</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">▼▼</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 3">▼▼▼</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="vt.kind === 'level'">
+                                                <span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">●</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">●●</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 3">●●●</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="vt.kind === 'sentiment'">
+                                                <span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">☹️</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">😐</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 3">😊</span>
+                                                </span>
+                                            </template>
                                             <!-- Completeness indicator -->
                                             <small class="ms-1" x-text="space.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                         </div>
@@ -1745,7 +1790,7 @@
                                             <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
                                                 <div>
                                                     <template x-if="editMode && vt.kind === 'numeric'">
-                                                        <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/challenge?return_to=workspacev2`"
+                                                        <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=challenge&return_to=workspacev2`"
                                                            class="formula-config-icon"
                                                            @click.stop>
                                                             <i class="bi bi-calculator"></i>
@@ -1759,8 +1804,15 @@
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'median'">m</span>
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'count'">#</span>
                                                     </span>
-                                                    <span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
-                                                    <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                    <!-- Value display by type -->
+                                                    <template x-if="vt.kind === 'numeric'">
+                                                        <span><span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span><span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span></span>
+                                                    </template>
+                                                    <template x-if="vt.kind === 'risk'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">!!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">!!!</span></span></template>
+                                                    <template x-if="vt.kind === 'positive_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">★★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">★★★</span></span></template>
+                                                    <template x-if="vt.kind === 'negative_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">▼▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">▼▼▼</span></span></template>
+                                                    <template x-if="vt.kind === 'level'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">●●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">●●●</span></span></template>
+                                                    <template x-if="vt.kind === 'sentiment'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">☹️</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">😐</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">😊</span></span></template>
                                                     <small class="ms-1" x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                 </div>
                                             </template>
@@ -1858,7 +1910,7 @@
                                                     <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
                                                         <div>
                                                             <template x-if="editMode && vt.kind === 'numeric'">
-                                                                <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/initiative?return_to=workspacev2`"
+                                                                <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=initiative&return_to=workspacev2`"
                                                                    class="formula-config-icon"
                                                                    @click.stop>
                                                                     <i class="bi bi-calculator"></i>
@@ -1872,8 +1924,47 @@
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'median'">m</span>
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'count'">#</span>
                                                             </span>
-                                                            <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
-                                                            <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                            <template x-if="vt.kind === 'numeric'">
+                                                                <span>
+                                                                    <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                                                    <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                                </span>
+                                                            </template>
+                                                            <template x-if="vt.kind === 'risk'">
+                                                                <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">!</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">!!</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 3">!!!</span>
+                                                                </span>
+                                                            </template>
+                                                            <template x-if="vt.kind === 'positive_impact'">
+                                                                <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">★</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">★★</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 3">★★★</span>
+                                                                </span>
+                                                            </template>
+                                                            <template x-if="vt.kind === 'negative_impact'">
+                                                                <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">▼</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">▼▼</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 3">▼▼▼</span>
+                                                                </span>
+                                                            </template>
+                                                            <template x-if="vt.kind === 'level'">
+                                                                <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">●</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">●●</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 3">●●●</span>
+                                                                </span>
+                                                            </template>
+                                                            <template x-if="vt.kind === 'sentiment'">
+                                                                <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">☹️</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">😐</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 3">😊</span>
+                                                                </span>
+                                                            </template>
                                                             <small class="ms-1" x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                         </div>
                                                     </template>
@@ -1952,7 +2043,7 @@
                                                             <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
                                                                 <div>
                                                                     <template x-if="editMode && vt.kind === 'numeric'">
-                                                                        <a :href="`/organization_admin/value-types/${vt.id}/configure-rollup/system?return_to=workspacev2`"
+                                                                        <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=system&return_to=workspacev2`"
                                                                            class="formula-config-icon"
                                                                            @click.stop>
                                                                             <i class="bi bi-calculator"></i>
@@ -1966,8 +2057,47 @@
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'median'">m</span>
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'count'">#</span>
                                                                     </span>
-                                                                    <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
-                                                                    <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                                    <template x-if="vt.kind === 'numeric'">
+                                                                        <span>
+                                                                            <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                                            <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="vt.kind === 'risk'">
+                                                                        <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">!</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">!!</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 3">!!!</span>
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="vt.kind === 'positive_impact'">
+                                                                        <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">★</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">★★</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 3">★★★</span>
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="vt.kind === 'negative_impact'">
+                                                                        <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">▼</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">▼▼</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 3">▼▼▼</span>
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="vt.kind === 'level'">
+                                                                        <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">●</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">●●</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 3">●●●</span>
+                                                                        </span>
+                                                                    </template>
+                                                                    <template x-if="vt.kind === 'sentiment'">
+                                                                        <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">☹️</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">😐</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 3">😊</span>
+                                                                        </span>
+                                                                    </template>
                                                                     <small class="ms-1" x-text="system.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                                 </div>
                                                             </template>
@@ -2122,7 +2252,9 @@
                                                                              @click="window.location.href = `/workspace/kpis/${kpi.id}/value-types/${vt.id}`">
                                                                             <!-- No Data -->
                                                                             <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_data'">
-                                                                                <span class="badge bg-secondary" style="font-size: 0.8rem;">Click to enter</span>
+                                                                                <small class="text-muted" style="font-size: 0.75rem;">
+                                                                                    <i class="bi bi-pencil" style="opacity: 0.5;"></i>
+                                                                                </small>
                                                                             </template>
                                                                             <!-- Has Value -->
                                                                             <template x-if="kpi.values[String(vt.id)].value != null && kpi.values[String(vt.id)].consensus_status !== 'no_data'">
@@ -2211,7 +2343,7 @@
                                                                         </div>
                                                                         <!-- Comment Icon (bottom-right) -->
                                                                         <span class="comment-icon"
-                                                                              @click.stop="alert('Comments modal - to be implemented')"
+                                                                              @click.stop="commentsManager.openCommentModal(kpi.values[String(vt.id)].config_id, kpi.name, vt.name)"
                                                                               title="Add/View Comments">
                                                                             💬
                                                                         </span>
@@ -2270,6 +2402,43 @@
     </div>
 </div>
 
+<!-- Comment Modal -->
+<div class="modal fade" id="commentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="commentModalTitle">Comments</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Existing comments -->
+                {% if current_user.can_view_comments(session.organization_id) %}
+                <div id="commentsContainer"></div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-lock"></i> You don't have permission to view comments.
+                </div>
+                {% endif %}
+
+                <!-- New comment form -->
+                {% if current_user.can_add_comments(session.organization_id) %}
+                <div class="mt-4">
+                    <h6>Add Comment</h6>
+                    <textarea class="form-control" id="newCommentText" rows="3"
+                              placeholder="Type @ to mention someone..."></textarea>
+                    <small class="form-text text-muted">
+                        <i class="bi bi-lightbulb"></i> Tip: Use @username to mention colleagues
+                    </small>
+                    <div class="mt-2">
+                        <button class="btn btn-primary" id="postCommentBtn">Post Comment</button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 // Set today as default date in quick snapshot modal
 document.addEventListener('DOMContentLoaded', function() {
@@ -2279,6 +2448,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<!-- Comments JS -->
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 
 <script>
 function workspaceV2(orgId) {
@@ -2519,7 +2691,43 @@ function workspaceV2(orgId) {
                 alert('Failed to load workspace data. Please refresh the page.');
             } finally {
                 this.loading = false;
+                // Load trend indicators after data is loaded
+                setTimeout(() => this.loadTrendIndicators(), 100);
             }
+        },
+
+        loadTrendIndicators() {
+            // Find all KPI cells with data-config-id attribute
+            document.querySelectorAll('[data-config-id]').forEach(cell => {
+                const configId = cell.dataset.configId;
+                if (!configId) return;
+
+                fetch(`/workspace/api/kpi/${configId}/trend`)
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        return null;
+                    })
+                    .then(trend => {
+                        if (trend && trend.direction) {
+                            // Add trend indicator
+                            const icon = trend.direction === 'up' ? '↗️' :
+                                        trend.direction === 'down' ? '↘️' : '→';
+
+                            const trendSpan = document.createElement('span');
+                            trendSpan.className = 'trend-indicator';
+                            trendSpan.innerHTML = ` ${icon}`;
+                            trendSpan.title = `${trend.direction === 'up' ? 'Increasing' : trend.direction === 'down' ? 'Decreasing' : 'Stable'}: ${trend.change > 0 ? '+' : ''}${trend.change.toFixed(2)} (${trend.percent_change > 0 ? '+' : ''}${trend.percent_change.toFixed(1)}%)`;
+
+                            cell.appendChild(trendSpan);
+                        }
+                    })
+                    .catch(err => {
+                        // Silently fail - trend data is optional
+                        console.debug('No trend data for config', configId);
+                    });
+            });
         },
 
         clearAllFilters() {
