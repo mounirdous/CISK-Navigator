@@ -5,6 +5,27 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.13.1] - 2026-03-16
+
+### Fixed - Search Input Text Cropping
+**Issue**: Search input placeholder text was cropped ("Search... (Ct" instead of "Search... (Ctrl+K)")
+
+**Root Cause**: After adding the saved searches dropdown button in v2.5.13, the search input box became narrower within the 320px input-group, causing the placeholder text to be truncated.
+
+**The Fix**: Increased input-group width from 320px to 400px to accommodate:
+- Search input field
+- Saved searches dropdown button (new in v2.5.13)
+- Filters button
+- Search button
+
+**Files Modified**:
+- `app/templates/base.html` - Changed input-group width from 320px to 400px
+- `app/__init__.py` - Version bump to 2.5.13.1
+
+**Impact**: Search placeholder text now displays fully: "Search... (Ctrl+K)"
+
+---
+
 ## [2.5.13] - 2026-03-16
 
 ### Added - Saved Searches Dropdown UI (Phase 4 Part 3)
