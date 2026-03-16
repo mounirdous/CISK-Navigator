@@ -1603,6 +1603,7 @@
                 <div style="display: contents;">
                     <!-- Space Row -->
                     <div class="ws-row level-0"
+                         :id="'space-' + space.id"
                          x-show="showLevels.spaces"
                          :draggable="editMode"
                          @dragstart="dragRowStart($event, space, 'space', null)"
@@ -1773,7 +1774,9 @@
                     <template x-for="challenge in space.challenges" :key="challenge.id">
                         <div style="display: contents;">
                             <!-- Challenge Row -->
-                            <div class="ws-row level-1" x-show="showLevels.challenges && !space.collapsed"
+                            <div class="ws-row level-1"
+                                 :id="'challenge-' + challenge.id"
+                                 x-show="showLevels.challenges && !space.collapsed"
                                  :draggable="editMode"
                                  @dragstart="dragRowStart($event, challenge, 'challenge', space)"
                                  @dragover.prevent="dragRowOver($event, challenge, 'challenge', space)"
@@ -1874,7 +1877,9 @@
                             <template x-for="initiative in challenge.initiatives" :key="initiative.id">
                                 <div style="display: contents;">
                                     <!-- Initiative Row -->
-                                    <div class="ws-row level-2" x-show="showLevels.initiatives && !space.collapsed && !challenge.collapsed"
+                                    <div class="ws-row level-2"
+                                         :id="'initiative-' + initiative.id"
+                                         x-show="showLevels.initiatives && !space.collapsed && !challenge.collapsed"
                                          :draggable="editMode"
                                          @dragstart="dragRowStart($event, initiative, 'initiative', challenge)"
                                          @dragover.prevent="dragRowOver($event, initiative, 'initiative', challenge)"
@@ -2026,7 +2031,9 @@
                                     <template x-for="system in initiative.systems" :key="system.id">
                                         <div style="display: contents;">
                                             <!-- System Row -->
-                                            <div class="ws-row level-3" x-show="showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed"
+                                            <div class="ws-row level-3"
+                                                 :id="'system-' + system.id"
+                                                 x-show="showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed"
                                                  :draggable="editMode"
                                                  @dragstart="dragRowStart($event, system, 'system', initiative)"
                                                  @dragover.prevent="dragRowOver($event, system, 'system', initiative)"
@@ -2157,7 +2164,9 @@
 
                                             <!-- KPIs -->
                                             <template x-for="kpi in system.kpis" :key="kpi.id">
-                                                <div class="ws-row level-4" x-show="showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
+                                                <div class="ws-row level-4"
+                                                     :id="'kpi-' + kpi.id"
+                                                     x-show="showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
                                                      :draggable="editMode"
                                                      @dragstart="dragRowStart($event, kpi, 'kpi', system)"
                                                      @dragover.prevent="dragRowOver($event, kpi, 'kpi', system)"
@@ -2799,6 +2808,89 @@ function workspaceV2(orgId, filterPresets) {
                 this.loading = false;
                 // Load trend indicators after data is loaded
                 setTimeout(() => this.loadTrendIndicators(), 100);
+
+                // Scroll to entity from hash (from global live search)
+                setTimeout(() => this.scrollToHashTarget(), 200);
+            }
+        },
+
+        scrollToHashTarget() {
+            const hash = window.location.hash;
+            if (!hash) return;
+
+            const targetId = hash.substring(1); // Remove the #
+            const targetElement = document.getElementById(targetId);
+
+            if (targetElement) {
+                // Expand parent entities to reveal the target
+                this.expandParentsForTarget(targetId);
+
+                // Wait a bit for expansion animations, then scroll
+                setTimeout(() => {
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Add highlight effect
+                    targetElement.style.transition = 'background-color 0.5s';
+                    const originalBg = window.getComputedStyle(targetElement).backgroundColor;
+                    targetElement.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        targetElement.style.backgroundColor = originalBg;
+                    }, 2000);
+                }, 100);
+            }
+        },
+
+        expandParentsForTarget(targetId) {
+            // Parse entity type and ID from target (e.g., "space-123", "kpi-456")
+            const [entityType, entityIdStr] = targetId.split('-');
+            const entityId = parseInt(entityIdStr);
+
+            // Expand based on entity type
+            if (entityType === 'challenge') {
+                // Find and expand parent space
+                this.spaces.forEach(space => {
+                    if (space.challenges.some(c => c.id === entityId)) {
+                        space.collapsed = false;
+                    }
+                });
+            } else if (entityType === 'initiative') {
+                // Find and expand parent challenge and space
+                this.spaces.forEach(space => {
+                    space.challenges.forEach(challenge => {
+                        if (challenge.initiatives.some(i => i.id === entityId)) {
+                            space.collapsed = false;
+                            challenge.collapsed = false;
+                        }
+                    });
+                });
+            } else if (entityType === 'system') {
+                // Find and expand all parents
+                this.spaces.forEach(space => {
+                    space.challenges.forEach(challenge => {
+                        challenge.initiatives.forEach(initiative => {
+                            if (initiative.systems.some(s => s.id === entityId)) {
+                                space.collapsed = false;
+                                challenge.collapsed = false;
+                                initiative.collapsed = false;
+                            }
+                        });
+                    });
+                });
+            } else if (entityType === 'kpi') {
+                // Find and expand all parents up to KPI
+                this.spaces.forEach(space => {
+                    space.challenges.forEach(challenge => {
+                        challenge.initiatives.forEach(initiative => {
+                            initiative.systems.forEach(system => {
+                                if (system.kpis.some(k => k.id === entityId)) {
+                                    space.collapsed = false;
+                                    challenge.collapsed = false;
+                                    initiative.collapsed = false;
+                                    system.collapsed = false;
+                                }
+                            });
+                        });
+                    });
+                });
             }
         },
 
