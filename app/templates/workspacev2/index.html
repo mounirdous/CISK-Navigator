@@ -57,20 +57,20 @@
 
     /* Filters Bar */
     .ws-filters {
-        height: var(--filters-height);
         background: white;
         border-bottom: 2px solid var(--border-color);
         padding: 1rem 1.5rem;
         display: flex;
-        gap: 1rem;
+        gap: 1.5rem;
         align-items: center;
         overflow-x: auto;
         flex-shrink: 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
     .filter-group {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.75rem;
         align-items: center;
     }
 
@@ -82,25 +82,37 @@
     }
 
     .filter-pill {
-        padding: 0.4rem 1rem;
-        border-radius: 20px;
-        border: 2px solid #dee2e6;
+        padding: 0.5rem 1.2rem;
+        border-radius: 25px;
+        border: 2px solid #e0e0e0;
         background: white;
         font-size: 0.85rem;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.25s ease;
         white-space: nowrap;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
     }
 
     .filter-pill:hover {
         background: #f8f9fa;
-        border-color: #adb5bd;
+        border-color: #667eea;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
     }
 
     .filter-pill.active {
-        background: #0d6efd;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-color: #0d6efd;
+        border-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .filter-pill.active:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
     }
 
     /* Grid Container */
@@ -437,7 +449,10 @@
             </h1>
         </div>
         <div style="display: flex; gap: 1rem; align-items: center;">
-            <span x-show="!loading" x-text="`${totalCount} items`" style="font-size: 0.9rem; opacity: 0.9;"></span>
+            <span x-show="!loading" style="font-size: 0.9rem; opacity: 0.9; display: flex; align-items: center; gap: 0.5rem;">
+                <i x-show="hasActiveFilters" class="bi bi-funnel-fill" style="color: #ffc107;"></i>
+                <span x-text="filterSummary"></span>
+            </span>
             <button @click="editMode = !editMode"
                     class="btn btn-sm"
                     :class="editMode ? 'btn-warning' : 'btn-outline-light'"
@@ -451,6 +466,40 @@
         </div>
     </div>
 
+    <!-- Filters Bar -->
+    <div class="ws-filters">
+        <!-- Space Type Filter -->
+        <div class="filter-group">
+            <i class="bi bi-funnel" style="color: #667eea;"></i>
+            <span class="filter-label">Space Type:</span>
+            <button @click="spaceTypeFilter = 'all'"
+                    class="filter-pill"
+                    :class="{'active': spaceTypeFilter === 'all'}">
+                <i class="bi bi-globe"></i> All
+                <span x-show="spaceTypeFilter === 'all'" x-text="`(${spaces.length})`"></span>
+            </button>
+            <button @click="spaceTypeFilter = 'public'"
+                    class="filter-pill"
+                    :class="{'active': spaceTypeFilter === 'public'}">
+                <i class="bi bi-unlock"></i> Public
+                <span x-show="spaceTypeFilter === 'public'" x-text="`(${spaces.filter(s => !s.is_private).length})`"></span>
+            </button>
+            <button @click="spaceTypeFilter = 'private'"
+                    class="filter-pill"
+                    :class="{'active': spaceTypeFilter === 'private'}">
+                <i class="bi bi-lock"></i> Private
+                <span x-show="spaceTypeFilter === 'private'" x-text="`(${spaces.filter(s => s.is_private).length})`"></span>
+            </button>
+        </div>
+
+        <!-- Clear Filters -->
+        <button x-show="spaceTypeFilter !== 'all'"
+                @click="clearAllFilters()"
+                class="btn btn-sm btn-outline-danger"
+                style="margin-left: auto;">
+            <i class="bi bi-x-circle"></i> Clear Filters
+        </button>
+    </div>
 
     <!-- Grid -->
     <div class="ws-grid-container">
@@ -723,6 +772,19 @@ function workspaceV2(orgId) {
                 });
             });
             return count;
+        },
+
+        get hasActiveFilters() {
+            return this.spaceTypeFilter !== 'all';
+        },
+
+        get filterSummary() {
+            if (!this.hasActiveFilters) {
+                return `${this.totalCount} items`;
+            }
+            const totalSpaces = this.spaces.length;
+            const filteredSpaces = this.filteredSpaces.length;
+            return `${this.totalCount} items (${filteredSpaces}/${totalSpaces} spaces)`;
         },
 
         // Methods
