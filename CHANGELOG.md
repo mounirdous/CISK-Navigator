@@ -5,6 +5,75 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.3] - 2026-03-16
+
+### Mobile Optimization - Map Dashboard 🗺️📱
+
+Complete mobile-responsive overhaul of the Geographic KPI Distribution map view.
+
+### Added
+- **📱 Responsive Layout**: Adaptive layout based on screen size
+  - **Portrait mode**: Vertical stack (sidebar on top, map below)
+  - **Landscape mode**: Side-by-side (40% sidebar, 60% map)
+  - **Tablet mode**: Narrower sidebar (320px)
+
+- **🎯 Touch-Optimized Controls**: Mobile-first interaction design
+  - Minimum 44px touch targets on all buttons
+  - 36px minimum height for filter chips
+  - Larger tap areas for KPI list items (min 80px)
+  - Touch feedback on tap (scale animation)
+
+- **📏 Compact UI Elements**: Space-efficient design
+  - Smaller fonts (16px → 13px for KPI names)
+  - Reduced padding throughout (20px → 15px)
+  - Horizontally scrollable filter chips (no wrap)
+  - Compact badges and labels
+
+- **🗺️ Adaptive Map Display**:
+  - **Portrait**: 50% viewport height
+  - **Landscape**: 60% width, full height
+  - Touch-friendly zoom controls (1.2x scale)
+  - Map controls FAB in bottom-right
+
+- **📋 Full-Screen Details Panel**: Better mobile UX
+  - Slides in from right covering 100% width
+  - Dedicated close button
+  - Scrollable content
+
+### Changed
+- **Sidebar**: Full-width on mobile (360px → 100%)
+- **KPI List**: Max height 50vh with scroll on mobile
+- **Filter Chips**: Horizontal scroll instead of wrap
+- **Page Title**: Stacks vertically on mobile
+- **Button Group**: Full width with flex distribution
+
+### Fixed
+- **🐛 Map initialization on small screens**: Fixed KPI loading failure on mobile devices
+  - Corrected CSS `order` property applied to wrong element (`.map-container` instead of `#map`)
+  - Added explicit height to `.map-container` on mobile (was flex: 1 with height: auto parent)
+  - Changed `#map` from absolute to relative positioning on mobile for proper height calculation
+  - Prevents map container from having 0 height which caused Mapbox initialization failures
+
+### Technical
+- **Breakpoints**:
+  - Mobile: `@media (max-width: 768px)`
+  - Tablet: `@media (min-width: 769px) and (max-width: 1024px)`
+  - Touch: `@media (hover: none) and (pointer: coarse)`
+  - Landscape: `@media (max-width: 768px) and (orientation: landscape)`
+- **Flex Order**: Sidebar (order:1), Map (order:2) for logical tab order
+- **iOS Momentum**: `-webkit-overflow-scrolling: touch` on filter chips
+
+### Performance
+- CSS-only responsive design (no JavaScript)
+- Hardware-accelerated transforms for animations
+- Efficient media query stacking
+
+### User Experience
+- **Adaptive**: Layout changes based on orientation
+- **Touch-friendly**: All targets meet accessibility standards
+- **Scrollable**: Horizontal scroll for filters, vertical for list
+- **Feedback**: Visual feedback on all touch interactions
+
 ## [2.1.2] - 2026-03-16
 
 ### Fixed

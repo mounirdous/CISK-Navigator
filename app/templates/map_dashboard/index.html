@@ -825,6 +825,265 @@
     animation: none;
     opacity: 0;
 }
+
+/* ============================================
+   MOBILE OPTIMIZATION - v2.1.3
+   ============================================ */
+
+@media (max-width: 768px) {
+    /* Mobile: Stack layout vertically */
+    .dashboard-wrapper {
+        flex-direction: column;
+        height: auto;
+        min-height: calc(100vh - 200px);
+    }
+
+    /* Sidebar becomes full-width top panel */
+    .kpi-sidebar {
+        width: 100%;
+        max-height: 50vh;
+        border-right: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        order: 1;
+        flex-shrink: 0;
+    }
+
+    /* Map takes remaining space below */
+    .map-container {
+        order: 2;
+        min-height: 50vh;
+        height: 50vh;
+        flex-shrink: 0;
+    }
+
+    #map {
+        position: relative !important;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Header adjustments */
+    .sidebar-header {
+        padding: 15px;
+    }
+
+    .sidebar-header h3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+    }
+
+    /* Search box */
+    .search-box input {
+        padding: 8px 12px 8px 36px;
+        font-size: 13px;
+    }
+
+    /* Filter chips: Smaller and scrollable */
+    .filter-chips {
+        gap: 6px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 5px;
+    }
+
+    .filter-chip {
+        padding: 5px 10px;
+        font-size: 11px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .filter-badge {
+        font-size: 9px;
+        padding: 1px 5px;
+    }
+
+    /* KPI List: More compact */
+    .kpi-list {
+        padding: 10px;
+        max-height: calc(50vh - 200px);
+    }
+
+    .kpi-list-item {
+        padding: 12px;
+        margin-bottom: 10px;
+        border-radius: 10px;
+    }
+
+    .kpi-item-name {
+        font-size: 13px;
+    }
+
+    .kpi-item-level {
+        padding: 3px 8px;
+        font-size: 9px;
+    }
+
+    .kpi-item-location {
+        font-size: 11px;
+    }
+
+    .kpi-item-value {
+        font-size: 18px;
+    }
+
+    /* Details panel: Full screen on mobile */
+    .details-panel {
+        width: 100%;
+        right: -100%;
+    }
+
+    .details-panel.open {
+        right: 0;
+    }
+
+    /* Empty state */
+    .empty-state {
+        padding: 40px 15px;
+    }
+
+    .empty-state i {
+        font-size: 36px;
+    }
+
+    /* Hide hover effects on touch */
+    .kpi-list-item:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Tap feedback */
+    .kpi-list-item:active {
+        transform: scale(0.98);
+    }
+
+    /* Map controls positioning */
+    .map-controls-toggle {
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    /* Page title stack */
+    .page-title {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 10px;
+    }
+
+    .page-title h2 {
+        font-size: 20px;
+    }
+
+    .page-title .btn-group {
+        width: 100%;
+        display: flex;
+    }
+
+    .page-title .btn {
+        flex: 1;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+
+    /* Touch-friendly buttons */
+    .btn-sm {
+        min-height: 44px;
+        padding: 10px 15px;
+    }
+
+    /* Skeleton loader */
+    .skeleton-item {
+        padding: 12px;
+        margin-bottom: 10px;
+    }
+
+    /* Hide map zoom controls text on mobile */
+    .mapboxgl-ctrl-zoom-in .mapboxgl-ctrl-icon,
+    .mapboxgl-ctrl-zoom-out .mapboxgl-ctrl-icon {
+        transform: scale(1.2);
+    }
+}
+
+/* Tablet optimization (769px - 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+    /* Narrower sidebar on tablet */
+    .kpi-sidebar {
+        width: 320px;
+    }
+
+    /* Smaller fonts */
+    .kpi-item-name {
+        font-size: 13px;
+    }
+
+    .kpi-item-value {
+        font-size: 18px;
+    }
+
+    /* Details panel narrower */
+    .details-panel {
+        width: 400px;
+        right: -400px;
+    }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .filter-chip {
+        min-height: 36px;
+        padding: 8px 14px;
+    }
+
+    .kpi-list-item {
+        min-height: 80px;
+    }
+
+    /* Remove hover states */
+    .kpi-list-item:hover {
+        transform: none;
+    }
+
+    /* Better tap feedback */
+    .kpi-list-item:active {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+    }
+}
+
+/* Landscape mobile (common on tablets/phones rotated) */
+@media (max-width: 768px) and (orientation: landscape) {
+    .dashboard-wrapper {
+        flex-direction: row;
+    }
+
+    .kpi-sidebar {
+        width: 40%;
+        max-height: 100%;
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        border-bottom: none;
+    }
+
+    .map-container {
+        width: 60%;
+        height: calc(100vh - 200px);
+        min-height: 400px;
+    }
+
+    #map {
+        position: relative !important;
+        width: 100%;
+        height: 100%;
+    }
+
+    .kpi-list {
+        max-height: calc(100vh - 380px);
+    }
+}
 </style>
 {% endblock %}
 
