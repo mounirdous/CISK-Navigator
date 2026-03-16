@@ -5,12 +5,14 @@ Main tree/grid navigation and data entry.
 """
 
 import base64
+import json
 from datetime import date
 from functools import wraps
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
+from markupsafe import Markup
 from sqlalchemy import or_
 
 from app.extensions import db
@@ -269,7 +271,7 @@ def index():
 
     # Convert to dicts for JSON serialization in template
     filter_presets = filter_presets_objs
-    filter_presets_json = [preset.to_dict() for preset in filter_presets_objs]
+    filter_presets_json = json.dumps([preset.to_dict() for preset in filter_presets_objs])
 
     return render_template(
         "workspace/index.html",
@@ -279,7 +281,7 @@ def index():
         org_logo=org_logo,
         porters_completion=porters_completion,
         filter_presets=filter_presets,
-        filter_presets_json=filter_presets_json,
+        filter_presets_json=Markup(filter_presets_json),
         csrf_token=generate_csrf,
     )
 
