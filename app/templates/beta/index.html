@@ -1,4 +1,4 @@
-{% extends "beta/base_beta.html" %}
+{% extends "base.html" %}
 
 {% block title %}Beta Testing Program{% endblock %}
 
@@ -144,12 +144,15 @@
 
     <!-- Beta Features -->
     <div class="feature-grid">
-        <!-- No beta features currently available -->
-        <div style="text-align: center; padding: 3rem; color: #6c757d;">
-            <i class="bi bi-lightbulb" style="font-size: 3rem; margin-bottom: 1rem;"></i>
-            <h3>No Beta Features Available</h3>
-            <p>Check back later for new experimental features!</p>
-        </div>
+        <!-- Workspace V2 -->
+        <a href="{{ url_for('workspacev2.index') }}" class="feature-card">
+            <div class="feature-icon">⚡</div>
+            <div class="feature-title">Workspace V2</div>
+            <div class="feature-desc">
+                Fully reactive workspace with Alpine.js. In-memory filtering, drag-and-drop, and instant updates without page reloads.
+            </div>
+            <span class="feature-badge new">New</span>
+        </a>
     </div>
 
 </div>

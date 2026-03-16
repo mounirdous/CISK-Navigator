@@ -323,6 +323,13 @@
         font-size: 0.9rem;
     }
 
+    .entity-logo {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        border-radius: 3px;
+    }
+
     /* Mobile Responsive */
     @media (max-width: 768px) {
         .ws-header h1 {
@@ -398,6 +405,13 @@
     .ws-row.drag-over-row {
         border-top: 3px solid #ffc107;
         background: #fff3cd !important;
+    }
+
+    /* Change parent drop zone - purple/blue */
+    .ws-row.drag-over-parent {
+        border: 3px solid #667eea;
+        background: linear-gradient(to right, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)) !important;
+        box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
     }
 
     .drag-handle {
@@ -501,7 +515,8 @@
                                    :class="{'collapsed': space.collapsed, 'empty': space.challenges.length === 0}"
                                    @click="space.collapsed = !space.collapsed"
                                    x-show="space.challenges.length > 0"></i>
-                                <i class="bi bi-folder-fill entity-icon" style="color: #667eea;"></i>
+                                <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
+                                <i x-show="!space.logo_url" class="bi bi-folder-fill entity-icon" style="color: #667eea;"></i>
                                 <span x-text="space.name"></span>
                                 <i x-show="space.is_private" class="bi bi-lock-fill" style="font-size: 0.85rem; opacity: 0.5;"></i>
                             </div>
@@ -536,7 +551,8 @@
                                            :class="{'collapsed': challenge.collapsed, 'empty': challenge.initiatives.length === 0}"
                                            @click="challenge.collapsed = !challenge.collapsed"
                                            x-show="challenge.initiatives.length > 0"></i>
-                                        <i class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
+                                        <img x-show="challenge.logo_url" :src="challenge.logo_url" class="entity-logo" />
+                                        <i x-show="!challenge.logo_url" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
                                         <span x-text="challenge.name"></span>
                                     </div>
                                 </div>
@@ -570,7 +586,8 @@
                                                    :class="{'collapsed': initiative.collapsed, 'empty': initiative.systems.length === 0}"
                                                    @click="initiative.collapsed = !initiative.collapsed"
                                                    x-show="initiative.systems.length > 0"></i>
-                                                <i class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
+                                                <img x-show="initiative.logo_url" :src="initiative.logo_url" class="entity-logo" />
+                                                <i x-show="!initiative.logo_url" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
                                                 <span x-text="initiative.name"></span>
                                             </div>
                                         </div>
@@ -604,7 +621,8 @@
                                                            :class="{'collapsed': system.collapsed, 'empty': system.kpis.length === 0}"
                                                            @click="system.collapsed = !system.collapsed"
                                                            x-show="system.kpis.length > 0"></i>
-                                                        <i class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
+                                                        <img x-show="system.logo_url" :src="system.logo_url" class="entity-logo" />
+                                                        <i x-show="!system.logo_url" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
                                                         <span x-text="system.name"></span>
                                                     </div>
                                                 </div>
@@ -632,7 +650,8 @@
                                                     <div class="ws-cell">
                                                         <div class="entity-name level-4">
                                                             <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
-                                                            <i class="bi bi-graph-up entity-icon" style="color: #2ecc71;"></i>
+                                                            <img x-show="kpi.logo_url" :src="kpi.logo_url" class="entity-logo" />
+                                                            <i x-show="!kpi.logo_url" class="bi bi-graph-up entity-icon" style="color: #2ecc71;"></i>
                                                             <span x-text="kpi.name"></span>
                                                         </div>
                                                     </div>
@@ -713,11 +732,6 @@ function workspaceV2(orgId) {
                 const response = await fetch('{{ url_for("workspacev2.get_data") }}');
                 const data = await response.json();
 
-                console.log('=== WORKSPACE V2 DATA v1.36.4 ===');
-                console.log('Spaces:', data.spaces.length);
-                console.log('Value Types:', data.valueTypes.length);
-                console.log('Raw data:', data);
-
                 // Add UI state to all entities
                 this.spaces = data.spaces.map(space => ({
                     ...space,
@@ -740,62 +754,6 @@ function workspaceV2(orgId) {
                 this.governanceBodies = data.governanceBodies;
                 this.groups = data.groups;
                 this.impactLevels = data.impactLevels;
-
-                console.log('Processed spaces:', this.spaces.length);
-                console.log('Filtered spaces:', this.filteredSpaces.length);
-                console.log('First space:', this.spaces[0]);
-
-                // Deep dive into KPI values
-                if (this.spaces[0]) {
-                    const space = this.spaces[0];
-                    console.log('First space rollup_values:', space.rollup_values);
-
-                    if (space.challenges.length > 0) {
-                        const challenge = space.challenges[0];
-                        console.log('First challenge:', challenge);
-
-                        if (challenge.initiatives.length > 0) {
-                            const initiative = challenge.initiatives[0];
-                            console.log('First initiative:', initiative);
-
-                            if (initiative.systems.length > 0) {
-                                const system = initiative.systems[0];
-                                console.log('First system:', system);
-                                console.log('System rollup_values:', system.rollup_values);
-
-                                if (system.kpis.length > 0) {
-                                    const kpi = system.kpis[0];
-                                    console.log('🔥 FIRST KPI:', JSON.parse(JSON.stringify(kpi)));
-                                    console.log('🔥 KPI VALUES:', JSON.parse(JSON.stringify(kpi.values)));
-                                    console.log('🔥 Value Types:', JSON.parse(JSON.stringify(this.valueTypes)));
-
-                                    // Check if values match value type IDs
-                                    console.log('🔥 KPI VALUES KEYS:', Object.keys(kpi.values || {}));
-                                    console.log('🔥 VALUE TYPE IDS:', this.valueTypes.map(vt => vt.id));
-
-                                    // Check the actual value for ID 136
-                                    if (kpi.values && kpi.values[136]) {
-                                        const val136 = JSON.parse(JSON.stringify(kpi.values[136]));
-                                        console.log('🔥 VALUE FOR ID 136:', val136);
-                                        console.log('🔥 formatted_value:', val136.formatted_value);
-                                        console.log('🔥 color:', val136.color);
-                                    } else {
-                                        console.log('🔥 NO VALUE FOR ID 136!');
-                                    }
-
-                                    // Test the condition
-                                    console.log('🔥 TEST: kpi.values exists?', !!kpi.values);
-                                    console.log('🔥 TEST: kpi.values[136] exists?', !!(kpi.values && kpi.values[136]));
-
-                                    // Check types
-                                    console.log('🔥 TYPE CHECK:');
-                                    console.log('  - vt.id type:', typeof this.valueTypes[0].id, 'value:', this.valueTypes[0].id);
-                                    console.log('  - kpi.values key type:', typeof Object.keys(kpi.values)[0], 'value:', Object.keys(kpi.values)[0]);
-                                }
-                            }
-                        }
-                    }
-                }
             } catch (error) {
                 console.error('Failed to load workspace data:', error);
                 alert('Failed to load workspace data. Please refresh the page.');
@@ -889,11 +847,35 @@ function workspaceV2(orgId) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
 
-            // Only allow dropping on same type and same parent
-            if (this.draggedRow.entityType === targetEntityType &&
-                this.draggedRow.parent === parent) {
-                e.target.closest('.ws-row').classList.add('drag-over-row');
+            const row = e.target.closest('.ws-row');
+            if (!row) return;
+
+            // Remove all drag-over classes first
+            document.querySelectorAll('.drag-over-row, .drag-over-parent').forEach(el => {
+                el.classList.remove('drag-over-row', 'drag-over-parent');
+            });
+
+            // Check if this is a valid parent for the dragged entity
+            const validParent = this.isValidParent(this.draggedRow.entityType, targetEntityType);
+
+            if (validParent) {
+                // Change parent operation
+                row.classList.add('drag-over-parent');
+            } else if (this.draggedRow.entityType === targetEntityType && this.draggedRow.parent === parent) {
+                // Reorder operation (same type, same parent)
+                row.classList.add('drag-over-row');
             }
+        },
+
+        isValidParent(draggedType, targetType) {
+            // Define valid parent relationships
+            const validParents = {
+                'challenge': 'space',
+                'initiative': 'challenge',
+                'system': 'initiative',
+                'kpi': 'system'
+            };
+            return validParents[draggedType] === targetType;
         },
 
         dragRowLeave(e) {
@@ -905,36 +887,24 @@ function workspaceV2(orgId) {
             e.preventDefault();
 
             const draggedEntity = this.draggedRow.entity;
+            const draggedType = this.draggedRow.entityType;
+            const oldParent = this.draggedRow.parent;
 
-            // Only allow same type and same parent
-            if (this.draggedRow.entityType !== targetEntityType ||
-                this.draggedRow.parent !== parent ||
-                draggedEntity.id === targetEntity.id) {
+            // Check if this is a "change parent" operation
+            if (this.isValidParent(draggedType, targetEntityType)) {
+                await this.changeParent(draggedEntity, draggedType, oldParent, targetEntity, targetEntityType);
+                return;
+            }
+
+            // Otherwise, it's a reorder operation (same type, same parent)
+            if (draggedType !== targetEntityType || oldParent !== parent || draggedEntity.id === targetEntity.id) {
                 return;
             }
 
             console.log('Dropped:', draggedEntity.name, 'onto', targetEntity.name);
 
             // Find the array containing these entities
-            let entitiesArray = null;
-            switch (targetEntityType) {
-                case 'space':
-                    entitiesArray = this.spaces;
-                    break;
-                case 'challenge':
-                    entitiesArray = parent.challenges;
-                    break;
-                case 'initiative':
-                    entitiesArray = parent.initiatives;
-                    break;
-                case 'system':
-                    entitiesArray = parent.systems;
-                    break;
-                case 'kpi':
-                    entitiesArray = parent.kpis;
-                    break;
-            }
-
+            let entitiesArray = this.getEntityArray(targetEntityType, parent);
             if (!entitiesArray) return;
 
             // Reorder the array
@@ -947,7 +917,96 @@ function workspaceV2(orgId) {
             entitiesArray.splice(dropIndex, 0, draggedEntity);
 
             // Save to backend
-            await this.saveRowOrder(targetEntityType, entitiesArray, parent);
+            await this.saveRowOrder(draggedType, entitiesArray, parent);
+        },
+
+        getEntityArray(entityType, parent) {
+            switch (entityType) {
+                case 'space':
+                    return this.spaces;
+                case 'challenge':
+                    return parent?.challenges;
+                case 'initiative':
+                    return parent?.initiatives;
+                case 'system':
+                    return parent?.systems;
+                case 'kpi':
+                    return parent?.kpis;
+                default:
+                    return null;
+            }
+        },
+
+        async changeParent(draggedEntity, draggedType, oldParent, newParent, newParentType) {
+            // Confirm with user
+            const message = `Move "${draggedEntity.name}" from "${oldParent.name}" to "${newParent.name}"?`;
+            if (!confirm(message)) {
+                console.log('Change parent cancelled by user');
+                return;
+            }
+
+            console.log('Changing parent:', draggedEntity.name, 'from', oldParent.name, 'to', newParent.name);
+
+            // Remove from old parent
+            const oldArray = this.getEntityArray(draggedType, oldParent);
+            if (oldArray) {
+                const index = oldArray.findIndex(e => e.id === draggedEntity.id);
+                if (index !== -1) {
+                    oldArray.splice(index, 1);
+                }
+            }
+
+            // Add to new parent
+            const newArray = this.getEntityArray(draggedType, newParent);
+            if (newArray) {
+                newArray.push(draggedEntity);
+            }
+
+            // For KPIs and Systems, use link_id as the parent ID
+            let newParentId = newParent.id;
+            if (draggedType === 'kpi' || draggedType === 'system') {
+                newParentId = newParent.link_id || newParent.id;
+            }
+
+            // Save to backend
+            await this.saveParentChange(draggedEntity, draggedType, newParentId);
+        },
+
+        async saveParentChange(entity, entityType, newParentId) {
+            try {
+                let url = `/workspacev2/api/change-parent/${entityType}`;
+
+                // For initiatives and systems, use link_id; for others use id
+                let entityId = entity.id;
+                if (entityType === 'initiative' || entityType === 'system') {
+                    entityId = entity.link_id;
+                }
+
+                let payload = {
+                    entity_id: entityId,
+                    new_parent_id: newParentId
+                };
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log('✅ Parent changed successfully:', entityType);
+                } else {
+                    console.error('Failed to change parent:', result.error);
+                    alert('Failed to change parent: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error changing parent:', error);
+                alert('Error changing parent. Please refresh the page.');
+            }
         },
 
         dragRowEnd(e) {

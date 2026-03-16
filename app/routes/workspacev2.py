@@ -4,13 +4,25 @@ Workspace V2 - Fully Reactive Alpine.js Implementation
 Beta feature with in-memory filtering, drag-and-drop, and reactive updates.
 """
 
-from flask import Blueprint, jsonify, render_template, session
+import base64
+
+from flask import Blueprint, jsonify, render_template, request, session
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import GovernanceBody, Initiative, Space, SystemSetting, ValueType
+from app.models import (
+    KPI,
+    Challenge,
+    ChallengeInitiativeLink,
+    GovernanceBody,
+    Initiative,
+    InitiativeSystemLink,
+    Space,
+    SystemSetting,
+    ValueType,
+)
 
 bp = Blueprint("workspacev2", __name__, url_prefix="/workspacev2")
 
@@ -81,11 +93,7 @@ def get_data():
 
     # Get spaces with privacy filtering
     spaces_query = Space.query.filter_by(organization_id=org_id)
-    if (
-        not current_user.is_global_admin
-        and not current_user.is_super_admin
-        and not current_user.is_org_admin(org_id)
-    ):
+    if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
         spaces_query = spaces_query.filter(or_(Space.is_private.is_(False), Space.created_by == current_user.id))
 
     spaces = spaces_query.order_by(Space.display_order, Space.name).all()
@@ -186,28 +194,52 @@ def get_data():
                                         "color": config.get_value_color(consensus.get("value")),
                                     }
 
+                        # Get KPI logo
+                        kpi_logo_url = None
+                        if kpi.logo_data and kpi.logo_mime_type:
+                            kpi_logo_url = (
+                                f"data:{kpi.logo_mime_type};base64,{base64.b64encode(kpi.logo_data).decode('utf-8')}"
+                            )
+
                         kpis_data.append(
                             {
                                 "id": kpi.id,
                                 "name": kpi.name,
                                 "display_order": kpi.display_order,
+                                "logo_url": kpi_logo_url,
                                 "values": kpi_values,
                             }
+                        )
+
+                    # Get system logo
+                    system_logo_url = None
+                    if system.logo_data and system.logo_mime_type:
+                        system_logo_url = (
+                            f"data:{system.logo_mime_type};base64,{base64.b64encode(system.logo_data).decode('utf-8')}"
                         )
 
                     systems_data.append(
                         {
                             "id": system.id,
+                            "link_id": sys_link.id,  # For parent change operations
                             "name": system.name,
+                            "logo_url": system_logo_url,
                             "rollup_values": system_rollup_values,
                             "kpis": kpis_data,
                         }
                     )
 
+                # Get initiative logo
+                initiative_logo_url = None
+                if initiative.logo_data and initiative.logo_mime_type:
+                    initiative_logo_url = f"data:{initiative.logo_mime_type};base64,{base64.b64encode(initiative.logo_data).decode('utf-8')}"
+
                 initiatives_data.append(
                     {
                         "id": initiative.id,
+                        "link_id": link.id,  # For parent change operations
                         "name": initiative.name,
+                        "logo_url": initiative_logo_url,
                         "group_label": initiative.group_label,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "rollup_values": initiative_rollup_values,
@@ -215,20 +247,34 @@ def get_data():
                     }
                 )
 
+            # Get challenge logo
+            challenge_logo_url = None
+            if challenge.logo_data and challenge.logo_mime_type:
+                challenge_logo_url = (
+                    f"data:{challenge.logo_mime_type};base64,{base64.b64encode(challenge.logo_data).decode('utf-8')}"
+                )
+
             challenges_data.append(
                 {
                     "id": challenge.id,
                     "name": challenge.name,
+                    "logo_url": challenge_logo_url,
                     "display_order": challenge.display_order,
                     "rollup_values": challenge_rollup_values,
                     "initiatives": initiatives_data,
                 }
             )
 
+        # Get space logo
+        space_logo_url = None
+        if space.logo_data and space.logo_mime_type:
+            space_logo_url = f"data:{space.logo_mime_type};base64,{base64.b64encode(space.logo_data).decode('utf-8')}"
+
         spaces_data.append(
             {
                 "id": space.id,
                 "name": space.name,
+                "logo_url": space_logo_url,
                 "display_order": space.display_order,
                 "is_private": space.is_private,
                 "rollup_values": space_rollup_values,
@@ -278,3 +324,67 @@ def get_data():
             "impactLevels": impact_levels_data,
         }
     )
+
+
+@bp.route("/api/change-parent/<entity_type>", methods=["POST"])
+@login_required
+@beta_required
+def change_parent(entity_type):
+    """Change the parent of an entity (move to different parent)"""
+    try:
+        org_id = session.get("organization_id")
+        data = request.get_json()
+
+        entity_id = data.get("entity_id")
+        new_parent_id = data.get("new_parent_id")
+
+        if not entity_id or not new_parent_id:
+            return jsonify({"error": "Missing entity_id or new_parent_id"}), 400
+
+        if entity_type == "challenge":
+            # Move challenge to different space
+            challenge = Challenge.query.filter_by(id=entity_id, organization_id=org_id).first()
+            if not challenge:
+                return jsonify({"error": "Challenge not found"}), 404
+
+            challenge.space_id = new_parent_id
+
+        elif entity_type == "initiative":
+            # Move initiative to different challenge
+            link = ChallengeInitiativeLink.query.filter_by(id=entity_id).first()
+            if not link or link.initiative.organization_id != org_id:
+                return jsonify({"error": "Initiative link not found"}), 404
+
+            link.challenge_id = new_parent_id
+
+        elif entity_type == "system":
+            # Move system to different initiative
+            link = InitiativeSystemLink.query.filter_by(id=entity_id).first()
+            if not link or link.system.organization_id != org_id:
+                return jsonify({"error": "System link not found"}), 404
+
+            link.initiative_id = new_parent_id
+
+        elif entity_type == "kpi":
+            # Move KPI to different system (system is a link)
+            kpi = KPI.query.filter_by(id=entity_id).first()
+            if not kpi:
+                return jsonify({"error": "KPI not found"}), 404
+
+            # Verify ownership through system link
+            old_link = InitiativeSystemLink.query.get(kpi.initiative_system_link_id)
+            if not old_link or old_link.system.organization_id != org_id:
+                return jsonify({"error": "Unauthorized"}), 403
+
+            # new_parent_id is the InitiativeSystemLink id
+            kpi.initiative_system_link_id = new_parent_id
+
+        else:
+            return jsonify({"error": f"Unknown entity type: {entity_type}"}), 400
+
+        db.session.commit()
+        return jsonify({"success": True, "message": f"{entity_type.capitalize()} parent changed"})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500

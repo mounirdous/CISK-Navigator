@@ -62,6 +62,64 @@ def your_feature():
     return render_template("beta/your_template.html", ...)
 ```
 
+**Option C: Separate blueprint with beta decorator** (recommended for complex features with multiple routes)
+```python
+# In app/routes/your_feature.py
+
+from flask import Blueprint
+from flask_login import login_required
+from functools import wraps
+
+bp = Blueprint("your_feature", __name__, url_prefix="/your-feature")
+
+
+def beta_required(f):
+    """Decorator to require beta access"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        from flask import flash, redirect, url_for
+        from flask_login import current_user
+        from app.models import SystemSetting
+
+        if not current_user.is_authenticated:
+            return redirect(url_for("auth.login"))
+
+        if not SystemSetting.is_beta_enabled():
+            flash("Beta testing program is currently disabled.", "warning")
+            return redirect(url_for("workspace.dashboard"))
+
+        if current_user.is_super_admin or current_user.beta_tester:
+            return f(*args, **kwargs)
+
+        flash("Beta features are not enabled for your account.", "warning")
+        return redirect(url_for("workspace.dashboard"))
+
+    return decorated_function
+
+
+@bp.route("/")
+@login_required
+@beta_required
+def index():
+    """Main route"""
+    return render_template("your_feature/index.html")
+
+
+@bp.route("/api/data")
+@login_required
+@beta_required
+def get_data():
+    """API endpoint"""
+    return jsonify({"data": []})
+```
+
+Then register in `app/__init__.py`:
+```python
+# After other blueprint registrations
+from app.routes import your_feature
+app.register_blueprint(your_feature.bp)
+```
+
 ### 2. Create the Template
 
 **For root-level routes:**
@@ -446,12 +504,63 @@ return redirect(url_for("workspace.index"))
 
 ---
 
+## Example: Workspace V2 Feature (Alpine.js + Separate Blueprint)
+
+### Current Beta Implementation (March 16, 2026)
+
+**Blueprint:** Separate blueprint with `@beta_required` decorator
+**Routes:**
+- `/workspacev2/` - Main UI
+- `/workspacev2/data` - JSON API endpoint
+
+**Files:**
+```
+app/
+├── routes/
+│   └── workspacev2.py          # Separate blueprint with beta_required decorator
+├── templates/
+│   └── workspacev2/
+│       └── index.html          # Alpine.js reactive template
+└── __init__.py                 # Blueprint registration
+```
+
+**Key Features:**
+- Fully reactive UI with Alpine.js 3
+- JSON API returns all data for client-side filtering
+- In-memory filtering (no page reloads)
+- Mobile and desktop responsive
+- Drag-and-drop ready
+- Listed in `/beta` page
+
+**Why separate blueprint?**
+- Multiple routes (`/`, `/data`, future: `/settings`, etc.)
+- Clean separation from main beta blueprint
+- Can easily add more endpoints without cluttering `beta.py`
+- Reusable `@beta_required` decorator
+
+**Next steps when releasing to public:**
+1. Remove `@beta_required` decorator from all routes
+2. Replace with `@login_required` and `@organization_required`
+3. Remove from `/beta` index
+4. Add to main navigation (Dashboards dropdown)
+5. Update URL if needed (e.g., `/workspace/v2` instead of `/workspacev2`)
+
+---
+
 ## Questions?
 
-If you're unsure about any step, check the Action Items feature implementation as a reference:
+If you're unsure about any step, check these implementation examples:
+
+**Action Items** (root-level route):
 - Route: `app/__init__.py` (search for `@app.route("/action-items")`)
 - Template: `app/templates/workspace/action_items.html`
 - Dashboard alert: `app/routes/workspace.py` (dashboard function)
 - Navigation: `app/templates/base.html` (Dashboards dropdown)
+
+**Workspace V2** (separate blueprint):
+- Route: `app/routes/workspacev2.py`
+- Template: `app/templates/workspacev2/index.html`
+- Registration: `app/__init__.py` (blueprint registration)
+- Beta listing: `app/templates/beta/index.html`
 
 Last Updated: March 16, 2026
