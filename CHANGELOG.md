@@ -5,6 +5,34 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.15.1] - 2026-03-16
+
+### Fixed - CSRF Token Undefined Error in Search Page
+**Issue**: `jinja2.exceptions.UndefinedError: 'csrf_token' is undefined` on search page
+
+**Root Cause**:
+- In v2.5.14, added save search modal with JavaScript using `{{ csrf_token() }}`
+- base.html template requires csrf_token to be passed from routes
+- search_page route didn't pass csrf_token parameter to render_template
+- Error occurred when visiting /workspace/search page
+
+**The Fix**: Added `csrf_token=generate_csrf` to both render_template calls in search_page:
+- Line 2052: Empty query case
+- Line 2170: Search results case
+
+**Files Modified**:
+- `app/routes/workspace.py` - Added csrf_token parameter to search_page render_template calls
+- `app/__init__.py` - Version bump to 2.5.15.1
+
+**Technical Details**:
+- generate_csrf already imported at top of workspace.py (line 14)
+- Flask-WTF's generate_csrf provides the token function for templates
+- Same pattern used in other routes throughout the application
+
+**Impact**: Search page now loads without errors
+
+---
+
 ## [2.5.15] - 2026-03-16
 
 ### Added - Auto-load Default Search on Page Load (Phase 4 Part 5)

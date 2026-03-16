@@ -2049,7 +2049,9 @@ def search_page():
     query = request.args.get("q", "").strip()
 
     if not query:
-        return render_template("workspace/search.html", organization_name=org_name, query="", results={})
+        return render_template(
+            "workspace/search.html", organization_name=org_name, query="", results={}, csrf_token=generate_csrf
+        )
 
     # Search across all entities
     results = {
@@ -2174,6 +2176,7 @@ def search_page():
         results=results,
         total=total,
         entity_defaults=entity_defaults,
+        csrf_token=generate_csrf,
     )
 
 
