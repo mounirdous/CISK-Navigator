@@ -1299,9 +1299,18 @@
 
             <!-- Data Filters -->
             <div class="filter-section">
-                <div class="filter-section-header">
-                    <i class="bi bi-funnel"></i>
-                    <span>Data Filters</span>
+                <div class="filter-section-header" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="bi bi-funnel"></i>
+                        <span>Data Filters</span>
+                    </div>
+                    <button x-show="hasActiveFilters"
+                            @click="clearAllFilters()"
+                            class="btn btn-sm btn-outline-secondary"
+                            style="font-size: 0.75rem; padding: 0.2rem 0.6rem;"
+                            title="Clear all filters">
+                        <i class="bi bi-x-circle"></i> Clear All
+                    </button>
                 </div>
 
                 <!-- Row 1: Governance & Groups -->
@@ -1659,10 +1668,10 @@
                                            @click.stop>
                                             <i class="bi bi-plus-circle"></i>
                                         </a>
-                                        <a href="#"
+                                        <a :href="`/org-admin/spaces/${space.id}/edit?return_to=workspace`"
                                            class="text-primary"
                                            title="Edit Space"
-                                           @click.prevent.stop="alert('Edit space functionality - use the v1 workspace to edit spaces for now')">
+                                           @click.stop>
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
                                         <a href="#"
