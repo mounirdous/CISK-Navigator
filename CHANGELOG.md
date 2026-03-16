@@ -5,6 +5,78 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-03-16
+
+### Mobile Optimization - Option 3 Implementation 📱
+
+Complete mobile-responsive overhaul implementing hybrid approach for optimal mobile experience.
+
+### Added
+- **📱 Horizontal Scrollable Grid**: Touch-friendly workspace grid
+  - iOS momentum scrolling (-webkit-overflow-scrolling: touch)
+  - Smooth scroll behavior for natural feel
+  - Sticky entity name column while values scroll horizontally
+  - Visual scroll indicator: "← Swipe to see values →"
+  - Auto-hiding indicator after user scrolls
+
+- **🎯 Touch-Optimized Controls**: Mobile-first button design
+  - Minimum 44px touch targets (Apple HIG compliant)
+  - Larger expand/collapse icons (1.2rem with padding)
+  - Floating action buttons for snapshot controls
+  - Circular FABs with shadows (56px diameter)
+  - Fixed bottom-right positioning prevents overlap
+
+- **📐 Responsive Toolbar**: Adaptive command bar
+  - Auto-stacking on mobile (vertical layout)
+  - Hides non-essential controls (collapse all, column toggles)
+  - Larger button padding (0.5rem vs 0.25rem)
+  - Flexible wrapping for narrow screens
+
+- **🎨 Mobile-Specific Styling**: Optimized visual hierarchy
+  - Reduced entity indentation (0.5rem base vs 1.5rem)
+  - Hidden badges by default (less clutter)
+  - Minimum 100px value cell width
+  - Larger action icons (1.2rem + padding)
+  - Custom scrollbar styling (8px width)
+
+### Changed
+- **Filter Section**: Full-width expansion on mobile
+- **Summary Bar**: Stacks vertically on narrow screens
+- **Grid Container**: Now allows horizontal overflow with min-width: max-content
+- **Hover Effects**: Disabled on touch devices, replaced with tap feedback
+- **Row Heights**: Minimum 48px on touch devices for better tapping
+
+### Technical
+- **Breakpoints**:
+  - Mobile: `@media (max-width: 768px)`
+  - Tablet: `@media (min-width: 769px) and (max-width: 1024px)`
+  - Touch devices: `@media (hover: none) and (pointer: coarse)`
+- **New JavaScript**: `setupMobileScrollIndicator()` method
+  - Detects horizontal scroll events
+  - Adds/removes 'scrolled' class dynamically
+  - 2-second timeout before re-showing indicator
+- **CSS Architecture**: Mobile-first with progressive enhancement
+- **Sticky Positioning**: First grid column fixed with z-index and shadow
+
+### Fixed
+- **Button Overlap**: Snapshot controls no longer conflict with filters
+- **Grid Overflow**: Can now scroll to see all value columns
+- **Toolbar Chaos**: Controls stack properly instead of overflowing
+- **Touch Targets**: All interactive elements meet accessibility standards
+
+### Performance
+- Hardware-accelerated scrolling on iOS
+- CSS-only responsive design (no JS layout shifts)
+- Minimal reflows with position: sticky
+- Efficient scroll event debouncing (2s timeout)
+
+### User Experience
+- **Discoverable scrolling**: Visual cue teaches horizontal swipe
+- **Familiar gestures**: Native-feeling momentum scroll
+- **No mode switching**: Same workspace adapts seamlessly
+- **Progressive disclosure**: Hides complexity on small screens
+- **Tap confidence**: Large, well-spaced interactive elements
+
 ## [2.0.0] - 2026-03-16
 
 ### Major Release - Workspace V2 Complete & Holiday Edition 🎄
