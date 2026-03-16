@@ -5,6 +5,186 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.17] - 2026-03-16
+
+### Changed - Unified Search Experience (Search Results Page Now Uses SearchService)
+**Feature**: Search results page upgraded to use enhanced SearchService
+
+**Issue**: Two different search systems with inconsistent behavior:
+- **Navbar search**: Fuzzy matching, modifiers, filters (NEW system)
+- **Search results page**: Simple LIKE queries (OLD system)
+- Example: "inventroy" worked in navbar but failed in search page
+
+**The Solution**: Upgrade search results page to use SearchService
+
+**Benefits**:
+1. **Consistent Experience**: Same powerful search everywhere
+2. **Fuzzy Matching**: Typo-tolerant search on search page now
+3. **Search Modifiers**: @incomplete, @no_consensus, @archived work on search page
+4. **Better Results**: Relevance scoring, word-by-word matching
+5. **Single Codebase**: Easier to maintain, one source of truth
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Added `search_value_types()` - Search value types by name/unit label
+  - Added `search_comments()` - Search comments with fuzzy matching
+  - Updated `search_all()` - Include value_types and comments in results
+  - Updated `_empty_results()` - Include value_types and comments fields
+- `app/routes/workspace.py`:
+  - Replaced ~140 lines of LIKE queries with 1 SearchService call
+  - Updated `search_page()` route to use SearchService
+  - Result transformation to match template expectations
+- `app/templates/workspace/search.html`:
+  - Added enhanced search features tip box
+  - Documents fuzzy matching, modifiers, Ctrl+K shortcut
+- `app/__init__.py` - Version bump to 2.5.17
+
+**What Changed**:
+
+### **Before (v2.5.16)**:
+```python
+# Simple LIKE pattern matching
+search_pattern = f"%{query}%"
+spaces = Space.query.filter(Space.name.ilike(search_pattern)).all()
+# ❌ No fuzzy matching
+# ❌ No modifiers
+# ❌ No relevance scoring
+```
+
+### **After (v2.5.17)**:
+```python
+# Enhanced SearchService
+results = SearchService.search_all(query, filters={}, organization_id=org_id)
+# ✅ Fuzzy matching (typo-tolerant)
+# ✅ Modifiers (@incomplete, @no_consensus, @archived)
+# ✅ Relevance scoring (best matches first)
+# ✅ Word-by-word matching
+```
+
+**New Entity Searches Added**:
+
+1. **Value Types Search** (`search_value_types`):
+   - Searches name and unit_label
+   - Returns: id, name, unit_label, kind, match_score
+   - Example: "CHF" finds "Cost (CHF)" value type
+
+2. **Comments Search** (`search_comments`):
+   - Fuzzy matches comment text
+   - Minimum 3 characters required
+   - Limit: Top 50 results (performance)
+   - Returns: id, text (truncated 200 chars), user, kpi, created_at, match_score
+   - Example: "improvement" finds comments mentioning improvements
+
+**Search Features Now Available on Search Page**:
+
+✅ **Fuzzy Matching**:
+```
+Query: "inventroy" (typo)
+Result: Finds "Inventory turns improvement" ✓
+```
+
+✅ **Search Modifiers**:
+```
+Query: "@incomplete"
+Result: 6 incomplete initiatives + 4 incomplete spaces ✓
+
+Query: "@no_consensus"
+Result: 1 initiative without consensus ✓
+
+Query: "ERP @incomplete"
+Result: Incomplete items related to ERP ✓
+```
+
+✅ **Relevance Scoring**:
+- Name matches score higher (2 points)
+- Description matches score lower (1 point)
+- Results sorted by relevance
+
+✅ **Word-by-Word Matching**:
+- "Inventory" matches "Inventory turns improvement"
+- "ERP" matches "Core ERP (SAP S/4HANA)"
+
+**User Flow**:
+
+### **Navbar Search (Quick Lookup)**:
+```
+1. User presses Ctrl+K
+2. Types query
+3. Live dropdown shows top results
+4. Click "View all results" → Goes to search page
+```
+
+### **Search Results Page (Deep Browsing)**:
+```
+1. User clicks search button OR types Enter
+2. Full-page results with all entities
+3. Can browse, review details, navigate
+4. Same fuzzy matching and modifiers work
+```
+
+**Clear Positioning**:
+
+| Feature | Navbar Search | Search Results Page |
+|---------|---------------|---------------------|
+| **Purpose** | Quick navigation | Deep research |
+| **UX** | Dropdown, stay on page | Full page, detailed view |
+| **Use Case** | "Where is X?" | "Show me everything about Y" |
+| **Results** | Top 10-15 results | All results, paginated |
+| **Search Engine** | SearchService ✓ | SearchService ✓ ← **NEW!** |
+
+**Technical Details**:
+
+- SearchService handles 7 entity types:
+  - KPIs, Systems, Initiatives, Challenges, Spaces (original)
+  - Value Types, Comments (added in v2.5.17)
+
+- Result transformation for template compatibility:
+  ```python
+  # SearchService returns: "space_name"
+  # Template expects: "space"
+  # → Transformation layer handles mapping
+  ```
+
+- Performance:
+  - Comments limited to 100 queries, returns top 50 matches
+  - All other entities: No artificial limits
+  - Fuzzy matching optimized with early exit on mismatch
+
+**Testing Results**:
+```
+Test 1: Value Types - "CHF"
+✓ Found: Cost (CHF) value type
+
+Test 2: Fuzzy Matching - "inventroy" (typo)
+✓ Found: Inventory turns improvement KPI
+
+Test 3: Comments Search - "improvement"
+✓ Searched comments successfully (0 results = correct, no comments yet)
+
+Test 4: @incomplete Modifier
+✓ Found: 10 incomplete items (6 initiatives + 4 spaces)
+```
+
+**Impact**:
+- **User-Facing**: Search results page now has fuzzy matching and modifiers! 🎉
+- **Consistency**: Same powerful search everywhere in the application
+- **Simplification**: Removed 140 lines of duplicate query code
+- **Maintenance**: Single search engine to update/improve
+- **UX**: "View all results" link in navbar connects both experiences
+
+**What Users Get**:
+1. Type in navbar → Quick dropdown results
+2. Click "View all results" → Full page with ALL results
+3. Same fuzzy matching, modifiers work on both
+4. Consistent, predictable behavior
+
+**Backwards Compatibility**:
+- Search page URLs unchanged: `/workspace/search?q=...`
+- Template structure unchanged (just better results)
+- No breaking changes for users
+
+---
+
 ## [2.5.16] - 2026-03-16
 
 ### Fixed - Search Modifiers Now Fully Functional

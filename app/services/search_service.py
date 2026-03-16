@@ -64,7 +64,9 @@ class SearchService:
             filters = {}
 
         # Determine which entity types to search
-        entity_types = filters.get("entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces"])
+        entity_types = filters.get(
+            "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments"]
+        )
 
         results = {
             "kpis": [],
@@ -72,6 +74,8 @@ class SearchService:
             "initiatives": [],
             "challenges": [],
             "spaces": [],
+            "value_types": [],
+            "comments": [],
             "query_info": {
                 "original_query": query,
                 "parsed_query": parsed["clean_query"],
@@ -95,6 +99,12 @@ class SearchService:
 
         if "spaces" in entity_types:
             results["spaces"] = SearchService.search_spaces(parsed, filters, organization_id)
+
+        if "value_types" in entity_types:
+            results["value_types"] = SearchService.search_value_types(parsed, filters, organization_id)
+
+        if "comments" in entity_types:
+            results["comments"] = SearchService.search_comments(parsed, filters, organization_id)
 
         return results
 
@@ -535,6 +545,115 @@ class SearchService:
         return results
 
     @staticmethod
+    def search_value_types(parsed, filters, organization_id):
+        """
+        Search Value Types by name and unit label.
+
+        Args:
+            parsed (dict): Parsed query
+            filters (dict): Additional filters
+            organization_id (int): Organization ID
+
+        Returns:
+            list: Matching ValueType records
+        """
+        from app.models import ValueType
+
+        query = parsed["clean_query"]
+
+        # Get all value types for organization
+        all_value_types = db.session.query(ValueType).filter(ValueType.organization_id == organization_id).all()
+
+        # Filter by fuzzy match
+        results = []
+        for value_type in all_value_types:
+            # Fuzzy match logic
+            match_score = 0
+            if query:  # If there's a text query, check fuzzy match
+                if SearchService.fuzzy_match(value_type.name, query):
+                    match_score += 2
+
+                if value_type.unit_label and SearchService.fuzzy_match(value_type.unit_label, query):
+                    match_score += 1
+
+                # Skip if no fuzzy match
+                if match_score == 0:
+                    continue
+            else:
+                # Modifier-only search - include all value types
+                match_score = 1
+
+            results.append(
+                {
+                    "id": value_type.id,
+                    "name": value_type.name,
+                    "unit_label": value_type.unit_label,
+                    "kind": value_type.kind,
+                    "match_score": match_score,
+                    "updated_at": value_type.updated_at.isoformat() if value_type.updated_at else None,
+                }
+            )
+
+        results.sort(key=lambda x: x["match_score"], reverse=True)
+        return results
+
+    @staticmethod
+    def search_comments(parsed, filters, organization_id):
+        """
+        Search Comments by text content.
+
+        Args:
+            parsed (dict): Parsed query
+            filters (dict): Additional filters
+            organization_id (int): Organization ID
+
+        Returns:
+            list: Matching Comment records with context
+        """
+        from app.models import CellComment, Initiative, KPIValueTypeConfig
+
+        query = parsed["clean_query"]
+
+        # Only search if there's actual query text (comments need context)
+        if not query or len(query) < 3:
+            return []
+
+        # Get comments for organization (via KPI -> Initiative -> Organization)
+        all_comments = (
+            db.session.query(CellComment)
+            .join(KPIValueTypeConfig)
+            .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+            .join(InitiativeSystemLink)
+            .join(Initiative)
+            .filter(Initiative.organization_id == organization_id)
+            .limit(100)  # Limit for performance
+            .all()
+        )
+
+        # Filter by fuzzy match
+        results = []
+        for comment in all_comments:
+            # Fuzzy match on comment text
+            match_score = 0
+            if SearchService.fuzzy_match(comment.comment_text, query):
+                match_score += 1
+
+            if match_score > 0:
+                results.append(
+                    {
+                        "id": comment.id,
+                        "text": comment.comment_text[:200] if comment.comment_text else "",
+                        "user": comment.user.display_name if comment.user else "Unknown",
+                        "kpi": comment.config.kpi.name if comment.config and comment.config.kpi else "Unknown",
+                        "created_at": comment.created_at.strftime("%Y-%m-%d %H:%M") if comment.created_at else "",
+                        "match_score": match_score,
+                    }
+                )
+
+        results.sort(key=lambda x: x["match_score"], reverse=True)
+        return results[:50]  # Return top 50 comments
+
+    @staticmethod
     def _empty_results():
         """Return empty search results structure."""
         return {
@@ -543,5 +662,7 @@ class SearchService:
             "initiatives": [],
             "challenges": [],
             "spaces": [],
+            "value_types": [],
+            "comments": [],
             "query_info": {"original_query": "", "parsed_query": "", "modifiers": [], "operators": {}},
         }

@@ -2043,115 +2043,48 @@ def search_org_users():
 @login_required
 @organization_required
 def search_page():
-    """Search results page"""
+    """Search results page - Enhanced with SearchService (fuzzy matching, modifiers, filters)"""
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
     query = request.args.get("q", "").strip()
 
     if not query:
         return render_template(
-            "workspace/search.html", organization_name=org_name, query="", results={}, csrf_token=generate_csrf
+            "workspace/search.html",
+            organization_name=org_name,
+            query="",
+            results={},
+            total=0,
+            csrf_token=generate_csrf,
         )
 
-    # Search across all entities
+    # Use SearchService for fuzzy matching, modifiers, and filters
+    # This gives the same powerful search experience as the navbar
+    search_results = SearchService.search_all(query, filters={}, organization_id=org_id)
+
+    # Transform SearchService results to match template expectations
+    # SearchService returns more detailed results (match_score, updated_at, etc.)
     results = {
-        "spaces": [],
-        "challenges": [],
-        "initiatives": [],
-        "systems": [],
-        "kpis": [],
-        "value_types": [],
-        "comments": [],
+        "spaces": search_results.get("spaces", []),
+        "challenges": search_results.get("challenges", []),
+        "initiatives": search_results.get("initiatives", []),
+        "systems": search_results.get("systems", []),
+        "kpis": search_results.get("kpis", []),
+        "value_types": search_results.get("value_types", []),
+        "comments": search_results.get("comments", []),
     }
 
-    search_pattern = f"%{query}%"
+    # Add space_name to challenges if missing (template expects it)
+    for challenge in results["challenges"]:
+        if "space" not in challenge and "space_name" in challenge:
+            challenge["space"] = challenge["space_name"]
 
-    # Search Spaces
-    spaces = Space.query.filter(
-        Space.organization_id == org_id,
-        db.or_(Space.name.ilike(search_pattern), Space.description.ilike(search_pattern)),
-    ).all()
-    results["spaces"] = [{"id": s.id, "name": s.name, "description": s.description} for s in spaces]
-
-    # Search Challenges
-    challenges = (
-        Challenge.query.join(Space)
-        .filter(
-            Space.organization_id == org_id,
-            db.or_(Challenge.name.ilike(search_pattern), Challenge.description.ilike(search_pattern)),
-        )
-        .all()
-    )
-    results["challenges"] = [
-        {"id": c.id, "name": c.name, "description": c.description, "space": c.space.name} for c in challenges
-    ]
-
-    # Search Initiatives
-    initiatives = Initiative.query.filter(
-        Initiative.organization_id == org_id,
-        db.or_(Initiative.name.ilike(search_pattern), Initiative.description.ilike(search_pattern)),
-    ).all()
-    results["initiatives"] = [{"id": i.id, "name": i.name, "description": i.description} for i in initiatives]
-
-    # Search Systems
-    systems = System.query.filter(
-        System.organization_id == org_id,
-        db.or_(System.name.ilike(search_pattern), System.description.ilike(search_pattern)),
-    ).all()
-    results["systems"] = [{"id": s.id, "name": s.name, "description": s.description} for s in systems]
-
-    # Search KPIs
-    kpis = (
-        db.session.query(KPI)
-        .join(InitiativeSystemLink)
-        .join(Initiative)
-        .filter(
-            Initiative.organization_id == org_id,
-            db.or_(KPI.name.ilike(search_pattern), KPI.description.ilike(search_pattern)),
-        )
-        .all()
-    )
-    results["kpis"] = [
-        {
-            "id": k.id,
-            "name": k.name,
-            "description": k.description,
-            "initiative": k.initiative_system_link.initiative.name if k.initiative_system_link else "",
-            "system": k.initiative_system_link.system.name if k.initiative_system_link else "",
-        }
-        for k in kpis
-    ]
-
-    # Search Value Types
-    value_types = ValueType.query.filter(
-        ValueType.organization_id == org_id,
-        db.or_(ValueType.name.ilike(search_pattern), ValueType.unit_label.ilike(search_pattern)),
-    ).all()
-    results["value_types"] = [
-        {"id": v.id, "name": v.name, "unit_label": v.unit_label, "kind": v.kind} for v in value_types
-    ]
-
-    # Search Comments
-    comments = (
-        db.session.query(CellComment)
-        .join(KPIValueTypeConfig)
-        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
-        .join(InitiativeSystemLink)
-        .join(Initiative)
-        .filter(Initiative.organization_id == org_id, CellComment.comment_text.ilike(search_pattern))
-        .limit(50)
-        .all()
-    )
-    results["comments"] = [
-        {
-            "id": c.id,
-            "text": c.comment_text[:200],
-            "user": c.user.display_name if c.user else "Unknown",
-            "kpi": c.config.kpi.name if c.config and c.config.kpi else "Unknown",
-            "created_at": c.created_at.strftime("%Y-%m-%d %H:%M") if c.created_at else "",
-        }
-        for c in comments
-    ]
+    # Add initiative/system names to KPIs if missing
+    for kpi in results["kpis"]:
+        if "initiative" not in kpi and "initiative_name" in kpi:
+            kpi["initiative"] = kpi["initiative_name"]
+        if "system" not in kpi and "system_name" in kpi:
+            kpi["system"] = kpi["system_name"]
 
     # Count totals
     total = sum(len(results[key]) for key in results)
