@@ -3420,19 +3420,18 @@ function workspaceV2(orgId, filterPresets) {
                         return;
                     }
 
-                    // Smooth scroll to the KPI with proper spacing
-                    // Use 'nearest' to prevent over-scrolling, then adjust if needed
+                    // Smooth scroll to the KPI with gentle positioning
                     const container = document.querySelector('.ws-grid-container');
                     const rowRect = kpiRow.getBoundingClientRect();
                     const containerRect = container.getBoundingClientRect();
 
-                    // Calculate if row is visible and how much space we have
-                    const rowTop = rowRect.top - containerRect.top;
-                    const rowBottom = rowRect.bottom - containerRect.top;
+                    // Calculate current scroll position
+                    const currentScroll = container.scrollTop;
+                    const rowTop = rowRect.top - containerRect.top + currentScroll;
                     const viewportHeight = containerRect.height;
 
-                    // Scroll to position the row with 20% padding from top
-                    const targetScroll = kpiRow.offsetTop - (viewportHeight * 0.2);
+                    // Position row at 35% from top (more gentle, less scroll)
+                    const targetScroll = rowTop - (viewportHeight * 0.35);
 
                     container.scrollTo({
                         top: Math.max(0, targetScroll),
