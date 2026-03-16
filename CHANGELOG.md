@@ -5,6 +5,98 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.11] - 2026-03-16
+
+### Added - Saved Searches Database & Model (Phase 4 Part 1)
+**Feature**: Database schema and model for persistent user-saved searches
+
+**Issue**: Users need to save frequently-used search queries and filters for quick access. This is the foundation for the saved searches UI feature.
+
+**Files Created**:
+- `app/models/saved_search.py` - New SavedSearch model
+- `migrations/versions/c1e3ad7e2081_add_saved_searches_table.py` - Database migration
+
+**Files Modified**:
+- `app/models/__init__.py` - Added SavedSearch import and export
+- `app/__init__.py` - Version bump to 2.5.11
+
+**Data Model - saved_search Table**:
+```sql
+CREATE TABLE saved_search (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    name VARCHAR(200) NOT NULL,
+    query TEXT NOT NULL,
+    filters JSON,  -- Stores entity_types, date_range, status filters
+    is_default BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMP NOT NULL DEFAULT now(),
+    updated_at TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_saved_search_user_org ON saved_search(user_id, organization_id);
+```
+
+**SavedSearch Model Features**:
+
+1. **Core Fields**:
+   - `name`: User-friendly name for the saved search (e.g., "Q1 At-Risk KPIs")
+   - `query`: The search text (e.g., "Inventory")
+   - `filters`: JSON field storing advanced filters (entity types, date ranges, status)
+   - `is_default`: Whether this search auto-loads when user opens search
+
+2. **Relationships**:
+   - Foreign key to `users` table (with CASCADE delete)
+   - Foreign key to `organizations` table (with CASCADE delete)
+   - Each search belongs to one user in one organization
+   - Multi-tenant: searches are organization-scoped
+
+3. **Model Methods**:
+   - `to_dict()` - Serialize to JSON for API responses
+   - `get_user_searches(user_id, org_id)` - Get all searches for a user
+   - `get_default_search(user_id, org_id)` - Get the user's default search
+   - `set_as_default()` - Set this search as default (unsets other defaults)
+
+**Technical Details**:
+
+- **SQLAlchemy 2.x Compatibility**: Uses `db.session.query(SavedSearch)` syntax (not `.query.filter_by()`)
+- **JSON Storage**: Filters stored as JSON for flexibility (no schema changes for new filter types)
+- **Cascading Deletes**: If user or organization is deleted, saved searches are auto-deleted
+- **Index**: Composite index on (user_id, organization_id) for fast lookups
+- **Timestamps**: Automatic created_at/updated_at via PostgreSQL defaults
+
+**Migration Notes**:
+
+- Migration created: `c1e3ad7e2081_add_saved_searches_table.py`
+- Revision chain: `2683fafe7d5a` (rename mobile_beta_tester) → `c1e3ad7e2081` (add saved_search)
+- Downgrade: Drops table and index cleanly
+- Foreign key table names corrected: `users` and `organizations` (not singular forms)
+
+**Testing**:
+```python
+# Tested via Python API:
+✓ Create saved search with query + filters
+✓ Retrieve by ID
+✓ Get all user searches (ordered by name)
+✓ Serialize to dict with to_dict()
+✓ Set as default (unsets other defaults)
+✓ Delete and cleanup
+
+Result: All tests passed
+```
+
+**Impact**:
+- No user-facing changes yet (database-only)
+- Prepares for Phase 4 Part 2: Saved Searches UI (CRUD operations, dropdown, default search)
+- No breaking changes to existing search functionality
+
+**Next Steps**:
+- v2.5.12: Add API endpoints for CRUD operations (create, read, update, delete saved searches)
+- v2.5.13: Add UI dropdown in search bar to access saved searches
+- v2.5.14: Add "Save this search" button and modal
+- v2.5.15: Add "Set as default" functionality with auto-load on page load
+
+---
+
 ## [2.5.10] - 2026-03-16
 
 ### Added - Advanced Search Filters Panel (Phase 3 Part 2)

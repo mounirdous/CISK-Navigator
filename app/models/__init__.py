@@ -22,6 +22,7 @@ from .kpi_snapshot import KPISnapshot, RollupSnapshot
 from .organization import Organization, UserOrganizationMembership
 from .rollup_rule import RollupRule
 from .saved_chart import SavedChart
+from .saved_search import SavedSearch
 from .space import Space
 from .sso_config import SSOConfig
 from .system import InitiativeSystemLink, System
@@ -62,6 +63,7 @@ __all__ = [
     "AnnouncementTargetUser",
     "AnnouncementTargetOrganization",
     "SavedChart",
+    "SavedSearch",
     "GeographyRegion",
     "GeographyCountry",
     "GeographySite",
