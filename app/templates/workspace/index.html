@@ -2475,7 +2475,7 @@
                                                                                                 <span x-show="vt.unit_label" x-text="' ' + vt.unit_label"></span>
                                                                                             </strong>
                                                                                             <!-- Target indicator -->
-                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2493,7 +2493,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">!</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">!!</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">!!!</span>
-                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2510,7 +2510,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">★</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">★★</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">★★★</span>
-                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2527,7 +2527,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">▼</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">▼▼</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">▼▼▼</span>
-                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2544,7 +2544,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">●</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">●●</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">●●●</span>
-                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2561,7 +2561,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">☹️</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">😐</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">😊</span>
-                                                                                            <template x-if="kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
