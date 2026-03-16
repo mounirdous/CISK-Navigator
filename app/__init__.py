@@ -158,10 +158,14 @@ def create_app(config_name=None):
     # Context processor - inject maintenance_mode into all templates
     @app.context_processor
     def inject_maintenance_mode():
-        """Make maintenance_mode and app_version available to all templates"""
+        """Make maintenance_mode, beta_enabled and app_version available to all templates"""
         from app.models import SystemSetting
 
-        return {"maintenance_mode": SystemSetting.is_maintenance_mode(), "app_version": __version__}
+        return {
+            "maintenance_mode": SystemSetting.is_maintenance_mode(),
+            "beta_enabled": SystemSetting.is_beta_enabled(),
+            "app_version": __version__,
+        }
 
     # Context processor - inject entity defaults for branding
     @app.context_processor

@@ -96,6 +96,11 @@ class SystemSetting(db.Model):
         return SystemSetting.get_bool("maintenance_mode", default=False)
 
     @staticmethod
+    def is_beta_enabled():
+        """Check if beta testing program is enabled system-wide"""
+        return SystemSetting.get_bool("beta_enabled", default=False)
+
+    @staticmethod
     def get_session_timeout():
         """Get session timeout in seconds"""
         return SystemSetting.get_int("session_timeout_seconds", default=3600)

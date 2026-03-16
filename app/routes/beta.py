@@ -7,16 +7,14 @@ Beta access is opt-in via /beta landing page.
 """
 
 import base64
-from datetime import date
 from functools import wraps
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.forms import ContributionForm
 from app.models import (
     KPI,
     CellComment,
@@ -27,23 +25,17 @@ from app.models import (
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
-    KPISnapshot,
+    KPIGovernanceBodyLink,
     KPIValueTypeConfig,
     Organization,
-    RollupSnapshot,
-    SavedChart,
     Space,
     System,
     SystemAnnouncement,
-    User,
-    UserAnnouncementAcknowledgment,
     UserFilterPreset,
     UserOrganizationMembership,
     ValueType,
 )
-from app.services import AggregationService, ConsensusService, ExcelExportService
 from app.services.comment_service import CommentService
-from app.services.snapshot_pivot_service import SnapshotPivotService
 from app.services.snapshot_service import SnapshotService
 
 bp = Blueprint("beta", __name__, url_prefix="/beta")
@@ -111,8 +103,15 @@ def beta_required(f):
 
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        from app.models import SystemSetting
+
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
+
+        # Check if beta is enabled system-wide
+        if not SystemSetting.is_beta_enabled():
+            flash("Beta testing program is currently disabled.", "warning")
+            return redirect(url_for("workspace.dashboard"))
 
         # Allow super admins and beta testers
         if current_user.is_super_admin or current_user.beta_tester:
@@ -375,7 +374,6 @@ def workspace():
 
     # Get active value types that have displayable rollup values in the FILTERED spaces
     # Check for value types with actual contribution data (what creates rollups)
-    from app.models import Contribution, KPIGovernanceBodyLink
 
     if space_ids:
         # Build query to find value types that have data in filtered spaces
@@ -455,7 +453,8 @@ def workspace():
 
         # Combine both queries
         value_type_ids_with_data = set(
-            [row[0] for row in value_types_with_contributions.all()] + [row[0] for row in value_types_with_formulas.all()]
+            [row[0] for row in value_types_with_contributions.all()]
+            + [row[0] for row in value_types_with_formulas.all()]
         )
     else:
         value_type_ids_with_data = set()
@@ -698,7 +697,9 @@ def workspace():
     organization = Organization.query.get(org_id)
     org_logo = None
     if organization and organization.logo_data:
-        org_logo = f"data:{organization.logo_mime_type};base64,{base64.b64encode(organization.logo_data).decode('utf-8')}"
+        org_logo = (
+            f"data:{organization.logo_mime_type};base64,{base64.b64encode(organization.logo_data).decode('utf-8')}"
+        )
 
     return render_template(
         "beta/workspace.html",

@@ -39,142 +39,41 @@
     }
 }
 
-.disclaimer-card {
-    background: var(--bg-secondary);
-    border: 2px solid #ffc107;
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.disclaimer-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #ffc107;
-    margin-bottom: 1rem;
-}
-
-.disclaimer-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.disclaimer-list li {
-    padding: 0.5rem 0;
-    padding-left: 1.5rem;
-    position: relative;
-}
-
-.disclaimer-list li:before {
-    content: "⚠️";
-    position: absolute;
-    left: 0;
-}
-
-.beta-feature-card {
+.empty-state-card {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
     border-radius: 16px;
-    padding: 2rem;
-    transition: all 0.3s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
+    padding: 3rem 2rem;
+    text-align: center;
 }
 
-.beta-feature-card:hover {
-    border-color: var(--accent-primary);
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-}
-
-.beta-feature-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
+.empty-state-icon {
+    font-size: 4rem;
+    color: var(--text-secondary);
     margin-bottom: 1.5rem;
+    opacity: 0.5;
 }
 
-.beta-feature-title {
+.empty-state-title {
     font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 1rem;
     color: var(--text-primary);
 }
 
-.beta-feature-desc {
+.empty-state-desc {
     font-size: 1rem;
     color: var(--text-secondary);
-    margin-bottom: 1.5rem;
-    flex-grow: 1;
-}
-
-.beta-feature-status {
-    display: inline-block;
-    padding: 0.375rem 0.75rem;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    margin-bottom: 1rem;
-}
-
-.status-new {
-    background: rgba(40, 167, 69, 0.1);
-    color: #28a745;
-}
-
-.status-experimental {
-    background: rgba(255, 193, 7, 0.1);
-    color: #ffc107;
-}
-
-.beta-feature-btn {
-    width: 100%;
-    padding: 0.875rem;
-    border-radius: 12px;
-    font-weight: 600;
-    font-size: 1.05rem;
-    transition: all 0.2s ease;
-}
-
-@media (max-width: 767px) {
-    .beta-feature-card {
-        padding: 1.5rem;
-    }
-    .beta-feature-btn {
-        min-height: 48px;
-    }
-}
-
-.feedback-card {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    border: 2px solid rgba(102, 126, 234, 0.3);
-    border-radius: 16px;
-    padding: 2rem;
-    text-align: center;
-}
-
-.feedback-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-}
-
-.feedback-desc {
-    font-size: 1rem;
-    color: var(--text-secondary);
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="max-width: 1200px;">
+<div class="container-fluid" style="max-width: 1000px;">
 
     <!-- Beta Hero -->
     <div class="beta-hero">
@@ -182,83 +81,23 @@
             <i class="bi bi-flask me-2"></i> Beta Testing Program
         </div>
         <div class="beta-hero-desc">
-            You're part of our beta testing program! Try new features before they're released to everyone.
+            This space is reserved for testing new features before they're released to everyone.
         </div>
     </div>
 
-    <!-- Disclaimer -->
-    <div class="disclaimer-card">
-        <div class="disclaimer-title">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> Important Information
+    <!-- Empty State -->
+    <div class="empty-state-card">
+        <div class="empty-state-icon">
+            <i class="bi bi-inbox"></i>
         </div>
-        <ul class="disclaimer-list">
-            <li><strong>Experimental Features:</strong> Beta features are under active development and may have bugs or change without notice.</li>
-            <li><strong>Your Feedback Matters:</strong> We rely on your testing to improve these features before wide release.</li>
-            <li><strong>No Impact on Regular Work:</strong> Beta features are separate - you can continue using the regular app normally.</li>
-            <li><strong>Report Issues:</strong> If you find bugs or have suggestions, please let us know!</li>
-        </ul>
-    </div>
-
-    <!-- Beta Features -->
-    <h2 class="mb-4" style="font-size: 1.75rem; font-weight: 700;">
-        <i class="bi bi-rocket-takeoff me-2" style="color: var(--accent-primary);"></i>
-        Available Beta Features
-    </h2>
-
-    <div class="row g-4 mb-5">
-        <!-- Beta Dashboard -->
-        <div class="col-lg-6">
-            <div class="beta-feature-card">
-                <div class="beta-feature-icon" style="background: rgba(102, 126, 234, 0.1);">
-                    <i class="bi bi-speedometer2" style="color: #667eea;"></i>
-                </div>
-                <span class="beta-feature-status status-new">
-                    <i class="bi bi-stars"></i> New
-                </span>
-                <div class="beta-feature-title">Responsive Dashboard</div>
-                <div class="beta-feature-desc">
-                    Fully responsive dashboard optimized for both desktop and mobile devices. Features adaptive layouts,
-                    touch-friendly buttons, and streamlined navigation that works perfectly on any screen size.
-                </div>
-                <a href="{{ url_for('beta.dashboard') }}" class="btn btn-primary beta-feature-btn">
-                    <i class="bi bi-arrow-right-circle me-2"></i> Try Beta Dashboard
-                </a>
-            </div>
+        <div class="empty-state-title">
+            No Beta Features Available
         </div>
-
-        <!-- Beta Workspace -->
-        <div class="col-lg-6">
-            <div class="beta-feature-card">
-                <div class="beta-feature-icon" style="background: rgba(118, 75, 162, 0.1);">
-                    <i class="bi bi-grid-3x3-gap" style="color: #764ba2;"></i>
-                </div>
-                <span class="beta-feature-status status-experimental">
-                    <i class="bi bi-flask"></i> Experimental
-                </span>
-                <div class="beta-feature-title">Mobile-Optimized Workspace</div>
-                <div class="beta-feature-desc">
-                    Card-based workspace with drill-down navigation optimized for mobile devices.
-                    Explore spaces, challenges, initiatives, and systems with an intuitive touch interface.
-                </div>
-                <a href="{{ url_for('beta.workspace') }}" class="btn btn-primary beta-feature-btn">
-                    <i class="bi bi-arrow-right-circle me-2"></i> Try Beta Workspace
-                </a>
-            </div>
+        <div class="empty-state-desc">
+            There are currently no beta features to test. Check back later or contact your administrator for more information about upcoming features.
         </div>
-    </div>
-
-    <!-- Feedback Section -->
-    <div class="feedback-card">
-        <div class="feedback-title">
-            <i class="bi bi-chat-heart me-2" style="color: #667eea;"></i>
-            We Value Your Feedback
-        </div>
-        <div class="feedback-desc">
-            Your testing and feedback help us build better features. Found a bug? Have a suggestion?
-            Let your administrator know so we can continue improving the platform.
-        </div>
-        <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-lg btn-outline-primary">
-            <i class="bi bi-arrow-left-circle me-2"></i> Back to Regular Dashboard
+        <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-lg btn-primary">
+            <i class="bi bi-arrow-left-circle me-2"></i> Back to Dashboard
         </a>
     </div>
 

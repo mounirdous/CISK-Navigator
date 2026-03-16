@@ -44,6 +44,7 @@ def index():
     sso_config = SSOConfig.get_instance()
     sso_enabled = sso_config and sso_config.is_enabled
     maintenance_mode = SystemSetting.is_maintenance_mode()
+    beta_enabled = SystemSetting.is_beta_enabled()
 
     return render_template(
         "super_admin/index.html",
@@ -53,6 +54,7 @@ def index():
         global_admins=global_admins,
         sso_enabled=sso_enabled,
         maintenance_mode=maintenance_mode,
+        beta_enabled=beta_enabled,
     )
 
 
@@ -179,6 +181,28 @@ def toggle_maintenance():
         flash(f"Error toggling maintenance mode: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.maintenance_settings"))
+
+
+@bp.route("/settings/beta/toggle", methods=["POST"])
+@super_admin_required
+def toggle_beta():
+    """Toggle beta testing program"""
+    current_state = SystemSetting.is_beta_enabled()
+    new_state = not current_state
+
+    try:
+        SystemSetting.set_value("beta_enabled", str(new_state).lower(), current_user.id)
+        db.session.commit()
+
+        if new_state:
+            flash("Beta testing program ENABLED - Beta menu will appear for beta testers", "success")
+        else:
+            flash("Beta testing program DISABLED - Beta menu hidden from all users", "warning")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error toggling beta: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.index"))
 
 
 @bp.route("/users")

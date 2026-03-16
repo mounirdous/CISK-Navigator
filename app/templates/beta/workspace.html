@@ -1,6 +1,16 @@
-{% extends "beta/base_beta.html" %}
+{% extends "base.html" %}
 
 {% block title %}Workspace (Beta) - {{ org_name }}{% endblock %}
+
+{% block before_content %}
+<!-- Beta Testing Banner -->
+<div class="beta-banner" style="background: linear-gradient(135deg, #ff6b6b, #ee5a6f); color: white; padding: 0.5rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; margin: -1rem -1rem 1rem -1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+    🧪 BETA TESTING - Mobile Prototype
+    <a href="{{ url_for('beta.index') }}" style="color: white; text-decoration: underline; margin-left: 1rem; font-size: 0.9rem;">
+        ← Back to Beta
+    </a>
+</div>
+{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/comments.css') }}">
