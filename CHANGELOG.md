@@ -5,6 +5,86 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.2] - 2026-03-16
+
+### Added - Enhanced Search API Endpoint (Phase 2)
+**Feature**: REST API endpoint exposing the SearchService with enhanced results
+
+**Files Modified**:
+- `app/routes/workspace.py` - Added `/api/search/advanced` endpoint (POST)
+
+**New API Endpoint**: `/api/search/advanced`
+- **Method**: POST
+- **Authentication**: Requires login + organization context
+- **Request Body** (JSON):
+  ```json
+  {
+    "query": "search text or operators",
+    "filters": {
+      "entity_types": ["kpis", "systems", "initiatives", "challenges", "spaces"],
+      "date_range": "last_week",
+      "status": ["at_risk", "incomplete"]
+    }
+  }
+  ```
+
+- **Response Body** (JSON):
+  ```json
+  {
+    "kpis": [{id, name, description, system_name, initiative_name, match_score, url, edit_url, icon, logo, ...}],
+    "systems": [{id, name, description, match_score, url, edit_url, icon, logo, ...}],
+    "initiatives": [{id, name, description, impact_on_challenge, match_score, url, edit_url, icon, logo, ...}],
+    "challenges": [{id, name, description, space_name, match_score, url, edit_url, icon, logo, ...}],
+    "spaces": [{id, name, description, match_score, url, edit_url, icon, logo, ...}],
+    "query_info": {
+      "original_query": "...",
+      "parsed_query": "...",
+      "modifiers": [...],
+      "operators": {...}
+    },
+    "total_results": 42
+  }
+  ```
+
+**Key Features**:
+1. **Enhanced Results** - Adds URLs, edit links, icons, and logos to search results
+2. **Entity Defaults Integration** - Fetches organization-specific branding
+3. **Navigation URLs** - Each result includes:
+   - `url` - Link to view entity in workspace (with KPI highlight if applicable)
+   - `edit_url` - Link to edit entity in admin panel
+   - `icon` - Entity type icon (text or emoji)
+   - `logo` - Base64-encoded logo image (if configured)
+
+4. **Total Results Count** - Aggregated count across all entity types
+5. **Organization Scoping** - Results automatically filtered to current organization
+
+**Integration Points**:
+- Uses `SearchService.search_all()` for core search logic
+- Uses `EntityTypeDefault` model for branding
+- Uses `url_for()` to generate consistent URLs
+- Uses workspace routes: `workspace.index`, `organization_admin.edit_*`
+
+**Error Handling**:
+- Returns 400 if query parameter missing
+- Returns empty results for queries < 2 characters
+- Handles missing entity defaults gracefully
+
+**Architecture Notes**:
+- Endpoint separates concerns: SearchService does search, endpoint handles URLs/branding
+- RESTful design: POST for complex query with filters
+- JSON-only API (no HTML rendering)
+- Consistent with existing `/api/search/live` endpoint pattern
+
+**Testing**:
+```bash
+# Example cURL test
+curl -X POST http://localhost:5003/api/search/advanced \
+  -H "Content-Type: application/json" \
+  -d '{"query": "inventory @risk", "filters": {"entity_types": ["kpis", "systems"]}}'
+```
+
+**Next Phase**: Frontend UI to consume this API (v2.5.3)
+
 ## [2.5.1] - 2026-03-16
 
 ### Added - Enhanced Search Backend (Phase 1)

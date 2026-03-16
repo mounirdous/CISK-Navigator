@@ -43,6 +43,7 @@ from app.models import (
 )
 from app.services import AggregationService, ConsensusService, ExcelExportService
 from app.services.comment_service import CommentService
+from app.services.search_service import SearchService
 from app.services.snapshot_pivot_service import SnapshotPivotService
 from app.services.snapshot_service import SnapshotService
 
@@ -2333,6 +2334,101 @@ def live_search():
         )
 
     return jsonify({"results": results, "total": len(results)})
+
+
+@bp.route("/api/search/advanced", methods=["POST"])
+@login_required
+@organization_required
+def advanced_search():
+    """
+    Advanced search API endpoint with fuzzy matching, query parsing, and filters.
+
+    Accepts JSON POST body:
+    {
+        "query": "search text",
+        "filters": {
+            "entity_types": ["kpis", "systems", "initiatives", "challenges", "spaces"],
+            "date_range": "last_week",
+            "status": ["at_risk", "incomplete"],
+            ... (additional filters)
+        }
+    }
+
+    Returns JSON with categorized results and query info.
+    """
+    org_id = session.get("organization_id")
+    data = request.get_json()
+
+    if not data or "query" not in data:
+        return jsonify({"error": "Query parameter required"}), 400
+
+    query = data.get("query", "").strip()
+    filters = data.get("filters", {})
+
+    if not query or len(query) < 2:
+        return jsonify(SearchService._empty_results())
+
+    # Execute search using SearchService
+    results = SearchService.search_all(query, filters, org_id)
+
+    # Enhance results with URLs and entity defaults
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
+    # Add URLs and icons to results
+    for kpi_result in results.get("kpis", []):
+        kpi_result["url"] = url_for("workspace.index", kpi_id=kpi_result["id"])
+        kpi_result["edit_url"] = url_for("organization_admin.edit_kpi", kpi_id=kpi_result["id"])
+        kpi_result["icon"] = entity_defaults.get("kpi", {}).get("icon", "Ψ")
+        kpi_result["logo"] = entity_defaults.get("kpi", {}).get("logo")
+
+    for system_result in results.get("systems", []):
+        system_result["url"] = url_for("workspace.index", _anchor=f"system-{system_result['id']}")
+        system_result["edit_url"] = url_for("organization_admin.edit_system", system_id=system_result["id"])
+        system_result["icon"] = entity_defaults.get("system", {}).get("icon", "Φ")
+        system_result["logo"] = entity_defaults.get("system", {}).get("logo")
+
+    for initiative_result in results.get("initiatives", []):
+        initiative_result["url"] = url_for("workspace.index", _anchor=f"initiative-{initiative_result['id']}")
+        initiative_result["edit_url"] = url_for(
+            "organization_admin.edit_initiative", initiative_id=initiative_result["id"]
+        )
+        initiative_result["icon"] = entity_defaults.get("initiative", {}).get("icon", "δ")
+        initiative_result["logo"] = entity_defaults.get("initiative", {}).get("logo")
+
+    for challenge_result in results.get("challenges", []):
+        challenge_result["url"] = url_for("workspace.index", _anchor=f"challenge-{challenge_result['id']}")
+        challenge_result["edit_url"] = url_for("organization_admin.edit_challenge", challenge_id=challenge_result["id"])
+        challenge_result["icon"] = entity_defaults.get("challenge", {}).get("icon", "ƒ")
+        challenge_result["logo"] = entity_defaults.get("challenge", {}).get("logo")
+
+    for space_result in results.get("spaces", []):
+        space_result["url"] = url_for("workspace.index", _anchor=f"space-{space_result['id']}")
+        space_result["edit_url"] = url_for("organization_admin.edit_space", space_id=space_result["id"])
+        space_result["icon"] = entity_defaults.get("space", {}).get("icon", "🏢")
+        space_result["logo"] = entity_defaults.get("space", {}).get("logo")
+
+    # Calculate totals
+    total_results = (
+        len(results.get("kpis", []))
+        + len(results.get("systems", []))
+        + len(results.get("initiatives", []))
+        + len(results.get("challenges", []))
+        + len(results.get("spaces", []))
+    )
+
+    results["total_results"] = total_results
+
+    return jsonify(results)
 
 
 @bp.route("/api/kpi/<int:kpi_id>/status")
