@@ -231,43 +231,50 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for kpi in all_kpis:
+            # Fuzzy match logic
             match_score = 0
+            if query:  # If there's a text query, check fuzzy match
+                # Check name
+                if SearchService.fuzzy_match(kpi.name, query):
+                    match_score += 2
 
-            # Check name
-            if SearchService.fuzzy_match(kpi.name, query):
-                match_score += 2
-
-            # Check description
-            if kpi.description and SearchService.fuzzy_match(kpi.description, query):
-                match_score += 1
-
-            # Check system name
-            if kpi.initiative_system_link and kpi.initiative_system_link.system:
-                system_name = kpi.initiative_system_link.system.name
-                if SearchService.fuzzy_match(system_name, query):
+                # Check description
+                if kpi.description and SearchService.fuzzy_match(kpi.description, query):
                     match_score += 1
 
-            if match_score > 0:
-                results.append(
-                    {
-                        "id": kpi.id,
-                        "name": kpi.name,
-                        "description": kpi.description,
-                        "system_name": (
-                            kpi.initiative_system_link.system.name
-                            if kpi.initiative_system_link and kpi.initiative_system_link.system
-                            else None
-                        ),
-                        "initiative_name": (
-                            kpi.initiative_system_link.initiative.name
-                            if kpi.initiative_system_link and kpi.initiative_system_link.initiative
-                            else None
-                        ),
-                        "match_score": match_score,
-                        "is_archived": kpi.is_archived,
-                        "updated_at": kpi.updated_at.isoformat() if kpi.updated_at else None,
-                    }
-                )
+                # Check system name
+                if kpi.initiative_system_link and kpi.initiative_system_link.system:
+                    system_name = kpi.initiative_system_link.system.name
+                    if SearchService.fuzzy_match(system_name, query):
+                        match_score += 1
+
+                # Skip if no fuzzy match
+                if match_score == 0:
+                    continue
+            else:
+                # Modifier-only search - include all that passed modifier filters
+                match_score = 1
+
+            results.append(
+                {
+                    "id": kpi.id,
+                    "name": kpi.name,
+                    "description": kpi.description,
+                    "system_name": (
+                        kpi.initiative_system_link.system.name
+                        if kpi.initiative_system_link and kpi.initiative_system_link.system
+                        else None
+                    ),
+                    "initiative_name": (
+                        kpi.initiative_system_link.initiative.name
+                        if kpi.initiative_system_link and kpi.initiative_system_link.initiative
+                        else None
+                    ),
+                    "match_score": match_score,
+                    "is_archived": kpi.is_archived,
+                    "updated_at": kpi.updated_at.isoformat() if kpi.updated_at else None,
+                }
+            )
 
         # Sort by match score
         results.sort(key=lambda x: x["match_score"], reverse=True)
@@ -306,24 +313,31 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for system in all_systems:
+            # Fuzzy match logic
             match_score = 0
+            if query:  # If there's a text query, check fuzzy match
+                if SearchService.fuzzy_match(system.name, query):
+                    match_score += 2
 
-            if SearchService.fuzzy_match(system.name, query):
-                match_score += 2
+                if system.description and SearchService.fuzzy_match(system.description, query):
+                    match_score += 1
 
-            if system.description and SearchService.fuzzy_match(system.description, query):
-                match_score += 1
+                # Skip if no fuzzy match
+                if match_score == 0:
+                    continue
+            else:
+                # Modifier-only search - include all systems
+                match_score = 1
 
-            if match_score > 0:
-                results.append(
-                    {
-                        "id": system.id,
-                        "name": system.name,
-                        "description": system.description,
-                        "match_score": match_score,
-                        "updated_at": system.updated_at.isoformat() if system.updated_at else None,
-                    }
-                )
+            results.append(
+                {
+                    "id": system.id,
+                    "name": system.name,
+                    "description": system.description,
+                    "match_score": match_score,
+                    "updated_at": system.updated_at.isoformat() if system.updated_at else None,
+                }
+            )
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
         return results
@@ -355,28 +369,48 @@ class SearchService:
 
         all_initiatives = base_query.all()
 
-        # Filter by fuzzy match
+        # Filter by fuzzy match and modifiers
         results = []
         for initiative in all_initiatives:
+            # Check incomplete modifier
+            if "incomplete" in modifiers:
+                filled, total, status = initiative.get_form_completion()
+                if status == "complete":
+                    continue  # Skip complete initiatives when searching for incomplete
+
+            # Fuzzy match logic
             match_score = 0
+            if query:  # If there's a text query, check fuzzy match
+                if SearchService.fuzzy_match(initiative.name, query):
+                    match_score += 2
 
-            if SearchService.fuzzy_match(initiative.name, query):
-                match_score += 2
+                if initiative.description and SearchService.fuzzy_match(initiative.description, query):
+                    match_score += 1
 
-            if initiative.description and SearchService.fuzzy_match(initiative.description, query):
-                match_score += 1
+                # Skip if no fuzzy match
+                if match_score == 0:
+                    continue
+            else:
+                # Modifier-only search (no text query) - include all that passed modifier filters
+                match_score = 1
 
-            if match_score > 0:
-                results.append(
-                    {
-                        "id": initiative.id,
-                        "name": initiative.name,
-                        "description": initiative.description,
-                        "impact_on_challenge": initiative.impact_on_challenge,
-                        "match_score": match_score,
-                        "updated_at": initiative.updated_at.isoformat() if initiative.updated_at else None,
-                    }
-                )
+            # Include in results
+            result_dict = {
+                "id": initiative.id,
+                "name": initiative.name,
+                "description": initiative.description,
+                "impact_on_challenge": initiative.impact_on_challenge,
+                "match_score": match_score,
+                "updated_at": initiative.updated_at.isoformat() if initiative.updated_at else None,
+            }
+
+            # Add completion info if @incomplete modifier
+            if "incomplete" in modifiers:
+                filled, total, status = initiative.get_form_completion()
+                result_dict["completion_status"] = f"{filled}/{total} fields"
+                result_dict["completion_percent"] = int((filled / total) * 100) if total > 0 else 0
+
+            results.append(result_dict)
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
         return results
@@ -405,25 +439,32 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for challenge in all_challenges:
+            # Fuzzy match logic
             match_score = 0
+            if query:  # If there's a text query, check fuzzy match
+                if SearchService.fuzzy_match(challenge.name, query):
+                    match_score += 2
 
-            if SearchService.fuzzy_match(challenge.name, query):
-                match_score += 2
+                if challenge.description and SearchService.fuzzy_match(challenge.description, query):
+                    match_score += 1
 
-            if challenge.description and SearchService.fuzzy_match(challenge.description, query):
-                match_score += 1
+                # Skip if no fuzzy match
+                if match_score == 0:
+                    continue
+            else:
+                # Modifier-only search - include all challenges
+                match_score = 1
 
-            if match_score > 0:
-                results.append(
-                    {
-                        "id": challenge.id,
-                        "name": challenge.name,
-                        "description": challenge.description,
-                        "space_name": challenge.space.name if challenge.space else None,
-                        "match_score": match_score,
-                        "updated_at": challenge.updated_at.isoformat() if challenge.updated_at else None,
-                    }
-                )
+            results.append(
+                {
+                    "id": challenge.id,
+                    "name": challenge.name,
+                    "description": challenge.description,
+                    "space_name": challenge.space.name if challenge.space else None,
+                    "match_score": match_score,
+                    "updated_at": challenge.updated_at.isoformat() if challenge.updated_at else None,
+                }
+            )
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
         return results
@@ -442,32 +483,53 @@ class SearchService:
             list: Matching Space records
         """
         query = parsed["clean_query"]
+        modifiers = parsed["modifiers"]
 
         # Get all spaces for organization
         # Note: Space model doesn't have is_archived field
         all_spaces = db.session.query(Space).filter(Space.organization_id == organization_id).all()
 
-        # Filter by fuzzy match
+        # Filter by modifiers and fuzzy match
         results = []
         for space in all_spaces:
+            # Check incomplete modifier (spaces without complete SWOT)
+            if "incomplete" in modifiers:
+                filled, total, status = space.get_swot_completion()
+                if status == "complete":
+                    continue  # Skip complete spaces when searching for incomplete
+
+            # Fuzzy match logic
             match_score = 0
+            if query:  # If there's a text query, check fuzzy match
+                if SearchService.fuzzy_match(space.name, query):
+                    match_score += 2
 
-            if SearchService.fuzzy_match(space.name, query):
-                match_score += 2
+                if space.description and SearchService.fuzzy_match(space.description, query):
+                    match_score += 1
 
-            if space.description and SearchService.fuzzy_match(space.description, query):
-                match_score += 1
+                # Skip if no fuzzy match
+                if match_score == 0:
+                    continue
+            else:
+                # Modifier-only search - include all that passed modifier filters
+                match_score = 1
 
-            if match_score > 0:
-                results.append(
-                    {
-                        "id": space.id,
-                        "name": space.name,
-                        "description": space.description,
-                        "match_score": match_score,
-                        "updated_at": space.updated_at.isoformat() if space.updated_at else None,
-                    }
-                )
+            # Include in results
+            result_dict = {
+                "id": space.id,
+                "name": space.name,
+                "description": space.description,
+                "match_score": match_score,
+                "updated_at": space.updated_at.isoformat() if space.updated_at else None,
+            }
+
+            # Add completion info if @incomplete modifier
+            if "incomplete" in modifiers:
+                filled, total, status = space.get_swot_completion()
+                result_dict["completion_status"] = f"{filled}/{total} SWOT fields"
+                result_dict["completion_percent"] = int((filled / total) * 100) if total > 0 else 0
+
+            results.append(result_dict)
 
         results.sort(key=lambda x: x["match_score"], reverse=True)
         return results

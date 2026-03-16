@@ -5,6 +5,122 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.16] - 2026-03-16
+
+### Fixed - Search Modifiers Now Fully Functional
+**Issue**: Search modifiers (@incomplete, @no_consensus) were being parsed but not actually filtering results
+
+**Root Cause**:
+- Modifiers were extracted from query string ✓
+- But empty query (modifier-only search like "@incomplete") had match_score = 0
+- Results with match_score = 0 were filtered out
+- Result: No results returned for modifier-only searches
+
+**The Fix**: Implemented proper modifier filtering across all entity types
+
+**Changes Made**:
+
+1. **@incomplete Modifier** - Now works for Initiatives and Spaces:
+   - **Initiatives**: Checks `get_form_completion()` method
+     - Filters out initiatives with `status == "complete"`
+     - Includes initiatives with `status == "empty"` or `"partial"`
+     - Returns completion info: "2/8 fields", completion_percent
+   - **Spaces**: Checks `get_swot_completion()` method
+     - Filters out spaces with complete SWOT analysis
+     - Includes spaces with incomplete/empty SWOT
+     - Returns completion info: "0/4 SWOT fields", completion_percent
+
+2. **@no_consensus Modifier** - Now works for Initiatives:
+   - Filters `Initiative.impact_on_challenge == "no_consensus"`
+   - Already implemented, but wasn't returning results due to fuzzy match issue
+   - Now returns all matching initiatives even without text query
+
+3. **@archived Modifier** - Already worked for KPIs:
+   - Filters `KPI.is_archived == True` (or False by default)
+   - No changes needed
+
+4. **Modifier-Only Search Logic** - Fixed for all entity types:
+   - **Before**: `@incomplete` → query = "", match_score = 0 → filtered out
+   - **After**: `@incomplete` → query = "", match_score = 1 → included
+   - Pattern applied to: KPIs, Systems, Initiatives, Challenges, Spaces
+
+5. **Combined Search** - Query + Modifier works:
+   - Example: "ERP @incomplete"
+   - First applies fuzzy match on "ERP"
+   - Then filters by @incomplete modifier
+   - Returns only incomplete items matching "ERP"
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Updated `search_initiatives()` - Added @incomplete filter with form completion check
+  - Updated `search_spaces()` - Added @incomplete filter with SWOT completion check
+  - Updated `search_kpis()` - Fixed modifier-only search logic
+  - Updated `search_systems()` - Fixed modifier-only search logic
+  - Updated `search_challenges()` - Fixed modifier-only search logic
+- `app/__init__.py` - Version bump to 2.5.16
+
+**Technical Implementation**:
+
+```python
+# Pattern applied to all search functions:
+if query:
+    # Text search: apply fuzzy matching
+    if fuzzy_match(name, query):
+        match_score += 2
+    if match_score == 0:
+        continue  # Skip non-matches
+else:
+    # Modifier-only: include all that passed modifier filters
+    match_score = 1
+
+# For @incomplete on initiatives:
+if "incomplete" in modifiers:
+    filled, total, status = initiative.get_form_completion()
+    if status == "complete":
+        continue  # Skip complete items
+```
+
+**Testing Results**:
+```
+Test 1: @no_consensus
+✓ Found 1 initiative: "Engage with leaders"
+
+Test 2: @incomplete
+✓ Found 6 incomplete initiatives
+✓ Found 4 incomplete spaces (missing SWOT)
+✓ Completion info shown: "1/8 fields", "0/4 SWOT fields"
+
+Test 3: "ERP @no_consensus"
+✓ Combined search works (0 results = correct, no ERP items lack consensus)
+```
+
+**What Now Works**:
+- `@incomplete` → Returns all incomplete initiatives + spaces
+- `@no_consensus` → Returns all initiatives without consensus
+- `@archived` → Returns all archived KPIs (was already working)
+- `"text @modifier"` → Combined fuzzy search + modifier filter
+- Empty results display when appropriate (not errors)
+
+**What's Still NOT Implemented** (never was):
+- `@risk` modifier - No "at_risk" field exists in any model
+  - Would need database schema change to add risk tracking
+  - Currently not a database field, only UI concept
+
+**Impact**:
+- **User-Facing**: Search modifiers now actually work! 🎉
+- Users can find incomplete items: `@incomplete`
+- Users can find no-consensus initiatives: `@no_consensus`
+- Matches Action Items page data (29 items)
+- Modifier hints in search bar are now functional
+
+**User Experience**:
+- Type `@incomplete` → See all incomplete initiatives and spaces
+- Type `@no_consensus` → See all initiatives needing decision
+- Combine with text: `"ERP @incomplete"` → Specific filtering
+- Results show completion info when using @incomplete
+
+---
+
 ## [2.5.15.1] - 2026-03-16
 
 ### Fixed - CSRF Token Undefined Error in Search Page
