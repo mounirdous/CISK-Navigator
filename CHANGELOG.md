@@ -49,10 +49,12 @@ Complete mobile-responsive overhaul of the Geographic KPI Distribution map view.
 
 ### Fixed
 - **🐛 Map initialization on small screens**: Fixed KPI loading failure on mobile devices
-  - Corrected CSS `order` property applied to wrong element (`.map-container` instead of `#map`)
-  - Added explicit height to `.map-container` on mobile (was flex: 1 with height: auto parent)
-  - Changed `#map` from absolute to relative positioning on mobile for proper height calculation
-  - Prevents map container from having 0 height which caused Mapbox initialization failures
+  - Root cause: `.map-container` had no explicit height on mobile (relied on flex: 1 with parent height: auto)
+  - Without a defined container height, Mapbox failed to initialize properly
+  - Solution: Added explicit `height: 50vh` to `.map-container` on mobile
+  - Added `position: relative` to `.map-container` (parent for absolute positioned `#map`)
+  - Kept `#map` as `position: absolute` (required by Mapbox for proper rendering)
+  - Moved CSS `order` property to `.map-container` for correct flex ordering
 
 ### Technical
 - **Breakpoints**:
