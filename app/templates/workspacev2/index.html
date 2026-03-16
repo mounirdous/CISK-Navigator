@@ -55,30 +55,79 @@
         margin-left: 1rem;
     }
 
-    /* Filters Bar */
-    .ws-filters {
+    /* Filters Panel */
+    .ws-filters-container {
         background: white;
         border-bottom: 2px solid var(--border-color);
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .ws-filters-toggle {
         padding: 1rem 1.5rem;
         display: flex;
-        gap: 1.5rem;
+        justify-content: space-between;
         align-items: center;
-        overflow-x: auto;
-        flex-shrink: 0;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        cursor: pointer;
+        transition: background 0.2s;
     }
 
-    .filter-group {
+    .ws-filters-toggle:hover {
+        background: #f8f9fa;
+    }
+
+    .filter-active-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.2rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .ws-filters-content {
+        border-top: 1px solid #e9ecef;
+        padding: 1.5rem;
+        background: #fafbfc;
+    }
+
+    .filter-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-section:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .filter-section-header {
         display: flex;
-        gap: 0.75rem;
         align-items: center;
+        gap: 0.5rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #495057;
+        margin-bottom: 1rem;
     }
 
-    .filter-label {
+    .filter-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.75rem 0;
+    }
+
+    .filter-row-label {
         font-weight: 600;
         font-size: 0.9rem;
         color: #495057;
-        white-space: nowrap;
+        min-width: 120px;
+    }
+
+    .filter-pills-group {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
     }
 
     .filter-pill {
@@ -113,6 +162,155 @@
     .filter-pill.active:hover {
         transform: translateY(-1px);
         box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    }
+
+    .filter-presets {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .filter-preset-card {
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.2s;
+    }
+
+    .filter-preset-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
+    }
+
+    .preset-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+
+    .preset-description {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    .btn-preset-action {
+        padding: 0.4rem 0.9rem;
+        border-radius: 8px;
+        border: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .btn-load {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .btn-load:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .btn-delete {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-delete:hover {
+        background: #c82333;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    /* Modal */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow: auto;
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h5 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-close-modal {
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        color: #6c757d;
+        cursor: pointer;
+        padding: 0.25rem;
+        transition: color 0.2s;
+    }
+
+    .btn-close-modal:hover {
+        color: #000;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+
+    [x-cloak] {
+        display: none !important;
     }
 
     /* Grid Container */
@@ -439,7 +637,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="workspace-v2" x-data="workspaceV2({{ org_id }})" x-init="loadData()">
+<div class="workspace-v2" x-data="workspaceV2({{ org_id }})" x-init="init(); loadData()">
     <!-- Header -->
     <div class="ws-header">
         <div style="display: flex; align-items: center;">
@@ -466,39 +664,135 @@
         </div>
     </div>
 
-    <!-- Filters Bar -->
-    <div class="ws-filters">
-        <!-- Space Type Filter -->
-        <div class="filter-group">
-            <i class="bi bi-funnel" style="color: #667eea;"></i>
-            <span class="filter-label">Space Type:</span>
-            <button @click="spaceTypeFilter = 'all'"
-                    class="filter-pill"
-                    :class="{'active': spaceTypeFilter === 'all'}">
-                <i class="bi bi-globe"></i> All
-                <span x-text="`(${spaces.length})`"></span>
-            </button>
-            <button @click="spaceTypeFilter = 'public'"
-                    class="filter-pill"
-                    :class="{'active': spaceTypeFilter === 'public'}">
-                <i class="bi bi-unlock"></i> Public
-                <span x-text="`(${spaces.filter(s => !s.is_private).length})`"></span>
-            </button>
-            <button @click="spaceTypeFilter = 'private'"
-                    class="filter-pill"
-                    :class="{'active': spaceTypeFilter === 'private'}">
-                <i class="bi bi-lock"></i> Private
-                <span x-text="`(${spaces.filter(s => s.is_private).length})`"></span>
-            </button>
+    <!-- Filters Panel -->
+    <div class="ws-filters-container">
+        <!-- Filter Toggle Bar -->
+        <div class="ws-filters-toggle" @click="filtersExpanded = !filtersExpanded">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <i class="bi bi-funnel-fill" style="color: #667eea; font-size: 1.1rem;"></i>
+                <span style="font-weight: 600; font-size: 0.95rem;">Filters & Presets</span>
+                <span x-show="hasActiveFilters" class="filter-active-badge">Active</span>
+            </div>
+            <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #667eea;"></i>
         </div>
 
-        <!-- Clear Filters -->
-        <button x-show="spaceTypeFilter !== 'all'"
-                @click="clearAllFilters()"
-                class="btn btn-sm btn-outline-danger"
-                style="margin-left: auto;">
-            <i class="bi bi-x-circle"></i> Clear Filters
-        </button>
+        <!-- Expandable Filter Content -->
+        <div x-show="filtersExpanded"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform -translate-y-2"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 transform translate-y-0"
+             x-transition:leave-end="opacity-0 transform -translate-y-2"
+             class="ws-filters-content">
+
+            <!-- Saved Filter Presets -->
+            <div x-show="savedPresets.length > 0" class="filter-section">
+                <div class="filter-section-header">
+                    <i class="bi bi-bookmark-star"></i>
+                    <span>Saved Presets</span>
+                </div>
+                <div class="filter-presets">
+                    <template x-for="preset in savedPresets" :key="preset.id">
+                        <div class="filter-preset-card">
+                            <div style="flex: 1;">
+                                <div class="preset-name" x-text="preset.name"></div>
+                                <div class="preset-description" x-text="getPresetDescription(preset)"></div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button @click="loadPreset(preset)" class="btn-preset-action btn-load">
+                                    <i class="bi bi-upload"></i> Load
+                                </button>
+                                <button @click="deletePreset(preset.id)" class="btn-preset-action btn-delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- Active Filters -->
+            <div class="filter-section">
+                <div class="filter-section-header">
+                    <i class="bi bi-sliders"></i>
+                    <span>Active Filters</span>
+                </div>
+
+                <!-- Space Type Filter -->
+                <div class="filter-row">
+                    <span class="filter-row-label">Space Type:</span>
+                    <div class="filter-pills-group">
+                        <button @click="spaceTypeFilter = 'all'"
+                                class="filter-pill"
+                                :class="{'active': spaceTypeFilter === 'all'}">
+                            <i class="bi bi-globe"></i> All
+                            <span x-text="`(${spaces.length})`"></span>
+                        </button>
+                        <button @click="spaceTypeFilter = 'public'"
+                                class="filter-pill"
+                                :class="{'active': spaceTypeFilter === 'public'}">
+                            <i class="bi bi-unlock"></i> Public
+                            <span x-text="`(${spaces.filter(s => !s.is_private).length})`"></span>
+                        </button>
+                        <button @click="spaceTypeFilter = 'private'"
+                                class="filter-pill"
+                                :class="{'active': spaceTypeFilter === 'private'}">
+                            <i class="bi bi-lock"></i> Private
+                            <span x-text="`(${spaces.filter(s => s.is_private).length})`"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="filter-actions">
+                <button x-show="hasActiveFilters"
+                        @click="clearAllFilters()"
+                        class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-x-circle"></i> Clear All Filters
+                </button>
+                <button x-show="hasActiveFilters"
+                        @click="showSavePresetModal = true"
+                        class="btn btn-sm btn-success">
+                    <i class="bi bi-bookmark-plus"></i> Save as Preset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Preset Modal -->
+    <div x-show="showSavePresetModal"
+         x-cloak
+         @click.self="showSavePresetModal = false"
+         class="modal-overlay">
+        <div class="modal-content" @click.stop>
+            <div class="modal-header">
+                <h5><i class="bi bi-bookmark-plus"></i> Save Filter Preset</h5>
+                <button @click="showSavePresetModal = false" class="btn-close-modal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Preset Name</label>
+                <input type="text"
+                       x-model="newPresetName"
+                       @keydown.enter="saveCurrentPreset()"
+                       class="form-control"
+                       placeholder="e.g., My Public Spaces"
+                       autofocus>
+                <div class="mt-3" style="font-size: 0.9rem; color: #6c757d;">
+                    <strong>Current filters:</strong><br>
+                    <span x-text="getPresetDescription({filters: getCurrentFilters()})"></span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button @click="showSavePresetModal = false" class="btn btn-sm btn-secondary">Cancel</button>
+                <button @click="saveCurrentPreset()" class="btn btn-sm btn-success">
+                    <i class="bi bi-check-lg"></i> Save Preset
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Grid -->
@@ -742,11 +1036,17 @@ function workspaceV2(orgId) {
 
         // UI State
         loading: true,
+        filtersExpanded: false,
         spaceTypeFilter: 'all',
         editMode: false,
         draggedColumnIndex: null,
         draggedRow: null,
         dragOverRow: null,
+
+        // Filter Presets
+        savedPresets: [],
+        showSavePresetModal: false,
+        newPresetName: '',
 
         // Computed
         get filteredSpaces() {
@@ -826,6 +1126,92 @@ function workspaceV2(orgId) {
 
         clearAllFilters() {
             this.spaceTypeFilter = 'all';
+        },
+
+        // Filter Presets
+        init() {
+            // Load saved presets from localStorage
+            const saved = localStorage.getItem('workspacev2_filter_presets');
+            if (saved) {
+                try {
+                    this.savedPresets = JSON.parse(saved);
+                } catch (e) {
+                    console.error('Failed to load saved presets:', e);
+                    this.savedPresets = [];
+                }
+            }
+        },
+
+        getCurrentFilters() {
+            return {
+                spaceTypeFilter: this.spaceTypeFilter
+            };
+        },
+
+        getPresetDescription(preset) {
+            const filters = preset.filters;
+            const parts = [];
+
+            if (filters.spaceTypeFilter && filters.spaceTypeFilter !== 'all') {
+                parts.push(`Space Type: ${filters.spaceTypeFilter}`);
+            }
+
+            return parts.length > 0 ? parts.join(', ') : 'No filters applied';
+        },
+
+        saveCurrentPreset() {
+            if (!this.newPresetName.trim()) {
+                alert('Please enter a preset name');
+                return;
+            }
+
+            const preset = {
+                id: Date.now(),
+                name: this.newPresetName.trim(),
+                filters: this.getCurrentFilters(),
+                createdAt: new Date().toISOString()
+            };
+
+            this.savedPresets.push(preset);
+            this.savePresetsToStorage();
+
+            this.showSavePresetModal = false;
+            this.newPresetName = '';
+
+            // Show success message
+            alert(`Filter preset "${preset.name}" saved successfully!`);
+        },
+
+        loadPreset(preset) {
+            // Apply all filters from the preset
+            const filters = preset.filters;
+
+            if (filters.spaceTypeFilter) {
+                this.spaceTypeFilter = filters.spaceTypeFilter;
+            }
+
+            // Expand filters panel to show what was loaded
+            this.filtersExpanded = true;
+
+            console.log('Loaded preset:', preset.name);
+        },
+
+        deletePreset(presetId) {
+            if (!confirm('Delete this filter preset?')) {
+                return;
+            }
+
+            this.savedPresets = this.savedPresets.filter(p => p.id !== presetId);
+            this.savePresetsToStorage();
+        },
+
+        savePresetsToStorage() {
+            try {
+                localStorage.setItem('workspacev2_filter_presets', JSON.stringify(this.savedPresets));
+            } catch (e) {
+                console.error('Failed to save presets:', e);
+                alert('Failed to save presets to browser storage');
+            }
         },
 
         // Column drag and drop
