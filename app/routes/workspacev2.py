@@ -21,6 +21,7 @@ from app.models import (
     Initiative,
     InitiativeSystemLink,
     Space,
+    System,
     SystemSetting,
     ValueType,
 )
@@ -133,6 +134,28 @@ def get_data():
             return f"data:{entity.logo_mime_type};base64,{base64.b64encode(entity.logo_data).decode('utf-8')}"
         return default_logos.get(entity_type)
 
+    # Helper function to get entity links
+    from app.models import EntityLink
+
+    def get_entity_links(entity_type, entity_id):
+        """Get all links for a specific entity"""
+        links = (
+            EntityLink.query.filter_by(entity_type=entity_type, entity_id=entity_id)
+            .order_by(EntityLink.display_order)
+            .all()
+        )
+        result = []
+        for link in links:
+            result.append(
+                {
+                    "id": link.id,
+                    "title": link.title,
+                    "url": link.url,
+                    "icon": link.get_display_icon(),
+                }
+            )
+        return result
+
     # Build full hierarchical tree: Spaces → Challenges → Initiatives → Systems → KPIs
     spaces_data = []
     for space in spaces:
@@ -148,6 +171,17 @@ def get_data():
                     "color": rollup_data.get("color", "#6c757d"),
                 }
 
+        # Get space SWOT completion
+        swot_filled, swot_total, swot_status = space.get_swot_completion()
+        swot_completion = {
+            "filled": swot_filled,
+            "total": swot_total,
+            "status": swot_status,  # 'empty', 'partial', 'complete'
+        }
+
+        # Get space entity links
+        space_entity_links = get_entity_links("space", space.id)
+
         challenges_data = []
         for challenge in space.challenges:
             # Get challenge rollup values
@@ -161,6 +195,9 @@ def get_data():
                         "unit_label": vt.unit_label,
                         "color": rollup_data.get("color", "#6c757d"),
                     }
+
+            # Get challenge entity links
+            challenge_entity_links = get_entity_links("challenge", challenge.id)
 
             # Get initiatives under this challenge
             initiatives_data = []
@@ -179,6 +216,17 @@ def get_data():
                             "color": rollup_data.get("color", "#6c757d"),
                         }
 
+                # Get initiative form completion
+                form_filled, form_total, form_status = initiative.get_form_completion()
+                form_completion = {
+                    "filled": form_filled,
+                    "total": form_total,
+                    "status": form_status,  # 'empty', 'partial', 'complete'
+                }
+
+                # Get initiative entity links
+                initiative_entity_links = get_entity_links("initiative", initiative.id)
+
                 # Get systems under this initiative
                 systems_data = []
                 for sys_link in initiative.system_links:
@@ -196,12 +244,12 @@ def get_data():
                                 "color": rollup_data.get("color", "#6c757d"),
                             }
 
+                    # Get system entity links
+                    system_entity_links = get_entity_links("system", system.id)
+
                     # Get KPIs under this system
                     kpis_data = []
                     for kpi in sys_link.kpis:
-                        if kpi.is_archived:
-                            continue
-
                         # Get KPI values
                         kpi_values = {}
                         for vt in value_types:
@@ -217,6 +265,31 @@ def get_data():
                                         "color": config.get_value_color(consensus.get("value")),
                                     }
 
+                        # Get governance body info (full details for badges)
+                        governance_bodies_data = []
+                        for gb_link in kpi.governance_body_links:
+                            governance_bodies_data.append(
+                                {
+                                    "id": gb_link.governance_body.id,
+                                    "name": gb_link.governance_body.name,
+                                    "abbreviation": gb_link.governance_body.abbreviation,
+                                    "color": gb_link.governance_body.color,
+                                }
+                            )
+
+                        # Get target direction from configs (if any has a target)
+                        target_direction = None
+                        for config in kpi.value_type_configs:
+                            if config.target_value is not None:
+                                target_direction = config.target_direction or "maximize"
+                                break
+
+                        # Check if KPI has linked sources
+                        has_linked_sources = any(config.linked_source_kpi_id for config in kpi.value_type_configs)
+
+                        # Get KPI entity links
+                        kpi_entity_links = get_entity_links("kpi", kpi.id)
+
                         kpis_data.append(
                             {
                                 "id": kpi.id,
@@ -224,6 +297,12 @@ def get_data():
                                 "display_order": kpi.display_order,
                                 "logo_url": get_logo_url(kpi, "kpi"),
                                 "values": kpi_values,
+                                "is_archived": kpi.is_archived,
+                                "archived_at": kpi.archived_at.strftime("%Y-%m-%d") if kpi.archived_at else None,
+                                "governance_bodies": governance_bodies_data,
+                                "target_direction": target_direction,
+                                "has_linked_sources": has_linked_sources,
+                                "entity_links": kpi_entity_links,
                             }
                         )
 
@@ -234,6 +313,7 @@ def get_data():
                             "name": system.name,
                             "logo_url": get_logo_url(system, "system"),
                             "rollup_values": system_rollup_values,
+                            "entity_links": system_entity_links,
                             "kpis": kpis_data,
                         }
                     )
@@ -247,6 +327,8 @@ def get_data():
                         "group_label": initiative.group_label,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "rollup_values": initiative_rollup_values,
+                        "form_completion": form_completion,
+                        "entity_links": initiative_entity_links,
                         "systems": systems_data,
                     }
                 )
@@ -258,6 +340,7 @@ def get_data():
                     "logo_url": get_logo_url(challenge, "challenge"),
                     "display_order": challenge.display_order,
                     "rollup_values": challenge_rollup_values,
+                    "entity_links": challenge_entity_links,
                     "initiatives": initiatives_data,
                 }
             )
@@ -269,7 +352,10 @@ def get_data():
                 "logo_url": get_logo_url(space, "space"),
                 "display_order": space.display_order,
                 "is_private": space.is_private,
+                "space_label": space.space_label,
                 "rollup_values": space_rollup_values,
+                "swot_completion": swot_completion,
+                "entity_links": space_entity_links,
                 "challenges": challenges_data,
             }
         )
@@ -316,6 +402,65 @@ def get_data():
             "impactLevels": impact_levels_data,
         }
     )
+
+
+@bp.route("/api/action-items-count")
+@login_required
+@beta_required
+def get_action_items_count():
+    """Get count of action items requiring attention"""
+    org_id = session.get("organization_id")
+
+    # Get initiatives with no consensus
+    initiatives_no_consensus = Initiative.query.filter_by(
+        organization_id=org_id, impact_on_challenge="no_consensus"
+    ).count()
+
+    # Get initiatives with incomplete forms
+    all_initiatives = Initiative.query.filter_by(organization_id=org_id).all()
+    initiatives_incomplete = 0
+    for initiative in all_initiatives:
+        filled, total, status = initiative.get_form_completion()
+        if status != "complete":
+            initiatives_incomplete += 1
+
+    # Get spaces without SWOT (empty or partial)
+    all_spaces = Space.query.filter_by(organization_id=org_id).all()
+    spaces_no_swot = 0
+    for space in all_spaces:
+        filled, total, status = space.get_swot_completion()
+        if status != "complete":
+            spaces_no_swot += 1
+
+    # Get systems without KPIs
+    systems_without_kpis = (
+        db.session.query(System)
+        .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
+        .filter(Initiative.organization_id == org_id, KPI.id.is_(None))
+        .distinct()
+        .count()
+    )
+
+    # Get KPIs without governance bodies
+    from app.models import KPIGovernanceBodyLink
+
+    kpis_without_gb = (
+        db.session.query(KPI)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .outerjoin(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
+        .filter(Initiative.organization_id == org_id, KPIGovernanceBodyLink.id.is_(None))
+        .count()
+    )
+
+    # Calculate total
+    total_issues = (
+        initiatives_no_consensus + initiatives_incomplete + spaces_no_swot + systems_without_kpis + kpis_without_gb
+    )
+
+    return jsonify({"total_issues": total_issues})
 
 
 @bp.route("/api/change-parent/<entity_type>", methods=["POST"])

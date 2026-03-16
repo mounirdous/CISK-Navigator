@@ -1,17 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Workspace V2 (Beta) - {{ org_name }}{% endblock %}
+{% block title %}Workspace - {{ org_name }}{% endblock %}
 
 {% block extra_css %}
 <style>
+    /* Entity type colors from database */
     :root {
         --header-height: 60px;
         --cell-height: 32px;
-        --space-bg: #f8f9fa;
-        --challenge-bg: #ffffff;
-        --initiative-bg: #fafbfc;
-        --system-bg: #f5f7f9;
-        --kpi-bg: #ffffff;
+        --entity-space-color: {{ entity_defaults.space.color if entity_defaults and entity_defaults.space else '#10b981' }};
+        --entity-challenge-color: {{ entity_defaults.challenge.color if entity_defaults and entity_defaults.challenge else '#f59e0b' }};
+        --entity-initiative-color: {{ entity_defaults.initiative.color if entity_defaults and entity_defaults.initiative else '#8b5cf6' }};
+        --entity-system-color: {{ entity_defaults.system.color if entity_defaults and entity_defaults.system else '#ec4899' }};
+        --entity-kpi-color: {{ entity_defaults.kpi.color if entity_defaults and entity_defaults.kpi else '#06b6d4' }};
+        --space-bg: color-mix(in srgb, var(--entity-space-color) 8%, white);
+        --challenge-bg: color-mix(in srgb, var(--entity-challenge-color) 5%, white);
+        --initiative-bg: color-mix(in srgb, var(--entity-initiative-color) 6%, white);
+        --system-bg: color-mix(in srgb, var(--entity-system-color) 5%, white);
+        --kpi-bg: color-mix(in srgb, var(--entity-kpi-color) 4%, white);
         --border-color: #dee2e6;
         --hover-bg: #e8f4f8;
         --drag-over: #e3f2fd;
@@ -25,10 +31,161 @@
         overflow: hidden;
     }
 
-    /* Header */
+    /* Badges and Icons */
+    .completion-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        margin-left: 0.4rem;
+        vertical-align: middle;
+    }
+
+    .badge-empty {
+        background: #fecaca;
+        color: #dc2626;
+    }
+
+    .badge-partial {
+        background: #fef3c7;
+        color: #d97706;
+    }
+
+    .badge-complete {
+        background: #d1fae5;
+        color: #059669;
+    }
+
+    .gb-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+        margin-left: 0.3rem;
+        color: white;
+        vertical-align: middle;
+    }
+
+    .entity-badge {
+        display: inline-block;
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 0.15rem 0.5rem;
+        border-radius: 8px;
+        margin-left: 0.4rem;
+        background: #e0e7ff;
+        color: #4338ca;
+        vertical-align: middle;
+    }
+
+    .private-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 0.15rem 0.4rem;
+        border-radius: 6px;
+        margin-left: 0.4rem;
+        background: #fee2e2;
+        color: #991b1b;
+        vertical-align: middle;
+    }
+
+    .archived-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        font-size: 0.7rem;
+        font-weight: 500;
+        padding: 0.15rem 0.4rem;
+        border-radius: 6px;
+        margin-left: 0.4rem;
+        background: #e5e7eb;
+        color: #6b7280;
+        vertical-align: middle;
+    }
+
+    .action-icons {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-left: 0.75rem;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+    }
+
+    .ws-row:hover .action-icons {
+        opacity: 1;
+    }
+
+    .action-icons a {
+        color: inherit;
+        text-decoration: none;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+    .action-icons a:hover {
+        transform: scale(1.15);
+        filter: brightness(1.2);
+    }
+
+    .entity-link-icon {
+        color: #3b82f6;
+        font-size: 1rem;
+        margin-left: 0.4rem;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .entity-link-icon:hover {
+        color: #1d4ed8;
+    }
+
+    .form-link-icon {
+        color: #6366f1;
+        font-size: 0.95rem;
+        margin-left: 0.4rem;
+        margin-right: 0.2rem;
+        transition: color 0.2s;
+    }
+
+    .form-link-icon:hover {
+        color: #4338ca;
+    }
+
+    .swot-link-icon {
+        color: #8b5cf6;
+        font-size: 0.95rem;
+        margin-left: 0.4rem;
+        margin-right: 0.2rem;
+        transition: color 0.2s;
+    }
+
+    .swot-link-icon:hover {
+        color: #6d28d9;
+    }
+
+    .target-arrow {
+        font-size: 0.85rem;
+        margin-right: 0.2rem;
+        opacity: 0.7;
+    }
+
+    .linked-kpi-indicator {
+        color: #666;
+        font-size: 0.8rem;
+        margin-left: 0.3rem;
+        opacity: 0.6;
+    }
+
+    /* Toolbar - Commands Band */
     .ws-header {
         height: var(--header-height);
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
         color: white;
         padding: 0 1.5rem;
         display: flex;
@@ -36,23 +193,12 @@
         justify-content: space-between;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         flex-shrink: 0;
+        transition: background 0.3s;
     }
 
-    .ws-header h1 {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin: 0;
-    }
-
-    .beta-badge {
-        background: #ffc107;
-        color: #000;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        margin-left: 1rem;
+    /* Edit mode - change to amber/orange gradient */
+    .ws-header.edit-mode {
+        background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
     }
 
     /* Filters Panel */
@@ -77,7 +223,7 @@
     }
 
     .filter-active-badge {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #3182ce;
         color: white;
         padding: 0.2rem 0.75rem;
         border-radius: 12px;
@@ -90,6 +236,27 @@
         border-top: 1px solid #e9ecef;
         padding: 1.5rem;
         background: #fafbfc;
+        max-height: 70vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .ws-filters-content::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .ws-filters-content::-webkit-scrollbar-track {
+        background: #e9ecef;
+        border-radius: 4px;
+    }
+
+    .ws-filters-content::-webkit-scrollbar-thumb {
+        background: #3182ce;
+        border-radius: 4px;
+    }
+
+    .ws-filters-content::-webkit-scrollbar-thumb:hover {
+        background: #2c5282;
     }
 
     .filter-section {
@@ -147,16 +314,16 @@
 
     .filter-pill:hover {
         background: #f8f9fa;
-        border-color: #667eea;
+        border-color: #3182ce;
         transform: translateY(-1px);
         box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
     }
 
     .filter-pill.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: #3182ce;
         color: white;
-        border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        border-color: #3182ce;
+        box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
     }
 
     .filter-pill.active:hover {
@@ -171,7 +338,7 @@
         gap: 0.75rem;
         padding: 0.75rem 1rem;
         background: white;
-        border: 2px solid #667eea;
+        border: 2px solid #3182ce;
         border-radius: 12px;
         margin-bottom: 1rem;
     }
@@ -221,7 +388,7 @@
     }
 
     .filter-preset-card.clickable:hover {
-        border-color: #667eea;
+        border-color: #3182ce;
         box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
         transform: translateY(-2px);
     }
@@ -395,9 +562,14 @@
         font-size: 0.8rem;
     }
 
+    .ws-header-cell:not(:first-child) {
+        position: relative;
+    }
+
     .ws-header-cell:first-child {
-        min-width: 300px;
-        max-width: 400px;
+        min-width: 350px;
+        width: 450px;
+        max-width: 600px;
         text-align: left;
         position: sticky;
         left: 0;
@@ -444,6 +616,17 @@
         align-items: center;
         gap: 0.5rem;
         font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        min-width: 0;
+    }
+
+    .entity-name > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex-shrink: 1;
     }
 
     .entity-name.level-0 {
@@ -484,7 +667,7 @@
     .expand-icon {
         cursor: pointer;
         transition: transform 0.2s;
-        color: #667eea;
+        color: #3182ce;
         font-size: 1rem;
         min-width: 1rem;
     }
@@ -530,7 +713,7 @@
 
     .spinner {
         border: 4px solid #f3f3f3;
-        border-top: 4px solid #667eea;
+        border-top: 4px solid #3182ce;
         border-radius: 50%;
         width: 50px;
         height: 50px;
@@ -556,7 +739,7 @@
 
     .drag-handle:hover {
         opacity: 1 !important;
-        color: #667eea;
+        color: #3182ce;
     }
 
     /* Empty State */
@@ -652,6 +835,27 @@
         transition: background 0.15s, opacity 0.2s;
     }
 
+    /* Row backgrounds using entity colors from branding */
+    .ws-row.level-0 {
+        background-color: var(--space-bg) !important;
+    }
+
+    .ws-row.level-1 {
+        background-color: var(--challenge-bg) !important;
+    }
+
+    .ws-row.level-2 {
+        background-color: var(--initiative-bg) !important;
+    }
+
+    .ws-row.level-3 {
+        background-color: var(--system-bg) !important;
+    }
+
+    .ws-row.level-4 {
+        background-color: var(--kpi-bg) !important;
+    }
+
     .ws-row.dragging-row {
         opacity: 0.5;
         background: #e3f2fd !important;
@@ -662,11 +866,11 @@
         background: #fff3cd !important;
     }
 
-    /* Change parent drop zone - purple/blue */
+    /* Change parent drop zone - blue highlight */
     .ws-row.drag-over-parent {
-        border: 3px solid #667eea;
-        background: linear-gradient(to right, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15)) !important;
-        box-shadow: 0 0 15px rgba(102, 126, 234, 0.3);
+        border: 3px solid #3182ce;
+        background: rgba(49, 130, 206, 0.15) !important;
+        box-shadow: 0 0 15px rgba(49, 130, 206, 0.3);
     }
 
     .drag-handle {
@@ -678,24 +882,169 @@
     .drag-handle:active {
         cursor: grabbing;
     }
+
+    /* Column Collapse */
+    .ws-header-cell .collapse-column-icon {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        font-size: 0.9rem;
+    }
+
+    .ws-header-cell:hover .collapse-column-icon {
+        opacity: 1;
+    }
+
+    /* Collapsed header styling */
+    .ws-header-cell.column-collapsed {
+        min-width: 20px !important;
+        max-width: 20px !important;
+        width: 20px !important;
+        padding: 0.3rem 0.1rem !important;
+        vertical-align: middle;
+        background-color: rgba(108, 117, 125, 0.1) !important;
+        cursor: pointer;
+    }
+
+    .ws-header-cell.column-collapsed .column-content {
+        display: none !important;
+    }
+
+    /* Show expand icon in collapsed header */
+    .ws-header-cell.column-collapsed .collapse-column-icon {
+        position: static;
+        opacity: 0.6;
+        font-size: 1.2rem;
+        margin: 0;
+    }
+
+    .ws-header-cell.column-collapsed:hover .collapse-column-icon {
+        opacity: 1;
+    }
+
+    /* Collapsed cell styling */
+    .ws-cell.column-collapsed {
+        min-width: 20px !important;
+        max-width: 20px !important;
+        width: 20px !important;
+        padding: 0.15rem !important;
+        overflow: hidden !important;
+        background-color: rgba(108, 117, 125, 0.05) !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        text-indent: -9999px !important;
+    }
+
+    /* Hide all content in collapsed cells - more aggressive */
+    .ws-cell.column-collapsed *,
+    .ws-cell.column-collapsed span,
+    .ws-cell.column-collapsed .value-display {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        font-size: 0 !important;
+    }
+
+    /* No indicator - just empty collapsed cells */
+
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.3s;
+        border-radius: 22px;
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+    }
+
+    input:checked + .toggle-slider {
+        background-color: #3182ce;
+    }
+
+    input:checked + .toggle-slider:before {
+        transform: translateX(18px);
+    }
+
+    .toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.4rem 0;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .toggle-label:hover .toggle-slider {
+        background-color: #bbb;
+    }
+
+    .toggle-label:hover input:checked + .toggle-slider {
+        background-color: #2c5282;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="workspace-v2" x-data="workspaceV2({{ org_id }})" x-init="init(); loadData()">
-    <!-- Header -->
-    <div class="ws-header">
-        <div style="display: flex; align-items: center;">
-            <h1>
-                <i class="bi bi-diagram-3"></i> Workspace V2
-                <span class="beta-badge">Beta</span>
-            </h1>
-        </div>
-        <div style="display: flex; gap: 1rem; align-items: center;">
-            <span x-show="!loading" style="font-size: 0.9rem; opacity: 0.9; display: flex; align-items: center; gap: 0.5rem;">
+    <!-- Toolbar - Commands Band -->
+    <div class="ws-header" :class="{'edit-mode': editMode}">
+        <div style="display: flex; align-items: center; gap: 1.5rem;">
+            <span x-show="!loading" style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
                 <i x-show="hasActiveFilters" class="bi bi-funnel-fill" style="color: #ffc107;"></i>
                 <span x-text="filterSummary"></span>
             </span>
+            <a x-show="!loading && actionItemsCount > 0"
+               href="{{ url_for('action_items') }}"
+               style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: white; opacity: 0.9;"
+               title="Items requiring attention">
+                <i class="bi bi-exclamation-triangle-fill" style="color: #ffc107;"></i>
+                <span x-text="`${actionItemsCount} ${actionItemsCount === 1 ? 'issue' : 'issues'}`"></span>
+            </a>
+            <!-- Toggle Badges/Decorations -->
+            <button @click="showBadges = !showBadges"
+                    class="btn btn-sm btn-outline-light"
+                    :class="{'active': showBadges}"
+                    style="opacity: 0.9;"
+                    title="Toggle badges and decorations">
+                <i class="bi" :class="showBadges ? 'bi-tree-fill' : 'bi-tree'" style="color: #ffc107;"></i>
+            </button>
+        </div>
+        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <!-- Edit Mode Toggle -->
             <button @click="editMode = !editMode"
                     class="btn btn-sm"
                     :class="editMode ? 'btn-warning' : 'btn-outline-light'"
@@ -703,9 +1052,54 @@
                 <i class="bi bi-pencil-square"></i>
                 <span x-text="editMode ? 'Exit Edit Mode' : 'Edit Mode'"></span>
             </button>
-            <a href="{{ url_for('workspace.index') }}" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-arrow-left"></i> Classic View
-            </a>
+
+            <!-- Tree Controls (Rows) -->
+            <div class="btn-group btn-group-sm">
+                <button @click="expandAllRows()"
+                        class="btn btn-outline-light"
+                        title="Expand All Rows">
+                    <i class="bi bi-arrows-expand"></i>
+                </button>
+                <button @click="collapseAllRows()"
+                        class="btn btn-outline-light"
+                        title="Collapse All Rows">
+                    <i class="bi bi-arrows-collapse"></i>
+                </button>
+            </div>
+
+            <!-- Column Controls (New Feature) -->
+            <div class="btn-group btn-group-sm">
+                <button @click="expandAllColumns()"
+                        class="btn btn-outline-light"
+                        title="Expand All Columns">
+                    <i class="bi bi-arrows-angle-expand"></i>
+                </button>
+                <button @click="collapseAllColumns()"
+                        class="btn btn-outline-light"
+                        title="Collapse All Columns">
+                    <i class="bi bi-arrows-angle-contract"></i>
+                </button>
+            </div>
+
+            <!-- Data Actions -->
+            <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('workspace.export_excel') }}"
+                   class="btn btn-success"
+                   title="Export to Excel">
+                    <i class="bi bi-file-earmark-spreadsheet"></i>
+                </a>
+                <a href="{{ url_for('workspace.list_snapshots') }}"
+                   class="btn btn-info"
+                   title="View Snapshots">
+                    <i class="bi bi-camera"></i>
+                </a>
+                <button class="btn btn-outline-info"
+                        data-bs-toggle="modal"
+                        data-bs-target="#quickSnapshotModal"
+                        title="Quick Snapshot">
+                    <i class="bi bi-camera-fill"></i>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -714,11 +1108,11 @@
         <!-- Filter Toggle Bar -->
         <div class="ws-filters-toggle" @click="filtersExpanded = !filtersExpanded">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <i class="bi bi-funnel-fill" style="color: #667eea; font-size: 1.1rem;"></i>
-                <span style="font-weight: 600; font-size: 0.95rem;">Filters & Presets</span>
-                <span x-show="hasActiveFilters" class="filter-active-badge">Active</span>
+                <i class="bi bi-funnel-fill" style="color: #3182ce; font-size: 1.1rem;"></i>
+                <span style="font-weight: 600; font-size: 0.95rem;">Filters & Display</span>
+                <span x-show="hasActiveFilters" class="filter-active-badge" x-text="`${activeFilterCount} active`"></span>
             </div>
-            <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #667eea;"></i>
+            <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
         </div>
 
         <!-- Expandable Filter Content -->
@@ -731,60 +1125,105 @@
              x-transition:leave-end="opacity-0 transform -translate-y-2"
              class="ws-filters-content">
 
-            <!-- Saved Filter Presets -->
-            <div class="filter-section">
-                <div class="filter-section-header">
-                    <i class="bi bi-bookmark-star-fill"></i>
-                    <span>Saved Filter Presets</span>
+            <!-- Filter Presets Section - ALWAYS VISIBLE -->
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; color: white;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="bi bi-bookmark-star-fill" style="font-size: 1.2rem;"></i>
+                        <span style="font-weight: 600; font-size: 1rem;">Filter Presets</span>
+                        <span x-show="savedPresets.length > 0" style="background: rgba(255,255,255,0.3); padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem;" x-text="`${savedPresets.length} saved`"></span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button @click="showSavePresetModal = true"
+                                class="btn btn-sm"
+                                :class="hasActiveFilters ? 'btn-light' : 'btn-outline-light'"
+                                :disabled="!hasActiveFilters"
+                                style="font-size: 0.8rem;">
+                            <i class="bi bi-plus-circle"></i> Save Current
+                        </button>
+                        <button x-show="hasActiveFilters"
+                                @click="clearAllFilters()"
+                                class="btn btn-sm btn-outline-light"
+                                style="font-size: 0.8rem;">
+                            <i class="bi bi-x-circle"></i> Clear
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Search Box -->
-                <div class="preset-search-box">
-                    <i class="bi bi-search"></i>
-                    <input type="text"
-                           x-model="presetSearchQuery"
-                           placeholder="Search saved filters..."
-                           class="preset-search-input">
-                    <span class="preset-count" x-text="`(${filteredPresets.length} available)`"></span>
-                </div>
-
-                <!-- Preset Cards -->
-                <div x-show="filteredPresets.length > 0" class="filter-presets">
-                    <template x-for="preset in filteredPresets" :key="preset.id">
+                <!-- Saved Presets List -->
+                <div x-show="savedPresets.length > 0" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                    <template x-for="preset in savedPresets" :key="preset.id">
                         <div @click="loadPreset(preset)"
-                             class="filter-preset-card clickable">
-                            <div style="flex: 1;">
-                                <div class="preset-name" x-text="preset.name"></div>
-                                <div class="preset-description" x-text="getPresetDescription(preset)"></div>
-                            </div>
+                             style="background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 0.4rem 0.75rem; border-radius: 20px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.3);"
+                             @mouseenter="$el.style.background = 'rgba(255,255,255,0.3)'"
+                             @mouseleave="$el.style.background = 'rgba(255,255,255,0.2)'">
+                            <span style="font-size: 0.85rem; font-weight: 500;" x-text="preset.name"></span>
                             <button @click.stop="deletePreset(preset.id)"
-                                    class="btn-preset-delete"
-                                    title="Delete preset">
-                                <i class="bi bi-trash"></i>
+                                    style="background: none; border: none; padding: 0; opacity: 0.7; cursor: pointer; color: white; display: flex; align-items: center;"
+                                    title="Delete preset"
+                                    @mouseenter="$el.style.opacity = '1'"
+                                    @mouseleave="$el.style.opacity = '0.7'">
+                                <i class="bi bi-x-lg" style="font-size: 0.9rem;"></i>
                             </button>
                         </div>
                     </template>
                 </div>
-
-                <!-- Empty State -->
-                <div x-show="filteredPresets.length === 0" class="presets-empty-state">
-                    <i class="bi bi-inbox"></i>
-                    <p x-show="presetSearchQuery">No presets match your search</p>
-                    <p x-show="!presetSearchQuery && savedPresets.length === 0">No saved presets yet. Apply filters and click "Save as Preset" below.</p>
+                <div x-show="savedPresets.length === 0" style="text-align: center; padding: 1rem 0; opacity: 0.8; font-size: 0.9rem;">
+                    <i class="bi bi-info-circle"></i> Apply filters above, then click "Save Current" to create a preset
                 </div>
             </div>
 
-            <!-- Active Filters -->
+            <!-- Data Filters -->
             <div class="filter-section">
                 <div class="filter-section-header">
-                    <i class="bi bi-sliders"></i>
-                    <span>Active Filters</span>
+                    <i class="bi bi-funnel"></i>
+                    <span>Data Filters</span>
                 </div>
 
-                <!-- Space Type Filter -->
-                <div class="filter-row">
-                    <span class="filter-row-label">Space Type:</span>
-                    <div class="filter-pills-group">
+                <!-- Row 1: Governance & Groups -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 0.75rem;">
+                    <!-- Governance Bodies -->
+                    <div>
+                        <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                            <i class="bi bi-people-fill"></i> Governance Bodies
+                        </div>
+                        <div class="filter-pills-group">
+                            <template x-for="gb in governanceBodies" :key="gb.id">
+                                <button @click="toggleGovernanceBody(gb.id)"
+                                        class="filter-pill"
+                                        :class="{'active': selectedGovernanceBodies.includes(gb.id)}">
+                                    <span x-text="gb.name"></span>
+                                    <span x-text="`(${countByGovernanceBody(gb.id)})`"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Initiative Groups -->
+                    <div x-show="groups.length > 0">
+                        <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                            <i class="bi bi-tag-fill"></i> Initiative Groups
+                        </div>
+                        <div class="filter-pills-group">
+                            <template x-for="group in groups" :key="group">
+                                <button @click="toggleGroup(group)"
+                                        class="filter-pill"
+                                        :class="{'active': selectedGroups.includes(group)}">
+                                    <span x-text="group"></span>
+                                    <span x-text="`(${countByGroup(group)})`"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Row 2: Spaces & Space Type -->
+                <div style="margin-bottom: 0.75rem;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <i class="bi bi-folder-fill"></i> Spaces
+                    </div>
+                    <!-- Space Type Pills First -->
+                    <div class="filter-pills-group" style="margin-bottom: 0.5rem;">
                         <button @click="spaceTypeFilter = 'all'"
                                 class="filter-pill"
                                 :class="{'active': spaceTypeFilter === 'all'}">
@@ -804,21 +1243,94 @@
                             <span x-text="`(${spaces.filter(s => s.is_private).length})`"></span>
                         </button>
                     </div>
+                    <!-- Individual Space Selection -->
+                    <div class="filter-pills-group">
+                        <template x-for="space in spaces" :key="space.id">
+                            <button @click="toggleSpace(space.id)"
+                                    class="filter-pill"
+                                    :class="{'active': selectedSpaces.includes(space.id)}">
+                                <span x-text="space.name"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Row 3: Impact Assessment -->
+                <div style="margin-bottom: 0;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <i class="bi bi-lightning-fill"></i> Impact Assessment
+                    </div>
+                    <div class="filter-pills-group">
+                        <template x-for="level in impactLevels" :key="level.value">
+                            <button @click="toggleImpactLevel(level.value)"
+                                    class="filter-pill"
+                                    :class="{'active': selectedImpactLevels.includes(level.value)}">
+                                <span x-text="level.label"></span>
+                                <span x-text="`(${countByImpactLevel(level.value)})`"></span>
+                            </button>
+                        </template>
+                    </div>
                 </div>
             </div>
 
-            <!-- Actions -->
-            <div class="filter-actions">
-                <button x-show="hasActiveFilters"
-                        @click="clearAllFilters()"
-                        class="btn btn-sm btn-outline-danger">
-                    <i class="bi bi-x-circle"></i> Clear All Filters
-                </button>
-                <button x-show="hasActiveFilters"
-                        @click="showSavePresetModal = true"
-                        class="btn btn-sm btn-success">
-                    <i class="bi bi-bookmark-plus"></i> Save as Preset
-                </button>
+            <!-- Display Controls -->
+            <div class="filter-section" style="border-top: 2px solid #e9ecef; padding-top: 1rem; margin-top: 1rem;">
+                <div class="filter-section-header">
+                    <i class="bi bi-eye"></i>
+                    <span>Display Options</span>
+                </div>
+
+                <!-- Compact 2-column layout for everything -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                    <!-- Show Levels -->
+                    <label class="toggle-label">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="showLevels.spaces">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;"><i class="bi bi-folder-fill"></i> Spaces</span>
+                    </label>
+                    <label class="toggle-label">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="showLevels.challenges">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;"><i class="bi bi-bullseye"></i> Challenges</span>
+                    </label>
+                    <label class="toggle-label">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="showLevels.initiatives">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;"><i class="bi bi-rocket-takeoff-fill"></i> Initiatives</span>
+                    </label>
+                    <label class="toggle-label">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="showLevels.systems">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;"><i class="bi bi-gear-fill"></i> Systems</span>
+                    </label>
+                    <label class="toggle-label">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="showLevels.kpis">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;"><i class="bi bi-graph-up"></i> KPIs</span>
+                    </label>
+
+                    <!-- Divider -->
+                    <div style="grid-column: 1 / -1; height: 1px; background: #e9ecef; margin: 0.5rem 0;"></div>
+
+                    <!-- Options -->
+                    <label class="toggle-label">
+                        <label class="toggle-switch">
+                            <input type="checkbox" x-model="showArchivedKPIs">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span style="font-size: 0.85rem;"><i class="bi bi-archive-fill"></i> Archived KPIs</span>
+                    </label>
+                </div>
             </div>
         </div>
     </div>
@@ -887,17 +1399,27 @@
                 </div>
                 <template x-for="(vt, index) in valueTypes" :key="vt.id">
                     <div class="ws-header-cell"
-                         :class="{'draggable-column': editMode}"
+                         :class="{'draggable-column': editMode, 'column-collapsed': vt.collapsed}"
                          :draggable="editMode"
                          @dragstart="dragColumnStart($event, index)"
                          @dragover.prevent="dragColumnOver($event, index)"
                          @drop="dragColumnDrop($event, index)"
                          @dragend="dragColumnEnd($event)">
+                        <!-- Collapse Icon -->
+                        <span class="collapse-column-icon"
+                              @click.stop="toggleColumnCollapse(index)"
+                              :title="'Click to ' + (vt.collapsed ? 'expand' : 'collapse') + ': ' + vt.name">
+                            ⇄
+                        </span>
+                        <!-- Drag Handle (Edit Mode) -->
                         <div x-show="editMode" style="display: inline-block; opacity: 0.3; margin-right: 0.5rem; cursor: grab;">
                             <i class="bi bi-grip-vertical"></i>
                         </div>
-                        <div x-text="vt.name"></div>
-                        <div style="font-size: 0.75rem; font-weight: 400; opacity: 0.7; margin-top: 0.25rem;" x-text="vt.unit_label"></div>
+                        <!-- Column Content -->
+                        <div class="column-content">
+                            <div x-text="vt.name"></div>
+                            <div style="font-size: 0.75rem; font-weight: 400; opacity: 0.7; margin-top: 0.25rem;" x-text="vt.unit_label"></div>
+                        </div>
                     </div>
                 </template>
             </div>
@@ -907,6 +1429,7 @@
                 <div style="display: contents;">
                     <!-- Space Row -->
                     <div class="ws-row level-0"
+                         x-show="showLevels.spaces"
                          :draggable="editMode"
                          @dragstart="dragRowStart($event, space, 'space', null)"
                          @dragover.prevent="dragRowOver($event, space, 'space', null)"
@@ -921,18 +1444,86 @@
                                    @click="space.collapsed = !space.collapsed"
                                    x-show="space.challenges.length > 0"></i>
                                 <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
-                                <i x-show="!space.logo_url" class="bi bi-folder-fill entity-icon" style="color: #667eea;"></i>
+                                <i x-show="!space.logo_url" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
+
+                                <!-- SWOT link with completion badge -->
+                                <template x-if="showBadges">
+                                    <a :href="`{{ url_for('organization_admin.space_swot', space_id=0) }}`.replace('0', space.id)"
+                                       class="swot-link-icon"
+                                       :title="'SWOT Analysis - ' + (space.swot_completion.status === 'complete' ? 'Complete' : space.swot_completion.status === 'partial' ? 'Partial (' + space.swot_completion.filled + '/' + space.swot_completion.total + ')' : 'Empty')"
+                                       @click.stop>
+                                        <i class="bi bi-grid-3x3"></i>
+                                    </a>
+                                </template>
+                                <template x-if="showBadges && space.swot_completion.status === 'empty'">
+                                    <span class="completion-badge badge-empty" title="SWOT not filled">!</span>
+                                </template>
+                                <template x-if="showBadges && space.swot_completion.status === 'partial'">
+                                    <span class="completion-badge badge-partial" :title="'SWOT partially filled: ' + space.swot_completion.filled + '/' + space.swot_completion.total" x-text="space.swot_completion.filled + '/' + space.swot_completion.total"></span>
+                                </template>
+                                <template x-if="showBadges && space.swot_completion.status === 'complete'">
+                                    <span class="completion-badge badge-complete" title="SWOT complete">✓</span>
+                                </template>
+
                                 <span x-text="space.name"></span>
-                                <i x-show="space.is_private" class="bi bi-lock-fill" style="font-size: 0.85rem; opacity: 0.5;"></i>
+
+                                <!-- Space label badge -->
+                                <template x-if="showBadges && space.space_label">
+                                    <span class="entity-badge" x-text="space.space_label"></span>
+                                </template>
+
+                                <!-- Private badge -->
+                                <template x-if="showBadges && space.is_private">
+                                    <span class="private-badge" title="Private space">
+                                        <i class="bi bi-lock-fill"></i> Private
+                                    </span>
+                                </template>
+
+                                <!-- Entity links popover -->
+                                <template x-if="showBadges && space.entity_links && space.entity_links.length > 0">
+                                    <span class="entity-link-icon"
+                                          :title="'Related Links (' + space.entity_links.length + ')'"
+                                          @click.stop="showEntityLinks(space, 'space')">
+                                        <i class="bi bi-link-45deg"></i>
+                                    </span>
+                                </template>
+
+                                <!-- Action icons (edit mode only) -->
+                                <template x-if="editMode">
+                                    <span class="action-icons">
+                                        <a :href="`{{ url_for('organization_admin.create_challenge', space_id=0) }}`.replace('0', space.id)"
+                                           class="text-success"
+                                           title="Add Challenge to this Space"
+                                           @click.stop>
+                                            <i class="bi bi-plus-circle"></i>
+                                        </a>
+                                        <a href="#"
+                                           class="text-primary"
+                                           title="Edit Space"
+                                           @click.prevent.stop="alert('Edit space functionality - use the v1 workspace to edit spaces for now')">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <a href="#"
+                                           class="text-danger"
+                                           title="Delete Space"
+                                           @click.prevent.stop="deleteSpace(space)">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </span>
+                                </template>
                             </div>
                         </div>
                         <template x-for="vt in valueTypes" :key="vt.id">
-                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
-                                <template x-if="space.rollup_values && space.rollup_values[String(vt.id)]">
-                                    <span class="value-display" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                <template x-if="!vt.collapsed">
+                                    <template x-if="space.rollup_values && space.rollup_values[String(vt.id)]">
+                                        <span class="value-display" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                                    </template>
                                 </template>
-                                <template x-if="!space.rollup_values || !space.rollup_values[String(vt.id)]">
-                                    <span style="opacity: 0.25;">—</span>
+                                <template x-if="!vt.collapsed">
+                                    <template x-if="!space.rollup_values || !space.rollup_values[String(vt.id)]">
+                                        <span style="opacity: 0.25;">—</span>
+                                    </template>
                                 </template>
                             </div>
                         </template>
@@ -942,7 +1533,7 @@
                     <template x-for="challenge in space.challenges" :key="challenge.id">
                         <div style="display: contents;">
                             <!-- Challenge Row -->
-                            <div class="ws-row level-1" x-show="!space.collapsed"
+                            <div class="ws-row level-1" x-show="showLevels.challenges && !space.collapsed"
                                  :draggable="editMode"
                                  @dragstart="dragRowStart($event, challenge, 'challenge', space)"
                                  @dragover.prevent="dragRowOver($event, challenge, 'challenge', space)"
@@ -958,16 +1549,54 @@
                                            x-show="challenge.initiatives.length > 0"></i>
                                         <img x-show="challenge.logo_url" :src="challenge.logo_url" class="entity-logo" />
                                         <i x-show="!challenge.logo_url" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
+
                                         <span x-text="challenge.name"></span>
+
+                                        <!-- Entity links popover -->
+                                        <template x-if="showBadges && challenge.entity_links && challenge.entity_links.length > 0">
+                                            <span class="entity-link-icon"
+                                                  :title="'Related Links (' + challenge.entity_links.length + ')'"
+                                                  @click.stop="showEntityLinks(challenge, 'challenge')">
+                                                <i class="bi bi-link-45deg"></i>
+                                            </span>
+                                        </template>
+
+                                        <!-- Action icons (edit mode only) -->
+                                        <template x-if="editMode">
+                                            <span class="action-icons">
+                                                <a :href="`{{ url_for('organization_admin.create_initiative', challenge_id=0) }}`.replace('0', challenge.id)"
+                                                   class="text-success"
+                                                   title="Add Initiative to this Challenge"
+                                                   @click.stop>
+                                                    <i class="bi bi-plus-circle"></i>
+                                                </a>
+                                                <a :href="`{{ url_for('organization_admin.edit_challenge', challenge_id=0) }}`.replace('0', challenge.id)"
+                                                   class="text-primary"
+                                                   title="Edit Challenge"
+                                                   @click.stop>
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </a>
+                                                <a href="#"
+                                                   class="text-danger"
+                                                   title="Delete Challenge"
+                                                   @click.prevent.stop="deleteChallenge(challenge)">
+                                                    <i class="bi bi-trash"></i>
+                                                </a>
+                                            </span>
+                                        </template>
                                     </div>
                                 </div>
                                 <template x-for="vt in valueTypes" :key="vt.id">
-                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
-                                        <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
-                                            <span class="value-display" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
+                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                        <template x-if="!vt.collapsed">
+                                            <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
+                                                <span class="value-display" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
+                                            </template>
                                         </template>
-                                        <template x-if="!challenge.rollup_values || !challenge.rollup_values[String(vt.id)]">
-                                            <span style="opacity: 0.25;">—</span>
+                                        <template x-if="!vt.collapsed">
+                                            <template x-if="!challenge.rollup_values || !challenge.rollup_values[String(vt.id)]">
+                                                <span style="opacity: 0.25;">—</span>
+                                            </template>
                                         </template>
                                     </div>
                                 </template>
@@ -977,7 +1606,7 @@
                             <template x-for="initiative in challenge.initiatives" :key="initiative.id">
                                 <div style="display: contents;">
                                     <!-- Initiative Row -->
-                                    <div class="ws-row level-2" x-show="!space.collapsed && !challenge.collapsed"
+                                    <div class="ws-row level-2" x-show="showLevels.initiatives && !space.collapsed && !challenge.collapsed"
                                          :draggable="editMode"
                                          @dragstart="dragRowStart($event, initiative, 'initiative', challenge)"
                                          @dragover.prevent="dragRowOver($event, initiative, 'initiative', challenge)"
@@ -993,16 +1622,73 @@
                                                    x-show="initiative.systems.length > 0"></i>
                                                 <img x-show="initiative.logo_url" :src="initiative.logo_url" class="entity-logo" />
                                                 <i x-show="!initiative.logo_url" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
+
+                                                <!-- Form link with completion badge -->
+                                                <template x-if="showBadges">
+                                                    <a :href="`{{ url_for('organization_admin.initiative_form', initiative_id=0) }}`.replace('0', initiative.id)"
+                                                       class="form-link-icon"
+                                                       :title="'Initiative Form - ' + (initiative.form_completion.status === 'complete' ? 'Complete' : initiative.form_completion.status === 'partial' ? 'Partial (' + initiative.form_completion.filled + '/' + initiative.form_completion.total + ')' : 'Empty')"
+                                                       @click.stop>
+                                                        <i class="bi bi-file-text"></i>
+                                                    </a>
+                                                </template>
+                                                <template x-if="showBadges && initiative.form_completion.status === 'empty'">
+                                                    <span class="completion-badge badge-empty" title="Form not filled">!</span>
+                                                </template>
+                                                <template x-if="showBadges && initiative.form_completion.status === 'partial'">
+                                                    <span class="completion-badge badge-partial" :title="'Form partially filled: ' + initiative.form_completion.filled + '/' + initiative.form_completion.total" x-text="initiative.form_completion.filled + '/' + initiative.form_completion.total"></span>
+                                                </template>
+                                                <template x-if="showBadges && initiative.form_completion.status === 'complete'">
+                                                    <span class="completion-badge badge-complete" title="Form complete">✓</span>
+                                                </template>
+
                                                 <span x-text="initiative.name"></span>
+
+                                                <!-- Entity links popover -->
+                                                <template x-if="showBadges && initiative.entity_links && initiative.entity_links.length > 0">
+                                                    <span class="entity-link-icon"
+                                                          :title="'Related Links (' + initiative.entity_links.length + ')'"
+                                                          @click.stop="showEntityLinks(initiative, 'initiative')">
+                                                        <i class="bi bi-link-45deg"></i>
+                                                    </span>
+                                                </template>
+
+                                                <!-- Action icons (edit mode only) -->
+                                                <template x-if="editMode">
+                                                    <span class="action-icons">
+                                                        <a :href="`{{ url_for('organization_admin.create_system', initiative_id=0) }}`.replace('0', initiative.id)"
+                                                           class="text-success"
+                                                           title="Link System to this Initiative"
+                                                           @click.stop>
+                                                            <i class="bi bi-plus-circle"></i>
+                                                        </a>
+                                                        <a :href="`{{ url_for('organization_admin.edit_initiative', initiative_id=0) }}`.replace('0', initiative.id)"
+                                                           class="text-primary"
+                                                           title="Edit Initiative"
+                                                           @click.stop>
+                                                            <i class="bi bi-pencil-square"></i>
+                                                        </a>
+                                                        <a href="#"
+                                                           class="text-danger"
+                                                           title="Delete Initiative"
+                                                           @click.prevent.stop="deleteInitiative(initiative)">
+                                                            <i class="bi bi-trash"></i>
+                                                        </a>
+                                                    </span>
+                                                </template>
                                             </div>
                                         </div>
                                         <template x-for="vt in valueTypes" :key="vt.id">
-                                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
-                                                <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
-                                                    <span class="value-display" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                            <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                                <template x-if="!vt.collapsed">
+                                                    <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
+                                                        <span class="value-display" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                                    </template>
                                                 </template>
-                                                <template x-if="!initiative.rollup_values || !initiative.rollup_values[String(vt.id)]">
-                                                    <span style="opacity: 0.25;">—</span>
+                                                <template x-if="!vt.collapsed">
+                                                    <template x-if="!initiative.rollup_values || !initiative.rollup_values[String(vt.id)]">
+                                                        <span style="opacity: 0.25;">—</span>
+                                                    </template>
                                                 </template>
                                             </div>
                                         </template>
@@ -1012,7 +1698,7 @@
                                     <template x-for="system in initiative.systems" :key="system.id">
                                         <div style="display: contents;">
                                             <!-- System Row -->
-                                            <div class="ws-row level-3" x-show="!space.collapsed && !challenge.collapsed && !initiative.collapsed"
+                                            <div class="ws-row level-3" x-show="showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed"
                                                  :draggable="editMode"
                                                  @dragstart="dragRowStart($event, system, 'system', initiative)"
                                                  @dragover.prevent="dragRowOver($event, system, 'system', initiative)"
@@ -1028,16 +1714,54 @@
                                                            x-show="system.kpis.length > 0"></i>
                                                         <img x-show="system.logo_url" :src="system.logo_url" class="entity-logo" />
                                                         <i x-show="!system.logo_url" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
+
                                                         <span x-text="system.name"></span>
+
+                                                        <!-- Entity links popover -->
+                                                        <template x-if="showBadges && system.entity_links && system.entity_links.length > 0">
+                                                            <span class="entity-link-icon"
+                                                                  :title="'Related Links (' + system.entity_links.length + ')'"
+                                                                  @click.stop="showEntityLinks(system, 'system')">
+                                                                <i class="bi bi-link-45deg"></i>
+                                                            </span>
+                                                        </template>
+
+                                                        <!-- Action icons (edit mode only) -->
+                                                        <template x-if="editMode">
+                                                            <span class="action-icons">
+                                                                <a :href="`{{ url_for('organization_admin.create_kpi', link_id=0) }}`.replace('0', system.link_id)"
+                                                                   class="text-success"
+                                                                   title="Add KPI to this System"
+                                                                   @click.stop>
+                                                                    <i class="bi bi-plus-circle"></i>
+                                                                </a>
+                                                                <a href="#"
+                                                                   class="text-primary"
+                                                                   title="Edit System"
+                                                                   @click.prevent.stop="alert('Edit system functionality - use the v1 workspace to edit systems for now')">
+                                                                    <i class="bi bi-pencil-square"></i>
+                                                                </a>
+                                                                <a href="#"
+                                                                   class="text-danger"
+                                                                   title="Unlink System"
+                                                                   @click.prevent.stop="deleteSystem(system, initiative)">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </a>
+                                                            </span>
+                                                        </template>
                                                     </div>
                                                 </div>
                                                 <template x-for="vt in valueTypes" :key="vt.id">
-                                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
-                                                        <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
-                                                            <span class="value-display" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                    <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                                        <template x-if="!vt.collapsed">
+                                                            <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
+                                                                <span class="value-display" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                            </template>
                                                         </template>
-                                                        <template x-if="!system.rollup_values || !system.rollup_values[String(vt.id)]">
-                                                            <span style="opacity: 0.25;">—</span>
+                                                        <template x-if="!vt.collapsed">
+                                                            <template x-if="!system.rollup_values || !system.rollup_values[String(vt.id)]">
+                                                                <span style="opacity: 0.25;">—</span>
+                                                            </template>
                                                         </template>
                                                     </div>
                                                 </template>
@@ -1045,7 +1769,7 @@
 
                                             <!-- KPIs -->
                                             <template x-for="kpi in system.kpis" :key="kpi.id">
-                                                <div class="ws-row level-4" x-show="!space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
+                                                <div class="ws-row level-4" x-show="showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
                                                      :draggable="editMode"
                                                      @dragstart="dragRowStart($event, kpi, 'kpi', system)"
                                                      @dragover.prevent="dragRowOver($event, kpi, 'kpi', system)"
@@ -1057,18 +1781,91 @@
                                                             <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                                             <img x-show="kpi.logo_url" :src="kpi.logo_url" class="entity-logo" />
                                                             <i x-show="!kpi.logo_url" class="bi bi-graph-up entity-icon" style="color: #2ecc71;"></i>
+
+                                                            <!-- Target direction arrow -->
+                                                            <template x-if="showBadges && kpi.target_direction">
+                                                                <span class="target-arrow" :title="'Target: ' + kpi.target_direction">
+                                                                    <span x-show="kpi.target_direction === 'minimize'">⬇️</span>
+                                                                    <span x-show="kpi.target_direction === 'exact'">🎯</span>
+                                                                    <span x-show="kpi.target_direction === 'maximize'">⬆️</span>
+                                                                </span>
+                                                            </template>
+
                                                             <span x-text="kpi.name"></span>
+
+                                                            <!-- Entity links popover -->
+                                                            <template x-if="showBadges && kpi.entity_links && kpi.entity_links.length > 0">
+                                                                <span class="entity-link-icon"
+                                                                      :title="'Related Links (' + kpi.entity_links.length + ')'"
+                                                                      @click.stop="showEntityLinks(kpi, 'kpi')">
+                                                                    <i class="bi bi-link-45deg"></i>
+                                                                </span>
+                                                            </template>
+
+                                                            <!-- Linked KPI indicator -->
+                                                            <template x-if="showBadges && kpi.has_linked_sources">
+                                                                <i class="bi bi-link-45deg linked-kpi-indicator" title="This KPI has linked values"></i>
+                                                            </template>
+
+                                                            <!-- Archived badge -->
+                                                            <template x-if="showBadges && kpi.is_archived">
+                                                                <span class="archived-badge" :title="'Archived on ' + kpi.archived_at">
+                                                                    <i class="bi bi-archive"></i> Archived
+                                                                </span>
+                                                            </template>
+
+                                                            <!-- Governance body badges -->
+                                                            <template x-if="showBadges">
+                                                                <template x-for="gb in kpi.governance_bodies" :key="gb.id">
+                                                                    <span class="gb-badge"
+                                                                          :style="'background-color: ' + gb.color"
+                                                                          :title="gb.name"
+                                                                          x-text="gb.abbreviation"></span>
+                                                                </template>
+                                                            </template>
+
+                                                            <!-- Action icons (edit mode only) -->
+                                                            <template x-if="editMode">
+                                                                <span class="action-icons">
+                                                                    <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0) }}`.replace('0', kpi.id)"
+                                                                       class="text-primary"
+                                                                       title="Edit KPI"
+                                                                       @click.stop>
+                                                                        <i class="bi bi-pencil-square"></i>
+                                                                    </a>
+                                                                    <template x-if="!kpi.is_archived">
+                                                                        <a href="#"
+                                                                           class="text-warning"
+                                                                           title="Archive KPI"
+                                                                           @click.prevent.stop="archiveKPI(kpi)">
+                                                                            <i class="bi bi-archive"></i>
+                                                                        </a>
+                                                                    </template>
+                                                                    <template x-if="kpi.is_archived">
+                                                                        <a href="#"
+                                                                           class="text-success"
+                                                                           title="Restore KPI"
+                                                                           @click.prevent.stop="restoreKPI(kpi)">
+                                                                            <i class="bi bi-arrow-counterclockwise"></i>
+                                                                        </a>
+                                                                    </template>
+                                                                </span>
+                                                            </template>
                                                         </div>
                                                     </div>
                                                     <template x-for="vt in valueTypes" :key="vt.id">
-                                                        <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric'}">
-                                                            <template x-if="kpi.values && kpi.values[String(vt.id)]">
-                                                                <span class="value-display"
-                                                                      :style="kpi.values[String(vt.id)].color ? `background-color: ${kpi.values[String(vt.id)].color}15; color: ${kpi.values[String(vt.id)].color}` : ''"
-                                                                      x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
+                                                        <div class="ws-cell value-cell" :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}">
+                                                            <template x-if="!vt.collapsed">
+                                                                <template x-if="kpi.values && kpi.values[String(vt.id)]">
+                                                                    <span class="value-display"
+                                                                          :style="kpi.values[String(vt.id)].color ? `background-color: ${kpi.values[String(vt.id)].color}15; color: ${kpi.values[String(vt.id)].color}` : ''"
+                                                                          x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
+                                                                </template>
                                                             </template>
-                                                            <template x-if="!kpi.values || !kpi.values[String(vt.id)]">
-                                                                <span style="opacity: 0.25;">—</span>
+                                                            <template x-if="!vt.collapsed">
+                                                                <template x-if="!kpi.values || !kpi.values[String(vt.id)]">
+                                                                    <span style="opacity: 0.25;">—</span>
+                                                                </template>
                                                             </template>
                                                         </div>
                                                     </template>
@@ -1086,6 +1883,49 @@
     </div>
 </div>
 
+<!-- Quick Snapshot Modal -->
+<div class="modal fade" id="quickSnapshotModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Quick Snapshot</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('workspace.create_snapshot') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="snapshot_date_quick" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="snapshot_date_quick" name="snapshot_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="label_quick" class="form-label">Label (Optional)</label>
+                        <input type="text" class="form-control" id="label_quick" name="label"
+                               placeholder="e.g., Q1 2026, End of Sprint 5" maxlength="100">
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Captures current KPI values for time-series tracking
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Snapshot</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set today as default date in quick snapshot modal
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('snapshot_date_quick');
+    if (dateInput) {
+        dateInput.valueAsDate = new Date();
+    }
+});
+</script>
+
 <script>
 function workspaceV2(orgId) {
     return {
@@ -1099,11 +1939,35 @@ function workspaceV2(orgId) {
         // UI State
         loading: true,
         filtersExpanded: false,
-        spaceTypeFilter: 'all',
         editMode: false,
         draggedColumnIndex: null,
         draggedRow: null,
         dragOverRow: null,
+        actionItemsCount: 0,
+
+        // Data Filters
+        spaceTypeFilter: 'all',
+        selectedGovernanceBodies: [],
+        selectedSpaces: [],
+        selectedGroups: [],
+        selectedImpactLevels: [],
+
+        // Display Controls
+        showLevels: {
+            spaces: true,
+            challenges: true,
+            initiatives: true,
+            systems: true,
+            kpis: true
+        },
+        showAggregations: {
+            spaces: true,
+            challenges: true,
+            initiatives: true,
+            systems: true
+        },
+        showArchivedKPIs: false,
+        showBadges: true,  // Toggle for all badges/decorations (governance badges, icons, etc.)
 
         // Filter Presets
         savedPresets: [],
@@ -1114,22 +1978,93 @@ function workspaceV2(orgId) {
         // Computed
         get filteredSpaces() {
             return this.spaces.filter(space => {
+                // Space Type Filter
                 if (this.spaceTypeFilter === 'public' && space.is_private) return false;
                 if (this.spaceTypeFilter === 'private' && !space.is_private) return false;
+
+                // Selected Spaces Filter
+                if (this.selectedSpaces.length > 0 && !this.selectedSpaces.includes(space.id)) {
+                    return false;
+                }
+
                 return true;
-            });
+            }).map(space => ({
+                ...space,
+                challenges: space.challenges.filter(challenge => {
+                    return challenge.initiatives.some(initiative => this.filterInitiative(initiative));
+                }).map(challenge => ({
+                    ...challenge,
+                    initiatives: challenge.initiatives.filter(initiative => this.filterInitiative(initiative)).map(initiative => ({
+                        ...initiative,
+                        systems: initiative.systems.map(system => ({
+                            ...system,
+                            kpis: system.kpis.filter(kpi => this.filterKPI(kpi))
+                        })).filter(system => system.kpis.length > 0)
+                    }))
+                }))
+            })).filter(space => space.challenges.length > 0);
+        },
+
+        filterInitiative(initiative) {
+            // Initiative Groups Filter
+            if (this.selectedGroups.length > 0) {
+                if (!initiative.group_label || !this.selectedGroups.includes(initiative.group_label)) {
+                    return false;
+                }
+            }
+
+            // Impact Assessment Filter
+            if (this.selectedImpactLevels.length > 0) {
+                if (!this.selectedImpactLevels.includes(initiative.impact_on_challenge)) {
+                    return false;
+                }
+            }
+
+            return true;
+        },
+
+        filterKPI(kpi) {
+            // Archived KPIs filter
+            if (!this.showArchivedKPIs && kpi.is_archived) {
+                return false;
+            }
+
+            // Governance Bodies Filter
+            if (this.selectedGovernanceBodies.length > 0) {
+                // Check if KPI has any of the selected GBs
+                const kpiGBIds = kpi.governance_body_ids || [];
+                const hasSelectedGB = this.selectedGovernanceBodies.some(gbId => kpiGBIds.includes(gbId));
+                if (!hasSelectedGB) {
+                    return false;
+                }
+            }
+
+            return true;
         },
 
         get totalCount() {
-            let count = this.filteredSpaces.length;
+            let count = 0;
+
+            if (this.showLevels.spaces) {
+                count += this.filteredSpaces.length;
+            }
+
             this.filteredSpaces.forEach(space => {
-                count += space.challenges.length;
+                if (this.showLevels.challenges) {
+                    count += space.challenges.length;
+                }
                 space.challenges.forEach(challenge => {
-                    count += challenge.initiatives.length;
+                    if (this.showLevels.initiatives) {
+                        count += challenge.initiatives.length;
+                    }
                     challenge.initiatives.forEach(initiative => {
-                        count += initiative.systems.length;
+                        if (this.showLevels.systems) {
+                            count += initiative.systems.length;
+                        }
                         initiative.systems.forEach(system => {
-                            count += system.kpis.length;
+                            if (this.showLevels.kpis) {
+                                count += system.kpis.length;
+                            }
                         });
                     });
                 });
@@ -1138,7 +2073,21 @@ function workspaceV2(orgId) {
         },
 
         get hasActiveFilters() {
-            return this.spaceTypeFilter !== 'all';
+            return this.spaceTypeFilter !== 'all' ||
+                   this.selectedGovernanceBodies.length > 0 ||
+                   this.selectedSpaces.length > 0 ||
+                   this.selectedGroups.length > 0 ||
+                   this.selectedImpactLevels.length > 0;
+        },
+
+        get activeFilterCount() {
+            let count = 0;
+            if (this.spaceTypeFilter !== 'all') count++;
+            if (this.selectedGovernanceBodies.length > 0) count++;
+            if (this.selectedSpaces.length > 0) count++;
+            if (this.selectedGroups.length > 0) count++;
+            if (this.selectedImpactLevels.length > 0) count++;
+            return count;
         },
 
         get filterSummary() {
@@ -1162,6 +2111,16 @@ function workspaceV2(orgId) {
         },
 
         // Methods
+        async loadActionItemsCount() {
+            try {
+                const response = await fetch('{{ url_for("workspacev2.get_action_items_count") }}');
+                const data = await response.json();
+                this.actionItemsCount = data.total_issues;
+            } catch (error) {
+                console.error('Failed to load action items count:', error);
+            }
+        },
+
         async loadData() {
             this.loading = true;
             try {
@@ -1186,7 +2145,12 @@ function workspaceV2(orgId) {
                     }))
                 }));
 
-                this.valueTypes = data.valueTypes;
+                // Add collapsed state to value types
+                this.valueTypes = data.valueTypes.map(vt => ({
+                    ...vt,
+                    collapsed: false
+                }));
+
                 this.governanceBodies = data.governanceBodies;
                 this.groups = data.groups;
                 this.impactLevels = data.impactLevels;
@@ -1200,6 +2164,94 @@ function workspaceV2(orgId) {
 
         clearAllFilters() {
             this.spaceTypeFilter = 'all';
+            this.selectedGovernanceBodies = [];
+            this.selectedSpaces = [];
+            this.selectedGroups = [];
+            this.selectedImpactLevels = [];
+        },
+
+        // Filter Toggle Methods
+        toggleGovernanceBody(gbId) {
+            const index = this.selectedGovernanceBodies.indexOf(gbId);
+            if (index > -1) {
+                this.selectedGovernanceBodies.splice(index, 1);
+            } else {
+                this.selectedGovernanceBodies.push(gbId);
+            }
+        },
+
+        toggleSpace(spaceId) {
+            const index = this.selectedSpaces.indexOf(spaceId);
+            if (index > -1) {
+                this.selectedSpaces.splice(index, 1);
+            } else {
+                this.selectedSpaces.push(spaceId);
+            }
+        },
+
+        toggleGroup(group) {
+            const index = this.selectedGroups.indexOf(group);
+            if (index > -1) {
+                this.selectedGroups.splice(index, 1);
+            } else {
+                this.selectedGroups.push(group);
+            }
+        },
+
+        toggleImpactLevel(level) {
+            const index = this.selectedImpactLevels.indexOf(level);
+            if (index > -1) {
+                this.selectedImpactLevels.splice(index, 1);
+            } else {
+                this.selectedImpactLevels.push(level);
+            }
+        },
+
+        // Count methods for filter badges
+        countByGovernanceBody(gbId) {
+            let count = 0;
+            this.spaces.forEach(space => {
+                space.challenges.forEach(challenge => {
+                    challenge.initiatives.forEach(initiative => {
+                        initiative.systems.forEach(system => {
+                            system.kpis.forEach(kpi => {
+                                if (!kpi.is_archived && (kpi.governance_body_ids || []).includes(gbId)) {
+                                    count++;
+                                }
+                            });
+                        });
+                    });
+                });
+            });
+            return count;
+        },
+
+        countByGroup(group) {
+            let count = 0;
+            this.spaces.forEach(space => {
+                space.challenges.forEach(challenge => {
+                    challenge.initiatives.forEach(initiative => {
+                        if (initiative.group_label === group) {
+                            count++;
+                        }
+                    });
+                });
+            });
+            return count;
+        },
+
+        countByImpactLevel(level) {
+            let count = 0;
+            this.spaces.forEach(space => {
+                space.challenges.forEach(challenge => {
+                    challenge.initiatives.forEach(initiative => {
+                        if (initiative.impact_on_challenge === level) {
+                            count++;
+                        }
+                    });
+                });
+            });
+            return count;
         },
 
         // Filter Presets
@@ -1214,11 +2266,18 @@ function workspaceV2(orgId) {
                     this.savedPresets = [];
                 }
             }
+
+            // Load action items count
+            this.loadActionItemsCount();
         },
 
         getCurrentFilters() {
             return {
-                spaceTypeFilter: this.spaceTypeFilter
+                spaceTypeFilter: this.spaceTypeFilter,
+                selectedGovernanceBodies: [...this.selectedGovernanceBodies],
+                selectedSpaces: [...this.selectedSpaces],
+                selectedGroups: [...this.selectedGroups],
+                selectedImpactLevels: [...this.selectedImpactLevels]
             };
         },
 
@@ -1226,9 +2285,11 @@ function workspaceV2(orgId) {
             const filters = preset.filters;
             let count = 0;
 
-            if (filters.spaceTypeFilter && filters.spaceTypeFilter !== 'all') {
-                count++;
-            }
+            if (filters.spaceTypeFilter && filters.spaceTypeFilter !== 'all') count++;
+            if (filters.selectedGovernanceBodies && filters.selectedGovernanceBodies.length > 0) count++;
+            if (filters.selectedSpaces && filters.selectedSpaces.length > 0) count++;
+            if (filters.selectedGroups && filters.selectedGroups.length > 0) count++;
+            if (filters.selectedImpactLevels && filters.selectedImpactLevels.length > 0) count++;
 
             return count === 1 ? '1 filter' : `${count} filters`;
         },
@@ -1238,6 +2299,18 @@ function workspaceV2(orgId) {
 
             if (filters.spaceTypeFilter && filters.spaceTypeFilter !== 'all') {
                 parts.push(`Space Type: ${filters.spaceTypeFilter.charAt(0).toUpperCase() + filters.spaceTypeFilter.slice(1)}`);
+            }
+            if (filters.selectedGovernanceBodies && filters.selectedGovernanceBodies.length > 0) {
+                parts.push(`Governance Bodies: ${filters.selectedGovernanceBodies.length} selected`);
+            }
+            if (filters.selectedSpaces && filters.selectedSpaces.length > 0) {
+                parts.push(`Spaces: ${filters.selectedSpaces.length} selected`);
+            }
+            if (filters.selectedGroups && filters.selectedGroups.length > 0) {
+                parts.push(`Groups: ${filters.selectedGroups.length} selected`);
+            }
+            if (filters.selectedImpactLevels && filters.selectedImpactLevels.length > 0) {
+                parts.push(`Impact: ${filters.selectedImpactLevels.length} selected`);
             }
 
             return parts.length > 0 ? parts.join(', ') : 'No filters applied';
@@ -1270,9 +2343,11 @@ function workspaceV2(orgId) {
             // Apply all filters from the preset
             const filters = preset.filters;
 
-            if (filters.spaceTypeFilter) {
-                this.spaceTypeFilter = filters.spaceTypeFilter;
-            }
+            this.spaceTypeFilter = filters.spaceTypeFilter || 'all';
+            this.selectedGovernanceBodies = filters.selectedGovernanceBodies || [];
+            this.selectedSpaces = filters.selectedSpaces || [];
+            this.selectedGroups = filters.selectedGroups || [];
+            this.selectedImpactLevels = filters.selectedImpactLevels || [];
 
             // Expand filters panel to show what was loaded
             this.filtersExpanded = true;
@@ -1577,6 +2652,279 @@ function workspaceV2(orgId) {
             } catch (error) {
                 console.error('Error saving row order:', error);
                 alert('Error saving order. Please try again.');
+            }
+        },
+
+        // Expand/Collapse Rows
+        expandAllRows() {
+            this.spaces.forEach(space => {
+                space.collapsed = false;
+                space.challenges.forEach(challenge => {
+                    challenge.collapsed = false;
+                    challenge.initiatives.forEach(initiative => {
+                        initiative.collapsed = false;
+                        initiative.systems.forEach(system => {
+                            system.collapsed = false;
+                        });
+                    });
+                });
+            });
+        },
+
+        collapseAllRows() {
+            this.spaces.forEach(space => {
+                space.collapsed = true;
+                space.challenges.forEach(challenge => {
+                    challenge.collapsed = true;
+                    challenge.initiatives.forEach(initiative => {
+                        initiative.collapsed = true;
+                        initiative.systems.forEach(system => {
+                            system.collapsed = true;
+                        });
+                    });
+                });
+            });
+        },
+
+        // Column Collapse
+        expandAllColumns() {
+            this.valueTypes.forEach(vt => {
+                vt.collapsed = false;
+            });
+        },
+
+        collapseAllColumns() {
+            this.valueTypes.forEach(vt => {
+                vt.collapsed = true;
+            });
+        },
+
+        toggleColumnCollapse(index) {
+            this.valueTypes[index].collapsed = !this.valueTypes[index].collapsed;
+        },
+
+        // Entity Actions
+        showEntityLinks(entity, entityType) {
+            // Build HTML for links
+            if (!entity.entity_links || entity.entity_links.length === 0) {
+                return;
+            }
+
+            let linksHTML = entity.entity_links.map(link => {
+                const title = link.title || link.url;
+                const displayUrl = link.url.length > 50 ? link.url.substring(0, 50) + '...' : link.url;
+                return `
+                    <div style="margin-bottom: 0.75rem;">
+                        <a href="${link.url}" target="_blank" style="color: #0d6efd; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 1.2rem;">${link.icon}</span>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 600;">${this.escapeHtml(title)}</div>
+                                <div style="font-size: 0.85rem; color: #6c757d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(displayUrl)}</div>
+                            </div>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+
+            const modalHTML = `
+                <div class="modal fade" id="entityLinksModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-link-45deg"></i> Related Links - ${this.escapeHtml(entity.name)}
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                ${linksHTML}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove any existing modal
+            document.getElementById('entityLinksModal')?.remove();
+
+            // Add modal to DOM
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('entityLinksModal'));
+            modal.show();
+
+            // Clean up after modal is hidden
+            document.getElementById('entityLinksModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        },
+
+        escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        },
+
+        async deleteSpace(space) {
+            if (!confirm(`Are you sure you want to delete the space "${space.name}"?\n\nThis will also delete all challenges, initiatives, systems, and KPIs within this space. This action cannot be undone!`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/geography/spaces/${space.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await this.loadData();
+                    alert('Space deleted successfully');
+                } else {
+                    alert('Failed to delete space: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting space:', error);
+                alert('Error deleting space. Please try again.');
+            }
+        },
+
+        async deleteChallenge(challenge) {
+            if (!confirm(`Are you sure you want to delete the challenge "${challenge.name}"?\n\nThis will also delete all initiatives, systems, and KPIs linked to this challenge. This action cannot be undone!`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/organization_admin/challenges/${challenge.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await this.loadData();
+                    alert('Challenge deleted successfully');
+                } else {
+                    alert('Failed to delete challenge: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting challenge:', error);
+                alert('Error deleting challenge. Please try again.');
+            }
+        },
+
+        async deleteInitiative(initiative) {
+            if (!confirm(`Are you sure you want to delete the initiative "${initiative.name}"?\n\nThis will also delete all systems and KPIs linked to this initiative. This action cannot be undone!`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/organization_admin/initiatives/${initiative.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await this.loadData();
+                    alert('Initiative deleted successfully');
+                } else {
+                    alert('Failed to delete initiative: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error deleting initiative:', error);
+                alert('Error deleting initiative. Please try again.');
+            }
+        },
+
+        async deleteSystem(system, initiative) {
+            if (!confirm(`Are you sure you want to unlink the system "${system.name}" from initiative "${initiative.name}"?\n\nThis will also delete all KPIs for this system under this initiative. The system itself will remain available for other initiatives.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/organization_admin/initiative-system-links/${system.link_id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await this.loadData();
+                    alert('System unlinked successfully');
+                } else {
+                    alert('Failed to unlink system: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error unlinking system:', error);
+                alert('Error unlinking system. Please try again.');
+            }
+        },
+
+        async archiveKPI(kpi) {
+            if (!confirm(`Archive KPI "${kpi.name}"?\n\nArchived KPIs can be restored later.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/organization_admin/kpis/${kpi.id}/archive`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await this.loadData();
+                } else {
+                    alert('Failed to archive KPI: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error archiving KPI:', error);
+                alert('Error archiving KPI. Please try again.');
+            }
+        },
+
+        async restoreKPI(kpi) {
+            if (!confirm(`Restore KPI "${kpi.name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/organization_admin/kpis/${kpi.id}/restore`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    await this.loadData();
+                } else {
+                    alert('Failed to restore KPI: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error restoring KPI:', error);
+                alert('Error restoring KPI. Please try again.');
             }
         }
     }
