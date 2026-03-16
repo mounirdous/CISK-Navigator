@@ -1239,7 +1239,9 @@
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <i class="bi bi-bookmark-star-fill" style="font-size: 1.2rem;"></i>
                         <span style="font-weight: 600; font-size: 1rem;">Filter Presets</span>
-                        <span x-show="savedPresets.length > 0" style="background: rgba(255,255,255,0.3); padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem;" x-text="`${savedPresets.length} saved`"></span>
+                        {% if filter_presets %}
+                        <span style="background: rgba(255,255,255,0.3); padding: 0.15rem 0.5rem; border-radius: 10px; font-size: 0.75rem;">{{ filter_presets|length }} saved</span>
+                        {% endif %}
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <button @click="showSavePresetModal = true"
@@ -1258,7 +1260,43 @@
                     </div>
                 </div>
 
-                <!-- Saved Presets List -->
+                <!-- Search & Load Database Presets -->
+                {% if filter_presets %}
+                <div style="position: relative; max-width: 400px; margin-bottom: 1rem;">
+                    <input type="text" id="preset-search-v2" class="form-control form-control-sm"
+                           placeholder="🔍 Search saved filters... ({{ filter_presets|length }} available)"
+                           autocomplete="off"
+                           style="background: rgba(255,255,255,0.9); border: 1px solid rgba(255,255,255,0.3);">
+
+                    <!-- Dropdown list -->
+                    <div id="presets-dropdown-v2" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 300px; overflow-y: auto; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; margin-top: 4px;">
+                        {% for preset in filter_presets %}
+                        <div class="preset-dropdown-item-v2" data-preset-id="{{ preset.id }}" data-preset-name="{{ preset.name|lower }}"
+                             data-preset-filters='{{ preset.filters|tojson }}'
+                             style="padding: 10px 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; transition: background 0.2s;">
+                            <div style="flex: 1;">
+                                <div class="preset-item-name" style="font-weight: 600; font-size: 0.9rem; color: #2c3e50;">{{ preset.name }}</div>
+                                <div style="font-size: 0.75rem; color: #6c757d; margin-top: 2px;">
+                                    {% set filter_count = preset.filters|length if preset.filters else 0 %}
+                                    {{ filter_count }} filter{{ 's' if filter_count != 1 }}
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-danger delete-preset-btn-v2" data-delete-preset="{{ preset.id }}"
+                                    style="padding: 2px 8px; font-size: 0.75rem; border-radius: 4px;"
+                                    onclick="event.stopPropagation();" title="Delete preset">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div id="no-presets-found-v2" style="display: none; padding: 12px; text-align: center; color: #6c757d; font-size: 0.85rem; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #dee2e6; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; margin-top: 4px;">
+                        No filters match "<span id="search-term-display-v2"></span>". Try a different term.
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Saved Presets List (localStorage - remove after migration) -->
                 <div x-show="savedPresets.length > 0" style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
                     <template x-for="preset in savedPresets" :key="preset.id">
                         <div @click="loadPreset(preset)"
@@ -2942,27 +2980,36 @@ function workspaceV2(orgId) {
             return parts.length > 0 ? parts.join(', ') : 'No filters applied';
         },
 
-        saveCurrentPreset() {
+        async saveCurrentPreset() {
             if (!this.newPresetName.trim()) {
                 alert('Please enter a preset name');
                 return;
             }
 
-            const preset = {
-                id: Date.now(),
-                name: this.newPresetName.trim(),
-                filters: this.getCurrentFilters(),
-                createdAt: new Date().toISOString()
-            };
+            const name = this.newPresetName.trim();
+            const filters = this.getCurrentFilters();
 
-            this.savedPresets.push(preset);
-            this.savePresetsToStorage();
+            try {
+                const response = await fetch('/workspace/api/filter-presets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({name, filters})
+                });
 
-            this.showSavePresetModal = false;
-            this.newPresetName = '';
-
-            // Show success message
-            alert(`Filter preset "${preset.name}" saved successfully!`);
+                if (response.ok) {
+                    alert(`Filter preset "${name}" saved successfully!`);
+                    location.reload();  // Reload to show new preset in database list
+                } else {
+                    const error = await response.json();
+                    alert('Error: ' + (error.error || 'Failed to save preset'));
+                }
+            } catch (err) {
+                console.error('Failed to save preset:', err);
+                alert('Failed to save preset. Please try again.');
+            }
         },
 
         loadPreset(preset) {
@@ -3555,5 +3602,121 @@ function workspaceV2(orgId) {
         }
     }
 }
+</script>
+
+<!-- Preset Search Dropdown (Database Presets) -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('preset-search-v2');
+    const dropdown = document.getElementById('presets-dropdown-v2');
+    const noResultsDiv = document.getElementById('no-presets-found-v2');
+
+    if (!searchInput || !dropdown) return; // No presets available
+
+    // Show dropdown on focus - show ALL presets
+    searchInput.addEventListener('focus', function() {
+        // Reset filter - show all items
+        const items = dropdown.querySelectorAll('.preset-dropdown-item-v2');
+        items.forEach(item => {
+            item.style.display = 'flex';
+        });
+        dropdown.style.display = 'block';
+        noResultsDiv.style.display = 'none';
+    });
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.style.display = 'none';
+            noResultsDiv.style.display = 'none';
+        }
+    });
+
+    // Filter presets on input
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        const items = dropdown.querySelectorAll('.preset-dropdown-item-v2');
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const name = item.dataset.presetName;
+            if (name.includes(searchTerm)) {
+                item.style.display = 'flex';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        if (visibleCount === 0 && searchTerm) {
+            dropdown.style.display = 'none';
+            noResultsDiv.style.display = 'block';
+            document.getElementById('search-term-display-v2').textContent = searchInput.value;
+        } else {
+            dropdown.style.display = 'block';
+            noResultsDiv.style.display = 'none';
+        }
+    });
+
+    // Load preset on click
+    dropdown.querySelectorAll('.preset-dropdown-item-v2').forEach(item => {
+        item.addEventListener('click', function() {
+            const filters = JSON.parse(this.dataset.presetFilters);
+            const workspaceComponent = Alpine.$data(document.querySelector('[x-data]'));
+
+            // Apply filters to Alpine component
+            if (filters.spaceTypeFilter) workspaceComponent.spaceTypeFilter = filters.spaceTypeFilter;
+            if (filters.selectedGovernanceBodies) workspaceComponent.selectedGovernanceBodies = filters.selectedGovernanceBodies || [];
+            if (filters.selectedSpaces) workspaceComponent.selectedSpaces = filters.selectedSpaces || [];
+            if (filters.selectedGroups) workspaceComponent.selectedGroups = filters.selectedGroups || [];
+            if (filters.selectedImpactLevels) workspaceComponent.selectedImpactLevels = filters.selectedImpactLevels || [];
+
+            // Expand filters to show what was loaded
+            workspaceComponent.filtersExpanded = true;
+
+            // Close dropdown
+            dropdown.style.display = 'none';
+            searchInput.value = '';
+        });
+    });
+
+    // Delete preset
+    dropdown.querySelectorAll('.delete-preset-btn-v2').forEach(btn => {
+        btn.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            const presetId = this.dataset.deletePreset;
+
+            if (!confirm('Delete this filter preset? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/workspace/api/filter-presets/${presetId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Reload page to update preset list
+                    window.location.reload();
+                } else {
+                    alert('Failed to delete preset. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error deleting preset:', error);
+                alert('Error deleting preset. Please try again.');
+            }
+        });
+    });
+
+    // Hover effects
+    dropdown.querySelectorAll('.preset-dropdown-item-v2').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            this.style.background = '#f8f9fa';
+        });
+        item.addEventListener('mouseleave', function() {
+            this.style.background = '';
+        });
+    });
+});
 </script>
 {% endblock %}

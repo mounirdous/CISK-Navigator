@@ -24,6 +24,7 @@ from app.models import (
     Space,
     System,
     SystemSetting,
+    UserFilterPreset,
     ValueType,
 )
 
@@ -80,6 +81,13 @@ def index():
         filled, total, status = org.get_porters_completion()
         porters_completion = {"filled": filled, "total": total, "status": status}
 
+    # Get filter presets for this user (from database, not localStorage)
+    filter_presets = (
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
+        .order_by(UserFilterPreset.name)
+        .all()
+    )
+
     return render_template(
         "workspacev2/index.html",
         org_name=org_name,
@@ -87,6 +95,7 @@ def index():
         organization=org,
         org_logo=org_logo,
         porters_completion=porters_completion,
+        filter_presets=filter_presets,
         csrf_token=generate_csrf,
     )
 
