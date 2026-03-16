@@ -1547,6 +1547,16 @@
                               :title="'Click to ' + (vt.collapsed ? 'expand' : 'collapse') + ': ' + vt.name">
                             ⇄
                         </span>
+                        <!-- Rollup Config Icon (Edit Mode Only, Numeric Only) -->
+                        <template x-if="editMode && vt.kind === 'numeric'">
+                            <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspacev2') }}`.replace('vt_id=0', `vt_id=${vt.id}`)"
+                               class="rollup-config-icon"
+                               :title="'Configure rollup display for ' + vt.name"
+                               @click.stop
+                               style="position: absolute; top: 4px; left: 4px; font-size: 0.8rem; opacity: 0.6; transition: opacity 0.2s; text-decoration: none;">
+                                <i class="bi bi-sliders"></i>
+                            </a>
+                        </template>
                         <!-- Drag Handle (Edit Mode) -->
                         <div x-show="editMode" style="display: inline-block; opacity: 0.3; margin-right: 0.5rem; cursor: grab;">
                             <i class="bi bi-grip-vertical"></i>
@@ -2255,7 +2265,7 @@
 
                                                                         <!-- Cell Value (clickable to detail) -->
                                                                         <div :style="'cursor: pointer; display: inline-block; width: 100%;'"
-                                                                             @click="window.location.href = `/workspace/kpis/${kpi.id}/value-types/${vt.id}`">
+                                                                             @click="window.location.href = `/workspace/kpi/${kpi.id}/value-type/${vt.id}`">
                                                                             <!-- No Data -->
                                                                             <template x-if="kpi.values[String(vt.id)].consensus_status === 'no_data'">
                                                                                 <small style="color: #6c757d; font-size: 0.85rem;">
@@ -2274,7 +2284,7 @@
                                                                                             </strong>
                                                                                             <!-- Target indicator -->
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
@@ -2292,7 +2302,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">!!</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">!!!</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
@@ -2309,7 +2319,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">★★</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">★★★</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
@@ -2326,7 +2336,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">▼▼</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">▼▼▼</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
@@ -2343,7 +2353,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">●●</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">●●●</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
@@ -2360,7 +2370,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">😐</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">😊</span>
                                                                                             <template x-if="kpi.values[String(vt.id)].has_target">
-                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('kpi_id=0', `kpi_id=${kpi.id}`)"
+                                                                                                <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspacev2') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
