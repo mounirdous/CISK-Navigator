@@ -3,37 +3,65 @@ Beta Feature Prototypes
 ------------------------
 Experimental features and UI prototypes for testing.
 
-Auto-redirect: Users with beta_tester=True automatically see beta routes.
+Beta access is opt-in via /beta landing page.
 """
 
 import base64
+from datetime import date
 from functools import wraps
 
-from flask import Blueprint, flash, redirect, render_template, session, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
+from sqlalchemy import or_
 
 from app.extensions import db
+from app.forms import ContributionForm
 from app.models import (
     KPI,
     CellComment,
     Challenge,
     ChallengeInitiativeLink,
+    Contribution,
     EntityTypeDefault,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
+    KPISnapshot,
     KPIValueTypeConfig,
     Organization,
+    RollupSnapshot,
+    SavedChart,
     Space,
     System,
     SystemAnnouncement,
+    User,
+    UserAnnouncementAcknowledgment,
+    UserFilterPreset,
+    UserOrganizationMembership,
     ValueType,
 )
+from app.services import AggregationService, ConsensusService, ExcelExportService
 from app.services.comment_service import CommentService
+from app.services.snapshot_pivot_service import SnapshotPivotService
 from app.services.snapshot_service import SnapshotService
 
 bp = Blueprint("beta", __name__, url_prefix="/beta")
+
+
+def organization_required(f):
+    """Decorator to require organization context"""
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for("auth.login"))
+        if session.get("organization_id") is None:
+            flash("Please log in to an organization", "warning")
+            return redirect(url_for("auth.login"))
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
 def beta_required(f):
@@ -164,97 +192,10 @@ def dashboard():
 
 @bp.route("/workspace")
 @login_required
+@organization_required
 @beta_required
 def workspace():
-    """Beta workspace prototype - mobile card-based view"""
-    org_id = session.get("organization_id")
-    org_name = session.get("organization_name")
-
-    if not org_id:
-        flash("Please select an organization first.", "warning")
-        return redirect(url_for("auth.login"))
-
-    # Get organization
-    organization = Organization.query.get_or_404(org_id)
-
-    # Get organization logo
-    org_logo = None
-    if organization.logo_data:
-        org_logo = (
-            f"data:{organization.logo_mime_type};base64,{base64.b64encode(organization.logo_data).decode('utf-8')}"
-        )
-
-    # Get entity type defaults
-    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
-    entity_defaults = {}
-    for default in entity_defaults_raw:
-        logo_url = None
-        if default.default_logo_data and default.default_logo_mime_type:
-            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
-
-        entity_defaults[default.entity_type] = {
-            "color": default.default_color,
-            "icon": default.default_icon,
-            "logo": logo_url,
-        }
-
-    # Get all spaces with full hierarchy
-    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order).all()
-
-    # Build hierarchy data
-    spaces_data = []
-    for space in spaces:
-        challenges = Challenge.query.filter_by(space_id=space.id).order_by(Challenge.display_order).all()
-
-        challenges_data = []
-        for challenge in challenges:
-            # Get initiatives through ChallengeInitiativeLink (many-to-many)
-            challenge_links = sorted(challenge.initiative_links, key=lambda x: x.display_order)
-
-            initiatives_data = []
-            for challenge_link in challenge_links:
-                initiative = challenge_link.initiative
-                if not initiative:
-                    continue
-
-                # Get systems for this initiative
-                systems_links = sorted(
-                    [link for link in initiative.system_links if link.system], key=lambda x: x.display_order
-                )
-
-                systems_data = []
-                for sys_link in systems_links:
-                    system = sys_link.system
-                    # Count KPIs for this system
-                    kpi_count = len([kpi for kpi in sys_link.kpis if not kpi.is_archived])
-
-                    systems_data.append({"system": system, "kpi_count": kpi_count})
-
-                initiatives_data.append(
-                    {"initiative": initiative, "systems_count": len(systems_data), "systems": systems_data}
-                )
-
-            challenges_data.append(
-                {"challenge": challenge, "initiatives_count": len(initiatives_data), "initiatives": initiatives_data}
-            )
-
-        spaces_data.append({"space": space, "challenges_count": len(challenges_data), "challenges": challenges_data})
-
-    # Get value types (ValueType doesn't have is_deleted, has is_active instead)
-    value_types = (
-        ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.display_order).all()
-    )
-
-    return render_template(
-        "beta/workspace.html",
-        page_title="Workspace (Beta)",
-        organization=organization,
-        org_name=org_name,
-        org_logo=org_logo,
-        org_id=org_id,
-        entity_defaults=entity_defaults,
-        spaces_data=spaces_data,
-        value_types=value_types,
-        csrf_token=generate_csrf,
-        is_prototype=True,
-    )
+    """Beta workspace - redirects to regular workspace for now (full copy coming)"""
+    # Temporary: Just use the regular workspace
+    # Template is already copied to beta/workspace.html
+    return redirect(url_for("workspace.index"))
