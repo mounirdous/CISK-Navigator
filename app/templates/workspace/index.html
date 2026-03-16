@@ -869,6 +869,78 @@
         font-size: 0.9rem;
     }
 
+    /* Christmas Tree Icon */
+    .xmas-tree-icon {
+        display: inline-block;
+        position: relative;
+        width: 16px;
+        height: 18px;
+        vertical-align: middle;
+    }
+
+    .xmas-tree-icon::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 6px solid #2d5016;
+        top: 0;
+    }
+
+    .xmas-tree-icon::after {
+        content: '';
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 7px solid transparent;
+        border-right: 7px solid transparent;
+        border-bottom: 6px solid #4a8a2a;
+        top: 4px;
+    }
+
+    .xmas-tree-trunk {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 3px;
+        height: 4px;
+        background: #8b4513;
+        bottom: 0;
+        border-radius: 1px;
+    }
+
+    .xmas-tree-star {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: -3px;
+        font-size: 6px;
+        line-height: 1;
+    }
+
+    .xmas-ornament {
+        position: absolute;
+        width: 3px;
+        height: 3px;
+        border-radius: 50%;
+        animation: twinkle 1.5s ease-in-out infinite;
+    }
+
+    .xmas-ornament.red { background: #ff0000; top: 5px; left: 4px; }
+    .xmas-ornament.gold { background: #ffd700; top: 7px; right: 4px; animation-delay: 0.5s; }
+    .xmas-ornament.blue { background: #0066ff; top: 9px; left: 6px; animation-delay: 1s; }
+
+    @keyframes twinkle {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
     .entity-logo {
         width: 20px;
         height: 20px;
@@ -1660,7 +1732,13 @@
                                    @click="space.collapsed = !space.collapsed"
                                    x-show="space.challenges.length > 0"></i>
                                 <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
-                                <i x-show="!space.logo_url" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
+                                <span x-show="!space.logo_url" class="xmas-tree-icon">
+                                    <span class="xmas-tree-star">⭐</span>
+                                    <span class="xmas-tree-trunk"></span>
+                                    <span class="xmas-ornament red"></span>
+                                    <span class="xmas-ornament gold"></span>
+                                    <span class="xmas-ornament blue"></span>
+                                </span>
 
                                 <!-- SWOT link with completion badge -->
                                 <template x-if="showBadges">
