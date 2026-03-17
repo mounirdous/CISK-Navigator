@@ -2,6 +2,41 @@
 
 {% block title %}Create Action/Memo{% endblock %}
 
+{% block extra_css %}
+<style>
+.autocomplete-dropdown {
+    position: absolute;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    width: 400px;
+    margin-top: -6px;
+}
+.autocomplete-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+.autocomplete-item:hover {
+    background-color: #f8f9fa;
+}
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+.autocomplete-item strong {
+    color: #0d6efd;
+}
+.autocomplete-item small {
+    color: #6c757d;
+    margin-left: 8px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <div class="row">
@@ -41,17 +76,19 @@
                         </div>
 
                         <!-- Description -->
-                        <div class="mb-3">
+                        <div class="mb-3 position-relative">
                             <label for="description" class="form-label">{{ form.description.label.text }}</label>
-                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="6", placeholder="Detailed description. Use @mentions to link entities (e.g., @\"Entity Name\")") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="6", placeholder="Detailed description. Use @mentions to link entities (e.g., @\"Entity Name\")", id="description-field") }}
                             {% if form.description.errors %}
                                 <div class="invalid-feedback">
                                     {{ form.description.errors[0] }}
                                 </div>
                             {% endif %}
                             <div class="form-text">
-                                Tip: Use <code>@"Entity Name"</code> to mention and link spaces, challenges, initiatives, systems, or KPIs
+                                Tip: Type <code>@</code> followed by entity name to see suggestions
                             </div>
+                            <!-- Autocomplete dropdown -->
+                            <div id="mention-autocomplete" class="autocomplete-dropdown" style="display: none;"></div>
                         </div>
 
                         <!-- Action-specific fields (shown conditionally) -->
@@ -156,6 +193,107 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Listen for changes
     typeSelect.addEventListener('change', toggleActionFields);
+
+    // @mention autocomplete
+    const descriptionField = document.getElementById('description-field');
+    const autocompleteDropdown = document.getElementById('mention-autocomplete');
+    let currentMentionStart = -1;
+    let currentMentionEnd = -1;
+
+    if (descriptionField) {
+        descriptionField.addEventListener('input', function(e) {
+            const text = this.value;
+            const cursorPos = this.selectionStart;
+
+            // Find if we're in a mention (after @)
+            let mentionStart = -1;
+            for (let i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] === '@') {
+                    mentionStart = i;
+                    break;
+                }
+                if (text[i] === ' ' || text[i] === '\n') {
+                    break;
+                }
+            }
+
+            if (mentionStart !== -1) {
+                const mentionText = text.substring(mentionStart + 1, cursorPos);
+                currentMentionStart = mentionStart;
+                currentMentionEnd = cursorPos;
+
+                if (mentionText.length >= 1) {
+                    // Search for entities
+                    fetch(`{{ url_for('action_items.api_search_entities') }}?q=${encodeURIComponent(mentionText)}`)
+                        .then(response => response.json())
+                        .then(results => {
+                            if (results.length > 0) {
+                                showAutocomplete(results);
+                            } else {
+                                hideAutocomplete();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching entities:', error);
+                            hideAutocomplete();
+                        });
+                } else {
+                    hideAutocomplete();
+                }
+            } else {
+                hideAutocomplete();
+            }
+        });
+
+        // Handle clicking outside
+        document.addEventListener('click', function(e) {
+            if (e.target !== descriptionField && e.target !== autocompleteDropdown) {
+                hideAutocomplete();
+            }
+        });
+    }
+
+    function showAutocomplete(results) {
+        autocompleteDropdown.innerHTML = '';
+        autocompleteDropdown.style.display = 'block';
+
+        // Position dropdown below textarea
+        const rect = descriptionField.getBoundingClientRect();
+        autocompleteDropdown.style.left = '0';
+        autocompleteDropdown.style.top = descriptionField.offsetHeight + 'px';
+
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'autocomplete-item';
+            item.innerHTML = `<strong>${result.name}</strong> <small>[${result.type}]</small>`;
+            item.addEventListener('click', function() {
+                insertMention(result.name);
+            });
+            autocompleteDropdown.appendChild(item);
+        });
+    }
+
+    function hideAutocomplete() {
+        autocompleteDropdown.style.display = 'none';
+        autocompleteDropdown.innerHTML = '';
+    }
+
+    function insertMention(entityName) {
+        const text = descriptionField.value;
+        const beforeMention = text.substring(0, currentMentionStart);
+        const afterMention = text.substring(currentMentionEnd);
+
+        // Insert mention with quotes if name contains spaces
+        const mention = entityName.includes(' ') ? `@"${entityName}"` : `@${entityName}`;
+        descriptionField.value = beforeMention + mention + ' ' + afterMention;
+
+        // Move cursor after mention
+        const newCursorPos = beforeMention.length + mention.length + 1;
+        descriptionField.setSelectionRange(newCursorPos, newCursorPos);
+        descriptionField.focus();
+
+        hideAutocomplete();
+    }
 });
 </script>
 {% endblock %}

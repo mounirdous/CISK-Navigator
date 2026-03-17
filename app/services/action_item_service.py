@@ -122,10 +122,16 @@ class ActionItemService:
         if not item or item.owner_user_id != user_id:
             return None
 
-        # Update fields
-        for field in ["title", "description", "status", "priority", "due_date", "visibility"]:
-            if field in kwargs:
+        # Update fields (only if value is not None, or if it's an explicitly nullable field)
+        for field in ["title", "description", "visibility"]:
+            if field in kwargs and kwargs[field] is not None:
                 setattr(item, field, kwargs[field])
+
+        # For actions only: update status, priority, due_date
+        if item.type == "action":
+            for field in ["status", "priority", "due_date"]:
+                if field in kwargs and kwargs[field] is not None:
+                    setattr(item, field, kwargs[field])
 
         # Mark as completed if status changed to completed
         if "status" in kwargs and kwargs["status"] == "completed" and item.completed_at is None:
