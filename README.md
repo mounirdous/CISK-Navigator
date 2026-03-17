@@ -637,15 +637,23 @@
 - **🔍 Enhanced Search**: Advanced global search with fuzzy matching and action item tracking
   - **Search bar in top navigation** with Ctrl+K keyboard shortcut
   - **Fuzzy matching**: Typo-tolerant search (e.g., "inventroy" finds "Inventory")
-  - **Search modifiers**: Filter by status and quality
-    - `@requires_action` - All items needing attention (matches Action Items page)
+  - **Advanced filters**: Filter panel with entity types, date range, and status
+    - **Entity type filters**: Restrict search to specific types (KPIs, Systems, Initiatives, Challenges, Spaces)
+    - **Filter persistence**: Filters pass from navbar to search results page via URL parameters
+    - **Filter restoration**: Filter panel state restored from URL on page reload
+    - **Visual indicator**: Yellow funnel icon shows when filters are active
+  - **Search modifiers**: Filter by status and quality (work with entity type filters)
+    - `@requires_action` - All items needing attention (matches Action Items page, 28 items total)
     - `@incomplete` - Initiatives/Spaces with incomplete forms/SWOT
     - `@no_consensus` - Initiatives without consensus on impact
     - `@missing_kpis` - Systems without KPIs
-    - `@missing_governance` - KPIs without governance bodies
+    - `@missing_governance` - KPIs without governance bodies (18 KPIs)
     - `@archived` - Archived KPIs
+    - **Modifier + Filter examples**:
+      - `@requires_action` + "KPIs only" = 18 KPIs without governance
+      - `@incomplete` + "Initiatives only" = 6 incomplete initiatives
   - **Saved searches**: Save frequently used queries, set default search
-  - **Live search dropdown**: Real-time results as you type (navbar)
+  - **Live search dropdown**: Real-time results as you type (navbar, up to 5 per type)
   - **Full search page**: Comprehensive results with manual search button
   - **Searches across**: Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Comments
   - **Permission-aware results**: Edit buttons only if authorized
