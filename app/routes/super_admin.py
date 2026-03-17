@@ -12,7 +12,7 @@ from flask_wtf.csrf import generate_csrf
 
 from app.decorators import super_admin_required
 from app.extensions import db
-from app.forms import OrganizationSSOConfigForm
+from app.forms import EmailConfigForm, OrganizationSSOConfigForm
 from app.models import (
     AnnouncementTargetOrganization,
     AnnouncementTargetUser,
@@ -213,6 +213,104 @@ def toggle_beta():
         flash(f"Error toggling beta: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.index"))
+
+
+@bp.route("/settings/email", methods=["GET", "POST"])
+@super_admin_required
+def email_settings():
+    """Configure email/SMTP settings"""
+    from app.services.email_service import EmailService
+
+    form = EmailConfigForm()
+
+    if request.method == "GET":
+        # Load current settings into form
+        config = EmailService.get_smtp_config()
+        form.smtp_host.data = config["smtp_host"]
+        form.smtp_port.data = config["smtp_port"]
+        form.smtp_username.data = config["smtp_username"]
+        # Don't populate password field for security
+        form.smtp_use_tls.data = config["smtp_use_tls"]
+        form.smtp_use_ssl.data = config["smtp_use_ssl"]
+        form.smtp_from_email.data = config["from_email"]
+        form.smtp_from_name.data = config["from_name"]
+
+        # Load notification settings
+        form.enable_mention_notifications.data = SystemSetting.get_value("email_mention_notifications", default=False)
+        form.enable_action_notifications.data = SystemSetting.get_value("email_action_notifications", default=False)
+
+    if form.validate_on_submit():
+        try:
+            # Save SMTP settings
+            SystemSetting.set_value("smtp_host", form.smtp_host.data, current_user.id)
+            SystemSetting.set_value("smtp_port", str(form.smtp_port.data), current_user.id)
+            SystemSetting.set_value("smtp_username", form.smtp_username.data, current_user.id)
+
+            # Only update password if provided
+            if form.smtp_password.data:
+                SystemSetting.set_value("smtp_password", form.smtp_password.data, current_user.id)
+
+            SystemSetting.set_value("smtp_use_tls", str(form.smtp_use_tls.data).lower(), current_user.id)
+            SystemSetting.set_value("smtp_use_ssl", str(form.smtp_use_ssl.data).lower(), current_user.id)
+            SystemSetting.set_value("smtp_from_email", form.smtp_from_email.data, current_user.id)
+            SystemSetting.set_value("smtp_from_name", form.smtp_from_name.data, current_user.id)
+
+            # Save notification settings
+            SystemSetting.set_value(
+                "email_mention_notifications", str(form.enable_mention_notifications.data).lower(), current_user.id
+            )
+            SystemSetting.set_value(
+                "email_action_notifications", str(form.enable_action_notifications.data).lower(), current_user.id
+            )
+
+            db.session.commit()
+
+            # Send test email if requested
+            if form.test_email.data:
+                success = EmailService.send_test_email(form.test_email.data)
+                if success:
+                    flash(f"Email configuration saved and test email sent to {form.test_email.data}!", "success")
+                else:
+                    flash(
+                        "Email configuration saved, but test email failed. Check logs for details.",
+                        "warning",
+                    )
+            else:
+                flash("Email configuration saved successfully!", "success")
+
+            return redirect(url_for("super_admin.email_settings"))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error saving email configuration: {str(e)}", "danger")
+
+    return render_template("super_admin/email_settings.html", form=form, csrf_token=generate_csrf)
+
+
+@bp.route("/settings/email/test", methods=["POST"])
+@super_admin_required
+def test_email():
+    """Send a test email"""
+    from app.services.email_service import EmailService
+
+    test_address = request.form.get("test_email")
+
+    if not test_address:
+        flash("Please provide an email address for testing", "warning")
+        return redirect(url_for("super_admin.email_settings"))
+
+    if not EmailService.is_configured():
+        flash("Email service is not configured yet", "danger")
+        return redirect(url_for("super_admin.email_settings"))
+
+    success = EmailService.send_test_email(test_address)
+
+    if success:
+        flash(f"Test email sent successfully to {test_address}!", "success")
+    else:
+        flash("Failed to send test email. Check logs for details.", "danger")
+
+    return redirect(url_for("super_admin.email_settings"))
 
 
 @bp.route("/users")

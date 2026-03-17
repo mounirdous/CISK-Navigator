@@ -150,6 +150,11 @@ class TestCSRFTokenAvailability:
         response = authenticated_super_admin.get("/super-admin/settings/maintenance")
         self.assert_no_csrf_errors(response)
 
+    def test_super_admin_email_settings(self, authenticated_super_admin):
+        """Test /super-admin/settings/email has csrf_token"""
+        response = authenticated_super_admin.get("/super-admin/settings/email")
+        self.assert_no_csrf_errors(response)
+
     def test_super_admin_pending_users(self, authenticated_super_admin):
         """Test /super-admin/users/pending has csrf_token"""
         response = authenticated_super_admin.get("/super-admin/users/pending")
@@ -312,6 +317,7 @@ class TestGlobalAdminRoutes:
         "/super-admin/settings/sso",
         "/super-admin/settings/security",
         "/super-admin/settings/maintenance",
+        "/super-admin/settings/email",
         "/super-admin/users/pending",
         "/super-admin/linked-kpis",
         "/super-admin/backup",

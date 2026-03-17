@@ -17,21 +17,51 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum types (if not exists)
+    # Create enum types (if not exists) - using exception handling for better reliability
     op.execute(
-        "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_item_type') THEN CREATE TYPE action_item_type AS ENUM ('memo', 'action'); END IF; END $$;"
+        """
+        DO $$ BEGIN
+            CREATE TYPE action_item_type AS ENUM ('memo', 'action');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
     )
     op.execute(
-        "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_item_status') THEN CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled'); END IF; END $$;"
+        """
+        DO $$ BEGIN
+            CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
     )
     op.execute(
-        "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_item_priority') THEN CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent'); END IF; END $$;"
+        """
+        DO $$ BEGIN
+            CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
     )
     op.execute(
-        "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_item_visibility') THEN CREATE TYPE action_item_visibility AS ENUM ('private', 'shared'); END IF; END $$;"
+        """
+        DO $$ BEGIN
+            CREATE TYPE action_item_visibility AS ENUM ('private', 'shared');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
     )
     op.execute(
-        "DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_item_mention_entity_type') THEN CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi'); END IF; END $$;"
+        """
+        DO $$ BEGIN
+            CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+        """
     )
 
     # Create action_items table

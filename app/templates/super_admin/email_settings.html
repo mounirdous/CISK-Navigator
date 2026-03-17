@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}Email Settings - Super Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('super_admin.index') }}">Super Admin</a></li>
+                    <li class="breadcrumb-item active">Email Settings</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-0">
+                <i class="bi bi-envelope text-primary me-2"></i>
+                Email / SMTP Settings
+            </h1>
+            <p class="text-muted mb-0">Configure email service for notifications</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <!-- SMTP Server Configuration -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-server me-2"></i>
+                            SMTP Server Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                {{ form.smtp_host.label(class="form-label fw-bold") }}
+                                {{ form.smtp_host(class="form-control" + (" is-invalid" if form.smtp_host.errors else ""), placeholder="smtp.gmail.com") }}
+                                {% if form.smtp_host.errors %}
+                                    <div class="invalid-feedback">{{ form.smtp_host.errors[0] }}</div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.smtp_host.description }}</small>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                {{ form.smtp_port.label(class="form-label fw-bold") }}
+                                {{ form.smtp_port(class="form-control" + (" is-invalid" if form.smtp_port.errors else "")) }}
+                                {% if form.smtp_port.errors %}
+                                    <div class="invalid-feedback">{{ form.smtp_port.errors[0] }}</div>
+                                {% endif %}
+                                <small class="text-muted">{{ form.smtp_port.description }}</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.smtp_username.label(class="form-label fw-bold") }}
+                            {{ form.smtp_username(class="form-control" + (" is-invalid" if form.smtp_username.errors else "")) }}
+                            {% if form.smtp_username.errors %}
+                                <div class="invalid-feedback">{{ form.smtp_username.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.smtp_username.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.smtp_password.label(class="form-label fw-bold") }}
+                            {{ form.smtp_password(class="form-control" + (" is-invalid" if form.smtp_password.errors else ""), placeholder="••••••••") }}
+                            {% if form.smtp_password.errors %}
+                                <div class="invalid-feedback">{{ form.smtp_password.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.smtp_password.description }}</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.smtp_use_tls(class="form-check-input") }}
+                                    {{ form.smtp_use_tls.label(class="form-check-label fw-bold") }}
+                                </div>
+                                <small class="text-muted d-block ms-4">{{ form.smtp_use_tls.description }}</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check">
+                                    {{ form.smtp_use_ssl(class="form-check-input") }}
+                                    {{ form.smtp_use_ssl.label(class="form-check-label fw-bold") }}
+                                </div>
+                                <small class="text-muted d-block ms-4">{{ form.smtp_use_ssl.description }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sender Configuration -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge me-2"></i>
+                            Sender Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.smtp_from_email.label(class="form-label fw-bold") }}
+                            {{ form.smtp_from_email(class="form-control" + (" is-invalid" if form.smtp_from_email.errors else ""), placeholder="noreply@example.com") }}
+                            {% if form.smtp_from_email.errors %}
+                                <div class="invalid-feedback">{{ form.smtp_from_email.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.smtp_from_email.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.smtp_from_name.label(class="form-label fw-bold") }}
+                            {{ form.smtp_from_name(class="form-control") }}
+                            <small class="text-muted">{{ form.smtp_from_name.description }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notification Settings -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-bell me-2"></i>
+                            Email Notifications
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.enable_mention_notifications(class="form-check-input") }}
+                                {{ form.enable_mention_notifications.label(class="form-check-label fw-bold") }}
+                            </div>
+                            <small class="text-muted d-block ms-4">Notify users when they are mentioned in comments</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.enable_action_notifications(class="form-check-input") }}
+                                {{ form.enable_action_notifications.label(class="form-check-label fw-bold") }}
+                            </div>
+                            <small class="text-muted d-block ms-4">Notify users when action items are assigned to them</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Email -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-0 pt-3">
+                        <h5 class="mb-0">
+                            <i class="bi bi-send-check me-2"></i>
+                            Test Configuration
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            {{ form.test_email.label(class="form-label fw-bold") }}
+                            {{ form.test_email(class="form-control", placeholder="test@example.com") }}
+                            <small class="text-muted">{{ form.test_email.description }}</small>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> If you enter a test email address, a test email will be sent after saving the configuration.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{{ url_for('super_admin.index') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Back
+                    </a>
+                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                </div>
+            </form>
+        </div>
+
+        <!-- Sidebar with examples and tips -->
+        <div class="col-lg-4">
+            <!-- Common SMTP Providers -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="bi bi-cloud me-2"></i>
+                        Common SMTP Providers
+                    </h6>
+
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <h6 class="mb-2">Gmail</h6>
+                        <small class="text-muted d-block">Host: <code>smtp.gmail.com</code></small>
+                        <small class="text-muted d-block">Port: <code>587</code> (TLS)</small>
+                        <small class="text-muted d-block">Username: Your Gmail address</small>
+                        <small class="text-muted d-block">⚠️ Requires App Password</small>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <h6 class="mb-2">SendGrid</h6>
+                        <small class="text-muted d-block">Host: <code>smtp.sendgrid.net</code></small>
+                        <small class="text-muted d-block">Port: <code>587</code> (TLS)</small>
+                        <small class="text-muted d-block">Username: <code>apikey</code></small>
+                        <small class="text-muted d-block">Password: Your API key</small>
+                    </div>
+
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <h6 class="mb-2">Mailgun</h6>
+                        <small class="text-muted d-block">Host: <code>smtp.mailgun.org</code></small>
+                        <small class="text-muted d-block">Port: <code>587</code> (TLS)</small>
+                        <small class="text-muted d-block">Username: Your Mailgun SMTP username</small>
+                    </div>
+
+                    <div class="p-3 bg-light rounded">
+                        <h6 class="mb-2">Brevo (Sendinblue)</h6>
+                        <small class="text-muted d-block">Host: <code>smtp-relay.brevo.com</code></small>
+                        <small class="text-muted d-block">Port: <code>587</code> (TLS)</small>
+                        <small class="text-muted d-block">Free: 300 emails/day</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="bi bi-lightbulb me-2"></i>
+                        Configuration Tips
+                    </h6>
+                    <ul class="small mb-0">
+                        <li class="mb-2">Most providers use port 587 with TLS</li>
+                        <li class="mb-2">Gmail requires an App Password (not your regular password)</li>
+                        <li class="mb-2">SendGrid and Mailgun offer free tiers</li>
+                        <li class="mb-2">Always test the configuration before enabling notifications</li>
+                        <li class="mb-2">Check your SMTP provider's rate limits</li>
+                        <li class="mb-2">Use a no-reply email address as sender</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

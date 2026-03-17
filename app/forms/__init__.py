@@ -5,6 +5,7 @@ WTForms for the application
 from .auth_forms import ChangePasswordForm, LoginForm, ProfileEditForm
 from .challenge_forms import ChallengeCreateForm, ChallengeEditForm
 from .contribution_forms import ContributionForm
+from .email_forms import EmailConfigForm
 from .governance_body_forms import GovernanceBodyCreateForm, GovernanceBodyEditForm
 from .initiative_forms import InitiativeCreateForm, InitiativeEditForm
 from .kpi_forms import KPICreateForm, KPIEditForm
@@ -43,4 +44,5 @@ __all__ = [
     "YAMLUploadForm",
     "OrganizationCloneForm",
     "OrganizationSSOConfigForm",
+    "EmailConfigForm",
 ]
