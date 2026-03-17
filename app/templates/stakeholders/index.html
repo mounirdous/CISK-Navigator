@@ -30,201 +30,279 @@
     </div>
 
     <div class="row">
-        <!-- Filters Panel -->
+        <!-- Left Sidebar -->
         <div class="col-md-3">
-            <!-- Map Selector -->
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="bi bi-collection"></i> Map Selection</h5>
+            <!-- Map Selection & Quick Actions -->
+            <div class="card mb-3 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="bi bi-collection"></i> Map Selection</h6>
                 </div>
                 <div class="card-body">
                     {% if selected_map %}
-                    <div class="alert alert-info mb-2">
-                        <strong><i class="bi bi-map"></i> {{ selected_map.name }}</strong>
-                        {% if selected_map.visibility == 'private' %}
-                        <span class="badge bg-secondary float-end">Private</span>
-                        {% else %}
-                        <span class="badge bg-success float-end">Shared</span>
-                        {% endif %}
-                        {% if selected_map.description %}
-                        <p class="mb-0 mt-1 small">{{ selected_map.description }}</p>
-                        {% endif %}
+                    <div class="alert alert-info mb-2 py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong><i class="bi bi-map"></i> {{ selected_map.name }}</strong>
+                                {% if selected_map.description %}
+                                <p class="mb-0 mt-1 small text-muted">{{ selected_map.description }}</p>
+                                {% endif %}
+                            </div>
+                            {% if selected_map.visibility == 'private' %}
+                            <span class="badge bg-secondary"><i class="bi bi-lock"></i></span>
+                            {% else %}
+                            <span class="badge bg-success"><i class="bi bi-people"></i></span>
+                            {% endif %}
+                        </div>
                     </div>
                     {% endif %}
 
                     <select class="form-select mb-2" id="mapSelector" onchange="changeMap()">
-                        <option value="">All Stakeholders</option>
+                        <option value="">📊 All Stakeholders</option>
                         {% for map in maps %}
                         <option value="{{ map.id }}" {% if selected_map and selected_map.id == map.id %}selected{% endif %}>
-                            {{ map.name }} ({{ map.stakeholder_count }})
-                            {% if map.visibility == 'private' %}🔒{% endif %}
+                            {{ '🔒 ' if map.visibility == 'private' else '👥 ' }}{{ map.name }} ({{ map.stakeholder_count }})
                         </option>
                         {% endfor %}
                     </select>
 
                     <div class="d-grid">
                         <a href="{{ url_for('stakeholders.create_map', organization_id=organization.id) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-plus-circle"></i> New Map
+                            <i class="bi bi-plus-circle"></i> Create New Map
                         </a>
                     </div>
+                </div>
+            </div>
 
-                    {% if maps|length == 0 %}
-                    <div class="alert alert-warning mt-2 mb-0">
-                        <small>No maps yet. Create your first map to organize stakeholders!</small>
+            <!-- Primary Actions -->
+            <div class="card mb-3 border-success">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="bi bi-tools"></i> Actions</h6>
+                </div>
+                <div class="card-body">
+                    <button class="btn btn-success w-100 mb-2" data-bs-toggle="modal" data-bs-target="#addRelationshipModal">
+                        <i class="bi bi-arrow-left-right"></i> <strong>Connect People</strong>
+                    </button>
+
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <button class="btn btn-outline-primary btn-sm" onclick="savePositions()" title="Save Layout">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="fitGraph()" title="Fit to Screen">
+                            <i class="fas fa-expand"></i> Fit
+                        </button>
+                        <button class="btn btn-outline-info btn-sm" onclick="exportImage()" title="Export as Image">
+                            <i class="fas fa-download"></i> Export
+                        </button>
                     </div>
-                    {% endif %}
+
+                    <div class="mb-2">
+                        <label class="form-label small mb-1">Layout Style</label>
+                        <select class="form-select form-select-sm" id="layoutSelect">
+                            <option value="force">Force Directed</option>
+                            <option value="hierarchical">Hierarchical</option>
+                            <option value="circular">Circular</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
+            <!-- Filters - Collapsible -->
             <div class="card mb-3">
                 <div class="card-header">
-                    <h5 class="mb-0">Filters</h5>
+                    <h6 class="mb-0">
+                        <a class="text-decoration-none text-dark" data-bs-toggle="collapse" href="#filtersCollapse" role="button" aria-expanded="true">
+                            <i class="bi bi-funnel"></i> Filters
+                            <i class="bi bi-chevron-down float-end"></i>
+                        </a>
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <form id="filterForm">
-                        <div class="mb-3">
-                            <label class="form-label">Support Level</label>
-                            <div class="form-check">
-                                <input class="form-check-input filter-check" type="checkbox" value="champion" id="filter-champion" checked>
-                                <label class="form-check-label" for="filter-champion">
-                                    <span class="badge" style="background-color: #28a745;">Champion</span>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input filter-check" type="checkbox" value="supporter" id="filter-supporter" checked>
-                                <label class="form-check-label" for="filter-supporter">
-                                    <span class="badge" style="background-color: #6c757d;">Supporter</span>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input filter-check" type="checkbox" value="neutral" id="filter-neutral" checked>
-                                <label class="form-check-label" for="filter-neutral">
-                                    <span class="badge" style="background-color: #ffc107;">Neutral</span>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input filter-check" type="checkbox" value="skeptic" id="filter-skeptic" checked>
-                                <label class="form-check-label" for="filter-skeptic">
-                                    <span class="badge" style="background-color: #fd7e14;">Skeptic</span>
-                                </label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input filter-check" type="checkbox" value="blocker" id="filter-blocker" checked>
-                                <label class="form-check-label" for="filter-blocker">
-                                    <span class="badge" style="background-color: #dc3545;">Blocker</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ filter_form.department.label(class="form-label") }}
-                            {{ filter_form.department(class="form-select") }}
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">Influence Range</label>
-                            <div class="row">
-                                <div class="col-6">
-                                    <input type="number" class="form-control" id="min_influence" min="1" max="100" value="1" placeholder="Min">
+                <div class="collapse show" id="filtersCollapse">
+                    <div class="card-body">
+                        <form id="filterForm">
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Support Level</label>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input filter-check" type="checkbox" value="champion" id="filter-champion" checked>
+                                    <label class="form-check-label small" for="filter-champion">
+                                        <span class="badge" style="background-color: #28a745;">Champion</span>
+                                    </label>
                                 </div>
-                                <div class="col-6">
-                                    <input type="number" class="form-control" id="max_influence" min="1" max="100" value="100" placeholder="Max">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input filter-check" type="checkbox" value="supporter" id="filter-supporter" checked>
+                                    <label class="form-check-label small" for="filter-supporter">
+                                        <span class="badge" style="background-color: #6c757d;">Supporter</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input filter-check" type="checkbox" value="neutral" id="filter-neutral" checked>
+                                    <label class="form-check-label small" for="filter-neutral">
+                                        <span class="badge" style="background-color: #ffc107;">Neutral</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input filter-check" type="checkbox" value="skeptic" id="filter-skeptic" checked>
+                                    <label class="form-check-label small" for="filter-skeptic">
+                                        <span class="badge" style="background-color: #fd7e14;">Skeptic</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input filter-check" type="checkbox" value="blocker" id="filter-blocker" checked>
+                                    <label class="form-check-label small" for="filter-blocker">
+                                        <span class="badge" style="background-color: #dc3545;">Blocker</span>
+                                    </label>
                                 </div>
                             </div>
-                        </div>
 
-                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
-                            <i class="fas fa-filter"></i> Apply Filters
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary w-100 mt-2" onclick="clearFilters()">
-                            <i class="fas fa-times"></i> Clear
-                        </button>
-                    </form>
+                            <div class="mb-3">
+                                {{ filter_form.department.label(class="form-label small fw-bold") }}
+                                {{ filter_form.department(class="form-select form-select-sm") }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-bold">Influence Range</label>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <input type="number" class="form-control form-control-sm" id="min_influence" min="1" max="100" value="1" placeholder="Min">
+                                    </div>
+                                    <div class="col-6">
+                                        <input type="number" class="form-control form-control-sm" id="max_influence" min="1" max="100" value="100" placeholder="Max">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="btn-group w-100" role="group">
+                                <button type="button" class="btn btn-primary btn-sm" onclick="applyFilters()">
+                                    <i class="fas fa-filter"></i> Apply
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearFilters()">
+                                    <i class="fas fa-times"></i> Clear
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5 class="mb-0">Graph Controls</h5>
-                </div>
-                <div class="card-body">
-                    <select class="form-select mb-2" id="layoutSelect">
-                        <option value="force">Force Directed</option>
-                        <option value="hierarchical">Hierarchical</option>
-                        <option value="circular">Circular</option>
-                    </select>
-                    <button class="btn btn-outline-primary w-100 mb-2" onclick="savePositions()">
-                        <i class="fas fa-save"></i> Save Positions
-                    </button>
-                    <button class="btn btn-outline-secondary w-100 mb-2" onclick="fitGraph()">
-                        <i class="fas fa-expand"></i> Fit to Screen
-                    </button>
-                    <button class="btn btn-outline-info w-100 mb-2" onclick="exportImage()">
-                        <i class="fas fa-download"></i> Export Image
-                    </button>
-                    <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addRelationshipModal">
-                        <i class="bi bi-arrow-left-right"></i> Add Relationship
-                    </button>
-                </div>
-            </div>
-
+            <!-- Legend - Compact -->
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Legend</h5>
+                    <h6 class="mb-0">
+                        <a class="text-decoration-none text-dark" data-bs-toggle="collapse" href="#legendCollapse" role="button" aria-expanded="false">
+                            <i class="bi bi-info-circle"></i> Legend
+                            <i class="bi bi-chevron-down float-end"></i>
+                        </a>
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <p class="small mb-2"><strong>Node Size:</strong> Influence Level</p>
-                    <p class="small mb-2"><strong>Node Color:</strong> Support Level</p>
-                    <p class="small mb-2"><strong>Edge Style:</strong></p>
-                    <ul class="small mb-0" style="list-style: none; padding-left: 0;">
-                        <li><span style="color: #6c757d;">⋯⋯⋯</span> Reports To</li>
-                        <li><span style="color: #007bff;">━━━</span> Influences</li>
-                        <li><span style="color: #28a745;">━━━</span> Collaborates</li>
-                        <li><span style="color: #ffc107;">━━━</span> Sponsors</li>
-                        <li><span style="color: #dc3545;">━━━</span> Blocks</li>
-                    </ul>
+                <div class="collapse" id="legendCollapse">
+                    <div class="card-body small">
+                        <p class="mb-1"><strong>Node Size:</strong> Influence</p>
+                        <p class="mb-2"><strong>Node Color:</strong> Support</p>
+                        <p class="mb-1"><strong>Connections:</strong></p>
+                        <ul class="mb-0" style="list-style: none; padding-left: 0; font-size: 0.85rem;">
+                            <li><span style="color: #6c757d;">⋯⋯</span> Reports To</li>
+                            <li><span style="color: #007bff;">━━</span> Influences</li>
+                            <li><span style="color: #28a745;">━━</span> Collaborates</li>
+                            <li><span style="color: #ffc107;">━━</span> Sponsors</li>
+                            <li><span style="color: #dc3545;">━━</span> Blocks</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Graph Canvas -->
         <div class="col-md-6">
-            <div class="card">
-                <div class="card-body p-0">
-                    <div id="networkGraph" style="height: 700px; border: 1px solid #dee2e6;"></div>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white border-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0 text-muted">
+                                <i class="bi bi-diagram-3"></i> Network Visualization
+                                {% if selected_map %}
+                                <span class="badge bg-info ms-2">{{ selected_map.name }}</span>
+                                {% endif %}
+                            </h6>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-circle-fill text-success"></i> {{ stakeholders|length }} nodes
+                            <i class="bi bi-arrow-right-circle ms-2"></i> {{ relationships|length }} edges
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="mt-2 text-center">
-                <small class="text-muted">
-                    Click: Select • Double-click: Edit • Shift+Drag: Pan • Scroll: Zoom
-                </small>
+                <div class="card-body p-0">
+                    <div id="networkGraph" style="height: 700px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);"></div>
+                </div>
+                <div class="card-footer bg-light text-center small text-muted border-0">
+                    <i class="bi bi-mouse"></i> <strong>Click</strong> to select •
+                    <strong>Double-click</strong> to edit •
+                    <strong>Drag</strong> to move •
+                    <strong>Scroll</strong> to zoom
+                </div>
             </div>
         </div>
 
-        <!-- Details Panel -->
+        <!-- Right Panel -->
         <div class="col-md-3">
-            <div class="card" id="detailsPanel" style="display: none;">
-                <div class="card-header">
-                    <h5 class="mb-0">Stakeholder Details</h5>
+            <!-- Details Panel (shown when node selected) -->
+            <div class="card border-info" id="detailsPanel" style="display: none;">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-person-circle"></i> Stakeholder Details</h6>
                 </div>
                 <div class="card-body" id="detailsContent">
                     <!-- Dynamically populated -->
                 </div>
             </div>
 
-            <div class="card" id="welcomePanel">
-                <div class="card-header">
-                    <h5 class="mb-0">Getting Started</h5>
+            <!-- Quick Guide (shown by default) -->
+            <div class="card border-info" id="welcomePanel">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-lightbulb"></i> Quick Guide</h6>
                 </div>
                 <div class="card-body">
-                    <p>Click on a stakeholder to view details and relationships.</p>
-                    <p class="mb-0"><strong>Quick Actions:</strong></p>
-                    <ul>
-                        <li>Double-click node to edit</li>
-                        <li>Drag nodes to arrange</li>
-                        <li>Click "Save Positions" to remember layout</li>
-                        <li>Use filters to focus on specific groups</li>
+                    <div class="alert alert-success mb-3 py-2">
+                        <small><i class="bi bi-check-circle"></i> <strong>{{ stakeholders|length }}</strong> stakeholders • <strong>{{ relationships|length }}</strong> connections</small>
+                    </div>
+
+                    <h6 class="text-primary mb-2"><i class="bi bi-mouse"></i> Interactions</h6>
+                    <ul class="small mb-3" style="line-height: 1.8;">
+                        <li><strong>Click</strong> node → View details</li>
+                        <li><strong>Double-click</strong> → Edit stakeholder</li>
+                        <li><strong>Drag</strong> nodes → Rearrange</li>
+                        <li><strong>Scroll</strong> → Zoom in/out</li>
+                        <li><strong>Shift+Drag</strong> → Pan view</li>
                     </ul>
+
+                    <h6 class="text-primary mb-2"><i class="bi bi-arrow-left-right"></i> Building the Network</h6>
+                    <div class="d-grid gap-2 mb-3">
+                        <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#addRelationshipModal">
+                            <i class="bi bi-plus-circle"></i> Connect People
+                        </button>
+                        <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-person-plus"></i> Add Stakeholder
+                        </a>
+                    </div>
+
+                    <h6 class="text-primary mb-2"><i class="bi bi-collection"></i> Maps</h6>
+                    <p class="small text-muted mb-2">Create focused views for different groups (e.g., Executive Team, IT Leaders)</p>
+                    {% if maps|length == 0 %}
+                    <div class="alert alert-warning py-2 mb-0">
+                        <small><i class="bi bi-info-circle"></i> No maps yet. <a href="{{ url_for('stakeholders.create_map', organization_id=organization.id) }}">Create your first map</a></small>
+                    </div>
+                    {% else %}
+                    <div class="list-group list-group-flush small">
+                        {% for map in maps[:3] %}
+                        <a href="?organization_id={{ organization.id }}&map_id={{ map.id }}" class="list-group-item list-group-item-action py-2">
+                            {{ '🔒' if map.visibility == 'private' else '👥' }} {{ map.name }}
+                            <span class="badge bg-secondary float-end">{{ map.stakeholder_count }}</span>
+                        </a>
+                        {% endfor %}
+                        {% if maps|length > 3 %}
+                        <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="list-group-item list-group-item-action text-center py-2 small text-primary">
+                            <i class="bi bi-three-dots"></i> View all {{ maps|length }} maps
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
