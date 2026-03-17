@@ -13,6 +13,7 @@ class Stakeholder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     created_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    site_id = db.Column(db.Integer, db.ForeignKey("geography_sites.id", ondelete="SET NULL"), nullable=True)
     visibility = db.Column(db.String(20), nullable=False, default="shared", index=True)  # 'private' or 'shared'
     name = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(200))
@@ -35,6 +36,7 @@ class Stakeholder(db.Model):
     # Relationships
     organization = db.relationship("Organization", backref="stakeholders")
     created_by = db.relationship("User", foreign_keys=[created_by_user_id], backref="created_stakeholders")
+    site = db.relationship("GeographySite", backref="stakeholders")
     outgoing_relationships = db.relationship(
         "StakeholderRelationship",
         foreign_keys="StakeholderRelationship.from_stakeholder_id",
@@ -68,6 +70,8 @@ class Stakeholder(db.Model):
             "position_y": self.position_y,
             "visibility": self.visibility,
             "created_by_user_id": self.created_by_user_id,
+            "site_id": self.site_id,
+            "site_name": self.site.name if self.site else None,
         }
 
     def is_visible_to_user(self, user):

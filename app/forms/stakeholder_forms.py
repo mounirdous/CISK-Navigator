@@ -11,6 +11,7 @@ class StakeholderForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=200)])
     role = StringField("Role/Title", validators=[Optional(), Length(max=200)])
     department = StringField("Department", validators=[Optional(), Length(max=200)])
+    site_id = SelectField("Site/Location", coerce=int, validators=[Optional()], description="Physical location")
     email = StringField("Email", validators=[Optional(), Email(), Length(max=255)])
     influence_level = IntegerField(
         "Influence Level",

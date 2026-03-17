@@ -11,6 +11,7 @@ from app.forms import StakeholderFilterForm, StakeholderForm, StakeholderMapForm
 from app.models import (
     KPI,
     Challenge,
+    GeographySite,
     Initiative,
     Organization,
     Space,
@@ -154,6 +155,15 @@ def create():
     organization = Organization.query.get_or_404(org_id)
     form = StakeholderForm()
 
+    # Populate site choices (all active sites in the organization)
+    sites = (
+        GeographySite.query.join(GeographySite.country)
+        .filter(GeographySite.is_active.is_(True))
+        .order_by(GeographySite.name)
+        .all()
+    )
+    form.site_id.choices = [(0, "-- No Site --")] + [(s.id, f"{s.name} ({s.country.name})") for s in sites]
+
     if form.validate_on_submit():
         stakeholder = Stakeholder(
             organization_id=org_id,
@@ -161,6 +171,7 @@ def create():
             name=form.name.data,
             role=form.role.data,
             department=form.department.data,
+            site_id=form.site_id.data if form.site_id.data != 0 else None,
             email=form.email.data,
             influence_level=form.influence_level.data,
             interest_level=form.interest_level.data,
@@ -204,10 +215,24 @@ def edit(id):
 
     form = StakeholderForm(obj=stakeholder)
 
+    # Populate site choices
+    sites = (
+        GeographySite.query.join(GeographySite.country)
+        .filter(GeographySite.is_active.is_(True))
+        .order_by(GeographySite.name)
+        .all()
+    )
+    form.site_id.choices = [(0, "-- No Site --")] + [(s.id, f"{s.name} ({s.country.name})") for s in sites]
+
+    # Set current value
+    if request.method == "GET":
+        form.site_id.data = stakeholder.site_id if stakeholder.site_id else 0
+
     if form.validate_on_submit():
         stakeholder.name = form.name.data
         stakeholder.role = form.role.data
         stakeholder.department = form.department.data
+        stakeholder.site_id = form.site_id.data if form.site_id.data != 0 else None
         stakeholder.email = form.email.data
         stakeholder.influence_level = form.influence_level.data
         stakeholder.interest_level = form.interest_level.data
