@@ -187,7 +187,7 @@
             </div>
             <div class="modal-body">
                 <form id="linkEntityForm">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
 
                     <div class="mb-3">
                         <label for="entityType" class="form-label">Entity Type</label>

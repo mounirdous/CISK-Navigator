@@ -159,8 +159,11 @@
                     <button class="btn btn-outline-secondary w-100 mb-2" onclick="fitGraph()">
                         <i class="fas fa-expand"></i> Fit to Screen
                     </button>
-                    <button class="btn btn-outline-info w-100" onclick="exportImage()">
+                    <button class="btn btn-outline-info w-100 mb-2" onclick="exportImage()">
                         <i class="fas fa-download"></i> Export Image
+                    </button>
+                    <button class="btn btn-success w-100" data-bs-toggle="modal" data-bs-target="#addRelationshipModal">
+                        <i class="bi bi-arrow-left-right"></i> Add Relationship
                     </button>
                 </div>
             </div>
@@ -223,6 +226,67 @@
                         <li>Use filters to focus on specific groups</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Relationship Modal -->
+<div class="modal fade" id="addRelationshipModal" tabindex="-1" aria-labelledby="addRelationshipModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRelationshipModalLabel">Add Relationship</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="relationshipForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+
+                    <div class="mb-3">
+                        <label for="fromStakeholder" class="form-label">From Stakeholder</label>
+                        <select class="form-select" id="fromStakeholder" name="from_stakeholder_id" required>
+                            <option value="">Select stakeholder...</option>
+                            {% for s in stakeholders %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="relationshipType" class="form-label">Relationship Type</label>
+                        <select class="form-select" id="relationshipType" name="relationship_type" required>
+                            <option value="">Select type...</option>
+                            <option value="reports_to">Reports To</option>
+                            <option value="influences">Influences</option>
+                            <option value="collaborates">Collaborates With</option>
+                            <option value="sponsors">Sponsors</option>
+                            <option value="blocks">Blocks</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="toStakeholder" class="form-label">To Stakeholder</label>
+                        <select class="form-select" id="toStakeholder" name="to_stakeholder_id" required>
+                            <option value="">Select stakeholder...</option>
+                            {% for s in stakeholders %}
+                            <option value="{{ s.id }}">{{ s.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="strength" class="form-label">Strength (1-100)</label>
+                        <input type="range" class="form-range" id="strengthRange" min="1" max="100" value="50"
+                               oninput="document.getElementById('strength').value = this.value; document.getElementById('strengthValue').innerText = this.value">
+                        <input type="hidden" id="strength" name="strength" value="50">
+                        <small class="text-muted">Current: <span id="strengthValue">50</span></small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitRelationship()">Add Relationship</button>
             </div>
         </div>
     </div>
@@ -485,7 +549,7 @@ async function savePositions() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token() }}'
+            'X-CSRFToken': '{{ csrf_token }}'
         },
         body: JSON.stringify({positions: positions})
     });
@@ -512,6 +576,56 @@ function exportImage() {
     link.download = 'stakeholder-map-{{ organization.name }}.png';
     link.href = canvas.toDataURL();
     link.click();
+}
+
+async function submitRelationship() {
+    const form = document.getElementById('relationshipForm');
+    const formData = new FormData(form);
+
+    const fromId = formData.get('from_stakeholder_id');
+    const toId = formData.get('to_stakeholder_id');
+    const relType = formData.get('relationship_type');
+    const strength = formData.get('strength');
+    const csrfToken = formData.get('csrf_token');
+
+    if (!fromId || !toId || !relType) {
+        alert('Please fill all required fields');
+        return;
+    }
+
+    if (fromId === toId) {
+        alert('Cannot create a relationship from a stakeholder to themselves');
+        return;
+    }
+
+    try {
+        const response = await fetch('/stakeholders/relationships/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                from_stakeholder_id: parseInt(fromId),
+                to_stakeholder_id: parseInt(toId),
+                relationship_type: relType,
+                strength: parseInt(strength)
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to create relationship');
+        }
+
+        // Close modal and reload page
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addRelationshipModal'));
+        modal.hide();
+        location.reload();
+    } catch (error) {
+        console.error('Error creating relationship:', error);
+        alert('Error: ' + error.message);
+    }
 }
 </script>
 {% endblock %}
