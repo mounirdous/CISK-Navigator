@@ -5,6 +5,117 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-03-17
+
+### Added - Comprehensive Stakeholder Mapping & Network Visualization System
+**Feature**: Complete stakeholder relationship mapping with privacy controls and interactive visualizations
+
+**What's New**:
+- **Multiple Named Maps**: Create separate stakeholder maps (e.g., "Executive Team", "IT Department")
+  - Private maps: Only visible to creator
+  - Shared maps: Visible to all organization members
+  - Filter network view by specific map
+- **Stakeholder Relationships**: Connect people with meaningful relationship types
+  - Reports To, Influences, Collaborates With, Sponsors, Blocks
+  - Relationship strength: Strong, Medium, Weak
+  - Visual connection builder with modal UI
+  - Network visualization with vis.js force-directed graph
+- **Entity Linking**: Connect stakeholders to strategic entities
+  - Link to Challenges, Initiatives, Systems, KPIs
+  - See all connections in one place
+  - Entity-aware filtering
+- **Power/Interest Matrix**: Strategic stakeholder analysis visualization
+  - Quadrant-based positioning (Manage Closely, Keep Satisfied, Keep Informed, Monitor)
+  - Color-coded by support level (Champion, Supporter, Neutral, Skeptic, Blocker)
+  - Interactive Chart.js scatter plot
+  - Sponsor recommendation engine
+- **Enhanced Network View**: Interactive force-directed graph with advanced filtering
+  - Color-coded nodes by support level
+  - Relationship lines with labels
+  - Drag-and-drop positioning
+  - Real-time filtering by support level, influence, interest
+- **Improved UI/UX**: Complete layout redesign for better usability
+  - Important controls positioned at top
+  - Collapsible sections for filters and legend
+  - Color-coded card headers for visual hierarchy
+  - Prominent "Connect People" button
+  - Compact, scannable layout with emojis
+- **Menu Reorganization**: Renamed "Strategy & Execution" → "People & Actions"
+  - Better reflects purpose (people-centric focus)
+  - More intuitive navigation
+
+**New Routes**:
+- `/stakeholders/` - Main network visualization dashboard (GET)
+- `/stakeholders/list` - Stakeholder list view (GET)
+- `/stakeholders/matrix` - Power/Interest Matrix (GET)
+- `/stakeholders/create` - Create new stakeholder (GET/POST)
+- `/stakeholders/<id>/edit` - Edit stakeholder (GET/POST)
+- `/stakeholders/<id>/delete` - Delete stakeholder (POST)
+- `/stakeholders/maps` - List all maps (GET)
+- `/stakeholders/maps/create` - Create new map (POST)
+- `/stakeholders/maps/<id>/delete` - Delete map (POST)
+- `/stakeholders/relationships/create` - Create relationship (POST)
+- `/stakeholders/relationships/<id>/delete` - Delete relationship (POST)
+- `/stakeholders/entity-links/create` - Link stakeholder to entity (POST)
+- `/stakeholders/entity-links/<id>/delete` - Delete entity link (POST)
+- `/stakeholders/api/network-data` - Network graph data API (GET)
+- `/stakeholders/api/power-interest-matrix` - Matrix data API (GET)
+- `/stakeholders/api/sponsor-recommendations` - Sponsor suggestions API (GET)
+
+**New Files**:
+- `app/routes/stakeholders.py` - Complete stakeholder routes and API endpoints
+- `app/models/stakeholder.py` - Stakeholder model with visibility controls
+- `app/models/stakeholder_relationship.py` - Relationship model
+- `app/models/stakeholder_map.py` - Map and membership models
+- `app/models/stakeholder_entity_link.py` - Entity linking model
+- `app/forms/stakeholder_forms.py` - Forms for creating/editing stakeholders
+- `app/templates/stakeholders/index.html` - Main network visualization page
+- `app/templates/stakeholders/list.html` - List view page
+- `app/templates/stakeholders/matrix.html` - Power/Interest Matrix page
+- `app/templates/stakeholders/create.html` - Create stakeholder page
+- `app/templates/stakeholders/edit.html` - Edit stakeholder page
+- `app/templates/stakeholders/maps.html` - Map management page
+
+**Files Modified**:
+- `app/__init__.py` - Bumped version to 2.7.0, registered stakeholders blueprint
+- `app/templates/base.html` - Renamed menu to "People & Actions"
+- `tests/integration/test_csrf_token_pages.py` - Added stakeholder route tests
+
+**Database Migrations**:
+- Migration `d4110fa013f9`: Created stakeholder_maps and stakeholder_map_memberships tables
+  - Uses String + CHECK constraint (not ENUM) for PostgreSQL safety
+  - Idempotency checks for existing tables
+- Migration `8a2f3e1b4c5d`: Created stakeholder_relationships table
+  - Five relationship types with strengths
+  - Idempotency checks
+- Migration `9b3c4d2a1e0f`: Created stakeholder_entity_links table
+  - Polymorphic linking to challenges/initiatives/systems/KPIs
+  - Idempotency checks
+
+**Technical Highlights**:
+- **CSRF Token Pattern**: All routes use `csrf_token=generate_csrf` (function reference)
+- **Visibility Filtering**: Model-level `is_visible_to_user()` method for privacy
+- **Audit Logging**: All CRUD operations logged via AuditService
+- **Permission System**: Org admin required for stakeholder management
+- **Test Coverage**: Comprehensive pytest integration tests for all routes
+
+**Setup Instructions**:
+1. Navigate to People & Actions → Stakeholder Network
+2. Create stakeholders with power/interest/support levels
+3. Create named maps for different groups (optional)
+4. Connect people with relationships (Reports To, Influences, etc.)
+5. Link stakeholders to strategic entities
+6. Use filters to focus on specific groups
+7. View Power/Interest Matrix for strategic analysis
+
+**Migration Safety**:
+- All migrations use idempotency checks (`if table not in existing_tables`)
+- No ENUM types (uses String + CHECK constraint)
+- Tested on PostgreSQL 18
+- Safe to re-run migrations
+
+---
+
 ## [1.32.0] - 2026-03-17
 
 ### Added - Email Notification System with SMTP Configuration
