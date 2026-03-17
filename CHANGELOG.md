@@ -5,6 +5,72 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-03-17
+
+### Added - Email Notifications & Enhanced Backup/Restore System
+**Feature**: Real-time email notifications for mentions and action items + Comprehensive backup/restore with version control
+
+**Email Notifications**:
+- **Mention Notifications**: Receive email when mentioned in comments (@username)
+  - Beautiful HTML email with comment preview
+  - Direct link to view comment
+  - Configurable in Super Admin → Email Settings
+- **Action Item Notifications**: Receive email when assigned action items
+  - Shows title, description, due date
+  - Direct link to action item
+  - Sent on creation and reassignment
+- **Smart Logic**: Won't email yourself (prevents spam)
+- **SMTP Configuration**: Fully configured with Brevo SMTP relay
+  - Test email functionality in Super Admin
+  - From: CISK Navigator <mounir.dous@gmail.com>
+
+**Backup/Restore v2.0 - Complete Feature Coverage**:
+- **Database Schema Versioning**: Prevents incompatible restores
+  - DB version 1.0 baseline established
+  - Version check blocks restores if schema mismatch
+  - Protects data integrity across versions
+- **Comprehensive Backup Coverage**:
+  - ✅ Organization logo and settings
+  - ✅ All entity logos (Spaces, Challenges, Initiatives, Systems, KPIs)
+  - ✅ KPI formulas (calculation_type + calculation_config)
+  - ✅ Linked KPIs (cross-organization references)
+  - ✅ **KPI Geography Assignments** (region/country/site links)
+  - ✅ Stakeholders (with sites, positions, visibility)
+  - ✅ Stakeholder relationships and entity links
+  - ✅ Stakeholder maps with memberships
+  - ✅ Geography references (sites used by organization)
+  - ✅ All KPI contributions (actual data)
+  - ✅ Value types and governance bodies
+- **Enhanced Restore Features**:
+  - Auto-create governance bodies when no mapping provided
+  - Restore geography assignments (KPIs appear on map)
+  - Comprehensive statistics display
+  - Shows: logos, formulas, geography assignments, stakeholders, maps restored
+  - Detailed error and warning reporting
+- **UI Improvements**:
+  - Display governance bodies and stakeholders counts in org boxes
+  - Show geography assignments in restore stats
+  - Enhanced backup/restore page with all v2.0 entity counts
+
+### Fixed
+- **Cascade Delete for Stakeholders**: Organizations can now be deleted without database errors
+  - Added `passive_deletes=True` to stakeholder/stakeholder_map relationships
+  - PostgreSQL CASCADE DELETE now works correctly
+- **Stats Collection**: Fixed restore statistics aggregation
+  - Added logos_restored, formulas_restored, geography_assignments to hierarchy stats
+  - Proper counting across all nested restore operations
+
+### Technical
+- **New File**: `app/db_version.py` - Database schema version tracking
+- **Updated Services**:
+  - `comment_service.py` - Added email notifications for mentions
+  - `action_item_service.py` - Added email notifications for assignments
+  - `full_backup_service.py` - Added geography assignments export
+  - `full_restore_service.py` - Added geography assignments restore
+- **Database**: No schema changes - all updates are code-level only
+
+**Migration Notes**: No database migration required for this version. All changes are backward-compatible.
+
 ## [2.7.0] - 2026-03-17
 
 ### Added - Comprehensive Stakeholder Mapping & Network Visualization System

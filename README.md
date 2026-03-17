@@ -1,12 +1,54 @@
-# 🧭 CISK Navigator v1.33.32
+# 🧭 CISK Navigator v2.8.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-1.33.32-blue)
+![Version](https://img.shields.io/badge/version-2.8.0-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-96%20passing-success)
+
+## ✨ What's New in v2.8.0 (March 2026)
+
+### 📧 **Email Notifications System**
+- **Mention Notifications**: Get email when mentioned in comments (@username)
+  - Beautiful HTML email with comment preview
+  - Direct link to view comment
+  - Configurable in Super Admin → Email Settings
+- **Action Item Notifications**: Get email when assigned action items
+  - Shows title, description, due date
+  - Direct link to action item
+  - Sent on creation and reassignment
+- **Smart Logic**: Won't email yourself to prevent spam
+- **SMTP Integration**: Fully configured with Brevo SMTP relay
+  - Test email functionality in Super Admin
+  - Enable/disable per notification type
+
+### 💾 **Backup/Restore v2.0 - Enterprise Grade**
+- **Database Schema Versioning**: Prevents incompatible restores
+  - DB version 1.0 baseline established
+  - Version check blocks restores if schema mismatch
+  - Protects data integrity across versions
+- **Comprehensive Backup Coverage**:
+  - ✅ Organization and all entity logos (Spaces, Challenges, Initiatives, Systems, KPIs)
+  - ✅ KPI formulas and linked KPIs (cross-org references)
+  - ✅ **KPI Geography Assignments** - KPIs appear on map after restore
+  - ✅ Complete stakeholder data (relationships, maps, entity links)
+  - ✅ All KPI contributions (actual data)
+  - ✅ Value types and governance bodies
+- **Enhanced Restore Features**:
+  - Auto-create governance bodies
+  - Restore geography assignments
+  - Comprehensive statistics (logos, formulas, geography, stakeholders)
+  - Detailed error and warning reporting
+- **UI Improvements**:
+  - Display governance bodies and stakeholders counts
+  - Show geography assignments in restore stats
+
+### 🔧 **Bug Fixes**
+- Fixed cascade delete for stakeholders when deleting organizations
+- Fixed restore statistics aggregation
+- Added `passive_deletes=True` for proper PostgreSQL CASCADE
 
 ## ✨ What's New in v1.33.32 (March 2026)
 
