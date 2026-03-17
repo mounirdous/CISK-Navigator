@@ -1986,11 +1986,14 @@ def get_my_comments():
         org_id = session.get("organization_id")
         limit = request.args.get("limit", 50, type=int)
 
-        # Get comments authored by current user
+        # Get comments authored by current user (join through config -> kpi to filter by organization)
         comments = (
             CellComment.query.filter_by(user_id=current_user.id)
-            .join(KPIValueTypeConfig)
-            .filter(KPIValueTypeConfig.organization_id == org_id)
+            .join(KPIValueTypeConfig, CellComment.kpi_value_type_config_id == KPIValueTypeConfig.id)
+            .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .filter(Initiative.organization_id == org_id)
             .order_by(CellComment.created_at.desc())
             .limit(limit)
             .all()
@@ -1999,8 +2002,8 @@ def get_my_comments():
         def comment_with_context(comment):
             """Add KPI and cell context to comment"""
             config = comment.config
-            kpi = config.kpi
-            value_type = config.value_type
+            kpi = config.kpi if config else None
+            value_type = config.value_type if config else None
 
             return {
                 **comment.to_dict(),
@@ -2009,7 +2012,7 @@ def get_my_comments():
                 ),
                 "kpi_name": kpi.name if kpi else "Unknown KPI",
                 "value_type_name": value_type.name if value_type else "Unknown Type",
-                "config_id": config.id,
+                "config_id": config.id if config else None,
                 "reply_to": comment.parent.user.display_name if comment.parent else None,
             }
 
