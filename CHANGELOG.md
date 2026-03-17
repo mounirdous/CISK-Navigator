@@ -5,6 +5,37 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.28] - 2026-03-17
+
+### Fixed - CSRF token undefined errors across application
+**Fix**: Resolved csrf_token undefined template errors affecting multiple routes
+
+**Problem**: Templates using `{{ csrf_token() }}` were getting "csrf_token is undefined" errors when the route didn't pass `csrf_token=generate_csrf` to render_template.
+
+**What Fixed**:
+- Added `csrf_token=generate_csrf` to all render_template calls missing it
+- Fixed geography.py routes using `generate_csrf()` (calling function) instead of `generate_csrf` (passing function)
+
+**Routes Fixed**:
+- Organization admin: index
+- Workspace: index, list_snapshots, view_snapshot, compare_snapshots
+- Executive: dashboard
+- Analytics: dashboard
+- Map dashboard: index
+- Super admin: index, settings, SSO, security, maintenance, users, logs, health, pending_users, linked_kpis, backup, restore, announcements, documentation
+- Geography: all routes (7 fixes)
+
+**Files Modified**:
+- `app/routes/organization_admin.py`
+- `app/routes/workspace.py`
+- `app/routes/executive.py`
+- `app/routes/analytics.py`
+- `app/routes/map_dashboard.py`
+- `app/routes/super_admin.py`
+- `app/routes/geography.py`
+
+---
+
 ## [2.5.26] - 2026-03-17
 
 ### Changed - Dynamic limit text in live search
