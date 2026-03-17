@@ -185,6 +185,10 @@ CISK Navigator Team
             kpi_name: KPI name where comment was made
             comment_url: URL to view the comment
         """
+        # Check if mention notifications are enabled
+        if not SystemSetting.get_bool("email_mention_notifications", default=False):
+            return False
+
         subject = f"CISK Navigator - You were mentioned in {kpi_name}"
 
         body_text = f"""
@@ -240,6 +244,10 @@ CISK Navigator
             due_date: Due date string
             action_url: URL to view action item
         """
+        # Check if action notifications are enabled
+        if not SystemSetting.get_bool("email_action_notifications", default=False):
+            return False
+
         subject = f"CISK Navigator - Action Item Assigned: {action_title}"
 
         body_text = f"""
