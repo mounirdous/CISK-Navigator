@@ -38,6 +38,12 @@ class ActionItemCreateForm(FlaskForm):
 
     due_date = DateField("Due Date", format="%Y-%m-%d", validators=[Optional()])
 
+    owner_user_id = SelectField(
+        "Assign To",
+        coerce=int,
+        validators=[DataRequired()],
+    )
+
     visibility = SelectField(
         "Visibility",
         choices=[("private", "Private (only me)"), ("shared", "Shared (team)")],
@@ -67,6 +73,12 @@ class ActionItemEditForm(FlaskForm):
     )
 
     due_date = DateField("Due Date", format="%Y-%m-%d", validators=[Optional()])
+
+    owner_user_id = SelectField(
+        "Assign To",
+        coerce=int,
+        validators=[DataRequired()],
+    )
 
     visibility = SelectField(
         "Visibility",

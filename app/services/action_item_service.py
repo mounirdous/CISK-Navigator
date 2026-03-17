@@ -123,7 +123,7 @@ class ActionItemService:
             return None
 
         # Update fields (only if value is not None, or if it's an explicitly nullable field)
-        for field in ["title", "description", "visibility"]:
+        for field in ["title", "description", "visibility", "owner_user_id"]:
             if field in kwargs and kwargs[field] is not None:
                 setattr(item, field, kwargs[field])
 

@@ -130,6 +130,20 @@
                             </div>
                         </div>
 
+                        <!-- Owner -->
+                        <div class="mb-3">
+                            <label for="owner_user_id" class="form-label">{{ form.owner_user_id.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.owner_user_id(class="form-select") }}
+                            {% if form.owner_user_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.owner_user_id.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                The person responsible for this item
+                            </div>
+                        </div>
+
                         <!-- Visibility -->
                         <div class="mb-3">
                             <label for="visibility" class="form-label">{{ form.visibility.label.text }} <span class="text-danger">*</span></label>

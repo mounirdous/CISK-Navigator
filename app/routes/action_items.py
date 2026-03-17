@@ -81,11 +81,27 @@ def create():
     org_id = session.get("organization_id")
     form = ActionItemCreateForm()
 
+    # Populate owner choices with organization users
+    from app.models import User, UserOrganizationMembership
+
+    org_users = (
+        db.session.query(User)
+        .join(UserOrganizationMembership)
+        .filter(UserOrganizationMembership.organization_id == org_id, User.is_active.is_(True))
+        .order_by(User.display_name)
+        .all()
+    )
+    form.owner_user_id.choices = [(u.id, u.display_name or u.login) for u in org_users]
+
+    # Default to current user
+    if request.method == "GET":
+        form.owner_user_id.data = current_user.id
+
     if form.validate_on_submit():
         try:
             item = ActionItemService.create_item(
                 organization_id=org_id,
-                owner_user_id=current_user.id,
+                owner_user_id=form.owner_user_id.data,
                 created_by_user_id=current_user.id,
                 title=form.title.data,
                 description=form.description.data,
@@ -120,6 +136,18 @@ def edit(item_id):
 
     form = ActionItemEditForm(obj=item)
 
+    # Populate owner choices with organization users
+    from app.models import User, UserOrganizationMembership
+
+    org_users = (
+        db.session.query(User)
+        .join(UserOrganizationMembership)
+        .filter(UserOrganizationMembership.organization_id == item.organization_id, User.is_active.is_(True))
+        .order_by(User.display_name)
+        .all()
+    )
+    form.owner_user_id.choices = [(u.id, u.display_name or u.login) for u in org_users]
+
     if form.validate_on_submit():
         try:
             updated_item = ActionItemService.update_item(
@@ -130,6 +158,7 @@ def edit(item_id):
                 status=form.status.data if item.type == "action" else None,
                 priority=form.priority.data if item.type == "action" else None,
                 due_date=form.due_date.data,
+                owner_user_id=form.owner_user_id.data,
                 visibility=form.visibility.data,
             )
 

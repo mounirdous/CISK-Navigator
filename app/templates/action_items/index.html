@@ -167,7 +167,13 @@
                             </td>
                             <td>
                                 {% if item.mentions|length > 0 %}
-                                    <span class="badge bg-primary">{{ item.mentions|length }} mentions</span>
+                                    {% for mention in item.mentions %}
+                                        <a href="{{ mention.get_entity_url() }}" class="badge bg-primary text-decoration-none me-1 mb-1" title="View {{ mention.entity_type }}: {{ mention.mention_text }}">
+                                            {{ mention.mention_text }} <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                    {% endfor %}
+                                {% else %}
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
                             <td>
