@@ -29,8 +29,7 @@ def upgrade():
         return
 
     # Create enums with individual try/except to handle partial failures
-    from sqlalchemy.exc import ProgrammingError
-
+    # Catch ANY exception since the exception type varies
     enum_creations = [
         "CREATE TYPE action_item_type AS ENUM ('memo', 'action')",
         "CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled')",
@@ -42,7 +41,7 @@ def upgrade():
     for enum_sql in enum_creations:
         try:
             op.execute(enum_sql)
-        except ProgrammingError:
+        except Exception:
             # Enum already exists from failed migration, continue
             pass
 
