@@ -64,22 +64,30 @@ def upgrade():
         """
     )
 
-    # Create action_items table
+    # Create action_items table (create_type=False since we handle enum creation above)
     op.create_table(
         "action_items",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("organization_id", sa.Integer(), nullable=False),
-        sa.Column("type", sa.Enum("memo", "action", name="action_item_type"), nullable=False),
+        sa.Column("type", sa.Enum("memo", "action", name="action_item_type", create_type=False), nullable=False),
         sa.Column("title", sa.String(length=200), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
-            "status", sa.Enum("draft", "active", "completed", "cancelled", name="action_item_status"), nullable=False
+            "status",
+            sa.Enum("draft", "active", "completed", "cancelled", name="action_item_status", create_type=False),
+            nullable=False,
         ),
-        sa.Column("priority", sa.Enum("low", "medium", "high", "urgent", name="action_item_priority"), nullable=False),
+        sa.Column(
+            "priority",
+            sa.Enum("low", "medium", "high", "urgent", name="action_item_priority", create_type=False),
+            nullable=False,
+        ),
         sa.Column("due_date", sa.Date(), nullable=True),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
         sa.Column("owner_user_id", sa.Integer(), nullable=False),
-        sa.Column("visibility", sa.Enum("private", "shared", name="action_item_visibility"), nullable=False),
+        sa.Column(
+            "visibility", sa.Enum("private", "shared", name="action_item_visibility", create_type=False), nullable=False
+        ),
         sa.Column("created_by_user_id", sa.Integer(), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
@@ -93,14 +101,22 @@ def upgrade():
     op.create_index(op.f("ix_action_items_status"), "action_items", ["status"], unique=False)
     op.create_index(op.f("ix_action_items_visibility"), "action_items", ["visibility"], unique=False)
 
-    # Create action_item_mentions table
+    # Create action_item_mentions table (create_type=False since we handle enum creation above)
     op.create_table(
         "action_item_mentions",
         sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("action_item_id", sa.Integer(), nullable=False),
         sa.Column(
             "entity_type",
-            sa.Enum("space", "challenge", "initiative", "system", "kpi", name="action_item_mention_entity_type"),
+            sa.Enum(
+                "space",
+                "challenge",
+                "initiative",
+                "system",
+                "kpi",
+                name="action_item_mention_entity_type",
+                create_type=False,
+            ),
             nullable=False,
         ),
         sa.Column("entity_id", sa.Integer(), nullable=False),
