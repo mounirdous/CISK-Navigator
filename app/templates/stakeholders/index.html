@@ -132,6 +132,39 @@
         </div>
     </div>
 
+    <!-- Quick Filter Presets & Active Filters -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <!-- Quick Filter Presets -->
+                        <div class="d-flex gap-2 flex-wrap">
+                            <span class="text-muted small me-2 align-self-center"><i class="bi bi-lightning"></i> Quick Filters:</span>
+                            <button class="btn btn-sm btn-outline-success" onclick="applyPresetFilter('champions')">
+                                <i class="bi bi-star"></i> Champions Only
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="applyPresetFilter('high_influence')">
+                                <i class="bi bi-graph-up"></i> High Influence
+                            </button>
+                            <button class="btn btn-sm btn-outline-info" onclick="applyPresetFilter('leadership')">
+                                <i class="bi bi-people"></i> Leadership
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="applyPresetFilter('skeptics_blockers')">
+                                <i class="bi bi-shield-exclamation"></i> Skeptics & Blockers
+                            </button>
+                        </div>
+
+                        <!-- Active Filter Chips -->
+                        <div id="activeFilterChips" class="d-flex gap-2 flex-wrap align-items-center">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Left Sidebar -->
         <div class="col-md-3">
@@ -262,14 +295,17 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label small fw-bold">Influence Range</label>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <input type="number" class="form-control form-control-sm" id="min_influence" min="1" max="100" value="1" placeholder="Min">
+                                <label class="form-label small fw-bold">
+                                    Influence Range
+                                    <span class="badge bg-primary ms-2" id="influenceRangeDisplay">1 - 100</span>
+                                </label>
+                                <div class="range-slider-container">
+                                    <input type="range" class="form-range" id="min_influence" min="1" max="100" value="1" oninput="updateInfluenceRange()">
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted">Min: <span id="minInfluenceValue">1</span></small>
+                                        <small class="text-muted">Max: <span id="maxInfluenceValue">100</span></small>
                                     </div>
-                                    <div class="col-6">
-                                        <input type="number" class="form-control form-control-sm" id="max_influence" min="1" max="100" value="100" placeholder="Max">
-                                    </div>
+                                    <input type="range" class="form-range mt-2" id="max_influence" min="1" max="100" value="100" oninput="updateInfluenceRange()">
                                 </div>
                             </div>
 
@@ -920,12 +956,164 @@ function applyFilters() {
     }
 
     loadGraph(filters);
+    updateFilterChips(filters);
 }
 
 function clearFilters() {
     document.getElementById('filterForm').reset();
     document.querySelectorAll('.filter-check').forEach(cb => cb.checked = true);
+    document.getElementById('min_influence').value = 1;
+    document.getElementById('max_influence').value = 100;
+    updateInfluenceRange();
     loadGraph();
+    updateFilterChips({});
+}
+
+// ========================================
+// RANGE SLIDER UPDATES
+// ========================================
+function updateInfluenceRange() {
+    const minVal = parseInt(document.getElementById('min_influence').value);
+    const maxVal = parseInt(document.getElementById('max_influence').value);
+
+    // Prevent crossing
+    if (minVal > maxVal) {
+        document.getElementById('min_influence').value = maxVal;
+    }
+    if (maxVal < minVal) {
+        document.getElementById('max_influence').value = minVal;
+    }
+
+    // Update display
+    const min = document.getElementById('min_influence').value;
+    const max = document.getElementById('max_influence').value;
+    document.getElementById('minInfluenceValue').textContent = min;
+    document.getElementById('maxInfluenceValue').textContent = max;
+    document.getElementById('influenceRangeDisplay').textContent = `${min} - ${max}`;
+}
+
+// ========================================
+// QUICK FILTER PRESETS
+// ========================================
+function applyPresetFilter(preset) {
+    // Clear existing filters first
+    clearFilters();
+
+    switch (preset) {
+        case 'champions':
+            // Only Champions
+            document.querySelectorAll('.filter-check').forEach(cb => {
+                cb.checked = cb.value === 'champion';
+            });
+            break;
+
+        case 'high_influence':
+            // Influence > 70
+            document.getElementById('min_influence').value = 70;
+            document.getElementById('max_influence').value = 100;
+            updateInfluenceRange();
+            break;
+
+        case 'leadership':
+            // Champions and Supporters with high influence
+            document.querySelectorAll('.filter-check').forEach(cb => {
+                cb.checked = cb.value === 'champion' || cb.value === 'supporter';
+            });
+            document.getElementById('min_influence').value = 60;
+            document.getElementById('max_influence').value = 100;
+            updateInfluenceRange();
+            break;
+
+        case 'skeptics_blockers':
+            // Skeptics and Blockers
+            document.querySelectorAll('.filter-check').forEach(cb => {
+                cb.checked = cb.value === 'skeptic' || cb.value === 'blocker';
+            });
+            break;
+    }
+
+    // Apply the filters
+    applyFilters();
+}
+
+// ========================================
+// FILTER CHIPS
+// ========================================
+function updateFilterChips(filters) {
+    const container = document.getElementById('activeFilterChips');
+    const chips = [];
+
+    // Department filter
+    if (filters.department) {
+        chips.push({
+            label: `Department: ${filters.department}`,
+            key: 'department',
+            value: filters.department
+        });
+    }
+
+    // Influence range filter
+    if (filters.min_influence && filters.max_influence) {
+        const min = parseInt(filters.min_influence);
+        const max = parseInt(filters.max_influence);
+        if (min > 1 || max < 100) {
+            chips.push({
+                label: `Influence: ${min}-${max}`,
+                key: 'influence',
+                value: `${min}-${max}`
+            });
+        }
+    }
+
+    // Support level filter
+    if (filters.support_level) {
+        const levels = filters.support_level.split(',');
+        chips.push({
+            label: `Support: ${levels.join(', ')}`,
+            key: 'support_level',
+            value: filters.support_level
+        });
+    }
+
+    // Render chips
+    if (chips.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+
+    let html = '<span class="text-muted small me-2">Active Filters:</span>';
+    chips.forEach(chip => {
+        html += `
+            <span class="filter-chip badge bg-primary">
+                ${chip.label}
+                <i class="bi bi-x-circle ms-1" style="cursor: pointer;" onclick="removeFilterChip('${chip.key}')"></i>
+            </span>
+        `;
+    });
+    html += `
+        <button class="btn btn-sm btn-link text-danger" onclick="clearFilters()">
+            <i class="bi bi-x-circle"></i> Clear All
+        </button>
+    `;
+
+    container.innerHTML = html;
+}
+
+function removeFilterChip(filterKey) {
+    switch (filterKey) {
+        case 'department':
+            document.querySelector('select[name="department"]').value = '';
+            break;
+        case 'influence':
+            document.getElementById('min_influence').value = 1;
+            document.getElementById('max_influence').value = 100;
+            updateInfluenceRange();
+            break;
+        case 'support_level':
+            document.querySelectorAll('.filter-check').forEach(cb => cb.checked = true);
+            break;
+    }
+    applyFilters();
 }
 
 function changeLayout() {
@@ -1491,6 +1679,121 @@ document.addEventListener('keydown', function(e) {
 h2 {
     font-weight: 700;
     font-size: 1.75rem;
+}
+
+/* ========================================
+   FILTER CHIPS & RANGE SLIDERS
+   ======================================== */
+
+/* Filter Chips */
+.filter-chip {
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    transition: all 0.2s ease;
+    animation: slideInDown 0.3s ease;
+}
+
+.filter-chip i {
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.filter-chip i:hover {
+    opacity: 1;
+}
+
+@keyframes slideInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Range Slider Styling */
+.range-slider-container {
+    padding: 0.5rem 0;
+}
+
+.form-range {
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(to right, #e9ecef 0%, #e9ecef 100%);
+    border-radius: 5px;
+    outline: none;
+    padding: 0;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+    transition: all 0.2s ease;
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.form-range::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+    transition: all 0.2s ease;
+}
+
+.form-range::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.form-range:focus {
+    outline: none;
+}
+
+.form-range::-webkit-slider-runnable-track {
+    background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+    border-radius: 5px;
+    height: 6px;
+}
+
+.form-range::-moz-range-track {
+    background: linear-gradient(to right, #667eea 0%, #764ba2 100%);
+    border-radius: 5px;
+    height: 6px;
+}
+
+/* Quick Filter Buttons */
+.btn-sm {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+}
+
+.btn-outline-success:hover,
+.btn-outline-warning:hover,
+.btn-outline-info:hover,
+.btn-outline-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 </style>
 
