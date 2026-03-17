@@ -921,9 +921,10 @@
 
                     // Transform new API response to old format for compatibility
                     const results = transformSearchResults(data);
+                    const limitPerType = data.limit_per_type || 5;
 
                     if (results.length > 0) {
-                        displayResults(results, query);
+                        displayResults(results, query, limitPerType);
                     } else {
                         displayNoResults(query);
                     }
@@ -1038,9 +1039,9 @@
             return results.slice(0, 15);
         }
 
-        function displayResults(results, query) {
+        function displayResults(results, query, limitPerType = 5) {
             let html = '<div style="padding: 8px 12px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; font-size: 0.875rem; color: #6c757d;">';
-            html += `<i class="bi bi-search"></i> Showing top ${results.length} result${results.length !== 1 ? 's' : ''} for "<strong>${escapeHtml(query)}</strong>" <span style="color: #999;">(up to 5 per type)</span>`;
+            html += `<i class="bi bi-search"></i> Showing top ${results.length} result${results.length !== 1 ? 's' : ''} for "<strong>${escapeHtml(query)}</strong>" <span style="color: #999;">(up to ${limitPerType} per type)</span>`;
             html += '</div>';
 
             html += '<div style="padding: 4px;">';

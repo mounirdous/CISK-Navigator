@@ -5,6 +5,28 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.26] - 2026-03-17
+
+### Changed - Dynamic limit text in live search
+**Change**: "up to 5 per type" text now dynamically updates based on server limit
+
+**What Changed**:
+- Live search API now returns `limit_per_type` in JSON response
+- JavaScript reads this value and displays it: "(up to 5 per type)"
+- If limit changes in backend, UI automatically reflects it
+
+**Files Modified**:
+- `app/routes/workspace.py`:
+  - Updated live_search() to return `limit_per_type` in JSON
+- `app/templates/base.html`:
+  - Updated displayResults() to accept limitPerType parameter
+  - Dynamic text: "(up to ${limitPerType} per type)"
+- `app/__init__.py` - Version bump to 2.5.26
+
+**Known Issue**: Entity type filters don't persist on search results page (to be fixed in next version)
+
+---
+
 ## [2.5.25] - 2026-03-17
 
 ### Changed - Centralized action items calculation logic

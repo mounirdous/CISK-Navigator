@@ -2236,7 +2236,7 @@ def live_search():
             }
         )
 
-    return jsonify({"results": results, "total": len(results)})
+    return jsonify({"results": results, "total": len(results), "limit_per_type": limit})
 
 
 @bp.route("/api/search/advanced", methods=["POST"])

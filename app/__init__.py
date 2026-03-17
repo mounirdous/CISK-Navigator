@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "2.5.25"
+__version__ = "2.5.26"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
