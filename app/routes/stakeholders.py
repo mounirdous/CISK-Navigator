@@ -97,6 +97,17 @@ def index():
     filter_form = StakeholderFilterForm()
     filter_form.department.choices = [("", "All Departments")] + [(d, d) for d in sorted(departments)]
 
+    # Get sites that are actually used by stakeholders in this organization
+    sites = (
+        db.session.query(GeographySite)
+        .join(Stakeholder, GeographySite.id == Stakeholder.site_id)
+        .join(GeographySite.country)
+        .filter(Stakeholder.organization_id == org_id, Stakeholder.site_id.isnot(None))
+        .distinct()
+        .order_by(GeographySite.name)
+        .all()
+    )
+
     # Convert to dicts for JSON serialization
     stakeholders_data = [s.to_dict() for s in visible_stakeholders]
     relationships_data = [r.to_dict() for r in relationships]
@@ -111,6 +122,7 @@ def index():
         stakeholders=stakeholders_data,
         relationships=relationships_data,
         filter_form=filter_form,
+        sites=sites,
         maps=maps_data,
         selected_map=selected_map,
         csrf_token=generate_csrf,

@@ -34,7 +34,7 @@ class Stakeholder(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    organization = db.relationship("Organization", backref="stakeholders")
+    organization = db.relationship("Organization", backref=db.backref("stakeholders", passive_deletes=True))
     created_by = db.relationship("User", foreign_keys=[created_by_user_id], backref="created_stakeholders")
     site = db.relationship("GeographySite", backref="stakeholders")
     outgoing_relationships = db.relationship(

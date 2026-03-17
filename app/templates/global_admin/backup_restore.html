@@ -198,6 +198,14 @@
                     <i class="bi bi-tags"></i>
                     <span>{{ stat.value_types }} Value Types</span>
                 </div>
+                <div class="org-stat">
+                    <i class="bi bi-shield-check"></i>
+                    <span>{{ stat.governance_bodies }} Governance Bodies</span>
+                </div>
+                <div class="org-stat">
+                    <i class="bi bi-people"></i>
+                    <span>{{ stat.stakeholders }} Stakeholders</span>
+                </div>
             </div>
         </div>
         {% endfor %}
@@ -288,7 +296,9 @@
                             data-challenges="{{ stat.challenges }}"
                             data-initiatives="{{ stat.initiatives }}"
                             data-systems="{{ stat.systems }}"
-                            data-kpis="{{ stat.kpis }}">
+                            data-kpis="{{ stat.kpis }}"
+                            data-governance-bodies="{{ stat.governance_bodies }}"
+                            data-stakeholders="{{ stat.stakeholders }}">
                         {{ stat.org.name }}
                         {% if stat.spaces == 0 and stat.challenges == 0 and stat.initiatives == 0 %}
                         (Empty - Safe)

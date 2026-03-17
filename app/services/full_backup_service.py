@@ -3,11 +3,56 @@ Full Backup/Restore Service
 
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
+
+BACKUP FORMAT VERSION: 2.0 (Updated 2026-03-17)
+
+What's backed up:
+================
+✅ Organization info (name, description)
+✅ Users and organization permissions
+✅ Value Types (with numeric formats, units, decimals)
+✅ Governance Bodies
+✅ Full CISK hierarchy:
+   - Spaces (with SWOT analysis)
+   - Challenges
+   - Initiatives
+   - Systems
+   - KPIs (with logos)
+✅ KPI Configurations:
+   - Value type configs
+   - Colors (positive/zero/negative)
+   - Display scale and decimals
+   - Target tracking (value, date, direction, tolerance)
+   - Baseline snapshots
+   - **Calculation type** (manual/linked/formula)
+   - **Calculation formulas** (JSON config)
+   - **Linked KPI references** (cross-org links)
+✅ All contributions (actual data!)
+✅ Stakeholder Mapping (v2.0+):
+   - Stakeholders (with sites)
+   - Relationships between stakeholders
+   - Entity links (stakeholder → CISK entities)
+✅ Stakeholder Maps (v2.0+):
+   - Named maps with memberships
+   - Visibility settings
+
+What's NOT backed up (must exist in target):
+===========================================
+⚠️  Geography data (Regions, Countries, Sites) - Global data, referenced by name only
+⚠️  User passwords - Users matched by login/email
+⚠️  Audit logs - Historical data not portable
+
+Version Compatibility:
+=====================
+- Backup format v1.0: Original release (before stakeholders, formulas, linked KPIs)
+- Backup format v2.0: Added stakeholders, maps, formulas, linked KPIs
+- Always restore to same or newer app version for best compatibility
 """
 
 import json
 from datetime import datetime
 
+from app import db
 from app.models import GovernanceBody, Space, ValueType
 
 
@@ -34,36 +79,62 @@ class FullBackupService:
         if not org:
             return None
 
+        from app import __version__ as app_version
+        from app.db_version import DB_SCHEMA_VERSION
+
         backup = {
             "metadata": {
-                "version": "1.0",
+                "backup_format_version": "2.0",  # Backup format version
+                "app_version": app_version,  # CISK Navigator version
+                "db_schema_version": DB_SCHEMA_VERSION,  # Database schema version
                 "created_at": datetime.utcnow().isoformat(),
                 "organization_name": org.name,
                 "organization_id": organization_id,
                 "backup_type": "full",
+                "compatibility_warning": f"This backup was created with CISK Navigator v{app_version} (DB schema v{DB_SCHEMA_VERSION}). "
+                "Restore REQUIRES matching DB schema version for data integrity.",
             },
-            "organization": {
-                "name": org.name,
-                "description": org.description,
-                "is_active": org.is_active,
-            },
+            "organization": FullBackupService._export_organization(org),
             "users": FullBackupService._export_users(organization_id),
             "value_types": FullBackupService._export_value_types(organization_id),
             "governance_bodies": FullBackupService._export_governance_bodies(organization_id),
             "spaces": FullBackupService._export_spaces(organization_id),
+            "stakeholders": FullBackupService._export_stakeholders(organization_id),
+            "stakeholder_maps": FullBackupService._export_stakeholder_maps(organization_id),
+            "geography_references": FullBackupService._export_geography_references(organization_id),
         }
 
         return backup
 
     @staticmethod
+    def _export_organization(org):
+        """Export organization data including logo"""
+        import base64
+
+        org_data = {
+            "name": org.name,
+            "description": org.description,
+            "is_active": org.is_active,
+        }
+
+        # Export logo if present
+        if org.logo_data and org.logo_mime_type:
+            org_data["logo"] = {
+                "mime_type": org.logo_mime_type,
+                "data": base64.b64encode(org.logo_data).decode("utf-8"),
+            }
+
+        return org_data
+
+    @staticmethod
     def _export_users(organization_id):
         """Export all users and their permissions for this organization"""
-        from app.models import UserOrganizationMembership, User
+        from app.models import User, UserOrganizationMembership
 
         memberships = (
             UserOrganizationMembership.query.filter_by(organization_id=organization_id)
             .join(User)
-            .filter(User.is_active == True)
+            .filter(User.is_active.is_(True))
             .all()
         )
 
@@ -142,7 +213,9 @@ class FullBackupService:
 
     @staticmethod
     def _export_spaces(organization_id):
-        """Export spaces with full hierarchy and data"""
+        """Export spaces with full hierarchy and data including logos"""
+        import base64
+
         spaces = Space.query.filter_by(organization_id=organization_id).order_by(Space.display_order, Space.name).all()
 
         result = []
@@ -160,6 +233,13 @@ class FullBackupService:
                 "challenges": [],
             }
 
+            # Export space logo if present
+            if space.logo_data and space.logo_mime_type:
+                space_data["logo"] = {
+                    "mime_type": space.logo_mime_type,
+                    "data": base64.b64encode(space.logo_data).decode("utf-8"),
+                }
+
             # Export challenges
             challenges = sorted(space.challenges, key=lambda c: (c.display_order, c.name))
             for challenge in challenges:
@@ -169,6 +249,13 @@ class FullBackupService:
                     "display_order": challenge.display_order,
                     "initiatives": [],
                 }
+
+                # Export challenge logo if present
+                if challenge.logo_data and challenge.logo_mime_type:
+                    challenge_data["logo"] = {
+                        "mime_type": challenge.logo_mime_type,
+                        "data": base64.b64encode(challenge.logo_data).decode("utf-8"),
+                    }
 
                 # Get unique initiatives through links
                 initiatives_dict = {}
@@ -187,6 +274,13 @@ class FullBackupService:
                         "systems": [],
                     }
 
+                    # Export initiative logo if present
+                    if initiative.logo_data and initiative.logo_mime_type:
+                        initiative_data["logo"] = {
+                            "mime_type": initiative.logo_mime_type,
+                            "data": base64.b64encode(initiative.logo_data).decode("utf-8"),
+                        }
+
                     # Get unique systems through links
                     systems_dict = {}
                     for link in initiative.system_links:
@@ -202,6 +296,13 @@ class FullBackupService:
                             "description": system.description,
                             "kpis": [],
                         }
+
+                        # Export system logo if present
+                        if system.logo_data and system.logo_mime_type:
+                            system_data["logo"] = {
+                                "mime_type": system.logo_mime_type,
+                                "data": base64.b64encode(system.logo_data).decode("utf-8"),
+                            }
 
                         # Find the link to get KPIs for this specific initiative-system pair
                         link = next(
@@ -225,7 +326,9 @@ class FullBackupService:
 
     @staticmethod
     def _export_kpi_with_data(kpi):
-        """Export KPI with all data including contributions and governance bodies"""
+        """Export KPI with all data including contributions, formulas, linked KPIs, and governance bodies"""
+        import base64
+
         kpi_data = {
             "name": kpi.name,
             "description": kpi.description,
@@ -234,6 +337,13 @@ class FullBackupService:
             "governance_bodies": [],
             "value_types": [],
         }
+
+        # Export logo if present
+        if kpi.logo_data and kpi.logo_mime_type:
+            kpi_data["logo"] = {
+                "mime_type": kpi.logo_mime_type,
+                "data": base64.b64encode(kpi.logo_data).decode("utf-8"),
+            }
 
         # Export governance body links
         for link in kpi.governance_body_links:
@@ -268,6 +378,40 @@ class FullBackupService:
                     vt_config["target_direction"] = config.target_direction
                 if config.target_tolerance_pct:
                     vt_config["target_tolerance_pct"] = config.target_tolerance_pct
+                if config.baseline_snapshot_id:
+                    vt_config["baseline_snapshot_id"] = config.baseline_snapshot_id
+
+            # Calculation type and formula (v1.20.0+)
+            vt_config["calculation_type"] = config.calculation_type
+            if config.calculation_config:
+                vt_config["calculation_config"] = config.calculation_config
+
+            # Linked KPI configuration (v1.18.0+)
+            if config.calculation_type == "linked" and config.linked_source_kpi_id:
+                from app.models import KPI, Organization
+
+                source_kpi = KPI.query.get(config.linked_source_kpi_id)
+                source_org = (
+                    Organization.query.get(config.linked_source_org_id) if config.linked_source_org_id else None
+                )
+
+                if source_kpi:
+                    # Find the source system and initiative to build full path
+                    source_system = (
+                        source_kpi.initiative_system_link.system if source_kpi.initiative_system_link else None
+                    )
+                    source_initiative = (
+                        source_kpi.initiative_system_link.initiative if source_kpi.initiative_system_link else None
+                    )
+
+                    vt_config["linked_kpi"] = {
+                        "source_org_name": source_org.name if source_org else None,
+                        "source_initiative_name": source_initiative.name if source_initiative else None,
+                        "source_system_name": source_system.name if source_system else None,
+                        "source_kpi_name": source_kpi.name,
+                        "source_value_type_id": config.linked_source_value_type_id,
+                        "note": "Linked KPIs must exist in target instance for restore to work properly.",
+                    }
 
             # Export ALL contributions for this value type
             for contrib in config.contributions:
@@ -288,6 +432,125 @@ class FullBackupService:
             kpi_data["value_types"].append(vt_config)
 
         return kpi_data
+
+    @staticmethod
+    def _export_stakeholders(organization_id):
+        """Export stakeholders, relationships, and entity links"""
+        from app.models import Stakeholder
+
+        stakeholders = Stakeholder.query.filter_by(organization_id=organization_id).order_by(Stakeholder.name).all()
+
+        result = []
+        for stakeholder in stakeholders:
+            stakeholder_data = {
+                "name": stakeholder.name,
+                "role": stakeholder.role,
+                "department": stakeholder.department,
+                "email": stakeholder.email,
+                "site_name": stakeholder.site.name if stakeholder.site else None,  # Store site name for reference
+                "influence_level": stakeholder.influence_level,
+                "interest_level": stakeholder.interest_level,
+                "support_level": stakeholder.support_level,
+                "visibility": stakeholder.visibility,
+                "notes": stakeholder.notes,
+                "position_x": stakeholder.position_x,
+                "position_y": stakeholder.position_y,
+                "created_by_login": stakeholder.created_by.login if stakeholder.created_by else None,
+                "relationships": [],
+                "entity_links": [],
+            }
+
+            # Export relationships (only where this stakeholder is "from")
+            for rel in stakeholder.outgoing_relationships:
+                to_stakeholder = rel.to_stakeholder
+                stakeholder_data["relationships"].append(
+                    {
+                        "to_stakeholder_name": to_stakeholder.name,
+                        "relationship_type": rel.relationship_type,
+                        "strength": rel.strength,
+                        "notes": rel.notes,
+                    }
+                )
+
+            # Export entity links
+            for link in stakeholder.entity_links:
+                entity = link.get_entity()
+                entity_link_data = {
+                    "entity_type": link.entity_type,
+                    "entity_name": entity.name if entity else f"Unknown {link.entity_type}",
+                    "interest_level": link.interest_level,
+                    "impact_level": link.impact_level,
+                    "notes": link.notes,
+                }
+                stakeholder_data["entity_links"].append(entity_link_data)
+
+            result.append(stakeholder_data)
+
+        return result
+
+    @staticmethod
+    def _export_stakeholder_maps(organization_id):
+        """Export stakeholder maps and their memberships"""
+        from app.models import StakeholderMap
+
+        maps = StakeholderMap.query.filter_by(organization_id=organization_id).order_by(StakeholderMap.name).all()
+
+        result = []
+        for map_obj in maps:
+            map_data = {
+                "name": map_obj.name,
+                "description": map_obj.description,
+                "visibility": map_obj.visibility,
+                "created_by_login": map_obj.created_by.login if map_obj.created_by else None,
+                "stakeholders": [],
+            }
+
+            # Export stakeholder memberships
+            for membership in map_obj.memberships:
+                stakeholder = membership.stakeholder
+                map_data["stakeholders"].append(
+                    {
+                        "name": stakeholder.name,
+                        "role": stakeholder.role,  # Include role to help identify if multiple stakeholders have same name
+                    }
+                )
+
+            result.append(map_data)
+
+        return result
+
+    @staticmethod
+    def _export_geography_references(organization_id):
+        """
+        Export geography references (sites used by this organization).
+
+        Note: Geography data (regions, countries, sites) is global and shared across organizations.
+        We only export which sites are referenced by this organization's stakeholders.
+        On restore, these sites must already exist in the target instance.
+        """
+        from app.models import GeographySite, Stakeholder
+
+        # Get all sites used by stakeholders in this org
+        sites = (
+            db.session.query(GeographySite)
+            .join(Stakeholder, GeographySite.id == Stakeholder.site_id)
+            .filter(Stakeholder.organization_id == organization_id, Stakeholder.site_id.isnot(None))
+            .distinct()
+            .all()
+        )
+
+        result = []
+        for site in sites:
+            result.append(
+                {
+                    "site_name": site.name,
+                    "country_name": site.country.name if site.country else None,
+                    "region_name": site.country.region.name if site.country and site.country.region else None,
+                    "note": "This is a reference only. Geography data must exist in target instance.",
+                }
+            )
+
+        return result
 
     @staticmethod
     def export_to_json_string(organization_id):

@@ -1,8 +1,31 @@
 """
-Full Restore Service
+Full Restore Service - v2.0
 
-Restores complete organization from JSON backup.
-Includes governance body mapping.
+Restores complete organization from JSON backup format v2.0.
+
+Features:
+=========
+✅ DB schema version checking (blocks incompatible restores)
+✅ User mapping (map to existing or create new)
+✅ Governance body mapping
+✅ Full CISK hierarchy (Spaces → Challenges → Initiatives → Systems → KPIs)
+✅ Value types with all configurations
+✅ KPI contributions (actual data)
+✅ **Logos** (Organization, Space, Challenge, Initiative, System, KPI)
+✅ **KPI Formulas** (calculation_type + calculation_config)
+✅ **Linked KPIs** (referenced but require manual re-linking after restore)
+✅ **Stakeholders** with site assignments
+✅ **Stakeholder Relationships** (reports_to, influences, etc.)
+✅ **Stakeholder Entity Links** (stakeholder → CISK entities)
+✅ **Stakeholder Maps** with memberships
+
+Important Notes:
+================
+- Restore REQUIRES matching DB schema version
+- Geography sites must already exist in target instance
+- Linked KPIs are flagged but not automatically linked (manual step required)
+- Users can be mapped to existing accounts or created new
+- All logos are base64 encoded in backup and restored as binary data
 """
 
 import json
@@ -14,12 +37,18 @@ from app.models import (
     Challenge,
     ChallengeInitiativeLink,
     Contribution,
+    GeographySite,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
     KPIGovernanceBodyLink,
     KPIValueTypeConfig,
     Space,
+    Stakeholder,
+    StakeholderEntityLink,
+    StakeholderMap,
+    StakeholderMapMembership,
+    StakeholderRelationship,
     System,
     ValueType,
 )
@@ -44,12 +73,31 @@ class FullRestoreService:
         Returns:
             dict with restore results and statistics
         """
-        from app.models import Organization, UserOrganizationMembership, User
+        from app.db_version import DB_SCHEMA_VERSION
+        from app.models import Organization, User, UserOrganizationMembership
 
         try:
             backup = json.loads(json_string)
         except json.JSONDecodeError as e:
             return {"success": False, "error": f"Invalid JSON: {str(e)}"}
+
+        # VERSION CHECKING: Critical for data integrity
+        metadata = backup.get("metadata", {})
+        backup_db_version = metadata.get("db_schema_version", "unknown")
+        backup_app_version = metadata.get("app_version", "unknown")
+
+        if backup_db_version != DB_SCHEMA_VERSION:
+            return {
+                "success": False,
+                "error": f"Database schema version mismatch!\n\n"
+                f"Backup DB version: {backup_db_version}\n"
+                f"Current DB version: {DB_SCHEMA_VERSION}\n\n"
+                f"Restore is BLOCKED to prevent data corruption.\n"
+                f"The backup must be created with the same database schema version.\n\n"
+                f"Backup app version: {backup_app_version}\n"
+                f"Backup created: {metadata.get('created_at', 'unknown')}",
+                "version_mismatch": True,
+            }
 
         stats = {
             "value_types": 0,
@@ -63,7 +111,15 @@ class FullRestoreService:
             "governance_body_links": 0,
             "users_created": 0,
             "users_mapped": 0,
+            "stakeholders": 0,
+            "stakeholder_relationships": 0,
+            "stakeholder_maps": 0,
+            "stakeholder_entity_links": 0,
+            "logos_restored": 0,
+            "formulas_restored": 0,
+            "linked_kpis_restored": 0,
             "errors": [],
+            "warnings": [],
         }
 
         try:
@@ -115,16 +171,12 @@ class FullRestoreService:
                         permissions = mapping_info.get("permissions", {})
 
                         # Check if user already exists (by login or email)
-                        existing_user = User.query.filter(
-                            (User.login == login) | (User.email == email)
-                        ).first()
+                        existing_user = User.query.filter((User.login == login) | (User.email == email)).first()
 
                         if existing_user:
                             # Use existing user instead
                             user_map[backup_login] = existing_user
-                            stats["errors"].append(
-                                f"User {login} already exists, mapped to existing account"
-                            )
+                            stats["errors"].append(f"User {login} already exists, mapped to existing account")
                         else:
                             # Create new user with default password
                             new_user = User(
@@ -149,34 +201,53 @@ class FullRestoreService:
                             stats["users_created"] += 1
 
             # Step 1: Create/map governance bodies
-            if governance_body_mapping:
+            # If no mapping provided, auto-create all governance bodies
+            if not governance_body_mapping:
+                governance_body_mapping = {}
                 for gb_data in backup.get("governance_bodies", []):
-                    gb_name = gb_data["name"]
-                    action = governance_body_mapping.get(gb_name)
+                    governance_body_mapping[gb_data["name"]] = "create"
 
-                    if action == "create":
-                        # Create new governance body
-                        gb = GovernanceBody(
-                            organization_id=organization_id,
-                            name=gb_name,
-                            abbreviation=gb_data.get("abbreviation", gb_name[:20]),
-                            description=gb_data.get("description"),
-                            color=gb_data.get("color", "#3498db"),
-                            display_order=gb_data.get("display_order", 0),
-                            is_active=gb_data.get("is_active", True),
-                            is_default=gb_data.get("is_default", False),
-                        )
-                        db.session.add(gb)
-                        db.session.flush()
+            for gb_data in backup.get("governance_bodies", []):
+                gb_name = gb_data["name"]
+                action = governance_body_mapping.get(gb_name)
+
+                if action == "create":
+                    # Create new governance body
+                    gb = GovernanceBody(
+                        organization_id=organization_id,
+                        name=gb_name,
+                        abbreviation=gb_data.get("abbreviation", gb_name[:20]),
+                        description=gb_data.get("description"),
+                        color=gb_data.get("color", "#3498db"),
+                        display_order=gb_data.get("display_order", 0),
+                        is_active=gb_data.get("is_active", True),
+                        is_default=gb_data.get("is_default", False),
+                    )
+                    db.session.add(gb)
+                    db.session.flush()
+                    governance_body_map[gb_name] = gb
+                    stats["governance_bodies"] += 1
+                elif isinstance(action, int):
+                    # Map to existing governance body
+                    gb = GovernanceBody.query.get(action)
+                    if gb:
                         governance_body_map[gb_name] = gb
-                        stats["governance_bodies"] += 1
-                    elif isinstance(action, int):
-                        # Map to existing governance body
-                        gb = GovernanceBody.query.get(action)
-                        if gb:
-                            governance_body_map[gb_name] = gb
-                        else:
-                            stats["errors"].append(f"Governance body ID {action} not found for '{gb_name}'")
+                    else:
+                        stats["errors"].append(f"Governance body ID {action} not found for '{gb_name}'")
+
+            # Step 1.5: Restore organization logo
+            org_data = backup.get("organization", {})
+            if "logo" in org_data:
+                try:
+                    import base64
+
+                    org = Organization.query.get(organization_id)
+                    org.logo_data = base64.b64decode(org_data["logo"]["data"])
+                    org.logo_mime_type = org_data["logo"]["mime_type"]
+                    db.session.flush()
+                    stats["logos_restored"] += 1
+                except Exception as e:
+                    stats["warnings"].append(f"Failed to restore organization logo: {str(e)}")
 
             # Step 2: Import Value Types
             for vt_data in backup.get("value_types", []):
@@ -218,11 +289,26 @@ class FullRestoreService:
                         "kpis",
                         "contributions",
                         "governance_body_links",
+                        "logos_restored",
+                        "formulas_restored",
+                        "linked_kpis_restored",
                     ]:
                         stats[key] += space_stats.get(key, 0)
                     stats["errors"].extend(space_stats.get("errors", []))
                 except Exception as e:
                     stats["errors"].append(f"Space '{space_data.get('name')}': {str(e)}")
+
+            # Step 4: Restore Stakeholders and Maps
+            stakeholder_stats = FullRestoreService._restore_stakeholders(backup, organization_id, user_map)
+            stats["stakeholders"] += stakeholder_stats.get("stakeholders", 0)
+            stats["stakeholder_relationships"] += stakeholder_stats.get("stakeholder_relationships", 0)
+            stats["stakeholder_entity_links"] += stakeholder_stats.get("stakeholder_entity_links", 0)
+            stats["warnings"].extend(stakeholder_stats.get("warnings", []))
+
+            # Step 5: Restore Stakeholder Maps
+            map_stats = FullRestoreService._restore_stakeholder_maps(backup, organization_id, user_map)
+            stats["stakeholder_maps"] += map_stats.get("maps", 0)
+            stats["warnings"].extend(map_stats.get("warnings", []))
 
             db.session.commit()
             stats["success"] = True
@@ -247,10 +333,15 @@ class FullRestoreService:
             "kpis": 0,
             "contributions": 0,
             "governance_body_links": 0,
+            "logos_restored": 0,
+            "formulas_restored": 0,
+            "linked_kpis_restored": 0,
             "errors": [],
         }
 
         # Create Space
+        import base64
+
         space = Space(
             organization_id=organization_id,
             name=space_data["name"],
@@ -263,6 +354,16 @@ class FullRestoreService:
             swot_opportunities=space_data.get("swot_opportunities"),
             swot_threats=space_data.get("swot_threats"),
         )
+
+        # Restore space logo if present
+        if "logo" in space_data:
+            try:
+                space.logo_data = base64.b64decode(space_data["logo"]["data"])
+                space.logo_mime_type = space_data["logo"]["mime_type"]
+                stats["logos_restored"] += 1
+            except Exception as e:
+                stats["errors"].append(f"Failed to restore logo for space '{space_data['name']}': {str(e)}")
+
         db.session.add(space)
         db.session.flush()
         stats["spaces"] += 1
@@ -277,6 +378,18 @@ class FullRestoreService:
                     description=challenge_data.get("description"),
                     display_order=challenge_data.get("display_order", 0),
                 )
+
+                # Restore challenge logo if present
+                if "logo" in challenge_data:
+                    try:
+                        challenge.logo_data = base64.b64decode(challenge_data["logo"]["data"])
+                        challenge.logo_mime_type = challenge_data["logo"]["mime_type"]
+                        stats["logos_restored"] += 1
+                    except Exception as e:
+                        stats["errors"].append(
+                            f"Failed to restore logo for challenge '{challenge_data['name']}': {str(e)}"
+                        )
+
                 db.session.add(challenge)
                 db.session.flush()
                 stats["challenges"] += 1
@@ -295,6 +408,16 @@ class FullRestoreService:
                             description=initiative_data.get("description"),
                             group_label=initiative_data.get("group_label"),
                         )
+
+                        # Restore initiative logo if present
+                        if "logo" in initiative_data:
+                            try:
+                                initiative.logo_data = base64.b64decode(initiative_data["logo"]["data"])
+                                initiative.logo_mime_type = initiative_data["logo"]["mime_type"]
+                                stats["logos_restored"] += 1
+                            except Exception as e:
+                                stats["errors"].append(f"Failed to restore logo for initiative '{init_name}': {str(e)}")
+
                         db.session.add(initiative)
                         db.session.flush()
                         initiative_map[init_name] = initiative
@@ -317,6 +440,16 @@ class FullRestoreService:
                                 name=sys_name,
                                 description=system_data.get("description"),
                             )
+
+                            # Restore system logo if present
+                            if "logo" in system_data:
+                                try:
+                                    system.logo_data = base64.b64decode(system_data["logo"]["data"])
+                                    system.logo_mime_type = system_data["logo"]["mime_type"]
+                                    stats["logos_restored"] += 1
+                                except Exception as e:
+                                    stats["errors"].append(f"Failed to restore logo for system '{sys_name}': {str(e)}")
+
                             db.session.add(system)
                             db.session.flush()
                             system_map[sys_name] = system
@@ -341,6 +474,9 @@ class FullRestoreService:
                                 stats["kpis"] += kpi_stats.get("kpis", 0)
                                 stats["contributions"] += kpi_stats.get("contributions", 0)
                                 stats["governance_body_links"] += kpi_stats.get("governance_body_links", 0)
+                                stats["logos_restored"] += kpi_stats.get("logos_restored", 0)
+                                stats["formulas_restored"] += kpi_stats.get("formulas_restored", 0)
+                                stats["linked_kpis_restored"] += kpi_stats.get("linked_kpis_restored", 0)
                                 stats["errors"].extend(kpi_stats.get("errors", []))
                             except Exception as e:
                                 stats["errors"].append(f"KPI '{kpi_data.get('name')}': {str(e)}")
@@ -352,8 +488,18 @@ class FullRestoreService:
 
     @staticmethod
     def _restore_kpi_with_data(kpi_data, init_sys_link_id, value_type_map, governance_body_map):
-        """Restore KPI with all data"""
-        stats = {"kpis": 0, "contributions": 0, "governance_body_links": 0, "errors": []}
+        """Restore KPI with all data including logo, formulas, and linked KPIs"""
+        import base64
+
+        stats = {
+            "kpis": 0,
+            "contributions": 0,
+            "governance_body_links": 0,
+            "logos_restored": 0,
+            "formulas_restored": 0,
+            "linked_kpis_restored": 0,
+            "errors": [],
+        }
 
         # Create KPI
         kpi = KPI(
@@ -363,6 +509,16 @@ class FullRestoreService:
             is_archived=kpi_data.get("is_archived", False),
             display_order=kpi_data.get("display_order", 0),
         )
+
+        # Restore KPI logo if present
+        if "logo" in kpi_data:
+            try:
+                kpi.logo_data = base64.b64decode(kpi_data["logo"]["data"])
+                kpi.logo_mime_type = kpi_data["logo"]["mime_type"]
+                stats["logos_restored"] += 1
+            except Exception as e:
+                stats["errors"].append(f"Failed to restore logo for KPI '{kpi_data['name']}': {str(e)}")
+
         db.session.add(kpi)
         db.session.flush()
         stats["kpis"] += 1
@@ -410,7 +566,29 @@ class FullRestoreService:
                 target_date=target_date,
                 target_direction=vt_config_data.get("target_direction"),
                 target_tolerance_pct=vt_config_data.get("target_tolerance_pct"),
+                baseline_snapshot_id=vt_config_data.get("baseline_snapshot_id"),
+                # Formula support
+                calculation_type=vt_config_data.get("calculation_type", "manual"),
+                calculation_config=vt_config_data.get("calculation_config"),
             )
+
+            # Track formulas
+            if config.calculation_type == "formula":
+                stats["formulas_restored"] += 1
+
+            # Note: Linked KPIs cannot be fully restored in first pass
+            # because they reference other KPIs that may not exist yet.
+            # The linked_kpi data is stored for reference but links must be
+            # manually re-established after all KPIs are restored.
+            if config.calculation_type == "linked" and "linked_kpi" in vt_config_data:
+                stats["linked_kpis_restored"] += 1
+                linked_info = vt_config_data["linked_kpi"]
+                stats["errors"].append(
+                    f"KPI '{kpi_data['name']}' - ValueType '{vt_name}': "
+                    f"Linked KPI detected (source: {linked_info.get('source_kpi_name')}). "
+                    f"Link must be manually re-established after restore."
+                )
+
             db.session.add(config)
             db.session.flush()
 
@@ -426,4 +604,198 @@ class FullRestoreService:
                 db.session.add(contribution)
                 stats["contributions"] += 1
 
+        return stats
+
+    @staticmethod
+    def _restore_stakeholders(backup, organization_id, user_map):
+        """Restore stakeholders with relationships and entity links"""
+        from app.models import KPI, Challenge, Initiative, Space, System
+
+        stats = {
+            "stakeholders": 0,
+            "stakeholder_relationships": 0,
+            "stakeholder_entity_links": 0,
+            "warnings": [],
+        }
+
+        stakeholder_map = {}  # name -> Stakeholder object (for relationships)
+
+        # Step 1: Create all stakeholders first (relationships come after)
+        for stakeholder_data in backup.get("stakeholders", []):
+            try:
+                created_by_user = None
+                if stakeholder_data.get("created_by_login"):
+                    created_by_user = user_map.get(stakeholder_data["created_by_login"])
+
+                # Find site by name (geography reference)
+                site = None
+                if stakeholder_data.get("site_name"):
+                    site = GeographySite.query.filter_by(name=stakeholder_data["site_name"]).first()
+                    if not site:
+                        stats["warnings"].append(
+                            f"Stakeholder '{stakeholder_data['name']}': Site '{stakeholder_data['site_name']}' not found. "
+                            "Stakeholder will be created without site assignment."
+                        )
+
+                stakeholder = Stakeholder(
+                    organization_id=organization_id,
+                    created_by_user_id=created_by_user.id if created_by_user else None,
+                    site_id=site.id if site else None,
+                    name=stakeholder_data["name"],
+                    role=stakeholder_data.get("role"),
+                    department=stakeholder_data.get("department"),
+                    email=stakeholder_data.get("email"),
+                    influence_level=stakeholder_data.get("influence_level", 50),
+                    interest_level=stakeholder_data.get("interest_level", 50),
+                    support_level=stakeholder_data.get("support_level", "neutral"),
+                    visibility=stakeholder_data.get("visibility", "shared"),
+                    notes=stakeholder_data.get("notes"),
+                    position_x=stakeholder_data.get("position_x"),
+                    position_y=stakeholder_data.get("position_y"),
+                )
+
+                db.session.add(stakeholder)
+                db.session.flush()
+
+                stakeholder_map[stakeholder_data["name"]] = stakeholder
+                stats["stakeholders"] += 1
+
+            except Exception as e:
+                stats["warnings"].append(f"Failed to restore stakeholder '{stakeholder_data.get('name')}': {str(e)}")
+
+        # Step 2: Create relationships (now that all stakeholders exist)
+        for stakeholder_data in backup.get("stakeholders", []):
+            from_stakeholder = stakeholder_map.get(stakeholder_data["name"])
+            if not from_stakeholder:
+                continue
+
+            for rel_data in stakeholder_data.get("relationships", []):
+                try:
+                    to_stakeholder = stakeholder_map.get(rel_data["to_stakeholder_name"])
+                    if not to_stakeholder:
+                        stats["warnings"].append(
+                            f"Relationship from '{stakeholder_data['name']}' to '{rel_data['to_stakeholder_name']}': "
+                            "Target stakeholder not found"
+                        )
+                        continue
+
+                    relationship = StakeholderRelationship(
+                        from_stakeholder_id=from_stakeholder.id,
+                        to_stakeholder_id=to_stakeholder.id,
+                        relationship_type=rel_data["relationship_type"],
+                        strength=rel_data.get("strength", 50),
+                        notes=rel_data.get("notes"),
+                    )
+                    db.session.add(relationship)
+                    stats["stakeholder_relationships"] += 1
+
+                except Exception as e:
+                    stats["warnings"].append(
+                        f"Failed to restore relationship from '{stakeholder_data['name']}': {str(e)}"
+                    )
+
+        # Step 3: Create entity links
+        for stakeholder_data in backup.get("stakeholders", []):
+            stakeholder = stakeholder_map.get(stakeholder_data["name"])
+            if not stakeholder:
+                continue
+
+            for link_data in stakeholder_data.get("entity_links", []):
+                try:
+                    entity_type = link_data["entity_type"]
+                    entity_name = link_data["entity_name"]
+
+                    # Find entity by name
+                    entity = None
+                    if entity_type == "space":
+                        entity = Space.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                    elif entity_type == "challenge":
+                        entity = Challenge.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                    elif entity_type == "initiative":
+                        entity = Initiative.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                    elif entity_type == "system":
+                        entity = System.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                    elif entity_type == "kpi":
+                        entity = (
+                            KPI.query.join(KPI.initiative_system_link)
+                            .join(InitiativeSystemLink.initiative)
+                            .filter(Initiative.organization_id == organization_id, KPI.name == entity_name)
+                            .first()
+                        )
+
+                    if not entity:
+                        stats["warnings"].append(
+                            f"Entity link for stakeholder '{stakeholder_data['name']}': "
+                            f"{entity_type} '{entity_name}' not found"
+                        )
+                        continue
+
+                    entity_link = StakeholderEntityLink(
+                        stakeholder_id=stakeholder.id,
+                        entity_type=entity_type,
+                        entity_id=entity.id,
+                        interest_level=link_data.get("interest_level", 50),
+                        impact_level=link_data.get("impact_level", 50),
+                        notes=link_data.get("notes"),
+                    )
+                    db.session.add(entity_link)
+                    stats["stakeholder_entity_links"] += 1
+
+                except Exception as e:
+                    stats["warnings"].append(
+                        f"Failed to restore entity link for stakeholder '{stakeholder_data['name']}': {str(e)}"
+                    )
+
+        db.session.flush()
+        return stats
+
+    @staticmethod
+    def _restore_stakeholder_maps(backup, organization_id, user_map):
+        """Restore stakeholder maps with memberships"""
+        stats = {"maps": 0, "warnings": []}
+
+        for map_data in backup.get("stakeholder_maps", []):
+            try:
+                created_by_user = None
+                if map_data.get("created_by_login"):
+                    created_by_user = user_map.get(map_data["created_by_login"])
+
+                stakeholder_map = StakeholderMap(
+                    organization_id=organization_id,
+                    created_by_user_id=created_by_user.id if created_by_user else None,
+                    name=map_data["name"],
+                    description=map_data.get("description"),
+                    visibility=map_data.get("visibility", "shared"),
+                )
+
+                db.session.add(stakeholder_map)
+                db.session.flush()
+                stats["maps"] += 1
+
+                # Add stakeholder memberships
+                for stakeholder_ref in map_data.get("stakeholders", []):
+                    stakeholder_name = stakeholder_ref["name"]
+
+                    # Find stakeholder by name (and optionally role for disambiguation)
+                    query = Stakeholder.query.filter_by(organization_id=organization_id, name=stakeholder_name)
+                    if stakeholder_ref.get("role"):
+                        query = query.filter_by(role=stakeholder_ref["role"])
+
+                    stakeholder = query.first()
+
+                    if not stakeholder:
+                        stats["warnings"].append(
+                            f"Map '{map_data['name']}': Stakeholder '{stakeholder_name}' not found"
+                        )
+                        continue
+
+                    membership = StakeholderMapMembership(
+                        stakeholder_map_id=stakeholder_map.id, stakeholder_id=stakeholder.id
+                    )
+                    db.session.add(membership)
+
+            except Exception as e:
+                stats["warnings"].append(f"Failed to restore stakeholder map '{map_data.get('name')}': {str(e)}")
+
+        db.session.flush()
         return stats

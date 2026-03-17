@@ -316,6 +316,16 @@
                             </div>
 
                             <div class="mb-3">
+                                <label class="form-label small fw-bold">Site/Location</label>
+                                <select class="form-select form-select-sm" name="site_id" id="site_filter">
+                                    <option value="">All Sites</option>
+                                    {% for site in sites %}
+                                    <option value="{{ site.id }}">{{ site.name }} ({{ site.country.name }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
                                 <label class="form-label small fw-bold">
                                     Influence Range
                                     <span class="badge bg-primary ms-2" id="influenceRangeDisplay">1 - 100</span>
@@ -413,6 +423,7 @@
                 <div class="card-footer bg-light text-center small text-muted border-0">
                     <i class="bi bi-mouse"></i> <strong>Click</strong> to select •
                     <strong>Double-click</strong> to edit •
+                    <strong>Right-click</strong> for menu •
                     <strong>Drag</strong> to move •
                     <strong>Scroll</strong> to zoom
                     <span id="fullscreenHint" style="display: none;">
@@ -448,6 +459,7 @@
                     <ul class="small mb-3" style="line-height: 1.8;">
                         <li><strong>Click</strong> node → View details</li>
                         <li><strong>Double-click</strong> → Edit stakeholder</li>
+                        <li><strong>Right-click</strong> → Quick actions menu</li>
                         <li><strong>Drag</strong> nodes → Rearrange</li>
                         <li><strong>Scroll</strong> → Zoom in/out</li>
                         <li><strong>Shift+Drag</strong> → Pan view</li>
@@ -948,6 +960,11 @@ function showStakeholderDetails(nodeId) {
         </div>
 
         <div class="mb-2">
+            <strong>Site/Location:</strong><br>
+            ${stakeholder.site_name || 'N/A'}
+        </div>
+
+        <div class="mb-2">
             <strong>Influence:</strong><br>
             <div class="progress" style="height: 20px;">
                 <div class="progress-bar" role="progressbar" style="width: ${stakeholder.influence_level}%">${stakeholder.influence_level}</div>
@@ -980,6 +997,7 @@ function showStakeholderDetails(nodeId) {
 function applyFilters() {
     const filters = {
         department: document.querySelector('select[name="department"]').value,
+        site_id: document.querySelector('select[name="site_id"]').value,
         min_influence: document.getElementById('min_influence').value,
         max_influence: document.getElementById('max_influence').value
     };
@@ -1830,6 +1848,187 @@ h2 {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+/* ========================================
+   CONTEXT MENU
+   ======================================== */
+.context-menu {
+    position: fixed;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    min-width: 180px;
+    z-index: 10000;
+    display: none;
+    overflow: hidden;
+}
+
+.context-menu-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+}
+
+.context-menu-item:last-child {
+    border-bottom: none;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.context-menu-item i {
+    width: 16px;
+    text-align: center;
+}
+
+.context-menu-item.danger {
+    color: #dc3545;
+}
+
+.context-menu-item.danger:hover {
+    background-color: #fff5f5;
+}
 </style>
+
+<!-- Context Menu -->
+<div id="contextMenu" class="context-menu">
+    <div class="context-menu-item" onclick="contextMenuAction('edit')">
+        <i class="bi bi-pencil-square"></i>
+        <span>Edit Stakeholder</span>
+    </div>
+    <div class="context-menu-item" onclick="contextMenuAction('connect')">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Connect To...</span>
+    </div>
+    <div class="context-menu-item" onclick="contextMenuAction('addToMap')">
+        <i class="bi bi-plus-circle"></i>
+        <span>Add to Map</span>
+    </div>
+    <div class="context-menu-item danger" onclick="contextMenuAction('delete')">
+        <i class="bi bi-trash"></i>
+        <span>Delete</span>
+    </div>
+</div>
+
+<script>
+// ========================================
+// CONTEXT MENU
+// ========================================
+let contextMenuNodeId = null;
+
+// Add right-click event listener to network
+document.addEventListener('DOMContentLoaded', function() {
+    const networkElement = document.getElementById('networkGraph');
+
+    if (networkElement) {
+        networkElement.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+
+            if (!network) return;
+
+            // Get node at click position
+            const canvasPos = network.DOMtoCanvas({x: e.pageX, y: e.pageY});
+            const nodeId = network.getNodeAt(canvasPos);
+
+            if (nodeId) {
+                contextMenuNodeId = nodeId;
+                showContextMenu(e.pageX, e.pageY);
+            } else {
+                hideContextMenu();
+            }
+        });
+    }
+
+    // Hide context menu when clicking elsewhere
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#contextMenu')) {
+            hideContextMenu();
+        }
+    });
+});
+
+function showContextMenu(x, y) {
+    const menu = document.getElementById('contextMenu');
+    menu.style.display = 'block';
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    // Adjust if menu goes off screen
+    const rect = menu.getBoundingClientRect();
+    if (rect.right > window.innerWidth) {
+        menu.style.left = (x - rect.width) + 'px';
+    }
+    if (rect.bottom > window.innerHeight) {
+        menu.style.top = (y - rect.height) + 'px';
+    }
+}
+
+function hideContextMenu() {
+    const menu = document.getElementById('contextMenu');
+    menu.style.display = 'none';
+    contextMenuNodeId = null;
+}
+
+async function contextMenuAction(action) {
+    // Save the nodeId BEFORE hiding the menu (which clears it)
+    const nodeId = contextMenuNodeId;
+    hideContextMenu();
+
+    if (!nodeId) return;
+
+    const stakeholder = {{ stakeholders|tojson }}.find(s => s.id === nodeId);
+    if (!stakeholder) return;
+
+    switch(action) {
+        case 'edit':
+            window.location.href = `/stakeholders/${nodeId}/edit`;
+            break;
+
+        case 'connect':
+            // Pre-fill the from_stakeholder in the add relationship modal
+            const fromSelect = document.getElementById('fromStakeholder');
+            if (fromSelect) {
+                fromSelect.value = nodeId;
+            }
+
+            // Show the modal
+            const modalElement = document.getElementById('addRelationshipModal');
+            if (modalElement) {
+                const modal = new bootstrap.Modal(modalElement);
+                modal.show();
+            }
+            break;
+
+        case 'addToMap':
+            // Show map selection modal or create new map with this stakeholder
+            alert('Add to Map feature: Select a map to add ' + stakeholder.name + ' to');
+            // TODO: Implement map selection modal
+            break;
+
+        case 'delete':
+            if (confirm(`Are you sure you want to delete ${stakeholder.name}? This will also remove all relationships.`)) {
+                // Create a form and submit it (since the delete route expects POST and redirects)
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/stakeholders/${nodeId}/delete`;
+
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = '{{ csrf_token() }}';
+                form.appendChild(csrfInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+            break;
+    }
+}
+</script>
 
 {% endblock %}

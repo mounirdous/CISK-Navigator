@@ -22,7 +22,7 @@ class StakeholderMap(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    organization = db.relationship("Organization", backref="stakeholder_maps")
+    organization = db.relationship("Organization", backref=db.backref("stakeholder_maps", passive_deletes=True))
     created_by = db.relationship("User", backref="created_stakeholder_maps")
     memberships = db.relationship(
         "StakeholderMapMembership", backref="map", cascade="all, delete-orphan", lazy="dynamic"

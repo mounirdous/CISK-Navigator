@@ -700,6 +700,8 @@ def backup_restore():
         orgs = sorted([org for org in orgs if org.is_active and not org.is_deleted], key=lambda o: o.name)
 
     # Get entity counts for each org
+    from app.models import GovernanceBody, Stakeholder
+
     org_stats = []
     for org in orgs:
         spaces_count = Space.query.filter_by(organization_id=org.id).count()
@@ -717,6 +719,8 @@ def backup_restore():
         )
 
         vt_count = db.session.query(ValueType).filter_by(organization_id=org.id).count()
+        gb_count = db.session.query(GovernanceBody).filter_by(organization_id=org.id).count()
+        stakeholder_count = db.session.query(Stakeholder).filter_by(organization_id=org.id).count()
 
         org_stats.append(
             {
@@ -727,6 +731,8 @@ def backup_restore():
                 "systems": systems_count,
                 "kpis": kpis_count,
                 "value_types": vt_count,
+                "governance_bodies": gb_count,
+                "stakeholders": stakeholder_count,
             }
         )
 
@@ -823,8 +829,6 @@ def restore_backup():
         # Detect format: JSON (full backup) or YAML (structure only)
         if filename.endswith((".json", ".json.gz")):
             # Full backup - extract governance bodies for mapping
-            from app.services.full_backup_service import FullBackupService
-
             try:
                 import json
 
@@ -846,7 +850,40 @@ def restore_backup():
                 from app.services.full_restore_service import FullRestoreService
 
                 result = FullRestoreService.restore_from_json(backup_content, org_id)
-                FullBackupService._flash_restore_results(result, org.name)
+
+                if result.get("success"):
+                    flash(f"✓ Full restore to {org.name} complete!", "success")
+
+                    stats = result.get("stats", result)  # Handle both old and new format
+                    details = f'Restored: {stats.get("value_types", 0)} value types, {stats.get("governance_bodies", 0)} governance bodies, '
+                    details += f'{stats.get("spaces", 0)} spaces, {stats.get("challenges", 0)} challenges, '
+                    details += f'{stats.get("initiatives", 0)} initiatives, {stats.get("systems", 0)} systems, '
+                    details += f'{stats.get("kpis", 0)} KPIs, {stats.get("contributions", 0)} contributions'
+
+                    # Add v2.0 features
+                    if stats.get("stakeholders", 0) > 0:
+                        details += f', {stats.get("stakeholders", 0)} stakeholders'
+                    if stats.get("stakeholder_relationships", 0) > 0:
+                        details += f', {stats.get("stakeholder_relationships", 0)} relationships'
+                    if stats.get("stakeholder_maps", 0) > 0:
+                        details += f', {stats.get("stakeholder_maps", 0)} maps'
+                    if stats.get("logos_restored", 0) > 0:
+                        details += f', {stats.get("logos_restored", 0)} logos'
+                    if stats.get("formulas_restored", 0) > 0:
+                        details += f', {stats.get("formulas_restored", 0)} formulas'
+                    if stats.get("linked_kpis_restored", 0) > 0:
+                        details += f', {stats.get("linked_kpis_restored", 0)} linked KPIs'
+
+                    flash(details, "info")
+
+                    if stats.get("warnings"):
+                        flash(f'⚠ {len(stats["warnings"])} warnings', "warning")
+                        for warning in stats["warnings"][:5]:
+                            flash(f"  • {warning}", "warning")
+                else:
+                    flash("Restore failed", "danger")
+                    error_msg = result.get("error", "Unknown error")
+                    flash(error_msg, "danger")
 
         else:
             # YAML - structure only (backward compatibility)
@@ -927,26 +964,40 @@ def full_backup_governance_mapping():
             )
 
             if result.get("success"):
-                msg = f"✓ Full restore to {org.name} complete!"
-                flash(msg, "success")
+                flash(f"✓ Full restore to {org.name} complete!", "success")
 
-                details = (
-                    f'Created: {result["value_types"]} value types, {result["governance_bodies"]} governance bodies, '
-                )
-                details += f'{result["spaces"]} spaces, {result["challenges"]} challenges, '
-                details += f'{result["initiatives"]} initiatives, {result["systems"]} systems, '
-                details += f'{result["kpis"]} KPIs, {result["contributions"]} contributions, '
-                details += f'{result["governance_body_links"]} GB links'
+                stats = result.get("stats", result)  # Handle both old and new format
+                details = f'Restored: {stats.get("value_types", 0)} value types, {stats.get("governance_bodies", 0)} governance bodies, '
+                details += f'{stats.get("spaces", 0)} spaces, {stats.get("challenges", 0)} challenges, '
+                details += f'{stats.get("initiatives", 0)} initiatives, {stats.get("systems", 0)} systems, '
+                details += f'{stats.get("kpis", 0)} KPIs, {stats.get("contributions", 0)} contributions'
+
+                # Add v2.0 features
+                if stats.get("stakeholders", 0) > 0:
+                    details += f', {stats.get("stakeholders", 0)} stakeholders'
+                if stats.get("stakeholder_relationships", 0) > 0:
+                    details += f', {stats.get("stakeholder_relationships", 0)} relationships'
+                if stats.get("stakeholder_maps", 0) > 0:
+                    details += f', {stats.get("stakeholder_maps", 0)} maps'
+                if stats.get("logos_restored", 0) > 0:
+                    details += f', {stats.get("logos_restored", 0)} logos'
+                if stats.get("formulas_restored", 0) > 0:
+                    details += f', {stats.get("formulas_restored", 0)} formulas'
+                if stats.get("linked_kpis_restored", 0) > 0:
+                    details += f', {stats.get("linked_kpis_restored", 0)} linked KPIs'
+
                 flash(details, "info")
 
-                if result["errors"]:
-                    flash(f'⚠ {len(result["errors"])} warnings:', "warning")
-                    for error in result["errors"][:5]:
-                        flash(f"  • {error}", "warning")
+                if stats.get("warnings"):
+                    flash(f'⚠ {len(stats["warnings"])} warnings', "warning")
+                    for warning in stats["warnings"][:5]:
+                        flash(f"  • {warning}", "warning")
             else:
                 flash("Restore failed", "danger")
-                for error in result.get("errors", []):
-                    flash(error, "danger")
+                error_msg = result.get("error", "Unknown error")
+                flash(error_msg, "danger")
+                for error in result.get("errors", [])[:5]:
+                    flash(f"  • {error}", "danger")
 
             return redirect(url_for("global_admin.backup_restore"))
 
