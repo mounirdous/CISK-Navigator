@@ -236,8 +236,8 @@ def email_settings():
         form.smtp_from_name.data = config["from_name"]
 
         # Load notification settings
-        form.enable_mention_notifications.data = SystemSetting.get_value("email_mention_notifications", default=False)
-        form.enable_action_notifications.data = SystemSetting.get_value("email_action_notifications", default=False)
+        form.enable_mention_notifications.data = SystemSetting.get_bool("email_mention_notifications", default=False)
+        form.enable_action_notifications.data = SystemSetting.get_bool("email_action_notifications", default=False)
 
     if form.validate_on_submit():
         try:

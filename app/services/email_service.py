@@ -32,8 +32,8 @@ class EmailService:
             "smtp_port": SystemSetting.get_value("smtp_port", default=587),
             "smtp_username": SystemSetting.get_value("smtp_username"),
             "smtp_password": SystemSetting.get_value("smtp_password"),
-            "smtp_use_tls": SystemSetting.get_value("smtp_use_tls", default=True),
-            "smtp_use_ssl": SystemSetting.get_value("smtp_use_ssl", default=False),
+            "smtp_use_tls": SystemSetting.get_bool("smtp_use_tls", default=True),
+            "smtp_use_ssl": SystemSetting.get_bool("smtp_use_ssl", default=False),
             "from_email": SystemSetting.get_value("smtp_from_email"),
             "from_name": SystemSetting.get_value("smtp_from_name", default="CISK Navigator"),
         }
