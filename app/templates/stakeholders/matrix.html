@@ -23,8 +23,8 @@
         <div class="col-md-9">
             <div class="card">
                 <div class="card-body">
-                    <div id="matrixChart" style="height: 600px; position: relative; background: #f8f9fa; border: 1px solid #dee2e6;">
-                        <!-- Matrix will be drawn here -->
+                    <div style="height: 600px; position: relative; background: #f8f9fa; border: 1px solid #dee2e6;">
+                        <canvas id="matrixChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -101,42 +101,59 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function loadMatrix() {
-    const response = await fetch(`/stakeholders/api/power-interest-matrix?organization_id=${organizationId}`);
-    const data = await response.json();
+    try {
+        const response = await fetch(`/stakeholders/api/power-interest-matrix?organization_id=${organizationId}`);
+        const data = await response.json();
 
-    const ctx = document.getElementById('matrixChart');
-    const colorMap = {
-        'champion': '#28a745',
-        'supporter': '#6c757d',
-        'neutral': '#ffc107',
-        'skeptic': '#fd7e14',
-        'blocker': '#dc3545'
-    };
-
-    // Group by support level for different datasets
-    const datasets = {};
-    data.forEach(s => {
-        if (!datasets[s.support]) {
-            datasets[s.support] = {
-                label: s.support.charAt(0).toUpperCase() + s.support.slice(1),
-                data: [],
-                backgroundColor: colorMap[s.support],
-                borderColor: colorMap[s.support],
-                borderWidth: 2,
-                pointRadius: 8,
-                pointHoverRadius: 12
-            };
+        const canvas = document.getElementById('matrixChart');
+        if (!canvas) {
+            console.error('Canvas element not found');
+            return;
         }
-        datasets[s.support].data.push({
-            x: s.power,
-            y: s.interest,
-            name: s.name,
-            role: s.role,
-            department: s.department
-        });
-    });
 
-    new Chart(ctx, {
+        // Check if we have data
+        if (!data || data.length === 0) {
+            console.log('No stakeholders to display');
+            const ctx = canvas.getContext('2d');
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#6c757d';
+            ctx.textAlign = 'center';
+            ctx.fillText('No stakeholders found. Create some stakeholders to see them here.', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+
+        const colorMap = {
+            'champion': '#28a745',
+            'supporter': '#6c757d',
+            'neutral': '#ffc107',
+            'skeptic': '#fd7e14',
+            'blocker': '#dc3545'
+        };
+
+        // Group by support level for different datasets
+        const datasets = {};
+        data.forEach(s => {
+            if (!datasets[s.support]) {
+                datasets[s.support] = {
+                    label: s.support.charAt(0).toUpperCase() + s.support.slice(1),
+                    data: [],
+                    backgroundColor: colorMap[s.support],
+                    borderColor: colorMap[s.support],
+                    borderWidth: 2,
+                    pointRadius: 8,
+                    pointHoverRadius: 12
+                };
+            }
+            datasets[s.support].data.push({
+                x: s.power,
+                y: s.interest,
+                name: s.name,
+                role: s.role,
+                department: s.department
+            });
+        });
+
+        new Chart(canvas, {
         type: 'scatter',
         data: {
             datasets: Object.values(datasets)
@@ -244,29 +261,37 @@ function drawQuadrantLabels() {
 }
 
 async function loadSponsorRecommendations() {
-    const response = await fetch(`/stakeholders/api/sponsor-recommendations?organization_id=${organizationId}`);
-    const recommendations = await response.json();
+    try {
+        const response = await fetch(`/stakeholders/api/sponsor-recommendations?organization_id=${organizationId}`);
+        if (!response.ok) {
+            throw new Error('Failed to load sponsor recommendations');
+        }
+        const recommendations = await response.json();
 
-    let html = '';
-    if (recommendations.length === 0) {
-        html = '<p class="text-muted small">No high-influence champions found</p>';
-    } else {
-        html = '<p class="small mb-2">Top potential sponsors:</p>';
-        recommendations.slice(0, 5).forEach((rec, idx) => {
-            html += `
-                <div class="mb-2 p-2 border rounded">
-                    <strong class="small">${idx + 1}. ${rec.name}</strong><br>
-                    <small class="text-muted">${rec.role || ''}</small><br>
-                    <small>
-                        <span class="badge bg-primary">Influence: ${rec.influence_level}</span>
-                        <span class="badge bg-success">${rec.support_level}</span>
-                    </small>
-                </div>
-            `;
-        });
+        let html = '';
+        if (recommendations.length === 0) {
+            html = '<p class="text-muted small">No high-influence champions found</p>';
+        } else {
+            html = '<p class="small mb-2">Top potential sponsors:</p>';
+            recommendations.slice(0, 5).forEach((rec, idx) => {
+                html += `
+                    <div class="mb-2 p-2 border rounded">
+                        <strong class="small">${idx + 1}. ${rec.name}</strong><br>
+                        <small class="text-muted">${rec.role || ''}</small><br>
+                        <small>
+                            <span class="badge bg-primary">Influence: ${rec.influence_level}</span>
+                            <span class="badge bg-success">${rec.support_level}</span>
+                        </small>
+                    </div>
+                `;
+            });
+        }
+
+        document.getElementById('sponsorRecommendations').innerHTML = html;
+    } catch (error) {
+        console.error('Error loading sponsor recommendations:', error);
+        document.getElementById('sponsorRecommendations').innerHTML = '<p class="text-danger small">Error loading recommendations</p>';
     }
-
-    document.getElementById('sponsorRecommendations').innerHTML = html;
 }
 </script>
 {% endblock %}
