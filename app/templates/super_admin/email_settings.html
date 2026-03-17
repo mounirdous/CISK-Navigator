@@ -152,14 +152,31 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Quick Test (for already configured SMTP) -->
+                        <div class="mb-4 p-3 bg-light rounded">
+                            <h6 class="mb-2">Quick Test</h6>
+                            <p class="text-muted small mb-3">Send a test email using current configuration</p>
+                            <div class="input-group">
+                                <input type="email" class="form-control" id="quickTestEmail" placeholder="test@example.com">
+                                <button class="btn btn-primary" type="button" onclick="sendQuickTest()">
+                                    <i class="bi bi-send me-1"></i> Send Test
+                                </button>
+                            </div>
+                            <div id="testResult" class="mt-2"></div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Test on Save -->
                         <div class="mb-3">
-                            {{ form.test_email.label(class="form-label fw-bold") }}
+                            <h6 class="mb-2">Test After Saving</h6>
+                            {{ form.test_email.label(class="form-label") }}
                             {{ form.test_email(class="form-control", placeholder="test@example.com") }}
                             <small class="text-muted">{{ form.test_email.description }}</small>
                         </div>
                         <div class="alert alert-info mb-0">
                             <i class="bi bi-info-circle me-2"></i>
-                            <strong>Note:</strong> If you enter a test email address, a test email will be sent after saving the configuration.
+                            <strong>Note:</strong> If you enter a test email address above, a test email will be sent <strong>after</strong> saving the configuration.
                         </div>
                     </div>
                 </div>
@@ -236,4 +253,60 @@
         </div>
     </div>
 </div>
+
+<script>
+// Send quick test email
+async function sendQuickTest() {
+    const emailInput = document.getElementById('quickTestEmail');
+    const testResult = document.getElementById('testResult');
+    const email = emailInput.value.trim();
+
+    if (!email) {
+        testResult.innerHTML = '<div class="alert alert-warning alert-dismissible fade show" role="alert">Please enter an email address<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        return;
+    }
+
+    // Show loading
+    testResult.innerHTML = '<div class="alert alert-info"><div class="spinner-border spinner-border-sm me-2"></div>Sending test email...</div>';
+
+    try {
+        const response = await fetch('{{ url_for("super_admin.test_email") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: `test_email=${encodeURIComponent(email)}`
+        });
+
+        const data = await response.text();
+
+        // Check if response contains success message
+        if (data.includes('success') || data.includes('sent successfully')) {
+            testResult.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="bi bi-check-circle me-2"></i>Test email sent successfully to ' + email + '!<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            emailInput.value = ''; // Clear input
+        } else if (data.includes('not configured')) {
+            testResult.innerHTML = '<div class="alert alert-warning alert-dismissible fade show" role="alert"><i class="bi bi-exclamation-triangle me-2"></i>Email service is not configured yet. Please save your configuration first.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        } else {
+            testResult.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-x-circle me-2"></i>Failed to send test email. Check the configuration and try again.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        }
+    } catch (error) {
+        console.error('Error sending test email:', error);
+        testResult.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="bi bi-x-circle me-2"></i>Error: Could not send test email<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+    }
+}
+
+// Allow Enter key to send test
+document.addEventListener('DOMContentLoaded', function() {
+    const emailInput = document.getElementById('quickTestEmail');
+    if (emailInput) {
+        emailInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendQuickTest();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
