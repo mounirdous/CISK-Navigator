@@ -5,6 +5,70 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.32.0] - 2026-03-17
+
+### Added - Email Notification System with SMTP Configuration
+**Feature**: Complete email service infrastructure for sending notifications to users
+
+**What's New**:
+- **SMTP Configuration**: Super admin can configure email settings via web UI
+  - SMTP host, port, username, password
+  - TLS/SSL encryption options
+  - From email address and display name
+- **Test Email Functionality**: Send test emails to verify configuration
+  - Quick test button on settings page
+  - Test on save option when updating settings
+- **Email Notifications** (infrastructure ready, disabled by default):
+  - @Mention notifications (when user is mentioned in comments)
+  - Action item assignment notifications
+  - Toggle switches to enable/disable each notification type
+- **Free SMTP Provider Support**: Tested with Brevo, SendGrid, Mailgun, Gmail
+- **Secure Storage**: SMTP credentials stored in system_settings table
+- **Organization-Scoped**: Email notifications respect organization boundaries
+
+**New Routes**:
+- `/super-admin/settings/email` - Configure SMTP settings (GET/POST)
+- `/super-admin/settings/email/test` - Send test email (POST)
+
+**New Files**:
+- `app/services/email_service.py` - Email sending service with SMTP support
+- `app/forms/email_forms.py` - EmailConfigForm for SMTP configuration
+- `app/templates/super_admin/email_settings.html` - Email configuration UI
+
+**Files Modified**:
+- `app/routes/super_admin.py` - Added email_settings() and test_email() routes
+- `app/forms/__init__.py` - Added EmailConfigForm import
+- `tests/integration/test_csrf_token_pages.py` - Added email settings page test
+
+**Database Tables Used**:
+- `system_settings` - Stores all SMTP configuration (key-value pairs)
+
+**Migration Notes**:
+- Database migrations created action_items and comment_entity_mentions tables
+- Migration idempotency fixes for enum types in PostgreSQL
+- Three migrations: cleanup (66388e544042), comment mentions (5f87aa9fccb9), action items (737ff76c2619)
+
+**Setup Instructions**:
+1. Navigate to Super Admin → Email Settings
+2. Configure SMTP provider (e.g., Brevo: smtp-relay.brevo.com:587)
+3. Enter credentials and from email address
+4. Click "Send Test Email" to verify configuration
+5. Enable notification types as needed
+6. Save settings
+
+**Free SMTP Options**:
+- **Brevo (Sendinblue)**: 300 emails/day, smtp-relay.brevo.com:587
+- **SendGrid**: 100 emails/day, smtp.sendgrid.net:587
+- **Mailgun**: 100 emails/day, smtp.mailgun.org:587
+- **Gmail**: 500 emails/day, smtp.gmail.com:587 (app password required)
+
+**Next Steps**:
+- Integrate notification triggers into comment and action item workflows
+- Enable notifications by default once tested in production
+- Add email templates for different notification types
+
+---
+
 ## [2.5.28] - 2026-03-17
 
 ### Fixed - CSRF token undefined errors across application

@@ -42,6 +42,7 @@
 | **System-Wide Backups** | ✅ Yes |
 | **Full Restore** | ✅ Yes |
 | **SSO Configuration** | ✅ Yes |
+| **Email/SMTP Configuration** | ✅ Yes |
 | **System Settings** | ✅ Yes |
 | **System Announcements** | ✅ Yes |
 | **Direct Database Access** | ✅ Yes (via shell) |
@@ -113,6 +114,11 @@ User Experience:
    ⚙️ System Settings:
    ┌─────────────────────┐
    │ [System Configuration]│
+   └─────────────────────┘
+
+   📧 Email Configuration:
+   ┌─────────────────────┐
+   │ [Email Settings]    │
    └─────────────────────┘
 
    🗄️ Database Tools:
@@ -523,7 +529,191 @@ User Experience:
 
 ---
 
-### Journey 6: Direct Database Access
+### Journey 6: Email Configuration
+
+**Purpose:** Configure SMTP settings for sending email notifications to users
+
+#### Step 6.1: Configure Email Settings
+**Route:** `/super-admin/settings/email`
+**Template:** `super_admin/email_settings.html`
+
+```
+User Experience:
+1. Click "Email Settings"
+2. See email configuration page:
+
+   ╔════════════════════════════════════════╗
+   ║ 📧 Email Configuration                 ║
+   ╚════════════════════════════════════════╝
+
+   SMTP Server Configuration:
+   - SMTP Host: [smtp-relay.brevo.com]
+   - SMTP Port: [587]
+   - SMTP Username: [your-email@company.com]
+   - SMTP Password: [****************]
+   - [✓] Use TLS (STARTTLS)
+   - [ ] Use SSL
+
+   Email Sender Settings:
+   - From Email: [noreply@company.com]
+   - From Name: [CISK Navigator]
+
+   Notification Settings:
+   - [ ] Send Email on @Mentions
+   - [ ] Send Email on Action Item Assignment
+
+   Test Email:
+   - Test Email Address: [admin@company.com]
+   - [Send Test Email]
+
+   [Save Settings]
+
+3. Configure SMTP provider (Brevo, SendGrid, Gmail, etc.)
+4. Click "Send Test Email" to verify
+   → Test email sent to specified address
+   → Shows success/failure message
+5. Enable notification types
+6. Click "Save Settings"
+   → Configuration saved to database
+   → Flash message: "Email settings saved successfully"
+```
+
+**Code Flow:**
+```python
+# app/routes/super_admin.py
+@bp.route("/settings/email", methods=["GET", "POST"])
+@login_required
+@super_admin_required
+def email_settings():
+    form = EmailConfigForm()
+
+    if request.method == "GET":
+        # Load settings from database
+        config = {
+            "smtp_host": SystemSetting.get_value("smtp_host", default=""),
+            "smtp_port": SystemSetting.get_value("smtp_port", default=587),
+            "smtp_username": SystemSetting.get_value("smtp_username", default=""),
+            "smtp_use_tls": SystemSetting.get_bool("smtp_use_tls", default=True),
+            "smtp_use_ssl": SystemSetting.get_bool("smtp_use_ssl", default=False),
+            "smtp_from_email": SystemSetting.get_value("smtp_from_email", default=""),
+            "smtp_from_name": SystemSetting.get_value("smtp_from_name", default="CISK Navigator"),
+            "enable_mention_notifications": SystemSetting.get_bool("email_mention_notifications", default=False),
+            "enable_action_notifications": SystemSetting.get_bool("email_action_notifications", default=False),
+        }
+        # Populate form
+        for key, value in config.items():
+            if hasattr(form, key):
+                getattr(form, key).data = value
+
+    if form.validate_on_submit():
+        # Save all settings to database
+        SystemSetting.set_value("smtp_host", form.smtp_host.data)
+        SystemSetting.set_value("smtp_port", str(form.smtp_port.data))
+        SystemSetting.set_value("smtp_username", form.smtp_username.data)
+        if form.smtp_password.data:
+            SystemSetting.set_value("smtp_password", form.smtp_password.data)
+        SystemSetting.set_value("smtp_use_tls", "true" if form.smtp_use_tls.data else "false")
+        SystemSetting.set_value("smtp_use_ssl", "true" if form.smtp_use_ssl.data else "false")
+        SystemSetting.set_value("smtp_from_email", form.smtp_from_email.data)
+        SystemSetting.set_value("smtp_from_name", form.smtp_from_name.data)
+        SystemSetting.set_value("email_mention_notifications", "true" if form.enable_mention_notifications.data else "false")
+        SystemSetting.set_value("email_action_notifications", "true" if form.enable_action_notifications.data else "false")
+
+        flash("Email settings saved successfully", "success")
+
+    return render_template("super_admin/email_settings.html", form=form, csrf_token=generate_csrf)
+```
+
+**Service Used:** `app/services/email_service.py`
+
+**Database Table:** `system_settings` (key-value pairs)
+
+**Supported SMTP Providers:**
+- **Brevo (Sendinblue)**: smtp-relay.brevo.com:587 (300 emails/day free)
+- **SendGrid**: smtp.sendgrid.net:587 (100 emails/day free)
+- **Mailgun**: smtp.mailgun.org:587 (100 emails/day free)
+- **Gmail**: smtp.gmail.com:587 (requires app password)
+
+---
+
+#### Step 6.2: Send Test Email
+**Route:** `/super-admin/settings/email/test`
+**Method:** POST (AJAX)
+
+```
+User Experience:
+1. Enter test email address
+2. Click "Send Test Email" button
+   → JavaScript sends AJAX POST request
+   → Shows loading spinner
+3. Receive response:
+   ✅ Success: "Test email sent successfully!"
+   ❌ Error: "Failed to send test email: [error details]"
+4. Check email inbox
+   → Receive test email with:
+     - Subject: "CISK Navigator Test Email"
+     - Body: "This is a test email from CISK Navigator..."
+```
+
+**Code Flow:**
+```python
+# app/routes/super_admin.py
+@bp.route("/settings/email/test", methods=["POST"])
+@login_required
+@super_admin_required
+def test_email():
+    test_email_address = request.form.get("test_email")
+
+    if not test_email_address:
+        return jsonify({"success": False, "error": "Email address required"}), 400
+
+    # Use EmailService to send test
+    success = EmailService.send_test_email(test_email_address)
+
+    if success:
+        return jsonify({"success": True, "message": "Test email sent successfully!"})
+    else:
+        return jsonify({"success": False, "error": "Failed to send test email"}), 500
+```
+
+**Email Service Methods:**
+```python
+# app/services/email_service.py
+class EmailService:
+    @staticmethod
+    def send_test_email(to_email: str) -> bool:
+        """Send test email to verify SMTP configuration"""
+        subject = "CISK Navigator Test Email"
+        body = "This is a test email from CISK Navigator."
+        return EmailService.send_email([to_email], subject, body)
+
+    @staticmethod
+    def send_email(to_emails: List[str], subject: str, body_text: str,
+                   body_html: Optional[str] = None) -> bool:
+        """Send email using configured SMTP settings"""
+        # Load SMTP config from database
+        # Connect to SMTP server
+        # Send email
+        # Return success/failure
+
+    @staticmethod
+    def send_mention_notification(user, comment, entity):
+        """Send notification when user is mentioned"""
+        if not SystemSetting.get_bool("email_mention_notifications", default=False):
+            return False
+        # Send email
+
+    @staticmethod
+    def send_action_item_assigned(user, action_item):
+        """Send notification when action item is assigned"""
+        if not SystemSetting.get_bool("email_action_notifications", default=False):
+            return False
+        # Send email
+```
+
+---
+
+### Journey 7: Direct Database Access
 
 **Route:** `/super-admin/database`
 **Template:** `super_admin/database.html`
@@ -607,6 +797,8 @@ app/routes/super_admin.py
 ├─ /super-admin/announcements/<id>/edit    # Edit announcement
 ├─ /super-admin/announcements/<id>/delete  # Delete announcement
 ├─ /super-admin/settings                   # System settings
+├─ /super-admin/settings/email             # Email configuration
+├─ /super-admin/settings/email/test        # Test email sending
 └─ /super-admin/database                   # Direct DB access
 ```
 
@@ -621,6 +813,7 @@ app/templates/super_admin/
 ├─ create_announcement.html                # Create announcement
 ├─ edit_announcement.html                  # Edit announcement
 ├─ system_settings.html                    # System config
+├─ email_settings.html                     # Email/SMTP configuration
 └─ database.html                           # DB query interface
 ```
 
@@ -630,6 +823,7 @@ app/services/
 ├─ full_backup_service.py                  # Complete system backup
 ├─ full_restore_service.py                 # Complete system restore
 ├─ sso_service.py                          # SSO integration
+├─ email_service.py                        # Email/SMTP service
 └─ audit_service.py                        # Logs everything
 ```
 
@@ -653,6 +847,7 @@ app/services/
 | **Full System Backup** | ❌ No | ✅ **Yes** |
 | **Full System Restore** | ❌ No | ✅ **Yes** |
 | **SSO Configuration** | ❌ No | ✅ **Yes** |
+| **Email/SMTP Configuration** | ❌ No | ✅ **Yes** |
 | **System Settings** | ❌ No | ✅ **Yes** |
 | **System Announcements** | ❌ No | ✅ **Yes** |
 | **Direct DB Access** | ❌ No | ✅ **Yes** |
