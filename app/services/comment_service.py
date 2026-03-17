@@ -326,13 +326,14 @@ class CommentService:
         return query.count()
 
     @staticmethod
-    def render_comment_with_mentions(comment_text: str, organization_id: int) -> str:
+    def render_comment_with_mentions(comment_text: str, organization_id: int, comment_id: int = None) -> str:
         """
         Convert @mentions (users and entities) to clickable links in HTML.
 
         Args:
             comment_text: Raw comment text
             organization_id: Organization context
+            comment_id: Optional comment ID for context tracking in entity links
 
         Returns:
             HTML with @mentions as styled elements
@@ -353,8 +354,8 @@ class CommentService:
             entity_mentions_sorted = sorted(entity_mentions, key=lambda x: len(x[2]), reverse=True)
 
             for entity_type, entity_id, mention_text in entity_mentions_sorted:
-                # Get URL for entity
-                entity_url = MentionService.get_entity_url(entity_type, entity_id)
+                # Get URL for entity (with comment context for navigation)
+                entity_url = MentionService.get_entity_url(entity_type, entity_id, comment_id=comment_id)
 
                 # Handle both @"Entity Name" and @EntityName patterns
                 patterns = [f'@"{mention_text}"', f"@{mention_text}"]

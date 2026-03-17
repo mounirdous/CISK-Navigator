@@ -1765,7 +1765,9 @@ def get_cell_comments(config_id):
             """Recursively render comment with replies"""
             result = {
                 **comment.to_dict(),
-                "rendered_text": CommentService.render_comment_with_mentions(comment.comment_text, org_id),
+                "rendered_text": CommentService.render_comment_with_mentions(
+                    comment.comment_text, org_id, comment_id=comment.id
+                ),
                 "replies": [],
             }
 
@@ -1818,7 +1820,9 @@ def create_cell_comment(config_id):
             {
                 "success": True,
                 "comment": comment.to_dict(),
-                "rendered_text": CommentService.render_comment_with_mentions(comment.comment_text, org_id),
+                "rendered_text": CommentService.render_comment_with_mentions(
+                    comment.comment_text, org_id, comment_id=comment.id
+                ),
             }
         )
 
@@ -1857,7 +1861,9 @@ def update_cell_comment(comment_id):
             {
                 "success": True,
                 "comment": updated_comment.to_dict(),
-                "rendered_text": CommentService.render_comment_with_mentions(updated_comment.comment_text, org_id),
+                "rendered_text": CommentService.render_comment_with_mentions(
+                    updated_comment.comment_text, org_id, comment_id=updated_comment.id
+                ),
             }
         )
 
@@ -1968,6 +1974,48 @@ def mark_all_mentions_read():
 
     except Exception as e:
         db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+@bp.route("/api/my-comments")
+@login_required
+@organization_required
+def get_my_comments():
+    """Get comments authored by current user"""
+    try:
+        org_id = session.get("organization_id")
+        limit = request.args.get("limit", 50, type=int)
+
+        # Get comments authored by current user
+        comments = (
+            CellComment.query.filter_by(user_id=current_user.id)
+            .join(KPIValueTypeConfig)
+            .filter(KPIValueTypeConfig.organization_id == org_id)
+            .order_by(CellComment.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+
+        def comment_with_context(comment):
+            """Add KPI and cell context to comment"""
+            config = comment.config
+            kpi = config.kpi
+            value_type = config.value_type
+
+            return {
+                **comment.to_dict(),
+                "rendered_text": CommentService.render_comment_with_mentions(
+                    comment.comment_text, org_id, comment_id=comment.id
+                ),
+                "kpi_name": kpi.name if kpi else "Unknown KPI",
+                "value_type_name": value_type.name if value_type else "Unknown Type",
+                "config_id": config.id,
+                "reply_to": comment.parent.user.display_name if comment.parent else None,
+            }
+
+        return jsonify({"comments": [comment_with_context(c) for c in comments], "count": len(comments)})
+
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 

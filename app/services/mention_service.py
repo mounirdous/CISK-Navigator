@@ -261,13 +261,14 @@ class MentionService:
         }
 
     @staticmethod
-    def get_entity_url(entity_type: str, entity_id: int) -> str:
+    def get_entity_url(entity_type: str, entity_id: int, comment_id: int = None) -> str:
         """
         Get URL for a mentioned entity.
 
         Args:
             entity_type: Type of entity (space, challenge, initiative, system, kpi)
             entity_id: ID of the entity
+            comment_id: Optional comment ID for context tracking
 
         Returns:
             URL string to view the entity in workspace
@@ -275,11 +276,31 @@ class MentionService:
         from flask import url_for
 
         url_map = {
-            "space": lambda: url_for("workspace.index", space_id=entity_id),
-            "challenge": lambda: url_for("workspace.index", challenge_id=entity_id),
-            "initiative": lambda: url_for("workspace.index", initiative_id=entity_id),
-            "system": lambda: url_for("workspace.index", system_id=entity_id),
-            "kpi": lambda: url_for("workspace.index", kpi_id=entity_id),
+            "space": lambda: (
+                url_for("workspace.index", space_id=entity_id, from_comment=comment_id)
+                if comment_id
+                else url_for("workspace.index", space_id=entity_id)
+            ),
+            "challenge": lambda: (
+                url_for("workspace.index", challenge_id=entity_id, from_comment=comment_id)
+                if comment_id
+                else url_for("workspace.index", challenge_id=entity_id)
+            ),
+            "initiative": lambda: (
+                url_for("workspace.index", initiative_id=entity_id, from_comment=comment_id)
+                if comment_id
+                else url_for("workspace.index", initiative_id=entity_id)
+            ),
+            "system": lambda: (
+                url_for("workspace.index", system_id=entity_id, from_comment=comment_id)
+                if comment_id
+                else url_for("workspace.index", system_id=entity_id)
+            ),
+            "kpi": lambda: (
+                url_for("workspace.index", kpi_id=entity_id, from_comment=comment_id)
+                if comment_id
+                else url_for("workspace.index", kpi_id=entity_id)
+            ),
         }
 
         return url_map.get(entity_type, lambda: "#")()

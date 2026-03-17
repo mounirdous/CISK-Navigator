@@ -798,6 +798,60 @@
         }
     }
 
+    // Load my comments into modal
+    async function loadMyComments() {
+        const container = document.getElementById('myCommentsContainer');
+
+        try {
+            const response = await fetch('/workspace/api/my-comments?limit=50');
+            const data = await response.json();
+
+            if (!response.ok) {
+                container.innerHTML = '<div class="alert alert-danger">Error loading comments</div>';
+                return;
+            }
+
+            if (data.comments.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-muted p-4">
+                        <i class="bi bi-chat-dots" style="font-size: 3rem;"></i>
+                        <p class="mt-2">No comments yet</p>
+                        <small>Your comments will appear here</small>
+                    </div>
+                `;
+                return;
+            }
+
+            // Render my comments
+            container.innerHTML = data.comments.map(comment => {
+                const timeAgo = formatTimeAgo(comment.created_at);
+                const replyBadge = comment.reply_to ? `<span class="badge bg-secondary me-2">Reply to ${comment.reply_to}</span>` : '';
+
+                return `
+                    <div class="comment-item border-bottom p-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    ${replyBadge}
+                                    <strong class="text-primary">${comment.kpi_name}</strong>
+                                    <span class="text-muted">•</span>
+                                    <small class="text-muted">${comment.value_type_name}</small>
+                                </div>
+                                <div class="mt-2">${comment.rendered_text}</div>
+                            </div>
+                            <small class="text-muted text-nowrap ms-3">${timeAgo}</small>
+                        </div>
+                        ${comment.is_resolved ? '<span class="badge bg-success mt-2">Resolved</span>' : ''}
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Error loading my comments:', error);
+            container.innerHTML = '<div class="alert alert-danger">Error loading comments</div>';
+        }
+    }
+
     // Mark mention as read
     async function markMentionRead(mentionId) {
         try {
@@ -809,7 +863,7 @@
         }
     }
 
-    // Mark all as read
+    // Mark all as read and setup tab switching
     document.addEventListener('DOMContentLoaded', function() {
         const markAllBtn = document.getElementById('markAllReadBtn');
         if (markAllBtn) {
@@ -821,6 +875,14 @@
                 } catch (error) {
                     console.error('Error marking all as read:', error);
                 }
+            });
+        }
+
+        // Load My Comments when tab is clicked
+        const myCommentsTab = document.getElementById('my-comments-tab');
+        if (myCommentsTab) {
+            myCommentsTab.addEventListener('click', function() {
+                loadMyComments();
             });
         }
     });
@@ -839,12 +901,13 @@
         return date.toLocaleDateString();
     }
 
-    // Load unread mentions count and update badge
+    // Load unread mentions count and update badges
     async function loadUnreadMentionsCount() {
         try {
             const response = await fetch('/workspace/api/mentions/unread?limit=1');
             const data = await response.json();
 
+            // Update navbar badge
             const badge = document.getElementById('mentionsBadge');
             if (badge && data.total_count !== undefined) {
                 if (data.total_count > 0) {
@@ -852,6 +915,17 @@
                     badge.style.display = 'inline-block';
                 } else {
                     badge.style.display = 'none';
+                }
+            }
+
+            // Update tab badge inside modal
+            const tabBadge = document.getElementById('mentionsTabBadge');
+            if (tabBadge && data.total_count !== undefined) {
+                if (data.total_count > 0) {
+                    tabBadge.textContent = data.total_count;
+                    tabBadge.style.display = 'inline-block';
+                } else {
+                    tabBadge.style.display = 'none';
                 }
             }
         } catch (error) {

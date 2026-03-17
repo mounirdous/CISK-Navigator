@@ -182,4 +182,4 @@ class CommentEntityMention(db.Model):
         """Get URL for the mentioned entity"""
         from app.services.mention_service import MentionService
 
-        return MentionService.get_entity_url(self.entity_type, self.entity_id)
+        return MentionService.get_entity_url(self.entity_type, self.entity_id, comment_id=self.comment_id)
