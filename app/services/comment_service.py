@@ -1,17 +1,18 @@
 """
 Comment Service
 
-Manages cell comments, @mentions, and discussion threads.
+Manages cell comments, @mentions (users and entities), and discussion threads.
 """
 
 import re
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import CellComment, KPIValueTypeConfig, MentionNotification, User, UserOrganizationMembership
+from app.models import CellComment, CommentEntityMention, MentionNotification, User, UserOrganizationMembership
+from app.services.mention_service import MentionService
 
 
 class CommentService:
@@ -68,7 +69,7 @@ class CommentService:
         organization_id: Optional[int] = None,
     ) -> CellComment:
         """
-        Create a new comment and process mentions.
+        Create a new comment and process mentions (users and entities).
 
         Args:
             config_id: KPIValueTypeConfig ID
@@ -80,12 +81,19 @@ class CommentService:
         Returns:
             Created CellComment
         """
-        # Parse mentions
-        mentioned_usernames = CommentService.parse_mentions(comment_text)
+        # Parse all mentions using shared service
+        all_mentions = MentionService.parse_all_mentions(comment_text)
         mentioned_user_ids = []
+        entity_mentions = []
 
-        if mentioned_usernames and organization_id:
-            mentioned_user_ids = CommentService.resolve_mentions_to_user_ids(mentioned_usernames, organization_id)
+        if organization_id:
+            # Resolve user mentions
+            if all_mentions["users"]:
+                mentioned_user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
+
+            # Resolve entity mentions
+            if all_mentions["entities"]:
+                entity_mentions = MentionService.resolve_entity_mentions(all_mentions["entities"], organization_id)
 
         # Create comment
         comment = CellComment(
@@ -99,12 +107,19 @@ class CommentService:
         db.session.add(comment)
         db.session.flush()  # Get comment ID
 
-        # Create mention notifications
+        # Create user mention notifications
         for mentioned_user_id in mentioned_user_ids:
             # Don't notify yourself
             if mentioned_user_id != user_id:
                 notification = MentionNotification(mentioned_user_id=mentioned_user_id, comment_id=comment.id)
                 db.session.add(notification)
+
+        # Create entity mention records
+        for entity_type, entity_id, mention_text in entity_mentions:
+            entity_mention = CommentEntityMention(
+                comment_id=comment.id, entity_type=entity_type, entity_id=entity_id, mention_text=mention_text
+            )
+            db.session.add(entity_mention)
 
         db.session.commit()
         return comment
@@ -114,18 +129,25 @@ class CommentService:
         """
         Update an existing comment.
 
-        Re-parses mentions and updates notifications.
+        Re-parses mentions (users and entities) and updates notifications.
         """
         comment = CellComment.query.get(comment_id)
         if not comment:
             raise ValueError("Comment not found")
 
-        # Parse new mentions
-        mentioned_usernames = CommentService.parse_mentions(comment_text)
+        # Parse all mentions using shared service
+        all_mentions = MentionService.parse_all_mentions(comment_text)
         new_mentioned_user_ids = []
+        new_entity_mentions = []
 
-        if mentioned_usernames and organization_id:
-            new_mentioned_user_ids = CommentService.resolve_mentions_to_user_ids(mentioned_usernames, organization_id)
+        if organization_id:
+            # Resolve user mentions
+            if all_mentions["users"]:
+                new_mentioned_user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
+
+            # Resolve entity mentions
+            if all_mentions["entities"]:
+                new_entity_mentions = MentionService.resolve_entity_mentions(all_mentions["entities"], organization_id)
 
         old_mentioned_user_ids = comment.mentioned_user_ids or []
 
@@ -134,7 +156,7 @@ class CommentService:
         comment.mentioned_user_ids = new_mentioned_user_ids
         comment.updated_at = datetime.utcnow()
 
-        # Handle mention notifications
+        # Handle user mention notifications
         # Remove notifications for users no longer mentioned
         for user_id in old_mentioned_user_ids:
             if user_id not in new_mentioned_user_ids:
@@ -145,6 +167,17 @@ class CommentService:
             if user_id not in old_mentioned_user_ids and user_id != comment.user_id:
                 notification = MentionNotification(mentioned_user_id=user_id, comment_id=comment_id)
                 db.session.add(notification)
+
+        # Handle entity mentions
+        # Delete old entity mentions
+        CommentEntityMention.query.filter_by(comment_id=comment_id).delete()
+
+        # Create new entity mentions
+        for entity_type, entity_id, mention_text in new_entity_mentions:
+            entity_mention = CommentEntityMention(
+                comment_id=comment_id, entity_type=entity_type, entity_id=entity_id, mention_text=mention_text
+            )
+            db.session.add(entity_mention)
 
         db.session.commit()
         return comment

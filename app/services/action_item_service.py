@@ -2,14 +2,14 @@
 Service for managing action items and memos
 """
 
-import re
 from datetime import datetime
 
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import KPI, ActionItem, ActionItemMention, Challenge, Initiative, Space, System
+from app.models import ActionItem, ActionItemMention
+from app.services.mention_service import MentionService
 
 
 class ActionItemService:
@@ -192,9 +192,7 @@ class ActionItemService:
         """
         Parse description for @mentions and create ActionItemMention records
 
-        Supports patterns like:
-        - @"Entity Name" or @EntityName
-        - Searches across spaces, challenges, initiatives, systems, KPIs
+        Uses shared MentionService for parsing and resolving entities.
 
         Args:
             action_item_id: ActionItem ID
@@ -204,139 +202,34 @@ class ActionItemService:
         if not description:
             return
 
-        # Pattern: @"Entity Name" or @EntityName (word characters only)
-        mention_pattern = r'@"([^"]+)"|@(\S+)'
-        matches = re.finditer(mention_pattern, description)
+        # Parse entity mentions using shared service
+        all_mentions = MentionService.parse_all_mentions(description)
 
-        for match in matches:
-            mention_text = match.group(1) or match.group(2)
+        # We only care about entity mentions (not user mentions) for action items
+        if not all_mentions["entities"]:
+            return
 
-            # Try to find the entity
-            entity = ActionItemService._find_entity(mention_text, organization_id)
+        # Resolve entity mentions
+        entity_mentions = MentionService.resolve_entity_mentions(all_mentions["entities"], organization_id)
 
-            if entity:
-                mention = ActionItemMention(
-                    action_item_id=action_item_id,
-                    entity_type=entity["type"],
-                    entity_id=entity["id"],
-                    mention_text=mention_text,
-                )
-                db.session.add(mention)
-
-    @staticmethod
-    def _find_entity(search_text, organization_id):
-        """
-        Find an entity by name across spaces, challenges, initiatives, systems, KPIs
-
-        Returns:
-            Dictionary with 'type' and 'id', or None if not found
-        """
-        search_text_lower = search_text.lower().strip()
-
-        # Search spaces
-        space = Space.query.filter(
-            Space.organization_id == organization_id, db.func.lower(Space.name) == search_text_lower
-        ).first()
-        if space:
-            return {"type": "space", "id": space.id}
-
-        # Search challenges
-        challenge = Challenge.query.filter(
-            Challenge.organization_id == organization_id, db.func.lower(Challenge.name) == search_text_lower
-        ).first()
-        if challenge:
-            return {"type": "challenge", "id": challenge.id}
-
-        # Search initiatives
-        initiative = Initiative.query.filter(
-            Initiative.organization_id == organization_id, db.func.lower(Initiative.name) == search_text_lower
-        ).first()
-        if initiative:
-            return {"type": "initiative", "id": initiative.id}
-
-        # Search systems
-        system = System.query.filter(
-            System.organization_id == organization_id, db.func.lower(System.name) == search_text_lower
-        ).first()
-        if system:
-            return {"type": "system", "id": system.id}
-
-        # Search KPIs
-        kpi = (
-            KPI.query.join(KPI.initiative_system_link)
-            .join(Initiative)
-            .filter(Initiative.organization_id == organization_id, db.func.lower(KPI.name) == search_text_lower)
-            .first()
-        )
-        if kpi:
-            return {"type": "kpi", "id": kpi.id}
-
-        return None
+        # Create ActionItemMention records
+        for entity_type, entity_id, mention_text in entity_mentions:
+            mention = ActionItemMention(
+                action_item_id=action_item_id,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                mention_text=mention_text,
+            )
+            db.session.add(mention)
 
     @staticmethod
     def search_entities_for_mention(search_query, organization_id, limit=10):
         """
         Search for entities to mention (for autocomplete)
 
+        Delegates to shared MentionService.
+
         Returns:
             List of dictionaries with entity info
         """
-        if not search_query or len(search_query) < 2:
-            return []
-
-        results = []
-        search_pattern = f"%{search_query.lower()}%"
-
-        # Search spaces
-        spaces = Space.query.filter(
-            Space.organization_id == organization_id, db.func.lower(Space.name).like(search_pattern)
-        ).limit(limit)
-        for space in spaces:
-            results.append({"type": "space", "id": space.id, "name": space.name, "label": f"{space.name} [Space]"})
-
-        # Search challenges
-        challenges = Challenge.query.filter(
-            Challenge.organization_id == organization_id, db.func.lower(Challenge.name).like(search_pattern)
-        ).limit(limit)
-        for challenge in challenges:
-            results.append(
-                {
-                    "type": "challenge",
-                    "id": challenge.id,
-                    "name": challenge.name,
-                    "label": f"{challenge.name} [Challenge]",
-                }
-            )
-
-        # Search initiatives
-        initiatives = Initiative.query.filter(
-            Initiative.organization_id == organization_id, db.func.lower(Initiative.name).like(search_pattern)
-        ).limit(limit)
-        for initiative in initiatives:
-            results.append(
-                {
-                    "type": "initiative",
-                    "id": initiative.id,
-                    "name": initiative.name,
-                    "label": f"{initiative.name} [Initiative]",
-                }
-            )
-
-        # Search systems
-        systems = System.query.filter(
-            System.organization_id == organization_id, db.func.lower(System.name).like(search_pattern)
-        ).limit(limit)
-        for system in systems:
-            results.append({"type": "system", "id": system.id, "name": system.name, "label": f"{system.name} [System]"})
-
-        # Search KPIs
-        kpis = (
-            KPI.query.join(KPI.initiative_system_link)
-            .join(Initiative)
-            .filter(Initiative.organization_id == organization_id, db.func.lower(KPI.name).like(search_pattern))
-            .limit(limit)
-        )
-        for kpi in kpis:
-            results.append({"type": "kpi", "id": kpi.id, "name": kpi.name, "label": f"{kpi.name} [KPI]"})
-
-        return results[:limit]
+        return MentionService.search_entities(search_query, organization_id, limit)
