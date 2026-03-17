@@ -4,28 +4,37 @@
 
 {% block content %}
 <div class="container-fluid mt-4">
-    <div class="row mb-3">
-        <div class="col-md-8">
-            <h2>🗺️ Stakeholder Network Map</h2>
-            <p class="text-muted">
-                <strong>{{ organization.name }}</strong> •
-                {{ stakeholders|length }} stakeholders •
-                {{ relationships|length }} relationships
-            </p>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-info">
-                <i class="bi bi-collection"></i> Manage Maps
-            </a>
-            <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}" class="btn btn-outline-secondary">
-                <i class="fas fa-list"></i> List View
-            </a>
-            <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}" class="btn btn-outline-primary">
-                <i class="fas fa-th"></i> Matrix
-            </a>
-            <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary">
-                <i class="fas fa-plus"></i> Add Stakeholder
-            </a>
+    <!-- Modern Header Card -->
+    <div class="card mb-4" style="background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%) !important;">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="mb-2">🗺️ Stakeholder Network Map</h2>
+                    <p class="text-muted mb-0">
+                        <strong style="color: #667eea;">{{ organization.name }}</strong>
+                        <span class="mx-2">•</span>
+                        <span class="badge bg-primary">{{ stakeholders|length }} stakeholders</span>
+                        <span class="mx-1"></span>
+                        <span class="badge bg-success">{{ relationships|length }} connections</span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="btn-toolbar justify-content-end gap-2" role="toolbar">
+                        <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-collection"></i> Manage Maps
+                        </a>
+                        <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}" class="btn btn-outline-secondary btn-sm">
+                            <i class="fas fa-list"></i> List View
+                        </a>
+                        <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}" class="btn btn-outline-primary btn-sm">
+                            <i class="fas fa-th"></i> Matrix
+                        </a>
+                        <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-plus"></i> Add Stakeholder
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -836,6 +845,368 @@ document.addEventListener('keydown', function(e) {
 
 #networkCard:-ms-fullscreen .card-body {
     flex: 1;
+}
+
+/* ========================================
+   MODERN CARD DESIGN - Enhancement #1
+   ======================================== */
+
+/* Base container styling */
+.container-fluid {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: calc(100vh - 120px);
+    padding-bottom: 2rem;
+}
+
+/* Modern card base styles */
+.card {
+    border: none !important;
+    border-radius: 16px !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07),
+                0 2px 4px rgba(0, 0, 0, 0.05);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+/* Card hover effect */
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12),
+                0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Card headers with gradients */
+.card-header {
+    border: none !important;
+    border-radius: 16px 16px 0 0 !important;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}
+
+.card-header.bg-light {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%) !important;
+    color: #2d3748 !important;
+}
+
+.card-header.bg-white {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+    color: #2d3748 !important;
+}
+
+/* Card body spacing */
+.card-body {
+    padding: 1.25rem;
+}
+
+/* Card footer styling */
+.card-footer {
+    border: none !important;
+    border-radius: 0 0 16px 16px !important;
+    background: rgba(248, 249, 250, 0.8) !important;
+    backdrop-filter: blur(10px);
+}
+
+/* Network card special styling */
+#networkCard {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15),
+                0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#networkCard .card-body {
+    padding: 0 !important;
+}
+
+/* Network graph gradient background */
+#networkGraph {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    border-radius: 0;
+    position: relative;
+}
+
+#networkGraph::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+/* Modern button styles */
+.btn {
+    border-radius: 10px !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+}
+
+.btn-outline-primary {
+    border: 2px solid #667eea !important;
+    color: #667eea !important;
+    background: transparent !important;
+}
+
+.btn-outline-primary:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+}
+
+.btn-outline-secondary {
+    border: 2px solid #6c757d !important;
+    color: #6c757d !important;
+    background: transparent !important;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d !important;
+    color: white !important;
+}
+
+.btn-outline-success {
+    border: 2px solid #11998e !important;
+    color: #11998e !important;
+    background: transparent !important;
+}
+
+.btn-outline-success:hover {
+    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+    color: white !important;
+}
+
+.btn-outline-info {
+    border: 2px solid #4facfe !important;
+    color: #4facfe !important;
+    background: transparent !important;
+}
+
+.btn-outline-info:hover {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+    color: white !important;
+}
+
+/* Form controls */
+.form-select, .form-control {
+    border-radius: 10px !important;
+    border: 2px solid #e2e8f0;
+    padding: 0.6rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus, .form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    outline: none;
+}
+
+/* Alert boxes with glassmorphism */
+.alert {
+    border-radius: 12px !important;
+    border: none;
+    backdrop-filter: blur(10px);
+}
+
+.alert-info {
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%) !important;
+    border-left: 4px solid #4facfe;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(17, 153, 142, 0.15) 0%, rgba(56, 239, 125, 0.15) 100%) !important;
+    border-left: 4px solid #11998e;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%) !important;
+    border-left: 4px solid #ffc107;
+}
+
+/* Badge styling */
+.badge {
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Collapsible sections */
+.collapse .card-body {
+    background: rgba(248, 249, 250, 0.5);
+    border-radius: 0 0 16px 16px;
+}
+
+/* List group items */
+.list-group-item {
+    border-radius: 10px !important;
+    margin-bottom: 0.5rem;
+    border: none;
+    background: rgba(255, 255, 255, 0.8);
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    background: rgba(102, 126, 234, 0.1);
+    transform: translateX(4px);
+}
+
+/* Progress bars */
+.progress {
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transition: width 0.6s ease;
+}
+
+/* Modal styling */
+.modal-content {
+    border-radius: 20px !important;
+    border: none;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.modal-header {
+    border-radius: 20px 20px 0 0;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom: none;
+}
+
+.modal-footer {
+    border-top: none;
+    border-radius: 0 0 20px 20px;
+}
+
+/* Button group styling */
+.btn-group .btn {
+    border-radius: 0 !important;
+}
+
+.btn-group .btn:first-child {
+    border-radius: 10px 0 0 10px !important;
+}
+
+.btn-group .btn:last-child {
+    border-radius: 0 10px 10px 0 !important;
+}
+
+/* Animation for filter checkboxes */
+.filter-check {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-check:checked {
+    transform: scale(1.1);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Page header styling */
+h2 {
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Floating action button style for fullscreen */
+#fullscreenBtn {
+    border-radius: 12px !important;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+#fullscreenBtn:hover {
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    transform: scale(1.05);
+}
+
+/* Details panel animation */
+#detailsPanel {
+    animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Network stats badges */
+.text-muted.small i {
+    transition: color 0.3s ease;
+}
+
+.text-muted.small:hover i {
+    color: #667eea !important;
 }
 </style>
 
