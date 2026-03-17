@@ -6,6 +6,7 @@ import re
 from datetime import datetime
 
 from sqlalchemy import and_, or_
+from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import KPI, ActionItem, ActionItemMention, Challenge, Initiative, Space, System
@@ -29,7 +30,7 @@ class ActionItemService:
         Returns:
             List of ActionItem objects
         """
-        query = ActionItem.query.filter_by(organization_id=organization_id)
+        query = ActionItem.query.filter_by(organization_id=organization_id).options(joinedload(ActionItem.mentions))
 
         # Apply type filter
         if item_type:
