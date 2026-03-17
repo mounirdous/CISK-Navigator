@@ -76,6 +76,7 @@ class CellComment(db.Model):
             "resolved_by": self.resolved_by.display_name if self.resolved_by else None,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
             "mentioned_user_ids": self.mentioned_user_ids or [],
+            "entity_mentions": [mention.to_dict() for mention in self.entity_mentions] if self.entity_mentions else [],
             "reply_count": len(self.replies) if self.replies else 0,
         }
 

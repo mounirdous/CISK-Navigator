@@ -328,38 +328,67 @@ class CommentService:
     @staticmethod
     def render_comment_with_mentions(comment_text: str, organization_id: int) -> str:
         """
-        Convert @mentions to clickable links in HTML.
+        Convert @mentions (users and entities) to clickable links in HTML.
 
         Args:
             comment_text: Raw comment text
             organization_id: Organization context
 
         Returns:
-            HTML with @mentions as links
+            HTML with @mentions as styled elements
         """
-        mentions = CommentService.parse_mentions(comment_text)
+        if not comment_text:
+            return ""
 
-        if not mentions:
-            return comment_text
+        # Parse all mentions using shared service
+        all_mentions = MentionService.parse_all_mentions(comment_text)
 
-        # Get users
-        users = (
-            db.session.query(User)
-            .join(UserOrganizationMembership)
-            .filter(User.login.in_(mentions), UserOrganizationMembership.organization_id == organization_id)
-            .all()
-        )
-
-        user_map = {user.login: user for user in users}
-
-        # Replace @username with HTML
         result = comment_text
-        for mention in mentions:
-            user = user_map.get(mention)
-            if user:
-                # Replace with styled mention
-                pattern = f"@{mention}"
-                replacement = f'<span class="mention" data-user-id="{user.id}">@{user.display_name}</span>'
-                result = result.replace(pattern, replacement)
+
+        # Resolve and render entity mentions first (to handle @"Entity Name" before simple @username)
+        if all_mentions["entities"]:
+            entity_mentions = MentionService.resolve_entity_mentions(all_mentions["entities"], organization_id)
+
+            # Sort by length descending to replace longer matches first
+            entity_mentions_sorted = sorted(entity_mentions, key=lambda x: len(x[2]), reverse=True)
+
+            for entity_type, entity_id, mention_text in entity_mentions_sorted:
+                # Get URL for entity
+                entity_url = MentionService.get_entity_url(entity_type, entity_id)
+
+                # Handle both @"Entity Name" and @EntityName patterns
+                patterns = [f'@"{mention_text}"', f"@{mention_text}"]
+
+                for pattern in patterns:
+                    if pattern in result:
+                        replacement = (
+                            f'<a href="{entity_url}" '
+                            f'class="badge bg-info text-white text-decoration-none" '
+                            f'title="View {entity_type}: {mention_text}" '
+                            f'target="_blank">'
+                            f'{mention_text} <i class="bi bi-box-arrow-up-right"></i>'
+                            f"</a>"
+                        )
+                        result = result.replace(pattern, replacement)
+
+        # Resolve and render user mentions
+        if all_mentions["users"]:
+            user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
+
+            if user_ids:
+                users = db.session.query(User).filter(User.id.in_(user_ids)).all()
+                user_map = {user.login: user for user in users}
+
+                # Sort by length descending to replace longer usernames first
+                sorted_usernames = sorted(all_mentions["users"], key=len, reverse=True)
+
+                for username in sorted_usernames:
+                    user = user_map.get(username)
+                    if user:
+                        pattern = f"@{username}"
+                        # Only replace if not already part of an entity mention replacement
+                        if pattern in result and "badge bg-info" not in result.split(pattern)[0][-50:]:
+                            replacement = f'<span class="mention" data-user-id="{user.id}">@{user.display_name}</span>'
+                            result = result.replace(pattern, replacement, 1)
 
         return result

@@ -2008,6 +2008,31 @@ def search_org_users():
         return jsonify({"error": str(e)}), 500
 
 
+@bp.route("/api/mentions/search")
+@login_required
+@organization_required
+def search_mentions():
+    """
+    Search for users and entities to mention (unified autocomplete).
+
+    Query param: q=search_term
+    Returns: {"users": [...], "entities": [...]}
+    """
+    from app.services.mention_service import MentionService
+
+    try:
+        org_id = session.get("organization_id")
+        search_term = request.args.get("q", "").strip()
+        limit = request.args.get("limit", 10, type=int)
+
+        results = MentionService.search_all(search_term, org_id, limit)
+
+        return jsonify(results)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/search")
 @login_required
 @organization_required

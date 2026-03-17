@@ -332,7 +332,7 @@ class CommentsManager {
                 if (!searchTerm.includes(' ')) {
                     clearTimeout(mentionTimeout);
                     mentionTimeout = setTimeout(() => {
-                        this.searchUsers(searchTerm, textarea, lastAtIndex);
+                        this.searchMentions(searchTerm, textarea, lastAtIndex);
                     }, 200);  // Faster response
                 } else {
                     this.hideMentionDropdown();
@@ -384,27 +384,27 @@ class CommentsManager {
     }
 
     /**
-     * Search users for @mention
+     * Search users and entities for @mention
      */
-    async searchUsers(searchTerm, textarea, atIndex) {
+    async searchMentions(searchTerm, textarea, atIndex) {
         try {
-            const response = await fetch(`/workspace/api/org/users/search?q=${encodeURIComponent(searchTerm)}`);
+            const response = await fetch(`/workspace/api/mentions/search?q=${encodeURIComponent(searchTerm)}`);
             const data = await response.json();
 
-            if (response.ok && data.users.length > 0) {
-                this.showMentionDropdown(data.users, textarea, atIndex);
+            if (response.ok && (data.users.length > 0 || data.entities.length > 0)) {
+                this.showMentionDropdown(data, textarea, atIndex);
             } else {
                 this.hideMentionDropdown();
             }
         } catch (error) {
-            console.error('Error searching users:', error);
+            console.error('Error searching mentions:', error);
         }
     }
 
     /**
      * Show mention dropdown
      */
-    showMentionDropdown(users, textarea, atIndex) {
+    showMentionDropdown(data, textarea, atIndex) {
         let dropdown = document.getElementById('mentionDropdown');
 
         if (!dropdown) {
@@ -414,37 +414,77 @@ class CommentsManager {
             document.body.appendChild(dropdown);
         }
 
-        if (users.length === 0) {
-            dropdown.innerHTML = '<div class="mention-item text-muted">No users found</div>';
+        const users = data.users || [];
+        const entities = data.entities || [];
+
+        if (users.length === 0 && entities.length === 0) {
+            dropdown.innerHTML = '<div class="mention-item text-muted">No matches found</div>';
         } else {
-            dropdown.innerHTML = users.map(user => `
-                <div class="mention-item" data-login="${user.login}" data-name="${user.display_name}">
-                    <strong>${user.display_name}</strong> <small class="text-muted">@${user.login}</small>
-                </div>
-            `).join('');
+            let html = '';
+
+            // Users section
+            if (users.length > 0) {
+                html += '<div class="mention-section-header">Users</div>';
+                html += users.map(user => `
+                    <div class="mention-item" data-type="user" data-login="${user.login}" data-name="${user.display_name}">
+                        <i class="bi bi-person-circle"></i>
+                        <strong>${user.display_name}</strong> <small class="text-muted">@${user.login}</small>
+                    </div>
+                `).join('');
+            }
+
+            // Entities section
+            if (entities.length > 0) {
+                if (users.length > 0) {
+                    html += '<div class="mention-divider"></div>';
+                }
+                html += '<div class="mention-section-header">Entities</div>';
+                html += entities.map(entity => `
+                    <div class="mention-item" data-type="entity" data-entity-name="${entity.name}" data-entity-type="${entity.type}">
+                        <i class="bi bi-link-45deg"></i>
+                        <strong>${entity.name}</strong> <small class="text-muted">[${entity.type}]</small>
+                    </div>
+                `).join('');
+            }
+
+            dropdown.innerHTML = html;
         }
 
         // Position dropdown below textarea (with better calculation)
         const rect = textarea.getBoundingClientRect();
         dropdown.style.top = (rect.bottom + window.scrollY + 2) + 'px';
         dropdown.style.left = (rect.left + window.scrollX) + 'px';
-        dropdown.style.width = Math.max(rect.width, 250) + 'px';
+        dropdown.style.width = Math.max(rect.width, 300) + 'px';
         dropdown.style.display = 'block';
 
         // Add click handlers
-        dropdown.querySelectorAll('.mention-item[data-login]').forEach(item => {
+        dropdown.querySelectorAll('.mention-item[data-type]').forEach(item => {
             item.addEventListener('click', () => {
-                const login = item.dataset.login;
                 const text = textarea.value;
                 const cursorPos = textarea.selectionStart;
                 const textBeforeCursor = text.substring(0, cursorPos);
                 const searchStart = textBeforeCursor.lastIndexOf('@');
 
                 if (searchStart !== -1) {
-                    const newText = text.substring(0, searchStart) + `@${login} ` + text.substring(cursorPos);
+                    let mentionText;
+
+                    if (item.dataset.type === 'user') {
+                        // User mention: @username
+                        mentionText = `@${item.dataset.login} `;
+                    } else {
+                        // Entity mention: @"Entity Name" (with quotes if contains spaces)
+                        const entityName = item.dataset.entityName;
+                        if (entityName.includes(' ')) {
+                            mentionText = `@"${entityName}" `;
+                        } else {
+                            mentionText = `@${entityName} `;
+                        }
+                    }
+
+                    const newText = text.substring(0, searchStart) + mentionText + text.substring(cursorPos);
                     textarea.value = newText;
                     // Position cursor after the mention
-                    const newCursorPos = searchStart + login.length + 2;
+                    const newCursorPos = searchStart + mentionText.length;
                     textarea.setSelectionRange(newCursorPos, newCursorPos);
                 }
 
