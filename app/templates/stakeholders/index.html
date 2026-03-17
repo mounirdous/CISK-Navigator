@@ -29,6 +29,88 @@
         </div>
     </div>
 
+    <!-- Statistics Dashboard -->
+    <div class="row mb-4" id="statsCards">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Network Density</span>
+                        <i class="bi bi-diagram-3 text-primary"></i>
+                    </div>
+                    <h3 class="mb-0 text-primary" id="networkDensity">0%</h3>
+                    <small class="text-muted">Connection ratio</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Avg Connections</span>
+                        <i class="bi bi-arrow-left-right text-success"></i>
+                    </div>
+                    <h3 class="mb-0 text-success" id="avgConnections">0</h3>
+                    <small class="text-muted">Per stakeholder</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Most Influential</span>
+                        <i class="bi bi-star text-warning"></i>
+                    </div>
+                    <h6 class="mb-0 text-warning" id="mostInfluential">-</h6>
+                    <small class="text-muted" id="mostInfluentialPower">Power: 0</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted small">Most Connected</span>
+                        <i class="bi bi-people text-info"></i>
+                    </div>
+                    <h6 class="mb-0 text-info" id="mostConnected">-</h6>
+                    <small class="text-muted" id="mostConnectedCount">0 connections</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input
+                            type="text"
+                            class="form-control border-start-0 ps-0"
+                            id="stakeholderSearch"
+                            placeholder="Search stakeholders by name, role, or department..."
+                            onkeyup="searchStakeholders()"
+                        >
+                        <button class="btn btn-outline-secondary" onclick="clearSearch()" id="clearSearchBtn" style="display: none;">
+                            <i class="bi bi-x"></i> Clear
+                        </button>
+                    </div>
+                    <div id="searchResults" class="mt-2" style="display: none;">
+                        <small class="text-muted">
+                            <span id="searchResultCount">0</span> results found
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row">
         <!-- Left Sidebar -->
         <div class="col-md-3">
@@ -234,8 +316,21 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body p-0" style="position: relative;">
                     <div id="networkGraph" style="height: 700px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);"></div>
+
+                    <!-- Zoom Controls -->
+                    <div id="zoomControls" style="position: absolute; top: 15px; right: 15px; z-index: 100; display: flex; flex-direction: column; gap: 8px;">
+                        <button class="btn btn-sm btn-light shadow-sm zoom-btn" onclick="zoomIn()" title="Zoom In">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light shadow-sm zoom-btn" onclick="zoomOut()" title="Zoom Out">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+                        <button class="btn btn-sm btn-light shadow-sm zoom-btn" onclick="resetZoom()" title="Reset Zoom">
+                            <i class="bi bi-arrow-clockwise"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-footer bg-light text-center small text-muted border-0">
                     <i class="bi bi-mouse"></i> <strong>Click</strong> to select •
@@ -485,6 +580,222 @@ async function loadGraph(filters = {}) {
             window.location.href = `/stakeholders/${params.nodes[0]}/edit`;
         }
     });
+
+    // Calculate and display statistics after graph loads
+    calculateStatistics(data);
+}
+
+// ========================================
+// STATISTICS DASHBOARD
+// ========================================
+function calculateStatistics(data) {
+    const stakeholdersList = {{ stakeholders|tojson }};
+    const relationshipsList = {{ relationships|tojson }};
+
+    // Network Density: actual connections / possible connections
+    const numStakeholders = stakeholdersList.length;
+    const numConnections = relationshipsList.length;
+    const possibleConnections = (numStakeholders * (numStakeholders - 1)) / 2;
+    const density = possibleConnections > 0 ? ((numConnections / possibleConnections) * 100).toFixed(1) : 0;
+
+    document.getElementById('networkDensity').textContent = density + '%';
+
+    // Average Connections per stakeholder
+    const avgConnections = numStakeholders > 0 ? (numConnections * 2 / numStakeholders).toFixed(1) : 0;
+    document.getElementById('avgConnections').textContent = avgConnections;
+
+    // Most Influential (highest power)
+    if (stakeholdersList.length > 0) {
+        const mostInfluential = stakeholdersList.reduce((max, s) =>
+            (s.influence_level || 0) > (max.influence_level || 0) ? s : max
+        );
+        document.getElementById('mostInfluential').textContent = mostInfluential.name;
+        document.getElementById('mostInfluentialPower').textContent = `Power: ${mostInfluential.influence_level || 0}`;
+    }
+
+    // Most Connected (most relationships)
+    if (stakeholdersList.length > 0) {
+        const connectionCounts = {};
+        stakeholdersList.forEach(s => connectionCounts[s.id] = 0);
+
+        relationshipsList.forEach(rel => {
+            connectionCounts[rel.from_stakeholder_id] = (connectionCounts[rel.from_stakeholder_id] || 0) + 1;
+            connectionCounts[rel.to_stakeholder_id] = (connectionCounts[rel.to_stakeholder_id] || 0) + 1;
+        });
+
+        let maxConnections = 0;
+        let mostConnectedId = null;
+        for (const [id, count] of Object.entries(connectionCounts)) {
+            if (count > maxConnections) {
+                maxConnections = count;
+                mostConnectedId = parseInt(id);
+            }
+        }
+
+        if (mostConnectedId) {
+            const mostConnected = stakeholdersList.find(s => s.id === mostConnectedId);
+            document.getElementById('mostConnected').textContent = mostConnected.name;
+            document.getElementById('mostConnectedCount').textContent = `${maxConnections} connections`;
+        }
+    }
+}
+
+// ========================================
+// SEARCH FUNCTIONALITY
+// ========================================
+let searchTimeout;
+let originalNodeColors = {};
+
+function searchStakeholders() {
+    const searchTerm = document.getElementById('stakeholderSearch').value.toLowerCase().trim();
+    const clearBtn = document.getElementById('clearSearchBtn');
+    const searchResults = document.getElementById('searchResults');
+
+    // Show/hide clear button
+    if (searchTerm) {
+        clearBtn.style.display = 'block';
+    } else {
+        clearBtn.style.display = 'none';
+        searchResults.style.display = 'none';
+        resetSearchHighlights();
+        return;
+    }
+
+    // Debounce search
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performSearch(searchTerm);
+    }, 300);
+}
+
+function performSearch(searchTerm) {
+    const stakeholdersList = {{ stakeholders|tojson }};
+    const matches = stakeholdersList.filter(s =>
+        (s.name && s.name.toLowerCase().includes(searchTerm)) ||
+        (s.role && s.role.toLowerCase().includes(searchTerm)) ||
+        (s.department && s.department.toLowerCase().includes(searchTerm))
+    );
+
+    // Show results count
+    const searchResults = document.getElementById('searchResults');
+    searchResults.style.display = 'block';
+    document.getElementById('searchResultCount').textContent = matches.length;
+
+    // Highlight matching nodes
+    if (matches.length > 0) {
+        highlightNodes(matches.map(s => s.id));
+
+        // Center on first match
+        if (network) {
+            network.focus(matches[0].id, {
+                scale: 1.5,
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        }
+    } else {
+        resetSearchHighlights();
+    }
+}
+
+function highlightNodes(nodeIds) {
+    if (!network || !nodes) return;
+
+    // Store original colors if not already stored
+    if (Object.keys(originalNodeColors).length === 0) {
+        nodes.forEach(node => {
+            originalNodeColors[node.id] = node.color;
+        });
+    }
+
+    // Dim all nodes
+    nodes.forEach(node => {
+        nodes.update({
+            id: node.id,
+            color: {
+                background: '#e0e0e0',
+                border: '#cccccc'
+            },
+            opacity: 0.3
+        });
+    });
+
+    // Highlight matches with glow effect
+    nodeIds.forEach(id => {
+        const originalColor = originalNodeColors[id];
+        nodes.update({
+            id: id,
+            color: originalColor,
+            opacity: 1,
+            borderWidth: 4,
+            shapeProperties: {
+                borderDashes: false
+            }
+        });
+    });
+}
+
+function resetSearchHighlights() {
+    if (!network || !nodes || Object.keys(originalNodeColors).length === 0) return;
+
+    // Restore original colors
+    nodes.forEach(node => {
+        nodes.update({
+            id: node.id,
+            color: originalNodeColors[node.id],
+            opacity: 1,
+            borderWidth: 2
+        });
+    });
+}
+
+function clearSearch() {
+    document.getElementById('stakeholderSearch').value = '';
+    document.getElementById('clearSearchBtn').style.display = 'none';
+    document.getElementById('searchResults').style.display = 'none';
+    resetSearchHighlights();
+}
+
+// ========================================
+// ZOOM CONTROLS
+// ========================================
+function zoomIn() {
+    if (network) {
+        const scale = network.getScale();
+        network.moveTo({
+            scale: scale * 1.2,
+            animation: {
+                duration: 300,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+    }
+}
+
+function zoomOut() {
+    if (network) {
+        const scale = network.getScale();
+        network.moveTo({
+            scale: scale * 0.8,
+            animation: {
+                duration: 300,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+    }
+}
+
+function resetZoom() {
+    if (network) {
+        network.fit({
+            animation: {
+                duration: 500,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+    }
 }
 
 function showStakeholderDetails(nodeId) {
@@ -970,6 +1281,115 @@ document.addEventListener('keydown', function(e) {
     background-color: #667eea;
     border-color: #667eea;
     color: white;
+}
+
+/* ========================================
+   ZOOM CONTROLS
+   ======================================== */
+.zoom-btn {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+    transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+    transform: scale(1.1);
+}
+
+.zoom-btn:active {
+    transform: scale(0.95);
+}
+
+#zoomControls {
+    opacity: 0.9;
+    transition: opacity 0.2s ease;
+}
+
+#zoomControls:hover {
+    opacity: 1;
+}
+
+/* ========================================
+   STATISTICS CARDS
+   ======================================== */
+#statsCards .card {
+    border: none;
+    transition: all 0.3s ease;
+}
+
+#statsCards .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+#statsCards h3 {
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+#statsCards h6 {
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#statsCards .bi {
+    font-size: 1.5rem;
+    opacity: 0.7;
+}
+
+/* ========================================
+   SEARCH BAR
+   ======================================== */
+#stakeholderSearch {
+    border: none;
+    font-size: 0.95rem;
+}
+
+#stakeholderSearch:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.input-group-text {
+    border: none;
+}
+
+#searchResults {
+    padding: 0.5rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+}
+
+#clearSearchBtn {
+    border-radius: 0 8px 8px 0;
+}
+
+/* Search highlight animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.search-highlight {
+    animation: pulse 1s ease-in-out infinite;
 }
 </style>
 
