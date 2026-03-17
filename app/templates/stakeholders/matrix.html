@@ -233,6 +233,17 @@ async function loadMatrix() {
 
     // Draw quadrant labels manually
     drawQuadrantLabels();
+    } catch (error) {
+        console.error('Error loading matrix:', error);
+        const canvas = document.getElementById('matrixChart');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#dc3545';
+            ctx.textAlign = 'center';
+            ctx.fillText('Error loading matrix. Please refresh the page.', canvas.width / 2, canvas.height / 2);
+        }
+    }
 }
 
 function drawQuadrantLabels() {
