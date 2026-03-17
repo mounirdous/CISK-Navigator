@@ -5,6 +5,75 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.21] - 2026-03-17
+
+### Fixed - @requires_action count mismatch (was 34, should be 29)
+**Issue**: @requires_action returned 34 results instead of 29 (Action Items page count)
+
+**Root Cause**: Used AND logic instead of OR logic
+- v2.5.20 expanded @requires_action to all individual modifiers
+- Search functions required items to match ALL modifiers simultaneously
+- Example: Initiative must be BOTH no_consensus AND incomplete (wrong!)
+- Action Items page shows separate categories that can overlap
+
+**The Fix**: Use OR logic for @requires_action
+- For initiatives: return items that are (no_consensus OR incomplete)
+- For spaces: return items that are (incomplete SWOT)
+- For systems: return items that are (missing KPIs)
+- For KPIs: return items that are (missing governance)
+- Total matches Action Items page exactly: 29 items
+
+**What Changed**:
+
+**Before (v2.5.20)** - AND logic:
+```python
+# Expanded @requires_action to all modifiers
+modifiers.extend(["incomplete", "no_consensus", "missing_kpis", "missing_governance"])
+
+# Search required ALL modifiers to match
+if "no_consensus" in modifiers:
+    base_query = base_query.filter(Initiative.impact_on_challenge == "no_consensus")
+# Then check incomplete - requires BOTH!
+if "incomplete" in modifiers:
+    if status == "complete":
+        continue
+# Result: Only initiatives that are BOTH no_consensus AND incomplete
+```
+
+**After (v2.5.21)** - OR logic:
+```python
+# @requires_action NOT expanded - handled specially
+
+# Use OR logic for @requires_action
+if "requires_action" in modifiers:
+    is_no_consensus = initiative.impact_on_challenge == "no_consensus"
+    is_incomplete = status != "complete"
+    if not (is_no_consensus or is_incomplete):
+        continue  # Include if ANY condition matches
+# Result: Initiatives that are no_consensus OR incomplete
+```
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Removed @requires_action expansion from parse_query()
+  - Updated search_initiatives() to use OR logic for @requires_action
+  - Updated search_spaces() to handle @requires_action
+  - Updated search_systems() to handle @requires_action
+  - Updated search_kpis() to handle @requires_action
+  - Updated docstrings
+- `app/__init__.py` - Version bump to 2.5.21
+
+**Verification**:
+- Action Items page: 29 items (1 + 6 + 4 + X systems + 18 KPIs)
+- @requires_action search: Now returns exactly 29 items ✓
+- Individual modifiers still work correctly:
+  - @incomplete: 10 items (6 initiatives + 4 spaces)
+  - @no_consensus: 1 item
+  - @missing_kpis: X systems
+  - @missing_governance: 18 KPIs
+
+---
+
 ## [2.5.20] - 2026-03-17
 
 ### Added - Action Items Search Modifiers (@requires_action)

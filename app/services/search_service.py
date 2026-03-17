@@ -117,6 +117,7 @@ class SearchService:
 
         Supports:
         - Modifiers: @incomplete, @no_consensus, @archived, @missing_kpis, @missing_governance, @requires_action
+        - @requires_action: Special umbrella modifier that uses OR logic (not expanded to individual modifiers)
         - Date operators: updated:last_week, updated:last_month, updated:today
         - Numeric operators: value>100, value<50, value=25
         - Ranges: value:10-20
@@ -137,12 +138,8 @@ class SearchService:
         # Extract modifiers (@incomplete, @no_consensus, @archived)
         modifiers = re.findall(r"@(\w+)", query)
 
-        # Expand @requires_action umbrella modifier
-        if "requires_action" in modifiers:
-            # Add all action item modifiers
-            modifiers.extend(["incomplete", "no_consensus", "missing_kpis", "missing_governance"])
-            # Remove the umbrella modifier itself (keep individual ones)
-            modifiers.remove("requires_action")
+        # Note: @requires_action is NOT expanded here - it's handled specially in search functions
+        # to use OR logic instead of AND logic
 
         result["modifiers"] = modifiers
 
@@ -251,8 +248,8 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for kpi in all_kpis:
-            # Check @missing_governance modifier
-            if "missing_governance" in modifiers:
+            # Check @missing_governance or @requires_action modifier
+            if "missing_governance" in modifiers or "requires_action" in modifiers:
                 # Check if KPI has governance bodies
                 from app.models import KPIGovernanceBodyLink
 
@@ -345,8 +342,8 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for system in all_systems:
-            # Check @missing_kpis modifier
-            if "missing_kpis" in modifiers:
+            # Check @missing_kpis or @requires_action modifier
+            if "missing_kpis" in modifiers or "requires_action" in modifiers:
                 # Check if system has any KPIs
                 has_kpis = (
                     db.session.query(KPI)
@@ -403,25 +400,34 @@ class SearchService:
         query = parsed["clean_query"]
         modifiers = parsed["modifiers"]
 
-        # Base query
-        base_query = db.session.query(Initiative).filter(Initiative.organization_id == organization_id)
-
-        # Note: Initiative model doesn't have is_archived field
-
-        # Apply modifiers
-        if "no_consensus" in modifiers:
-            base_query = base_query.filter(Initiative.impact_on_challenge == "no_consensus")
-
-        all_initiatives = base_query.all()
+        # Base query - get ALL initiatives first
+        all_initiatives = db.session.query(Initiative).filter(Initiative.organization_id == organization_id).all()
 
         # Filter by fuzzy match and modifiers
         results = []
         for initiative in all_initiatives:
-            # Check incomplete modifier
-            if "incomplete" in modifiers:
+            # Handle @requires_action with OR logic
+            if "requires_action" in modifiers:
+                # Include if: no_consensus OR incomplete
+                is_no_consensus = initiative.impact_on_challenge == "no_consensus"
                 filled, total, status = initiative.get_form_completion()
-                if status == "complete":
-                    continue  # Skip complete initiatives when searching for incomplete
+                is_incomplete = status != "complete"
+
+                if not (is_no_consensus or is_incomplete):
+                    continue  # Skip initiatives that don't match any action item criteria
+
+            # Handle individual modifiers with AND logic (more specific)
+            else:
+                # Check no_consensus modifier
+                if "no_consensus" in modifiers:
+                    if initiative.impact_on_challenge != "no_consensus":
+                        continue
+
+                # Check incomplete modifier
+                if "incomplete" in modifiers:
+                    filled, total, status = initiative.get_form_completion()
+                    if status == "complete":
+                        continue  # Skip complete initiatives
 
             # Fuzzy match logic
             match_score = 0
@@ -538,10 +544,10 @@ class SearchService:
         results = []
         for space in all_spaces:
             # Check incomplete modifier (spaces without complete SWOT)
-            if "incomplete" in modifiers:
+            if "incomplete" in modifiers or "requires_action" in modifiers:
                 filled, total, status = space.get_swot_completion()
                 if status == "complete":
-                    continue  # Skip complete spaces when searching for incomplete
+                    continue  # Skip complete spaces
 
             # Fuzzy match logic
             match_score = 0
