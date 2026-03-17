@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
 from flask_login import login_required
+from flask_wtf.csrf import generate_csrf
 from sqlalchemy import func
 
 from app.extensions import db
@@ -440,6 +441,7 @@ def dashboard():
         has_private_spaces=has_private_spaces,
         # Entity defaults
         entity_defaults=entity_defaults,
+        csrf_token=generate_csrf,
     )
 
 

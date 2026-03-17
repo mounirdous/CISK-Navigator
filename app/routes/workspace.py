@@ -1361,6 +1361,7 @@ def view_snapshot(batch_id):
         organization_name=session.get("organization_name"),
         snapshot_date=view_date,
         is_historical_view=True,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1477,6 +1478,7 @@ def compare_snapshots():
         label2=label2,
         organization_name=session.get("organization_name"),
         entity_defaults=entity_defaults,
+        csrf_token=generate_csrf,
     )
 
 

@@ -2,8 +2,9 @@
 Map Dashboard route for geographic visualization of KPIs
 """
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
+from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.models import GeographyRegion, KPIGeographyAssignment, Organization
@@ -28,7 +29,7 @@ def index():
 
     # Count total KPIs with geography assignments (distinct KPI IDs) for this organization
     # Join through KPI → InitiativeSystemLink → Initiative to filter by organization
-    from app.models import KPI, InitiativeSystemLink, Initiative
+    from app.models import KPI, Initiative, InitiativeSystemLink
 
     total_kpis_with_location = (
         db.session.query(KPIGeographyAssignment.kpi_id)
@@ -51,6 +52,7 @@ def index():
         total_kpis=total_kpis_with_location,
         map_color_with_kpis=map_color_with_kpis,
         map_color_no_kpis=map_color_no_kpis,
+        csrf_token=generate_csrf,
     )
 
 

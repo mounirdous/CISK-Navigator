@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from flask_wtf.csrf import generate_csrf
 
 from app.decorators import super_admin_required
 from app.extensions import db
@@ -55,6 +56,7 @@ def index():
         sso_enabled=sso_enabled,
         maintenance_mode=maintenance_mode,
         beta_enabled=beta_enabled,
+        csrf_token=generate_csrf,
     )
 
 
