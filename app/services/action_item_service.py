@@ -4,11 +4,13 @@ Service for managing action items and memos
 
 from datetime import datetime
 
+from flask import url_for
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import ActionItem, ActionItemMention
+from app.models import ActionItem, ActionItemMention, User
+from app.services.email_service import EmailService
 from app.services.mention_service import MentionService
 
 
@@ -104,6 +106,34 @@ class ActionItemService:
             ActionItemService._parse_and_create_mentions(item.id, description, organization_id)
 
         db.session.commit()
+
+        # Send email notification if assigning to someone else
+        if owner_user_id != created_by_user_id:
+            owner_user = User.query.get(owner_user_id)
+            if owner_user and owner_user.email:
+                try:
+                    # Build action item URL
+                    try:
+                        action_url = url_for("action_items.index", _anchor=f"item-{item.id}", _external=True)
+                    except RuntimeError:
+                        # If not in request context, use relative URL
+                        action_url = f"/actions#item-{item.id}"
+
+                    # Format due date
+                    due_date_str = item.due_date.strftime("%Y-%m-%d") if item.due_date else "No due date"
+
+                    EmailService.send_action_item_assigned(
+                        user_email=owner_user.email,
+                        user_name=owner_user.display_name or owner_user.login,
+                        action_title=title,
+                        action_description=description or "",
+                        due_date=due_date_str,
+                        action_url=action_url,
+                    )
+                except Exception as e:
+                    # Log error but don't fail the action creation
+                    print(f"Failed to send action item email to {owner_user.email}: {e}")
+
         return item
 
     @staticmethod
@@ -122,6 +152,11 @@ class ActionItemService:
         item = ActionItem.query.get(item_id)
         if not item or item.owner_user_id != user_id:
             return None
+
+        # Track if owner changed for notification
+        old_owner_id = item.owner_user_id
+        new_owner_id = kwargs.get("owner_user_id")
+        owner_changed = new_owner_id and new_owner_id != old_owner_id
 
         # Update fields (only if value is not None, or if it's an explicitly nullable field)
         for field in ["title", "description", "visibility", "owner_user_id"]:
@@ -147,6 +182,31 @@ class ActionItemService:
 
         item.updated_at = datetime.utcnow()
         db.session.commit()
+
+        # Send email notification if owner changed
+        if owner_changed:
+            new_owner = User.query.get(new_owner_id)
+            if new_owner and new_owner.email:
+                try:
+                    # Build action item URL
+                    try:
+                        action_url = url_for("action_items.index", _anchor=f"item-{item.id}", _external=True)
+                    except RuntimeError:
+                        action_url = f"/actions#item-{item.id}"
+
+                    due_date_str = item.due_date.strftime("%Y-%m-%d") if item.due_date else "No due date"
+
+                    EmailService.send_action_item_assigned(
+                        user_email=new_owner.email,
+                        user_name=new_owner.display_name or new_owner.login,
+                        action_title=item.title,
+                        action_description=item.description or "",
+                        due_date=due_date_str,
+                        action_url=action_url,
+                    )
+                except Exception as e:
+                    print(f"Failed to send action item email to {new_owner.email}: {e}")
+
         return item
 
     @staticmethod

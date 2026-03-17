@@ -8,10 +8,12 @@ import re
 from datetime import datetime
 from typing import List, Optional
 
+from flask import url_for
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
 from app.models import CellComment, CommentEntityMention, MentionNotification, User, UserOrganizationMembership
+from app.services.email_service import EmailService
 from app.services.mention_service import MentionService
 
 
@@ -122,6 +124,38 @@ class CommentService:
             db.session.add(entity_mention)
 
         db.session.commit()
+
+        # Send email notifications for mentions (after commit)
+        from app.models import KPIValueTypeConfig
+
+        config = KPIValueTypeConfig.query.get(config_id)
+        if config and config.kpi:
+            kpi_name = config.kpi.name
+            # Build comment URL
+            try:
+                comment_url = url_for(
+                    "workspace.index", kpi_id=config.kpi.id, _anchor=f"comment-{comment.id}", _external=True
+                )
+            except RuntimeError:
+                # If not in request context, use relative URL
+                comment_url = f"/workspace?kpi_id={config.kpi.id}#comment-{comment.id}"
+
+            for mentioned_user_id in mentioned_user_ids:
+                if mentioned_user_id != user_id:
+                    mentioned_user = User.query.get(mentioned_user_id)
+                    if mentioned_user and mentioned_user.email:
+                        try:
+                            EmailService.send_mention_notification(
+                                user_email=mentioned_user.email,
+                                user_name=mentioned_user.display_name or mentioned_user.login,
+                                comment_text=comment_text,
+                                kpi_name=kpi_name,
+                                comment_url=comment_url,
+                            )
+                        except Exception as e:
+                            # Log error but don't fail the comment creation
+                            print(f"Failed to send mention email to {mentioned_user.email}: {e}")
+
         return comment
 
     @staticmethod
