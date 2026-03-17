@@ -127,3 +127,58 @@ class MentionNotification(db.Model):
             "read_at": self.read_at.isoformat() if self.read_at else None,
             "comment": self.comment.to_dict() if self.comment else None,
         }
+
+
+class CommentEntityMention(db.Model):
+    """
+    Track entity mentions in comments.
+
+    Stores references to spaces, challenges, initiatives, systems, or KPIs mentioned in comments.
+    """
+
+    __tablename__ = "comment_entity_mentions"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Which comment
+    comment_id = db.Column(
+        db.Integer, db.ForeignKey("cell_comments.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # Which entity (polymorphic relationship)
+    entity_type = db.Column(
+        db.Enum("space", "challenge", "initiative", "system", "kpi", name="comment_entity_mention_type"),
+        nullable=False,
+    )
+    entity_id = db.Column(db.Integer, nullable=False)
+
+    # Original mention text (for display)
+    mention_text = db.Column(db.String(255), nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    comment = db.relationship("CellComment", backref=db.backref("entity_mentions", passive_deletes=True))
+
+    # Indexes
+    __table_args__ = (db.Index("idx_comment_entity_mention", "comment_id", "entity_type", "entity_id"),)
+
+    def __repr__(self):
+        return f"<CommentEntityMention {self.id}: {self.entity_type} {self.entity_id}>"
+
+    def to_dict(self):
+        """Convert to dictionary for API responses"""
+        return {
+            "id": self.id,
+            "comment_id": self.comment_id,
+            "entity_type": self.entity_type,
+            "entity_id": self.entity_id,
+            "mention_text": self.mention_text,
+            "created_at": self.created_at.isoformat(),
+        }
+
+    def get_entity_url(self):
+        """Get URL for the mentioned entity"""
+        from app.services.mention_service import MentionService
+
+        return MentionService.get_entity_url(self.entity_type, self.entity_id)

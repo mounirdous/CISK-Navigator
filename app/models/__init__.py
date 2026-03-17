@@ -10,7 +10,7 @@ from .announcement import (
     UserAnnouncementAcknowledgment,
 )
 from .audit_log import AuditLog
-from .cell_comment import CellComment, MentionNotification
+from .cell_comment import CellComment, CommentEntityMention, MentionNotification
 from .challenge import Challenge
 from .contribution import Contribution
 from .entity_link import EntityLink
@@ -56,6 +56,7 @@ __all__ = [
     "KPISnapshot",
     "RollupSnapshot",
     "CellComment",
+    "CommentEntityMention",
     "MentionNotification",
     "SystemSetting",
     "EntityLink",
