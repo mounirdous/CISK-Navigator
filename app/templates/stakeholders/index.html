@@ -241,7 +241,7 @@
             </div>
             <div class="modal-body">
                 <form id="relationshipForm">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}"/>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
 
                     <div class="mb-3">
                         <label for="fromStakeholder" class="form-label">From Stakeholder</label>
@@ -549,7 +549,7 @@ async function savePositions() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
+            'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify({positions: positions})
     });
