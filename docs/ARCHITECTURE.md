@@ -93,6 +93,7 @@ CISK-Navigator/
 - `app/services/aggregation_service.py` - Rollup calculations
 - `app/services/deletion_impact_service.py` - Cascade delete analysis
 - `app/services/comment_service.py` - Comment management
+- `app/services/action_item_service.py` - Action items and memos (CRUD, @mentions, stats)
 - `app/services/excel_export_service.py` - Excel export
 - `app/services/yaml_import_service.py` - YAML structure import (no data)
 - `app/services/yaml_export_service.py` - YAML structure export (no data)
@@ -868,6 +869,7 @@ DELETE ValueType
 | `rollup_rule.py` | `RollupRule` | Aggregation formulas |
 | `kpi_snapshot.py` | `KPISnapshot`, `RollupSnapshot` | Historical snapshots |
 | `cell_comment.py` | `CellComment`, `MentionNotification` | Discussions, mentions |
+| `action_item.py` | `ActionItem`, `ActionItemMention` | Action register & memos with entity mentions |
 
 ### Routes (`app/routes/*.py`)
 
@@ -878,6 +880,7 @@ DELETE ValueType
 | `global_admin.py` | `global_admin` | Multi-org management |
 | `organization_admin.py` | `org_admin` | Org-specific settings |
 | `super_admin.py` | `super_admin` | System-wide settings |
+| `action_items.py` | `action_items` | Action register & memos management |
 
 ### Services (`app/services/*.py`)
 
@@ -888,6 +891,7 @@ DELETE ValueType
 | `aggregation_service.py` | Rollup calculations |
 | `deletion_impact_service.py` | Cascade analysis |
 | `comment_service.py` | Comment CRUD, mentions |
+| `action_item_service.py` | Action items/memos CRUD, @mention parsing, stats |
 | `excel_export_service.py` | Export to Excel |
 | `yaml_import_service.py` | Import structure from YAML (no data) |
 | `yaml_export_service.py` | Export structure to YAML (no data) |
@@ -916,6 +920,7 @@ DELETE ValueType
 | `rollup_forms.py` | Rollup rule create/edit |
 | `yaml_forms.py` | YAML import |
 | `organization_clone_forms.py` | Organization clone |
+| `action_item_forms.py` | Action items/memos create/edit/filter |
 
 ### Templates (`app/templates/`)
 

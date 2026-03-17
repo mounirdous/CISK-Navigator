@@ -65,6 +65,7 @@ def create_app(config_name=None):
 
     # Register blueprints
     from app.routes import (
+        action_items,
         analytics,
         auth,
         beta,
@@ -90,6 +91,7 @@ def create_app(config_name=None):
     app.register_blueprint(map_dashboard.bp)
     app.register_blueprint(logo.bp)
     app.register_blueprint(entity_links.bp)
+    app.register_blueprint(action_items.bp)  # Action items and memos
     app.register_blueprint(beta.bp)  # Beta feature prototypes
 
     # Register test error routes (REMOVE IN PRODUCTION)

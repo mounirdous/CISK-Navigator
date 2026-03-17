@@ -236,6 +236,9 @@ class TestCSRFTokenAvailability:
         "/executive/dashboard",
         "/analytics/dashboard",
         "/map/",
+        # Action Items & Memos
+        "/toolbox/actions/",
+        "/toolbox/actions/create",
     ],
 )
 class TestOrganizationRoutes:

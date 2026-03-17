@@ -2,6 +2,7 @@
 Database models
 """
 
+from .action_item import ActionItem, ActionItemMention
 from .announcement import (
     AnnouncementTargetOrganization,
     AnnouncementTargetUser,
@@ -32,6 +33,8 @@ from .user_filter_preset import UserFilterPreset
 from .value_type import KPIValueTypeConfig, ValueType
 
 __all__ = [
+    "ActionItem",
+    "ActionItemMention",
     "AuditLog",
     "User",
     "Organization",

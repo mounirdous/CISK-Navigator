@@ -54,6 +54,12 @@ class User(UserMixin, db.Model):
     organization_memberships = db.relationship(
         "UserOrganizationMembership", back_populates="user", cascade="all, delete-orphan"
     )
+    owned_action_items = db.relationship(
+        "ActionItem", foreign_keys="ActionItem.owner_user_id", back_populates="owner_user"
+    )
+    created_action_items = db.relationship(
+        "ActionItem", foreign_keys="ActionItem.created_by_user_id", back_populates="created_by_user"
+    )
 
     def set_password(self, password):
         """Hash and set the password"""

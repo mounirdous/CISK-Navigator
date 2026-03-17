@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ 'Action' if item.type == 'action' else 'Memo' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Edit {{ 'Action' if item.type == 'action' else 'Memo' }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('action_items.edit', item_id=item.id) }}" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+
+                        <!-- Type Badge (read-only) -->
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <div>
+                                {% if item.type == 'memo' %}
+                                    <span class="badge bg-info">📝 Memo</span>
+                                {% else %}
+                                    <span class="badge bg-primary">✓ Action</span>
+                                {% endif %}
+                                <small class="text-muted ms-2">(cannot be changed after creation)</small>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">{{ form.title.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="Brief title for this item") }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.title.errors[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">{{ form.description.label.text }}</label>
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="6", placeholder="Detailed description. Use @mentions to link entities (e.g., @\"Entity Name\")") }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.description.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Tip: Use <code>@"Entity Name"</code> to mention and link spaces, challenges, initiatives, systems, or KPIs
+                            </div>
+                        </div>
+
+                        <!-- Current Mentions -->
+                        {% if item.mentions|length > 0 %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Mentions</label>
+                            <div>
+                                {% for mention in item.mentions %}
+                                    <span class="badge bg-secondary me-1 mb-1">
+                                        {{ mention.entity_type }}: {{ mention.mention_text }}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Action-specific fields (only for actions) -->
+                        {% if item.type == 'action' %}
+                        <hr class="my-4">
+                        <h5 class="mb-3">Action Details</h5>
+
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="status" class="form-label">{{ form.status.label.text }}</label>
+                            {{ form.status(class="form-select") }}
+                            {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.status.errors[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Priority -->
+                        <div class="mb-3">
+                            <label for="priority" class="form-label">{{ form.priority.label.text }}</label>
+                            {{ form.priority(class="form-select") }}
+                            {% if form.priority.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.priority.errors[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Due Date -->
+                        <div class="mb-3">
+                            <label for="due_date" class="form-label">{{ form.due_date.label.text }}</label>
+                            {{ form.due_date(class="form-control" + (" is-invalid" if form.due_date.errors else ""), type="date") }}
+                            {% if form.due_date.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.due_date.errors[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Completion Info -->
+                        {% if item.completed_at %}
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle"></i>
+                            Completed on {{ item.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                        </div>
+                        {% endif %}
+                        {% endif %}
+
+                        <!-- Visibility -->
+                        <div class="mb-3">
+                            <label for="visibility" class="form-label">{{ form.visibility.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.visibility(class="form-select") }}
+                            {% if form.visibility.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.visibility.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <strong>Private:</strong> Only visible to you<br>
+                                <strong>Shared:</strong> Visible to everyone in your organization
+                            </div>
+                        </div>
+
+                        <!-- Metadata -->
+                        <div class="alert alert-light mt-4">
+                            <small class="text-muted">
+                                <strong>Created:</strong> {{ item.created_at.strftime('%Y-%m-%d %H:%M') }} by {{ item.created_by_user.display_name or item.created_by_user.login }}<br>
+                                <strong>Last Updated:</strong> {{ item.updated_at.strftime('%Y-%m-%d %H:%M') }}<br>
+                                <strong>Owner:</strong> {{ item.owner_user.display_name or item.owner_user.login }}
+                            </small>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('action_items.index') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Tips</h6>
+                    <ul class="mb-0">
+                        <li><strong>@mentions:</strong> Link to entities using <code>@"Entity Name"</code> syntax</li>
+                        <li><strong>Updating description:</strong> Mentions will be re-parsed when you save changes</li>
+                        <li><strong>Status changes:</strong> Marking an action as completed will record the completion timestamp</li>
+                        <li><strong>Visibility:</strong> Changing from shared to private will hide it from others</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

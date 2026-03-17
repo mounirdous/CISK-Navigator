@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}Action Register & Memos{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📝 Action Register & Memos</h2>
+        <a href="{{ url_for('action_items.create') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Item
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.total_actions }}</h5>
+                    <p class="card-text text-muted">Total Actions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.open_actions }}</h5>
+                    <p class="card-text text-muted">Open Actions</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center border-warning">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">{{ stats.overdue_actions }}</h5>
+                    <p class="card-text text-muted">Overdue</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.completed_actions }}</h5>
+                    <p class="card-text text-muted">Completed</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title">{{ stats.total_memos }}</h5>
+                    <p class="card-text text-muted">Memos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('action_items.index') }}" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Type</label>
+                    <select name="type_filter" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if current_filters.type == 'all' %}selected{% endif %}>All</option>
+                        <option value="action" {% if current_filters.type == 'action' %}selected{% endif %}>Actions</option>
+                        <option value="memo" {% if current_filters.type == 'memo' %}selected{% endif %}>Memos</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status_filter" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All</option>
+                        <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="cancelled" {% if current_filters.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">View</label>
+                    <select name="visibility_filter" class="form-select" onchange="this.form.submit()">
+                        <option value="all" {% if current_filters.visibility == 'all' %}selected{% endif %}>All Items</option>
+                        <option value="my_items" {% if current_filters.visibility == 'my_items' %}selected{% endif %}>My Items</option>
+                        <option value="team_items" {% if current_filters.visibility == 'team_items' %}selected{% endif %}>Team Items</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Items List -->
+    {% if items %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%">Type</th>
+                            <th style="width: 30%">Title</th>
+                            <th style="width: 10%">Status</th>
+                            <th style="width: 10%">Priority</th>
+                            <th style="width: 10%">Due Date</th>
+                            <th style="width: 10%">Owner</th>
+                            <th style="width: 10%">Visibility</th>
+                            <th style="width: 10%">Mentions</th>
+                            <th style="width: 5%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr {% if item.is_overdue %}class="table-warning"{% endif %}>
+                            <td>
+                                {% if item.type == 'memo' %}
+                                    <span class="badge bg-info">📝 Memo</span>
+                                {% else %}
+                                    <span class="badge bg-primary">✓ Action</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ item.title }}</strong>
+                                {% if item.description %}
+                                <br><small class="text-muted">{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.type == 'action' %}
+                                    {% if item.status == 'active' %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% elif item.status == 'completed' %}
+                                        <span class="badge bg-secondary">Completed</span>
+                                    {% elif item.status == 'draft' %}
+                                        <span class="badge bg-light text-dark">Draft</span>
+                                    {% elif item.status == 'cancelled' %}
+                                        <span class="badge bg-danger">Cancelled</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.type == 'action' %}
+                                    {% if item.priority == 'urgent' %}
+                                        <span class="badge bg-danger">🔥 Urgent</span>
+                                    {% elif item.priority == 'high' %}
+                                        <span class="badge bg-warning text-dark">High</span>
+                                    {% elif item.priority == 'medium' %}
+                                        <span class="badge bg-info">Medium</span>
+                                    {% elif item.priority == 'low' %}
+                                        <span class="badge bg-secondary">Low</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.due_date %}
+                                    {{ item.due_date.strftime('%Y-%m-%d') }}
+                                    {% if item.is_overdue %}
+                                        <span class="badge bg-danger">Overdue</span>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td>{{ item.owner_user.display_name or item.owner_user.login }}</td>
+                            <td>
+                                {% if item.visibility == 'private' %}
+                                    <span class="badge bg-secondary">🔒 Private</span>
+                                {% else %}
+                                    <span class="badge bg-success">👥 Shared</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.mentions|length > 0 %}
+                                    <span class="badge bg-primary">{{ item.mentions|length }} mentions</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.owner_user_id == current_user.id %}
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('action_items.edit', item_id=item.id) }}" class="btn btn-outline-primary">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('action_items.delete', item_id=item.id) }}" style="display:inline" onsubmit="return confirm('Delete this item?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p class="mb-0">No action items or memos found. <a href="{{ url_for('action_items.create') }}">Create one now!</a></p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

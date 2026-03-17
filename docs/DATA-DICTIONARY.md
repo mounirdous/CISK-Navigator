@@ -396,6 +396,69 @@ User mention tracking in comments.
 
 ---
 
+### `action_items`
+
+Action register and memos for tracking tasks and information.
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | INTEGER | NO | PK | Primary key |
+| `organization_id` | INTEGER | NO | FK | Parent organization |
+| `type` | ENUM | NO | 'action' | Item type: 'memo' or 'action' |
+| `title` | VARCHAR(200) | NO | - | Brief title |
+| `description` | TEXT | YES | NULL | Detailed description with @mentions |
+| `status` | ENUM | YES | 'active' | For actions: 'draft', 'active', 'completed', 'cancelled' |
+| `priority` | ENUM | YES | 'medium' | For actions: 'low', 'medium', 'high', 'urgent' |
+| `due_date` | DATE | YES | NULL | Target completion date |
+| `completed_at` | TIMESTAMP | YES | NULL | Actual completion timestamp |
+| `owner_user_id` | INTEGER | NO | FK | Responsible user |
+| `created_by_user_id` | INTEGER | NO | FK | Creator user |
+| `visibility` | ENUM | NO | 'shared' | 'private' (owner only) or 'shared' (team) |
+| `created_at` | TIMESTAMP | NO | now() | Creation timestamp |
+| `updated_at` | TIMESTAMP | YES | now() | Last update timestamp |
+
+**Indexes:**
+- PRIMARY KEY on `id`
+- FOREIGN KEY `organization_id` → `organizations(id)` ON DELETE CASCADE
+- FOREIGN KEY `owner_user_id` → `users(id)` ON DELETE CASCADE
+- FOREIGN KEY `created_by_user_id` → `users(id)` ON DELETE CASCADE
+- INDEX on `organization_id, type`
+- INDEX on `organization_id, status`
+- INDEX on `owner_user_id`
+
+**Relationships:**
+- N:1 with `organizations`
+- N:1 with `users` (owner)
+- N:1 with `users` (creator)
+- 1:N with `action_item_mentions`
+
+---
+
+### `action_item_mentions`
+
+Entity mentions within action items (e.g., @"Space Name").
+
+| Column | Type | Nullable | Default | Description |
+|--------|------|----------|---------|-------------|
+| `id` | INTEGER | NO | PK | Primary key |
+| `action_item_id` | INTEGER | NO | FK | Parent action item |
+| `entity_type` | ENUM | NO | - | Type: 'space', 'challenge', 'initiative', 'system', 'kpi' |
+| `entity_id` | INTEGER | NO | - | ID of mentioned entity |
+| `mention_text` | VARCHAR(255) | NO | - | Original mention text |
+| `created_at` | TIMESTAMP | NO | now() | Creation timestamp |
+
+**Indexes:**
+- PRIMARY KEY on `id`
+- FOREIGN KEY `action_item_id` → `action_items(id)` ON DELETE CASCADE
+- INDEX on `action_item_id`
+- INDEX on `entity_type, entity_id`
+
+**Relationships:**
+- N:1 with `action_items`
+- Polymorphic relation to `spaces`, `challenges`, `initiatives`, `systems`, `kpis` (via entity_type + entity_id)
+
+---
+
 ## Relationship Tables
 
 ### `challenge_initiative_links`

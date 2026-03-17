@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Create Action/Memo{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Create New Action or Memo</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('action_items.create') }}" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+
+                        <!-- Type Selection -->
+                        <div class="mb-3">
+                            <label for="type" class="form-label">{{ form.type.label.text }}</label>
+                            {{ form.type(class="form-select", id="type-select") }}
+                            {% if form.type.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.type.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <strong>Memo:</strong> Quick note or information to share<br>
+                                <strong>Action:</strong> Task with status tracking, priority, and due dates
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">{{ form.title.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.title(class="form-control" + (" is-invalid" if form.title.errors else ""), placeholder="Brief title for this item") }}
+                            {% if form.title.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.title.errors[0] }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">{{ form.description.label.text }}</label>
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="6", placeholder="Detailed description. Use @mentions to link entities (e.g., @\"Entity Name\")") }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.description.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                Tip: Use <code>@"Entity Name"</code> to mention and link spaces, challenges, initiatives, systems, or KPIs
+                            </div>
+                        </div>
+
+                        <!-- Action-specific fields (shown conditionally) -->
+                        <div id="action-fields">
+                            <hr class="my-4">
+                            <h5 class="mb-3">Action Details</h5>
+
+                            <!-- Status -->
+                            <div class="mb-3">
+                                <label for="status" class="form-label">{{ form.status.label.text }}</label>
+                                {{ form.status(class="form-select") }}
+                                {% if form.status.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.status.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Priority -->
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">{{ form.priority.label.text }}</label>
+                                {{ form.priority(class="form-select") }}
+                                {% if form.priority.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.priority.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Due Date -->
+                            <div class="mb-3">
+                                <label for="due_date" class="form-label">{{ form.due_date.label.text }}</label>
+                                {{ form.due_date(class="form-control" + (" is-invalid" if form.due_date.errors else ""), type="date") }}
+                                {% if form.due_date.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.due_date.errors[0] }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Visibility -->
+                        <div class="mb-3">
+                            <label for="visibility" class="form-label">{{ form.visibility.label.text }} <span class="text-danger">*</span></label>
+                            {{ form.visibility(class="form-select") }}
+                            {% if form.visibility.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.visibility.errors[0] }}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">
+                                <strong>Private:</strong> Only visible to you<br>
+                                <strong>Shared:</strong> Visible to everyone in your organization
+                            </div>
+                        </div>
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('action_items.index') }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Create
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card mt-3">
+                <div class="card-body">
+                    <h6 class="card-title">Tips</h6>
+                    <ul class="mb-0">
+                        <li><strong>@mentions:</strong> Link to entities using <code>@"Entity Name"</code> syntax</li>
+                        <li><strong>Memos:</strong> Use for information sharing, meeting notes, or quick reminders</li>
+                        <li><strong>Actions:</strong> Use for trackable tasks with priorities and due dates</li>
+                        <li><strong>Private vs Shared:</strong> Private items are only visible to you; shared items are visible to your organization</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show/hide action-specific fields based on type selection
+document.addEventListener('DOMContentLoaded', function() {
+    const typeSelect = document.getElementById('type-select');
+    const actionFields = document.getElementById('action-fields');
+
+    function toggleActionFields() {
+        if (typeSelect.value === 'action') {
+            actionFields.style.display = 'block';
+        } else {
+            actionFields.style.display = 'none';
+        }
+    }
+
+    // Initial state
+    toggleActionFields();
+
+    // Listen for changes
+    typeSelect.addEventListener('change', toggleActionFields);
+});
+</script>
+{% endblock %}

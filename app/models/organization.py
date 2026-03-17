@@ -59,6 +59,7 @@ class Organization(db.Model):
     systems = db.relationship("System", back_populates="organization", cascade="all, delete-orphan")
     value_types = db.relationship("ValueType", back_populates="organization", cascade="all, delete-orphan")
     governance_bodies = db.relationship("GovernanceBody", back_populates="organization", cascade="all, delete-orphan")
+    action_items = db.relationship("ActionItem", back_populates="organization", cascade="all, delete-orphan")
     deleter = db.relationship("User", foreign_keys=[deleted_by])
 
     def soft_delete(self, user_id):
