@@ -112,7 +112,7 @@ def index():
         filter_form=filter_form,
         maps=maps_data,
         selected_map=selected_map,
-        csrf_token=generate_csrf,
+        csrf_token=generate_csrf(),
     )
 
 
@@ -138,7 +138,7 @@ def list_stakeholders():
         "stakeholders/list.html",
         organization=organization,
         stakeholders=stakeholders,
-        csrf_token=generate_csrf,
+        csrf_token=generate_csrf(),
     )
 
 
@@ -234,7 +234,7 @@ def edit(id):
         form=form,
         stakeholder=stakeholder,
         organization=organization,
-        csrf_token=generate_csrf,
+        csrf_token=generate_csrf(),
     )
 
 
@@ -795,7 +795,7 @@ def edit_map(id):
         all_stakeholders=all_stakeholders,
         map_stakeholders=map_stakeholders,
         map_stakeholder_ids=map_stakeholder_ids,
-        csrf_token=generate_csrf,
+        csrf_token=generate_csrf(),
     )
 
 
