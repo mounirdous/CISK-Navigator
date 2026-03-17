@@ -28,9 +28,9 @@ def upgrade():
         # Migration already applied, skip
         return
 
-    # Create enums only if they don't already exist
-    # Use DO NOT EXISTS check for each enum type
-    enums_to_create = [
+    # Create enums using PostgreSQL DO blocks with exception handling
+    # This handles the error at the database level, not Python level
+    enum_definitions = [
         ("action_item_type", "('memo', 'action')"),
         ("action_item_status", "('draft', 'active', 'completed', 'cancelled')"),
         ("action_item_priority", "('low', 'medium', 'high', 'urgent')"),
@@ -38,12 +38,19 @@ def upgrade():
         ("action_item_mention_entity_type", "('space', 'challenge', 'initiative', 'system', 'kpi')"),
     ]
 
-    for enum_name, enum_values in enums_to_create:
-        # Check if enum exists - fetchone() returns None if not found
-        result = bind.execute(sa.text(f"SELECT 1 FROM pg_type WHERE typname = '{enum_name}'"))
-        if result.fetchone() is None:
-            # Enum doesn't exist, create it
-            op.execute(f"CREATE TYPE {enum_name} AS ENUM {enum_values}")
+    for enum_name, enum_values in enum_definitions:
+        op.execute(
+            sa.text(
+                f"""
+                DO $$
+                BEGIN
+                    CREATE TYPE {enum_name} AS ENUM {enum_values};
+                EXCEPTION
+                    WHEN duplicate_object THEN null;
+                END $$;
+                """
+            )
+        )
 
     # Create action_items table (create_type=False since we handle enum creation above)
     op.create_table(
