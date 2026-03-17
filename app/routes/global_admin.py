@@ -12,6 +12,7 @@ from functools import wraps
 from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
+from flask_wtf.csrf import generate_csrf
 from sqlalchemy import text
 
 from app.extensions import db
@@ -586,7 +587,12 @@ def archived_organizations():
     """List all archived (soft-deleted) organizations"""
     archived_orgs = Organization.query.filter_by(is_deleted=True).order_by(Organization.deleted_at.desc()).all()
     csrf_form = FlaskForm()
-    return render_template("global_admin/archived_organizations.html", organizations=archived_orgs, csrf_form=csrf_form)
+    return render_template(
+        "global_admin/archived_organizations.html",
+        organizations=archived_orgs,
+        csrf_form=csrf_form,
+        csrf_token=generate_csrf,
+    )
 
 
 @bp.route("/organizations/<int:org_id>/restore", methods=["POST"])

@@ -1115,7 +1115,7 @@ def challenges():
     """List all challenges"""
     org_id = session.get("organization_id")
     challenges = Challenge.query.filter_by(organization_id=org_id).order_by(Challenge.display_order).all()
-    return render_template("organization_admin/challenges.html", challenges=challenges)
+    return render_template("organization_admin/challenges.html", challenges=challenges, csrf_token=generate_csrf)
 
 
 @bp.route("/initiatives")
@@ -1125,7 +1125,7 @@ def initiatives():
     """List all initiatives"""
     org_id = session.get("organization_id")
     initiatives = Initiative.query.filter_by(organization_id=org_id).all()
-    return render_template("organization_admin/initiatives.html", initiatives=initiatives)
+    return render_template("organization_admin/initiatives.html", initiatives=initiatives, csrf_token=generate_csrf)
 
 
 # REMOVED: /systems route - structure is managed in workspace Edit Structure mode
@@ -2368,7 +2368,7 @@ def value_types():
     """List all value types"""
     org_id = session.get("organization_id")
     value_types = ValueType.query.filter_by(organization_id=org_id).order_by(ValueType.display_order).all()
-    return render_template("organization_admin/value_types.html", value_types=value_types)
+    return render_template("organization_admin/value_types.html", value_types=value_types, csrf_token=generate_csrf)
 
 
 @bp.route("/value-types/reorder", methods=["POST"])
@@ -2772,7 +2772,10 @@ def governance_bodies():
     )
     delete_form = FlaskForm()  # Simple form just for CSRF token
     return render_template(
-        "organization_admin/governance_bodies.html", governance_bodies=governance_bodies, delete_form=delete_form
+        "organization_admin/governance_bodies.html",
+        governance_bodies=governance_bodies,
+        delete_form=delete_form,
+        csrf_token=generate_csrf,
     )
 
 
@@ -2940,7 +2943,7 @@ def yaml_upload():
             db.session.rollback()
             flash(f"Error uploading YAML: {str(e)}", "danger")
 
-    return render_template("organization_admin/yaml_upload.html", form=form)
+    return render_template("organization_admin/yaml_upload.html", form=form, csrf_token=generate_csrf)
 
 
 @bp.route("/yaml-export")
