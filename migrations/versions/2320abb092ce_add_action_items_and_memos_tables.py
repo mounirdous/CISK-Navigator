@@ -17,52 +17,32 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum types (if not exists) - using exception handling for better reliability
-    op.execute(
-        """
-        DO $$ BEGIN
-            CREATE TYPE action_item_type AS ENUM ('memo', 'action');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-        """
-    )
-    op.execute(
-        """
-        DO $$ BEGIN
-            CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-        """
-    )
-    op.execute(
-        """
-        DO $$ BEGIN
-            CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-        """
-    )
-    op.execute(
-        """
-        DO $$ BEGIN
-            CREATE TYPE action_item_visibility AS ENUM ('private', 'shared');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-        """
-    )
-    op.execute(
-        """
-        DO $$ BEGIN
-            CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi');
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-        """
-    )
+    # Check if table already exists - if so, skip this migration
+    from sqlalchemy import inspect
+
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names()
+
+    if "action_items" in existing_tables:
+        # Migration already applied, skip
+        return
+
+    # Create enum types - direct creation without DO block (will fail on retry, but we check table above)
+    from sqlalchemy.exc import ProgrammingError
+
+    for enum_sql in [
+        "CREATE TYPE action_item_type AS ENUM ('memo', 'action')",
+        "CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled')",
+        "CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent')",
+        "CREATE TYPE action_item_visibility AS ENUM ('private', 'shared')",
+        "CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')",
+    ]:
+        try:
+            op.execute(enum_sql)
+        except ProgrammingError:
+            # Type already exists, continue
+            pass
 
     # Create action_items table (create_type=False since we handle enum creation above)
     op.create_table(
