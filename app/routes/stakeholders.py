@@ -463,8 +463,11 @@ def api_power_interest_matrix():
 
     stakeholders = Stakeholder.query.filter_by(organization_id=org_id).all()
 
+    # Filter by visibility
+    visible_stakeholders = [s for s in stakeholders if s.is_visible_to_user(current_user)]
+
     matrix_data = []
-    for s in stakeholders:
+    for s in visible_stakeholders:
         matrix_data.append(
             {
                 "id": s.id,
@@ -502,8 +505,11 @@ def api_sponsor_recommendations():
         .all()
     )
 
+    # Filter by visibility
+    visible_sponsors = [s for s in ideal_sponsors if s.is_visible_to_user(current_user)]
+
     recommendations = []
-    for s in ideal_sponsors:
+    for s in visible_sponsors:
         recommendations.append(
             {
                 "id": s.id,
