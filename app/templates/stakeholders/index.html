@@ -1,0 +1,517 @@
+{% extends "base.html" %}
+
+{% block title %}Stakeholder Network Map - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h2>🗺️ Stakeholder Network Map</h2>
+            <p class="text-muted">
+                <strong>{{ organization.name }}</strong> •
+                {{ stakeholders|length }} stakeholders •
+                {{ relationships|length }} relationships
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-info">
+                <i class="bi bi-collection"></i> Manage Maps
+            </a>
+            <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list"></i> List View
+            </a>
+            <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-th"></i> Matrix
+            </a>
+            <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Stakeholder
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Filters Panel -->
+        <div class="col-md-3">
+            <!-- Map Selector -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-collection"></i> Map Selection</h5>
+                </div>
+                <div class="card-body">
+                    {% if selected_map %}
+                    <div class="alert alert-info mb-2">
+                        <strong><i class="bi bi-map"></i> {{ selected_map.name }}</strong>
+                        {% if selected_map.visibility == 'private' %}
+                        <span class="badge bg-secondary float-end">Private</span>
+                        {% else %}
+                        <span class="badge bg-success float-end">Shared</span>
+                        {% endif %}
+                        {% if selected_map.description %}
+                        <p class="mb-0 mt-1 small">{{ selected_map.description }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <select class="form-select mb-2" id="mapSelector" onchange="changeMap()">
+                        <option value="">All Stakeholders</option>
+                        {% for map in maps %}
+                        <option value="{{ map.id }}" {% if selected_map and selected_map.id == map.id %}selected{% endif %}>
+                            {{ map.name }} ({{ map.stakeholder_count }})
+                            {% if map.visibility == 'private' %}🔒{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <div class="d-grid">
+                        <a href="{{ url_for('stakeholders.create_map', organization_id=organization.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-plus-circle"></i> New Map
+                        </a>
+                    </div>
+
+                    {% if maps|length == 0 %}
+                    <div class="alert alert-warning mt-2 mb-0">
+                        <small>No maps yet. Create your first map to organize stakeholders!</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form id="filterForm">
+                        <div class="mb-3">
+                            <label class="form-label">Support Level</label>
+                            <div class="form-check">
+                                <input class="form-check-input filter-check" type="checkbox" value="champion" id="filter-champion" checked>
+                                <label class="form-check-label" for="filter-champion">
+                                    <span class="badge" style="background-color: #28a745;">Champion</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-check" type="checkbox" value="supporter" id="filter-supporter" checked>
+                                <label class="form-check-label" for="filter-supporter">
+                                    <span class="badge" style="background-color: #6c757d;">Supporter</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-check" type="checkbox" value="neutral" id="filter-neutral" checked>
+                                <label class="form-check-label" for="filter-neutral">
+                                    <span class="badge" style="background-color: #ffc107;">Neutral</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-check" type="checkbox" value="skeptic" id="filter-skeptic" checked>
+                                <label class="form-check-label" for="filter-skeptic">
+                                    <span class="badge" style="background-color: #fd7e14;">Skeptic</span>
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input filter-check" type="checkbox" value="blocker" id="filter-blocker" checked>
+                                <label class="form-check-label" for="filter-blocker">
+                                    <span class="badge" style="background-color: #dc3545;">Blocker</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ filter_form.department.label(class="form-label") }}
+                            {{ filter_form.department(class="form-select") }}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Influence Range</label>
+                            <div class="row">
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="min_influence" min="1" max="100" value="1" placeholder="Min">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" class="form-control" id="max_influence" min="1" max="100" value="100" placeholder="Max">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="button" class="btn btn-primary w-100" onclick="applyFilters()">
+                            <i class="fas fa-filter"></i> Apply Filters
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary w-100 mt-2" onclick="clearFilters()">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Graph Controls</h5>
+                </div>
+                <div class="card-body">
+                    <select class="form-select mb-2" id="layoutSelect">
+                        <option value="force">Force Directed</option>
+                        <option value="hierarchical">Hierarchical</option>
+                        <option value="circular">Circular</option>
+                    </select>
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="savePositions()">
+                        <i class="fas fa-save"></i> Save Positions
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2" onclick="fitGraph()">
+                        <i class="fas fa-expand"></i> Fit to Screen
+                    </button>
+                    <button class="btn btn-outline-info w-100" onclick="exportImage()">
+                        <i class="fas fa-download"></i> Export Image
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Legend</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2"><strong>Node Size:</strong> Influence Level</p>
+                    <p class="small mb-2"><strong>Node Color:</strong> Support Level</p>
+                    <p class="small mb-2"><strong>Edge Style:</strong></p>
+                    <ul class="small mb-0" style="list-style: none; padding-left: 0;">
+                        <li><span style="color: #6c757d;">⋯⋯⋯</span> Reports To</li>
+                        <li><span style="color: #007bff;">━━━</span> Influences</li>
+                        <li><span style="color: #28a745;">━━━</span> Collaborates</li>
+                        <li><span style="color: #ffc107;">━━━</span> Sponsors</li>
+                        <li><span style="color: #dc3545;">━━━</span> Blocks</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graph Canvas -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body p-0">
+                    <div id="networkGraph" style="height: 700px; border: 1px solid #dee2e6;"></div>
+                </div>
+            </div>
+            <div class="mt-2 text-center">
+                <small class="text-muted">
+                    Click: Select • Double-click: Edit • Shift+Drag: Pan • Scroll: Zoom
+                </small>
+            </div>
+        </div>
+
+        <!-- Details Panel -->
+        <div class="col-md-3">
+            <div class="card" id="detailsPanel" style="display: none;">
+                <div class="card-header">
+                    <h5 class="mb-0">Stakeholder Details</h5>
+                </div>
+                <div class="card-body" id="detailsContent">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <div class="card" id="welcomePanel">
+                <div class="card-header">
+                    <h5 class="mb-0">Getting Started</h5>
+                </div>
+                <div class="card-body">
+                    <p>Click on a stakeholder to view details and relationships.</p>
+                    <p class="mb-0"><strong>Quick Actions:</strong></p>
+                    <ul>
+                        <li>Double-click node to edit</li>
+                        <li>Drag nodes to arrange</li>
+                        <li>Click "Save Positions" to remember layout</li>
+                        <li>Use filters to focus on specific groups</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- vis.js Library -->
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+<link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+
+<script>
+let network;
+let nodes;
+let edges;
+const organizationId = {{ organization.id }};
+
+// Map selection
+function changeMap() {
+    const mapId = document.getElementById('mapSelector').value;
+    const url = new URL(window.location);
+    if (mapId) {
+        url.searchParams.set('map_id', mapId);
+    } else {
+        url.searchParams.delete('map_id');
+    }
+    url.searchParams.set('organization_id', organizationId);
+    window.location.href = url.toString();
+}
+
+// Initialize graph
+document.addEventListener('DOMContentLoaded', function() {
+    loadGraph();
+});
+
+async function loadGraph(filters = {}) {
+    const params = new URLSearchParams({
+        organization_id: organizationId,
+        ...filters
+    });
+
+    const response = await fetch(`/stakeholders/api/graph-data?${params}`);
+    const data = await response.json();
+
+    const container = document.getElementById('networkGraph');
+    const graphData = {
+        nodes: new vis.DataSet(data.nodes),
+        edges: new vis.DataSet(data.edges)
+    };
+
+    const options = {
+        nodes: {
+            shape: 'dot',
+            scaling: {
+                min: 10,
+                max: 50,
+                label: {
+                    enabled: true,
+                    min: 12,
+                    max: 20
+                }
+            },
+            font: {
+                size: 14,
+                face: 'Arial'
+            },
+            borderWidth: 2,
+            borderWidthSelected: 4
+        },
+        edges: {
+            arrows: {
+                to: {enabled: true, scaleFactor: 0.5}
+            },
+            smooth: {
+                type: 'continuous'
+            }
+        },
+        physics: {
+            enabled: true,
+            solver: 'forceAtlas2Based',
+            forceAtlas2Based: {
+                gravitationalConstant: -50,
+                centralGravity: 0.01,
+                springLength: 100,
+                springConstant: 0.08
+            },
+            stabilization: {
+                iterations: 150
+            }
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 100,
+            zoomView: true,
+            dragView: true
+        }
+    };
+
+    network = new vis.Network(container, graphData, options);
+    nodes = graphData.nodes;
+    edges = graphData.edges;
+
+    // Event handlers
+    network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            showStakeholderDetails(params.nodes[0]);
+        }
+    });
+
+    network.on('doubleClick', function(params) {
+        if (params.nodes.length > 0) {
+            window.location.href = `/stakeholders/${params.nodes[0]}/edit`;
+        }
+    });
+}
+
+function showStakeholderDetails(nodeId) {
+    const stakeholder = {{ stakeholders|tojson }}.find(s => s.id === nodeId);
+    if (!stakeholder) return;
+
+    document.getElementById('welcomePanel').style.display = 'none';
+    document.getElementById('detailsPanel').style.display = 'block';
+
+    const supportBadgeColors = {
+        'champion': '#28a745',
+        'supporter': '#6c757d',
+        'neutral': '#ffc107',
+        'skeptic': '#fd7e14',
+        'blocker': '#dc3545'
+    };
+
+    const relationships = {{ relationships|tojson }}.filter(r =>
+        r.from_stakeholder_id === nodeId || r.to_stakeholder_id === nodeId
+    );
+
+    let html = `
+        <h5>${stakeholder.name}</h5>
+        <p class="text-muted mb-2">${stakeholder.role || 'No role specified'}</p>
+
+        <div class="mb-3">
+            <span class="badge" style="background-color: ${supportBadgeColors[stakeholder.support_level]}">
+                ${stakeholder.support_level.charAt(0).toUpperCase() + stakeholder.support_level.slice(1)}
+            </span>
+        </div>
+
+        <div class="mb-2">
+            <strong>Department:</strong><br>
+            ${stakeholder.department || 'N/A'}
+        </div>
+
+        <div class="mb-2">
+            <strong>Email:</strong><br>
+            ${stakeholder.email ? '<a href="mailto:' + stakeholder.email + '">' + stakeholder.email + '</a>' : 'N/A'}
+        </div>
+
+        <div class="mb-2">
+            <strong>Influence:</strong><br>
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar" role="progressbar" style="width: ${stakeholder.influence_level}%">${stakeholder.influence_level}</div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <strong>Interest:</strong><br>
+            <div class="progress" style="height: 20px;">
+                <div class="progress-bar bg-info" role="progressbar" style="width: ${stakeholder.interest_level}%">${stakeholder.interest_level}</div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <strong>Relationships:</strong> ${relationships.length}
+        </div>
+
+        ${stakeholder.notes ? '<div class="mb-3"><strong>Notes:</strong><br><small>' + stakeholder.notes + '</small></div>' : ''}
+
+        <div class="d-grid gap-2">
+            <a href="/stakeholders/${nodeId}/edit" class="btn btn-primary btn-sm">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+        </div>
+    `;
+
+    document.getElementById('detailsContent').innerHTML = html;
+}
+
+function applyFilters() {
+    const filters = {
+        department: document.querySelector('select[name="department"]').value,
+        min_influence: document.getElementById('min_influence').value,
+        max_influence: document.getElementById('max_influence').value
+    };
+
+    // Get checked support levels
+    const checkedLevels = Array.from(document.querySelectorAll('.filter-check:checked')).map(cb => cb.value);
+    if (checkedLevels.length < 5) {
+        filters.support_level = checkedLevels.join(',');
+    }
+
+    loadGraph(filters);
+}
+
+function clearFilters() {
+    document.getElementById('filterForm').reset();
+    document.querySelectorAll('.filter-check').forEach(cb => cb.checked = true);
+    loadGraph();
+}
+
+function changeLayout() {
+    const layout = document.getElementById('layoutSelect').value;
+
+    let options = {};
+    if (layout === 'hierarchical') {
+        options = {
+            layout: {
+                hierarchical: {
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    levelSeparation: 150
+                }
+            },
+            physics: false
+        };
+    } else if (layout === 'circular') {
+        // Arrange in circle
+        const nodeIds = nodes.getIds();
+        const angleStep = (2 * Math.PI) / nodeIds.length;
+        const radius = 300;
+
+        nodeIds.forEach((id, index) => {
+            const angle = index * angleStep;
+            nodes.update({
+                id: id,
+                x: radius * Math.cos(angle),
+                y: radius * Math.sin(angle),
+                fixed: true
+            });
+        });
+
+        network.setOptions({physics: false});
+        return;
+    } else {
+        options = {
+            layout: {
+                hierarchical: false
+            },
+            physics: {
+                enabled: true,
+                solver: 'forceAtlas2Based'
+            }
+        };
+    }
+
+    network.setOptions(options);
+}
+
+document.getElementById('layoutSelect').addEventListener('change', changeLayout);
+
+async function savePositions() {
+    const positions = network.getPositions();
+
+    const response = await fetch('/stakeholders/api/save-positions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({positions: positions})
+    });
+
+    if (response.ok) {
+        alert('Positions saved successfully!');
+    } else {
+        alert('Failed to save positions');
+    }
+}
+
+function fitGraph() {
+    network.fit({
+        animation: {
+            duration: 1000,
+            easingFunction: 'easeInOutQuad'
+        }
+    });
+}
+
+function exportImage() {
+    const canvas = document.querySelector('#networkGraph canvas');
+    const link = document.createElement('a');
+    link.download = 'stakeholder-map-{{ organization.name }}.png';
+    link.href = canvas.toDataURL();
+    link.click();
+}
+</script>
+{% endblock %}

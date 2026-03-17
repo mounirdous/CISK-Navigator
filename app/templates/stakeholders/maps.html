@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Stakeholder Maps - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>Stakeholder Maps</h2>
+            <p class="text-muted">{{ organization.name }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('stakeholders.create_map', organization_id=organization.id) }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Create New Map
+            </a>
+            <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" class="btn btn-secondary">
+                <i class="bi bi-diagram-3"></i> Network View
+            </a>
+        </div>
+    </div>
+
+    {% if maps %}
+    <div class="row">
+        {% for map in maps %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ map.name }}</h5>
+                        {% if map.visibility == 'private' %}
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-lock"></i> Private
+                        </span>
+                        {% else %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-people"></i> Shared
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if map.description %}
+                    <p class="card-text text-muted small">{{ map.description }}</p>
+                    {% endif %}
+
+                    <div class="mt-3 mb-3">
+                        <span class="badge bg-info">
+                            {{ map.memberships.count() }} stakeholder{{ 's' if map.memberships.count() != 1 else '' }}
+                        </span>
+                    </div>
+
+                    <div class="btn-group w-100" role="group">
+                        <a href="{{ url_for('stakeholders.index', organization_id=organization.id, map_id=map.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-diagram-3"></i> View
+                        </a>
+                        <a href="{{ url_for('stakeholders.edit_map', id=map.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMap({{ map.id }}, '{{ map.name }}')">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="card-footer text-muted small">
+                    Created {{ map.created_at.strftime('%Y-%m-%d') }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <h5><i class="bi bi-info-circle"></i> No Maps Yet</h5>
+        <p>Create your first stakeholder map to organize and visualize groups of stakeholders.</p>
+        <p class="mb-0">
+            <strong>Ideas for maps:</strong> Executive Team, IT Department, Project Sponsors, Change Champions, External Partners
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<form id="deleteForm" method="POST" style="display: none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+</form>
+
+<script>
+function deleteMap(mapId, mapName) {
+    if (!confirm(`Are you sure you want to delete the map "${mapName}"?\n\nThis will remove the map but will NOT delete the stakeholders themselves.`)) {
+        return;
+    }
+
+    const form = document.getElementById('deleteForm');
+    form.action = `/stakeholders/maps/${mapId}/delete`;
+    form.submit();
+}
+</script>
+{% endblock %}

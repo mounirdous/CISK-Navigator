@@ -26,6 +26,8 @@ from .saved_chart import SavedChart
 from .saved_search import SavedSearch
 from .space import Space
 from .sso_config import SSOConfig
+from .stakeholder import Stakeholder, StakeholderEntityLink, StakeholderRelationship
+from .stakeholder_map import StakeholderMap, StakeholderMapMembership
 from .system import InitiativeSystemLink, System
 from .system_setting import SystemSetting
 from .user import User
@@ -73,4 +75,9 @@ __all__ = [
     "GeographySite",
     "KPIGeographyAssignment",
     "KPISiteAssignment",
+    "Stakeholder",
+    "StakeholderRelationship",
+    "StakeholderEntityLink",
+    "StakeholderMap",
+    "StakeholderMapMembership",
 ]

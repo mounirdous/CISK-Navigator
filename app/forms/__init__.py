@@ -13,6 +13,13 @@ from .organization_clone_forms import OrganizationCloneForm
 from .organization_forms import OrganizationCreateForm, OrganizationEditForm
 from .space_forms import SpaceCreateForm, SpaceEditForm
 from .sso_forms import OrganizationSSOConfigForm
+from .stakeholder_forms import (
+    StakeholderEntityLinkForm,
+    StakeholderFilterForm,
+    StakeholderForm,
+    StakeholderMapForm,
+    StakeholderRelationshipForm,
+)
 from .system_forms import SystemCreateForm, SystemEditForm
 from .user_forms import UserCreateForm, UserEditForm
 from .value_type_forms import ValueTypeCreateForm, ValueTypeEditForm
@@ -45,4 +52,9 @@ __all__ = [
     "OrganizationCloneForm",
     "OrganizationSSOConfigForm",
     "EmailConfigForm",
+    "StakeholderForm",
+    "StakeholderRelationshipForm",
+    "StakeholderEntityLinkForm",
+    "StakeholderFilterForm",
+    "StakeholderMapForm",
 ]

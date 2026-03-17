@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Create Stakeholder Map - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Create Stakeholder Map</h2>
+            <p class="text-muted">{{ organization.name }}</p>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+                        <input type="hidden" name="organization_id" value="{{ organization.id }}">
+
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
+                            {% endif %}
+                            <small class="form-text text-muted">{{ form.name.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=3) }}
+                            <small class="form-text text-muted">{{ form.description.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.visibility.label(class="form-label") }}
+                            {{ form.visibility(class="form-select") }}
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>What's a stakeholder map?</strong><br>
+                            A map is a named collection of stakeholders. You can create different maps for different purposes:
+                            <ul class="mb-0 mt-2">
+                                <li><strong>Executive Team</strong> - C-level executives and board members</li>
+                                <li><strong>IT Leadership</strong> - Technology decision makers</li>
+                                <li><strong>Project Sponsors</strong> - Key sponsors for a specific initiative</li>
+                                <li><strong>Change Champions</strong> - People driving organizational change</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Create Map</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

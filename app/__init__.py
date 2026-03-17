@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "2.5.28"
+__version__ = "2.6.0"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -76,6 +76,7 @@ def create_app(config_name=None):
         logo,
         map_dashboard,
         organization_admin,
+        stakeholders,
         super_admin,
         workspace,
     )
@@ -92,6 +93,7 @@ def create_app(config_name=None):
     app.register_blueprint(logo.bp)
     app.register_blueprint(entity_links.bp)
     app.register_blueprint(action_items.bp)  # Action items and memos
+    app.register_blueprint(stakeholders.bp)  # Stakeholder mapping
     app.register_blueprint(beta.bp)  # Beta feature prototypes
 
     # Register test error routes (REMOVE IN PRODUCTION)

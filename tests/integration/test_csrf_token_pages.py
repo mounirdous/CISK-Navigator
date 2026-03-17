@@ -244,6 +244,11 @@ class TestCSRFTokenAvailability:
         # Action Items & Memos
         "/toolbox/actions/",
         "/toolbox/actions/create",
+        # Stakeholder Mapping
+        "/stakeholders/list",
+        "/stakeholders/matrix",
+        "/stakeholders/maps",
+        "/stakeholders/maps/create",
     ],
 )
 class TestOrganizationRoutes:

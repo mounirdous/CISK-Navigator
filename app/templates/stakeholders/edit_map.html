@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Map - {{ stakeholder_map.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Edit Map: {{ stakeholder_map.name }}</h2>
+            <p class="text-muted">{{ organization.name }}</p>
+
+            <!-- Map Settings Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Map Settings</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=3) }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.visibility.label(class="form-label") }}
+                            {{ form.visibility(class="form-select") }}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary">Save Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Stakeholders in Map Card -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Stakeholders in Map ({{ map_stakeholders|length }})</h5>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStakeholderModal">
+                        <i class="bi bi-plus-circle"></i> Add Stakeholders
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% if map_stakeholders %}
+                    <div class="list-group">
+                        {% for stakeholder in map_stakeholders %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ stakeholder.name }}</strong>
+                                {% if stakeholder.role %}
+                                <br><small class="text-muted">{{ stakeholder.role }}</small>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-sm btn-danger" onclick="removeStakeholder({{ stakeholder.id }}, '{{ stakeholder.name }}')">
+                                <i class="bi bi-x-circle"></i> Remove
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No stakeholders in this map yet. Click "Add Stakeholders" to add some.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Maps
+                </a>
+                <a href="{{ url_for('stakeholders.index', organization_id=organization.id, map_id=stakeholder_map.id) }}" class="btn btn-primary">
+                    <i class="bi bi-diagram-3"></i> View Network
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stakeholders Modal -->
+<div class="modal fade" id="addStakeholderModal" tabindex="-1" aria-labelledby="addStakeholderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addStakeholderModalLabel">Add Stakeholders to Map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" id="stakeholderSearch" class="form-control" placeholder="Search stakeholders...">
+                </div>
+                <div class="list-group" id="availableStakeholdersList">
+                    {% for stakeholder in all_stakeholders %}
+                    {% if stakeholder.id not in map_stakeholder_ids %}
+                    <div class="list-group-item stakeholder-item" data-name="{{ stakeholder.name|lower }}" data-role="{{ (stakeholder.role or '')|lower }}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ stakeholder.name }}</strong>
+                                {% if stakeholder.role %}
+                                <br><small class="text-muted">{{ stakeholder.role }}</small>
+                                {% endif %}
+                            </div>
+                            <button class="btn btn-sm btn-success" onclick="addStakeholder({{ stakeholder.id }}, '{{ stakeholder.name }}')">
+                                <i class="bi bi-plus-circle"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const mapId = {{ stakeholder_map.id }};
+const csrfToken = '{{ csrf_token() }}';
+
+// Search functionality
+document.getElementById('stakeholderSearch').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.stakeholder-item');
+
+    items.forEach(item => {
+        const name = item.getAttribute('data-name');
+        const role = item.getAttribute('data-role');
+        const matches = name.includes(searchTerm) || role.includes(searchTerm);
+        item.style.display = matches ? '' : 'none';
+    });
+});
+
+async function addStakeholder(stakeholderId, stakeholderName) {
+    try {
+        const response = await fetch(`/stakeholders/maps/${mapId}/add-stakeholder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ stakeholder_id: stakeholderId })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to add stakeholder');
+        }
+
+        location.reload();
+    } catch (error) {
+        console.error('Error adding stakeholder:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+async function removeStakeholder(stakeholderId, stakeholderName) {
+    if (!confirm(`Remove "${stakeholderName}" from this map?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/stakeholders/maps/${mapId}/remove-stakeholder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ stakeholder_id: stakeholderId })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to remove stakeholder');
+        }
+
+        location.reload();
+    } catch (error) {
+        console.error('Error removing stakeholder:', error);
+        alert('Error: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Power/Interest Matrix - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h2>📊 Power/Interest Matrix</h2>
+            <p class="text-muted">{{ organization.name }} • Stakeholder Analysis</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-project-diagram"></i> Network Map
+            </a>
+            <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-list"></i> List View
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <div id="matrixChart" style="height: 600px; position: relative; background: #f8f9fa; border: 1px solid #dee2e6;">
+                        <!-- Matrix will be drawn here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Strategy Guide</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><span class="badge bg-danger">High Power / High Interest</span> Manage Closely</h6>
+                            <p class="small">Key players - engage closely and ensure satisfaction</p>
+
+                            <h6 class="mt-3"><span class="badge bg-warning">High Power / Low Interest</span> Keep Satisfied</h6>
+                            <p class="small">Powerful but not engaged - maintain their support</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><span class="badge bg-info">Low Power / High Interest</span> Keep Informed</h6>
+                            <p class="small">Interested but limited influence - keep them updated</p>
+
+                            <h6 class="mt-3"><span class="badge bg-secondary">Low Power / Low Interest</span> Monitor</h6>
+                            <p class="small">Minimal effort required - periodic updates only</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Sponsor Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <div id="sponsorRecommendations">
+                        <p class="text-muted">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Legend</h5>
+                </div>
+                <div class="card-body">
+                    <p class="small mb-2"><strong>Position:</strong></p>
+                    <ul class="small" style="list-style: none; padding-left: 0;">
+                        <li>X-axis: Power (Influence)</li>
+                        <li>Y-axis: Interest</li>
+                    </ul>
+                    <p class="small mb-2 mt-3"><strong>Colors:</strong></p>
+                    <ul class="small" style="list-style: none; padding-left: 0;">
+                        <li><span style="color: #28a745;">●</span> Champion</li>
+                        <li><span style="color: #6c757d;">●</span> Supporter</li>
+                        <li><span style="color: #ffc107;">●</span> Neutral</li>
+                        <li><span style="color: #fd7e14;">●</span> Skeptic</li>
+                        <li><span style="color: #dc3545;">●</span> Blocker</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const organizationId = {{ organization.id }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadMatrix();
+    loadSponsorRecommendations();
+});
+
+async function loadMatrix() {
+    const response = await fetch(`/stakeholders/api/power-interest-matrix?organization_id=${organizationId}`);
+    const data = await response.json();
+
+    const ctx = document.getElementById('matrixChart');
+    const colorMap = {
+        'champion': '#28a745',
+        'supporter': '#6c757d',
+        'neutral': '#ffc107',
+        'skeptic': '#fd7e14',
+        'blocker': '#dc3545'
+    };
+
+    // Group by support level for different datasets
+    const datasets = {};
+    data.forEach(s => {
+        if (!datasets[s.support]) {
+            datasets[s.support] = {
+                label: s.support.charAt(0).toUpperCase() + s.support.slice(1),
+                data: [],
+                backgroundColor: colorMap[s.support],
+                borderColor: colorMap[s.support],
+                borderWidth: 2,
+                pointRadius: 8,
+                pointHoverRadius: 12
+            };
+        }
+        datasets[s.support].data.push({
+            x: s.power,
+            y: s.interest,
+            name: s.name,
+            role: s.role,
+            department: s.department
+        });
+    });
+
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: Object.values(datasets)
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    min: 0,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Power (Influence) →',
+                        font: {size: 16}
+                    },
+                    grid: {
+                        color: '#dee2e6'
+                    }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Interest →',
+                        font: {size: 16}
+                    },
+                    grid: {
+                        color: '#dee2e6'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = context.raw;
+                            return [
+                                point.name,
+                                point.role || '',
+                                point.department || '',
+                                `Power: ${point.x}`,
+                                `Interest: ${point.y}`
+                            ];
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        line1: {
+                            type: 'line',
+                            xMin: 50,
+                            xMax: 50,
+                            borderColor: '#6c757d',
+                            borderWidth: 2,
+                            borderDash: [5, 5]
+                        },
+                        line2: {
+                            type: 'line',
+                            yMin: 50,
+                            yMax: 50,
+                            borderColor: '#6c757d',
+                            borderWidth: 2,
+                            borderDash: [5, 5]
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Draw quadrant labels manually
+    drawQuadrantLabels();
+}
+
+function drawQuadrantLabels() {
+    const canvas = document.getElementById('matrixChart');
+    const labels = [
+        {text: 'MANAGE CLOSELY', x: '75%', y: '25%', color: '#dc3545'},
+        {text: 'KEEP SATISFIED', x: '75%', y: '75%', color: '#ffc107'},
+        {text: 'KEEP INFORMED', x: '25%', y: '25%', color: '#17a2b8'},
+        {text: 'MONITOR', x: '25%', y: '75%', color: '#6c757d'}
+    ];
+
+    labels.forEach(label => {
+        const div = document.createElement('div');
+        div.style.position = 'absolute';
+        div.style.left = label.x;
+        div.style.top = label.y;
+        div.style.transform = 'translate(-50%, -50%)';
+        div.style.color = label.color;
+        div.style.fontWeight = 'bold';
+        div.style.fontSize = '14px';
+        div.style.opacity = '0.3';
+        div.style.pointerEvents = 'none';
+        div.textContent = label.text;
+        canvas.parentElement.appendChild(div);
+    });
+}
+
+async function loadSponsorRecommendations() {
+    const response = await fetch(`/stakeholders/api/sponsor-recommendations?organization_id=${organizationId}`);
+    const recommendations = await response.json();
+
+    let html = '';
+    if (recommendations.length === 0) {
+        html = '<p class="text-muted small">No high-influence champions found</p>';
+    } else {
+        html = '<p class="small mb-2">Top potential sponsors:</p>';
+        recommendations.slice(0, 5).forEach((rec, idx) => {
+            html += `
+                <div class="mb-2 p-2 border rounded">
+                    <strong class="small">${idx + 1}. ${rec.name}</strong><br>
+                    <small class="text-muted">${rec.role || ''}</small><br>
+                    <small>
+                        <span class="badge bg-primary">Influence: ${rec.influence_level}</span>
+                        <span class="badge bg-success">${rec.support_level}</span>
+                    </small>
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('sponsorRecommendations').innerHTML = html;
+}
+</script>
+{% endblock %}

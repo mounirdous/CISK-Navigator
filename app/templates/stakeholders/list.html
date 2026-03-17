@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Stakeholders - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <h2>👥 Stakeholders</h2>
+            <p class="text-muted">{{ organization.name }} • {{ stakeholders|length }} stakeholders</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" class="btn btn-outline-primary">
+                <i class="fas fa-project-diagram"></i> Network Map
+            </a>
+            <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Stakeholder
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Department</th>
+                        <th>Influence</th>
+                        <th>Support</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stakeholder in stakeholders %}
+                    <tr>
+                        <td>
+                            <strong>{{ stakeholder.name }}</strong><br>
+                            {% if stakeholder.email %}
+                            <small class="text-muted">{{ stakeholder.email }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ stakeholder.role or '-' }}</td>
+                        <td>{{ stakeholder.department or '-' }}</td>
+                        <td>
+                            <div class="progress" style="height: 20px; min-width: 60px;">
+                                <div class="progress-bar" role="progressbar" style="width: {{ stakeholder.influence_level }}%">
+                                    {{ stakeholder.influence_level }}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% set colors = {'champion': '#28a745', 'supporter': '#6c757d', 'neutral': '#ffc107', 'skeptic': '#fd7e14', 'blocker': '#dc3545'} %}
+                            <span class="badge" style="background-color: {{ colors[stakeholder.support_level] }}">
+                                {{ stakeholder.support_level.capitalize() }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('stakeholders.edit', id=stakeholder.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('stakeholders.delete', id=stakeholder.id) }}" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this stakeholder?')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            No stakeholders yet. <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}">Add one</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

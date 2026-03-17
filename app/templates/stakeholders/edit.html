@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Stakeholder - {{ stakeholder.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Edit Stakeholder</h2>
+            <p class="text-muted">{{ organization.name }}</p>
+
+            <div class="card">
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.role.label(class="form-label") }}
+                                {{ form.role(class="form-control") }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.department.label(class="form-label") }}
+                                {{ form.department(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback">{{ form.email.errors[0] }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                {{ form.influence_level.label(class="form-label") }}
+                                <input type="range" class="form-range" id="influenceRange" min="1" max="100" value="{{ stakeholder.influence_level }}" oninput="document.getElementById('influence_level').value = this.value; document.getElementById('influenceValue').innerText = this.value">
+                                {{ form.influence_level(class="form-control", id="influence_level", readonly=True) }}
+                                <small class="text-muted">Current: <span id="influenceValue">{{ stakeholder.influence_level }}</span> (1=Low, 100=High)</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                {{ form.interest_level.label(class="form-label") }}
+                                <input type="range" class="form-range" id="interestRange" min="1" max="100" value="{{ stakeholder.interest_level }}" oninput="document.getElementById('interest_level').value = this.value; document.getElementById('interestValue').innerText = this.value">
+                                {{ form.interest_level(class="form-control", id="interest_level", readonly=True) }}
+                                <small class="text-muted">Current: <span id="interestValue">{{ stakeholder.interest_level }}</span> (1=Low, 100=High)</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.support_level.label(class="form-label") }}
+                            {{ form.support_level(class="form-select") }}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.visibility.label(class="form-label") }}
+                            {{ form.visibility(class="form-select") }}
+                            <small class="text-muted">Choose who can see this stakeholder in the network map</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows=4) }}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('stakeholders.index', organization_id=stakeholder.organization_id) }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Linked Entities Section -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Linked Entities</h5>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#linkEntityModal">
+                        <i class="bi bi-plus-circle"></i> Link Entity
+                    </button>
+                </div>
+                <div class="card-body">
+                    {% set linked = stakeholder.get_linked_entities() %}
+                    {% if linked.challenge or linked.initiative or linked.system or linked.kpi %}
+                        <div class="row">
+                            {% if linked.challenge %}
+                            <div class="col-md-6 mb-3">
+                                <h6>Challenges</h6>
+                                <ul class="list-group">
+                                    {% for item in linked.challenge %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ item.entity.name }}</span>
+                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('challenge', {{ item.entity.id }})">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
+                            {% if linked.initiative %}
+                            <div class="col-md-6 mb-3">
+                                <h6>Initiatives</h6>
+                                <ul class="list-group">
+                                    {% for item in linked.initiative %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ item.entity.name }}</span>
+                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('initiative', {{ item.entity.id }})">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
+                            {% if linked.system %}
+                            <div class="col-md-6 mb-3">
+                                <h6>Systems</h6>
+                                <ul class="list-group">
+                                    {% for item in linked.system %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ item.entity.name }}</span>
+                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('system', {{ item.entity.id }})">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+
+                            {% if linked.kpi %}
+                            <div class="col-md-6 mb-3">
+                                <h6>KPIs</h6>
+                                <ul class="list-group">
+                                    {% for item in linked.kpi %}
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span>{{ item.entity.name }}</span>
+                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('kpi', {{ item.entity.id }})">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">No linked entities yet. Click "Link Entity" to connect this stakeholder to challenges, initiatives, systems, or KPIs.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Relationships Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Relationships</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        View and manage relationships on the <a href="{{ url_for('stakeholders.index', organization_id=stakeholder.organization_id) }}">Network Map</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Link Entity Modal -->
+<div class="modal fade" id="linkEntityModal" tabindex="-1" aria-labelledby="linkEntityModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="linkEntityModalLabel">Link Entity to Stakeholder</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="linkEntityForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+
+                    <div class="mb-3">
+                        <label for="entityType" class="form-label">Entity Type</label>
+                        <select class="form-select" id="entityType" name="entity_type" required onchange="loadEntities()">
+                            <option value="">Select type...</option>
+                            <option value="challenge">Challenge</option>
+                            <option value="initiative">Initiative</option>
+                            <option value="system">System</option>
+                            <option value="kpi">KPI</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="entityId" class="form-label">Entity</label>
+                        <select class="form-select" id="entityId" name="entity_id" required disabled>
+                            <option value="">Select entity type first...</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="interestLevel" class="form-label">Interest Level</label>
+                            <select class="form-select" id="interestLevel" name="interest_level">
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="impactLevel" class="form-label">Impact Level</label>
+                            <select class="form-select" id="impactLevel" name="impact_level">
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitLink()">Link Entity</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const stakeholderId = {{ stakeholder.id }};
+const organizationId = {{ stakeholder.organization_id }};
+
+async function loadEntities() {
+    const entityType = document.getElementById('entityType').value;
+    const entitySelect = document.getElementById('entityId');
+
+    if (!entityType) {
+        entitySelect.disabled = true;
+        entitySelect.innerHTML = '<option value="">Select entity type first...</option>';
+        return;
+    }
+
+    entitySelect.disabled = true;
+    entitySelect.innerHTML = '<option value="">Loading...</option>';
+
+    try {
+        const response = await fetch(`/stakeholders/api/entities/${entityType}?organization_id=${organizationId}`);
+        if (!response.ok) throw new Error('Failed to load entities');
+
+        const entities = await response.json();
+
+        if (entities.length === 0) {
+            entitySelect.innerHTML = '<option value="">No entities found</option>';
+        } else {
+            entitySelect.innerHTML = '<option value="">Select entity...</option>' +
+                entities.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
+            entitySelect.disabled = false;
+        }
+    } catch (error) {
+        console.error('Error loading entities:', error);
+        entitySelect.innerHTML = '<option value="">Error loading entities</option>';
+    }
+}
+
+async function submitLink() {
+    const form = document.getElementById('linkEntityForm');
+    const formData = new FormData(form);
+
+    const entityType = formData.get('entity_type');
+    const entityId = formData.get('entity_id');
+    const interestLevel = formData.get('interest_level');
+    const impactLevel = formData.get('impact_level');
+    const csrfToken = formData.get('csrf_token');
+
+    if (!entityType || !entityId) {
+        alert('Please select both entity type and entity');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/stakeholders/${stakeholderId}/link-entity`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                entity_type: entityType,
+                entity_id: parseInt(entityId),
+                interest_level: interestLevel,
+                impact_level: impactLevel
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to link entity');
+        }
+
+        // Close modal and reload page
+        const modal = bootstrap.Modal.getInstance(document.getElementById('linkEntityModal'));
+        modal.hide();
+        location.reload();
+    } catch (error) {
+        console.error('Error linking entity:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
+async function unlinkEntity(entityType, entityId) {
+    if (!confirm('Are you sure you want to unlink this entity?')) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
+    try {
+        const response = await fetch(`/stakeholders/${stakeholderId}/unlink-entity`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                entity_type: entityType,
+                entity_id: entityId
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to unlink entity');
+        }
+
+        location.reload();
+    } catch (error) {
+        console.error('Error unlinking entity:', error);
+        alert('Error: ' + error.message);
+    }
+}
+</script>
+{% endblock %}
