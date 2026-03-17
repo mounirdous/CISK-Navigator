@@ -65,10 +65,16 @@ class SearchService:
         if filters is None:
             filters = {}
 
-        # Determine which entity types to search
-        entity_types = filters.get(
-            "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments"]
-        )
+        # For @requires_action, only search entity types with action items
+        modifiers = parsed["modifiers"]
+        if "requires_action" in modifiers:
+            # Only search entities that have action item criteria
+            entity_types = ["kpis", "systems", "initiatives", "spaces"]
+        else:
+            # Determine which entity types to search
+            entity_types = filters.get(
+                "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments"]
+            )
 
         results = {
             "kpis": [],

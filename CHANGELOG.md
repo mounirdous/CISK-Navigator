@@ -5,6 +5,40 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.22] - 2026-03-17
+
+### Fixed - @requires_action still returning 39 instead of 29
+**Issue**: @requires_action was searching ALL entity types, including those without action criteria
+
+**Root Cause**:
+- v2.5.21 fixed OR logic but still searched 7 entity types
+- Searched: KPIs, Systems, Initiatives, Challenges, Spaces, Value Types, Comments
+- But only 4 entity types have action criteria:
+  - ✅ Initiatives (no_consensus OR incomplete)
+  - ✅ Spaces (incomplete SWOT)
+  - ✅ Systems (missing KPIs)
+  - ✅ KPIs (missing governance)
+- Challenges, Value Types, Comments have NO action criteria but were included!
+
+**The Fix**: Restrict @requires_action to only search entity types with action criteria
+```python
+# For @requires_action, only search entity types with action items
+if "requires_action" in modifiers:
+    entity_types = ["kpis", "systems", "initiatives", "spaces"]  # Only 4 types
+else:
+    entity_types = ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments"]  # All 7 types
+```
+
+**Result**: @requires_action now returns exactly 29 items (matches Action Items page)
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Added entity type filtering for @requires_action
+  - Restricts search to only 4 relevant entity types
+- `app/__init__.py` - Version bump to 2.5.22
+
+---
+
 ## [2.5.21] - 2026-03-17
 
 ### Fixed - @requires_action count mismatch (was 34, should be 29)
