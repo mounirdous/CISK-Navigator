@@ -17,13 +17,23 @@ depends_on = None
 
 
 def upgrade():
-    # Create enum type for comment entity mentions (if not exists)
-    op.execute(
-        "DO $$ BEGIN "
-        "CREATE TYPE comment_entity_mention_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi'); "
-        "EXCEPTION WHEN duplicate_object THEN null; "
-        "END $$;"
-    )
+    # Check if table already exists - if so, skip this migration
+    from sqlalchemy import inspect
+
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names()
+
+    if "comment_entity_mentions" in existing_tables:
+        # Migration already applied, skip
+        return
+
+    # Create enum type only if it doesn't exist
+    result = bind.execute(sa.text("SELECT 1 FROM pg_type WHERE typname = 'comment_entity_mention_type'"))
+    if result.fetchone() is None:
+        op.execute(
+            "CREATE TYPE comment_entity_mention_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')"
+        )
 
     # Create comment_entity_mentions table
     op.create_table(
