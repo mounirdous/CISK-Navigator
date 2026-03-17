@@ -212,7 +212,7 @@
 
         <!-- Graph Canvas -->
         <div class="col-md-6">
-            <div class="card shadow-sm">
+            <div class="card shadow-sm" id="networkCard">
                 <div class="card-header bg-white border-0 pb-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
@@ -223,9 +223,14 @@
                                 {% endif %}
                             </h6>
                         </div>
-                        <div class="text-muted small">
-                            <i class="bi bi-circle-fill text-success"></i> {{ stakeholders|length }} nodes
-                            <i class="bi bi-arrow-right-circle ms-2"></i> {{ relationships|length }} edges
+                        <div class="d-flex align-items-center gap-2">
+                            <button class="btn btn-sm btn-outline-primary" onclick="toggleFullscreen()" title="Fullscreen" id="fullscreenBtn">
+                                <i class="bi bi-arrows-fullscreen"></i>
+                            </button>
+                            <div class="text-muted small">
+                                <i class="bi bi-circle-fill text-success"></i> {{ stakeholders|length }} nodes
+                                <i class="bi bi-arrow-right-circle ms-2"></i> {{ relationships|length }} edges
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -237,6 +242,9 @@
                     <strong>Double-click</strong> to edit •
                     <strong>Drag</strong> to move •
                     <strong>Scroll</strong> to zoom
+                    <span id="fullscreenHint" style="display: none;">
+                        • <strong>ESC</strong> to exit fullscreen
+                    </span>
                 </div>
             </div>
         </div>
@@ -705,5 +713,130 @@ async function submitRelationship() {
         alert('Error: ' + error.message);
     }
 }
+
+// Fullscreen functionality
+function toggleFullscreen() {
+    const card = document.getElementById('networkCard');
+
+    if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (card.requestFullscreen) {
+            card.requestFullscreen();
+        } else if (card.webkitRequestFullscreen) { // Safari
+            card.webkitRequestFullscreen();
+        } else if (card.msRequestFullscreen) { // IE11
+            card.msRequestFullscreen();
+        }
+    } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { // Safari
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { // IE11
+            document.msExitFullscreen();
+        }
+    }
+}
+
+// Listen for fullscreen changes
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange); // Safari
+document.addEventListener('msfullscreenchange', handleFullscreenChange); // IE11
+
+function handleFullscreenChange() {
+    const card = document.getElementById('networkCard');
+    const btn = document.getElementById('fullscreenBtn');
+    const hint = document.getElementById('fullscreenHint');
+    const graph = document.getElementById('networkGraph');
+
+    if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+        // Entered fullscreen
+        card.classList.add('fullscreen-active');
+        btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+        btn.title = 'Exit Fullscreen';
+        hint.style.display = 'inline';
+        graph.style.height = 'calc(100vh - 120px)'; // Adjust for header/footer
+
+        // Resize network to fit new dimensions
+        if (network) {
+            setTimeout(() => {
+                network.fit();
+                network.redraw();
+            }, 100);
+        }
+    } else {
+        // Exited fullscreen
+        card.classList.remove('fullscreen-active');
+        btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+        btn.title = 'Fullscreen';
+        hint.style.display = 'none';
+        graph.style.height = '700px';
+
+        // Resize network back to normal
+        if (network) {
+            setTimeout(() => {
+                network.fit();
+                network.redraw();
+            }, 100);
+        }
+    }
+}
+
+// Keyboard shortcut: F for fullscreen
+document.addEventListener('keydown', function(e) {
+    // Only if not in an input field
+    if (e.key === 'f' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+        e.preventDefault();
+        toggleFullscreen();
+    }
+});
 </script>
+
+<style>
+/* Fullscreen styles */
+#networkCard.fullscreen-active {
+    background: #fff;
+    z-index: 9999;
+}
+
+#networkCard.fullscreen-active .card-body {
+    height: calc(100vh - 120px);
+}
+
+#networkCard.fullscreen-active #networkGraph {
+    height: 100% !important;
+}
+
+/* Better visibility in fullscreen */
+#networkCard:fullscreen {
+    display: flex;
+    flex-direction: column;
+}
+
+#networkCard:fullscreen .card-body {
+    flex: 1;
+}
+
+/* Webkit (Safari) fullscreen */
+#networkCard:-webkit-full-screen {
+    display: flex;
+    flex-direction: column;
+}
+
+#networkCard:-webkit-full-screen .card-body {
+    flex: 1;
+}
+
+/* MS fullscreen */
+#networkCard:-ms-fullscreen {
+    display: flex;
+    flex-direction: column;
+}
+
+#networkCard:-ms-fullscreen .card-body {
+    flex: 1;
+}
+</style>
+
 {% endblock %}
