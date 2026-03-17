@@ -64,7 +64,7 @@ def index():
         total_kpis_with_geography=total_kpis_with_geography,
         map_color_with_kpis=map_color_with_kpis,
         map_color_no_kpis=map_color_no_kpis,
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -180,7 +180,7 @@ def create_region():
         form=form,
         organization=organization,
         title="Create Region",
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -222,7 +222,7 @@ def edit_region(region_id):
         organization=organization,
         region=region,
         title="Edit Region",
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -318,7 +318,7 @@ def create_country():
         form=form,
         organization=organization,
         title="Create Country",
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -384,7 +384,7 @@ def edit_country(country_id):
         organization=organization,
         country=country,
         title="Edit Country",
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -489,7 +489,7 @@ def create_site():
         form=form,
         organization=organization,
         title="Create Site",
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -564,7 +564,7 @@ def edit_site(site_id):
         organization=organization,
         site=site,
         title="Edit Site",
-        csrf_token=generate_csrf(),
+        csrf_token=generate_csrf,
     )
 
 
@@ -664,11 +664,7 @@ def api_countries_json():
     """Return all countries (with or without KPI assignments) as GeoJSON for map display"""
     org_id = session.get("organization_id")
 
-    countries = (
-        GeographyCountry.query.join(GeographyRegion)
-        .filter(GeographyRegion.organization_id == org_id)
-        .all()
-    )
+    countries = GeographyCountry.query.join(GeographyRegion).filter(GeographyRegion.organization_id == org_id).all()
 
     features = []
     for country in countries:
@@ -714,8 +710,9 @@ def api_countries_json():
 @organization_required
 def api_map_kpis():
     """Return all KPIs with their geographic locations and latest values for map display"""
-    from app.models import KPI, InitiativeSystemLink, Initiative
     from sqlalchemy import desc
+
+    from app.models import KPI, Initiative, InitiativeSystemLink
 
     org_id = session.get("organization_id")
 
@@ -761,7 +758,9 @@ def api_map_kpis():
             if lat and lon:
                 # Get primary value type config for unit and target
                 primary_config = kpi.value_type_configs[0] if kpi.value_type_configs else None
-                unit_label = primary_config.value_type.unit_label if primary_config and primary_config.value_type else None
+                unit_label = (
+                    primary_config.value_type.unit_label if primary_config and primary_config.value_type else None
+                )
                 target_value = primary_config.target_value if primary_config else None
 
                 features.append(
@@ -774,7 +773,9 @@ def api_map_kpis():
                             "kpi_code": f"KPI-{kpi.id}",  # KPI model has no code field
                             "location_name": location_name,
                             "location_type": location_type,
-                            "value": str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value else "No data",
+                            "value": (
+                                str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value else "No data"
+                            ),
                             "period": latest_snapshot.period.strftime("%Y-%m") if latest_snapshot else None,
                             "target": str(target_value) if target_value else None,
                             "unit": unit_label,

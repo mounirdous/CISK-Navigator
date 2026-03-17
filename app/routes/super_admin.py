@@ -65,7 +65,7 @@ def index():
 def settings():
     """View and manage all system settings"""
     settings_grouped = SystemSetting.get_all_settings_grouped()
-    return render_template("super_admin/settings.html", settings_grouped=settings_grouped)
+    return render_template("super_admin/settings.html", settings_grouped=settings_grouped, csrf_token=generate_csrf)
 
 
 @bp.route("/settings/<category>")
@@ -73,7 +73,9 @@ def settings():
 def settings_category(category):
     """View settings for a specific category"""
     settings = SystemSetting.get_settings_by_category(category)
-    return render_template("super_admin/settings_category.html", category=category, settings=settings)
+    return render_template(
+        "super_admin/settings_category.html", category=category, settings=settings, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/settings/update", methods=["POST"])
@@ -116,6 +118,7 @@ def sso_settings():
         sso_enabled=sso_enabled,
         sso_provider=sso_provider,
         sso_auto_provision=sso_auto_provision,
+        csrf_token=generate_csrf,
     )
 
 
@@ -150,7 +153,10 @@ def security_settings():
     session_timeout = SystemSetting.get_session_timeout()
 
     return render_template(
-        "super_admin/security_settings.html", security_settings=security_settings, session_timeout=session_timeout
+        "super_admin/security_settings.html",
+        security_settings=security_settings,
+        session_timeout=session_timeout,
+        csrf_token=generate_csrf,
     )
 
 
@@ -160,7 +166,9 @@ def maintenance_settings():
     """Maintenance mode settings"""
     maintenance_mode = SystemSetting.is_maintenance_mode()
 
-    return render_template("super_admin/maintenance_settings.html", maintenance_mode=maintenance_mode)
+    return render_template(
+        "super_admin/maintenance_settings.html", maintenance_mode=maintenance_mode, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/settings/maintenance/toggle", methods=["POST"])
@@ -237,7 +245,9 @@ def users():
 
     all_users = query.order_by(User.is_super_admin.desc(), User.is_global_admin.desc(), User.login).all()
 
-    return render_template("super_admin/users.html", users=all_users, current_role_filter=role_filter)
+    return render_template(
+        "super_admin/users.html", users=all_users, current_role_filter=role_filter, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/logs")
@@ -297,6 +307,7 @@ def logs():
             "search": search_query,
             "limit": limit,
         },
+        csrf_token=generate_csrf,
     )
 
 
@@ -311,7 +322,7 @@ def health():
         "settings": SystemSetting.query.count(),
     }
 
-    return render_template("super_admin/health.html", health_status=health_status)
+    return render_template("super_admin/health.html", health_status=health_status, csrf_token=generate_csrf)
 
 
 @bp.route("/settings/sso/config", methods=["GET", "POST"])
@@ -389,7 +400,7 @@ def sso_config():
             form.default_can_view_comments.data = config.default_permissions.get("can_view_comments", True)
             form.default_can_add_comments.data = config.default_permissions.get("can_add_comments", False)
 
-    return render_template("super_admin/sso_config.html", form=form, config=config)
+    return render_template("super_admin/sso_config.html", form=form, config=config, csrf_token=generate_csrf)
 
 
 @bp.route("/users/pending")
@@ -413,7 +424,9 @@ def pending_users():
     # Get all organizations for the assignment form
     organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
 
-    return render_template("super_admin/pending_users.html", pending_users=pending, organizations=organizations)
+    return render_template(
+        "super_admin/pending_users.html", pending_users=pending, organizations=organizations, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/users/<int:user_id>/assign-organization", methods=["POST"])
@@ -554,7 +567,9 @@ def linked_kpis():
         "unique_orgs": unique_orgs,
     }
 
-    return render_template("super_admin/linked_kpis.html", linked_data=linked_data, stats=stats)
+    return render_template(
+        "super_admin/linked_kpis.html", linked_data=linked_data, stats=stats, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/backup")
@@ -562,7 +577,7 @@ def linked_kpis():
 def backup():
     """Backup and restore page"""
     organizations = Organization.query.order_by(Organization.name).all()
-    return render_template("super_admin/backup.html", organizations=organizations)
+    return render_template("super_admin/backup.html", organizations=organizations, csrf_token=generate_csrf)
 
 
 @bp.route("/backup/create/<path:org_id>")
@@ -695,6 +710,7 @@ def restore_backup():
             existing_users=existing_users,
             target_org=target_org,
             backup_base64=backup_base64,
+            csrf_token=generate_csrf,
         )
 
     except json.JSONDecodeError:
@@ -916,6 +932,7 @@ def restore_full_instance():
             existing_users=all_existing_users,
             org_count=org_count,
             zip_base64=zip_base64,
+            csrf_token=generate_csrf,
         )
 
     except zipfile.BadZipFile:
@@ -1111,7 +1128,9 @@ def list_announcements():
 
         announcement_stats.append(stats)
 
-    return render_template("super_admin/announcements/list.html", announcement_stats=announcement_stats)
+    return render_template(
+        "super_admin/announcements/list.html", announcement_stats=announcement_stats, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/announcements/create", methods=["GET", "POST"])
@@ -1163,7 +1182,7 @@ def create_announcement():
         flash(f"Announcement '{announcement.title}' created successfully", "success")
         return redirect(url_for("super_admin.list_announcements"))
 
-    return render_template("super_admin/announcements/create.html", form=form)
+    return render_template("super_admin/announcements/create.html", form=form, csrf_token=generate_csrf)
 
 
 @bp.route("/announcements/<int:announcement_id>/edit", methods=["GET", "POST"])
@@ -1217,7 +1236,9 @@ def edit_announcement(announcement_id):
         flash(f"Announcement '{announcement.title}' updated successfully", "success")
         return redirect(url_for("super_admin.list_announcements"))
 
-    return render_template("super_admin/announcements/edit.html", form=form, announcement=announcement)
+    return render_template(
+        "super_admin/announcements/edit.html", form=form, announcement=announcement, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/announcements/<int:announcement_id>/delete", methods=["POST"])
@@ -1296,6 +1317,7 @@ def announcement_stats(announcement_id):
         acknowledgments=acknowledgments,
         not_acknowledged=not_acknowledged,
         stats=stats,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1338,6 +1360,7 @@ def documentation():
         concept_count=concept_stats,
         ui_audit_exists=ui_audit.exists(),
         index_content=index_content,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1355,7 +1378,9 @@ def documentation_journey(role):
     with open(file_path, "r") as f:
         journey_data = yaml.safe_load(f)
 
-    return render_template("super_admin/documentation/journey.html", role=role, journey_data=journey_data)
+    return render_template(
+        "super_admin/documentation/journey.html", role=role, journey_data=journey_data, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/documentation/concept/<concept>")
@@ -1372,7 +1397,9 @@ def documentation_concept(concept):
     with open(file_path, "r") as f:
         concept_data = yaml.safe_load(f)
 
-    return render_template("super_admin/documentation/concept.html", concept=concept, concept_data=concept_data)
+    return render_template(
+        "super_admin/documentation/concept.html", concept=concept, concept_data=concept_data, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/documentation/ui-audit")
@@ -1388,7 +1415,7 @@ def documentation_ui_audit():
     with open(docs_path, "r") as f:
         audit_data = yaml.safe_load(f)
 
-    return render_template("super_admin/documentation/ui_audit.html", audit_data=audit_data)
+    return render_template("super_admin/documentation/ui_audit.html", audit_data=audit_data, csrf_token=generate_csrf)
 
 
 @bp.route("/documentation/analysis")
@@ -1404,7 +1431,9 @@ def documentation_analysis():
     with open(docs_path, "r") as f:
         analysis_content = f.read()
 
-    return render_template("super_admin/documentation/analysis.html", analysis_content=analysis_content)
+    return render_template(
+        "super_admin/documentation/analysis.html", analysis_content=analysis_content, csrf_token=generate_csrf
+    )
 
 
 # ============================================================================
