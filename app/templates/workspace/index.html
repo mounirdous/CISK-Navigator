@@ -3701,6 +3701,11 @@ function workspaceV2(orgId, filterPresets) {
             // Read filters from URL params (when loading a preset)
             const urlParams = new URLSearchParams(window.location.search);
 
+            // Check if arriving from entity mention link (e.g., from comments)
+            const fromEntityLink = urlParams.has('space_id') || urlParams.has('challenge_id') ||
+                                   urlParams.has('initiative_id') || urlParams.has('system_id') ||
+                                   urlParams.has('kpi_id');
+
             if (urlParams.has('spaceTypeFilter')) {
                 this.spaceTypeFilter = urlParams.get('spaceTypeFilter');
             }
@@ -3715,6 +3720,14 @@ function workspaceV2(orgId, filterPresets) {
                 this.selectedSpaces = spaceParams.map(id => parseInt(id));
             }
 
+            // Handle entity mention links (convert entity_id params to selectedSpaces filter)
+            if (urlParams.has('space_id')) {
+                const spaceId = parseInt(urlParams.get('space_id'));
+                if (spaceId && !this.selectedSpaces.includes(spaceId)) {
+                    this.selectedSpaces.push(spaceId);
+                }
+            }
+
             const groupParams = urlParams.getAll('selectedGroups');
             if (groupParams.length > 0) {
                 this.selectedGroups = groupParams;
@@ -3725,8 +3738,8 @@ function workspaceV2(orgId, filterPresets) {
                 this.selectedImpactLevels = impactParams;
             }
 
-            // Expand filters if any were loaded from URL
-            if (urlParams.toString()) {
+            // Expand filters if any were loaded from URL (but NOT for entity mention links)
+            if (urlParams.toString() && !fromEntityLink) {
                 this.filtersExpanded = true;
             }
 
