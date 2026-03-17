@@ -27,7 +27,6 @@ class SearchService:
     FUZZY_THRESHOLD = 0.6
 
     # Search modifiers
-    MODIFIER_AT_RISK = "@risk"
     MODIFIER_INCOMPLETE = "@incomplete"
     MODIFIER_NO_CONSENSUS = "@no_consensus"
     MODIFIER_ARCHIVED = "@archived"
@@ -114,7 +113,7 @@ class SearchService:
         Parse search query for operators, modifiers, and clean text.
 
         Supports:
-        - Modifiers: @risk, @incomplete, @no_consensus, @archived
+        - Modifiers: @incomplete, @no_consensus, @archived
         - Date operators: updated:last_week, updated:last_month, updated:today
         - Numeric operators: value>100, value<50, value=25
         - Ranges: value:10-20
@@ -132,7 +131,7 @@ class SearchService:
             "date_filters": {},
         }
 
-        # Extract modifiers (@risk, @incomplete, etc.)
+        # Extract modifiers (@incomplete, @no_consensus, @archived)
         modifiers = re.findall(r"@(\w+)", query)
         result["modifiers"] = modifiers
 

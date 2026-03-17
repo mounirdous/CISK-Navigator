@@ -5,6 +5,34 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.19] - 2026-03-17
+
+### Removed - @risk Search Modifier
+**Change**: Removed @risk modifier from search (never worked, no database field)
+
+**Why**: @risk modifier was listed but never implemented:
+- No "at_risk" field exists in database
+- Cannot filter by risk status (would need complex KPI threshold logic)
+- Misleading to users - showed in UI but did nothing
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Removed `MODIFIER_AT_RISK = "@risk"` constant
+  - Updated docstrings to remove @risk references
+- `app/templates/base.html`:
+  - Removed @risk from search input title
+  - Removed @risk badge from search hints dropdown
+- `app/__init__.py` - Version bump to 2.5.19
+
+**Working Modifiers**:
+- ✅ `@incomplete` - Initiatives/Spaces with incomplete forms/SWOT
+- ✅ `@no_consensus` - Initiatives without consensus on impact
+- ✅ `@archived` - Archived KPIs
+
+**Note**: "At Risk" still appears in Executive Dashboard (different feature, based on KPI thresholds).
+
+---
+
 ## [2.5.18] - 2026-03-16
 
 ### Reverted - Live Search on Search Results Page (Bad UX)
