@@ -5,6 +5,97 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.20] - 2026-03-17
+
+### Added - Action Items Search Modifiers (@requires_action)
+**Feature**: New search modifiers to find items requiring attention
+
+**What's New**:
+- ✅ **@requires_action** - Umbrella modifier that shows ALL action items (29 total)
+- ✅ **@missing_kpis** - Systems without KPIs
+- ✅ **@missing_governance** - KPIs without governance bodies
+
+**Combined with existing modifiers**:
+- ✅ **@incomplete** - Initiatives/Spaces with incomplete forms/SWOT
+- ✅ **@no_consensus** - Initiatives without consensus on impact
+- ✅ **@archived** - Archived KPIs
+
+**How It Works**:
+
+**@requires_action** expands to all action items:
+```
+Search: "@requires_action"
+Returns:
+  - 1 initiative with no consensus
+  - 6 initiatives with incomplete forms
+  - 4 spaces with missing SWOT
+  - X systems without KPIs
+  - X KPIs without governance bodies
+= 29 total items (matches /action-items page exactly)
+```
+
+**Individual modifiers** for targeted search:
+```
+Search: "@missing_kpis"
+Returns: Only systems without KPIs
+
+Search: "@missing_governance"
+Returns: Only KPIs without governance bodies
+
+Search: "ERP @incomplete"
+Returns: Incomplete items related to ERP
+```
+
+**Implementation Details**:
+
+1. **Modifier Expansion** (parse_query):
+   - When @requires_action detected, expands to: [@incomplete, @no_consensus, @missing_kpis, @missing_governance]
+   - Allows umbrella modifier + text query: "ERP @requires_action"
+
+2. **Systems Search** (search_systems):
+   - Added @missing_kpis logic
+   - Checks if system has any KPIs via InitiativeSystemLink
+   - Skips systems that have KPIs when modifier present
+
+3. **KPIs Search** (search_kpis):
+   - Added @missing_governance logic
+   - Checks KPIGovernanceBodyLink count
+   - Skips KPIs that have governance bodies when modifier present
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Added constants: MODIFIER_MISSING_KPIS, MODIFIER_MISSING_GOVERNANCE, MODIFIER_REQUIRES_ACTION
+  - Updated parse_query() to expand @requires_action umbrella
+  - Updated search_systems() with @missing_kpis filter
+  - Updated search_kpis() with @missing_governance filter
+  - Updated docstrings
+- `app/templates/base.html`:
+  - Updated search input tooltip
+  - Added new modifiers to search hints dropdown
+  - Highlighted @requires_action with gold background
+- `app/templates/workspace/search.html`:
+  - Updated enhanced search features documentation
+  - Added Action Items section with @requires_action
+- `app/__init__.py` - Version bump to 2.5.20
+
+**User Value**:
+1. **Fast Quality Review**: `@requires_action` shows all 29 items instantly
+2. **Targeted Fixes**: Individual modifiers for specific issues
+3. **Combines with Search**: "Critical @requires_action" finds critical action items
+4. **Matches Action Items Page**: Same exact logic and counts
+
+**Example Queries**:
+```
+@requires_action              → All 29 action items
+@incomplete                   → 10 items (6 initiatives + 4 spaces)
+@missing_kpis                 → Systems without KPIs
+@missing_governance           → KPIs without governance bodies
+Critical @requires_action     → Action items containing "Critical"
+ERP @missing_kpis             → ERP-related systems without KPIs
+```
+
+---
+
 ## [2.5.19] - 2026-03-17
 
 ### Removed - @risk Search Modifier

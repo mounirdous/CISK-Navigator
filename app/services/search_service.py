@@ -30,6 +30,9 @@ class SearchService:
     MODIFIER_INCOMPLETE = "@incomplete"
     MODIFIER_NO_CONSENSUS = "@no_consensus"
     MODIFIER_ARCHIVED = "@archived"
+    MODIFIER_MISSING_KPIS = "@missing_kpis"
+    MODIFIER_MISSING_GOVERNANCE = "@missing_governance"
+    MODIFIER_REQUIRES_ACTION = "@requires_action"
 
     @staticmethod
     def search_all(query, filters=None, organization_id=None):
@@ -113,7 +116,7 @@ class SearchService:
         Parse search query for operators, modifiers, and clean text.
 
         Supports:
-        - Modifiers: @incomplete, @no_consensus, @archived
+        - Modifiers: @incomplete, @no_consensus, @archived, @missing_kpis, @missing_governance, @requires_action
         - Date operators: updated:last_week, updated:last_month, updated:today
         - Numeric operators: value>100, value<50, value=25
         - Ranges: value:10-20
@@ -133,6 +136,14 @@ class SearchService:
 
         # Extract modifiers (@incomplete, @no_consensus, @archived)
         modifiers = re.findall(r"@(\w+)", query)
+
+        # Expand @requires_action umbrella modifier
+        if "requires_action" in modifiers:
+            # Add all action item modifiers
+            modifiers.extend(["incomplete", "no_consensus", "missing_kpis", "missing_governance"])
+            # Remove the umbrella modifier itself (keep individual ones)
+            modifiers.remove("requires_action")
+
         result["modifiers"] = modifiers
 
         # Remove modifiers from query
@@ -240,6 +251,17 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for kpi in all_kpis:
+            # Check @missing_governance modifier
+            if "missing_governance" in modifiers:
+                # Check if KPI has governance bodies
+                from app.models import KPIGovernanceBodyLink
+
+                has_governance = (
+                    db.session.query(KPIGovernanceBodyLink).filter(KPIGovernanceBodyLink.kpi_id == kpi.id).count() > 0
+                )
+                if has_governance:
+                    continue  # Skip KPIs that have governance bodies
+
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
@@ -304,6 +326,7 @@ class SearchService:
             list: Matching System records
         """
         query = parsed["clean_query"]
+        modifiers = parsed["modifiers"]
 
         # Base query
         base_query = (
@@ -322,6 +345,19 @@ class SearchService:
         # Filter by fuzzy match
         results = []
         for system in all_systems:
+            # Check @missing_kpis modifier
+            if "missing_kpis" in modifiers:
+                # Check if system has any KPIs
+                has_kpis = (
+                    db.session.query(KPI)
+                    .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+                    .filter(InitiativeSystemLink.system_id == system.id)
+                    .count()
+                    > 0
+                )
+                if has_kpis:
+                    continue  # Skip systems that have KPIs
+
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
@@ -335,7 +371,7 @@ class SearchService:
                 if match_score == 0:
                     continue
             else:
-                # Modifier-only search - include all systems
+                # Modifier-only search - include all systems that passed filters
                 match_score = 1
 
             results.append(
