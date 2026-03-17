@@ -274,7 +274,9 @@ def index():
     # Create empty form for CSRF token
     form = FlaskForm()
 
-    return render_template("organization_admin/index.html", org_name=org_name, stats=stats, form=form)
+    return render_template(
+        "organization_admin/index.html", org_name=org_name, stats=stats, form=form, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/onboarding", methods=["GET", "POST"])
