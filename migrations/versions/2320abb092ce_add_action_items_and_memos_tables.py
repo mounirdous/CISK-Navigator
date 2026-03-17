@@ -28,22 +28,22 @@ def upgrade():
         # Migration already applied, skip
         return
 
-    # Create enums with individual try/except to handle partial failures
-    # Catch ANY exception since the exception type varies
-    enum_creations = [
-        "CREATE TYPE action_item_type AS ENUM ('memo', 'action')",
-        "CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled')",
-        "CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent')",
-        "CREATE TYPE action_item_visibility AS ENUM ('private', 'shared')",
-        "CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')",
+    # Create enums only if they don't already exist
+    # Use DO NOT EXISTS check for each enum type
+    enums_to_create = [
+        ("action_item_type", "('memo', 'action')"),
+        ("action_item_status", "('draft', 'active', 'completed', 'cancelled')"),
+        ("action_item_priority", "('low', 'medium', 'high', 'urgent')"),
+        ("action_item_visibility", "('private', 'shared')"),
+        ("action_item_mention_entity_type", "('space', 'challenge', 'initiative', 'system', 'kpi')"),
     ]
 
-    for enum_sql in enum_creations:
-        try:
-            op.execute(enum_sql)
-        except Exception:
-            # Enum already exists from failed migration, continue
-            pass
+    for enum_name, enum_values in enums_to_create:
+        # Check if enum exists
+        result = bind.execute(sa.text(f"SELECT 1 FROM pg_type WHERE typname = '{enum_name}'"))
+        if not result.scalar():
+            # Enum doesn't exist, create it
+            op.execute(f"CREATE TYPE {enum_name} AS ENUM {enum_values}")
 
     # Create action_items table (create_type=False since we handle enum creation above)
     op.create_table(
