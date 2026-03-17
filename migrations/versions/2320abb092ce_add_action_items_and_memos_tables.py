@@ -28,19 +28,23 @@ def upgrade():
         # Migration already applied, skip
         return
 
-    # Check if enums already exist (from previous failed migration)
-    result = bind.execute(sa.text("SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'action_item_type')"))
-    enum_exists = result.scalar()
+    # Create enums with individual try/except to handle partial failures
+    from sqlalchemy.exc import ProgrammingError
 
-    # Only create enums if they don't exist
-    if not enum_exists:
-        op.execute("CREATE TYPE action_item_type AS ENUM ('memo', 'action')")
-        op.execute("CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled')")
-        op.execute("CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent')")
-        op.execute("CREATE TYPE action_item_visibility AS ENUM ('private', 'shared')")
-        op.execute(
-            "CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')"
-        )
+    enum_creations = [
+        "CREATE TYPE action_item_type AS ENUM ('memo', 'action')",
+        "CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled')",
+        "CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent')",
+        "CREATE TYPE action_item_visibility AS ENUM ('private', 'shared')",
+        "CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')",
+    ]
+
+    for enum_sql in enum_creations:
+        try:
+            op.execute(enum_sql)
+        except ProgrammingError:
+            # Enum already exists from failed migration, continue
+            pass
 
     # Create action_items table (create_type=False since we handle enum creation above)
     op.create_table(
