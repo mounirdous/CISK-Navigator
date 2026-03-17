@@ -669,12 +669,30 @@ function searchStakeholders() {
 }
 
 function performSearch(searchTerm) {
-    const stakeholdersList = {{ stakeholders|tojson }};
-    const matches = stakeholdersList.filter(s =>
-        (s.name && s.name.toLowerCase().includes(searchTerm)) ||
-        (s.role && s.role.toLowerCase().includes(searchTerm)) ||
-        (s.department && s.department.toLowerCase().includes(searchTerm))
-    );
+    if (!nodes) {
+        console.error('Nodes not loaded yet');
+        return;
+    }
+
+    // Search actual nodes in the graph (not template data)
+    const allNodes = nodes.get();
+    const matches = allNodes.filter(node => {
+        const label = (node.label || '').toLowerCase();
+        const title = (node.title || '').toLowerCase();
+
+        // Also search data if available
+        if (node.data) {
+            const name = (node.data.name || '').toLowerCase();
+            const role = (node.data.role || '').toLowerCase();
+            const department = (node.data.department || '').toLowerCase();
+
+            return name.includes(searchTerm) ||
+                   role.includes(searchTerm) ||
+                   department.includes(searchTerm);
+        }
+
+        return label.includes(searchTerm) || title.includes(searchTerm);
+    });
 
     // Show results count
     const searchResults = document.getElementById('searchResults');
@@ -683,7 +701,7 @@ function performSearch(searchTerm) {
 
     // Highlight matching nodes
     if (matches.length > 0) {
-        highlightNodes(matches.map(s => s.id));
+        highlightNodes(matches.map(n => n.id));
 
         // Center on first match
         if (network) {
