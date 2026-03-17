@@ -50,53 +50,74 @@
         </div>
     </div>
 
-    <!-- Statistics Dashboard -->
-    <div class="row mb-4" id="statsCards">
-        <div class="col-md-3">
+    <!-- Statistics Dashboard - Collapsible -->
+    <div class="row mb-3">
+        <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small">Network Density</span>
-                        <i class="bi bi-diagram-3 text-primary"></i>
+                <div class="card-header bg-white border-0 py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-graph-up text-primary"></i>
+                            <strong class="ms-2">Network Statistics</strong>
+                        </div>
+                        <button class="btn btn-sm btn-link text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#statsCollapse" aria-expanded="false">
+                            <i class="bi bi-chevron-down" id="statsChevron" style="transform: rotate(-90deg); transition: transform 0.3s ease;"></i>
+                        </button>
                     </div>
-                    <h3 class="mb-0 text-primary" id="networkDensity">0%</h3>
-                    <small class="text-muted">Connection ratio</small>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small">Avg Connections</span>
-                        <i class="bi bi-arrow-left-right text-success"></i>
+                <div class="collapse" id="statsCollapse">
+                    <div class="card-body pt-2 pb-3">
+                        <div class="row g-3">
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center d-flex flex-column justify-content-center">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted small">Network Density</span>
+                                            <i class="bi bi-diagram-3 text-primary"></i>
+                                        </div>
+                                        <h3 class="mb-0 text-primary" id="networkDensity">0%</h3>
+                                        <small class="text-muted">Connection ratio</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center d-flex flex-column justify-content-center">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted small">Avg Connections</span>
+                                            <i class="bi bi-arrow-left-right text-success"></i>
+                                        </div>
+                                        <h3 class="mb-0 text-success" id="avgConnections">0</h3>
+                                        <small class="text-muted">Per stakeholder</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center d-flex flex-column justify-content-center">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted small">Most Influential</span>
+                                            <i class="bi bi-star text-warning"></i>
+                                        </div>
+                                        <h6 class="mb-0 text-warning" id="mostInfluential">-</h6>
+                                        <small class="text-muted" id="mostInfluentialPower">Power: 0</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-body text-center d-flex flex-column justify-content-center">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted small">Most Connected</span>
+                                            <i class="bi bi-people text-info"></i>
+                                        </div>
+                                        <h6 class="mb-0 text-info" id="mostConnected">-</h6>
+                                        <small class="text-muted" id="mostConnectedCount">0 connections</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <h3 class="mb-0 text-success" id="avgConnections">0</h3>
-                    <small class="text-muted">Per stakeholder</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small">Most Influential</span>
-                        <i class="bi bi-star text-warning"></i>
-                    </div>
-                    <h6 class="mb-0 text-warning" id="mostInfluential">-</h6>
-                    <small class="text-muted" id="mostInfluentialPower">Power: 0</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body text-center">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small">Most Connected</span>
-                        <i class="bi bi-people text-info"></i>
-                    </div>
-                    <h6 class="mb-0 text-info" id="mostConnected">-</h6>
-                    <small class="text-muted" id="mostConnectedCount">0 connections</small>
                 </div>
             </div>
         </div>
@@ -376,7 +397,7 @@
                 <div class="card-body p-0" style="position: relative;">
                     <div id="networkGraph" style="height: 700px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);"></div>
 
-                    <!-- Zoom & View Controls -->
+                    <!-- Zoom Controls -->
                     <div id="zoomControls" style="position: absolute; top: 15px; right: 15px; z-index: 100; display: flex; flex-direction: column; gap: 8px;">
                         <button class="btn btn-sm btn-light shadow-sm zoom-btn" onclick="zoomIn()" title="Zoom In">
                             <i class="bi bi-plus-lg"></i>
@@ -386,10 +407,6 @@
                         </button>
                         <button class="btn btn-sm btn-light shadow-sm zoom-btn" onclick="resetZoom()" title="Reset Zoom">
                             <i class="bi bi-arrow-clockwise"></i>
-                        </button>
-                        <div style="height: 1px; background: #dee2e6; margin: 4px 0;"></div>
-                        <button class="btn btn-sm btn-light shadow-sm zoom-btn" onclick="toggle3DView()" title="Toggle 3D View" id="view3DBtn">
-                            <i class="bi bi-box"></i>
                         </button>
                     </div>
                 </div>
@@ -560,6 +577,20 @@ function changeMap() {
 // Initialize graph
 document.addEventListener('DOMContentLoaded', function() {
     loadGraph();
+
+    // Stats collapse chevron rotation
+    const statsCollapse = document.getElementById('statsCollapse');
+    const statsChevron = document.getElementById('statsChevron');
+
+    if (statsCollapse && statsChevron) {
+        statsCollapse.addEventListener('show.bs.collapse', function () {
+            statsChevron.style.transform = 'rotate(0deg)';
+        });
+
+        statsCollapse.addEventListener('hide.bs.collapse', function () {
+            statsChevron.style.transform = 'rotate(-90deg)';
+        });
+    }
 });
 
 async function loadGraph(filters = {}) {
@@ -875,154 +906,6 @@ function resetZoom() {
             }
         });
     }
-}
-
-// ========================================
-// 3D VIEW TOGGLE
-// ========================================
-let is3DView = false;
-
-function toggle3DView() {
-    is3DView = !is3DView;
-    const graphContainer = document.getElementById('networkGraph');
-    const btn = document.getElementById('view3DBtn');
-
-    if (is3DView) {
-        // Enable 3D mode
-        graphContainer.style.perspective = '1200px';
-        graphContainer.style.transformStyle = 'preserve-3d';
-        graphContainer.style.transition = 'transform 0.8s ease';
-
-        // Add 3D transformation
-        applySphericalLayout();
-
-        // Update button
-        btn.classList.add('active');
-        btn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        btn.style.color = 'white';
-        btn.title = 'Switch to 2D View';
-
-        // Add rotation animation
-        startRotation();
-
-    } else {
-        // Disable 3D mode
-        graphContainer.style.perspective = 'none';
-        graphContainer.style.transform = 'none';
-
-        // Reset to 2D layout
-        resetToFlat Layout();
-
-        // Update button
-        btn.classList.remove('active');
-        btn.style.background = '';
-        btn.style.color = '';
-        btn.title = 'Toggle 3D View';
-
-        // Stop rotation
-        stopRotation();
-    }
-}
-
-let rotationInterval;
-let rotationAngle = 0;
-
-function startRotation() {
-    stopRotation(); // Clear any existing rotation
-
-    rotationInterval = setInterval(() => {
-        rotationAngle += 0.5;
-        const graphContainer = document.getElementById('networkGraph');
-        graphContainer.style.transform = `rotateX(15deg) rotateY(${rotationAngle}deg)`;
-    }, 30);
-}
-
-function stopRotation() {
-    if (rotationInterval) {
-        clearInterval(rotationInterval);
-        rotationInterval = null;
-    }
-    rotationAngle = 0;
-}
-
-function applySphericalLayout() {
-    if (!network || !nodes) return;
-
-    const allNodes = nodes.get();
-    const radius = 400;
-
-    // Position nodes in a 3D sphere layout
-    allNodes.forEach((node, index) => {
-        const stakeholder = {{ stakeholders|tojson }}.find(s => s.id === node.id);
-        const influence = stakeholder ? stakeholder.influence_level : 50;
-
-        // Use influence for radial distance (higher influence = closer to center)
-        const nodeRadius = radius * (1 - influence / 150);
-
-        // Spherical coordinates
-        const phi = Math.acos(-1 + (2 * index) / allNodes.length);
-        const theta = Math.sqrt(allNodes.length * Math.PI) * phi;
-
-        const x = nodeRadius * Math.cos(theta) * Math.sin(phi);
-        const y = nodeRadius * Math.sin(theta) * Math.sin(phi);
-        const z = nodeRadius * Math.cos(phi);
-
-        // Store z-coordinate for visual effects
-        node.z = z;
-
-        // Update node position with depth-based scaling
-        const scale = 1 + (z / radius) * 0.5; // Scale based on depth
-        nodes.update({
-            id: node.id,
-            x: x,
-            y: y,
-            size: node.value * scale, // Size varies with depth
-            shadow: {
-                enabled: true,
-                color: 'rgba(0,0,0,' + (0.3 + z / radius * 0.3) + ')',
-                size: 10 + z / radius * 10,
-                x: z / 50,
-                y: z / 50
-            }
-        });
-    });
-
-    // Disable physics in 3D mode for stability
-    network.setOptions({
-        physics: { enabled: false }
-    });
-}
-
-function resetToFlatLayout() {
-    if (!network) return;
-
-    // Re-enable physics
-    network.setOptions({
-        physics: {
-            enabled: true,
-            solver: 'forceAtlas2Based',
-            forceAtlas2Based: {
-                gravitationalConstant: -50,
-                centralGravity: 0.01,
-                springLength: 100,
-                springConstant: 0.08
-            }
-        }
-    });
-
-    // Reset node shadows
-    const allNodes = nodes.get();
-    allNodes.forEach(node => {
-        nodes.update({
-            id: node.id,
-            shadow: false
-        });
-    });
-
-    // Let physics settle
-    setTimeout(() => {
-        network.fit();
-    }, 1000);
 }
 
 function showStakeholderDetails(nodeId) {
