@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "2.5.24"
+__version__ = "2.5.25"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -148,7 +148,7 @@ def create_app(config_name=None):
         from flask_login import current_user
         from flask_wtf.csrf import generate_csrf
 
-        from app.models import KPI, Initiative, InitiativeSystemLink, Space, System
+        from app.services.action_items_service import ActionItemsService
 
         # Require login
         if not current_user.is_authenticated:
@@ -157,93 +157,18 @@ def create_app(config_name=None):
         org_id = session.get("organization_id")
         org_name = session.get("organization_name")
 
-        # Get initiatives with no consensus
-        initiatives_no_consensus = (
-            Initiative.query.filter_by(organization_id=org_id, impact_on_challenge="no_consensus")
-            .order_by(Initiative.name)
-            .all()
-        )
-
-        # Get initiatives with incomplete forms
-        all_initiatives = Initiative.query.filter_by(organization_id=org_id).order_by(Initiative.name).all()
-        initiatives_incomplete = []
-        for initiative in all_initiatives:
-            filled, total, status = initiative.get_form_completion()
-            if status != "complete":
-                initiatives_incomplete.append(
-                    {
-                        "initiative": initiative,
-                        "filled": filled,
-                        "total": total,
-                        "status": status,
-                        "completion_percent": int((filled / total) * 100) if total > 0 else 0,
-                    }
-                )
-
-        # Get spaces without SWOT (empty or partial)
-        all_spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.name).all()
-        spaces_no_swot = []
-        for space in all_spaces:
-            filled, total, status = space.get_swot_completion()
-            if status != "complete":
-                spaces_no_swot.append(
-                    {
-                        "space": space,
-                        "filled": filled,
-                        "total": total,
-                        "status": status,
-                        "completion_percent": int((filled / total) * 100) if total > 0 else 0,
-                    }
-                )
-
-        # Get systems without KPIs
-        systems_without_kpis = (
-            db.session.query(System)
-            .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
-            .filter(Initiative.organization_id == org_id, KPI.id.is_(None))
-            .distinct()
-            .order_by(System.name)
-            .all()
-        )
-
-        # Get KPIs without governance bodies
-        from app.models import KPIGovernanceBodyLink
-
-        kpis_without_gb = (
-            db.session.query(KPI)
-            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-            .outerjoin(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
-            .filter(Initiative.organization_id == org_id, KPIGovernanceBodyLink.id.is_(None))
-            .order_by(KPI.name)
-            .all()
-        )
-
-        # Calculate totals - count unique initiatives only (avoid double-counting)
-        unique_initiative_ids = set()
-        for init in initiatives_no_consensus:
-            unique_initiative_ids.add(init.id)
-        for init_dict in initiatives_incomplete:
-            unique_initiative_ids.add(init_dict["initiative"].id)
-
-        total_issues = (
-            len(unique_initiative_ids)  # Unique initiatives (no double-counting)
-            + len(spaces_no_swot)
-            + len(systems_without_kpis)
-            + len(kpis_without_gb)
-        )
+        # Get action items from centralized service
+        action_items_data = ActionItemsService.get_action_items_details(org_id)
 
         return render_template(
             "workspace/action_items.html",
             org_name=org_name,
-            initiatives_no_consensus=initiatives_no_consensus,
-            initiatives_incomplete=initiatives_incomplete,
-            spaces_no_swot=spaces_no_swot,
-            systems_without_kpis=systems_without_kpis,
-            kpis_without_gb=kpis_without_gb,
-            total_issues=total_issues,
+            initiatives_no_consensus=action_items_data["initiatives_no_consensus"],
+            initiatives_incomplete=action_items_data["initiatives_incomplete"],
+            spaces_no_swot=action_items_data["spaces_no_swot"],
+            systems_without_kpis=action_items_data["systems_without_kpis"],
+            kpis_without_gb=action_items_data["kpis_without_gb"],
+            total_issues=action_items_data["total"],
             csrf_token=generate_csrf,
         )
 

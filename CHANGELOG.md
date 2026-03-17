@@ -5,6 +5,85 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.25] - 2026-03-17
+
+### Changed - Centralized action items calculation logic
+**Refactoring**: Eliminated duplicate code across 3 locations
+
+**Problem**: Action items calculation logic was duplicated in 3 places:
+1. `/action-items` page (app/__init__.py)
+2. Dashboard banner (app/routes/workspace.py)
+3. Workspace header API (app/routes/workspace.py)
+
+**The Solution**: Created ActionItemsService
+
+**New Service**: `app/services/action_items_service.py`
+- `get_action_items_count()` - Returns counts only (fast)
+- `get_action_items_details()` - Returns full objects for display (detailed)
+
+**Benefits**:
+1. **Single Source of Truth** - Logic defined once, used everywhere
+2. **Consistent Counts** - All 3 locations show identical numbers (28 items)
+3. **Easier Maintenance** - Fix bugs once, applies everywhere
+4. **Better Testing** - Test service once instead of 3 routes
+5. **Code Reduction** - Removed ~150 lines of duplicate code
+
+**What Changed**:
+
+**Before (v2.5.24)** - Duplicated logic:
+```python
+# app/__init__.py - action_items() route
+initiatives_no_consensus = Initiative.query.filter_by(...).all()
+all_initiatives = Initiative.query.filter_by(...).all()
+initiatives_incomplete = []
+for initiative in all_initiatives:
+    filled, total, status = initiative.get_form_completion()
+    if status != "complete":
+        initiatives_incomplete.append({...})
+# ... 80 more lines ...
+
+# app/routes/workspace.py - dashboard() route
+incomplete_count = sum(1 for init in all_initiatives if init.get_form_completion()[2] != "complete")
+incomplete_swot_count = sum(1 for space in all_spaces if space.get_swot_completion()[2] != "complete")
+# ... similar logic repeated ...
+
+# app/routes/workspace.py - get_action_items_count() API
+initiatives_no_consensus = Initiative.query.filter_by(...).count()
+for initiative in all_initiatives:
+    if status != "complete":
+        initiatives_incomplete += 1
+# ... similar logic repeated again ...
+```
+
+**After (v2.5.25)** - Centralized service:
+```python
+# All 3 locations now use:
+from app.services.action_items_service import ActionItemsService
+
+# For counts only (dashboard, API):
+action_items_count = ActionItemsService.get_action_items_count(org_id)
+total = action_items_count["total"]  # 28 items
+
+# For detailed display (action items page):
+action_items_data = ActionItemsService.get_action_items_details(org_id)
+total = action_items_data["total"]  # 28 items
+```
+
+**Files Modified**:
+- `app/services/action_items_service.py` - **NEW**: Centralized service
+- `app/__init__.py`:
+  - Updated action_items() route to use ActionItemsService
+  - Removed 80+ lines of duplicate logic
+- `app/routes/workspace.py`:
+  - Updated dashboard() route to use ActionItemsService
+  - Updated get_action_items_count() API to use ActionItemsService
+  - Removed 70+ lines of duplicate logic
+- `app/__init__.py` - Version bump to 2.5.25
+
+**Result**: All 3 locations now show consistent count of **28 action items**
+
+---
+
 ## [2.5.24] - 2026-03-17
 
 ### Fixed - @requires_action now returns exactly 28 items (matches Action Items)

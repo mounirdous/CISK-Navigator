@@ -188,45 +188,11 @@ def dashboard():
                 continue
             active_announcements.append(ann)
 
-    # Calculate total action items
-    from app.models import KPIGovernanceBodyLink
+    # Calculate total action items using centralized service
+    from app.services.action_items_service import ActionItemsService
 
-    # Count initiatives with incomplete forms
-    all_initiatives = Initiative.query.filter_by(organization_id=org_id).all()
-    incomplete_count = sum(1 for init in all_initiatives if init.get_form_completion()[2] != "complete")
-
-    # Count spaces without complete SWOT
-    all_spaces = Space.query.filter_by(organization_id=org_id).all()
-    incomplete_swot_count = sum(1 for space in all_spaces if space.get_swot_completion()[2] != "complete")
-
-    # Count systems without KPIs
-    systems_without_kpis_count = (
-        db.session.query(System)
-        .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
-        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-        .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
-        .filter(Initiative.organization_id == org_id, KPI.id.is_(None))
-        .distinct()
-        .count()
-    )
-
-    # Count KPIs without governance bodies
-    kpis_without_gb_count = (
-        db.session.query(KPI)
-        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-        .outerjoin(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
-        .filter(Initiative.organization_id == org_id, KPIGovernanceBodyLink.id.is_(None))
-        .count()
-    )
-
-    total_action_items = (
-        stats["initiatives_no_consensus"]
-        + incomplete_count
-        + incomplete_swot_count
-        + systems_without_kpis_count
-        + kpis_without_gb_count
-    )
+    action_items_count = ActionItemsService.get_action_items_count(org_id)
+    total_action_items = action_items_count["total"]
 
     return render_template(
         "workspace/dashboard.html",
@@ -3829,58 +3795,14 @@ def get_data():
 @login_required
 def get_action_items_count():
     """Get count of action items requiring attention"""
+    from app.services.action_items_service import ActionItemsService
+
     org_id = session.get("organization_id")
 
-    # Get initiatives with no consensus
-    initiatives_no_consensus = Initiative.query.filter_by(
-        organization_id=org_id, impact_on_challenge="no_consensus"
-    ).count()
+    # Get action items count from centralized service
+    action_items_count = ActionItemsService.get_action_items_count(org_id)
 
-    # Get initiatives with incomplete forms
-    all_initiatives = Initiative.query.filter_by(organization_id=org_id).all()
-    initiatives_incomplete = 0
-    for initiative in all_initiatives:
-        filled, total, status = initiative.get_form_completion()
-        if status != "complete":
-            initiatives_incomplete += 1
-
-    # Get spaces without SWOT (empty or partial)
-    all_spaces = Space.query.filter_by(organization_id=org_id).all()
-    spaces_no_swot = 0
-    for space in all_spaces:
-        filled, total, status = space.get_swot_completion()
-        if status != "complete":
-            spaces_no_swot += 1
-
-    # Get systems without KPIs
-    systems_without_kpis = (
-        db.session.query(System)
-        .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
-        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-        .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
-        .filter(Initiative.organization_id == org_id, KPI.id.is_(None))
-        .distinct()
-        .count()
-    )
-
-    # Get KPIs without governance bodies
-    from app.models import KPIGovernanceBodyLink
-
-    kpis_without_gb = (
-        db.session.query(KPI)
-        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
-        .outerjoin(KPIGovernanceBodyLink, KPI.id == KPIGovernanceBodyLink.kpi_id)
-        .filter(Initiative.organization_id == org_id, KPIGovernanceBodyLink.id.is_(None))
-        .count()
-    )
-
-    # Calculate total
-    total_issues = (
-        initiatives_no_consensus + initiatives_incomplete + spaces_no_swot + systems_without_kpis + kpis_without_gb
-    )
-
-    return jsonify({"total_issues": total_issues})
+    return jsonify({"total_issues": action_items_count["total"]})
 
 
 @bp.route("/api/change-parent/<entity_type>", methods=["POST"])
