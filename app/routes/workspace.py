@@ -2140,8 +2140,8 @@ def live_search():
     search_pattern = f"%{query}%"
     results = []
 
-    # Limit to top 3 of each type for quick display
-    limit = 3
+    # Limit to top 5 of each type for quick display
+    limit = 5
 
     # Search Spaces
     spaces = (

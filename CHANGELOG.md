@@ -5,6 +5,44 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.23] - 2026-03-17
+
+### Changed - Search UX improvements and @requires_action fixes
+**Changes**:
+
+1. **Systems Without KPIs Logic** - Fixed to match Action Items page exactly
+   - Was checking if system has ANY KPIs across all links
+   - Now finds systems with at least one initiative link that has NO KPI
+   - Uses same query as Action Items page (outerjoin with KPI.id.is_(None))
+
+2. **Live Search Limit Increased** - From 3 to 5 per entity type
+   - More comprehensive results in dropdown
+   - Max 25 results (5 types × 5 each) instead of 15
+   - Better balance between completeness and performance
+
+3. **UI Text Updates** - Clearer result count messaging
+   - Live search: "Showing top X results (up to 5 per type)"
+   - Search results page: "Showing X results" (was "Found X results")
+   - More accurate - reflects that results may be limited
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Updated search_systems() to use Action Items logic for @requires_action
+  - Uses outerjoin + is_(None) pattern for systems without KPIs
+- `app/routes/workspace.py`:
+  - Changed limit from 3 to 5 in live_search()
+- `app/templates/base.html`:
+  - Updated displayResults() text: "Showing top X results (up to 5 per type)"
+- `app/templates/workspace/search.html`:
+  - Updated results summary: "Showing X results"
+- `app/__init__.py` - Version bump to 2.5.23
+
+**Status**: @requires_action now returns 27 results (was 39, should be 29)
+- Progress: 39 → 34 → 27 → targeting 29
+- Remaining discrepancy: 2 items
+
+---
+
 ## [2.5.22] - 2026-03-17
 
 ### Fixed - @requires_action still returning 39 instead of 29

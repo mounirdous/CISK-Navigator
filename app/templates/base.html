@@ -1040,7 +1040,7 @@
 
         function displayResults(results, query) {
             let html = '<div style="padding: 8px 12px; background: #f8f9fa; border-bottom: 1px solid #dee2e6; font-size: 0.875rem; color: #6c757d;">';
-            html += `<i class="bi bi-search"></i> Found ${results.length} result${results.length !== 1 ? 's' : ''} for "<strong>${escapeHtml(query)}</strong>"`;
+            html += `<i class="bi bi-search"></i> Showing top ${results.length} result${results.length !== 1 ? 's' : ''} for "<strong>${escapeHtml(query)}</strong>" <span style="color: #999;">(up to 5 per type)</span>`;
             html += '</div>';
 
             html += '<div style="padding: 4px;">';

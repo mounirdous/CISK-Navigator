@@ -331,35 +331,33 @@ class SearchService:
         query = parsed["clean_query"]
         modifiers = parsed["modifiers"]
 
-        # Base query
-        base_query = (
-            db.session.query(System)
-            .join(System.initiative_links)
-            .join(InitiativeSystemLink.initiative)
-            .filter(Initiative.organization_id == organization_id)
-            .distinct()
-        )
-
-        # Note: System model doesn't have is_archived field
-        # Systems are always active
-
-        all_systems = base_query.all()
+        # For @missing_kpis or @requires_action, use Action Items page logic
+        if "missing_kpis" in modifiers or "requires_action" in modifiers:
+            # Find systems with at least one initiative link that has no KPI
+            # (matches Action Items page logic exactly)
+            all_systems = (
+                db.session.query(System)
+                .join(InitiativeSystemLink, System.id == InitiativeSystemLink.system_id)
+                .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+                .outerjoin(KPI, InitiativeSystemLink.id == KPI.initiative_system_link_id)
+                .filter(Initiative.organization_id == organization_id, KPI.id.is_(None))
+                .distinct()
+                .all()
+            )
+        else:
+            # Normal search: get all systems
+            all_systems = (
+                db.session.query(System)
+                .join(System.initiative_links)
+                .join(InitiativeSystemLink.initiative)
+                .filter(Initiative.organization_id == organization_id)
+                .distinct()
+                .all()
+            )
 
         # Filter by fuzzy match
         results = []
         for system in all_systems:
-            # Check @missing_kpis or @requires_action modifier
-            if "missing_kpis" in modifiers or "requires_action" in modifiers:
-                # Check if system has any KPIs
-                has_kpis = (
-                    db.session.query(KPI)
-                    .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
-                    .filter(InitiativeSystemLink.system_id == system.id)
-                    .count()
-                    > 0
-                )
-                if has_kpis:
-                    continue  # Skip systems that have KPIs
 
             # Fuzzy match logic
             match_score = 0
