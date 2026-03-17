@@ -1301,6 +1301,7 @@ def list_snapshots():
             show_private=show_private,
             show_public=show_public,
             current_user_id=current_user.id,
+            csrf_token=generate_csrf,
         )
 
     except Exception as e:
