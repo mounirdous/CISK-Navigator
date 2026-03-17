@@ -39,9 +39,9 @@ def upgrade():
     ]
 
     for enum_name, enum_values in enums_to_create:
-        # Check if enum exists
+        # Check if enum exists - fetchone() returns None if not found
         result = bind.execute(sa.text(f"SELECT 1 FROM pg_type WHERE typname = '{enum_name}'"))
-        if not result.scalar():
+        if result.fetchone() is None:
             # Enum doesn't exist, create it
             op.execute(f"CREATE TYPE {enum_name} AS ENUM {enum_values}")
 
