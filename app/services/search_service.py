@@ -242,11 +242,15 @@ class SearchService:
             .filter(Initiative.organization_id == organization_id)
         )
 
-        # Apply modifiers
-        if "archived" not in modifiers:
-            base_query = base_query.filter(KPI.is_archived == False)  # noqa: E712
-        else:
+        # Apply archived filter
+        # Note: @requires_action and @missing_governance INCLUDE archived KPIs (matches Action Items page)
+        if "archived" in modifiers:
+            # Explicitly searching for archived KPIs only
             base_query = base_query.filter(KPI.is_archived == True)  # noqa: E712
+        elif "requires_action" not in modifiers and "missing_governance" not in modifiers:
+            # Normal search: exclude archived KPIs by default
+            base_query = base_query.filter(KPI.is_archived == False)  # noqa: E712
+        # else: @requires_action or @missing_governance - include both archived and non-archived
 
         # Get all KPIs
         all_kpis = base_query.all()

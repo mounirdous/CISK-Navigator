@@ -10,7 +10,7 @@ from flask import Flask
 from app.config import config
 from app.extensions import db, login_manager, migrate
 
-__version__ = "2.5.23"
+__version__ = "2.5.24"
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -221,10 +221,15 @@ def create_app(config_name=None):
             .all()
         )
 
-        # Calculate totals
+        # Calculate totals - count unique initiatives only (avoid double-counting)
+        unique_initiative_ids = set()
+        for init in initiatives_no_consensus:
+            unique_initiative_ids.add(init.id)
+        for init_dict in initiatives_incomplete:
+            unique_initiative_ids.add(init_dict["initiative"].id)
+
         total_issues = (
-            len(initiatives_no_consensus)
-            + len(initiatives_incomplete)
+            len(unique_initiative_ids)  # Unique initiatives (no double-counting)
             + len(spaces_no_swot)
             + len(systems_without_kpis)
             + len(kpis_without_gb)

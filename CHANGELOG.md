@@ -5,6 +5,67 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.24] - 2026-03-17
+
+### Fixed - @requires_action now returns exactly 28 items (matches Action Items)
+**Issue**: @requires_action returned 27-28 items, Action Items page showed 29 (double-counting issue)
+
+**Root Causes Found**:
+
+1. **Archived KPIs excluded by search but included by Action Items**
+   - Search filtered out archived KPIs by default
+   - Action Items page included ALL KPIs without governance (even archived)
+   - Missing 1 archived KPI: "ERP consolidation progress"
+
+2. **Action Items page double-counted initiatives**
+   - "Engage with leaders" is BOTH no_consensus AND incomplete
+   - Appeared in both categories on Action Items page
+   - Total showed 29 (1 no_consensus + 6 incomplete = 7, but only 6 unique)
+
+**The Fixes**:
+
+1. **Search: Include archived KPIs for @requires_action and @missing_governance**
+   ```python
+   # @requires_action and @missing_governance now INCLUDE archived KPIs
+   if "requires_action" not in modifiers and "missing_governance" not in modifiers:
+       base_query = base_query.filter(KPI.is_archived == False)
+   # else: include both archived and non-archived
+   ```
+
+2. **Action Items: Count unique initiatives only**
+   ```python
+   # Before: len(no_consensus) + len(incomplete) = 1 + 6 = 7 (wrong)
+   # After: Use set to count unique initiative IDs = 6 (correct)
+   unique_initiative_ids = set()
+   for init in initiatives_no_consensus:
+       unique_initiative_ids.add(init.id)
+   for init_dict in initiatives_incomplete:
+       unique_initiative_ids.add(init_dict["initiative"].id)
+   total_issues = len(unique_initiative_ids) + len(spaces) + len(systems) + len(kpis)
+   ```
+
+**Result**: Both @requires_action search and Action Items page now show **28 items**
+
+**Breakdown (verified with database)**:
+- 6 unique initiatives (1 no_consensus, 6 incomplete, but 1 item is both)
+- 4 incomplete spaces
+- 0 systems without KPIs
+- 18 KPIs without governance (including 1 archived)
+- **Total: 28 items**
+
+**Files Modified**:
+- `app/services/search_service.py`:
+  - Updated search_kpis() to include archived KPIs for @requires_action and @missing_governance
+  - Normal search still excludes archived by default
+- `app/__init__.py`:
+  - Fixed action_items() route to count unique initiatives
+  - Uses set to deduplicate initiative IDs before counting
+  - Version bump to 2.5.24
+
+**Impact**: @requires_action and Action Items page now perfectly aligned at 28 items
+
+---
+
 ## [2.5.23] - 2026-03-17
 
 ### Changed - Search UX improvements and @requires_action fixes
