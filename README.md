@@ -634,12 +634,23 @@
   - Top contributors leaderboard
   - Most commented KPIs
   - Space statistics (public/private counts)
-- **🔍 Search**: Global search across organization
-  - Search bar in top navigation
-  - Searches: Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Comments
-  - Permission-aware results (edit buttons only if authorized)
-  - Color-coded results by entity type
-  - User search API for @mentions
+- **🔍 Enhanced Search**: Advanced global search with fuzzy matching and action item tracking
+  - **Search bar in top navigation** with Ctrl+K keyboard shortcut
+  - **Fuzzy matching**: Typo-tolerant search (e.g., "inventroy" finds "Inventory")
+  - **Search modifiers**: Filter by status and quality
+    - `@requires_action` - All items needing attention (matches Action Items page)
+    - `@incomplete` - Initiatives/Spaces with incomplete forms/SWOT
+    - `@no_consensus` - Initiatives without consensus on impact
+    - `@missing_kpis` - Systems without KPIs
+    - `@missing_governance` - KPIs without governance bodies
+    - `@archived` - Archived KPIs
+  - **Saved searches**: Save frequently used queries, set default search
+  - **Live search dropdown**: Real-time results as you type (navbar)
+  - **Full search page**: Comprehensive results with manual search button
+  - **Searches across**: Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Comments
+  - **Permission-aware results**: Edit buttons only if authorized
+  - **Color-coded results** by entity type
+  - **User search API** for @mentions in comments
 - **📋 Audit Logging**: Comprehensive audit trail
   - **Coverage**: User management, Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Governance Bodies
   - **Tracks**: who, what, when, old values, new values, IP address, user agent
