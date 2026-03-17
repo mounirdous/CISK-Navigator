@@ -245,10 +245,12 @@ class TestCSRFTokenAvailability:
         "/toolbox/actions/",
         "/toolbox/actions/create",
         # Stakeholder Mapping
+        "/stakeholders/",
         "/stakeholders/list",
         "/stakeholders/matrix",
         "/stakeholders/maps",
         "/stakeholders/maps/create",
+        "/stakeholders/create",
     ],
 )
 class TestOrganizationRoutes:
@@ -256,6 +258,15 @@ class TestOrganizationRoutes:
 
     def test_route_has_no_undefined_errors(self, client, org_user, sample_organization, route):
         """Test route has no csrf_token undefined errors"""
+        # For stakeholder routes, user needs org admin permission
+        if route.startswith("/stakeholders"):
+            membership = org_user.get_membership(sample_organization.id)
+            if membership:
+                membership.is_org_admin = True
+                from app import db
+
+                db.session.commit()
+
         with client:
             # Login
             client.post(
@@ -269,8 +280,12 @@ class TestOrganizationRoutes:
                 sess["organization_id"] = sample_organization.id
                 sess["organization_name"] = sample_organization.name
 
-            # Test route
-            response = client.get(route)
+            # Test route - add organization_id param for stakeholder routes
+            test_url = route
+            if route.startswith("/stakeholders"):
+                test_url = f"{route}?organization_id={sample_organization.id}"
+
+            response = client.get(test_url)
             assert response.status_code == 200
 
             data = response.data.decode("utf-8")
