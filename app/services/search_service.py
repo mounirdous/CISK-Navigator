@@ -68,8 +68,14 @@ class SearchService:
         # For @requires_action, only search entity types with action items
         modifiers = parsed["modifiers"]
         if "requires_action" in modifiers:
-            # Only search entities that have action item criteria
-            entity_types = ["kpis", "systems", "initiatives", "spaces"]
+            # Action items exist only in these 4 entity types
+            action_item_types = ["kpis", "systems", "initiatives", "spaces"]
+
+            # If user has filtered entity types, intersect with action-item types
+            if "entity_types" in filters:
+                entity_types = [t for t in filters["entity_types"] if t in action_item_types]
+            else:
+                entity_types = action_item_types
         else:
             # Determine which entity types to search
             entity_types = filters.get(
