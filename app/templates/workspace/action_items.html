@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Action Items - {{ org_name }}{% endblock %}
+{% block title %}Data Quality Dashboard - {{ org_name }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -240,7 +240,7 @@
 {% block content %}
 <div class="container-fluid px-3 pb-4">
     <div class="action-header">
-        <h1><i class="bi bi-exclamation-triangle-fill"></i> Action Items</h1>
+        <h1><i class="bi bi-exclamation-triangle-fill"></i> Data Quality Dashboard</h1>
         <div class="total-issues">{{ total_issues }}</div>
         <div class="issues-label">Items Need Attention</div>
     </div>
@@ -248,7 +248,7 @@
     <div class="empty-state">
         <i class="bi bi-check-circle-fill text-success"></i>
         <h3>All Clear! 🎉</h3>
-        <p>No action items found. Your data quality is excellent!</p>
+        <p>No quality issues found. Your data quality is excellent!</p>
     </div>
     {% else %}
 
