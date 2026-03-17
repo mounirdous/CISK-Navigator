@@ -1,8 +1,8 @@
-"""Add action items and memos tables
+"""create_action_items_and_memos_tables_clean
 
-Revision ID: 2320abb092ce
-Revises: c1e3ad7e2081
-Create Date: 2026-03-17 13:40:34.436299
+Revision ID: 737ff76c2619
+Revises: 5f87aa9fccb9
+Create Date: 2026-03-17 15:51:45.563550
 
 """
 
@@ -10,49 +10,23 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = "2320abb092ce"
-down_revision = "c1e3ad7e2081"
+revision = "737ff76c2619"
+down_revision = "5f87aa9fccb9"
 branch_labels = None
 depends_on = None
 
 
 def upgrade():
-    # Check if table already exists - if so, skip entire migration
-    from sqlalchemy import inspect
+    # Create enum types
+    op.execute("CREATE TYPE action_item_type AS ENUM ('memo', 'action')")
+    op.execute("CREATE TYPE action_item_status AS ENUM ('draft', 'active', 'completed', 'cancelled')")
+    op.execute("CREATE TYPE action_item_priority AS ENUM ('low', 'medium', 'high', 'urgent')")
+    op.execute("CREATE TYPE action_item_visibility AS ENUM ('private', 'shared')")
+    op.execute(
+        "CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')"
+    )
 
-    bind = op.get_bind()
-    inspector = inspect(bind)
-    existing_tables = inspector.get_table_names()
-
-    if "action_items" in existing_tables:
-        # Migration already applied, skip
-        return
-
-    # Create enums using PostgreSQL DO blocks with exception handling
-    # This handles the error at the database level, not Python level
-    enum_definitions = [
-        ("action_item_type", "('memo', 'action')"),
-        ("action_item_status", "('draft', 'active', 'completed', 'cancelled')"),
-        ("action_item_priority", "('low', 'medium', 'high', 'urgent')"),
-        ("action_item_visibility", "('private', 'shared')"),
-        ("action_item_mention_entity_type", "('space', 'challenge', 'initiative', 'system', 'kpi')"),
-    ]
-
-    for enum_name, enum_values in enum_definitions:
-        op.execute(
-            sa.text(
-                f"""
-                DO $$
-                BEGIN
-                    CREATE TYPE {enum_name} AS ENUM {enum_values};
-                EXCEPTION
-                    WHEN duplicate_object THEN null;
-                END $$;
-                """
-            )
-        )
-
-    # Create action_items table (create_type=False since we handle enum creation above)
+    # Create action_items table
     op.create_table(
         "action_items",
         sa.Column("id", sa.Integer(), nullable=False),
@@ -89,7 +63,7 @@ def upgrade():
     op.create_index(op.f("ix_action_items_status"), "action_items", ["status"], unique=False)
     op.create_index(op.f("ix_action_items_visibility"), "action_items", ["visibility"], unique=False)
 
-    # Create action_item_mentions table (create_type=False since we handle enum creation above)
+    # Create action_item_mentions table
     op.create_table(
         "action_item_mentions",
         sa.Column("id", sa.Integer(), nullable=False),

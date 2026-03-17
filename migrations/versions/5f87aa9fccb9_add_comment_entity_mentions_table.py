@@ -1,7 +1,7 @@
 """add comment entity mentions table
 
 Revision ID: 5f87aa9fccb9
-Revises: 2320abb092ce
+Revises: c1e3ad7e2081
 Create Date: 2026-03-17 14:13:44.998600
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5f87aa9fccb9"
-down_revision = "2320abb092ce"
+down_revision = "66388e544042"
 branch_labels = None
 depends_on = None
 
