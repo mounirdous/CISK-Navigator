@@ -544,6 +544,11 @@
                 {% if session.organization_id %}
                 <div class="position-relative me-2">
                     <form class="d-flex" method="GET" action="{{ url_for('workspace.search_page') }}" id="searchForm">
+                        <!-- Hidden inputs for filters (populated by JavaScript) -->
+                        <input type="hidden" name="entity_types" id="entityTypesInput" value="">
+                        <input type="hidden" name="date_range" id="dateRangeInput" value="">
+                        <input type="hidden" name="status" id="statusInput" value="">
+
                         <div class="input-group" style="width: 340px;">
                             <input class="form-control form-control-sm" type="search" name="q" id="liveSearchInput" placeholder="Search..."
                                    autocomplete="off"
@@ -1159,8 +1164,23 @@
             }
         });
 
-        // Prevent form submission if live results are showing (let user click on result)
+        // Before form submission, populate hidden inputs with filter values
         searchForm.addEventListener('submit', function(e) {
+            // Populate hidden inputs with current filter values
+            if (window.searchFilters) {
+                // Entity types
+                if (window.searchFilters.entity_types && window.searchFilters.entity_types.length > 0) {
+                    document.getElementById('entityTypesInput').value = window.searchFilters.entity_types.join(',');
+                }
+                // Date range
+                if (window.searchFilters.date_range) {
+                    document.getElementById('dateRangeInput').value = window.searchFilters.date_range;
+                }
+                // Status
+                if (window.searchFilters.status && window.searchFilters.status.length > 0) {
+                    document.getElementById('statusInput').value = window.searchFilters.status.join(',');
+                }
+            }
             // Allow form submission to go through to search page
         });
 
