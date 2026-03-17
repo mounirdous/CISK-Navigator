@@ -42,7 +42,15 @@ def upgrade():
         sa.Column("comment_id", sa.Integer(), nullable=False),
         sa.Column(
             "entity_type",
-            sa.Enum("space", "challenge", "initiative", "system", "kpi", name="comment_entity_mention_type"),
+            sa.Enum(
+                "space",
+                "challenge",
+                "initiative",
+                "system",
+                "kpi",
+                name="comment_entity_mention_type",
+                create_type=False,
+            ),
             nullable=False,
         ),
         sa.Column("entity_id", sa.Integer(), nullable=False),

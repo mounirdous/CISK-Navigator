@@ -16,12 +16,14 @@ depends_on = None
 
 
 def upgrade():
-    """Drop all action_items related objects to clean up broken state"""
+    """Drop all action_items and comment mentions related objects to clean up broken state"""
     # Drop tables first (if they exist)
+    op.execute("DROP TABLE IF EXISTS comment_entity_mentions CASCADE")
     op.execute("DROP TABLE IF EXISTS action_item_mentions CASCADE")
     op.execute("DROP TABLE IF EXISTS action_items CASCADE")
 
     # Drop enum types
+    op.execute("DROP TYPE IF EXISTS comment_entity_mention_type CASCADE")
     op.execute("DROP TYPE IF EXISTS action_item_mention_entity_type CASCADE")
     op.execute("DROP TYPE IF EXISTS action_item_visibility CASCADE")
     op.execute("DROP TYPE IF EXISTS action_item_priority CASCADE")
