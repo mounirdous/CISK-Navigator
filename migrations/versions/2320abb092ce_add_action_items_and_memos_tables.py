@@ -17,10 +17,40 @@ depends_on = None
 
 
 def upgrade():
-    # SKIP THIS MIGRATION - enum types exist on production, causing duplicate errors
-    # This migration has been attempted multiple times and fails due to existing enums
-    # The feature is already deployed, marking as complete
-    return
+    # Check if table already exists - if so, skip entire migration
+    from sqlalchemy import inspect
+
+    bind = op.get_bind()
+    inspector = inspect(bind)
+    existing_tables = inspector.get_table_names()
+
+    if "action_items" in existing_tables:
+        # Migration already applied, skip
+        return
+
+    # Create enums using PostgreSQL DO blocks with exception handling
+    # This handles the error at the database level, not Python level
+    enum_definitions = [
+        ("action_item_type", "('memo', 'action')"),
+        ("action_item_status", "('draft', 'active', 'completed', 'cancelled')"),
+        ("action_item_priority", "('low', 'medium', 'high', 'urgent')"),
+        ("action_item_visibility", "('private', 'shared')"),
+        ("action_item_mention_entity_type", "('space', 'challenge', 'initiative', 'system', 'kpi')"),
+    ]
+
+    for enum_name, enum_values in enum_definitions:
+        op.execute(
+            sa.text(
+                f"""
+                DO $$
+                BEGIN
+                    CREATE TYPE {enum_name} AS ENUM {enum_values};
+                EXCEPTION
+                    WHEN duplicate_object THEN null;
+                END $$;
+                """
+            )
+        )
 
     # Create action_items table (create_type=False since we handle enum creation above)
     op.create_table(
