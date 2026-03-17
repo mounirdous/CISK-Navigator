@@ -861,6 +861,8 @@ def restore_backup():
                     details += f'{stats.get("kpis", 0)} KPIs, {stats.get("contributions", 0)} contributions'
 
                     # Add v2.0 features
+                    if stats.get("geography_assignments", 0) > 0:
+                        details += f', {stats.get("geography_assignments", 0)} geography assignments'
                     if stats.get("stakeholders", 0) > 0:
                         details += f', {stats.get("stakeholders", 0)} stakeholders'
                     if stats.get("stakeholder_relationships", 0) > 0:
@@ -973,6 +975,8 @@ def full_backup_governance_mapping():
                 details += f'{stats.get("kpis", 0)} KPIs, {stats.get("contributions", 0)} contributions'
 
                 # Add v2.0 features
+                if stats.get("geography_assignments", 0) > 0:
+                    details += f', {stats.get("geography_assignments", 0)} geography assignments'
                 if stats.get("stakeholders", 0) > 0:
                     details += f', {stats.get("stakeholders", 0)} stakeholders'
                 if stats.get("stakeholder_relationships", 0) > 0:

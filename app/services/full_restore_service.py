@@ -109,6 +109,7 @@ class FullRestoreService:
             "kpis": 0,
             "contributions": 0,
             "governance_body_links": 0,
+            "geography_assignments": 0,
             "users_created": 0,
             "users_mapped": 0,
             "stakeholders": 0,
@@ -289,6 +290,7 @@ class FullRestoreService:
                         "kpis",
                         "contributions",
                         "governance_body_links",
+                        "geography_assignments",
                         "logos_restored",
                         "formulas_restored",
                         "linked_kpis_restored",
@@ -333,6 +335,7 @@ class FullRestoreService:
             "kpis": 0,
             "contributions": 0,
             "governance_body_links": 0,
+            "geography_assignments": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
@@ -474,6 +477,7 @@ class FullRestoreService:
                                 stats["kpis"] += kpi_stats.get("kpis", 0)
                                 stats["contributions"] += kpi_stats.get("contributions", 0)
                                 stats["governance_body_links"] += kpi_stats.get("governance_body_links", 0)
+                                stats["geography_assignments"] += kpi_stats.get("geography_assignments", 0)
                                 stats["logos_restored"] += kpi_stats.get("logos_restored", 0)
                                 stats["formulas_restored"] += kpi_stats.get("formulas_restored", 0)
                                 stats["linked_kpis_restored"] += kpi_stats.get("linked_kpis_restored", 0)
@@ -495,6 +499,7 @@ class FullRestoreService:
             "kpis": 0,
             "contributions": 0,
             "governance_body_links": 0,
+            "geography_assignments": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
@@ -532,6 +537,49 @@ class FullRestoreService:
                 stats["governance_body_links"] += 1
             else:
                 stats["errors"].append(f"KPI '{kpi_data['name']}': Governance body '{gb_name}' not mapped (skipped)")
+
+        # Restore geography assignments (region/country/site links)
+        from app.models import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment
+
+        for geo_data in kpi_data.get("geography_assignments", []):
+            try:
+                level = geo_data.get("level")
+                geo_assignment = KPIGeographyAssignment(kpi_id=kpi.id)
+
+                if level == "site":
+                    # Find site by name (must exist in target instance)
+                    site_name = geo_data.get("site_name")
+                    site = GeographySite.query.filter_by(name=site_name).first()
+                    if site:
+                        geo_assignment.site_id = site.id
+                        db.session.add(geo_assignment)
+                        stats["geography_assignments"] = stats.get("geography_assignments", 0) + 1
+                    else:
+                        stats["errors"].append(f"KPI '{kpi_data['name']}': Site '{site_name}' not found (skipped)")
+                elif level == "country":
+                    # Find country by name
+                    country_name = geo_data.get("country_name")
+                    country = GeographyCountry.query.filter_by(name=country_name).first()
+                    if country:
+                        geo_assignment.country_id = country.id
+                        db.session.add(geo_assignment)
+                        stats["geography_assignments"] = stats.get("geography_assignments", 0) + 1
+                    else:
+                        stats["errors"].append(
+                            f"KPI '{kpi_data['name']}': Country '{country_name}' not found (skipped)"
+                        )
+                elif level == "region":
+                    # Find region by name
+                    region_name = geo_data.get("region_name")
+                    region = GeographyRegion.query.filter_by(name=region_name).first()
+                    if region:
+                        geo_assignment.region_id = region.id
+                        db.session.add(geo_assignment)
+                        stats["geography_assignments"] = stats.get("geography_assignments", 0) + 1
+                    else:
+                        stats["errors"].append(f"KPI '{kpi_data['name']}': Region '{region_name}' not found (skipped)")
+            except Exception as e:
+                stats["errors"].append(f"KPI '{kpi_data['name']}': Failed to restore geography assignment: {str(e)}")
 
         # Restore value type configurations and contributions
         for vt_config_data in kpi_data.get("value_types", []):

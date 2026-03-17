@@ -335,6 +335,7 @@ class FullBackupService:
             "is_archived": kpi.is_archived,
             "display_order": kpi.display_order,
             "governance_bodies": [],
+            "geography_assignments": [],
             "value_types": [],
         }
 
@@ -348,6 +349,34 @@ class FullBackupService:
         # Export governance body links
         for link in kpi.governance_body_links:
             kpi_data["governance_bodies"].append(link.governance_body.name)
+
+        # Export geography assignments (region/country/site links)
+        for geo_assignment in kpi.geography_assignments:
+            geo_data = {}
+            if geo_assignment.site_id and geo_assignment.site:
+                geo_data = {
+                    "level": "site",
+                    "site_name": geo_assignment.site.name,
+                    "country_name": geo_assignment.site.country.name if geo_assignment.site.country else None,
+                    "region_name": (
+                        geo_assignment.site.country.region.name
+                        if geo_assignment.site.country and geo_assignment.site.country.region
+                        else None
+                    ),
+                }
+            elif geo_assignment.country_id and geo_assignment.country:
+                geo_data = {
+                    "level": "country",
+                    "country_name": geo_assignment.country.name,
+                    "region_name": geo_assignment.country.region.name if geo_assignment.country.region else None,
+                }
+            elif geo_assignment.region_id and geo_assignment.region:
+                geo_data = {
+                    "level": "region",
+                    "region_name": geo_assignment.region.name,
+                }
+            if geo_data:
+                kpi_data["geography_assignments"].append(geo_data)
 
         # Export value type configurations with contributions
         configs = sorted(kpi.value_type_configs, key=lambda c: c.value_type.display_order)
