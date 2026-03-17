@@ -2014,6 +2014,27 @@ def search_page():
     org_name = session.get("organization_name")
     query = request.args.get("q", "").strip()
 
+    # Read filter parameters from URL
+    entity_types_param = request.args.get("entity_types", "")
+    date_range = request.args.get("date_range", "")
+    status_param = request.args.get("status", "")
+
+    # Parse filters for SearchService and template
+    filters = {}
+    entity_types_list = []
+    status_list = []
+
+    if entity_types_param:
+        entity_types_list = entity_types_param.split(",")
+        # Only add entity_types filter if it's not "all types" (less than 5 means actual filtering)
+        if len(entity_types_list) < 5:
+            filters["entity_types"] = entity_types_list
+    if date_range:
+        filters["date_range"] = date_range
+    if status_param:
+        status_list = status_param.split(",")
+        filters["status"] = status_list
+
     if not query:
         return render_template(
             "workspace/search.html",
@@ -2021,12 +2042,15 @@ def search_page():
             query="",
             results={},
             total=0,
+            entity_types=entity_types_list,
+            date_range=date_range,
+            status=status_list,
             csrf_token=generate_csrf,
         )
 
     # Use SearchService for fuzzy matching, modifiers, and filters
     # This gives the same powerful search experience as the navbar
-    search_results = SearchService.search_all(query, filters={}, organization_id=org_id)
+    search_results = SearchService.search_all(query, filters=filters, organization_id=org_id)
 
     # Transform SearchService results to match template expectations
     # SearchService returns more detailed results (match_score, updated_at, etc.)
@@ -2075,6 +2099,9 @@ def search_page():
         results=results,
         total=total,
         entity_defaults=entity_defaults,
+        entity_types=entity_types_list,
+        date_range=date_range,
+        status=status_list,
         csrf_token=generate_csrf,
     )
 

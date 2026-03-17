@@ -16,7 +16,12 @@
 <!-- Search Bar -->
 <div class="row mb-4">
     <div class="col-md-8 offset-md-2">
-        <form method="GET" action="{{ url_for('workspace.search_page') }}">
+        <form method="GET" action="{{ url_for('workspace.search_page') }}" id="searchForm">
+            <!-- Hidden inputs to preserve filters -->
+            <input type="hidden" name="entity_types" value="{{ entity_types|join(',') if entity_types else '' }}">
+            <input type="hidden" name="date_range" value="{{ date_range if date_range else '' }}">
+            <input type="hidden" name="status" value="{{ status|join(',') if status else '' }}">
+
             <div class="input-group input-group-lg">
                 <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search across all data..." autofocus>
                 <button class="btn btn-primary" type="submit">
@@ -406,4 +411,58 @@ body.dark-mode .list-group-item:hover a.flex-grow-1 {
     box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
 }
 </style>
+
+<script>
+// Restore filter panel state from URL parameters
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize searchFilters with values from backend
+    window.searchFilters = {
+        entity_types: {{ entity_types|tojson if entity_types else '[]'|safe }},
+        date_range: {{ date_range|tojson if date_range else '""'|safe }},
+        status: {{ status|tojson if status else '[]'|safe }}
+    };
+
+    // Restore checkboxes in filter panel
+    // Entity type checkboxes - uncheck all first, then check only filtered ones
+    const allEntityCheckboxes = ['filter_kpis', 'filter_systems', 'filter_initiatives', 'filter_challenges', 'filter_spaces'];
+    if (window.searchFilters.entity_types && window.searchFilters.entity_types.length > 0) {
+        // Uncheck all
+        allEntityCheckboxes.forEach(function(id) {
+            const checkbox = document.getElementById(id);
+            if (checkbox) checkbox.checked = false;
+        });
+
+        // Check only filtered types
+        window.searchFilters.entity_types.forEach(function(entityType) {
+            const checkbox = document.getElementById('filter_' + entityType);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+    }
+
+    // Restore date range select
+    if (window.searchFilters.date_range) {
+        const dateSelect = document.getElementById('filter_date');
+        if (dateSelect) {
+            dateSelect.value = window.searchFilters.date_range;
+        }
+    }
+
+    // Restore status checkboxes
+    if (window.searchFilters.status && window.searchFilters.status.length > 0) {
+        window.searchFilters.status.forEach(function(statusValue) {
+            const checkbox = document.getElementById('filter_' + statusValue);
+            if (checkbox) {
+                checkbox.checked = true;
+            }
+        });
+    }
+
+    // Update filter indicator badge
+    if (typeof updateFilterIndicator === 'function') {
+        updateFilterIndicator();
+    }
+});
+</script>
 {% endblock %}
