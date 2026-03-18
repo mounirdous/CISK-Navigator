@@ -21,7 +21,6 @@ from decimal import Decimal
 
 from app.extensions import db
 from app.models import (
-    KPI,
     ActionItem,
     Challenge,
     ChallengeInitiativeLink,
@@ -31,11 +30,9 @@ from app.models import (
     GeographySite,
     GovernanceBody,
     Initiative,
-    InitiativeSystemLink,
     KPIGeographyAssignment,
     KPIGovernanceBodyLink,
     KPISnapshot,
-    KPIValueTypeConfig,
     Organization,
     SavedChart,
     Space,
@@ -767,6 +764,28 @@ class DemoDataService:
         existing_org = Organization.query.filter_by(name=demo_org_name).first()
         if existing_org:
             old_org_id = existing_org.id
+
+            # Explicitly delete cell_comments first (before configs are deleted)
+            from app.models import KPI, CellComment, InitiativeSystemLink, KPIValueTypeConfig
+
+            # Get all KPI configs for this org
+            config_ids = (
+                db.session.query(KPIValueTypeConfig.id)
+                .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+                .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+                .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+                .filter(Initiative.organization_id == old_org_id)
+                .all()
+            )
+            config_ids = [c[0] for c in config_ids]
+
+            if config_ids:
+                # Delete all comments for these configs
+                CellComment.query.filter(CellComment.kpi_value_type_config_id.in_(config_ids)).delete(
+                    synchronize_session=False
+                )
+                db.session.flush()
+
             # Delete organization (cascading deletes handle related entities)
             db.session.delete(existing_org)
             db.session.commit()
@@ -796,6 +815,8 @@ class DemoDataService:
                 orphaned_data.append(f"Systems: {system_count}")
 
             # Check KPIs through InitiativeSystemLinks
+            from app.models import KPI, InitiativeSystemLink, KPIValueTypeConfig
+
             kpi_count = (
                 db.session.query(KPI)
                 .join(InitiativeSystemLink)
@@ -1161,39 +1182,6 @@ class DemoDataService:
                     }
                     db.session.add(vt)
 
-                    # Create default rollup rules for formula value types (consistent formatting)
-                    from app.models import RollupRule
-
-                    # System level
-                    rule_system = RollupRule(
-                        source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
-                        value_type_id=vt.id,
-                        rollup_enabled=True,
-                        display_scale="thousands",
-                        display_decimals=1,
-                    )
-                    db.session.add(rule_system)
-
-                    # Initiative level
-                    rule_initiative = RollupRule(
-                        source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
-                        value_type_id=vt.id,
-                        rollup_enabled=True,
-                        display_scale="thousands",
-                        display_decimals=1,
-                    )
-                    db.session.add(rule_initiative)
-
-                    # Challenge level
-                    rule_challenge = RollupRule(
-                        source_type=RollupRule.SOURCE_CHALLENGE,
-                        value_type_id=vt.id,
-                        rollup_enabled=True,
-                        display_scale="thousands",
-                        display_decimals=1,
-                    )
-                    db.session.add(rule_challenge)
-
         db.session.flush()
 
         # Create governance bodies for KPI oversight
@@ -1492,6 +1480,36 @@ class DemoDataService:
 
         db.session.flush()
 
+        # Create demo cell comments on some KPI configs
+        from app.models import CellComment
+
+        demo_comments = [
+            "Great progress on this KPI! Keep up the good work.",
+            "We should discuss this value in the next meeting - seems unusual.",
+            "This is tracking well against our target. Nice work team!",
+            "Can someone verify this data? Looks like it might need review.",
+            "Excellent trend! This shows our initiative is working.",
+            "@Demo_Contributor can you validate this number?",
+            "This needs attention - we're off track from our goal.",
+            "Perfect! This aligns with our quarterly objectives.",
+            "Let's monitor this closely over the next few weeks.",
+            "Outstanding results! Share this success with the board.",
+        ]
+
+        comments_created = 0
+        # Add comments to ~20% of configs (not too many, just realistic sample)
+        for config_data in random.sample(configs_created, min(len(configs_created) // 5, 10)):
+            config = config_data["config"]
+            comment = CellComment(
+                kpi_value_type_config_id=config.id,
+                user_id=users[0].id,  # Demo Admin
+                comment_text=random.choice(demo_comments),
+            )
+            db.session.add(comment)
+            comments_created += 1
+
+        db.session.flush()
+
         # Assign KPIs to geography locations (if geographies exist)
         geography_assignments_created = 0
         if geography_entities and kpis_created:
@@ -1553,6 +1571,7 @@ class DemoDataService:
             "kpis": len(kpis_created),
             "configs": len(configs_created),
             "snapshots": snapshots_created,
+            "comments": comments_created,
             "action_items": action_items_created,
             "saved_charts": saved_charts_created,
         }
