@@ -29,7 +29,7 @@ class SavedSearch(db.Model):
 
     # Relationships
     user = db.relationship("User", backref="saved_searches")
-    organization = db.relationship("Organization", backref="saved_searches")
+    organization = db.relationship("Organization", backref=db.backref("saved_searches", passive_deletes=True))
 
     def to_dict(self):
         """Convert to dictionary for API responses"""

@@ -24,7 +24,7 @@ class GeographyRegion(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    organization = db.relationship("Organization", backref="geography_regions")
+    organization = db.relationship("Organization", backref=db.backref("geography_regions", passive_deletes=True))
     countries = db.relationship(
         "GeographyCountry",
         back_populates="region",
