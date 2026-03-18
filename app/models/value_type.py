@@ -161,12 +161,16 @@ class ValueType(db.Model):
         return self.calculation_type == self.CALC_FORMULA
 
     def get_source_value_types(self):
-        """Get source value types for formula calculation"""
+        """Get source value types for formula calculation (preserves order)"""
         if not self.is_formula() or not self.calculation_config:
             return []
 
         source_ids = self.calculation_config.get("source_value_type_ids", [])
-        return ValueType.query.filter(ValueType.id.in_(source_ids)).all()
+        value_types = ValueType.query.filter(ValueType.id.in_(source_ids)).all()
+
+        # Sort by the order in source_ids (important for subtract/divide operations)
+        vt_dict = {vt.id: vt for vt in value_types}
+        return [vt_dict[id] for id in source_ids if id in vt_dict]
 
     def get_formula_display(self):
         """Get human-readable formula display (e.g., 'Revenue - Cost')"""

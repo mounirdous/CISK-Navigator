@@ -646,7 +646,14 @@ class DemoDataService:
                 {"name": "CO2", "kind": "numeric", "unit_label": "kg"},
                 {"name": "Cost", "kind": "numeric", "unit_label": "$"},
                 {"name": "Revenue", "kind": "numeric", "unit_label": "$"},
-                {"name": "Net", "kind": "numeric", "unit_label": "$"},
+                {
+                    "name": "Net",
+                    "kind": "numeric",
+                    "unit_label": "$",
+                    "is_formula": True,
+                    "formula_operation": "subtract",
+                    "formula_sources": ["Revenue", "Cost"],  # Source value type names
+                },
                 {"name": "Temperature", "kind": "numeric", "unit_label": "°C"},
                 {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
                 {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
@@ -1116,6 +1123,7 @@ class DemoDataService:
         value_types = []
         value_type_configs = scenario.get("value_types", [])
 
+        # First pass: Create all value types (without formulas)
         for idx, vt_data in enumerate(value_type_configs):
             vt = ValueType(
                 organization_id=org.id,
@@ -1123,9 +1131,32 @@ class DemoDataService:
                 kind=vt_data["kind"],
                 unit_label=vt_data["unit_label"],
                 display_order=idx + 1,  # Explicit ordering
+                calculation_type="manual",  # Default to manual
             )
             db.session.add(vt)
             value_types.append(vt)
+        db.session.flush()
+
+        # Second pass: Configure formulas (now that all value types have IDs)
+        for idx, vt_data in enumerate(value_type_configs):
+            if vt_data.get("is_formula"):
+                vt = value_types[idx]
+                operation = vt_data.get("formula_operation")
+                source_names = vt_data.get("formula_sources", [])
+
+                # Find source value type IDs by name
+                source_ids = []
+                for source_name in source_names:
+                    source_vt = next((v for v in value_types if v.name == source_name), None)
+                    if source_vt:
+                        source_ids.append(source_vt.id)
+
+                if len(source_ids) == len(source_names):
+                    # Set up formula
+                    vt.calculation_type = "formula"
+                    vt.calculation_config = {"operation": operation, "source_value_type_ids": source_ids}
+                    db.session.add(vt)
+
         db.session.flush()
 
         # Create governance bodies for KPI oversight
