@@ -1419,13 +1419,18 @@ async function submitAddToMap() {
             throw new Error(data.error || 'Failed to add stakeholder to map');
         }
 
-        // Close modal and reload page
+        // Close modal
         const modal = bootstrap.Modal.getInstance(document.getElementById('addToMapModal'));
         modal.hide();
 
-        // Show success message
+        // Show success message and redirect to the map view
         alert('Stakeholder added to map successfully!');
-        location.reload();
+
+        // Redirect to view the map (not just reload)
+        const url = new URL(window.location);
+        url.searchParams.set('map_id', mapId);
+        url.searchParams.set('organization_id', organizationId);
+        window.location.href = url.toString();
     } catch (error) {
         console.error('Error adding to map:', error);
         alert('Error: ' + error.message);

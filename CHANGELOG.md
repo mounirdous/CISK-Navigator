@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.1] - 2026-03-18
+
+### Fixed - Add to Map UX Improvement
+**Bug Fix**: After adding stakeholder to map, automatically switch to viewing that map
+
+**Issue**: When adding a stakeholder to a map, page reloaded but stayed on "All Stakeholders" view. User would see all stakeholders instead of just the ones in the selected map, causing confusion about whether the add worked.
+
+**Solution**: After successful addition, redirect to the map view (`?map_id=X`) instead of just reloading. Now you immediately see the map with the newly added stakeholder.
+
 ## [2.9.0] - 2026-03-18
 
 ### Feature - Add to Map Modal
@@ -16,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Select a map and add the stakeholder with one click
 - Shows map visibility (private 🔒 or shared 👥) and stakeholder count
 - Validates: prevents duplicates, requires map selection
-- Auto-reloads visualization after successful addition
+- Auto-switches to map view after successful addition
 
 **Technical Details**:
 - Modal uses existing `/stakeholders/maps/<map_id>/add-stakeholder` endpoint
