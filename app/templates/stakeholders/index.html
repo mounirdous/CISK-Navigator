@@ -685,6 +685,18 @@ async function loadGraph(filters = {}) {
         }
     });
 
+    // Right-click context menu using vis.js event system
+    network.on('oncontext', function(params) {
+        params.event.preventDefault();
+
+        if (params.nodes.length > 0) {
+            contextMenuNodeId = params.nodes[0];
+            showContextMenu(params.event.pageX, params.event.pageY);
+        } else {
+            hideContextMenu();
+        }
+    });
+
     // Calculate and display statistics after graph loads
     calculateStatistics(data);
 }
@@ -1921,40 +1933,11 @@ h2 {
 // ========================================
 let contextMenuNodeId = null;
 
-// Add right-click event listener to network
-document.addEventListener('DOMContentLoaded', function() {
-    const networkElement = document.getElementById('networkGraph');
-
-    if (networkElement) {
-        networkElement.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-
-            if (!network) return;
-
-            // Get position relative to the network element
-            const rect = networkElement.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            // Convert to canvas coordinates
-            const canvasPos = network.DOMtoCanvas({x: x, y: y});
-            const nodeId = network.getNodeAt(canvasPos);
-
-            if (nodeId) {
-                contextMenuNodeId = nodeId;
-                showContextMenu(e.pageX, e.pageY);
-            } else {
-                hideContextMenu();
-            }
-        });
+// Hide context menu when clicking elsewhere
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#contextMenu')) {
+        hideContextMenu();
     }
-
-    // Hide context menu when clicking elsewhere
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('#contextMenu')) {
-            hideContextMenu();
-        }
-    });
 });
 
 function showContextMenu(x, y) {

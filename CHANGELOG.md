@@ -5,14 +5,25 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.3] - 2026-03-18
+
+### Fixed - Right-Click Context Menu (Proper Fix)
+**Bug Fix**: Right-click context menu now uses vis.js event system for 100% reliability
+
+**Root Cause**: Previous fix (v2.8.2) still used DOM event listener with manual coordinate conversion. Left-click worked reliably because it used vis.js's built-in event system (`network.on('click', ...)`), but right-click used DOM's `addEventListener('contextmenu', ...)` which required error-prone coordinate math.
+
+**Solution**: Use vis.js's `network.on('oncontext', ...)` event - same reliable event system as left-click. Gets `params.nodes` directly without coordinate conversion. Now works exactly like left-click does.
+
 ## [2.8.2] - 2026-03-18
 
-### Fixed - Network Visualization Right-Click
-**Bug Fix**: Right-click context menu now works consistently on all nodes in stakeholder network
+### Fixed - Network Visualization Right-Click (Incomplete)
+**Note**: This fix improved right-click detection but still had reliability issues. See v2.8.3 for proper fix.
+
+**Bug Fix**: Right-click context menu coordinate detection improved
 
 **Issue**: Right-click detection failed intermittently, especially after scrolling or when network wasn't at top of page. Used page coordinates instead of canvas-relative coordinates.
 
-**Solution**: Calculate click position relative to network element using `getBoundingClientRect()`, then convert to canvas coordinates. Works reliably at any scroll position or zoom level.
+**Solution**: Calculate click position relative to network element using `getBoundingClientRect()`, then convert to canvas coordinates.
 
 ## [2.8.1] - 2026-03-18
 
