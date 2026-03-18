@@ -2191,17 +2191,28 @@
                               :title="'Click to ' + (vt.collapsed ? 'expand' : 'collapse') + ': ' + vt.name">
                             ⇄
                         </span>
-                        <!-- Formula Icon (For Formula Value Types) -->
+                        <!-- Formula Icon (For Formula Value Types) - Clickable in Edit Mode -->
                         <template x-if="vt.calculation_type === 'formula'">
-                            <span class="formula-indicator-icon"
-                                  :title="'Formula: ' + (vt.formula_display || 'Calculated')"
-                                  style="position: absolute; top: 4px; left: 4px; font-size: 0.8rem; opacity: 0.7; color: #10b981; cursor: help;">
-                                <i class="bi bi-table"></i>
-                            </span>
+                            <template x-if="editMode">
+                                <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspace') }}`.replace('/0/', `/${vt.id}/`)"
+                                   class="formula-indicator-icon"
+                                   :title="'Configure rollup display for ' + vt.name"
+                                   @click.stop
+                                   style="position: absolute; top: 4px; left: 4px; font-size: 0.8rem; opacity: 0.7; color: #10b981; text-decoration: none; transition: opacity 0.2s;">
+                                    <i class="bi bi-table"></i>
+                                </a>
+                            </template>
+                            <template x-if="!editMode">
+                                <span class="formula-indicator-icon"
+                                      :title="'Formula: ' + (vt.formula_display || 'Calculated')"
+                                      style="position: absolute; top: 4px; left: 4px; font-size: 0.8rem; opacity: 0.7; color: #10b981; cursor: help;">
+                                    <i class="bi bi-table"></i>
+                                </span>
+                            </template>
                         </template>
                         <!-- Rollup Config Icon (Edit Mode Only, Manual Numeric Only) -->
                         <template x-if="editMode && vt.kind === 'numeric' && vt.calculation_type !== 'formula'">
-                            <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspace') }}`.replace('vt_id=0', `vt_id=${vt.id}`)"
+                            <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspace') }}`.replace('/0/', `/${vt.id}/`)"
                                class="rollup-config-icon"
                                :title="'Configure rollup display for ' + vt.name"
                                @click.stop
