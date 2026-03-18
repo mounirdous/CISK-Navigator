@@ -1073,31 +1073,37 @@ class DemoDataService:
             base_value = random.uniform(50, 500)
             trend = random.choice([-0.01, 0, 0.01, 0.02])  # -1%, 0%, +1%, +2% per snapshot
 
-            # Contributor names
+            # Decide workflow: 40% use "Contribute" mode (with contributions), 60% use "Enter Data" mode
+            use_contributions = (config.id % 5) < 2  # Deterministic: some KPIs have contributions
             contributors = ["Alice Johnson", "Bob Smith", "Carol Williams"]
 
             for idx, snapshot_date in enumerate(dates):
                 # Apply trend
                 value = base_value * (1 + trend) ** idx
 
-                # Create 2-3 contributions with variations (±5%)
-                num_contributors = random.randint(2, 3)
-                contributor_values = []
+                if use_contributions:
+                    # WORKFLOW 1: "Contribute" mode - Multiple opinions → Consensus
+                    num_contributors = random.randint(2, 3)
+                    contributor_values = []
 
-                for i in range(num_contributors):
-                    contrib_value = value * random.uniform(0.95, 1.05)
-                    contributor_values.append(contrib_value)
+                    for i in range(num_contributors):
+                        contrib_value = value * random.uniform(0.95, 1.05)  # ±5% variation
+                        contributor_values.append(contrib_value)
 
-                    # Create contribution for this snapshot
-                    contribution = Contribution(
-                        kpi_value_type_config_id=config.id,
-                        contributor_name=contributors[i],
-                        numeric_value=Decimal(str(round(contrib_value, 2))),
-                    )
-                    db.session.add(contribution)
+                        contribution = Contribution(
+                            kpi_value_type_config_id=config.id,
+                            contributor_name=contributors[i],
+                            numeric_value=Decimal(str(round(contrib_value, 2))),
+                        )
+                        db.session.add(contribution)
 
-                # Consensus is average of contributions
-                consensus_value = sum(contributor_values) / len(contributor_values)
+                    # Consensus = average
+                    consensus_value = sum(contributor_values) / len(contributor_values)
+                    contributor_count = num_contributors
+                else:
+                    # WORKFLOW 2: "Enter Data" mode - Direct entry with immediate consensus
+                    consensus_value = value * random.uniform(0.9, 1.1)  # ±10% variation
+                    contributor_count = 1  # Single direct entry
 
                 snapshot = KPISnapshot(
                     kpi_value_type_config_id=config.id,
@@ -1110,7 +1116,7 @@ class DemoDataService:
                     owner_user_id=user_id,
                     consensus_status="strong",
                     consensus_value=Decimal(str(round(consensus_value, 2))),
-                    contributor_count=num_contributors,
+                    contributor_count=contributor_count,
                     is_rollup_eligible=True,
                 )
                 db.session.add(snapshot)
