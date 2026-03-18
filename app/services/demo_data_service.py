@@ -588,7 +588,7 @@ class DemoDataService:
                 role=sh_data["role"],
                 influence_level=sh_data["influence"],
                 interest_level=sh_data["interest"],
-                contact_email=f"{sh_data['name'].lower().replace(' ', '.')}@{scenario_key}.local",
+                email=f"{sh_data['name'].lower().replace(' ', '.')}@{scenario_key}.local",
                 created_by_user_id=users[0].id,
             )
             db.session.add(stakeholder)
