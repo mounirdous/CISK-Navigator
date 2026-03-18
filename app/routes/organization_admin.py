@@ -981,7 +981,7 @@ def create_space():
         flash(f"Space {space.name} created successfully", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
-    return render_template("organization_admin/create_space.html", form=form)
+    return render_template("organization_admin/create_space.html", form=form, csrf_token=generate_csrf)
 
 
 @bp.route("/spaces/<int:space_id>/edit", methods=["GET", "POST"])
@@ -1111,7 +1111,7 @@ def edit_space_swot(space_id):
 
         return redirect(url_for("organization_admin.space_swot", space_id=space.id))
 
-    return render_template("organization_admin/edit_space_swot.html", space=space)
+    return render_template("organization_admin/edit_space_swot.html", space=space, csrf_token=generate_csrf)
 
 
 # Challenge Management
@@ -1182,7 +1182,7 @@ def create_challenge(space_id):
         flash(f"Challenge {challenge.name} created successfully in {space.name}", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
-    return render_template("organization_admin/create_challenge.html", form=form, space=space)
+    return render_template("organization_admin/create_challenge.html", form=form, space=space, csrf_token=generate_csrf)
 
 
 @bp.route("/challenges/<int:challenge_id>/edit", methods=["GET", "POST"])
@@ -1353,7 +1353,11 @@ def create_initiative(challenge_id):
         }
 
     return render_template(
-        "organization_admin/create_initiative.html", form=form, challenge=challenge, entity_defaults=entity_defaults
+        "organization_admin/create_initiative.html",
+        form=form,
+        challenge=challenge,
+        entity_defaults=entity_defaults,
+        csrf_token=generate_csrf,
     )
 
 
@@ -1533,7 +1537,9 @@ def create_system(initiative_id):
         flash(f"System {system.name} created and linked to {initiative.name}", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
-    return render_template("organization_admin/create_system.html", form=form, initiative=initiative)
+    return render_template(
+        "organization_admin/create_system.html", form=form, initiative=initiative, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/systems/<int:system_id>/edit", methods=["GET", "POST"])
@@ -1922,6 +1928,7 @@ def create_kpi(link_id):
         preselect_value_types=preselect_value_types,
         preselect_governance_bodies=preselect_governance_bodies,
         entity_defaults=entity_defaults,
+        csrf_token=generate_csrf,
     )
 
 
@@ -2461,7 +2468,7 @@ def create_value_type():
 
         return redirect(url_for("organization_admin.value_types"))
 
-    return render_template("organization_admin/create_value_type.html", form=form)
+    return render_template("organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf)
 
 
 @bp.route("/value-types/<int:vt_id>/edit", methods=["GET", "POST"])
@@ -2509,7 +2516,9 @@ def edit_value_type(vt_id):
         flash(f"Value Type {value_type.name} updated successfully", "success")
         return redirect(url_for("organization_admin.value_types"))
 
-    return render_template("organization_admin/edit_value_type.html", form=form, value_type=value_type)
+    return render_template(
+        "organization_admin/edit_value_type.html", form=form, value_type=value_type, csrf_token=generate_csrf
+    )
 
 
 @bp.route("/value-types/<int:vt_id>/delete-check")
@@ -2849,7 +2858,7 @@ def create_governance_body():
 
         return redirect(url_for("organization_admin.governance_bodies"))
 
-    return render_template("organization_admin/create_governance_body.html", form=form)
+    return render_template("organization_admin/create_governance_body.html", form=form, csrf_token=generate_csrf)
 
 
 @bp.route("/governance-bodies/<int:gb_id>/edit", methods=["GET", "POST"])
@@ -2877,7 +2886,12 @@ def edit_governance_body(gb_id):
         flash(f"Governance Body {governance_body.name} updated successfully", "success")
         return redirect(url_for("organization_admin.governance_bodies"))
 
-    return render_template("organization_admin/edit_governance_body.html", form=form, governance_body=governance_body)
+    return render_template(
+        "organization_admin/edit_governance_body.html",
+        form=form,
+        governance_body=governance_body,
+        csrf_token=generate_csrf,
+    )
 
 
 @bp.route("/governance-bodies/<int:gb_id>/delete", methods=["POST"])

@@ -293,6 +293,142 @@ class TestCSRFTokenAvailability:
         assert response.status_code == 302  # Should redirect
         assert "/org-admin/porters" in response.location  # Should redirect to view page
 
+    def test_entity_create_edit_routes(self, authenticated_org_user, sample_organization, org_user):
+        """Test all create/edit entity routes have csrf_token"""
+        from app import db
+        from app.models import Challenge, GovernanceBody, Initiative, Space, System, ValueType
+
+        # Give user full permissions
+        membership = org_user.get_membership(sample_organization.id)
+        membership.can_manage_spaces = True
+        membership.can_manage_challenges = True
+        membership.can_manage_initiatives = True
+        membership.can_manage_systems = True
+        membership.can_manage_kpis = True
+        membership.can_manage_value_types = True
+        membership.can_manage_governance_bodies = True
+        db.session.commit()
+
+        # Create test space
+        space = Space(
+            name="Test Space",
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(space)
+        db.session.commit()
+
+        # Test space routes
+        response = authenticated_org_user.get("/org-admin/spaces/create")
+        self.assert_no_csrf_errors(response)
+
+        response = authenticated_org_user.get(f"/org-admin/spaces/{space.id}/edit")
+        self.assert_no_csrf_errors(response)
+
+        response = authenticated_org_user.get(f"/org-admin/spaces/{space.id}/swot/edit")
+        self.assert_no_csrf_errors(response)
+
+        # Create test challenge
+        challenge = Challenge(
+            name="Test Challenge",
+            space_id=space.id,
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(challenge)
+        db.session.commit()
+
+        # Test challenge routes
+        response = authenticated_org_user.get(f"/org-admin/spaces/{space.id}/challenges/create")
+        self.assert_no_csrf_errors(response)
+
+        response = authenticated_org_user.get(f"/org-admin/challenges/{challenge.id}/edit")
+        self.assert_no_csrf_errors(response)
+
+        # Create test initiative
+        initiative = Initiative(
+            name="Test Initiative",
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(initiative)
+        db.session.flush()
+
+        # Link initiative to challenge
+        from app.models import ChallengeInitiativeLink
+
+        link = ChallengeInitiativeLink(challenge_id=challenge.id, initiative_id=initiative.id, display_order=1)
+        db.session.add(link)
+        db.session.commit()
+
+        # Test initiative routes
+        response = authenticated_org_user.get(f"/org-admin/challenges/{challenge.id}/initiatives/create")
+        self.assert_no_csrf_errors(response)
+
+        response = authenticated_org_user.get(f"/org-admin/initiatives/{initiative.id}/edit")
+        self.assert_no_csrf_errors(response)
+
+        # Create test system
+        system = System(
+            name="Test System",
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(system)
+        db.session.flush()
+
+        # Link system to initiative
+        from app.models import InitiativeSystemLink
+
+        sys_link = InitiativeSystemLink(initiative_id=initiative.id, system_id=system.id, display_order=1)
+        db.session.add(sys_link)
+        db.session.commit()
+
+        # Test system routes
+        response = authenticated_org_user.get(f"/org-admin/initiatives/{initiative.id}/systems/create")
+        self.assert_no_csrf_errors(response)
+
+        response = authenticated_org_user.get(f"/org-admin/systems/{system.id}/edit")
+        self.assert_no_csrf_errors(response)
+
+        # Test KPI routes
+        response = authenticated_org_user.get(f"/org-admin/systems/{system.id}/kpis/create")
+        self.assert_no_csrf_errors(response)
+
+        # Test value type routes
+        response = authenticated_org_user.get("/org-admin/value-types/create")
+        self.assert_no_csrf_errors(response)
+
+        # Create test value type for edit
+        value_type = ValueType(
+            name="Test VT",
+            unit_label="units",
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(value_type)
+        db.session.commit()
+
+        response = authenticated_org_user.get(f"/org-admin/value-types/{value_type.id}/edit")
+        self.assert_no_csrf_errors(response)
+
+        # Test governance body routes
+        response = authenticated_org_user.get("/org-admin/governance-bodies/create")
+        self.assert_no_csrf_errors(response)
+
+        # Create test governance body for edit
+        gb = GovernanceBody(
+            name="Test GB",
+            abbreviation="TGB",
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(gb)
+        db.session.commit()
+
+        response = authenticated_org_user.get(f"/org-admin/governance-bodies/{gb.id}/edit")
+        self.assert_no_csrf_errors(response)
+
 
 @pytest.mark.parametrize(
     "route",
