@@ -4,6 +4,7 @@ Authentication routes
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.forms import ChangePasswordForm, LoginForm, ProfileEditForm
@@ -265,7 +266,7 @@ def change_password():
         else:
             return redirect(url_for("workspace.dashboard"))
 
-    return render_template("auth/change_password.html", form=form)
+    return render_template("auth/change_password.html", form=form, csrf_token=generate_csrf)
 
 
 # ============================================================================

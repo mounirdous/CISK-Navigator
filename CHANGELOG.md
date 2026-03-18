@@ -5,6 +5,24 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.2] - 2026-03-18
+
+### Fixed - CSRF Token in Change Password (CRITICAL HOTFIX)
+**Critical Bug**: New users hit 500 error when redirected to change password page
+
+**Error**: `jinja2.exceptions.UndefinedError: 'csrf_token' is undefined`
+
+**Root Cause**: The `/auth/change-password` route didn't pass `csrf_token=generate_csrf` to the template, but `base.html` expects it.
+
+**Impact**: Any newly created user with `must_change_password=True` couldn't log in. Production login broken for new users.
+
+**Fix**:
+- Added `from flask_wtf.csrf import generate_csrf` import to auth.py
+- Added `csrf_token=generate_csrf` to change_password render_template call
+- Now follows same pattern as all other routes
+
+**Note**: This is the same CSRF pattern issue that has occurred multiple times. Need comprehensive testing for all routes.
+
 ## [2.10.1] - 2026-03-18
 
 ### Improved - UX for Map Selection
