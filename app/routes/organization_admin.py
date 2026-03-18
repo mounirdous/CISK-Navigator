@@ -186,7 +186,7 @@ def organization_porters():
     """View Porter's Five Forces analysis for the organization"""
     org_id = session.get("organization_id")
     org = Organization.query.get_or_404(org_id)
-    return render_template("organization_admin/organization_porters.html", organization=org)
+    return render_template("organization_admin/organization_porters.html", organization=org, csrf_token=generate_csrf)
 
 
 @bp.route("/porters/edit", methods=["GET", "POST"])

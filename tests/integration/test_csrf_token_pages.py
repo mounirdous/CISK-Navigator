@@ -285,6 +285,7 @@ class TestCSRFTokenAvailability:
         "/org-admin/governance-bodies",
         "/org-admin/yaml-upload",
         "/org-admin/geography/",
+        "/org-admin/porters",
         # Workspace
         "/workspace/",
         "/workspace/snapshots/list",
