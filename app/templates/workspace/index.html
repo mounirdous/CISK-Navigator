@@ -3145,19 +3145,22 @@ function workspaceV2(orgId, filterPresets) {
                 return true;
             }).map(space => ({
                 ...space,
-                challenges: space.challenges.filter(challenge => {
-                    return challenge.initiatives.some(initiative => this.filterInitiative(initiative));
-                }).map(challenge => ({
+                // Show ALL challenges, not just those with initiatives
+                challenges: space.challenges.map(challenge => ({
                     ...challenge,
+                    // Filter initiatives by actual filters (groups, impact)
                     initiatives: challenge.initiatives.filter(initiative => this.filterInitiative(initiative)).map(initiative => ({
                         ...initiative,
+                        // Show ALL systems, not just those with KPIs
                         systems: initiative.systems.map(system => ({
                             ...system,
+                            // Filter KPIs by actual filters (governance bodies)
                             kpis: system.kpis.filter(kpi => this.filterKPI(kpi))
-                        })).filter(system => system.kpis.length > 0)
+                        }))
                     }))
                 }))
-            })).filter(space => space.challenges.length > 0);
+            }));
+            // DO NOT filter out empty entities - users need to see them to populate them!
         },
 
         filterInitiative(initiative) {

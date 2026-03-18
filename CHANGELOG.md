@@ -5,6 +5,42 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.5] - 2026-03-18
+
+### Fixed - Critical: Empty Spaces Not Visible in Workspace
+
+**Critical Bug**: Newly created spaces without challenges were invisible in workspace tree
+
+**Issue**: After creating a new space, it would not appear in the workspace tree. The space was created successfully in the database, but the workspace UI filtered it out.
+
+**Root Cause**: The `filteredSpaces` computed property had a final filter that removed spaces with no challenges:
+```javascript
+.filter(space => space.challenges.length > 0)
+```
+
+This made it impossible to see empty spaces, which meant users couldn't add challenges to them!
+
+**Impact**: Users couldn't work with newly created spaces until they added challenges through a direct route. This broke the normal workflow of: Create Space → Add Challenges → Add Initiatives → etc.
+
+**Fix**: Removed the filter that hid empty spaces. Users can now see all spaces regardless of whether they have challenges.
+
+**Files Modified:**
+- `app/templates/workspace/index.html` - Removed empty space filter from filteredSpaces computed property
+
+### Fixed - Filter Panel Auto-Expansion After Entity Creation
+
+**Issue**: After creating entities (space, challenge, initiative, system, KPI), the filter panel would expand and hide the workspace tree.
+
+**Fix**:
+- When `auto_edit=1` parameter is present, force collapse filter panel
+- Enable edit mode automatically after entity creation
+- All create routes pass `auto_edit=1` when returning to workspace
+
+**Result**: After creating entities, users see collapsed filters with tree visible and edit mode enabled.
+
+**Files Modified:**
+- `app/templates/workspace/index.html` - Improved auto_edit logic to collapse filters
+
 ## [2.10.4] - 2026-03-18
 
 ### Fixed - CSRF Token Errors + Porter's Permission + Workspace UI
