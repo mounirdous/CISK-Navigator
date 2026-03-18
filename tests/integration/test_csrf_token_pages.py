@@ -333,7 +333,6 @@ class TestCSRFTokenAvailability:
             name="Test Challenge",
             space_id=space.id,
             organization_id=sample_organization.id,
-            created_by=org_user.id,
         )
         db.session.add(challenge)
         db.session.commit()
@@ -349,7 +348,6 @@ class TestCSRFTokenAvailability:
         initiative = Initiative(
             name="Test Initiative",
             organization_id=sample_organization.id,
-            created_by=org_user.id,
         )
         db.session.add(initiative)
         db.session.flush()
@@ -372,7 +370,6 @@ class TestCSRFTokenAvailability:
         system = System(
             name="Test System",
             organization_id=sample_organization.id,
-            created_by=org_user.id,
         )
         db.session.add(system)
         db.session.flush()
@@ -404,7 +401,6 @@ class TestCSRFTokenAvailability:
             name="Test VT",
             unit_label="units",
             organization_id=sample_organization.id,
-            created_by=org_user.id,
         )
         db.session.add(value_type)
         db.session.commit()
@@ -421,7 +417,6 @@ class TestCSRFTokenAvailability:
             name="Test GB",
             abbreviation="TGB",
             organization_id=sample_organization.id,
-            created_by=org_user.id,
         )
         db.session.add(gb)
         db.session.commit()
