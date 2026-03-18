@@ -762,12 +762,13 @@ class DemoDataService:
 
         # Check if organization already exists - if so, delete it completely
         existing_org = Organization.query.filter_by(name=demo_org_name).first()
+        # Import models used throughout this function
+        from app.models import KPI, CellComment, InitiativeSystemLink, KPIValueTypeConfig
+
         if existing_org:
             old_org_id = existing_org.id
 
             # Explicitly delete cell_comments first (before configs are deleted)
-            from app.models import KPI, CellComment, InitiativeSystemLink, KPIValueTypeConfig
-
             # Get all KPI configs for this org
             config_ids = (
                 db.session.query(KPIValueTypeConfig.id)
@@ -815,8 +816,6 @@ class DemoDataService:
                 orphaned_data.append(f"Systems: {system_count}")
 
             # Check KPIs through InitiativeSystemLinks
-            from app.models import KPI, InitiativeSystemLink, KPIValueTypeConfig
-
             kpi_count = (
                 db.session.query(KPI)
                 .join(InitiativeSystemLink)
