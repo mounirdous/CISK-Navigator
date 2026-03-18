@@ -3732,21 +3732,23 @@ function workspaceV2(orgId, filterPresets) {
                 this.selectedImpactLevels = impactParams;
             }
 
-            // Check if we have actual filter parameters (not just navigation params like auto_edit)
-            const hasFilterParams = urlParams.has('spaceTypeFilter') ||
-                                   gbParams.length > 0 ||
-                                   spaceParams.length > 0 ||
-                                   groupParams.length > 0 ||
-                                   impactParams.length > 0;
-
-            // Expand filters only if actual filter parameters were loaded (not for entity mention links or auto_edit)
-            if (hasFilterParams && !fromEntityLink) {
-                this.filtersExpanded = true;
-            }
-
-            // Auto-enable edit mode if returning from entity creation
-            if (urlParams.has('auto_edit') && urlParams.get('auto_edit') === '1') {
+            // Auto-enable edit mode and collapse filters if returning from entity creation
+            const autoEdit = urlParams.has('auto_edit') && urlParams.get('auto_edit') === '1';
+            if (autoEdit) {
                 this.editMode = true;
+                this.filtersExpanded = false;  // Always collapse filters after entity creation
+            } else {
+                // Check if we have actual filter parameters (not just navigation params like auto_edit)
+                const hasFilterParams = urlParams.has('spaceTypeFilter') ||
+                                       gbParams.length > 0 ||
+                                       spaceParams.length > 0 ||
+                                       groupParams.length > 0 ||
+                                       impactParams.length > 0;
+
+                // Expand filters only if actual filter parameters were loaded (not for entity mention links)
+                if (hasFilterParams && !fromEntityLink) {
+                    this.filtersExpanded = true;
+                }
             }
 
             // Load action items count
