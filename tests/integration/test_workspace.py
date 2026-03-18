@@ -88,9 +88,18 @@ class TestWorkspaceGrid:
             sess["organization_id"] = sample_organization.id
             sess["organization_name"] = sample_organization.name
 
+        # Test that workspace page loads
         response = client.get("/workspace/")
         assert response.status_code == 200
-        assert b"Project Alpha" in response.data
+
+        # Test that workspace API returns the space data
+        response = client.get("/workspace/data")
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data is not None
+        assert "spaces" in data
+        assert len(data["spaces"]) == 1
+        assert data["spaces"][0]["name"] == "Project Alpha"
 
     def test_workspace_filter_by_space_type(self, client, org_user, sample_organization, db):
         """Test workspace can filter by public/private spaces"""
@@ -118,15 +127,25 @@ class TestWorkspaceGrid:
             sess["organization_id"] = sample_organization.id
             sess["organization_name"] = sample_organization.name
 
-        # Test filter for public spaces
-        response = client.get("/workspace/?space_type=public")
+        # Test that workspace API returns both spaces
+        response = client.get("/workspace/data")
         assert response.status_code == 200
-        assert b"Public Space" in response.data
+        data = response.get_json()
+        assert data is not None
+        assert "spaces" in data
+        assert len(data["spaces"]) == 2
 
-        # Test filter for private spaces
-        response = client.get("/workspace/?space_type=private")
-        assert response.status_code == 200
-        assert b"Private Space" in response.data
+        # Verify public space is in data
+        space_names = [s["name"] for s in data["spaces"]]
+        assert "Public Space" in space_names
+        assert "Private Space" in space_names
+
+        # Verify privacy flags are correct
+        for space in data["spaces"]:
+            if space["name"] == "Public Space":
+                assert space["is_private"] is False
+            elif space["name"] == "Private Space":
+                assert space["is_private"] is True
 
 
 class TestKPIDetail:

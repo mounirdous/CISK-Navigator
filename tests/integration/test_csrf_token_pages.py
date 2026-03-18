@@ -398,6 +398,7 @@ class TestCSRFTokenAvailability:
         # Create test value type for edit
         value_type = ValueType(
             name="Test VT",
+            kind=ValueType.KIND_NUMERIC,
             unit_label="units",
             organization_id=sample_organization.id,
         )
@@ -468,6 +469,19 @@ class TestOrganizationRoutes:
                 membership.is_org_admin = True
                 from app import db
 
+                db.session.commit()
+
+            # For /stakeholders/create, we need at least one stakeholder map
+            if route == "/stakeholders/create":
+                from app.models import StakeholderMap
+
+                stakeholder_map = StakeholderMap(
+                    name="Test Map",
+                    organization_id=sample_organization.id,
+                    created_by_user_id=org_user.id,
+                    visibility="shared",
+                )
+                db.session.add(stakeholder_map)
                 db.session.commit()
 
         with client:
