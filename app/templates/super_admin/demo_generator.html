@@ -119,22 +119,85 @@
                     <input type="hidden" name="scenario_key" id="scenario_key" value=""/>
 
                     <div class="row g-3">
-                        <!-- User Emails -->
+                        <!-- Demo Users -->
                         <div class="col-md-6">
-                            <label for="user_emails" class="form-label">
-                                <i class="fas fa-users text-info me-1"></i>
-                                User Emails (comma-separated)
-                            </label>
-                            <textarea
-                                class="form-control"
-                                id="user_emails"
-                                name="user_emails"
-                                rows="3"
-                                placeholder="admin@example.com, user1@example.com, user2@example.com"
-                            ></textarea>
-                            <div class="form-text">
-                                <strong>Password for all demo users: Demo2026!</strong> (no forced change)<br>
-                                Leave empty to create 3 generic demo users. First user will be an admin.
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-users text-info me-1"></i>
+                                    Demo Users
+                                </label>
+                                <div class="alert alert-info py-2 mb-2">
+                                    <small>
+                                        <strong>Password for all demo users: Demo2026!</strong> (no forced change)<br>
+                                        <strong>Emails are optional</strong> - leave empty to test notification handling without emails
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Admin User -->
+                            <div class="mb-3">
+                                <label for="admin_email" class="form-label">
+                                    <i class="fas fa-user-shield text-danger me-1"></i>
+                                    Admin Email
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-user me-1"></i>
+                                        <code id="admin_username" class="text-dark">demo_admin_...</code>
+                                    </span>
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        id="admin_email"
+                                        name="admin_email"
+                                        placeholder="admin@example.com or leave empty"
+                                    />
+                                </div>
+                                <div class="form-text">Full permissions - can manage everything</div>
+                            </div>
+
+                            <!-- Contributor User -->
+                            <div class="mb-3">
+                                <label for="contributor_email" class="form-label">
+                                    <i class="fas fa-user-edit text-primary me-1"></i>
+                                    Contributor Email
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-user me-1"></i>
+                                        <code id="contributor_username" class="text-dark">demo_contributor_...</code>
+                                    </span>
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        id="contributor_email"
+                                        name="contributor_email"
+                                        placeholder="contributor@example.com or leave empty"
+                                    />
+                                </div>
+                                <div class="form-text">Can edit KPIs, systems, initiatives, and create actions</div>
+                            </div>
+
+                            <!-- Viewer User -->
+                            <div class="mb-3">
+                                <label for="viewer_email" class="form-label">
+                                    <i class="fas fa-user text-secondary me-1"></i>
+                                    Viewer Email
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-user me-1"></i>
+                                        <code id="viewer_username" class="text-dark">demo_viewer_...</code>
+                                    </span>
+                                    <input
+                                        type="email"
+                                        class="form-control"
+                                        id="viewer_email"
+                                        name="viewer_email"
+                                        placeholder="viewer@example.com or leave empty"
+                                    />
+                                </div>
+                                <div class="form-text">Read-only access - cannot create or edit</div>
                             </div>
                         </div>
 
@@ -333,6 +396,11 @@
 
             // Update form
             scenarioInput.value = scenarioKey;
+
+            // Update usernames to show what will be created
+            document.getElementById('admin_username').textContent = `demo_admin_${scenarioKey}`;
+            document.getElementById('contributor_username').textContent = `demo_contributor_${scenarioKey}`;
+            document.getElementById('viewer_username').textContent = `demo_viewer_${scenarioKey}`;
 
             // Show configuration
             configSection.style.display = 'block';

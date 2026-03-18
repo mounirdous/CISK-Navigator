@@ -854,11 +854,8 @@ class DemoDataService:
 
         # Create demo users
         if not user_emails:
-            user_emails = [
-                f"demo.admin@{scenario_key}.local",
-                f"demo.contributor@{scenario_key}.local",
-                f"demo.viewer@{scenario_key}.local",
-            ]
+            # Generate usernames without emails
+            user_emails = [None, None, None]
 
         # Generate unique usernames for this scenario
         role_names = ["admin", "contributor", "viewer"]
@@ -876,6 +873,10 @@ class DemoDataService:
             while User.query.filter_by(login=username).first():
                 username = f"{base_username}_{counter}"
                 counter += 1
+
+            # Handle empty/None email - generate a unique one
+            if not email:
+                email = f"{username}@demo.local"
 
             # Check if user with this email already exists
             existing_user = User.query.filter_by(email=email).first()

@@ -1681,11 +1681,15 @@ def demo_generator_create():
         flash("Please select a scenario", "danger")
         return redirect(url_for("super_admin.demo_generator"))
 
-    # Parse user emails (comma-separated)
-    user_emails_str = request.form.get("user_emails", "").strip()
-    user_emails = None
-    if user_emails_str:
-        user_emails = [email.strip() for email in user_emails_str.split(",") if email.strip()]
+    # Get 3 user emails (can be empty to test users without emails)
+    admin_email = request.form.get("admin_email", "").strip()
+    contributor_email = request.form.get("contributor_email", "").strip()
+    viewer_email = request.form.get("viewer_email", "").strip()
+
+    # Build list of emails - if all empty, generate usernames
+    user_emails = (
+        [admin_email, contributor_email, viewer_email] if any([admin_email, contributor_email, viewer_email]) else None
+    )
 
     # Get configuration
     years_of_history = int(request.form.get("years_of_history", 2))
