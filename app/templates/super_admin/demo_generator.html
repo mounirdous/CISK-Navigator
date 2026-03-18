@@ -53,14 +53,23 @@
         <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100 scenario-card" data-scenario="{{ key }}">
                 <div class="card-body d-flex flex-column">
-                    <!-- Scenario Icon -->
+                    <!-- Scenario Icon with Branded Background -->
                     <div class="text-center mb-3">
                         {% if key == 'riverside_fc' %}
-                            <i class="fas fa-futbol text-success" style="font-size: 3rem;"></i>
+                            <div class="scenario-icon-wrapper bg-success bg-opacity-10 d-inline-flex p-4 rounded-circle mb-2">
+                                <i class="fas fa-futbol text-success" style="font-size: 3rem;"></i>
+                            </div>
+                            <div class="scenario-badge badge bg-success">⚽ Sport Club</div>
                         {% elif key == 'myhealth_journey' %}
-                            <i class="fas fa-heartbeat text-danger" style="font-size: 3rem;"></i>
+                            <div class="scenario-icon-wrapper bg-danger bg-opacity-10 d-inline-flex p-4 rounded-circle mb-2">
+                                <i class="fas fa-heartbeat text-danger" style="font-size: 3rem;"></i>
+                            </div>
+                            <div class="scenario-badge badge bg-danger">❤️ Personal Health</div>
                         {% elif key == 'green_home' %}
-                            <i class="fas fa-leaf text-success" style="font-size: 3rem;"></i>
+                            <div class="scenario-icon-wrapper bg-success bg-opacity-10 d-inline-flex p-4 rounded-circle mb-2">
+                                <i class="fas fa-leaf text-success" style="font-size: 3rem;"></i>
+                            </div>
+                            <div class="scenario-badge badge bg-success">🌱 Sustainability</div>
                         {% endif %}
                     </div>
 
@@ -265,16 +274,47 @@
     .scenario-card {
         transition: all 0.3s ease;
         cursor: pointer;
+        border: 2px solid transparent !important;
     }
 
     .scenario-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+        transform: translateY(-8px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+    }
+
+    .scenario-card:hover .scenario-icon-wrapper {
+        transform: scale(1.1);
+        transition: transform 0.3s ease;
     }
 
     .scenario-card.selected {
         border: 3px solid #0d6efd !important;
-        transform: scale(1.02);
+        transform: scale(1.03);
+        box-shadow: 0 12px 35px rgba(13,110,253,0.3) !important;
+    }
+
+    .scenario-card.selected .scenario-badge {
+        animation: pulse 1.5s infinite;
+    }
+
+    .scenario-icon-wrapper {
+        transition: transform 0.3s ease;
+    }
+
+    .scenario-badge {
+        font-size: 0.75rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
     }
 </style>
 

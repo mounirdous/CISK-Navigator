@@ -811,29 +811,49 @@ class DemoDataService:
                 current = start_date
                 while current <= today:
                     dates.append(current)
-                    # Move to next month
+                    # Move to same day next month, handle month-end edge cases
                     month = current.month + 1
                     year = current.year
                     if month > 12:
                         month = 1
                         year += 1
-                    current = date(year, month, 1)
+                    # Handle day overflow (e.g., Jan 31 -> Feb 31 doesn't exist)
+                    try:
+                        current = date(year, month, current.day)
+                    except ValueError:
+                        # Use last day of month if day doesn't exist
+                        import calendar
+
+                        last_day = calendar.monthrange(year, month)[1]
+                        current = date(year, month, last_day)
             elif kpi_frequency == "quarterly":
                 current = start_date
                 while current <= today:
                     dates.append(current)
-                    # Move to next quarter
+                    # Move 3 months ahead
                     month = current.month + 3
                     year = current.year
                     while month > 12:
                         month -= 12
                         year += 1
-                    current = date(year, month, 1)
+                    # Handle day overflow
+                    try:
+                        current = date(year, month, current.day)
+                    except ValueError:
+                        import calendar
+
+                        last_day = calendar.monthrange(year, month)[1]
+                        current = date(year, month, last_day)
             elif kpi_frequency == "yearly":
                 current = start_date
                 while current <= today:
                     dates.append(current)
-                    current = date(current.year + 1, current.month, current.day)
+                    # Handle leap year edge case (Feb 29)
+                    try:
+                        current = date(current.year + 1, current.month, current.day)
+                    except ValueError:
+                        # Feb 29 in non-leap year - use Feb 28
+                        current = date(current.year + 1, 2, 28)
             else:
                 # Default to weekly
                 current = start_date

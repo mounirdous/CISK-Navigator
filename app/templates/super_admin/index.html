@@ -207,22 +207,9 @@
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row g-3">
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.settings') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-sliders-h text-primary fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">System Settings</h5>
-                        <p class="text-muted small mb-0">Configure system-wide settings and features</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
+    <!-- User & Access Management -->
+    <h5 class="mb-3 mt-4"><i class="fas fa-users-cog text-primary me-2"></i>User & Access Management</h5>
+    <div class="row g-3 mb-4">
         <div class="col-md-4">
             <a href="{{ url_for('super_admin.users') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
@@ -252,6 +239,38 @@
         </div>
 
         <div class="col-md-4">
+            <a href="{{ url_for('super_admin.linked_kpis') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-link-45deg text-primary fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">Linked KPIs</h5>
+                        <p class="text-muted small mb-0">View data dependencies and value sharing</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- System Operations -->
+    <h5 class="mb-3"><i class="fas fa-cogs text-info me-2"></i>System Operations</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <a href="{{ url_for('super_admin.settings') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-sliders-h text-primary fa-2x"></i>
+                        </div>
+                        <h5 class="card-title">System Settings</h5>
+                        <p class="text-muted small mb-0">Configure system-wide settings and features</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
             <a href="{{ url_for('super_admin.health') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
                     <div class="card-body text-center py-4">
@@ -274,20 +293,6 @@
                         </div>
                         <h5 class="card-title">Audit Logs</h5>
                         <p class="text-muted small mb-0">Track all system changes and user actions</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.linked_kpis') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="bi bi-link-45deg text-primary fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">Linked KPIs</h5>
-                        <p class="text-muted small mb-0">View data dependencies and value sharing</p>
                     </div>
                 </div>
             </a>
@@ -334,30 +339,34 @@
                 </div>
             </a>
         </div>
+    </div>
 
-        <div class="col-md-4">
+    <!-- Testing & Development -->
+    <h5 class="mb-3"><i class="fas fa-flask text-success me-2"></i>Testing & Development</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <a href="{{ url_for('super_admin.demo_generator') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift border-primary border-2">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-magic text-primary fa-2x"></i>
+                        </div>
+                        <h5 class="card-title text-primary">Demo Data Generator</h5>
+                        <p class="text-muted small mb-0">Create realistic demo organizations with full feature coverage</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-6">
             <a href="{{ url_for('super_admin.bulk_operations') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift border-danger">
+                <div class="card border-0 shadow-sm h-100 hover-lift border-danger border-2">
                     <div class="card-body text-center py-4">
                         <div class="bg-danger bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
                             <i class="bi bi-trash text-danger fa-2x"></i>
                         </div>
                         <h5 class="card-title text-danger">Bulk Operations</h5>
                         <p class="text-muted small mb-0">Multi-delete orgs & users for testing</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.demo_generator') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift border-primary">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-magic text-primary fa-2x"></i>
-                        </div>
-                        <h5 class="card-title text-primary">Demo Data Generator</h5>
-                        <p class="text-muted small mb-0">Create realistic demo organizations</p>
                     </div>
                 </div>
             </a>
