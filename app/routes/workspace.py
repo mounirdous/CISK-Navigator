@@ -3895,6 +3895,8 @@ def get_data():
             "display_order": vt.display_order,
             "unit_label": vt.unit_label,
             "kind": vt.kind,
+            "calculation_type": vt.calculation_type,
+            "formula_display": vt.get_formula_display() if vt.is_formula() else None,
         }
         for vt in value_types
     ]
