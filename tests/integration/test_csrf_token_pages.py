@@ -273,6 +273,26 @@ class TestCSRFTokenAvailability:
         response = authenticated_org_user.get(f"/org-admin/spaces/{space.id}/swot")
         self.assert_no_csrf_errors(response)
 
+    def test_porters_edit(self, authenticated_org_user, sample_organization, org_user):
+        """Test /org-admin/porters/edit has csrf_token and handles permissions correctly"""
+        from app import db
+
+        # Give user permission to edit Porter's
+        membership = org_user.get_membership(sample_organization.id)
+        membership.can_edit_porters = True
+        db.session.commit()
+
+        response = authenticated_org_user.get("/org-admin/porters/edit")
+        self.assert_no_csrf_errors(response)
+
+        # Test permission denial
+        membership.can_edit_porters = False
+        db.session.commit()
+
+        response = authenticated_org_user.get("/org-admin/porters/edit", follow_redirects=False)
+        assert response.status_code == 302  # Should redirect
+        assert "/org-admin/porters" in response.location  # Should redirect to view page
+
 
 @pytest.mark.parametrize(
     "route",

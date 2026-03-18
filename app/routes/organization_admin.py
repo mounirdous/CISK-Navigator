@@ -215,7 +215,7 @@ def edit_organization_porters():
         return redirect(url_for("organization_admin.organization_porters"))
 
     return render_template(
-        "organization_admin/edit_organization_porters.html", organization=org, csrf_token=generate_csrf()
+        "organization_admin/edit_organization_porters.html", organization=org, csrf_token=generate_csrf
     )
 
 
