@@ -5,6 +5,28 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.1] - 2026-03-18
+
+### Fixed - Complete Cascade Delete Resolution
+**Bug Fix**: Resolved all remaining cascade delete errors when deleting organizations
+
+**What was fixed**:
+- **entity_type_defaults**: Added `passive_deletes=True` to prevent NULL constraint violation
+- **geography_regions**: Added `passive_deletes=True` to geography backref
+- **saved_searches**: Added `passive_deletes=True` to saved_searches backref
+
+**Technical Details**:
+- Models using simple `backref="..."` need `passive_deletes=True` to let PostgreSQL handle CASCADE DELETE
+- Models using `back_populates` with Organization-side `cascade="all, delete-orphan"` were already correct
+- Complete audit performed on all 12 models with `organization_id` CASCADE DELETE
+
+**Impact**: Organizations can now be deleted without database errors. All child records are properly cascaded.
+
+**Verified Models** (12 total):
+- ✅ system, value_type, initiative, governance_body, space, action_item, challenge (correct)
+- ✅ entity_type_defaults, geography_regions, saved_searches (fixed)
+- ✅ stakeholders, stakeholder_maps (already fixed in v2.8.0)
+
 ## [2.8.0] - 2026-03-17
 
 ### Added - Email Notifications & Enhanced Backup/Restore System
