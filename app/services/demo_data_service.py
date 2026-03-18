@@ -976,39 +976,36 @@ class DemoDataService:
     def _create_action_items(org_id, initiatives, kpis, user_id):
         """Create sample action items in various states"""
         action_items = []
-        item_types = [
-            ("incomplete_form", "Initiative missing objectives", "initiative"),
-            ("no_consensus", "KPI lacks consensus", "kpi"),
-            ("missing_kpi", "System needs KPIs", "initiative"),
+
+        # Sample action items
+        sample_actions = [
+            ("Review initiative objectives", "Update and finalize initiative objectives for Q2"),
+            ("Complete KPI data entry", "Enter missing KPI values for last month"),
+            ("Schedule stakeholder meeting", "Arrange quarterly review with key stakeholders"),
+            ("Update system documentation", "Document new processes and workflows"),
+            ("Analyze performance trends", "Review KPI trends and identify improvement areas"),
+            ("Prepare status report", "Create monthly status report for leadership"),
+            ("Follow up on action items", "Check completion status of pending items"),
+            ("Plan next sprint", "Define priorities and deliverables for next period"),
         ]
 
         # Create 5-10 action items
         num_items = random.randint(5, 10)
         for i in range(num_items):
-            item_type, description, entity_type = random.choice(item_types)
-
-            if entity_type == "initiative" and initiatives:
-                entity = random.choice(initiatives)
-                entity_id = entity.id
-            elif entity_type == "kpi" and kpis:
-                entity = random.choice(kpis)
-                entity_id = entity.id
-            else:
-                continue
-
-            status = random.choice(["open", "in_progress", "resolved", "dismissed"])
-            priority = random.choice(["low", "medium", "high"])
+            title, description = random.choice(sample_actions)
+            status = random.choice(["active", "active", "completed", "draft"])  # Weight towards active
+            priority = random.choice(["low", "medium", "medium", "high", "urgent"])  # Weight towards medium
 
             action_item = ActionItem(
                 organization_id=org_id,
-                item_type=item_type,
-                entity_type=entity_type,
-                entity_id=entity_id,
+                type="action",
+                title=title,
                 description=description,
                 status=status,
                 priority=priority,
-                assigned_to_user_id=user_id if random.random() > 0.5 else None,
+                owner_user_id=user_id,
                 created_by_user_id=user_id,
+                visibility="shared",
             )
             db.session.add(action_item)
             action_items.append(action_item)
