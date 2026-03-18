@@ -619,7 +619,7 @@ class DemoDataService:
             # Link stakeholders to map
             for sh_name in map_data["stakeholders"]:
                 stakeholder = stakeholder_map_dict[sh_name]
-                membership = StakeholderMapMembership(stakeholder_map_id=sh_map.id, stakeholder_id=stakeholder.id)
+                membership = StakeholderMapMembership(map_id=sh_map.id, stakeholder_id=stakeholder.id)
                 db.session.add(membership)
 
             # Create relationships within the map (random connections)
