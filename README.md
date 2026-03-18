@@ -1,54 +1,53 @@
-# 🧭 CISK Navigator v2.10.3
+# 🧭 CISK Navigator v2.11.2
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.10.3-blue)
+![Version](https://img.shields.io/badge/version-2.11.2-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-96%20passing-success)
 
-## ✨ What's New in v2.8.0 (March 2026)
+## ✨ What's New in v2.11.0 (March 2026)
 
-### 📧 **Email Notifications System**
-- **Mention Notifications**: Get email when mentioned in comments (@username)
-  - Beautiful HTML email with comment preview
-  - Direct link to view comment
-  - Configurable in Super Admin → Email Settings
-- **Action Item Notifications**: Get email when assigned action items
-  - Shows title, description, due date
-  - Direct link to action item
-  - Sent on creation and reassignment
-- **Smart Logic**: Won't email yourself to prevent spam
-- **SMTP Integration**: Fully configured with Brevo SMTP relay
-  - Test email functionality in Super Admin
-  - Enable/disable per notification type
+### 🔐 **Granular Permissions for Action Items, Stakeholders, and Map** (NEW!)
+Fine-grained access control with 5 new permissions per user-organization:
 
-### 💾 **Backup/Restore v2.0 - Enterprise Grade**
-- **Database Schema Versioning**: Prevents incompatible restores
-  - DB version 1.0 baseline established
-  - Version check blocks restores if schema mismatch
-  - Protects data integrity across versions
-- **Comprehensive Backup Coverage**:
-  - ✅ Organization and all entity logos (Spaces, Challenges, Initiatives, Systems, KPIs)
-  - ✅ KPI formulas and linked KPIs (cross-org references)
-  - ✅ **KPI Geography Assignments** - KPIs appear on map after restore
-  - ✅ Complete stakeholder data (relationships, maps, entity links)
-  - ✅ All KPI contributions (actual data)
-  - ✅ Value types and governance bodies
-- **Enhanced Restore Features**:
-  - Auto-create governance bodies
-  - Restore geography assignments
-  - Comprehensive statistics (logos, formulas, geography, stakeholders)
-  - Detailed error and warning reporting
-- **UI Improvements**:
-  - Display governance bodies and stakeholders counts
-  - Show geography assignments in restore stats
+**New Permission Types**:
+- **View Action Items** - See action register menu and list
+- **Create Action Items** - Create/edit action items (requires View permission)
+- **View Stakeholders** - See stakeholders menu under People & Action
+- **Manage Stakeholders** - Create/edit/delete stakeholders (requires View permission)
+- **View Map** - Access map dashboard and navigation
 
-### 🔧 **Bug Fixes**
-- Fixed cascade delete for stakeholders when deleting organizations
-- Fixed restore statistics aggregation
-- Added `passive_deletes=True` for proper PostgreSQL CASCADE
+**Why This Matters**:
+- Previously: Action items accessible to all, stakeholders required org admin
+- Now: Fine-grained control - separate VIEW vs CREATE/MANAGE rights
+- Menu items automatically hidden when user lacks permissions
+- Direct URL access blocked with friendly error messages
+
+**Key Features**:
+- Permission dependencies enforced (Create requires View, Manage requires View)
+- JavaScript + backend validation ensures consistency
+- All 4 user/org forms updated (Create/Edit User, Create/Edit Organization)
+- Backward compatible: Existing users get sensible defaults
+- Database migration handles 6 million+ records safely
+
+**Default Behavior**:
+- Action items & map: Enabled for all (backward compatibility)
+- Stakeholders: Disabled by default (new opt-in feature)
+- Contribute Values: Enabled for all
+
+### 🎨 **Custom Branding & Icons**
+- **Entity Type Defaults**: Organizations can now customize default icons/colors for all entity types
+- **Workspace Icons**: Fixed icons to use configured defaults from Branding Manager (v2.11.2)
+- **Onboarding Fix**: Entity defaults now created automatically during organization onboarding (v2.11.1)
+
+### 🔧 **Bug Fixes** (v2.11.1, v2.11.2)
+- Fixed CSRF token error on space SWOT page (v2.10.5)
+- Fixed workspace icons showing Christmas trees instead of custom branding (v2.11.2)
+- Fixed entity defaults not being created during onboarding (v2.11.1)
+- Added "Contribute Values" permission to organization forms (v2.10.6)
 
 ## ✨ What's New in v1.33.32 (March 2026)
 
