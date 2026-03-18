@@ -2191,12 +2191,12 @@
                               :title="'Click to ' + (vt.collapsed ? 'expand' : 'collapse') + ': ' + vt.name">
                             ⇄
                         </span>
-                        <!-- Formula Icon (For Formula Value Types) - Clickable in Edit Mode -->
+                        <!-- Formula Icon (For Formula Value Types) - Clickable in Edit Mode to Edit Formula -->
                         <template x-if="vt.calculation_type === 'formula'">
                             <template x-if="editMode">
-                                <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspace') }}`.replace('/0/', `/${vt.id}/`)"
+                                <a :href="`{{ url_for('organization_admin.edit_value_type', vt_id=0) }}`.replace('/0/', `/${vt.id}/`)"
                                    class="formula-indicator-icon"
-                                   :title="'Configure rollup display for ' + vt.name"
+                                   :title="'Edit formula for ' + vt.name"
                                    @click.stop
                                    style="position: absolute; top: 4px; left: 4px; font-size: 0.8rem; opacity: 0.7; color: #10b981; text-decoration: none; transition: opacity 0.2s;">
                                     <i class="bi bi-table"></i>
@@ -2353,7 +2353,7 @@
                                             <!-- Value display by type -->
                                             <template x-if="vt.kind === 'numeric'">
                                                 <span>
-                                                    <span :style="'color: ' + (space.rollup_values[String(vt.id)].color || '#6c757d')" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
+                                                    <span :style="'color: ' + (space.rollup_values[String(vt.id)].color || '#6c757d') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="space.rollup_values[String(vt.id)].formatted_value || space.rollup_values[String(vt.id)].value"></span>
                                                     <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
                                                 </span>
                                             </template>
@@ -2490,7 +2490,7 @@
                                                     </span>
                                                     <!-- Value display by type -->
                                                     <template x-if="vt.kind === 'numeric'">
-                                                        <span><span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span><span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span></span>
+                                                        <span><span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span><span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span></span>
                                                     </template>
                                                     <template x-if="vt.kind === 'risk'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">!!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">!!!</span></span></template>
                                                     <template x-if="vt.kind === 'positive_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">★★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">★★★</span></span></template>
@@ -2613,7 +2613,7 @@
                                                             </span>
                                                             <template x-if="vt.kind === 'numeric'">
                                                                 <span>
-                                                                    <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
+                                                                    <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="initiative.rollup_values[String(vt.id)].formatted_value || initiative.rollup_values[String(vt.id)].value"></span>
                                                                     <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
                                                                 </span>
                                                             </template>
@@ -2749,7 +2749,7 @@
                                                                     </span>
                                                                     <template x-if="vt.kind === 'numeric'">
                                                                         <span>
-                                                                            <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
+                                                                            <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="system.rollup_values[String(vt.id)].formatted_value || system.rollup_values[String(vt.id)].value"></span>
                                                                             <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
                                                                         </span>
                                                                     </template>
@@ -2957,7 +2957,7 @@
                                                                                     <template x-if="vt.kind === 'numeric'">
                                                                                         <span>
                                                                                             <strong>
-                                                                                                <span :style="'color: ' + (kpi.values[String(vt.id)].color || '#333')" x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
+                                                                                                <span :style="'color: ' + (kpi.values[String(vt.id)].color || '#333') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="kpi.values[String(vt.id)].formatted_value || kpi.values[String(vt.id)].value"></span>
                                                                                                 <span x-show="vt.unit_label" x-text="' ' + vt.unit_label"></span>
                                                                                             </strong>
                                                                                             <!-- Target indicator -->
