@@ -138,21 +138,14 @@
                         </div>
                     </div>
 
-                    <!-- Formula Configuration (Numeric Only) -->
-                    <div class="form-section" id="formula-section" style="display: none;">
+                    <!-- Calculation Type (Numeric Only) -->
+                    <div class="form-section" id="calculation-section" style="display: none;">
                         <div class="form-section-title">
-                            <i class="bi bi-calculator"></i>
-                            Formula Configuration
-                        </div>
-
-                        <div class="alert alert-info">
-                            <i class="bi bi-lightbulb"></i>
-                            <strong>Formula Value Types</strong> automatically calculate their values from other value types.
-                            Example: <code>Net = Revenue - Cost</code>
+                            <i class="bi bi-gear"></i>
+                            Calculation Type
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Calculation Type</label>
                             <div class="btn-group w-100" role="group">
                                 <input type="radio" class="btn-check" name="calc_type_toggle" id="calc_manual" value="manual" checked autocomplete="off">
                                 <label class="btn btn-outline-primary" for="calc_manual">
@@ -160,46 +153,71 @@
                                 </label>
                                 <input type="radio" class="btn-check" name="calc_type_toggle" id="calc_formula" value="formula" autocomplete="off">
                                 <label class="btn btn-outline-primary" for="calc_formula">
-                                    <i class="bi bi-calculator"></i> Formula
+                                    <i class="bi bi-table"></i> Formula
                                 </label>
                             </div>
                         </div>
 
+                        <!-- Formula Configuration -->
                         <div id="formula-config" style="display: none;">
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Operation</label>
-                                <select class="form-select" id="formula-operation-select">
-                                    <option value="">-- Select Operation --</option>
-                                    <option value="add">Add (+)</option>
-                                    <option value="subtract">Subtract (-)</option>
-                                    <option value="multiply">Multiply (×)</option>
-                                    <option value="divide">Divide (÷)</option>
-                                </select>
-                                <small class="form-text text-muted">
-                                    <i class="bi bi-info-circle"></i> Choose how to combine source value types
-                                </small>
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-lightbulb"></i>
+                                <strong>Formula Value Types</strong> calculate from other numeric value types.
+                                Example: <code>Net = Revenue - Cost</code>
                             </div>
 
+                            <!-- Simple/Advanced Toggle -->
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Source Value Types</label>
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div id="source-value-types-list">
-                                            <p class="text-muted">
-                                                <i class="bi bi-info-circle"></i>
-                                                Create at least 2 value types first, then you can create formula value types.
-                                            </p>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <input type="radio" class="btn-check" name="formula_mode" id="mode_simple" value="simple" checked autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="mode_simple">Simple</label>
+                                    <input type="radio" class="btn-check" name="formula_mode" id="mode_advanced" value="advanced" autocomplete="off">
+                                    <label class="btn btn-outline-secondary" for="mode_advanced">Advanced</label>
+                                </div>
+                            </div>
+
+                            <!-- Simple Mode -->
+                            <div id="simple-mode">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Operation</label>
+                                    <select class="form-select" id="formula-operation-select">
+                                        <option value="">-- Select Operation --</option>
+                                        <option value="subtract">Subtract (−)</option>
+                                        <option value="add">Add (+)</option>
+                                        <option value="multiply">Multiply (×)</option>
+                                        <option value="divide">Divide (÷)</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Source Value Types</label>
+                                    <div class="card">
+                                        <div class="card-body" style="max-height: 200px; overflow-y: auto;">
+                                            <div id="source-value-types-list">
+                                                <p class="text-muted">
+                                                    <i class="bi bi-info-circle"></i>
+                                                    Create at least 2 numeric value types first.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Select 2+ sources (order matters for subtract/divide)
+                                    </small>
                                 </div>
-                                <small class="form-text text-muted">
-                                    <i class="bi bi-info-circle"></i> Select 2 or more source value types (order matters for subtract/divide)
-                                </small>
                             </div>
 
-                            <div class="alert alert-warning">
-                                <i class="bi bi-exclamation-triangle"></i>
-                                <strong>Note:</strong> Formula value types cannot be edited manually. Values are automatically calculated.
+                            <!-- Advanced Mode -->
+                            <div id="advanced-mode" style="display: none;">
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-code-slash"></i>
+                                    <strong>Advanced Mode:</strong> Python expressions not yet supported for value type formulas. Use Simple mode.
+                                </div>
+                            </div>
+
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle"></i>
+                                Formula values calculate automatically and cannot be edited manually.
                             </div>
                         </div>
                     </div>
@@ -235,7 +253,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const kindSelect = document.querySelector('select[name="kind"]');
     const numericSection = document.getElementById('numeric-section');
-    const formulaSection = document.getElementById('formula-section');
+    const calculationSection = document.getElementById('calculation-section');
     const formulaSelect = document.querySelector('select[name="default_aggregation_formula"]');
 
     const calcManualRadio = document.getElementById('calc_manual');
@@ -243,6 +261,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const formulaConfig = document.getElementById('formula-config');
     const formulaOperationSelect = document.getElementById('formula-operation-select');
     const sourceValueTypesList = document.getElementById('source-value-types-list');
+
+    // Formula mode toggle
+    const modeSimpleRadio = document.getElementById('mode_simple');
+    const modeAdvancedRadio = document.getElementById('mode_advanced');
+    const simpleMode = document.getElementById('simple-mode');
+    const advancedMode = document.getElementById('advanced-mode');
 
     // Hidden form fields
     const calculationTypeField = document.querySelector('input[name="calculation_type"]');
@@ -265,7 +289,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function toggleNumericSection() {
         const isNumeric = kindSelect.value === 'numeric';
         numericSection.style.display = isNumeric ? 'block' : 'none';
-        formulaSection.style.display = isNumeric ? 'block' : 'none';
+        calculationSection.style.display = isNumeric ? 'block' : 'none';
+    }
+
+    function toggleFormulaMode() {
+        const isSimple = modeSimpleRadio && modeSimpleRadio.checked;
+        if (simpleMode) simpleMode.style.display = isSimple ? 'block' : 'none';
+        if (advancedMode) advancedMode.style.display = isSimple ? 'none' : 'block';
     }
 
     function updateFormulaOptions() {
@@ -378,6 +408,9 @@ document.addEventListener('DOMContentLoaded', function() {
     calcManualRadio.addEventListener('change', toggleFormulaConfig);
     calcFormulaRadio.addEventListener('change', toggleFormulaConfig);
 
+    if (modeSimpleRadio) modeSimpleRadio.addEventListener('change', toggleFormulaMode);
+    if (modeAdvancedRadio) modeAdvancedRadio.addEventListener('change', toggleFormulaMode);
+
     formulaOperationSelect.addEventListener('change', function() {
         formulaOperationField.value = this.value;
     });
@@ -402,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleNumericSection();
     updateFormulaOptions();
     toggleFormulaConfig();
+    toggleFormulaMode();
     loadAvailableValueTypes();
 });
 </script>
