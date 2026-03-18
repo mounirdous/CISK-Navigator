@@ -214,7 +214,9 @@
                     {% endif %}
 
                     <select class="form-select mb-2" id="mapSelector" onchange="changeMap()">
-                        <option value="">📊 All Stakeholders</option>
+                        {% if not selected_map %}
+                        <option value="" selected>Select a map...</option>
+                        {% endif %}
                         {% for map in maps %}
                         <option value="{{ map.id }}" {% if selected_map and selected_map.id == map.id %}selected{% endif %}>
                             {{ '🔒 ' if map.visibility == 'private' else '👥 ' }}{{ map.name }} ({{ map.stakeholder_count }})

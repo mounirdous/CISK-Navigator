@@ -59,7 +59,11 @@ def index():
     all_maps = StakeholderMap.query.filter_by(organization_id=org_id).all()
     visible_maps = [m for m in all_maps if m.is_visible_to_user(current_user)]
 
-    # Filter stakeholders by map if selected
+    # Require map selection - redirect to first map if none selected
+    if not map_id and visible_maps:
+        return redirect(url_for("stakeholders.index", organization_id=org_id, map_id=visible_maps[0].id))
+
+    # Filter stakeholders by selected map
     if map_id:
         selected_map = StakeholderMap.query.get(map_id)
         if not selected_map or not selected_map.is_visible_to_user(current_user):
@@ -68,8 +72,9 @@ def index():
 
         stakeholders = selected_map.get_stakeholders()
     else:
+        # No maps available - show empty view with message
         selected_map = None
-        stakeholders = Stakeholder.query.filter_by(organization_id=org_id).all()
+        stakeholders = []
 
     # Filter by visibility
     visible_stakeholders = [s for s in stakeholders if s.is_visible_to_user(current_user)]

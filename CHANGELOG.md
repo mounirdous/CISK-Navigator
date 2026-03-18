@@ -5,6 +5,32 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.1] - 2026-03-18
+
+### Improved - UX for Map Selection
+**UX Improvements**: Better map selection interface in stakeholder forms and navigation
+
+**Changes**:
+
+**Create/Edit Forms - Checkboxes instead of Multi-select**:
+- Replaced confusing multi-select dropdown with clear checkboxes
+- Each map has its own checkbox with visibility indicator
+- Pre-checked boxes show current map memberships in edit form
+- Scrollable container if many maps exist
+- Much clearer "Add to Maps" interface
+
+**Map Selector Dropdown**:
+- Removed "All Stakeholders" option (no longer makes sense - every stakeholder belongs to maps)
+- Must select a specific map to view
+- Defaults to first available map if none selected
+- Shows "Select a map..." placeholder when appropriate
+
+**Benefits**:
+- Clearer map assignment - see all options at once
+- No confusion about multi-select behavior (Ctrl+Click)
+- Defaults to showing a map instead of empty state
+- Consistent with the rule: stakeholders must belong to maps
+
 ## [2.10.0] - 2026-03-18
 
 ### Feature - Mandatory Map Assignment for Stakeholders

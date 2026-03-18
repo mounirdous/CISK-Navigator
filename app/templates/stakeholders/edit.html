@@ -76,11 +76,21 @@
 
                         <div class="mb-3">
                             {{ form.maps.label(class="form-label") }}
-                            {{ form.maps(class="form-select" + (" is-invalid" if form.maps.errors else ""), size=5, multiple=True) }}
+                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                {% for value, label in form.maps.choices %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="maps" value="{{ value }}" id="map_{{ value }}"
+                                           {% if value in form.maps.data %}checked{% endif %}>
+                                    <label class="form-check-label" for="map_{{ value }}">
+                                        {{ label }}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
                             {% if form.maps.errors %}
-                            <div class="invalid-feedback">{{ form.maps.errors[0] }}</div>
+                            <div class="text-danger small mt-1">{{ form.maps.errors[0] }}</div>
                             {% endif %}
-                            <small class="text-muted">{{ form.maps.description }}</small>
+                            <small class="text-muted d-block mt-1">Select at least one map</small>
                         </div>
 
                         <div class="mb-3">
