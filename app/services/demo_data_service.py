@@ -685,9 +685,12 @@ class DemoDataService:
                     db.session.add(rel)
         db.session.flush()
 
-        # Create value types
+        # Create value types (Cost/Revenue/Net first for prominence in workspace)
         value_types = []
         value_type_configs = [
+            {"name": "Cost", "kind": "numeric", "unit_label": "€"},
+            {"name": "Revenue", "kind": "numeric", "unit_label": "€"},
+            {"name": "Net", "kind": "numeric", "unit_label": "€"},
             {"name": "Count", "kind": "numeric", "unit_label": "units"},
             {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
             {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
@@ -696,13 +699,14 @@ class DemoDataService:
             {"name": "Weight", "kind": "numeric", "unit_label": "kg"},
             {"name": "Score", "kind": "numeric", "unit_label": "pts"},
             {"name": "Rating", "kind": "numeric", "unit_label": "/5"},
-            {"name": "Cost", "kind": "numeric", "unit_label": "€"},
-            {"name": "Revenue", "kind": "numeric", "unit_label": "€"},
-            {"name": "Net", "kind": "numeric", "unit_label": "€"},
         ]
-        for vt_data in value_type_configs:
+        for idx, vt_data in enumerate(value_type_configs):
             vt = ValueType(
-                organization_id=org.id, name=vt_data["name"], kind=vt_data["kind"], unit_label=vt_data["unit_label"]
+                organization_id=org.id,
+                name=vt_data["name"],
+                kind=vt_data["kind"],
+                unit_label=vt_data["unit_label"],
+                display_order=idx + 1,  # Explicit ordering
             )
             db.session.add(vt)
             value_types.append(vt)
