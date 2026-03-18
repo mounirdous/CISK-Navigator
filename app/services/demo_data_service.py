@@ -630,8 +630,8 @@ class DemoDataService:
                 for target in targets:
                     relationship_type = random.choice(["reports_to", "collaborates_with", "influences", "depends_on"])
                     rel = StakeholderRelationship(
-                        source_stakeholder_id=source.id,
-                        target_stakeholder_id=target.id,
+                        from_stakeholder_id=source.id,
+                        to_stakeholder_id=target.id,
                         relationship_type=relationship_type,
                         strength=random.randint(3, 5),
                         notes=f"{source.name} {relationship_type.replace('_', ' ')} {target.name}",
