@@ -45,6 +45,18 @@ class ValueType(db.Model):
 
     FORMULAS = [FORMULA_SUM, FORMULA_MIN, FORMULA_MAX, FORMULA_AVG, FORMULA_MEDIAN, FORMULA_COUNT]
 
+    # Calculation types
+    CALC_MANUAL = "manual"
+    CALC_FORMULA = "formula"
+
+    # Formula operations
+    OP_ADD = "add"
+    OP_SUBTRACT = "subtract"
+    OP_MULTIPLY = "multiply"
+    OP_DIVIDE = "divide"
+
+    OPERATIONS = [OP_ADD, OP_SUBTRACT, OP_MULTIPLY, OP_DIVIDE]
+
     id = db.Column(db.Integer, primary_key=True)
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
@@ -55,6 +67,15 @@ class ValueType(db.Model):
     default_aggregation_formula = db.Column(db.String(20), nullable=False, default=FORMULA_SUM)
     display_order = db.Column(db.Integer, default=0, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    # Formula configuration
+    calculation_type = db.Column(db.String(20), nullable=False, default=CALC_MANUAL, comment="manual or formula")
+    calculation_config = db.Column(
+        db.JSON,
+        nullable=True,
+        comment="Formula definition: {operation: 'add', source_value_type_ids: [1, 2]}",
+    )
+
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -134,6 +155,109 @@ class ValueType(db.Model):
         elif self.kind == self.KIND_NEGATIVE_IMPACT:
             return "▼" * level
         return str(level)
+
+    def is_formula(self):
+        """Check if this is a formula-based value type"""
+        return self.calculation_type == self.CALC_FORMULA
+
+    def get_source_value_types(self):
+        """Get source value types for formula calculation"""
+        if not self.is_formula() or not self.calculation_config:
+            return []
+
+        source_ids = self.calculation_config.get("source_value_type_ids", [])
+        return ValueType.query.filter(ValueType.id.in_(source_ids)).all()
+
+    def get_formula_display(self):
+        """Get human-readable formula display (e.g., 'Revenue - Cost')"""
+        if not self.is_formula() or not self.calculation_config:
+            return None
+
+        operation = self.calculation_config.get("operation")
+        source_vts = self.get_source_value_types()
+
+        if not source_vts:
+            return None
+
+        op_symbols = {
+            self.OP_ADD: " + ",
+            self.OP_SUBTRACT: " - ",
+            self.OP_MULTIPLY: " × ",
+            self.OP_DIVIDE: " ÷ ",
+        }
+
+        symbol = op_symbols.get(operation, " ? ")
+        return symbol.join([vt.name for vt in source_vts])
+
+    def validate_formula_config(self):
+        """
+        Validate formula configuration.
+
+        Returns:
+            tuple: (is_valid, error_message)
+        """
+        if not self.is_formula():
+            return (True, None)
+
+        if not self.calculation_config:
+            return (False, "Formula configuration is required")
+
+        operation = self.calculation_config.get("operation")
+        if operation not in self.OPERATIONS:
+            return (False, f"Invalid operation: {operation}")
+
+        source_ids = self.calculation_config.get("source_value_type_ids", [])
+        if not source_ids or len(source_ids) < 2:
+            return (False, "At least 2 source value types are required")
+
+        # Check that source value types exist and are in same organization
+        source_vts = ValueType.query.filter(ValueType.id.in_(source_ids)).all()
+        if len(source_vts) != len(source_ids):
+            return (False, "One or more source value types not found")
+
+        for vt in source_vts:
+            if vt.organization_id != self.organization_id:
+                return (False, f"Source value type {vt.name} is from a different organization")
+
+            if not vt.is_numeric():
+                return (False, f"Source value type {vt.name} must be numeric")
+
+        # Check for circular dependencies
+        if self.id:
+            circular_error = self._check_circular_dependency(source_ids, visited=set())
+            if circular_error:
+                return (False, circular_error)
+
+        return (True, None)
+
+    def _check_circular_dependency(self, source_ids, visited=None):
+        """
+        Recursively check for circular dependencies in formula value types.
+
+        Returns:
+            str: Error message if circular dependency found, None otherwise
+        """
+        if visited is None:
+            visited = set()
+
+        if self.id in visited:
+            return f"Circular dependency detected: {self.name} depends on itself"
+
+        visited.add(self.id)
+
+        # Check each source value type
+        for source_id in source_ids:
+            if source_id == self.id:
+                return f"Cannot use {self.name} as a source for itself"
+
+            source_vt = ValueType.query.get(source_id)
+            if source_vt and source_vt.is_formula() and source_vt.calculation_config:
+                nested_source_ids = source_vt.calculation_config.get("source_value_type_ids", [])
+                error = source_vt._check_circular_dependency(nested_source_ids, visited.copy())
+                if error:
+                    return error
+
+        return None
 
     def __repr__(self):
         return f"<ValueType {self.name}>"
@@ -304,6 +428,12 @@ class KPIValueTypeConfig(db.Model):
         Get consensus calculation for this KPI cell.
         Handles manual contributions, linked KPIs, and formula calculations.
 
+        Priority order:
+        1. Value type formula (e.g., Net = Revenue - Cost)
+        2. KPI formula (calculate from other KPIs)
+        3. Linked KPI (read from source)
+        4. Manual contributions (consensus)
+
         Args:
             _visited: Internal parameter to track visited configs and prevent circular references
 
@@ -323,7 +453,26 @@ class KPIValueTypeConfig(db.Model):
         # Add current config to visited set
         _visited.add(self.id)
 
-        # If this is a formula KPI, calculate from other KPIs
+        # PRIORITY 1: Value type formula (Net = Revenue - Cost across same KPI)
+        if self.value_type and self.value_type.is_formula():
+            calculated_value = self._calculate_value_type_formula(_visited=_visited)
+            # Wrap in consensus-like dict for consistency
+            if calculated_value is not None:
+                return {
+                    "status": "strong",
+                    "value": calculated_value,
+                    "count": 1,
+                    "is_rollup_eligible": True,
+                }
+            else:
+                return {
+                    "status": "no_data",
+                    "value": None,
+                    "count": 0,
+                    "is_rollup_eligible": False,
+                }
+
+        # PRIORITY 2: KPI formula (calculate from other KPIs)
         if self.is_formula():
             calculated_value = self._calculate_formula_value(_visited=_visited)
             # Wrap in consensus-like dict for consistency
@@ -342,7 +491,7 @@ class KPIValueTypeConfig(db.Model):
                     "is_rollup_eligible": False,
                 }
 
-        # If this is a linked KPI, read from the source
+        # PRIORITY 3: Linked KPI (read from source)
         if self.is_linked():
             source_config = self.get_linked_source_config()
             if source_config:
@@ -525,6 +674,103 @@ class KPIValueTypeConfig(db.Model):
 
             # Default to sum if operation not recognized
             return float(sum(values))
+
+        except ZeroDivisionError:
+            return None
+        except Exception:
+            return None
+
+    def _calculate_value_type_formula(self, _visited=None):
+        """
+        Calculate value based on value type formula (e.g., Net = Revenue - Cost).
+
+        This calculates across VALUE TYPES for the SAME KPI, not across KPIs.
+        Example: For KPI "Monthly Profit", if Net value type = Revenue - Cost,
+                 get Revenue value and Cost value for THIS KPI, then subtract.
+
+        Args:
+            _visited: Set of visited config IDs to prevent circular dependencies
+
+        Returns:
+            Calculated numeric value or None if calculation fails
+        """
+        if not self.value_type or not self.value_type.is_formula():
+            return None
+
+        if not self.value_type.calculation_config:
+            return None
+
+        operation = self.value_type.calculation_config.get("operation")
+        source_value_type_ids = self.value_type.calculation_config.get("source_value_type_ids", [])
+
+        if not source_value_type_ids or not operation:
+            return None
+
+        # Get source configs for THIS KPI with the source value types
+        source_configs = (
+            KPIValueTypeConfig.query.filter_by(kpi_id=self.kpi_id)
+            .filter(KPIValueTypeConfig.value_type_id.in_(source_value_type_ids))
+            .all()
+        )
+
+        if len(source_configs) != len(source_value_type_ids):
+            # Not all source value types are configured for this KPI
+            return None
+
+        # Get values from source configs (in the order specified)
+        values = []
+        for source_vt_id in source_value_type_ids:
+            source_config = next((c for c in source_configs if c.value_type_id == source_vt_id), None)
+            if not source_config:
+                return None
+
+            # Get consensus value from source config (handles recursion)
+            consensus_result = source_config.get_consensus_value(_visited=_visited)
+
+            if isinstance(consensus_result, dict):
+                value = consensus_result.get("value")
+            else:
+                value = consensus_result
+
+            if value is None:
+                # Missing source data
+                return None
+
+            try:
+                values.append(float(value))
+            except (ValueError, TypeError):
+                return None
+
+        if not values:
+            return None
+
+        # Apply operation (same logic as KPI formulas)
+        try:
+            if operation == "add":
+                return float(sum(values))
+            elif operation == "subtract":
+                if len(values) < 2:
+                    return float(values[0]) if values else None
+                result = values[0]
+                for v in values[1:]:
+                    result -= v
+                return float(result)
+            elif operation == "multiply":
+                result = 1.0
+                for v in values:
+                    result *= v
+                return float(result)
+            elif operation == "divide":
+                if len(values) < 2:
+                    return float(values[0]) if values else None
+                result = values[0]
+                for v in values[1:]:
+                    if v == 0:
+                        return None  # Division by zero
+                    result /= v
+                return float(result)
+            else:
+                return None
 
         except ZeroDivisionError:
             return None
