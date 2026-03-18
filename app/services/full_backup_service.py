@@ -175,7 +175,23 @@ class FullBackupService:
                 "default_aggregation_formula": vt.default_aggregation_formula,
                 "is_active": vt.is_active,
                 "display_order": vt.display_order,
+                "calculation_type": vt.calculation_type,
             }
+
+            # Formula configuration (if formula-based value type)
+            if vt.calculation_config:
+                # Store formula with both IDs and names for restore compatibility
+                config = vt.calculation_config.copy()
+                source_vt_ids = config.get("source_value_type_ids", [])
+
+                # Add source value type names for restore
+                source_vt_names = []
+                for source_vt in value_types:
+                    if source_vt.id in source_vt_ids:
+                        source_vt_names.append(source_vt.name)
+
+                vt_data["calculation_config"] = config
+                vt_data["formula_source_names"] = source_vt_names  # For restore
 
             if vt.kind == "numeric":
                 vt_data["numeric_format"] = vt.numeric_format

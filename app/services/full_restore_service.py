@@ -251,6 +251,7 @@ class FullRestoreService:
                     stats["warnings"].append(f"Failed to restore organization logo: {str(e)}")
 
             # Step 2: Import Value Types
+            # First pass: Create all value types without formulas
             for vt_data in backup.get("value_types", []):
                 try:
                     vt = ValueType(
@@ -263,6 +264,7 @@ class FullRestoreService:
                         default_aggregation_formula=vt_data.get("default_aggregation_formula", "sum"),
                         is_active=vt_data.get("is_active", True),
                         display_order=vt_data.get("display_order", 0),
+                        calculation_type=vt_data.get("calculation_type", "manual"),
                     )
                     db.session.add(vt)
                     db.session.flush()
@@ -270,6 +272,38 @@ class FullRestoreService:
                     stats["value_types"] += 1
                 except Exception as e:
                     stats["errors"].append(f"ValueType '{vt_data.get('name')}': {str(e)}")
+
+            # Second pass: Configure formulas (now that all value types exist with new IDs)
+            for vt_data in backup.get("value_types", []):
+                if vt_data.get("calculation_config") and vt_data.get("formula_source_names"):
+                    try:
+                        vt = value_type_map.get(vt_data["name"])
+                        if vt:
+                            # Reconstruct formula config with new IDs
+                            old_config = vt_data["calculation_config"]
+                            operation = old_config.get("operation")
+                            source_names = vt_data["formula_source_names"]
+
+                            # Map source names to new IDs
+                            new_source_ids = []
+                            for source_name in source_names:
+                                source_vt = value_type_map.get(source_name)
+                                if source_vt:
+                                    new_source_ids.append(source_vt.id)
+
+                            if len(new_source_ids) == len(source_names):
+                                # All sources found, configure formula
+                                vt.calculation_config = {
+                                    "operation": operation,
+                                    "source_value_type_ids": new_source_ids,
+                                }
+                                db.session.add(vt)
+                            else:
+                                stats["errors"].append(
+                                    f"ValueType formula '{vt.name}': Could not find all source value types"
+                                )
+                    except Exception as e:
+                        stats["errors"].append(f"ValueType formula '{vt_data.get('name')}': {str(e)}")
 
             # Step 3: Import Spaces with full hierarchy
             for space_data in backup.get("spaces", []):
