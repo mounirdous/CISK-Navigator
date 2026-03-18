@@ -26,70 +26,42 @@ def upgrade():
         "CREATE TYPE action_item_mention_entity_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')"
     )
 
-    # Create action_items table
-    op.create_table(
-        "action_items",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("organization_id", sa.Integer(), nullable=False),
-        sa.Column("type", sa.Enum("memo", "action", name="action_item_type", create_type=False), nullable=False),
-        sa.Column("title", sa.String(length=200), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column(
-            "status",
-            sa.Enum("draft", "active", "completed", "cancelled", name="action_item_status", create_type=False),
-            nullable=False,
-        ),
-        sa.Column(
-            "priority",
-            sa.Enum("low", "medium", "high", "urgent", name="action_item_priority", create_type=False),
-            nullable=False,
-        ),
-        sa.Column("due_date", sa.Date(), nullable=True),
-        sa.Column("completed_at", sa.DateTime(), nullable=True),
-        sa.Column("owner_user_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "visibility", sa.Enum("private", "shared", name="action_item_visibility", create_type=False), nullable=False
-        ),
-        sa.Column("created_by_user_id", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["created_by_user_id"], ["users.id"], ondelete="SET NULL"),
-        sa.ForeignKeyConstraint(["organization_id"], ["organizations.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["owner_user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(op.f("ix_action_items_organization_id"), "action_items", ["organization_id"], unique=False)
-    op.create_index(op.f("ix_action_items_owner_user_id"), "action_items", ["owner_user_id"], unique=False)
-    op.create_index(op.f("ix_action_items_status"), "action_items", ["status"], unique=False)
-    op.create_index(op.f("ix_action_items_visibility"), "action_items", ["visibility"], unique=False)
+    # Create action_items table using raw SQL to avoid SQLAlchemy re-creating enum types
+    op.execute("""
+        CREATE TABLE action_items (
+            id SERIAL PRIMARY KEY,
+            organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+            type action_item_type NOT NULL,
+            title VARCHAR(200) NOT NULL,
+            description TEXT,
+            status action_item_status NOT NULL,
+            priority action_item_priority NOT NULL,
+            due_date DATE,
+            completed_at TIMESTAMP,
+            owner_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            visibility action_item_visibility NOT NULL,
+            created_by_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            created_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP NOT NULL
+        )
+    """)
+    op.execute("CREATE INDEX ix_action_items_organization_id ON action_items (organization_id)")
+    op.execute("CREATE INDEX ix_action_items_owner_user_id ON action_items (owner_user_id)")
+    op.execute("CREATE INDEX ix_action_items_status ON action_items (status)")
+    op.execute("CREATE INDEX ix_action_items_visibility ON action_items (visibility)")
 
-    # Create action_item_mentions table
-    op.create_table(
-        "action_item_mentions",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("action_item_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "entity_type",
-            sa.Enum(
-                "space",
-                "challenge",
-                "initiative",
-                "system",
-                "kpi",
-                name="action_item_mention_entity_type",
-                create_type=False,
-            ),
-            nullable=False,
-        ),
-        sa.Column("entity_id", sa.Integer(), nullable=False),
-        sa.Column("mention_text", sa.String(length=255), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(["action_item_id"], ["action_items.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-    op.create_index(
-        op.f("ix_action_item_mentions_action_item_id"), "action_item_mentions", ["action_item_id"], unique=False
-    )
+    # Create action_item_mentions table using raw SQL
+    op.execute("""
+        CREATE TABLE action_item_mentions (
+            id SERIAL PRIMARY KEY,
+            action_item_id INTEGER NOT NULL REFERENCES action_items(id) ON DELETE CASCADE,
+            entity_type action_item_mention_entity_type NOT NULL,
+            entity_id INTEGER NOT NULL,
+            mention_text VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP NOT NULL
+        )
+    """)
+    op.execute("CREATE INDEX ix_action_item_mentions_action_item_id ON action_item_mentions (action_item_id)")
 
 
 def downgrade():

@@ -33,9 +33,9 @@ def upgrade():
         op.create_foreign_key(
             "fk_stakeholders_site_id", "stakeholders", "geography_sites", ["site_id"], ["id"], ondelete="SET NULL"
         )
-        print("✓ Added site_id column to stakeholders table")
+        print("Added site_id column to stakeholders table")
     else:
-        print("→ Column site_id already exists in stakeholders table, skipping")
+        print("Column site_id already exists in stakeholders table, skipping")
 
 
 def downgrade():
@@ -52,6 +52,6 @@ def downgrade():
         op.drop_constraint("fk_stakeholders_site_id", "stakeholders", type_="foreignkey")
         # Drop column
         op.drop_column("stakeholders", "site_id")
-        print("✓ Removed site_id column from stakeholders table")
+        print("Removed site_id column from stakeholders table")
     else:
-        print("→ Column site_id doesn't exist in stakeholders table, skipping")
+        print("Column site_id doesn't exist in stakeholders table, skipping")

@@ -838,10 +838,21 @@ def restore_backup():
                 governance_bodies = []
 
             if governance_bodies:
-                # Store backup and org_id in session for mapping step
-                session["pending_full_backup"] = backup_content
+                # Store backup to a temp file (too large for session cookie)
+                import os
+                import tempfile
+                tmp = tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".json", delete=False, encoding="utf-8",
+                    dir=tempfile.gettempdir(), prefix="cisk_restore_"
+                )
+                tmp.write(backup_content)
+                tmp.close()
+
+                session["pending_full_backup_path"] = tmp.name
                 session["full_backup_org_id"] = org_id
                 session["full_backup_governance_bodies"] = [gb["name"] for gb in governance_bodies]
+                # Remove old key if present
+                session.pop("pending_full_backup", None)
 
                 # Redirect to mapping page
                 return redirect(url_for("global_admin.full_backup_governance_mapping"))
@@ -922,13 +933,17 @@ def full_backup_governance_mapping():
     from app.services.full_restore_service import FullRestoreService
 
     # Check if we have pending backup restore
-    backup_content = session.get("pending_full_backup")
+    import os
+    backup_path = session.get("pending_full_backup_path")
     org_id = session.get("full_backup_org_id")
     gb_names = session.get("full_backup_governance_bodies", [])
 
-    if not backup_content or not org_id or not gb_names:
+    if not backup_path or not os.path.exists(backup_path) or not org_id or not gb_names:
         flash("No pending backup restore found", "warning")
         return redirect(url_for("global_admin.backup_restore"))
+
+    with open(backup_path, "r", encoding="utf-8") as f:
+        backup_content = f.read()
 
     org = db.session.get(Organization, org_id)
     if not org:
@@ -955,10 +970,13 @@ def full_backup_governance_mapping():
                     gb_id = int(action.split("_")[1])
                     governance_body_mapping[gb_name] = gb_id
 
-            # Clear session data
+            # Clear session data and temp file
+            tmp_path = session.pop("pending_full_backup_path", None)
             session.pop("pending_full_backup", None)
             session.pop("full_backup_org_id", None)
             session.pop("full_backup_governance_bodies", None)
+            if tmp_path and os.path.exists(tmp_path):
+                os.unlink(tmp_path)
 
             # Restore with governance body mapping
             result = FullRestoreService.restore_from_json(

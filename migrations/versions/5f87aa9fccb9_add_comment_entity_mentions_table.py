@@ -28,45 +28,25 @@ def upgrade():
         # Migration already applied, skip
         return
 
-    # Create enum type only if it doesn't exist
-    result = bind.execute(sa.text("SELECT 1 FROM pg_type WHERE typname = 'comment_entity_mention_type'"))
-    if result.fetchone() is None:
-        op.execute(
-            "CREATE TYPE comment_entity_mention_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')"
-        )
-
-    # Create comment_entity_mentions table
-    op.create_table(
-        "comment_entity_mentions",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("comment_id", sa.Integer(), nullable=False),
-        sa.Column(
-            "entity_type",
-            sa.Enum(
-                "space",
-                "challenge",
-                "initiative",
-                "system",
-                "kpi",
-                name="comment_entity_mention_type",
-                create_type=False,
-            ),
-            nullable=False,
-        ),
-        sa.Column("entity_id", sa.Integer(), nullable=False),
-        sa.Column("mention_text", sa.String(length=255), nullable=False),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
-        sa.ForeignKeyConstraint(
-            ["comment_id"],
-            ["cell_comments.id"],
-            ondelete="CASCADE",
-        ),
-        sa.PrimaryKeyConstraint("id"),
+    # Drop stale enum if it exists (e.g. from a partial prior run), then recreate it
+    op.execute("DROP TYPE IF EXISTS comment_entity_mention_type")
+    op.execute(
+        "CREATE TYPE comment_entity_mention_type AS ENUM ('space', 'challenge', 'initiative', 'system', 'kpi')"
     )
 
-    # Create indexes
-    op.create_index("idx_comment_entity_mention", "comment_entity_mentions", ["comment_id", "entity_type", "entity_id"])
-    op.create_index(op.f("ix_comment_entity_mentions_comment_id"), "comment_entity_mentions", ["comment_id"])
+    # Create table using raw SQL to avoid SQLAlchemy re-creating the enum type
+    op.execute("""
+        CREATE TABLE comment_entity_mentions (
+            id SERIAL PRIMARY KEY,
+            comment_id INTEGER NOT NULL REFERENCES cell_comments(id) ON DELETE CASCADE,
+            entity_type comment_entity_mention_type NOT NULL,
+            entity_id INTEGER NOT NULL,
+            mention_text VARCHAR(255) NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    op.execute("CREATE INDEX idx_comment_entity_mention ON comment_entity_mentions (comment_id, entity_type, entity_id)")
+    op.execute("CREATE INDEX ix_comment_entity_mentions_comment_id ON comment_entity_mentions (comment_id)")
 
 
 def downgrade():

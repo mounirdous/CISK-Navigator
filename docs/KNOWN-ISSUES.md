@@ -1,6 +1,6 @@
 # Known Issues & Gotchas
 
-**Last Updated:** 2026-03-10
+**Last Updated:** 2026-03-18
 
 This document tracks known issues, gotchas, and lessons learned from bugs.
 
@@ -315,6 +315,76 @@ default_organization_id = db.Column(
    - Catch IntegrityErrors earlier
    - Provide helpful messages
    - Suggest fixes
+
+---
+
+## Full Backup Restore Silently Fails (Empty Org After Restore)
+
+**Issue:** Restoring a JSON backup with governance bodies produced no error but left the target organization empty.
+
+**Root Cause:** The backup restore flow stores intermediate state in the Flask session cookie so the governance-body mapping page can access it. For any non-trivial backup the JSON content pushes the session cookie over the browser's 4 KB limit (~4093 bytes). Browsers silently discard oversized cookies, so when the governance-mapping page loaded the session was empty, it hit the "No pending backup restore found" guard and redirected back — without any visible error (the flash message was in the now-dropped session too).
+
+**Symptoms:**
+- `POST /backup-restore/restore` → 302 to governance-mapping
+- `GET /backup-restore/governance-mapping` → immediate 302 back to backup-restore (no form shown)
+- Org remains empty, no error displayed
+- Server log shows: `UserWarning: The 'session' cookie is too large`
+
+**Fix (2026-03-18):** Instead of storing the backup JSON string in the session, the route now writes it to a temporary file (`cisk_restore_*.json` in the system temp dir) and stores only the file path in the session. The temp file is deleted after a successful restore.
+
+```python
+# BAD: stores entire JSON in session cookie
+session["pending_full_backup"] = backup_content  # can be megabytes
+
+# GOOD: write to temp file, store path only
+tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, ...)
+tmp.write(backup_content)
+session["pending_full_backup_path"] = tmp.name
+```
+
+**Files changed:** `app/routes/global_admin.py` — `restore_backup()` and `full_backup_governance_mapping()`
+
+---
+
+## Windows cp1252 UnicodeEncodeError in Migration Files
+
+**Issue:** Migration files with emoji in `print()` statements crash on Windows with `UnicodeEncodeError: 'charmap' codec can't encode character`.
+
+**Cause:** Windows terminal uses the cp1252 codec by default. Emoji and special Unicode characters (✓, →, etc.) are not in cp1252.
+
+**Fix:** Remove all emoji from `print()` calls in migration files. Plain ASCII only.
+
+**Affected migrations fixed:** `7a2248e4f425_add_site_to_stakeholders.py`
+
+---
+
+## SQLAlchemy Named Enum Re-Creation in Alembic Migrations
+
+**Issue:** Migrations that manually create a PostgreSQL enum type via `op.execute("CREATE TYPE ...")` and then use `op.create_table(... sa.Enum(..., name="type_name", create_type=False) ...)` fail with `DuplicateObject: type already exists`.
+
+**Root Cause:** Despite `create_type=False`, SQLAlchemy's internal `_on_table_create` event listener still fires and attempts to issue a `CREATE TYPE` DDL, conflicting with the one already created by `op.execute`.
+
+**Fix:** Replace `op.create_table(...)` with raw SQL for any table that uses a named enum type:
+
+```python
+# BAD: SQLAlchemy re-creates the enum even with create_type=False
+op.execute("CREATE TYPE my_enum AS ENUM ('a', 'b')")
+op.create_table("my_table",
+    sa.Column("col", sa.Enum("a", "b", name="my_enum", create_type=False), ...),
+    ...
+)
+
+# GOOD: raw SQL bypasses the event listener
+op.execute("CREATE TYPE my_enum AS ENUM ('a', 'b')")
+op.execute("""
+    CREATE TABLE my_table (
+        id SERIAL PRIMARY KEY,
+        col my_enum NOT NULL
+    )
+""")
+```
+
+**Affected migrations fixed:** `5f87aa9fccb9`, `737ff76c2619`
 
 ---
 
