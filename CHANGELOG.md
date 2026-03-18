@@ -5,6 +5,24 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.6] - 2026-03-18
+
+### Fixed - Workspace Not Refreshing After Entity Creation
+
+**Critical Bug**: After creating entities (space, challenge, initiative, system, KPI), the workspace tree would not refresh to show the newly created entity. The flash message appeared confirming creation, but the entity was invisible.
+
+**Root Cause**: When redirecting back to workspace with `?auto_edit=1`, the Alpine.js component did not reload data from the server. It used stale cached data from the previous page load.
+
+**Fix**:
+- Made `init()` function async to support data reloading
+- When `auto_edit=1` parameter is present, force reload workspace data before enabling edit mode
+- This ensures newly created entities appear immediately after creation
+
+**Impact**: Critical - users could not see their newly created work until manually refreshing the page.
+
+**Files Modified:**
+- `app/templates/workspace/index.html` - Added data reload on auto_edit, made init() async
+
 ## [2.10.5] - 2026-03-18
 
 ### Fixed - Critical: Empty Spaces Not Visible in Workspace

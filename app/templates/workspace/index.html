@@ -3680,7 +3680,7 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         // Filter Presets
-        init() {
+        async init() {
             // Prevent browser's automatic hash scroll jump
             // We'll handle scrolling ourselves after data loads
             if (window.location.hash) {
@@ -3740,6 +3740,8 @@ function workspaceV2(orgId, filterPresets) {
             if (autoEdit) {
                 this.editMode = true;
                 this.filtersExpanded = false;  // Always collapse filters after entity creation
+                // Reload data to show newly created entity
+                await this.loadData();
             } else {
                 // Check if we have actual filter parameters (not just navigation params like auto_edit)
                 const hasFilterParams = urlParams.has('spaceTypeFilter') ||
