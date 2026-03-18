@@ -950,8 +950,10 @@ class DemoDataService:
         # Create ONE contribution per KPI config to demonstrate contribution workflow
         from app.models import Contribution
 
-        contributors = ["Alice Johnson", "Bob Smith", "Carol Williams"]
-        for config_data in configs_created:
+        # Use the 3 demo users as contributors (cycling through them)
+        contributor_names = [user.display_name for user in users[:3]]  # "Demo Admin", "Demo Contributor", "Demo Viewer"
+
+        for idx, config_data in enumerate(configs_created):
             config = config_data["config"]
             # Get last snapshot value as base
             last_snapshot = (
@@ -962,9 +964,11 @@ class DemoDataService:
             if last_snapshot:
                 # Create one contribution with similar value (±5% variation)
                 contrib_value = float(last_snapshot.consensus_value) * random.uniform(0.95, 1.05)
+                # Cycle through the 3 demo users
+                contributor_name = contributor_names[idx % len(contributor_names)]
                 contribution = Contribution(
                     kpi_value_type_config_id=config.id,
-                    contributor_name=random.choice(contributors),
+                    contributor_name=contributor_name,
                     numeric_value=Decimal(str(round(contrib_value, 2))),
                 )
                 db.session.add(contribution)
