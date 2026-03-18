@@ -619,6 +619,7 @@ class DemoDataService:
                 membership = UserOrganizationMembership(
                     user_id=moun_user.id,
                     organization_id=org.id,
+                    is_org_admin=True,
                     can_manage_spaces=True,
                     can_manage_challenges=True,
                     can_manage_initiatives=True,
@@ -806,7 +807,11 @@ class DemoDataService:
                         mission=f"Implement {initiative_data['name']} to address {challenge_data['name']} through systematic improvements and measurable outcomes.",
                         success_criteria="Achieve target KPIs within planned timeframe. Maintain quality standards above 85%. Positive stakeholder feedback from all governance bodies.",
                         responsible_person=f"{users[0].display_name} (Lead)",
-                        team_members=f"{users[1].display_name}\n{users[2].display_name}\nExternal Consultant",
+                        team_members=(
+                            "\n".join([user.display_name for user in users[1:]]) + "\nExternal Consultant"
+                            if len(users) > 1
+                            else "External Consultant"
+                        ),
                         handover_organization=f"{space_data['name']} Operations Team",
                         deliverables='[{"name": "Phase 1 Completion", "date": "Q2 2026"}, {"name": "Full Implementation", "date": "Q4 2026"}]',
                         group_label=random.choice(["A", "B", "C"]),
