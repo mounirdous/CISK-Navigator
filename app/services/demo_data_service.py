@@ -396,7 +396,15 @@ class DemoDataService:
                                                 {"name": "Monthly Electricity Bill", "frequency": "monthly"},
                                                 {"name": "Yearly Carbon Offset", "frequency": "yearly"},
                                             ],
-                                        }
+                                        },
+                                        {
+                                            "name": "Solar Economics",
+                                            "kpis": [
+                                                {"name": "Monthly Installation Cost", "frequency": "monthly"},
+                                                {"name": "Monthly Energy Revenue", "frequency": "monthly"},
+                                                {"name": "Monthly Net Profit", "frequency": "monthly", "formula": True},
+                                            ],
+                                        },
                                     ],
                                 },
                             ],
@@ -642,6 +650,9 @@ class DemoDataService:
             {"name": "Weight", "kind": "numeric", "unit_label": "kg"},
             {"name": "Score", "kind": "numeric", "unit_label": "pts"},
             {"name": "Rating", "kind": "numeric", "unit_label": "/5"},
+            {"name": "Cost", "kind": "numeric", "unit_label": "€"},
+            {"name": "Revenue", "kind": "numeric", "unit_label": "€"},
+            {"name": "Net", "kind": "numeric", "unit_label": "€"},
         ]
         for vt_data in value_type_configs:
             vt = ValueType(
@@ -724,6 +735,9 @@ class DemoDataService:
                         db.session.add(sys_link)
                         db.session.flush()
 
+                        # Track configs for this system (for formula setup)
+                        system_configs = []
+
                         for kpi_idx, kpi_data in enumerate(system_data["kpis"]):
                             kpi = KPI(
                                 name=kpi_data["name"],
@@ -738,10 +752,62 @@ class DemoDataService:
                             # Assign appropriate value type based on KPI name
                             vt = DemoDataService._select_value_type(kpi.name, value_types)
 
-                            config = KPIValueTypeConfig(kpi_id=kpi.id, value_type_id=vt.id)
+                            # Check if this is a formula KPI
+                            is_formula = kpi_data.get("formula", False)
+
+                            config = KPIValueTypeConfig(
+                                kpi_id=kpi.id,
+                                value_type_id=vt.id,
+                                calculation_type="formula" if is_formula else "manual",
+                            )
                             db.session.add(config)
                             db.session.flush()
-                            configs_created.append({"config": config, "kpi": kpi, "frequency": kpi_data["frequency"]})
+
+                            # Store for formula setup
+                            system_configs.append(
+                                {
+                                    "config": config,
+                                    "kpi": kpi,
+                                    "kpi_data": kpi_data,
+                                    "frequency": kpi_data["frequency"],
+                                    "is_formula": is_formula,
+                                }
+                            )
+
+                        # Set up formula configurations for this system
+                        for config_info in system_configs:
+                            if config_info["is_formula"]:
+                                # For Solar Economics: Net Profit = Revenue - Cost
+                                if (
+                                    "net" in config_info["kpi"].name.lower()
+                                    or "profit" in config_info["kpi"].name.lower()
+                                ):
+                                    # Find Revenue and Cost configs in this system
+                                    revenue_config = next(
+                                        (c["config"] for c in system_configs if "revenue" in c["kpi"].name.lower()),
+                                        None,
+                                    )
+                                    cost_config = next(
+                                        (c["config"] for c in system_configs if "cost" in c["kpi"].name.lower()), None
+                                    )
+
+                                    if revenue_config and cost_config:
+                                        # Set up formula: Revenue - Cost
+                                        config_info["config"].calculation_config = {
+                                            "operation": "subtract",
+                                            "kpi_config_ids": [revenue_config.id, cost_config.id],
+                                        }
+                                        db.session.add(config_info["config"])
+
+                            # Add to main configs list (skip snapshots for formulas)
+                            if not config_info["is_formula"]:
+                                configs_created.append(
+                                    {
+                                        "config": config_info["config"],
+                                        "kpi": config_info["kpi"],
+                                        "frequency": config_info["frequency"],
+                                    }
+                                )
 
         db.session.flush()
 
@@ -777,6 +843,14 @@ class DemoDataService:
         """Select appropriate value type based on KPI name"""
         name_lower = kpi_name.lower()
         for vt in value_types:
+            # Financial value types (specific matching first)
+            if vt.name == "Cost" and "cost" in name_lower:
+                return vt
+            if vt.name == "Revenue" and "revenue" in name_lower:
+                return vt
+            if vt.name == "Net" and ("net" in name_lower or "profit" in name_lower):
+                return vt
+            # Other value types
             if vt.name == "Hours" and ("hours" in name_lower or "time" in name_lower):
                 return vt
             if vt.name == "Percentage" and ("rate" in name_lower or "satisfaction" in name_lower):
