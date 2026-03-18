@@ -212,7 +212,7 @@ class KPIGeographyAssignment(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     # Relationships
-    kpi = db.relationship("KPI", backref="geography_assignments")
+    kpi = db.relationship("KPI", back_populates="geography_assignments")
     region = db.relationship("GeographyRegion", back_populates="geography_assignments")
     country = db.relationship("GeographyCountry", back_populates="geography_assignments")
     site = db.relationship("GeographySite", back_populates="geography_assignments")

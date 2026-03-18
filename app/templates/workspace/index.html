@@ -2803,7 +2803,7 @@
                                                                         <!-- Calculation Type Badge (top-left) -->
                                                                         <template x-if="kpi.values[String(vt.id)].calculation_type === 'formula'">
                                                                             <template x-if="editMode">
-                                                                                <a :href="`/organization_admin/kpis/${kpi.id}/edit`"
+                                                                                <a :href="`/org-admin/kpis/${kpi.id}/edit`"
                                                                                    class="calc-type-badge"
                                                                                    title="Formula KPI - Click to edit"
                                                                                    @click.stop>📐</a>
@@ -2814,7 +2814,7 @@
                                                                         </template>
                                                                         <template x-if="kpi.values[String(vt.id)].calculation_type === 'linked'">
                                                                             <template x-if="editMode">
-                                                                                <a :href="`/organization_admin/kpis/${kpi.id}/edit`"
+                                                                                <a :href="`/org-admin/kpis/${kpi.id}/edit`"
                                                                                    class="calc-type-badge"
                                                                                    title="Linked KPI - Click to edit"
                                                                                    @click.stop>🔗</a>
@@ -2824,7 +2824,7 @@
                                                                             </template>
                                                                         </template>
                                                                         <template x-if="kpi.values[String(vt.id)].calculation_type === 'manual' && editMode">
-                                                                            <a :href="`/organization_admin/kpis/${kpi.id}/edit`"
+                                                                            <a :href="`/org-admin/kpis/${kpi.id}/edit`"
                                                                                class="calc-type-badge"
                                                                                style="color: var(--bs-secondary);"
                                                                                title="Manual entry - Click to edit"
@@ -2859,7 +2859,7 @@
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
                                                                                                    @mouseover="$el.style.opacity='0.7'"
                                                                                                    @mouseout="$el.style.opacity='1'">
-                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem;'"
+                                                                                                    <span :style="'color: ' + kpi.values[String(vt.id)].target_color + '; margin-left: 0.5rem; font-size: 1.1rem; filter: drop-shadow(0 0 2px ' + kpi.values[String(vt.id)].target_color + ');'"
                                                                                                           :title="'Target: ' + kpi.values[String(vt.id)].target_progress + '% achieved (Goal: ' + kpi.values[String(vt.id)].target_value + (kpi.values[String(vt.id)].target_date ? ' by ' + kpi.values[String(vt.id)].target_date : '') + ') - Click to edit target'">🎯</span>
                                                                                                 </a>
                                                                                             </template>
@@ -4294,7 +4294,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/organization_admin/challenges/${challenge.id}`, {
+                const response = await fetch(`/org-admin/challenges/${challenge.id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'
@@ -4320,7 +4320,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/organization_admin/initiatives/${initiative.id}`, {
+                const response = await fetch(`/org-admin/initiatives/${initiative.id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'
@@ -4346,7 +4346,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/organization_admin/initiative-system-links/${system.link_id}`, {
+                const response = await fetch(`/org-admin/initiative-system-links/${system.link_id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'
@@ -4372,7 +4372,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/organization_admin/kpis/${kpi.id}/archive`, {
+                const response = await fetch(`/org-admin/kpis/${kpi.id}/archive`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'
@@ -4397,7 +4397,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/organization_admin/kpis/${kpi.id}/restore`, {
+                const response = await fetch(`/org-admin/kpis/${kpi.id}/restore`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'

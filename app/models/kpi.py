@@ -45,6 +45,9 @@ class KPI(db.Model):
         cascade="all, delete-orphan",
     )
     governance_body_links = db.relationship("KPIGovernanceBodyLink", back_populates="kpi", cascade="all, delete-orphan")
+    geography_assignments = db.relationship(
+        "KPIGeographyAssignment", back_populates="kpi", cascade="all, delete-orphan"
+    )
     archived_by = db.relationship("User", foreign_keys=[archived_by_user_id])
 
     def get_variable_name(self):

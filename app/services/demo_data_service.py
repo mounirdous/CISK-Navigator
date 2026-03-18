@@ -25,13 +25,19 @@ from app.models import (
     ActionItem,
     Challenge,
     ChallengeInitiativeLink,
+    EntityTypeDefault,
+    GeographyCountry,
+    GeographyRegion,
+    GeographySite,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
+    KPIGeographyAssignment,
     KPIGovernanceBodyLink,
     KPISnapshot,
     KPIValueTypeConfig,
     Organization,
+    SavedChart,
     Space,
     Stakeholder,
     StakeholderMap,
@@ -220,6 +226,64 @@ class DemoDataService:
                     "stakeholders": ["Emma Thompson", "David Chen", "Rachel Green"],
                 },
             ],
+            "geographies": {
+                "regions": [
+                    {
+                        "name": "United Kingdom",
+                        "code": "UK",
+                        "countries": [
+                            {
+                                "name": "England",
+                                "code": "ENG",
+                                "iso": "GB",
+                                "lat": 52.3555,
+                                "lon": -1.1743,
+                                "sites": [
+                                    {"name": "Riverside Main Stadium", "code": "RMS", "lat": 51.5074, "lon": -0.1278},
+                                    {
+                                        "name": "Training Ground North",
+                                        "code": "TGN",
+                                        "lat": 53.4808,
+                                        "lon": -2.2426,
+                                    },  # Manchester
+                                    {
+                                        "name": "Youth Academy",
+                                        "code": "YA",
+                                        "lat": 52.4862,
+                                        "lon": -1.8904,
+                                    },  # Birmingham
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "name": "Europe",
+                        "code": "EUR",
+                        "countries": [
+                            {
+                                "name": "France",
+                                "code": "FR",
+                                "iso": "FR",
+                                "lat": 46.2276,
+                                "lon": 2.2137,
+                                "sites": [
+                                    {"name": "Paris Training Center", "code": "PTC", "lat": 48.8566, "lon": 2.3522},
+                                ],
+                            },
+                            {
+                                "name": "Germany",
+                                "code": "DE",
+                                "iso": "DE",
+                                "lat": 51.1657,
+                                "lon": 10.4515,
+                                "sites": [
+                                    {"name": "Berlin Sports Complex", "code": "BSC", "lat": 52.5200, "lon": 13.4050},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
         },
         "myhealth_journey": {
             "name": "MyHealth Journey",
@@ -359,6 +423,53 @@ class DemoDataService:
                     "stakeholders": ["Amanda White", "Chris Taylor", "Robert Johnson"],
                 },
             ],
+            "geographies": {
+                "regions": [
+                    {
+                        "name": "North America",
+                        "code": "NOAM",
+                        "countries": [
+                            {
+                                "name": "United States",
+                                "code": "US",
+                                "iso": "US",
+                                "lat": 37.0902,
+                                "lon": -95.7129,
+                                "sites": [
+                                    {
+                                        "name": "Home Base - New York",
+                                        "code": "HOME-NY",
+                                        "lat": 40.7128,
+                                        "lon": -74.0060,
+                                    },
+                                    {
+                                        "name": "Fitness First Gym - NYC",
+                                        "code": "GYM-NY",
+                                        "lat": 40.7589,
+                                        "lon": -73.9851,
+                                    },
+                                    {
+                                        "name": "Central Park Running Track",
+                                        "code": "PARK-NY",
+                                        "lat": 40.7829,
+                                        "lon": -73.9654,
+                                    },
+                                ],
+                            },
+                            {
+                                "name": "Canada",
+                                "code": "CA",
+                                "iso": "CA",
+                                "lat": 56.1304,
+                                "lon": -106.3468,
+                                "sites": [
+                                    {"name": "Toronto Health Center", "code": "THC", "lat": 43.6532, "lon": -79.3832},
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
         },
         "green_home": {
             "name": "Green Home Project",
@@ -501,6 +612,75 @@ class DemoDataService:
                     "stakeholders": ["Susan Park", "Maria Garcia", "Linda Chen", "Frank Wilson"],
                 },
             ],
+            "geographies": {
+                "regions": [
+                    {
+                        "name": "North America",
+                        "code": "NOAM",
+                        "countries": [
+                            {
+                                "name": "United States - West Coast",
+                                "code": "US-W",
+                                "iso": "US",
+                                "lat": 37.7749,
+                                "lon": -122.4194,
+                                "sites": [
+                                    {
+                                        "name": "Primary Home - California",
+                                        "code": "HOME-CA",
+                                        "lat": 34.0522,
+                                        "lon": -118.2437,
+                                    },
+                                    {
+                                        "name": "Solar Array - Rooftop",
+                                        "code": "SOLAR-CA",
+                                        "lat": 34.0512,
+                                        "lon": -118.2447,
+                                    },
+                                    {"name": "Garden & Compost", "code": "GARDEN-CA", "lat": 34.0532, "lon": -118.2427},
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        "name": "Europe",
+                        "code": "EUR",
+                        "countries": [
+                            {
+                                "name": "Germany",
+                                "code": "DE",
+                                "iso": "DE",
+                                "lat": 51.1657,
+                                "lon": 10.4515,
+                                "sites": [
+                                    {"name": "Berlin Eco House", "code": "ECO-BE", "lat": 52.5200, "lon": 13.4050},
+                                ],
+                            },
+                        ],
+                    },
+                    {
+                        "name": "Asia Pacific",
+                        "code": "APAC",
+                        "countries": [
+                            {
+                                "name": "Australia",
+                                "code": "AU",
+                                "iso": "AU",
+                                "lat": -25.2744,
+                                "lon": 133.7751,
+                                "sites": [
+                                    {
+                                        "name": "Sydney Green Home",
+                                        "code": "GREEN-SYD",
+                                        "lat": -33.8688,
+                                        "lon": 151.2093,
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
         },
     }
 
@@ -531,8 +711,11 @@ class DemoDataService:
 
         scenario = DemoDataService.SCENARIOS[scenario_key]
 
+        # Prefix org name with DEMO_ for easy identification
+        demo_org_name = f"DEMO_{scenario['name']}"
+
         # Check if organization already exists - if so, delete it completely
-        existing_org = Organization.query.filter_by(name=scenario["name"]).first()
+        existing_org = Organization.query.filter_by(name=demo_org_name).first()
         if existing_org:
             old_org_id = existing_org.id
             # Delete organization (cascading deletes handle related entities)
@@ -619,22 +802,42 @@ class DemoDataService:
             if gb_count > 0:
                 orphaned_data.append(f"GovernanceBodies: {gb_count}")
 
+            # Check SavedCharts (should be 0)
+            saved_chart_count = SavedChart.query.filter_by(organization_id=old_org_id).count()
+            if saved_chart_count > 0:
+                orphaned_data.append(f"SavedCharts: {saved_chart_count}")
+
+            # Check Geography Regions (should be 0)
+            geo_region_count = GeographyRegion.query.filter_by(organization_id=old_org_id).count()
+            if geo_region_count > 0:
+                orphaned_data.append(f"GeographyRegions: {geo_region_count}")
+
+            # Check Entity Type Defaults (should be 0)
+            entity_defaults_count = EntityTypeDefault.query.filter_by(organization_id=old_org_id).count()
+            if entity_defaults_count > 0:
+                orphaned_data.append(f"EntityTypeDefaults: {entity_defaults_count}")
+
+            # Check ActionItems (should be 0)
+            action_item_count = ActionItem.query.filter_by(organization_id=old_org_id).count()
+            if action_item_count > 0:
+                orphaned_data.append(f"ActionItems: {action_item_count}")
+
             # If any orphaned data found, raise error
             if orphaned_data:
                 raise RuntimeError(
-                    f"CASCADE DELETE FAILED! Orphaned data found for organization '{scenario['name']}' (ID {old_org_id}): {', '.join(orphaned_data)}"
+                    f"CASCADE DELETE FAILED! Orphaned data found for organization '{demo_org_name}' (ID {old_org_id}): {', '.join(orphaned_data)}"
                 )
 
             # Log successful verification
             import logging
 
             logging.info(
-                f"✅ CASCADE DELETE VERIFIED: All data for organization '{scenario['name']}' (ID {old_org_id}) was successfully deleted"
+                f"✅ CASCADE DELETE VERIFIED: All data for organization '{demo_org_name}' (ID {old_org_id}) was successfully deleted"
             )
 
         # Create organization with Porter's Five Forces
         org = Organization(
-            name=scenario["name"],
+            name=demo_org_name,
             description=scenario["description"],
             is_active=True,
             porters_new_entrants=scenario["porters"]["new_entrants"],
@@ -645,6 +848,9 @@ class DemoDataService:
         )
         db.session.add(org)
         db.session.flush()
+
+        # Create custom branding (entity type defaults) for this scenario
+        DemoDataService._create_entity_defaults(org.id, scenario_key)
 
         # Create demo users
         if not user_emails:
@@ -777,6 +983,58 @@ class DemoDataService:
                         notes=f"{source.name} {relationship_type.replace('_', ' ')} {target.name}",
                     )
                     db.session.add(rel)
+        db.session.flush()
+
+        # Create geographies (regions, countries, sites)
+        geography_entities = {}  # Store all created geography entities
+        if "geographies" in scenario:
+            geo_data = scenario["geographies"]
+            for region_data in geo_data.get("regions", []):
+                region = GeographyRegion(
+                    organization_id=org.id,
+                    name=region_data["name"],
+                    code=region_data.get("code"),
+                    display_order=len(geography_entities),
+                )
+                db.session.add(region)
+                db.session.flush()
+                geography_entities[region_data["name"]] = {"entity": region, "type": "region"}
+
+                for country_data in region_data.get("countries", []):
+                    country = GeographyCountry(
+                        region_id=region.id,
+                        name=country_data["name"],
+                        code=country_data.get("code"),
+                        iso_code=country_data.get("iso"),
+                        latitude=country_data.get("lat"),
+                        longitude=country_data.get("lon"),
+                        display_order=len([e for e in geography_entities.values() if e["type"] == "country"]),
+                    )
+                    db.session.add(country)
+                    db.session.flush()
+                    geography_entities[f"{region_data['name']}/{country_data['name']}"] = {
+                        "entity": country,
+                        "type": "country",
+                        "region": region,
+                    }
+
+                    for site_data in country_data.get("sites", []):
+                        site = GeographySite(
+                            country_id=country.id,
+                            name=site_data["name"],
+                            code=site_data.get("code"),
+                            latitude=site_data.get("lat"),
+                            longitude=site_data.get("lon"),
+                            display_order=len([e for e in geography_entities.values() if e["type"] == "site"]),
+                        )
+                        db.session.add(site)
+                        db.session.flush()
+                        geography_entities[f"{region_data['name']}/{country_data['name']}/{site_data['name']}"] = {
+                            "entity": site,
+                            "type": "site",
+                            "country": country,
+                            "region": region,
+                        }
         db.session.flush()
 
         # Create value types (Cost/Revenue/Net first for prominence in workspace)
@@ -972,12 +1230,50 @@ class DemoDataService:
                                 # Integer format - no decimals
                                 display_decimals = 0
 
+                            # Set targets to demonstrate 3 target types
+                            target_value = None
+                            target_direction = None
+                            target_date = None
+
+                            # Distribute target types across KPIs (1 in 3 gets a target)
+                            if kpi_idx % 3 == 0:
+                                # Type 1: MAXIMIZE (higher is better)
+                                target_direction = "maximize"
+                                if vt.name in ["Revenue", "Count"]:
+                                    target_value = Decimal("1000")
+                                elif vt.name == "Percentage":
+                                    target_value = Decimal("85")
+                                elif vt.name == "Hours":
+                                    target_value = Decimal("40")
+                                target_date = date.today() + timedelta(days=180)
+                            elif kpi_idx % 3 == 1:
+                                # Type 2: MINIMIZE (lower is better)
+                                target_direction = "minimize"
+                                if vt.name in ["Cost", "Currency"]:
+                                    target_value = Decimal("500")
+                                elif vt.name == "Count":
+                                    target_value = Decimal("10")
+                                elif vt.name == "Distance":
+                                    target_value = Decimal("5")
+                                target_date = date.today() + timedelta(days=180)
+                            elif kpi_idx % 3 == 2:
+                                # Type 3: EXACT (at target is best)
+                                target_direction = "exact"
+                                if vt.name == "Percentage":
+                                    target_value = Decimal("75")
+                                elif vt.name in ["Count", "Score"]:
+                                    target_value = Decimal("50")
+                                target_date = date.today() + timedelta(days=180)
+
                             config = KPIValueTypeConfig(
                                 kpi_id=kpi.id,
                                 value_type_id=vt.id,
                                 calculation_type="formula" if is_formula else "manual",
                                 display_scale=display_scale,
                                 display_decimals=display_decimals,
+                                target_value=target_value,
+                                target_direction=target_direction,
+                                target_date=target_date,
                             )
                             db.session.add(config)
                             db.session.flush()
@@ -1069,9 +1365,48 @@ class DemoDataService:
 
         db.session.flush()
 
-        # Create action items (mix of different states)
-        action_items_created = DemoDataService._create_action_items(
-            org.id, initiatives_created, kpis_created, users[0].id
+        # Assign KPIs to geography locations (if geographies exist)
+        geography_assignments_created = 0
+        if geography_entities and kpis_created:
+            # Get all site entities (most granular level)
+            sites = [geo["entity"] for geo in geography_entities.values() if geo["type"] == "site"]
+
+            if sites:
+                # Assign each KPI to a random site (demonstrating geographic distribution)
+                for kpi in kpis_created:
+                    # ~70% of KPIs get assigned to a site (not all KPIs need geography)
+                    if random.random() < 0.7:
+                        site = random.choice(sites)
+                        assignment = KPIGeographyAssignment(kpi_id=kpi.id, site_id=site.id)
+                        db.session.add(assignment)
+                        geography_assignments_created += 1
+
+                # Also assign some KPIs at country level (less granular)
+                countries = [geo["entity"] for geo in geography_entities.values() if geo["type"] == "country"]
+                if countries and len(kpis_created) > 3:
+                    # Assign first few KPIs at country level
+                    for kpi in kpis_created[:3]:
+                        country = random.choice(countries)
+                        assignment = KPIGeographyAssignment(kpi_id=kpi.id, country_id=country.id)
+                        db.session.add(assignment)
+                        geography_assignments_created += 1
+
+                # Assign one KPI at region level (highest level aggregation)
+                regions = [geo["entity"] for geo in geography_entities.values() if geo["type"] == "region"]
+                if regions and kpis_created:
+                    region = regions[0]  # Use first region
+                    assignment = KPIGeographyAssignment(kpi_id=kpis_created[0].id, region_id=region.id)
+                    db.session.add(assignment)
+                    geography_assignments_created += 1
+
+        db.session.flush()
+
+        # Create action items (mix of different states, distributed among demo users)
+        action_items_created = DemoDataService._create_action_items(org.id, initiatives_created, kpis_created, users)
+
+        # Create saved charts for different frequencies
+        saved_charts_created = DemoDataService._create_saved_charts(
+            org.id, configs_created, value_types, users[0].id, years_of_history
         )
 
         db.session.commit()
@@ -1082,6 +1417,8 @@ class DemoDataService:
             "user_info": user_info,
             "stakeholders": len(stakeholder_map_dict),
             "stakeholder_maps": len(stakeholder_maps),
+            "geographies": len(geography_entities),
+            "geography_assignments": geography_assignments_created,
             "spaces": len(spaces_created),
             "challenges": len(challenges_created),
             "initiatives": len(initiatives_created),
@@ -1090,6 +1427,7 @@ class DemoDataService:
             "configs": len(configs_created),
             "snapshots": snapshots_created,
             "action_items": action_items_created,
+            "saved_charts": saved_charts_created,
         }
 
     @staticmethod
@@ -1104,18 +1442,29 @@ class DemoDataService:
                 return vt
             if vt.name == "Net" and ("net" in name_lower or "profit" in name_lower):
                 return vt
-            # Other value types
-            if vt.name == "Hours" and ("hours" in name_lower or "time" in name_lower):
+            # Hours - match training, cardio, recovery, sessions
+            if vt.name == "Hours" and (
+                "hours" in name_lower
+                or "time" in name_lower
+                or "training" in name_lower
+                or "cardio" in name_lower
+                or "recovery" in name_lower
+                or "sessions" in name_lower
+            ):
                 return vt
+            # Distance - match running, distance
+            if vt.name == "Distance" and (
+                "distance" in name_lower or "running" in name_lower or "walking" in name_lower
+            ):
+                return vt
+            # Other value types
             if vt.name == "Percentage" and ("rate" in name_lower or "satisfaction" in name_lower):
                 return vt
-            if vt.name == "Currency" and ("revenue" in name_lower or "bill" in name_lower or "sales" in name_lower):
+            if vt.name == "Currency" and ("bill" in name_lower or "sales" in name_lower):
                 return vt
-            if vt.name == "Distance" and "distance" in name_lower:
+            if vt.name == "Weight" and ("weight" in name_lower or "compost" in name_lower or "waste" in name_lower):
                 return vt
-            if vt.name == "Weight" and ("weight" in name_lower or "compost" in name_lower):
-                return vt
-            if vt.name == "Score" and ("score" in name_lower or "test" in name_lower):
+            if vt.name == "Score" and ("score" in name_lower or "test" in name_lower or "assessment" in name_lower):
                 return vt
             if vt.name == "Rating" and "level" in name_lower:
                 return vt
@@ -1230,8 +1579,8 @@ class DemoDataService:
         return snapshot_count
 
     @staticmethod
-    def _create_action_items(org_id, initiatives, kpis, user_id):
-        """Create sample action items in various states"""
+    def _create_action_items(org_id, initiatives, kpis, users):
+        """Create sample action items in various states, distributed among demo users"""
         action_items = []
 
         # Sample action items
@@ -1246,12 +1595,15 @@ class DemoDataService:
             ("Plan next sprint", "Define priorities and deliverables for next period"),
         ]
 
-        # Create 5-10 action items
+        # Create 5-10 action items, distributed among demo users only
         num_items = random.randint(5, 10)
         for i in range(num_items):
             title, description = random.choice(sample_actions)
             status = random.choice(["active", "active", "completed", "draft"])  # Weight towards active
             priority = random.choice(["low", "medium", "medium", "high", "urgent"])  # Weight towards medium
+
+            # Rotate through demo users for ownership
+            user = users[i % len(users)]
 
             action_item = ActionItem(
                 organization_id=org_id,
@@ -1260,11 +1612,218 @@ class DemoDataService:
                 description=description,
                 status=status,
                 priority=priority,
-                owner_user_id=user_id,
-                created_by_user_id=user_id,
+                owner_user_id=user.id,
+                created_by_user_id=user.id,
                 visibility="shared",
             )
             db.session.add(action_item)
             action_items.append(action_item)
 
         return len(action_items)
+
+    @staticmethod
+    def _create_saved_charts(org_id, configs_created, value_types, user_id, years_of_history):
+        """Create meaningful saved charts for daily, weekly, monthly, quarterly, yearly KPIs"""
+        import json
+        from datetime import datetime
+
+        saved_charts = []
+        current_year = datetime.now().year
+        year_start = current_year - years_of_history
+        year_end = current_year
+
+        # Group configs by frequency
+        daily_configs = [c for c in configs_created if c.get("frequency") == "daily"]
+        weekly_configs = [c for c in configs_created if c.get("frequency") == "weekly"]
+        monthly_configs = [c for c in configs_created if c.get("frequency") == "monthly"]
+        quarterly_configs = [c for c in configs_created if c.get("frequency") == "quarterly"]
+        yearly_configs = [c for c in configs_created if c.get("frequency") == "yearly"]
+
+        # Chart color palette
+        chart_colors = ["#007bff", "#28a745", "#dc3545", "#ffc107", "#17a2b8", "#6c757d", "#6f42c1", "#fd7e14"]
+
+        # 1. Daily KPIs Chart
+        if daily_configs:
+            config_colors = {}
+            for idx, config_data in enumerate(daily_configs[:5]):  # Limit to 5 KPIs per chart
+                config_colors[str(config_data["config"].id)] = chart_colors[idx % len(chart_colors)]
+
+            chart = SavedChart(
+                organization_id=org_id,
+                created_by_user_id=user_id,
+                name="Daily Performance Tracking",
+                description="Track daily KPIs including steps, attendance, and activity metrics",
+                year_start=year_start,
+                year_end=year_end,
+                view_type="daily",
+                chart_type="line",
+                config_ids_colors=json.dumps(config_colors),
+                is_shared=True,
+            )
+            db.session.add(chart)
+            saved_charts.append(chart)
+
+        # 2. Weekly KPIs Chart
+        if weekly_configs:
+            config_colors = {}
+            for idx, config_data in enumerate(weekly_configs[:5]):
+                config_colors[str(config_data["config"].id)] = chart_colors[idx % len(chart_colors)]
+
+            chart = SavedChart(
+                organization_id=org_id,
+                created_by_user_id=user_id,
+                name="Weekly Progress Overview",
+                description="Monitor weekly training hours, distance, and activity goals",
+                year_start=year_start,
+                year_end=year_end,
+                view_type="weekly",
+                chart_type="line",
+                config_ids_colors=json.dumps(config_colors),
+                is_shared=True,
+            )
+            db.session.add(chart)
+            saved_charts.append(chart)
+
+        # 3. Monthly KPIs Chart (Bar chart for comparison)
+        if monthly_configs:
+            config_colors = {}
+            for idx, config_data in enumerate(monthly_configs[:5]):
+                config_colors[str(config_data["config"].id)] = chart_colors[idx % len(chart_colors)]
+
+            chart = SavedChart(
+                organization_id=org_id,
+                created_by_user_id=user_id,
+                name="Monthly Metrics Dashboard",
+                description="Compare monthly revenue, costs, and financial KPIs",
+                year_start=year_start,
+                year_end=year_end,
+                view_type="monthly",
+                chart_type="bar",
+                config_ids_colors=json.dumps(config_colors),
+                is_shared=True,
+            )
+            db.session.add(chart)
+            saved_charts.append(chart)
+
+        # 4. Quarterly KPIs Chart
+        if quarterly_configs:
+            config_colors = {}
+            for idx, config_data in enumerate(quarterly_configs[:5]):
+                config_colors[str(config_data["config"].id)] = chart_colors[idx % len(chart_colors)]
+
+            chart = SavedChart(
+                organization_id=org_id,
+                created_by_user_id=user_id,
+                name="Quarterly Strategic View",
+                description="Track quarterly fitness tests, waste reduction, and strategic goals",
+                year_start=year_start,
+                year_end=year_end,
+                view_type="quarterly",
+                chart_type="line",
+                config_ids_colors=json.dumps(config_colors),
+                is_shared=True,
+            )
+            db.session.add(chart)
+            saved_charts.append(chart)
+
+        # 5. Yearly KPIs Chart
+        if yearly_configs:
+            config_colors = {}
+            for idx, config_data in enumerate(yearly_configs[:5]):
+                config_colors[str(config_data["config"].id)] = chart_colors[idx % len(chart_colors)]
+
+            chart = SavedChart(
+                organization_id=org_id,
+                created_by_user_id=user_id,
+                name="Annual Performance Trends",
+                description="Long-term view of yearly goals, carbon offset, and major milestones",
+                year_start=year_start,
+                year_end=year_end,
+                view_type="yearly",
+                chart_type="bar",
+                config_ids_colors=json.dumps(config_colors),
+                is_shared=True,
+            )
+            db.session.add(chart)
+            saved_charts.append(chart)
+
+        # 6. Mixed frequency chart (monthly view with all types for comparison)
+        if monthly_configs or quarterly_configs:
+            all_mixed_configs = (monthly_configs + quarterly_configs)[:6]
+            config_colors = {}
+            for idx, config_data in enumerate(all_mixed_configs):
+                config_colors[str(config_data["config"].id)] = chart_colors[idx % len(chart_colors)]
+
+            chart = SavedChart(
+                organization_id=org_id,
+                created_by_user_id=user_id,
+                name="Comprehensive Performance Mix",
+                description="Combined view of multiple KPI frequencies for holistic analysis",
+                year_start=year_start,
+                year_end=year_end,
+                view_type="monthly",
+                chart_type="line",
+                config_ids_colors=json.dumps(config_colors),
+                is_shared=True,
+            )
+            db.session.add(chart)
+            saved_charts.append(chart)
+
+        return len(saved_charts)
+
+    @staticmethod
+    def _create_entity_defaults(org_id, scenario_key):
+        """Create custom branding (EntityTypeDefault) for each demo scenario"""
+        # Define scenario-specific branding
+        branding = {
+            "riverside_fc": {
+                "organization": {"color": "#22c55e", "icon": "⚽"},  # Green football
+                "space": {"color": "#16a34a", "icon": "🏟️"},  # Stadium
+                "challenge": {"color": "#f59e0b", "icon": "🎯"},  # Target
+                "initiative": {"color": "#8b5cf6", "icon": "🏃"},  # Runner
+                "system": {"color": "#ec4899", "icon": "⚙️"},  # Gear
+                "kpi": {"color": "#06b6d4", "icon": "📊"},  # Chart
+            },
+            "myhealth_journey": {
+                "organization": {"color": "#dc2626", "icon": "❤️"},  # Red heart
+                "space": {"color": "#f97316", "icon": "🏃"},  # Running
+                "challenge": {"color": "#f59e0b", "icon": "🎯"},  # Target
+                "initiative": {"color": "#8b5cf6", "icon": "💪"},  # Strong
+                "system": {"color": "#ec4899", "icon": "🥗"},  # Healthy food
+                "kpi": {"color": "#06b6d4", "icon": "📈"},  # Chart up
+            },
+            "green_home": {
+                "organization": {"color": "#10b981", "icon": "🌱"},  # Seedling
+                "space": {"color": "#059669", "icon": "🏡"},  # House
+                "challenge": {"color": "#f59e0b", "icon": "♻️"},  # Recycle
+                "initiative": {"color": "#8b5cf6", "icon": "☀️"},  # Sun (solar)
+                "system": {"color": "#ec4899", "icon": "💧"},  # Water drop
+                "kpi": {"color": "#06b6d4", "icon": "🌍"},  # Earth
+            },
+        }
+
+        scenario_branding = branding.get(scenario_key, branding["green_home"])  # Default to green_home
+
+        # Entity type descriptions
+        descriptions = {
+            "organization": "Demo organization showcasing CISK Navigator features",
+            "space": "Strategic workspace for organizing related challenges",
+            "challenge": "Key business challenge or goal to address",
+            "initiative": "Strategic initiative to solve challenges",
+            "system": "Functional capability or business area",
+            "kpi": "Key Performance Indicator for measurement",
+        }
+
+        # Create EntityTypeDefault for each entity type
+        for entity_type, branding_config in scenario_branding.items():
+            entity_default = EntityTypeDefault(
+                organization_id=org_id,
+                entity_type=entity_type,
+                default_color=branding_config["color"],
+                default_icon=branding_config["icon"],
+                display_name=entity_type.replace("_", " ").title(),
+                description=descriptions.get(entity_type, f"{entity_type.title()} entity"),
+            )
+            db.session.add(entity_default)
+
+        db.session.flush()

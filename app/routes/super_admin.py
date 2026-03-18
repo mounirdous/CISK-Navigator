@@ -1719,10 +1719,12 @@ def demo_generator_create():
 
         flash(
             f"📊 Created: {len(result['users'])} users, {result['stakeholders']} stakeholders, "
-            f"{result['stakeholder_maps']} maps, {result['spaces']} spaces, "
+            f"{result['stakeholder_maps']} maps, {result['geographies']} geography locations "
+            f"({result['geography_assignments']} KPI assignments), {result['spaces']} spaces, "
             f"{result['challenges']} challenges, {result['initiatives']} initiatives, "
-            f"{result['systems']} systems, {result['kpis']} KPIs, "
-            f"{result['snapshots']} snapshots, {result['action_items']} action items",
+            f"{result['systems']} systems, {result['kpis']} KPIs ({result['configs']} with targets), "
+            f"{result['snapshots']} snapshots, {result['action_items']} action items, "
+            f"{result['saved_charts']} saved charts (daily/weekly/monthly/quarterly/yearly)",
             "info",
         )
 

@@ -307,6 +307,8 @@ function calculationBuilder() {
 
         async loadExistingFormula() {
             const config = {{ config.calculation_config|tojson if config.calculation_config else '{}' }};
+
+            // Load formula mode and operation/expression
             if (config.mode) {
                 this.formulaMode = config.mode;
                 if (config.mode === 'simple') {
@@ -314,8 +316,19 @@ function calculationBuilder() {
                 } else {
                     this.expression = config.expression || '';
                 }
+            } else {
+                // Backwards compatibility: if no mode specified, check for operation or expression
+                if (config.operation) {
+                    this.formulaMode = 'simple';
+                    this.operation = config.operation;
+                } else if (config.expression) {
+                    this.formulaMode = 'advanced';
+                    this.expression = config.expression;
+                }
             }
-            const sourceConfigIds = config.source_config_ids || [];
+
+            // Load selected source KPIs
+            const sourceConfigIds = config.kpi_config_ids || [];
             for (const id of sourceConfigIds) {
                 const kpi = this.availableKPIs.find(k => k.id === id);
                 if (kpi && !this.selectedKPIs.some(s => s.id === kpi.id)) {
