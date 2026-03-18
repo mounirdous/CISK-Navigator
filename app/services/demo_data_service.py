@@ -25,8 +25,11 @@ from app.models import (
     ActionItem,
     Challenge,
     ChallengeInitiativeLink,
+    Contribution,
+    GovernanceBody,
     Initiative,
     InitiativeSystemLink,
+    KPIGovernanceBodyLink,
     KPISnapshot,
     KPIValueTypeConfig,
     Organization,
@@ -705,6 +708,55 @@ class DemoDataService:
             value_types.append(vt)
         db.session.flush()
 
+        # Create governance bodies for KPI oversight
+        governance_bodies = []
+        governance_configs = [
+            {
+                "name": "Executive Board",
+                "abbreviation": "EXEC",
+                "color": "#e74c3c",
+                "description": "Strategic oversight and approval",
+            },
+            {
+                "name": "Finance Committee",
+                "abbreviation": "FIN",
+                "color": "#2ecc71",
+                "description": "Financial metrics and budgets",
+            },
+            {
+                "name": "Operations Team",
+                "abbreviation": "OPS",
+                "color": "#3498db",
+                "description": "Day-to-day operations and performance",
+            },
+            {
+                "name": "Sustainability Council",
+                "abbreviation": "SUST",
+                "color": "#27ae60",
+                "description": "Environmental and social impact",
+            },
+            {
+                "name": "Quality Assurance",
+                "abbreviation": "QA",
+                "color": "#f39c12",
+                "description": "Quality standards and compliance",
+            },
+        ]
+        for idx, gb_data in enumerate(governance_configs):
+            gb = GovernanceBody(
+                organization_id=org.id,
+                name=gb_data["name"],
+                abbreviation=gb_data["abbreviation"],
+                color=gb_data["color"],
+                description=gb_data["description"],
+                display_order=idx + 1,
+                is_active=True,
+                is_default=(idx == 0),  # First one is default
+            )
+            db.session.add(gb)
+            governance_bodies.append(gb)
+        db.session.flush()
+
         # Create entity hierarchy
         spaces_created = []
         challenges_created = []
@@ -743,10 +795,20 @@ class DemoDataService:
                 challenges_created.append(challenge)
 
                 for initiative_idx, initiative_data in enumerate(challenge_data["initiatives"]):
+                    # Fill in complete initiative form with realistic data
                     initiative = Initiative(
                         organization_id=org.id,
                         name=initiative_data["name"],
                         description=initiative_data["description"],
+                        mission=f"Implement {initiative_data['name']} to address {challenge_data['name']} through systematic improvements and measurable outcomes.",
+                        success_criteria="Achieve target KPIs within planned timeframe. Maintain quality standards above 85%. Positive stakeholder feedback from all governance bodies.",
+                        responsible_person=f"{users[0].display_name} (Lead)",
+                        team_members=f"{users[1].display_name}\n{users[2].display_name}\nExternal Consultant",
+                        handover_organization=f"{space_data['name']} Operations Team",
+                        deliverables='[{"name": "Phase 1 Completion", "date": "Q2 2026"}, {"name": "Full Implementation", "date": "Q4 2026"}]',
+                        group_label=random.choice(["A", "B", "C"]),
+                        impact_on_challenge="high",
+                        impact_rationale=f"Critical initiative for achieving {challenge_data['name']} objectives. Direct impact on strategic goals.",
                     )
                     db.session.add(initiative)
                     db.session.flush()
@@ -794,13 +856,35 @@ class DemoDataService:
                             # Check if this is a formula KPI
                             is_formula = kpi_data.get("formula", False)
 
+                            # Set format and scale examples based on value type
+                            display_scale = None
+                            display_decimals = None
+                            if vt.name in ["Cost", "Revenue", "Net"]:
+                                # Financial metrics: show in thousands with 1 decimal
+                                display_scale = "thousands"
+                                display_decimals = 1
+                            elif vt.name == "Currency":
+                                # Other currency: show as-is with 2 decimals
+                                display_decimals = 2
+                            elif vt.name in ["Count", "Score"]:
+                                # Integer format - no decimals
+                                display_decimals = 0
+
                             config = KPIValueTypeConfig(
                                 kpi_id=kpi.id,
                                 value_type_id=vt.id,
                                 calculation_type="formula" if is_formula else "manual",
+                                display_scale=display_scale,
+                                display_decimals=display_decimals,
                             )
                             db.session.add(config)
                             db.session.flush()
+
+                            # Assign governance body to KPI (distributed across different bodies)
+                            if kpi_idx < len(governance_bodies):
+                                gb = governance_bodies[kpi_idx % len(governance_bodies)]
+                                gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=gb.id)
+                                db.session.add(gb_link)
 
                             # Store for formula setup
                             system_configs.append(
@@ -989,11 +1073,31 @@ class DemoDataService:
             base_value = random.uniform(50, 500)
             trend = random.choice([-0.01, 0, 0.01, 0.02])  # -1%, 0%, +1%, +2% per snapshot
 
+            # Contributor names for realistic consensus
+            contributors = ["Alice Johnson", "Bob Smith", "Carol Williams"]
+
             for idx, snapshot_date in enumerate(dates):
                 # Apply trend
                 value = base_value * (1 + trend) ** idx
-                # Add random variation (±10%)
-                value = value * random.uniform(0.9, 1.1)
+
+                # Create 2-3 contributions with slight variations for consensus
+                num_contributors = random.randint(2, 3)
+                contributor_values = []
+
+                for i in range(num_contributors):
+                    # Add variation (±5%) from base value for each contributor
+                    contrib_value = value * random.uniform(0.95, 1.05)
+                    contributor_values.append(contrib_value)
+
+                    contribution = Contribution(
+                        kpi_value_type_config_id=config.id,
+                        contributor_name=contributors[i],
+                        numeric_value=Decimal(str(round(contrib_value, 2))),
+                    )
+                    db.session.add(contribution)
+
+                # Calculate consensus (average of contributions)
+                consensus_value = sum(contributor_values) / len(contributor_values)
 
                 snapshot = KPISnapshot(
                     kpi_value_type_config_id=config.id,
@@ -1005,9 +1109,9 @@ class DemoDataService:
                     is_public=True,
                     owner_user_id=user_id,
                     consensus_status="strong",
-                    consensus_value=Decimal(str(round(value, 2))),
-                    contributor_count=random.randint(1, 3),
-                    is_rollup_eligible=False,
+                    consensus_value=Decimal(str(round(consensus_value, 2))),
+                    contributor_count=num_contributors,
+                    is_rollup_eligible=True,  # FIXED: Enable rollup
                 )
                 db.session.add(snapshot)
                 snapshot_count += 1
