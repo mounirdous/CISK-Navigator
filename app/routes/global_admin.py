@@ -394,6 +394,7 @@ def create_organization():
                 "kpis": request.form.get(f"perm_kpis_{user.id}") == "on",
                 "view_comments": request.form.get(f"perm_view_comments_{user.id}") == "on",
                 "add_comments": request.form.get(f"perm_add_comments_{user.id}") == "on",
+                "contribute": request.form.get(f"perm_contribute_{user.id}") == "on",
             }
 
     if form.validate_on_submit():
@@ -446,6 +447,7 @@ def create_organization():
                 can_manage_kpis=request.form.get(f"perm_kpis_{user_id}") == "on",
                 can_view_comments=request.form.get(f"perm_view_comments_{user_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{user_id}") == "on",
+                can_contribute=request.form.get(f"perm_contribute_{user_id}") == "on",
             )
             db.session.add(membership)
 
@@ -518,6 +520,7 @@ def edit_organization(org_id):
                 can_manage_kpis=request.form.get(f"perm_kpis_{user_id}") == "on",
                 can_view_comments=request.form.get(f"perm_view_comments_{user_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{user_id}") == "on",
+                can_contribute=request.form.get(f"perm_contribute_{user_id}") == "on",
             )
             db.session.add(membership)
 
@@ -839,11 +842,15 @@ def restore_backup():
 
             if governance_bodies:
                 # Store backup to a temp file (too large for session cookie)
-                import os
                 import tempfile
+
                 tmp = tempfile.NamedTemporaryFile(
-                    mode="w", suffix=".json", delete=False, encoding="utf-8",
-                    dir=tempfile.gettempdir(), prefix="cisk_restore_"
+                    mode="w",
+                    suffix=".json",
+                    delete=False,
+                    encoding="utf-8",
+                    dir=tempfile.gettempdir(),
+                    prefix="cisk_restore_",
                 )
                 tmp.write(backup_content)
                 tmp.close()
@@ -930,10 +937,11 @@ def restore_backup():
 @global_admin_required
 def full_backup_governance_mapping():
     """Map governance bodies from full backup to existing or create new"""
-    from app.services.full_restore_service import FullRestoreService
-
     # Check if we have pending backup restore
     import os
+
+    from app.services.full_restore_service import FullRestoreService
+
     backup_path = session.get("pending_full_backup_path")
     org_id = session.get("full_backup_org_id")
     gb_names = session.get("full_backup_governance_bodies", [])

@@ -267,6 +267,17 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="row g-2 mt-1">
+                                                <div class="col-md-12">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_contribute_{{ user.id }}" id="perm_contribute_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('contribute', True) %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_contribute_{{ user.id }}">
+                                                            <i class="bi bi-pencil-square"></i> Contribute Values
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

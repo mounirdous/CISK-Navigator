@@ -5,6 +5,26 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.6] - 2026-03-18
+
+### Added - Contribute Permission in Organization Creation/Edit
+**Feature**: Added "Contribute Values" permission checkbox when creating/editing organizations
+
+**Issue**: When creating or editing an organization and assigning users, the "Contribute Values" permission checkbox was missing from the user permissions panel.
+
+**Changes**:
+- Added "Contribute Values" checkbox to create organization form
+- Added "Contribute Values" checkbox to edit organization form
+- Updated backend to save `can_contribute` permission
+- Updated preserved_permissions to include `contribute` field
+
+**Why This Matters**: Users need to control who can enter/edit data values in the workspace. This permission was already working in the global admin user creation/edit forms, but was missing from the organization forms.
+
+**Files Modified**:
+- `app/templates/global_admin/create_organization.html` - Added checkbox
+- `app/templates/global_admin/edit_organization.html` - Added checkbox
+- `app/routes/global_admin.py` - Added can_contribute to membership creation in both create and edit routes
+
 ## [2.10.5] - 2026-03-18
 
 ### Fixed - Workspace Icons from Branding Manager
