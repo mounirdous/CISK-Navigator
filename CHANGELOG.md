@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.4] - 2026-03-18
+
+### Fixed - Context Menu in Fullscreen Mode
+**Bug Fix**: Context menu now works in fullscreen mode
+
+**Root Cause**: Context menu div was outside #networkCard. When the card went fullscreen, the menu wasn't visible because fullscreen only displays the fullscreen element and its children.
+
+**Solution**: Moved context menu div inside #networkCard (after card-body, before card-footer). Now visible and functional in both normal and fullscreen modes.
+
 ## [2.8.3] - 2026-03-18
 
 ### Fixed - Right-Click Context Menu (Proper Fix)
