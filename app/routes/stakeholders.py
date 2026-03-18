@@ -308,6 +308,8 @@ def delete(id):
 def api_graph_data():
     """API endpoint to get graph data for visualization."""
     org_id = request.args.get("organization_id", type=int)
+    map_id = request.args.get("map_id", type=int)
+
     if not org_id:
         return jsonify({"error": "No organization specified"}), 400
 
@@ -315,22 +317,35 @@ def api_graph_data():
     if not (current_user.is_super_admin or current_user.is_global_admin or current_user.is_org_admin(org_id)):
         return jsonify({"error": "Access denied"}), 403
 
-    # Apply filters
-    query = Stakeholder.query.filter_by(organization_id=org_id)
+    # Filter by map if specified
+    if map_id:
+        selected_map = StakeholderMap.query.get(map_id)
+        if not selected_map or not selected_map.is_visible_to_user(current_user):
+            return jsonify({"error": "Map not found or access denied"}), 403
 
-    department = request.args.get("department")
-    if department:
-        query = query.filter_by(department=department)
+        # Get stakeholders in this map
+        stakeholders = selected_map.get_stakeholders()
+        query = None  # Skip query building, we already have stakeholders
+    else:
+        # Apply filters to all stakeholders in organization
+        query = Stakeholder.query.filter_by(organization_id=org_id)
 
-    support_level = request.args.get("support_level")
-    if support_level:
-        query = query.filter_by(support_level=support_level)
+    # Apply additional filters only if not using map (query-based filtering)
+    if query is not None:
+        department = request.args.get("department")
+        if department:
+            query = query.filter_by(department=department)
 
-    min_influence = request.args.get("min_influence", type=int, default=1)
-    max_influence = request.args.get("max_influence", type=int, default=100)
-    query = query.filter(Stakeholder.influence_level >= min_influence, Stakeholder.influence_level <= max_influence)
+        support_level = request.args.get("support_level")
+        if support_level:
+            query = query.filter_by(support_level=support_level)
 
-    stakeholders = query.all()
+        min_influence = request.args.get("min_influence", type=int, default=1)
+        max_influence = request.args.get("max_influence", type=int, default=100)
+        query = query.filter(Stakeholder.influence_level >= min_influence, Stakeholder.influence_level <= max_influence)
+
+        stakeholders = query.all()
+    # else: stakeholders already set from map.get_stakeholders()
 
     # Filter by visibility
     visible_stakeholders = [s for s in stakeholders if s.is_visible_to_user(current_user)]

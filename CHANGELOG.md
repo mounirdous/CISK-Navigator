@@ -5,6 +5,25 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2] - 2026-03-18
+
+### Fixed - Map Filtering in Network Visualization
+**Critical Bug Fix**: Network visualization now correctly filters stakeholders by selected map
+
+**Issue**: When viewing a specific map (e.g., "Other Map" with only 1 stakeholder), the network visualization showed ALL stakeholders from the organization instead of just the ones in that map. The header correctly showed "1 stakeholder" but the graph displayed all 4.
+
+**Root Cause**: The `/api/graph-data` endpoint (used by AJAX to load the graph) didn't check for the `map_id` parameter. It always loaded all stakeholders in the organization, ignoring the selected map filter.
+
+**Solution**:
+- Added `map_id` parameter handling to `/api/graph-data` endpoint
+- When `map_id` is provided, uses `selected_map.get_stakeholders()` to filter
+- JavaScript now passes `selectedMapId` to the API call
+- Maps now work as expected: selecting a map shows only its stakeholders
+
+**Files Changed**:
+- `app/routes/stakeholders.py` - Added map_id filtering to api_graph_data()
+- `app/templates/stakeholders/index.html` - Pass selectedMapId to loadGraph()
+
 ## [2.9.1] - 2026-03-18
 
 ### Fixed - Add to Map UX Improvement

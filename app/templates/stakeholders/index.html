@@ -638,6 +638,7 @@ let network;
 let nodes;
 let edges;
 const organizationId = {{ organization.id }};
+const selectedMapId = {% if selected_map %}{{ selected_map.id }}{% else %}null{% endif %};
 
 // Map selection
 function changeMap() {
@@ -676,6 +677,11 @@ async function loadGraph(filters = {}) {
         organization_id: organizationId,
         ...filters
     });
+
+    // Add map_id if a map is selected
+    if (selectedMapId) {
+        params.set('map_id', selectedMapId);
+    }
 
     const response = await fetch(`/stakeholders/api/graph-data?${params}`);
     const data = await response.json();
