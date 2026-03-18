@@ -101,106 +101,73 @@
         </div>
     </div>
 
-    <!-- Feature Toggles -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
+    <!-- Feature Toggles - Compact Layout -->
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-3 pb-0">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-shield-alt text-primary me-2"></i>
-                        Authentication
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h6 class="mb-1">Single Sign-On (SSO)</h6>
-                            <p class="text-muted small mb-0">Enable SSO authentication system-wide</p>
-                        </div>
-                        <div class="form-check form-switch form-switch-lg">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-shield-alt text-primary fs-4 me-2"></i>
+                        <h6 class="mb-0 fw-bold">SSO</h6>
+                        <div class="form-check form-switch ms-auto">
                             <input class="form-check-input" type="checkbox" id="ssoToggle"
                                    {% if sso_enabled %}checked{% endif %} disabled>
-                            <label class="form-check-label" for="ssoToggle"></label>
                         </div>
                     </div>
-                    <a href="{{ url_for('super_admin.sso_config') }}" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-cog"></i> Configure SSO
+                    <a href="{{ url_for('super_admin.sso_config') }}" class="btn btn-sm btn-outline-primary w-100">
+                        <i class="fas fa-cog"></i> Configure
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-3 pb-0">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-wrench text-warning me-2"></i>
-                        System Maintenance
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h6 class="mb-1">Maintenance Mode</h6>
-                            <p class="text-muted small mb-0">Put system in read-only mode</p>
-                        </div>
-                        <div class="form-check form-switch form-switch-lg">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-wrench text-warning fs-4 me-2"></i>
+                        <h6 class="mb-0 fw-bold">Maintenance</h6>
+                        <div class="form-check form-switch ms-auto">
                             <input class="form-check-input" type="checkbox" id="maintenanceToggle"
                                    {% if maintenance_mode %}checked{% endif %} disabled>
-                            <label class="form-check-label" for="maintenanceToggle"></label>
                         </div>
                     </div>
-                    <a href="{{ url_for('super_admin.maintenance_settings') }}" class="btn btn-sm btn-outline-warning">
-                        <i class="fas fa-tools"></i> Maintenance Settings
+                    <a href="{{ url_for('super_admin.maintenance_settings') }}" class="btn btn-sm btn-outline-warning w-100">
+                        <i class="fas fa-tools"></i> Settings
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-3 pb-0">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-envelope text-success me-2"></i>
-                        Email / SMTP
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <h6 class="mb-1">Email Service</h6>
-                        <p class="text-muted small mb-0">Configure SMTP for email notifications</p>
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-envelope text-success fs-4 me-2"></i>
+                        <h6 class="mb-0 fw-bold">Email</h6>
                     </div>
-                    <a href="{{ url_for('super_admin.email_settings') }}" class="btn btn-sm btn-outline-success">
-                        <i class="bi bi-gear"></i> Configure Email
+                    <a href="{{ url_for('super_admin.email_settings') }}" class="btn btn-sm btn-outline-success w-100">
+                        <i class="bi bi-gear"></i> Configure SMTP
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-transparent border-0 pt-3 pb-0">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-flask text-info me-2"></i>
-                        Beta Testing Program
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <h6 class="mb-1">Beta Access</h6>
-                            <p class="text-muted small mb-0">Enable beta menu for users with beta flag</p>
-                        </div>
-                        <div class="form-check form-switch form-switch-lg">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-flask text-info fs-4 me-2"></i>
+                        <h6 class="mb-0 fw-bold">Beta</h6>
+                        <div class="form-check form-switch ms-auto">
                             <input class="form-check-input" type="checkbox" id="betaToggle"
                                    {% if beta_enabled %}checked{% endif %}
                                    onchange="document.getElementById('betaToggleForm').submit()">
-                            <label class="form-check-label" for="betaToggle"></label>
                         </div>
                     </div>
                     <form id="betaToggleForm" method="POST" action="{{ url_for('super_admin.toggle_beta') }}" style="display: none;"></form>
-                    <a href="{{ url_for('beta.index') }}" class="btn btn-sm btn-outline-info">
-                        <i class="fas fa-flask"></i> View Beta Page
+                    <a href="{{ url_for('beta.index') }}" class="btn btn-sm btn-outline-info w-100">
+                        <i class="fas fa-flask"></i> View Beta
                     </a>
                 </div>
             </div>
@@ -208,8 +175,8 @@
     </div>
 
     <!-- User & Access Management -->
-    <h5 class="mb-3 mt-4"><i class="fas fa-users-cog text-primary me-2"></i>User & Access Management</h5>
-    <div class="row g-3 mb-4">
+    <h5 class="mb-3 mt-3"><i class="fas fa-users-cog text-primary me-2"></i>User & Access Management</h5>
+    <div class="row g-3 mb-3">
         <div class="col-md-4">
             <a href="{{ url_for('super_admin.users') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
@@ -254,8 +221,8 @@
     </div>
 
     <!-- System Operations -->
-    <h5 class="mb-3"><i class="fas fa-cogs text-info me-2"></i>System Operations</h5>
-    <div class="row g-3 mb-4">
+    <h5 class="mb-3 mt-3"><i class="fas fa-cogs text-info me-2"></i>System Operations</h5>
+    <div class="row g-3 mb-3">
         <div class="col-md-4">
             <a href="{{ url_for('super_admin.settings') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
@@ -342,8 +309,8 @@
     </div>
 
     <!-- Testing & Development -->
-    <h5 class="mb-3"><i class="fas fa-flask text-success me-2"></i>Testing & Development</h5>
-    <div class="row g-3 mb-4">
+    <h5 class="mb-3 mt-3"><i class="fas fa-flask text-success me-2"></i>Testing & Development</h5>
+    <div class="row g-3 mb-3">
         <div class="col-md-6">
             <a href="{{ url_for('super_admin.demo_generator') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift border-primary border-2">
