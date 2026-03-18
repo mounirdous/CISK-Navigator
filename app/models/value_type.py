@@ -269,6 +269,7 @@ class KPIValueTypeConfig(db.Model):
         """
         Get the list of source KPIValueTypeConfig objects referenced in the formula.
         Returns empty list if not a formula or config is invalid.
+        ORDER MATTERS: Returns configs in the same order as kpi_config_ids.
         """
         if not self.is_formula():
             return []
@@ -278,7 +279,12 @@ class KPIValueTypeConfig(db.Model):
             return []
 
         # Fetch all configs in one query
-        return KPIValueTypeConfig.query.filter(KPIValueTypeConfig.id.in_(config_ids)).all()
+        configs_by_id = {
+            cfg.id: cfg for cfg in KPIValueTypeConfig.query.filter(KPIValueTypeConfig.id.in_(config_ids)).all()
+        }
+
+        # Return in the order specified in config_ids (critical for subtract/divide operations)
+        return [configs_by_id[config_id] for config_id in config_ids if config_id in configs_by_id]
 
     def get_linked_source_config(self):
         """
