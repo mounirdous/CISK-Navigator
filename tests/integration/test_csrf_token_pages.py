@@ -388,8 +388,8 @@ class TestCSRFTokenAvailability:
         response = authenticated_org_user.get(f"/org-admin/systems/{system.id}/edit")
         self.assert_no_csrf_errors(response)
 
-        # Test KPI routes
-        response = authenticated_org_user.get(f"/org-admin/systems/{system.id}/kpis/create")
+        # Test KPI routes (uses link_id not system_id)
+        response = authenticated_org_user.get(f"/org-admin/initiative-system-links/{sys_link.id}/kpis/create")
         self.assert_no_csrf_errors(response)
 
         # Test value type routes
