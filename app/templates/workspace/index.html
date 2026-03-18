@@ -4514,7 +4514,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/org-admin/kpis/${kpi.id}/restore`, {
+                const response = await fetch(`/org-admin/kpis/${kpi.id}/unarchive`, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'

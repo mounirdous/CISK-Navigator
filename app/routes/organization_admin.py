@@ -2205,17 +2205,17 @@ def delete_kpi(kpi_id):
 @permission_required("can_manage_kpis")
 def archive_kpi(kpi_id):
     """Archive a KPI (makes it read-only and hidden by default)"""
-    org_id = session.get("organization_id")
-    kpi = KPI.query.get_or_404(kpi_id)
+    try:
+        org_id = session.get("organization_id")
+        kpi = KPI.query.get_or_404(kpi_id)
 
-    # Verify ownership
-    if kpi.initiative_system_link.initiative.organization_id != org_id:
-        flash("Access denied", "danger")
-        return redirect(url_for("workspace.index"))
+        # Verify ownership
+        if kpi.initiative_system_link.initiative.organization_id != org_id:
+            return jsonify({"success": False, "error": "Access denied"}), 403
 
-    if kpi.is_archived:
-        flash(f'KPI "{kpi.name}" is already archived', "warning")
-    else:
+        if kpi.is_archived:
+            return jsonify({"success": False, "error": f'KPI "{kpi.name}" is already archived'})
+
         from datetime import datetime
 
         kpi.is_archived = True
@@ -2226,14 +2226,11 @@ def archive_kpi(kpi_id):
         AuditService.log_archive("KPI", kpi.id, kpi.name)
 
         db.session.commit()
-        flash(f'KPI "{kpi.name}" archived successfully', "success")
+        return jsonify({"success": True})
 
-    # Preserve edit mode if it was active
-    edit_mode = request.args.get("edit_mode") or request.args.get("auto_edit")
-    if edit_mode:
-        return redirect(url_for("workspace.index", auto_edit=1))
-
-    return redirect(url_for("workspace.index"))
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @bp.route("/kpis/<int:kpi_id>/unarchive", methods=["POST"])
@@ -2242,29 +2239,30 @@ def archive_kpi(kpi_id):
 @permission_required("can_manage_kpis")
 def unarchive_kpi(kpi_id):
     """Unarchive a KPI (makes it active again)"""
-    org_id = session.get("organization_id")
-    kpi = KPI.query.get_or_404(kpi_id)
+    try:
+        org_id = session.get("organization_id")
+        kpi = KPI.query.get_or_404(kpi_id)
 
-    # Verify ownership
-    if kpi.initiative_system_link.initiative.organization_id != org_id:
-        flash("Access denied", "danger")
-        return redirect(url_for("workspace.index"))
+        # Verify ownership
+        if kpi.initiative_system_link.initiative.organization_id != org_id:
+            return jsonify({"success": False, "error": "Access denied"}), 403
 
-    if not kpi.is_archived:
-        flash(f'KPI "{kpi.name}" is not archived', "warning")
-    else:
+        if not kpi.is_archived:
+            return jsonify({"success": False, "error": f'KPI "{kpi.name}" is not archived'})
+
         kpi.is_archived = False
         kpi.archived_at = None
         kpi.archived_by_user_id = None
+
+        # Audit log
+        AuditService.log_update("KPI", kpi.id, kpi.name, {"is_archived": True}, {"is_archived": False})
+
         db.session.commit()
-        flash(f'KPI "{kpi.name}" unarchived successfully', "success")
+        return jsonify({"success": True})
 
-    # Preserve edit mode if it was active
-    edit_mode = request.args.get("edit_mode") or request.args.get("auto_edit")
-    if edit_mode:
-        return redirect(url_for("workspace.index", auto_edit=1))
-
-    return redirect(url_for("workspace.index"))
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @bp.route("/systems/<int:system_id>/delete", methods=["POST"])
