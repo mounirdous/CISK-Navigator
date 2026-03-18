@@ -602,6 +602,32 @@ class DemoDataService:
         if not users[0].is_global_admin:
             users[0].is_global_admin = True
 
+        # Check for user "moun" (dev testing user) and add them as org admin
+        moun_user = User.query.filter((User.login == "moun") | (User.email.like("%moun%"))).first()
+        if moun_user and (moun_user.is_super_admin or moun_user.is_global_admin):
+            # Check if already a member
+            from app.models import UserOrganizationMembership
+
+            existing_membership = UserOrganizationMembership.query.filter_by(
+                user_id=moun_user.id, organization_id=org.id
+            ).first()
+
+            if not existing_membership:
+                # Add moun as org admin with full permissions
+                membership = UserOrganizationMembership(
+                    user_id=moun_user.id,
+                    organization_id=org.id,
+                    can_manage_spaces=True,
+                    can_manage_challenges=True,
+                    can_manage_initiatives=True,
+                    can_manage_systems=True,
+                    can_manage_kpis=True,
+                    can_view_comments=True,
+                    can_add_comments=True,
+                )
+                db.session.add(membership)
+                db.session.flush()
+
         # Create stakeholders
         stakeholder_map_dict = {}
         for sh_data in scenario["stakeholders"]:
