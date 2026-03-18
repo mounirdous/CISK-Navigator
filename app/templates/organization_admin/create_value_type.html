@@ -209,9 +209,38 @@
 
                             <!-- Advanced Mode -->
                             <div id="advanced-mode" style="display: none;">
-                                <div class="alert alert-warning">
+                                <div class="alert alert-info mb-3">
                                     <i class="bi bi-code-slash"></i>
-                                    <strong>Advanced Mode:</strong> Python expressions not yet supported for value type formulas. Use Simple mode.
+                                    <strong>Python Expression:</strong> Write a formula using value type names as variables.
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Available Value Types</label>
+                                    <div class="card">
+                                        <div class="card-body" style="max-height: 150px; overflow-y: auto;">
+                                            <div id="available-vars-list">
+                                                <p class="text-muted small">
+                                                    <i class="bi bi-info-circle"></i>
+                                                    Create numeric value types first. Variable names shown below.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Python Expression</label>
+                                    <textarea class="form-control font-monospace" id="formula-expression" rows="3"
+                                              placeholder="revenue - cost&#10;(revenue - cost) / revenue * 100&#10;revenue * 0.15"></textarea>
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Use +, -, *, /, (), and variable names from above
+                                    </small>
+                                </div>
+
+                                <div class="mb-3">
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="alert('Examples:\\n\\nNet Profit:\\nrevenue - cost\\n\\nProfit Margin:\\n(revenue - cost) / revenue * 100\\n\\nTax Amount:\\nrevenue * 0.15')">
+                                        <i class="bi bi-lightbulb"></i> Help & Examples
+                                    </button>
                                 </div>
                             </div>
 
@@ -270,8 +299,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hidden form fields
     const calculationTypeField = document.querySelector('input[name="calculation_type"]');
+    const formulaModeField = document.querySelector('input[name="formula_mode"]');
     const formulaOperationField = document.querySelector('input[name="formula_operation"]');
     const formulaSourceIdsField = document.querySelector('input[name="formula_source_ids"]');
+    const formulaExpressionField = document.querySelector('input[name="formula_expression"]');
+
+    // Advanced mode elements
+    const formulaExpressionTextarea = document.getElementById('formula-expression');
+    const availableVarsList = document.getElementById('available-vars-list');
 
     let availableValueTypes = [];
     let selectedSourceIds = [];
@@ -296,6 +331,36 @@ document.addEventListener('DOMContentLoaded', function() {
         const isSimple = modeSimpleRadio && modeSimpleRadio.checked;
         if (simpleMode) simpleMode.style.display = isSimple ? 'block' : 'none';
         if (advancedMode) advancedMode.style.display = isSimple ? 'none' : 'block';
+
+        // Update hidden field
+        if (formulaModeField) {
+            formulaModeField.value = isSimple ? 'simple' : 'advanced';
+        }
+
+        // Populate available variables for advanced mode
+        if (!isSimple) {
+            populateAvailableVariables();
+        }
+    }
+
+    function populateAvailableVariables() {
+        if (!availableVarsList) return;
+
+        if (availableValueTypes.length === 0) {
+            availableVarsList.innerHTML = '<p class="text-muted small mb-0"><i class="bi bi-info-circle"></i> No numeric value types available yet.</p>';
+            return;
+        }
+
+        let html = '<div class="d-flex flex-wrap gap-2">';
+        availableValueTypes.forEach(vt => {
+            const varName = vt.name.toLowerCase().replace(/\s+/g, '_').replace(/-/g, '_');
+            html += `<span class="badge bg-info" style="cursor: pointer;" onclick="document.getElementById('formula-expression').value += '${varName}'; document.getElementById('formula-expression').focus();" title="Click to insert">
+                ${varName}</span>`;
+        });
+        html += '</div>';
+        html += '<p class="text-muted small mb-0 mt-2"><i class="bi bi-lightbulb"></i> Click badges to insert variable names</p>';
+
+        availableVarsList.innerHTML = html;
     }
 
     function updateFormulaOptions() {
@@ -415,18 +480,38 @@ document.addEventListener('DOMContentLoaded', function() {
         formulaOperationField.value = this.value;
     });
 
+    if (formulaExpressionTextarea) {
+        formulaExpressionTextarea.addEventListener('input', function() {
+            if (formulaExpressionField) {
+                formulaExpressionField.value = this.value;
+            }
+        });
+    }
+
     // Form submit validation
     document.querySelector('form').addEventListener('submit', function(e) {
         if (calcFormulaRadio.checked) {
-            if (!formulaOperationSelect.value) {
-                e.preventDefault();
-                alert('Please select an operation for the formula');
-                return false;
-            }
-            if (selectedSourceIds.length < 2) {
-                e.preventDefault();
-                alert('Please select at least 2 source value types for the formula');
-                return false;
+            const isSimple = modeSimpleRadio && modeSimpleRadio.checked;
+
+            if (isSimple) {
+                // Simple mode validation
+                if (!formulaOperationSelect.value) {
+                    e.preventDefault();
+                    alert('Please select an operation for the formula');
+                    return false;
+                }
+                if (selectedSourceIds.length < 2) {
+                    e.preventDefault();
+                    alert('Please select at least 2 source value types for the formula');
+                    return false;
+                }
+            } else {
+                // Advanced mode validation
+                if (!formulaExpressionTextarea.value.trim()) {
+                    e.preventDefault();
+                    alert('Please enter a Python expression for the formula');
+                    return false;
+                }
             }
         }
     });

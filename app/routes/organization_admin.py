@@ -1735,8 +1735,13 @@ def create_kpi(link_id):
         flash("Access denied", "danger")
         return redirect(url_for("workspace.index"))
 
-    # Get active value types for selection
-    value_types = ValueType.query.filter_by(organization_id=org_id, is_active=True).all()
+    # Get active value types for selection (exclude formula value types - they're computed)
+    value_types = (
+        ValueType.query.filter_by(organization_id=org_id, is_active=True)
+        .filter(ValueType.calculation_type != "formula")
+        .order_by(ValueType.display_order)
+        .all()
+    )
 
     # Get active governance bodies for selection
     governance_bodies = (
@@ -2585,26 +2590,46 @@ def create_value_type():
 
         # Handle formula configuration
         if form.calculation_type.data == "formula":
-            if form.formula_operation.data and form.formula_source_ids.data:
-                try:
-                    source_ids = [int(id.strip()) for id in form.formula_source_ids.data.split(",") if id.strip()]
-                    value_type.calculation_config = {
-                        "operation": form.formula_operation.data,
-                        "source_value_type_ids": source_ids,
-                    }
+            formula_mode = form.formula_mode.data or "simple"
 
-                    # Validate formula configuration
-                    is_valid, error_message = value_type.validate_formula_config()
-                    if not is_valid:
-                        flash(f"Formula validation error: {error_message}", "danger")
+            try:
+                if formula_mode == "advanced":
+                    # Advanced mode: Python expression
+                    if form.formula_expression.data:
+                        value_type.calculation_config = {
+                            "mode": "advanced",
+                            "expression": form.formula_expression.data,
+                        }
+                    else:
+                        flash("Please enter a Python expression for the formula", "danger")
                         return render_template(
                             "organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf
                         )
-                except (ValueError, KeyError) as e:
-                    flash(f"Invalid formula configuration: {e}", "danger")
+                else:
+                    # Simple mode: operation on source value types
+                    if form.formula_operation.data and form.formula_source_ids.data:
+                        source_ids = [int(id.strip()) for id in form.formula_source_ids.data.split(",") if id.strip()]
+                        value_type.calculation_config = {
+                            "mode": "simple",
+                            "operation": form.formula_operation.data,
+                            "source_value_type_ids": source_ids,
+                        }
+                    else:
+                        flash("Please select an operation and at least 2 source value types", "danger")
+                        return render_template(
+                            "organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf
+                        )
+
+                # Validate formula configuration
+                is_valid, error_message = value_type.validate_formula_config()
+                if not is_valid:
+                    flash(f"Formula validation error: {error_message}", "danger")
                     return render_template(
                         "organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf
                     )
+            except (ValueError, KeyError) as e:
+                flash(f"Invalid formula configuration: {e}", "danger")
+                return render_template("organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf)
 
         db.session.add(value_type)
         db.session.flush()

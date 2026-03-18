@@ -704,6 +704,44 @@ class KPIValueTypeConfig(db.Model):
         if not self.value_type.calculation_config:
             return None
 
+        mode = self.value_type.calculation_config.get("mode", "simple")
+
+        # Advanced mode: Python expression
+        if mode == "advanced":
+            expression = self.value_type.calculation_config.get("expression")
+            if not expression:
+                return None
+
+            # Get all value type configs for this KPI to build variable context
+            all_configs = KPIValueTypeConfig.query.filter_by(kpi_id=self.kpi_id).all()
+
+            # Build variable context: value_type_name -> consensus value
+            context = {}
+            for config in all_configs:
+                if config.value_type and config.value_type.calculation_type != "formula":
+                    var_name = config.value_type.name.lower().replace(" ", "_").replace("-", "_")
+                    consensus_result = config.get_consensus_value(_visited=_visited)
+                    if isinstance(consensus_result, dict):
+                        value = consensus_result.get("value")
+                    else:
+                        value = consensus_result
+
+                    if value is not None:
+                        try:
+                            context[var_name] = float(value)
+                        except (ValueError, TypeError):
+                            pass
+
+            # Evaluate expression
+            try:
+                from simpleeval import FunctionNotDefined, InvalidExpression, simple_eval
+
+                result = simple_eval(expression, names=context)
+                return float(result) if result is not None else None
+            except (FunctionNotDefined, InvalidExpression, ZeroDivisionError, Exception):
+                return None
+
+        # Simple mode: operation on source value types
         operation = self.value_type.calculation_config.get("operation")
         source_value_type_ids = self.value_type.calculation_config.get("source_value_type_ids", [])
 

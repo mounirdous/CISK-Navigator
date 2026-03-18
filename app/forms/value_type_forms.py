@@ -41,8 +41,10 @@ class ValueTypeCreateForm(FlaskForm):
 
     # Formula fields (hidden, managed by JavaScript)
     calculation_type = HiddenField(default="manual")
-    formula_operation = HiddenField()
-    formula_source_ids = HiddenField()  # Comma-separated value type IDs
+    formula_mode = HiddenField(default="simple")  # simple or advanced
+    formula_operation = HiddenField()  # For simple mode
+    formula_source_ids = HiddenField()  # For simple mode - comma-separated value type IDs
+    formula_expression = HiddenField()  # For advanced mode - Python expression
 
     submit = SubmitField("Create Value Type")
 
