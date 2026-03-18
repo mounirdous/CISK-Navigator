@@ -4392,8 +4392,14 @@ function workspaceV2(orgId, filterPresets) {
                         if (initiative.systems) {
                             initiative.systems.forEach(system => {
                                 console.log(`  System: ${system.name}, collapsed: ${system.collapsed}`);
-                                const shouldShow = this.showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed;
-                                console.log(`    Should show? ${shouldShow} (showLevels.systems=${this.showLevels.systems})`);
+                                const shouldShowSystem = this.showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed;
+                                console.log(`    System should show? ${shouldShowSystem}`);
+
+                                // Check KPIs
+                                if (system.kpis) {
+                                    const shouldShowKPIs = this.showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed;
+                                    console.log(`    Has ${system.kpis.length} KPIs, should show? ${shouldShowKPIs} (showLevels.kpis=${this.showLevels.kpis}, system.collapsed=${system.collapsed})`);
+                                }
                             });
                         }
                     });
