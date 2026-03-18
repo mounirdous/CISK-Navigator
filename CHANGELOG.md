@@ -5,6 +5,50 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-03-18
+
+### Added - Demo Data Generator
+
+**Major Feature**: Comprehensive demo organization creator for testing and demonstrations.
+
+**Three Scenarios**:
+- **Riverside FC**: Community football club focused on youth development
+- **MyHealth Journey**: Personal health and wellness transformation
+- **Green Home Project**: Eco-friendly sustainable living space
+
+**What's Generated**:
+- Complete entity hierarchy (Spaces, Challenges, Initiatives, Systems, KPIs)
+- Stakeholder ecosystem (5-10 stakeholders, 2-3 maps, relationships, entity links)
+- Historical snapshots with realistic trends and variations
+- KPIs with different frequencies (Daily, Weekly, Monthly, Quarterly, Yearly)
+- Action items in various states (open, in-progress, resolved, dismissed)
+- Mix of public/private spaces
+- Demo users with configurable emails
+
+**Configuration Options**:
+- User emails (comma-separated, defaults to 3 generic users)
+- Years of history (1-5 years, default 2)
+- Snapshot frequency (daily, weekly, monthly)
+
+**Features**:
+- Drop & recreate existing organizations (clean demo environment)
+- Realistic data with trends (+2% per snapshot) and random variation (±10%)
+- Super admin only (destructive operation, requires confirmation)
+- Beautiful UI with scenario cards and configuration form
+
+**Technical Details**:
+- Uses `DemoDataService` for data generation
+- Supports ISO week calendar for weekly snapshots
+- Creates stakeholder relationships (reports_to, collaborates_with, influences, depends_on)
+- Links stakeholders to entities (owners, reviewers, contributors)
+
+**Files Added**:
+- `app/services/demo_data_service.py` - Demo data generation service
+- `app/templates/super_admin/demo_generator.html` - Demo generator UI
+- Routes added to `app/routes/super_admin.py`
+
+**Impact**: Enables rapid testing and demonstrations with realistic, complete datasets.
+
 ## [2.10.7] - 2026-03-18
 
 ### Added - Weekly Pivot Analysis

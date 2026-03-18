@@ -1645,3 +1645,75 @@ def bulk_delete_users():
         flash(f"Error committing bulk delete: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.bulk_operations"))
+
+
+# ============================================================================
+# DEMO DATA GENERATOR
+# ============================================================================
+
+
+@bp.route("/demo-generator")
+@login_required
+@super_admin_required
+def demo_generator():
+    """Demo data generator - Create realistic demo organizations"""
+    from app.services.demo_data_service import DemoDataService
+
+    scenarios = DemoDataService.SCENARIOS
+
+    return render_template(
+        "super_admin/demo_generator.html",
+        scenarios=scenarios,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/demo-generator/create", methods=["POST"])
+@login_required
+@super_admin_required
+def demo_generator_create():
+    """Create demo organization"""
+    from app.services.demo_data_service import DemoDataService
+
+    scenario_key = request.form.get("scenario_key")
+    if not scenario_key:
+        flash("Please select a scenario", "danger")
+        return redirect(url_for("super_admin.demo_generator"))
+
+    # Parse user emails (comma-separated)
+    user_emails_str = request.form.get("user_emails", "").strip()
+    user_emails = None
+    if user_emails_str:
+        user_emails = [email.strip() for email in user_emails_str.split(",") if email.strip()]
+
+    # Get configuration
+    years_of_history = int(request.form.get("years_of_history", 2))
+    snapshot_frequency = request.form.get("snapshot_frequency", "weekly")
+
+    try:
+        result = DemoDataService.create_demo_organization(
+            scenario_key=scenario_key,
+            user_emails=user_emails,
+            years_of_history=years_of_history,
+            snapshot_frequency=snapshot_frequency,
+        )
+
+        flash(
+            f"✅ Demo organization '{result['organization'].name}' created successfully!",
+            "success",
+        )
+        flash(
+            f"📊 Created: {result['users']} users, {result['stakeholders']} stakeholders, "
+            f"{result['stakeholder_maps']} maps, {result['spaces']} spaces, "
+            f"{result['challenges']} challenges, {result['initiatives']} initiatives, "
+            f"{result['systems']} systems, {result['kpis']} KPIs, "
+            f"{result['snapshots']} snapshots, {result['action_items']} action items",
+            "info",
+        )
+
+        return redirect(url_for("super_admin.demo_generator"))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error creating demo organization: {str(e)}", "danger")
+        return redirect(url_for("super_admin.demo_generator"))

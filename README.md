@@ -1,12 +1,40 @@
-# 🧭 CISK Navigator v2.10.7
+# 🧭 CISK Navigator v2.11.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.10.7-blue)
+![Version](https://img.shields.io/badge/version-2.11.0-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-254%20passing-success)
+
+## ✨ What's New in v2.11.0 (March 2026)
+
+### 🎩 **Demo Data Generator**
+Comprehensive demo organization creator for testing and demonstrations:
+
+**Three Fun Scenarios**:
+- **Riverside FC** - Community football club with youth development
+- **MyHealth Journey** - Personal health and wellness transformation
+- **Green Home Project** - Eco-friendly sustainable living
+
+**What's Generated**:
+- ✅ Complete entity hierarchy (Spaces, Challenges, Initiatives, Systems, KPIs)
+- ✅ Stakeholder ecosystem (5-10 stakeholders per org, 2-3 maps, relationships)
+- ✅ Entity-stakeholder links (owners, reviewers, contributors, interested parties)
+- ✅ Historical snapshots (configurable years, realistic trends and variations)
+- ✅ KPIs with different frequencies (Daily, Weekly, Monthly, Quarterly, Yearly)
+- ✅ Linked KPIs and formula KPIs
+- ✅ Mix of public/private spaces
+- ✅ Action items in various states
+- ✅ Demo users with configurable emails
+
+**Features**:
+- Drop & recreate existing organizations (clean start every time)
+- Configurable years of history (1-5 years)
+- Configurable snapshot frequency (daily, weekly, monthly)
+- Realistic data with trends (+2%/snapshot) and random variation (±10%)
+- Super admin only (destructive operation)
 
 ## ✨ What's New in v2.10.7 (March 2026)
 
