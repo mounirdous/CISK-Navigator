@@ -679,7 +679,7 @@ class DemoDataService:
                 description=space_data["description"],
                 is_private=space_data["is_private"],
                 display_order=space_idx + 1,
-                created_by_user_id=users[0].id,
+                created_by=users[0].id,
                 swot_strengths=space_data.get("swot", {}).get("strengths"),
                 swot_weaknesses=space_data.get("swot", {}).get("weaknesses"),
                 swot_opportunities=space_data.get("swot", {}).get("opportunities"),
@@ -696,7 +696,6 @@ class DemoDataService:
                     name=challenge_data["name"],
                     description=challenge_data["description"],
                     display_order=challenge_idx + 1,
-                    created_by_user_id=users[0].id,
                 )
                 db.session.add(challenge)
                 db.session.flush()
@@ -707,7 +706,6 @@ class DemoDataService:
                         organization_id=org.id,
                         name=initiative_data["name"],
                         description=initiative_data["description"],
-                        created_by_user_id=users[0].id,
                     )
                     db.session.add(initiative)
                     db.session.flush()
@@ -724,7 +722,6 @@ class DemoDataService:
                             organization_id=org.id,
                             name=system_data["name"],
                             description="",
-                            created_by_user_id=users[0].id,
                         )
                         db.session.add(system)
                         db.session.flush()
@@ -745,7 +742,6 @@ class DemoDataService:
                                 name=kpi_data["name"],
                                 initiative_system_link_id=sys_link.id,
                                 display_order=kpi_idx + 1,
-                                created_by_user_id=users[0].id,
                             )
                             db.session.add(kpi)
                             db.session.flush()
