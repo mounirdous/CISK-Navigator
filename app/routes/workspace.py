@@ -642,6 +642,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         can_contribute=current_user.can_contribute(org_id),
         entity_defaults=entity_defaults,
         workspace_filters=workspace_filters,
+        csrf_token=generate_csrf,
     )
 
 

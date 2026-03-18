@@ -25,7 +25,6 @@ from app.models import (
     ActionItem,
     Challenge,
     ChallengeInitiativeLink,
-    Contribution,
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
@@ -1077,23 +1076,13 @@ class DemoDataService:
             base_value = random.uniform(50, 500)
             trend = random.choice([-0.01, 0, 0.01, 0.02])  # -1%, 0%, +1%, +2% per snapshot
 
-            contributor_name = random.choice(["Alice Johnson", "Bob Smith", "Carol Williams"])
-
-            # Generate all snapshots (historical + current)
+            # Generate all snapshots (historical + current) - NO contributions
             for idx, snapshot_date in enumerate(dates):
                 # Apply trend
                 value = base_value * (1 + trend) ** idx
                 consensus_value = value * random.uniform(0.9, 1.1)  # ±10% variation
 
-                # Create one contribution per KPI for immediate consensus
-                contribution = Contribution(
-                    kpi_value_type_config_id=config.id,
-                    contributor_name=contributor_name,
-                    numeric_value=Decimal(str(round(consensus_value, 2))),
-                )
-                db.session.add(contribution)
-
-                # Create snapshot with immediate consensus (contributor_count=1)
+                # Create snapshot directly (fake historical data)
                 snapshot = KPISnapshot(
                     kpi_value_type_config_id=config.id,
                     snapshot_date=snapshot_date,
@@ -1105,7 +1094,7 @@ class DemoDataService:
                     owner_user_id=user_id,
                     consensus_status="strong",
                     consensus_value=Decimal(str(round(consensus_value, 2))),
-                    contributor_count=1,  # One contribution = immediate consensus
+                    contributor_count=1,
                     is_rollup_eligible=True,
                 )
                 db.session.add(snapshot)
