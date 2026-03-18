@@ -173,6 +173,41 @@ class User(UserMixin, db.Model):
         membership = self.get_membership(organization_id)
         return bool(membership and (membership.is_org_admin or membership.can_contribute))
 
+    def can_view_action_items(self, organization_id):
+        """Check if user can view action items in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_view_action_items))
+
+    def can_create_action_items(self, organization_id):
+        """Check if user can create action items in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_create_action_items))
+
+    def can_view_stakeholders(self, organization_id):
+        """Check if user can view stakeholders in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_view_stakeholders))
+
+    def can_manage_stakeholders(self, organization_id):
+        """Check if user can manage stakeholders in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_manage_stakeholders))
+
+    def can_view_map(self, organization_id):
+        """Check if user can view map dashboard in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_view_map))
+
     def has_permission(self, organization_id, permission_name):
         """Generic permission checker - delegates to specific permission methods"""
         if self.is_super_admin or self.is_global_admin:

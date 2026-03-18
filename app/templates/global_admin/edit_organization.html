@@ -230,6 +230,57 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="row g-2 mt-2">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_view_action_items_{{ user.id }}" id="perm_view_action_items_{{ user.id }}"
+                                                               onchange="toggleCreateActionItems({{ user.id }})" {% if membership and membership.can_view_action_items %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_view_action_items_{{ user.id }}">
+                                                            <i class="bi bi-card-checklist"></i> View Action Items
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_create_action_items_{{ user.id }}" id="perm_create_action_items_{{ user.id }}"
+                                                               {% if membership and membership.can_create_action_items %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_create_action_items_{{ user.id }}">
+                                                            <i class="bi bi-plus-circle"></i> Create Action Items
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2 mt-2">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_view_stakeholders_{{ user.id }}" id="perm_view_stakeholders_{{ user.id }}"
+                                                               onchange="toggleManageStakeholders({{ user.id }})" {% if membership and membership.can_view_stakeholders %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_view_stakeholders_{{ user.id }}">
+                                                            <i class="bi bi-people"></i> View Stakeholders
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_manage_stakeholders_{{ user.id }}" id="perm_manage_stakeholders_{{ user.id }}"
+                                                               {% if membership and membership.can_manage_stakeholders %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_manage_stakeholders_{{ user.id }}">
+                                                            <i class="bi bi-person-plus"></i> Manage Stakeholders
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="row g-2 mt-2">
+                                                <div class="col-md-12">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_view_map_{{ user.id }}" id="perm_view_map_{{ user.id }}"
+                                                               {% if membership and membership.can_view_map %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_view_map_{{ user.id }}">
+                                                            <i class="bi bi-map"></i> View Map Dashboard
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -292,6 +343,30 @@ function toggleAddComments(userId) {
         addCheckbox.disabled = true;
     } else {
         addCheckbox.disabled = false;
+    }
+}
+
+function toggleCreateActionItems(userId) {
+    const viewCheckbox = document.getElementById('perm_view_action_items_' + userId);
+    const createCheckbox = document.getElementById('perm_create_action_items_' + userId);
+
+    if (!viewCheckbox.checked) {
+        createCheckbox.checked = false;
+        createCheckbox.disabled = true;
+    } else {
+        createCheckbox.disabled = false;
+    }
+}
+
+function toggleManageStakeholders(userId) {
+    const viewCheckbox = document.getElementById('perm_view_stakeholders_' + userId);
+    const manageCheckbox = document.getElementById('perm_manage_stakeholders_' + userId);
+
+    if (!viewCheckbox.checked) {
+        manageCheckbox.checked = false;
+        manageCheckbox.disabled = true;
+    } else {
+        manageCheckbox.disabled = false;
     }
 }
 

@@ -5,6 +5,57 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-03-18
+
+### Added - Granular Permissions for Action Items, Stakeholders, and Map
+
+**Major Feature**: Fine-grained access control for action items, stakeholders, and map dashboard
+
+**New Permissions Added:**
+1. **can_view_action_items** - View action register menu and list
+2. **can_create_action_items** - Create/edit own action items (requires view permission)
+3. **can_view_stakeholders** - View stakeholders menu and list
+4. **can_manage_stakeholders** - Create/edit/delete stakeholders (requires view permission)
+5. **can_view_map** - View map dashboard menu and page
+
+**Why This Matters:**
+Previously, action items were accessible to all org members and stakeholders required org admin. Now you have fine-grained control:
+- Control who can VIEW vs CREATE action items
+- Control who can VIEW vs MANAGE stakeholders
+- Control who can see the map dashboard
+
+**Migration:**
+- Database migration adds 5 new columns to user_organization_memberships
+- Existing users: action items and map default to TRUE, stakeholders default to FALSE
+- Maintains backward compatibility
+
+**UI Updates:**
+All permission forms now include the new checkboxes:
+- Create User (Global Admin → Users → Create)
+- Edit User (Global Admin → Users → Edit)
+- Create Organization (Global Admin → Organizations → Create)
+- Edit Organization (Global Admin → Organizations → Edit)
+
+**Dependencies:**
+- "Create Action Items" requires "View Action Items"
+- "Manage Stakeholders" requires "View Stakeholders"
+- JavaScript enforces these dependencies in all forms
+
+**Files Modified:**
+- `migrations/versions/adf138430006_*.py` - Database migration
+- `app/models/organization.py` - Added 5 new permission columns
+- `app/models/user.py` - Added 5 new permission check methods
+- `app/routes/global_admin.py` - Updated all 4 routes to save new permissions
+- `app/templates/global_admin/create_user.html` - Added permission checkboxes + JS
+- `app/templates/global_admin/edit_user.html` - Added permission checkboxes + JS
+- `app/templates/global_admin/create_organization.html` - Added permission checkboxes + JS
+- `app/templates/global_admin/edit_organization.html` - Added permission checkboxes + JS
+
+**Next Steps** (separate commit):
+- Update menu visibility in base.html to use new permissions
+- Update route permission checks in action_items.py and stakeholders.py
+- Update map dashboard permission checks
+
 ## [2.10.6] - 2026-03-18
 
 ### Added - Contribute Permission in Organization Creation/Edit

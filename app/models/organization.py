@@ -152,6 +152,13 @@ class UserOrganizationMembership(db.Model):
     can_add_comments = db.Column(db.Boolean, default=True, nullable=False)
     can_contribute = db.Column(db.Boolean, default=True, nullable=False)
 
+    # Feature-specific permissions
+    can_view_action_items = db.Column(db.Boolean, default=True, nullable=False, comment="View action register")
+    can_create_action_items = db.Column(db.Boolean, default=True, nullable=False, comment="Create/edit action items")
+    can_view_stakeholders = db.Column(db.Boolean, default=False, nullable=False, comment="View stakeholders")
+    can_manage_stakeholders = db.Column(db.Boolean, default=False, nullable=False, comment="Create/edit stakeholders")
+    can_view_map = db.Column(db.Boolean, default=True, nullable=False, comment="View map dashboard")
+
     # Unique constraint: one user cannot be assigned twice to the same organization
     __table_args__ = (db.UniqueConstraint("user_id", "organization_id", name="uq_user_org"),)
 

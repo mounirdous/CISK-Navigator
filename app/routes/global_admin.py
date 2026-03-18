@@ -208,6 +208,11 @@ def create_user():
                 can_view_comments=request.form.get(f"perm_view_comments_{org_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{org_id}") == "on",
                 can_contribute=request.form.get(f"perm_contribute_{org_id}") == "on",
+                can_view_action_items=request.form.get(f"perm_view_action_items_{org_id}") == "on",
+                can_create_action_items=request.form.get(f"perm_create_action_items_{org_id}") == "on",
+                can_view_stakeholders=request.form.get(f"perm_view_stakeholders_{org_id}") == "on",
+                can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{org_id}") == "on",
+                can_view_map=request.form.get(f"perm_view_map_{org_id}") == "on",
             )
             db.session.add(membership)
 
@@ -297,6 +302,11 @@ def edit_user(user_id):
                 can_view_comments=request.form.get(f"perm_view_comments_{org_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{org_id}") == "on",
                 can_contribute=request.form.get(f"perm_contribute_{org_id}") == "on",
+                can_view_action_items=request.form.get(f"perm_view_action_items_{org_id}") == "on",
+                can_create_action_items=request.form.get(f"perm_create_action_items_{org_id}") == "on",
+                can_view_stakeholders=request.form.get(f"perm_view_stakeholders_{org_id}") == "on",
+                can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{org_id}") == "on",
+                can_view_map=request.form.get(f"perm_view_map_{org_id}") == "on",
             )
             db.session.add(membership)
 
@@ -395,6 +405,11 @@ def create_organization():
                 "view_comments": request.form.get(f"perm_view_comments_{user.id}") == "on",
                 "add_comments": request.form.get(f"perm_add_comments_{user.id}") == "on",
                 "contribute": request.form.get(f"perm_contribute_{user.id}") == "on",
+                "view_action_items": request.form.get(f"perm_view_action_items_{user.id}") == "on",
+                "create_action_items": request.form.get(f"perm_create_action_items_{user.id}") == "on",
+                "view_stakeholders": request.form.get(f"perm_view_stakeholders_{user.id}") == "on",
+                "manage_stakeholders": request.form.get(f"perm_manage_stakeholders_{user.id}") == "on",
+                "view_map": request.form.get(f"perm_view_map_{user.id}") == "on",
             }
 
     if form.validate_on_submit():
@@ -448,6 +463,11 @@ def create_organization():
                 can_view_comments=request.form.get(f"perm_view_comments_{user_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{user_id}") == "on",
                 can_contribute=request.form.get(f"perm_contribute_{user_id}") == "on",
+                can_view_action_items=request.form.get(f"perm_view_action_items_{user_id}") == "on",
+                can_create_action_items=request.form.get(f"perm_create_action_items_{user_id}") == "on",
+                can_view_stakeholders=request.form.get(f"perm_view_stakeholders_{user_id}") == "on",
+                can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{user_id}") == "on",
+                can_view_map=request.form.get(f"perm_view_map_{user_id}") == "on",
             )
             db.session.add(membership)
 
@@ -521,6 +541,11 @@ def edit_organization(org_id):
                 can_view_comments=request.form.get(f"perm_view_comments_{user_id}") == "on",
                 can_add_comments=request.form.get(f"perm_add_comments_{user_id}") == "on",
                 can_contribute=request.form.get(f"perm_contribute_{user_id}") == "on",
+                can_view_action_items=request.form.get(f"perm_view_action_items_{user_id}") == "on",
+                can_create_action_items=request.form.get(f"perm_create_action_items_{user_id}") == "on",
+                can_view_stakeholders=request.form.get(f"perm_view_stakeholders_{user_id}") == "on",
+                can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{user_id}") == "on",
+                can_view_map=request.form.get(f"perm_view_map_{user_id}") == "on",
             )
             db.session.add(membership)
 
