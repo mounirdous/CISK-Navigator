@@ -5,6 +5,35 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.2] - 2026-03-18
+
+### Fixed - Workspace Icons Showing Christmas Trees (HOTFIX)
+
+**Critical Bug**: Workspace tree showing Christmas tree decorations instead of custom icons from Branding Manager
+
+**Issue**: Even after EntityTypeDefault records were created (v2.11.1), workspace entities still showed Christmas tree decorations (🌲) instead of the configured default icons (🏢, ƒ, δ, Φ, Ψ) from Branding Manager.
+
+**Root Cause**: The workspace template logic had three icon states:
+1. If `logo_url` exists (uploaded image) → show image
+2. If NO logo_url AND badges showing → show Christmas tree decoration
+3. If NO logo_url AND (edit mode OR badges hidden) → show bootstrap icon
+
+EntityTypeDefault records have `default_icon` (text/emoji) but not `default_logo_data` (uploaded images). Since `logo_url` was null, the template showed Christmas trees. The backend wasn't passing the `icon` field through the API.
+
+**Fix**:
+- Backend: Added `default_icons` dictionary in workspace.get_data endpoint
+- Backend: Created `get_icon()` helper that returns entity's icon or default icon from EntityTypeDefault
+- Backend: Added `icon` field to all entity serialization (space, challenge, initiative, system, kpi)
+- Template: Replaced Christmas tree spans with `entity-icon-text` displaying `entity.icon`
+- Template: Added CSS for `entity-icon-text` class (font-size 1.1rem, inline-block)
+- Template: Bootstrap icons now only show when icon field is also null
+
+**Result**: Workspace now correctly displays default icons from Branding Manager (🏢 for spaces, ƒ for challenges, δ for initiatives, Φ for systems, Ψ for KPIs).
+
+**Files Modified**:
+- `app/routes/workspace.py` - Added icon support in get_data endpoint
+- `app/templates/workspace/index.html` - Replaced Christmas trees with entity icons
+
 ## [2.11.1] - 2026-03-18
 
 ### Fixed - Entity Defaults Not Created During Onboarding
