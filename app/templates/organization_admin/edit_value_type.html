@@ -97,7 +97,7 @@
                     {% if value_type.is_formula() %}
                     <div class="form-section">
                         <div class="form-section-title">
-                            <i class="bi bi-calculator"></i>
+                            <i class="bi bi-table"></i>
                             Formula Configuration
                         </div>
 
@@ -108,26 +108,30 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Calculation Type</label>
-                            <input type="text" class="form-control" value="Formula (Automatic Calculation)" readonly>
+                            <input type="text" class="form-control" value="Formula (Automatic Calculation)" readonly style="background-color: #d1fae5; border-color: #10b981;">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Formula</label>
+                            <label class="form-label fw-semibold">Formula Display</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-calculator"></i></span>
-                                <input type="text" class="form-control" value="{{ value_type.get_formula_display() }}" readonly>
+                                <span class="input-group-text" style="background-color: #d1fae5; border-color: #10b981;">
+                                    <i class="bi bi-table"></i>
+                                </span>
+                                <input type="text" class="form-control" value="{{ value_type.get_formula_display() }}" readonly style="background-color: #d1fae5; border-color: #10b981;">
                             </div>
                             <small class="form-text text-muted">
-                                <i class="bi bi-info-circle"></i> Values are automatically calculated from source value types
+                                <i class="bi bi-check-circle"></i> Values calculate automatically from source value types
                             </small>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Source Value Types</label>
+                            <label class="form-label fw-semibold">Source Value Types ({{ value_type.get_source_value_types()|length }})</label>
                             <ul class="list-group">
                                 {% for source_vt in value_type.get_source_value_types() %}
-                                <li class="list-group-item">
-                                    <i class="bi bi-hash"></i> {{ source_vt.name }}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="bi bi-hash"></i> {{ source_vt.name }}
+                                    </span>
                                     {% if source_vt.unit_label %}
                                         <span class="badge bg-secondary">{{ source_vt.unit_label }}</span>
                                     {% endif %}
