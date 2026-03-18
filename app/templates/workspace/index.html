@@ -4328,82 +4328,46 @@ function workspaceV2(orgId, filterPresets) {
 
         // Expand/Collapse Rows
         expandAllRows() {
-            const expandInitiative = (initiative, depth = 0) => {
-                console.log('  '.repeat(depth) + `Expanding initiative: ${initiative.name}, collapsed BEFORE: ${initiative.collapsed}`);
+            console.log('=== EXPAND ALL ROWS ===');
+
+            const expandInitiative = (initiative) => {
                 initiative.collapsed = false;
-                console.log('  '.repeat(depth) + `  collapsed AFTER: ${initiative.collapsed}, has systems: ${!!initiative.systems}, has nested initiatives: ${!!initiative.initiatives}`);
 
                 // Expand systems
                 if (initiative.systems) {
-                    console.log('  '.repeat(depth) + `  Found ${initiative.systems.length} systems`);
                     initiative.systems.forEach(system => {
-                        console.log('  '.repeat(depth) + `    System: ${system.name}, collapsed BEFORE: ${system.collapsed}`);
                         system.collapsed = false;
-                        console.log('  '.repeat(depth) + `      collapsed AFTER: ${system.collapsed}, has KPIs: ${!!system.kpis}`);
-                        // Expand KPIs (if they have a collapsed property)
-                        if (system.kpis) {
-                            system.kpis.forEach(kpi => {
-                                if (kpi.hasOwnProperty('collapsed')) {
-                                    kpi.collapsed = false;
-                                }
-                            });
-                        }
                     });
                 }
 
                 // Recursively expand nested challenges
                 if (initiative.challenges) {
-                    console.log('  '.repeat(depth) + `  Found ${initiative.challenges.length} nested challenges`);
                     initiative.challenges.forEach(challenge => {
                         challenge.collapsed = false;
                         if (challenge.initiatives) {
-                            challenge.initiatives.forEach(init => expandInitiative(init, depth + 1));
+                            challenge.initiatives.forEach(expandInitiative);
                         }
                     });
                 }
 
                 // Recursively expand nested initiatives
                 if (initiative.initiatives) {
-                    console.log('  '.repeat(depth) + `  Found ${initiative.initiatives.length} nested initiatives`);
-                    initiative.initiatives.forEach(init => expandInitiative(init, depth + 1));
+                    initiative.initiatives.forEach(expandInitiative);
                 }
             };
 
-            console.log('=== EXPAND ALL ROWS ===');
             this.spaces.forEach(space => {
-                console.log(`Space: ${space.name}`);
                 space.collapsed = false;
                 space.challenges.forEach(challenge => {
-                    console.log(`  Challenge: ${challenge.name}`);
                     challenge.collapsed = false;
-                    challenge.initiatives.forEach(init => expandInitiative(init, 1));
+                    challenge.initiatives.forEach(expandInitiative);
                 });
             });
 
-            // Verify the state after expansion
-            console.log('\n=== VERIFICATION AFTER EXPAND ===');
-            console.log('showLevels.systems:', this.showLevels.systems);
-            console.log('showLevels:', JSON.stringify(this.showLevels));
-            this.spaces.forEach(space => {
-                space.challenges.forEach(challenge => {
-                    challenge.initiatives.forEach(initiative => {
-                        console.log(`Initiative: ${initiative.name}, collapsed: ${initiative.collapsed}, systems: ${initiative.systems.length}`);
-                        console.log(`  Render conditions: space.collapsed=${space.collapsed}, challenge.collapsed=${challenge.collapsed}, initiative.collapsed=${initiative.collapsed}`);
-                        if (initiative.systems) {
-                            initiative.systems.forEach(system => {
-                                console.log(`  System: ${system.name}, collapsed: ${system.collapsed}`);
-                                const shouldShowSystem = this.showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed;
-                                console.log(`    System should show? ${shouldShowSystem}`);
-
-                                // Check KPIs
-                                if (system.kpis) {
-                                    const shouldShowKPIs = this.showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed;
-                                    console.log(`    Has ${system.kpis.length} KPIs, should show? ${shouldShowKPIs} (showLevels.kpis=${this.showLevels.kpis}, system.collapsed=${system.collapsed})`);
-                                }
-                            });
-                        }
-                    });
-                });
+            // Force Alpine to re-evaluate by touching a reactive property
+            this.$nextTick(() => {
+                // Trigger reactivity by re-assigning spaces array
+                this.spaces = [...this.spaces];
             });
         },
 
@@ -4437,6 +4401,11 @@ function workspaceV2(orgId, filterPresets) {
                     challenge.collapsed = true;
                     challenge.initiatives.forEach(collapseInitiative);
                 });
+            });
+
+            // Force Alpine to re-evaluate
+            this.$nextTick(() => {
+                this.spaces = [...this.spaces];
             });
         },
 
