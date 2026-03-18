@@ -2726,6 +2726,50 @@ def delete_value_type_check(vt_id):
     )
 
 
+@bp.route("/value-types/<int:vt_id>/delete", methods=["POST"])
+@login_required
+@organization_required
+@permission_required("can_manage_value_types")
+def delete_value_type(vt_id):
+    """Delete a value type (after confirmation check)"""
+    try:
+        org_id = session.get("organization_id")
+        value_type = ValueType.query.get_or_404(vt_id)
+
+        if value_type.organization_id != org_id:
+            flash("Access denied", "danger")
+            return redirect(url_for("organization_admin.value_types"))
+
+        # Double check if it can be deleted
+        can_delete, reason = ValueTypeUsageService.can_delete(vt_id)
+        if not can_delete:
+            flash(f"Cannot delete value type: {reason}", "danger")
+            return redirect(url_for("organization_admin.value_types"))
+
+        value_type_name = value_type.name
+        value_type_id = value_type.id
+
+        # Delete the value type (cascade will handle related records)
+        db.session.delete(value_type)
+
+        # Audit log
+        AuditService.log_delete(
+            "ValueType",
+            value_type_id,
+            value_type_name,
+            {"kind": value_type.kind, "organization_id": org_id},
+        )
+
+        db.session.commit()
+        flash(f'Value type "{value_type_name}" deleted successfully', "success")
+        return redirect(url_for("organization_admin.value_types"))
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting value type: {str(e)}", "danger")
+        return redirect(url_for("organization_admin.value_types"))
+
+
 @bp.route("/value-types/<int:vt_id>/rollup-config", methods=["GET", "POST"])
 @login_required
 @organization_required

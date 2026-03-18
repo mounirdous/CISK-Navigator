@@ -2082,10 +2082,50 @@
             <i class="bi bi-inbox"></i>
             <h3>No data found</h3>
             <p>Try adjusting your filters or create a space to get started.</p>
+            <!-- Show Add Space button in empty state -->
+            {% if current_user.can_manage_spaces(org_id) %}
+            <template x-if="editMode && spaces.length === 0">
+                <div style="margin-top: 1.5rem;">
+                    <a href="{{ url_for('organization_admin.create_space') }}?return_to=workspace"
+                       class="btn btn-success">
+                        <i class="bi bi-plus-circle"></i> Create Your First Space
+                    </a>
+                </div>
+            </template>
+            {% endif %}
             <p style="font-size: 0.8rem; opacity: 0.5; margin-top: 1rem;">
                 Debug: <span x-text="spaces.length"></span> spaces loaded,
                 <span x-text="valueTypes.length"></span> value types
             </p>
+        </div>
+
+        <!-- Organization Header (always shown when not loading) -->
+        <div x-show="!loading && (filteredSpaces.length > 0 || spaces.length > 0)" class="ws-grid" style="margin-bottom: 1rem;">
+            <div class="ws-header-row">
+                <div class="ws-header-cell" style="font-size: 1.1rem; font-weight: 700;">
+                    <template x-if="orgLogo">
+                        <img :src="orgLogo" :alt="orgName" style="height: 1.5rem; width: auto; margin-right: 0.5rem; vertical-align: middle;">
+                    </template>
+                    <template x-if="!orgLogo">
+                        <i class="bi bi-building"></i>
+                    </template>
+                    <span x-text="orgName"></span>
+
+                    <!-- Action icons for creating spaces (edit mode only) -->
+                    {% if current_user.can_manage_spaces(org_id) %}
+                    <template x-if="editMode">
+                        <span class="action-icons ms-2">
+                            <a href="{{ url_for('organization_admin.create_space') }}?return_to=workspace"
+                               class="text-success"
+                               title="Add Space to Organization"
+                               @click.stop>
+                                <i class="bi bi-plus-circle"></i>
+                            </a>
+                        </span>
+                    </template>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- Data Grid -->
