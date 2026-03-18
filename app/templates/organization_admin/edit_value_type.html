@@ -94,6 +94,50 @@
                         </div>
                     </div>
 
+                    {% if value_type.is_formula() %}
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-calculator"></i>
+                            Formula Configuration
+                        </div>
+
+                        <div class="alert alert-warning mb-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Read-Only:</strong> Formula configuration cannot be changed after creation. To modify the formula, create a new value type.
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Calculation Type</label>
+                            <input type="text" class="form-control" value="Formula (Automatic Calculation)" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Formula</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-calculator"></i></span>
+                                <input type="text" class="form-control" value="{{ value_type.get_formula_display() }}" readonly>
+                            </div>
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle"></i> Values are automatically calculated from source value types
+                            </small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Source Value Types</label>
+                            <ul class="list-group">
+                                {% for source_vt in value_type.get_source_value_types() %}
+                                <li class="list-group-item">
+                                    <i class="bi bi-hash"></i> {{ source_vt.name }}
+                                    {% if source_vt.unit_label %}
+                                        <span class="badge bg-secondary">{{ source_vt.unit_label }}</span>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     {% if value_type.kind == 'numeric' %}
                     <div class="form-section">
                         <div class="form-section-title">

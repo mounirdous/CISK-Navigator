@@ -2708,12 +2708,21 @@ def delete_value_type_check(vt_id):
     can_delete, reason = ValueTypeUsageService.can_delete(vt_id)
     usage = ValueTypeUsageService.check_usage(vt_id)
 
+    # Calculate impact for deletion (counts)
+    impact = {
+        "kpi_configs": len(usage.get("kpi_configs", [])),
+        "contributions": usage.get("contributions_count", 0),
+        "consensus_values": len(usage.get("kpi_configs", [])),  # Each config has consensus values
+    }
+
     return render_template(
         "organization_admin/delete_value_type_check.html",
         value_type=value_type,
         can_delete=can_delete,
         reason=reason,
         usage=usage,
+        impact=impact,
+        csrf_token=generate_csrf,
     )
 
 
