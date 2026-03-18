@@ -1077,6 +1077,38 @@ def delete_space(space_id):
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/spaces/<int:space_id>", methods=["DELETE"])
+@login_required
+@organization_required
+@permission_required("can_manage_spaces")
+def delete_space_api(space_id):
+    """Delete a space (REST API endpoint)"""
+    try:
+        org_id = session.get("organization_id")
+        space = Space.query.filter_by(id=space_id, organization_id=org_id).first_or_404()
+
+        space_name = space.name
+        space_id_for_audit = space.id
+        space_details = {
+            "description": space.description,
+            "space_label": space.space_label,
+            "is_private": space.is_private,
+            "organization_id": space.organization_id,
+        }
+
+        db.session.delete(space)
+
+        # Audit log
+        AuditService.log_delete("Space", space_id_for_audit, space_name, space_details)
+
+        db.session.commit()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @bp.route("/spaces/<int:space_id>/swot")
 @login_required
 @organization_required
@@ -1601,6 +1633,45 @@ def edit_system(system_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
     )
+
+
+@bp.route("/initiative-system-links/<int:link_id>", methods=["DELETE"])
+@login_required
+@organization_required
+@permission_required("can_manage_systems")
+def unlink_system_api(link_id):
+    """Unlink a system from an initiative (REST API endpoint)"""
+    try:
+        org_id = session.get("organization_id")
+        link = InitiativeSystemLink.query.get_or_404(link_id)
+
+        # Verify ownership
+        if link.initiative.organization_id != org_id:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        link_details = {
+            "initiative": link.initiative.name,
+            "system": link.system.name,
+            "kpi_count": len(link.kpis),
+        }
+
+        # Delete the link (cascade will delete associated KPIs)
+        db.session.delete(link)
+
+        # Audit log
+        AuditService.log_delete(
+            "InitiativeSystemLink",
+            link.id,
+            f"{link.initiative.name} - {link.system.name}",
+            link_details,
+        )
+
+        db.session.commit()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 @bp.route("/initiative-system-links/<int:link_id>/rollup-config", methods=["POST"])
@@ -2343,6 +2414,48 @@ def delete_initiative(initiative_id):
     return redirect(url_for("organization_admin.initiatives"))
 
 
+@bp.route("/initiatives/<int:initiative_id>", methods=["DELETE"])
+@login_required
+@organization_required
+@permission_required("can_manage_initiatives")
+def delete_initiative_api(initiative_id):
+    """Delete an Initiative (REST API endpoint)"""
+    try:
+        org_id = session.get("organization_id")
+        initiative = Initiative.query.get_or_404(initiative_id)
+
+        # Verify ownership
+        if initiative.organization_id != org_id:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        initiative_name = initiative.name
+        initiative_id_for_audit = initiative.id
+
+        # Check if initiative is linked to any challenges
+        challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).all()
+        if challenge_links:
+            return jsonify(
+                {
+                    "success": False,
+                    "error": f'Cannot delete initiative "{initiative_name}" - it is linked to {len(challenge_links)} challenge(s). Remove links first.',
+                }
+            )
+
+        initiative_details = {"description": initiative.description, "organization_id": org_id}
+
+        db.session.delete(initiative)
+
+        # Audit log
+        AuditService.log_delete("Initiative", initiative_id_for_audit, initiative_name, initiative_details)
+
+        db.session.commit()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @bp.route("/challenges/<int:challenge_id>/delete", methods=["POST"])
 @login_required
 @organization_required
@@ -2370,6 +2483,41 @@ def delete_challenge(challenge_id):
 
     flash(f'Challenge "{challenge_name}" deleted successfully', "success")
     return redirect(url_for("workspace.index"))
+
+
+@bp.route("/challenges/<int:challenge_id>", methods=["DELETE"])
+@login_required
+@organization_required
+@permission_required("can_manage_challenges")
+def delete_challenge_api(challenge_id):
+    """Delete a Challenge (REST API endpoint)"""
+    try:
+        org_id = session.get("organization_id")
+        challenge = Challenge.query.get_or_404(challenge_id)
+
+        # Verify ownership
+        if challenge.space.organization_id != org_id:
+            return jsonify({"success": False, "error": "Access denied"}), 403
+
+        challenge_name = challenge.name
+        challenge_id_for_audit = challenge.id
+        challenge_details = {
+            "description": challenge.description,
+            "space": challenge.space.name,
+            "organization_id": org_id,
+        }
+
+        db.session.delete(challenge)
+
+        # Audit log
+        AuditService.log_delete("Challenge", challenge_id_for_audit, challenge_name, challenge_details)
+
+        db.session.commit()
+        return jsonify({"success": True})
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
 
 
 # Value Type Management

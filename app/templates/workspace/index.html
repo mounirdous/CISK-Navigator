@@ -4385,7 +4385,7 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             try {
-                const response = await fetch(`/geography/spaces/${space.id}`, {
+                const response = await fetch(`/org-admin/spaces/${space.id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRFToken': '{{ csrf_token() }}'
