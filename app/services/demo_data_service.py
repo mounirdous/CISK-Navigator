@@ -947,6 +947,30 @@ class DemoDataService:
             configs_created, years_of_history, snapshot_frequency, users[0].id
         )
 
+        # Create ONE contribution per KPI config to demonstrate contribution workflow
+        from app.models import Contribution
+
+        contributors = ["Alice Johnson", "Bob Smith", "Carol Williams"]
+        for config_data in configs_created:
+            config = config_data["config"]
+            # Get last snapshot value as base
+            last_snapshot = (
+                KPISnapshot.query.filter_by(kpi_value_type_config_id=config.id)
+                .order_by(KPISnapshot.snapshot_date.desc())
+                .first()
+            )
+            if last_snapshot:
+                # Create one contribution with similar value (±5% variation)
+                contrib_value = float(last_snapshot.consensus_value) * random.uniform(0.95, 1.05)
+                contribution = Contribution(
+                    kpi_value_type_config_id=config.id,
+                    contributor_name=random.choice(contributors),
+                    numeric_value=Decimal(str(round(contrib_value, 2))),
+                )
+                db.session.add(contribution)
+
+        db.session.flush()
+
         # Create action items (mix of different states)
         action_items_created = DemoDataService._create_action_items(
             org.id, initiatives_created, kpis_created, users[0].id
