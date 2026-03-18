@@ -206,6 +206,23 @@ class ValueType(db.Model):
         if not self.calculation_config:
             return (False, "Formula configuration is required")
 
+        mode = self.calculation_config.get("mode", "simple")
+
+        if mode == "advanced":
+            # Advanced mode: validate Python expression
+            expression = self.calculation_config.get("expression")
+            if not expression or not expression.strip():
+                return (False, "Python expression is required for advanced mode")
+
+            # Basic syntax check
+            try:
+                compile(expression, "<string>", "eval")
+            except SyntaxError as e:
+                return (False, f"Invalid Python expression: {e}")
+
+            return (True, None)
+
+        # Simple mode: validate operation and source value types
         operation = self.calculation_config.get("operation")
         if operation not in self.OPERATIONS:
             return (False, f"Invalid operation: {operation}")
