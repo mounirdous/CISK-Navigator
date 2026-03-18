@@ -226,6 +226,20 @@ class DemoDataService:
                     "stakeholders": ["Emma Thompson", "David Chen", "Rachel Green"],
                 },
             ],
+            "value_types": [
+                {"name": "Goals", "kind": "numeric", "unit_label": "goals"},
+                {"name": "Assists", "kind": "numeric", "unit_label": "assists"},
+                {"name": "Minutes", "kind": "numeric", "unit_label": "min"},
+                {"name": "Win Rate", "kind": "numeric", "unit_label": "%"},
+                {"name": "Attendance", "kind": "numeric", "unit_label": "people"},
+                {"name": "Revenue", "kind": "numeric", "unit_label": "£"},
+                {"name": "Cost", "kind": "numeric", "unit_label": "£"},
+                {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
+                {"name": "Score", "kind": "numeric", "unit_label": "pts"},
+                {"name": "Rating", "kind": "numeric", "unit_label": "/5"},
+                {"name": "Count", "kind": "numeric", "unit_label": "units"},
+                {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
+            ],
             "geographies": {
                 "regions": [
                     {
@@ -423,6 +437,20 @@ class DemoDataService:
                     "stakeholders": ["Amanda White", "Chris Taylor", "Robert Johnson"],
                 },
             ],
+            "value_types": [
+                {"name": "Weight", "kind": "numeric", "unit_label": "kg"},
+                {"name": "Blood Pressure", "kind": "numeric", "unit_label": "mmHg"},
+                {"name": "Heart Rate", "kind": "numeric", "unit_label": "bpm"},
+                {"name": "Steps", "kind": "numeric", "unit_label": "steps"},
+                {"name": "Calories", "kind": "numeric", "unit_label": "kcal"},
+                {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
+                {"name": "Distance", "kind": "numeric", "unit_label": "km"},
+                {"name": "Water Intake", "kind": "numeric", "unit_label": "L"},
+                {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
+                {"name": "Cost", "kind": "numeric", "unit_label": "$"},
+                {"name": "Score", "kind": "numeric", "unit_label": "pts"},
+                {"name": "Count", "kind": "numeric", "unit_label": "units"},
+            ],
             "geographies": {
                 "regions": [
                     {
@@ -611,6 +639,19 @@ class DemoDataService:
                     "description": "Overall sustainability guidance",
                     "stakeholders": ["Susan Park", "Maria Garcia", "Linda Chen", "Frank Wilson"],
                 },
+            ],
+            "value_types": [
+                {"name": "Energy", "kind": "numeric", "unit_label": "kWh"},
+                {"name": "Water", "kind": "numeric", "unit_label": "L"},
+                {"name": "CO2", "kind": "numeric", "unit_label": "kg"},
+                {"name": "Cost", "kind": "numeric", "unit_label": "$"},
+                {"name": "Revenue", "kind": "numeric", "unit_label": "$"},
+                {"name": "Temperature", "kind": "numeric", "unit_label": "°C"},
+                {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
+                {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
+                {"name": "Weight", "kind": "numeric", "unit_label": "kg"},
+                {"name": "Count", "kind": "numeric", "unit_label": "units"},
+                {"name": "Distance", "kind": "numeric", "unit_label": "km"},
             ],
             "geographies": {
                 "regions": [
@@ -1070,21 +1111,10 @@ class DemoDataService:
                         }
         db.session.flush()
 
-        # Create value types (Cost/Revenue/Net first for prominence in workspace)
+        # Create scenario-specific value types
         value_types = []
-        value_type_configs = [
-            {"name": "Cost", "kind": "numeric", "unit_label": "€"},
-            {"name": "Revenue", "kind": "numeric", "unit_label": "€"},
-            {"name": "Net", "kind": "numeric", "unit_label": "€"},
-            {"name": "Count", "kind": "numeric", "unit_label": "units"},
-            {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
-            {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
-            {"name": "Currency", "kind": "numeric", "unit_label": "USD"},
-            {"name": "Distance", "kind": "numeric", "unit_label": "km"},
-            {"name": "Weight", "kind": "numeric", "unit_label": "kg"},
-            {"name": "Score", "kind": "numeric", "unit_label": "pts"},
-            {"name": "Rating", "kind": "numeric", "unit_label": "/5"},
-        ]
+        value_type_configs = scenario.get("value_types", [])
+
         for idx, vt_data in enumerate(value_type_configs):
             vt = ValueType(
                 organization_id=org.id,
@@ -1475,7 +1505,44 @@ class DemoDataService:
                 return vt
             if vt.name == "Net" and ("net" in name_lower or "profit" in name_lower):
                 return vt
-            # Hours - match training, cardio, recovery, sessions
+
+            # Riverside FC-specific value types
+            if vt.name == "Goals" and ("goals" in name_lower or "scored" in name_lower):
+                return vt
+            if vt.name == "Assists" and "assists" in name_lower:
+                return vt
+            if vt.name == "Minutes" and "minutes" in name_lower:
+                return vt
+            if vt.name == "Win Rate" and ("win" in name_lower or "victory" in name_lower):
+                return vt
+            if vt.name == "Attendance" and ("attendance" in name_lower or "spectators" in name_lower):
+                return vt
+
+            # MyHealth Journey-specific value types
+            if vt.name == "Weight" and "weight" in name_lower:
+                return vt
+            if vt.name == "Blood Pressure" and ("blood" in name_lower or "pressure" in name_lower):
+                return vt
+            if vt.name == "Heart Rate" and ("heart" in name_lower or "pulse" in name_lower):
+                return vt
+            if vt.name == "Steps" and ("steps" in name_lower or "walking" in name_lower):
+                return vt
+            if vt.name == "Calories" and ("calories" in name_lower or "calorie" in name_lower):
+                return vt
+            if vt.name == "Water Intake" and "water" in name_lower:
+                return vt
+
+            # Green Home-specific value types
+            if vt.name == "Energy" and ("energy" in name_lower or "solar" in name_lower or "electricity" in name_lower):
+                return vt
+            if vt.name == "Water" and ("water" in name_lower or "usage" in name_lower):
+                return vt
+            if vt.name == "CO2" and ("carbon" in name_lower or "co2" in name_lower or "offset" in name_lower):
+                return vt
+            if vt.name == "Temperature" and ("temperature" in name_lower or "temp" in name_lower):
+                return vt
+
+            # Common value types
             if vt.name == "Hours" and (
                 "hours" in name_lower
                 or "time" in name_lower
@@ -1483,26 +1550,20 @@ class DemoDataService:
                 or "cardio" in name_lower
                 or "recovery" in name_lower
                 or "sessions" in name_lower
+                or "sleep" in name_lower
             ):
                 return vt
-            # Distance - match running, distance
-            if vt.name == "Distance" and (
-                "distance" in name_lower or "running" in name_lower or "walking" in name_lower
-            ):
+            if vt.name == "Distance" and ("distance" in name_lower or "running" in name_lower or "km" in name_lower):
                 return vt
-            # Other value types
-            if vt.name == "Percentage" and ("rate" in name_lower or "satisfaction" in name_lower):
-                return vt
-            if vt.name == "Currency" and ("bill" in name_lower or "sales" in name_lower):
-                return vt
-            if vt.name == "Weight" and ("weight" in name_lower or "compost" in name_lower or "waste" in name_lower):
+            if vt.name == "Percentage" and ("rate" in name_lower or "satisfaction" in name_lower or "%" in name_lower):
                 return vt
             if vt.name == "Score" and ("score" in name_lower or "test" in name_lower or "assessment" in name_lower):
                 return vt
-            if vt.name == "Rating" and "level" in name_lower:
+            if vt.name == "Rating" and ("level" in name_lower or "rating" in name_lower):
                 return vt
+
         # Default to Count
-        return next(vt for vt in value_types if vt.name == "Count")
+        return next((vt for vt in value_types if vt.name == "Count"), value_types[0] if value_types else None)
 
     @staticmethod
     def _generate_snapshots(configs, years_of_history, frequency, user_id):
