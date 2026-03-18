@@ -534,9 +534,103 @@ class DemoDataService:
         # Check if organization already exists - if so, delete it completely
         existing_org = Organization.query.filter_by(name=scenario["name"]).first()
         if existing_org:
+            old_org_id = existing_org.id
             # Delete organization (cascading deletes handle related entities)
             db.session.delete(existing_org)
             db.session.commit()
+
+            # VERIFICATION: Check that cascade deletes worked
+            # Query for any orphaned data that should have been deleted
+            orphaned_data = []
+
+            # Check Spaces (should be 0)
+            space_count = Space.query.filter_by(organization_id=old_org_id).count()
+            if space_count > 0:
+                orphaned_data.append(f"Spaces: {space_count}")
+
+            # Check Challenges (should be 0)
+            challenge_count = Challenge.query.filter_by(organization_id=old_org_id).count()
+            if challenge_count > 0:
+                orphaned_data.append(f"Challenges: {challenge_count}")
+
+            # Check Initiatives (should be 0)
+            initiative_count = Initiative.query.filter_by(organization_id=old_org_id).count()
+            if initiative_count > 0:
+                orphaned_data.append(f"Initiatives: {initiative_count}")
+
+            # Check Systems (should be 0)
+            system_count = System.query.filter_by(organization_id=old_org_id).count()
+            if system_count > 0:
+                orphaned_data.append(f"Systems: {system_count}")
+
+            # Check KPIs through InitiativeSystemLinks
+            kpi_count = (
+                db.session.query(KPI)
+                .join(InitiativeSystemLink)
+                .join(Initiative)
+                .filter(Initiative.organization_id == old_org_id)
+                .count()
+            )
+            if kpi_count > 0:
+                orphaned_data.append(f"KPIs: {kpi_count}")
+
+            # Check KPIValueTypeConfigs through KPIs (explicit join on kpi_id)
+            config_count = (
+                db.session.query(KPIValueTypeConfig)
+                .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+                .join(InitiativeSystemLink)
+                .join(Initiative)
+                .filter(Initiative.organization_id == old_org_id)
+                .count()
+            )
+            if config_count > 0:
+                orphaned_data.append(f"KPIValueTypeConfigs: {config_count}")
+
+            # Check Snapshots through KPIValueTypeConfigs (explicit joins)
+            snapshot_count = (
+                db.session.query(KPISnapshot)
+                .join(KPIValueTypeConfig, KPISnapshot.kpi_value_type_config_id == KPIValueTypeConfig.id)
+                .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+                .join(InitiativeSystemLink)
+                .join(Initiative)
+                .filter(Initiative.organization_id == old_org_id)
+                .count()
+            )
+            if snapshot_count > 0:
+                orphaned_data.append(f"Snapshots: {snapshot_count}")
+
+            # Check Stakeholders (should be 0)
+            stakeholder_count = Stakeholder.query.filter_by(organization_id=old_org_id).count()
+            if stakeholder_count > 0:
+                orphaned_data.append(f"Stakeholders: {stakeholder_count}")
+
+            # Check StakeholderMaps (should be 0)
+            map_count = StakeholderMap.query.filter_by(organization_id=old_org_id).count()
+            if map_count > 0:
+                orphaned_data.append(f"StakeholderMaps: {map_count}")
+
+            # Check ValueTypes (should be 0)
+            value_type_count = ValueType.query.filter_by(organization_id=old_org_id).count()
+            if value_type_count > 0:
+                orphaned_data.append(f"ValueTypes: {value_type_count}")
+
+            # Check GovernanceBodies (should be 0)
+            gb_count = GovernanceBody.query.filter_by(organization_id=old_org_id).count()
+            if gb_count > 0:
+                orphaned_data.append(f"GovernanceBodies: {gb_count}")
+
+            # If any orphaned data found, raise error
+            if orphaned_data:
+                raise RuntimeError(
+                    f"CASCADE DELETE FAILED! Orphaned data found for organization '{scenario['name']}' (ID {old_org_id}): {', '.join(orphaned_data)}"
+                )
+
+            # Log successful verification
+            import logging
+
+            logging.info(
+                f"✅ CASCADE DELETE VERIFIED: All data for organization '{scenario['name']}' (ID {old_org_id}) was successfully deleted"
+            )
 
         # Create organization with Porter's Five Forces
         org = Organization(
