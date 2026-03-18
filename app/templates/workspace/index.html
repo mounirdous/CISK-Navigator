@@ -4328,30 +4328,67 @@ function workspaceV2(orgId, filterPresets) {
 
         // Expand/Collapse Rows
         expandAllRows() {
+            const expandInitiative = (initiative) => {
+                initiative.collapsed = false;
+                // Expand systems
+                if (initiative.systems) {
+                    initiative.systems.forEach(system => {
+                        system.collapsed = false;
+                    });
+                }
+                // Recursively expand nested challenges
+                if (initiative.challenges) {
+                    initiative.challenges.forEach(challenge => {
+                        challenge.collapsed = false;
+                        if (challenge.initiatives) {
+                            challenge.initiatives.forEach(expandInitiative);
+                        }
+                    });
+                }
+                // Recursively expand nested initiatives
+                if (initiative.initiatives) {
+                    initiative.initiatives.forEach(expandInitiative);
+                }
+            };
+
             this.spaces.forEach(space => {
                 space.collapsed = false;
                 space.challenges.forEach(challenge => {
                     challenge.collapsed = false;
-                    challenge.initiatives.forEach(initiative => {
-                        initiative.collapsed = false;
-                        initiative.systems.forEach(system => {
-                            system.collapsed = false;
-                        });
-                    });
+                    challenge.initiatives.forEach(expandInitiative);
                 });
             });
         },
 
         collapseAllRows() {
+            const collapseInitiative = (initiative) => {
+                initiative.collapsed = true;
+                // Collapse systems
+                if (initiative.systems) {
+                    initiative.systems.forEach(system => {
+                        system.collapsed = true;
+                    });
+                }
+                // Recursively collapse nested challenges
+                if (initiative.challenges) {
+                    initiative.challenges.forEach(challenge => {
+                        challenge.collapsed = true;
+                        if (challenge.initiatives) {
+                            challenge.initiatives.forEach(collapseInitiative);
+                        }
+                    });
+                }
+                // Recursively collapse nested initiatives
+                if (initiative.initiatives) {
+                    initiative.initiatives.forEach(collapseInitiative);
+                }
+            };
+
             this.spaces.forEach(space => {
                 space.collapsed = true;
                 space.challenges.forEach(challenge => {
                     challenge.collapsed = true;
-                    challenge.initiatives.forEach(initiative => {
-                        initiative.collapsed = true;
-                        initiative.systems.forEach(system => {
-                            system.collapsed = true;
-                        });
+                    challenge.initiatives.forEach(collapseInitiative);
                     });
                 });
             });
