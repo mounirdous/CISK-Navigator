@@ -729,7 +729,7 @@ def snapshot_pivot():
     """
     Pivot table view of snapshots: KPIs as rows, time periods as columns.
 
-    Allows filtering by year, view type (monthly/quarterly/yearly), space, and value type.
+    Allows filtering by year, view type (daily/weekly/monthly/quarterly/yearly), space, and value type.
     """
     org_id = session.get("organization_id")
 

@@ -1,12 +1,27 @@
-# 🧭 CISK Navigator v2.10.6
+# 🧭 CISK Navigator v2.10.7
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.10.6-blue)
+![Version](https://img.shields.io/badge/version-2.10.7-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-![Tests](https://img.shields.io/badge/tests-246%20passing-success)
+![Tests](https://img.shields.io/badge/tests-254%20passing-success)
+
+## ✨ What's New in v2.10.7 (March 2026)
+
+### 📊 **Weekly Pivot Analysis**
+New time-series view for finer-grained snapshot analysis:
+
+**What's New**:
+- **Weekly View** added to Snapshot Pivot Analysis
+- Snapshots now grouped by ISO week (Week 1-53)
+- Complements existing Daily, Monthly, Quarterly, and Yearly views
+
+**Why This Matters**:
+- More granular than monthly, less noisy than daily
+- Perfect for tracking weekly progress on short-term initiatives
+- Uses ISO 8601 week calendar for consistency
 
 ## ✨ What's New in v2.10.6 (March 2026)
 

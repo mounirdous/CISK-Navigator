@@ -473,6 +473,13 @@
                                         <i class="bi bi-map-fill"></i> Map View
                                     </a>
                                 </li>
+                                {% if org_id %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.snapshot_pivot') }}">
+                                        <i class="bi bi-table"></i> Snapshot Analysis
+                                    </a>
+                                </li>
+                                {% endif %}
                             </ul>
                         </li>
                         {# Beta Testing Menu - Only visible if beta is enabled AND user is a beta tester #}

@@ -36,6 +36,7 @@
                         <label class="form-label">View Type</label>
                         <select name="view_type" id="view_type" class="form-select" style="border-radius: 8px;">
                             <option value="daily" {% if view_type == 'daily' %}selected{% endif %}>Daily</option>
+                            <option value="weekly" {% if view_type == 'weekly' %}selected{% endif %}>Weekly</option>
                             <option value="monthly" {% if view_type == 'monthly' %}selected{% endif %}>Monthly</option>
                             <option value="quarterly" {% if view_type == 'quarterly' %}selected{% endif %}>Quarterly</option>
                             <option value="yearly" {% if view_type == 'yearly' %}selected{% endif %}>Yearly</option>

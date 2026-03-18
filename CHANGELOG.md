@@ -5,6 +5,34 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.7] - 2026-03-18
+
+### Added - Weekly Pivot Analysis
+
+**New Feature**: Weekly view type added to Snapshot Pivot Analysis.
+
+**What Changed**:
+- Added "Weekly" option to View Type dropdown in pivot analysis
+- Snapshots can now be grouped by ISO week (Week 1-53)
+- Weekly periods labeled as "Week N YYYY" format
+
+**Use Cases**:
+- Track weekly progress on short-term initiatives
+- More granular than monthly view without the noise of daily data
+- Perfect for sprint-based workflows and weekly reporting
+
+**Technical Details**:
+- Uses Python's `isocalendar()` method for ISO 8601 week calculation
+- Snapshots grouped by (iso_year, iso_week) tuple
+- Supports all existing filters (space, challenge, value type, date ranges)
+
+**Files Modified:**
+- `app/services/snapshot_pivot_service.py` - Added weekly period generation and grouping
+- `app/templates/workspace/snapshot_pivot.html` - Added "Weekly" option to view type dropdown
+- `app/routes/workspace.py` - Updated docstring to include weekly view
+
+**Impact**: Enhances time-series analysis capabilities with an additional granularity option.
+
 ## [2.10.6] - 2026-03-18
 
 ### Fixed - Workspace Not Refreshing After Entity Creation

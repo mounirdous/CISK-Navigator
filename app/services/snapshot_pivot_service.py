@@ -49,12 +49,12 @@ class SnapshotPivotService:
         Args:
             organization_id: Organization ID
             year: Year to analyze (legacy - use year_start/year_end instead)
-            view_type: 'daily', 'monthly', 'quarterly', or 'yearly'
+            view_type: 'daily', 'weekly', 'monthly', 'quarterly', or 'yearly'
             space_id: Optional space filter
             value_type_id: Optional value type filter
             year_start: Start year for range
             year_end: End year for range
-            periods: List of quarters (1-4) or months (1-12) to include
+            periods: List of quarters (1-4), months (1-12), or weeks (1-53) to include
             custom_months: List of (year, month) tuples for custom date range
 
         Returns:
@@ -131,6 +131,14 @@ class SnapshotPivotService:
                 if snapshot.snapshot_date:
                     unique_dates.add(snapshot.snapshot_date)
             all_periods = [date.strftime("%Y-%m-%d") for date in sorted(unique_dates)]
+        elif view_type == "weekly":
+            # Weekly view: collect all unique (year, week) combinations from snapshots
+            unique_weeks = set()
+            for snapshot, config, kpi, value_type in results:
+                if snapshot.snapshot_date:
+                    iso_year, iso_week, _ = snapshot.snapshot_date.isocalendar()
+                    unique_weeks.add((iso_year, iso_week))
+            all_periods = [f"Week {week} {year}" for year, week in sorted(unique_weeks)]
         elif custom_months:
             # Custom range: show based on view_type
             if view_type == "monthly":
@@ -176,6 +184,12 @@ class SnapshotPivotService:
             # Determine period key
             if view_type == "daily":
                 period_label = snapshot.snapshot_date.strftime("%Y-%m-%d") if snapshot.snapshot_date else None
+            elif view_type == "weekly":
+                if snapshot.snapshot_date:
+                    iso_year, iso_week, _ = snapshot.snapshot_date.isocalendar()
+                    period_label = f"Week {iso_week} {iso_year}"
+                else:
+                    period_label = None
             elif view_type == "monthly":
                 period_label = f"{SnapshotPivotService._month_name(snapshot.month)} {snapshot.year}"
             elif view_type == "quarterly":
