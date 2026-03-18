@@ -628,7 +628,9 @@ class DemoDataService:
                 # Connect to 1-2 other stakeholders
                 targets = random.sample(map_stakeholders[i + 1 :], min(2, len(map_stakeholders) - i - 1))
                 for target in targets:
-                    relationship_type = random.choice(["reports_to", "collaborates_with", "influences", "depends_on"])
+                    relationship_type = random.choice(
+                        ["reports_to", "influences", "collaborates", "sponsors", "blocks"]
+                    )
                     rel = StakeholderRelationship(
                         from_stakeholder_id=source.id,
                         to_stakeholder_id=target.id,
