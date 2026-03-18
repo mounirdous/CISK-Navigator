@@ -92,6 +92,18 @@
             </p>
         </div>
 
+        {% if value_type.is_formula() %}
+        <!-- Formula Value Type Info -->
+        <div class="alert alert-info" style="border-left: 4px solid #0dcaf0; border-radius: 12px;">
+            <h6><i class="bi bi-table"></i> Formula Value Type</h6>
+            <p class="mb-2"><strong>{{ value_type.name }}</strong> is a formula-based value type that automatically calculates from other value types.</p>
+            <p class="mb-0">
+                <i class="bi bi-info-circle"></i>
+                Display settings (scale, decimals) must be set manually at each level - there are no KPIs to inherit from since formulas calculate at rollup levels.
+            </p>
+        </div>
+        {% endif %}
+
         <!-- Smart Default Summary -->
         <div class="alert alert-success" style="border-left: 4px solid #28a745; border-radius: 12px;">
             <h6><i class="bi bi-check-circle-fill"></i> Smart Rollup Active</h6>
@@ -175,12 +187,14 @@
                             <div class="col-md-6">
                                 <label for="display_scale_system" class="form-label small fw-semibold">Display Scale</label>
                                 <select class="form-select" id="display_scale_system" name="display_scale_system">
+                                    {% if not value_type.is_formula() %}
                                     <option value="" {% if not current_system_rule or not current_system_rule.display_scale %}selected{% endif %}>Inherit from KPIs (Smart)</option>
-                                    <option value="default" {% if current_system_rule and current_system_rule.display_scale == 'default' %}selected{% endif %}>Normal (Full Numbers)</option>
+                                    {% endif %}
+                                    <option value="default" {% if current_system_rule and current_system_rule.display_scale == 'default' %}selected{% endif %}{% if value_type.is_formula() and (not current_system_rule or not current_system_rule.display_scale) %}selected{% endif %}>Normal (Full Numbers)</option>
                                     <option value="thousands" {% if current_system_rule and current_system_rule.display_scale == 'thousands' %}selected{% endif %}>Thousands (k)</option>
                                     <option value="millions" {% if current_system_rule and current_system_rule.display_scale == 'millions' %}selected{% endif %}>Millions (M)</option>
                                 </select>
-                                <small class="form-text text-muted">Format for System-level rollup values</small>
+                                <small class="form-text text-muted">{% if value_type.is_formula() %}Format for formula value rollups{% else %}Format for System-level rollup values{% endif %}</small>
                             </div>
                             <div class="col-md-6">
                                 <label for="display_decimals_system" class="form-label small fw-semibold">Display Decimals</label>
@@ -238,8 +252,10 @@
                             <div class="col-md-6">
                                 <label for="display_scale_initiative" class="form-label small fw-semibold">Display Scale</label>
                                 <select class="form-select" id="display_scale_initiative" name="display_scale_initiative">
+                                    {% if not value_type.is_formula() %}
                                     <option value="" {% if not current_initiative_rule or not current_initiative_rule.display_scale %}selected{% endif %}>Inherit from Systems (Smart)</option>
-                                    <option value="default" {% if current_initiative_rule and current_initiative_rule.display_scale == 'default' %}selected{% endif %}>Normal (Full Numbers)</option>
+                                    {% endif %}
+                                    <option value="default" {% if current_initiative_rule and current_initiative_rule.display_scale == 'default' %}selected{% endif %}{% if value_type.is_formula() and (not current_initiative_rule or not current_initiative_rule.display_scale) %}selected{% endif %}>Normal (Full Numbers)</option>
                                     <option value="thousands" {% if current_initiative_rule and current_initiative_rule.display_scale == 'thousands' %}selected{% endif %}>Thousands (k)</option>
                                     <option value="millions" {% if current_initiative_rule and current_initiative_rule.display_scale == 'millions' %}selected{% endif %}>Millions (M)</option>
                                 </select>
@@ -301,8 +317,10 @@
                             <div class="col-md-6">
                                 <label for="display_scale_challenge" class="form-label small fw-semibold">Display Scale</label>
                                 <select class="form-select" id="display_scale_challenge" name="display_scale_challenge">
+                                    {% if not value_type.is_formula() %}
                                     <option value="" {% if not current_challenge_rule or not current_challenge_rule.display_scale %}selected{% endif %}>Inherit from Initiatives (Smart)</option>
-                                    <option value="default" {% if current_challenge_rule and current_challenge_rule.display_scale == 'default' %}selected{% endif %}>Normal (Full Numbers)</option>
+                                    {% endif %}
+                                    <option value="default" {% if current_challenge_rule and current_challenge_rule.display_scale == 'default' %}selected{% endif %}{% if value_type.is_formula() and (not current_challenge_rule or not current_challenge_rule.display_scale) %}selected{% endif %}>Normal (Full Numbers)</option>
                                     <option value="thousands" {% if current_challenge_rule and current_challenge_rule.display_scale == 'thousands' %}selected{% endif %}>Thousands (k)</option>
                                     <option value="millions" {% if current_challenge_rule and current_challenge_rule.display_scale == 'millions' %}selected{% endif %}>Millions (M)</option>
                                 </select>
