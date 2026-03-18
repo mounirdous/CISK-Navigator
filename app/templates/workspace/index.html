@@ -2181,9 +2181,9 @@
                     <div class="ws-header-cell"
                          :class="{'draggable-column': editMode, 'column-collapsed': vt.collapsed}"
                          :draggable="editMode"
-                         @dragstart="dragColumnStart($event, index)"
-                         @dragover.prevent="dragColumnOver($event, index)"
-                         @drop="dragColumnDrop($event, index)"
+                         @dragstart="dragColumnStart($event, vt.id)"
+                         @dragover.prevent="dragColumnOver($event, vt.id)"
+                         @drop="dragColumnDrop($event, vt.id)"
                          @dragend="dragColumnEnd($event)">
                         <!-- Collapse Icon -->
                         <span class="collapse-column-icon"
@@ -3208,7 +3208,7 @@ function workspaceV2(orgId, filterPresets) {
         loading: true,
         filtersExpanded: false,
         editMode: false,
-        draggedColumnIndex: null,
+        draggedColumnId: null,  // Store value type ID, not index
         draggedRow: null,
         dragOverRow: null,
         actionItemsCount: 0,
@@ -4040,15 +4040,15 @@ function workspaceV2(orgId, filterPresets) {
 
 
         // Column drag and drop
-        dragColumnStart(e, index) {
+        dragColumnStart(e, vtId) {
             if (!this.editMode) return;
-            this.draggedColumnIndex = index;
+            this.draggedColumnId = vtId;
             e.dataTransfer.effectAllowed = 'move';
             e.target.classList.add('dragging');
         },
 
-        dragColumnOver(e, index) {
-            if (!this.editMode || this.draggedColumnIndex === null) return;
+        dragColumnOver(e, vtId) {
+            if (!this.editMode || this.draggedColumnId === null) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
 
@@ -4056,24 +4056,29 @@ function workspaceV2(orgId, filterPresets) {
             document.querySelectorAll('.ws-header-cell.drag-over').forEach(el => el.classList.remove('drag-over'));
 
             // Add to current column only if different from dragged
-            if (this.draggedColumnIndex !== index) {
+            if (this.draggedColumnId !== vtId) {
                 e.currentTarget.classList.add('drag-over');
             }
         },
 
-        async dragColumnDrop(e, dropIndex) {
-            if (!this.editMode || this.draggedColumnIndex === null) return;
+        async dragColumnDrop(e, dropVtId) {
+            if (!this.editMode || this.draggedColumnId === null) return;
             e.preventDefault();
 
-            const dragIndex = this.draggedColumnIndex;
-            if (dragIndex === dropIndex) return;
+            if (this.draggedColumnId === dropVtId) return;
+
+            // Find actual indices in the FULL valueTypes array (not filtered visible ones)
+            const dragIndex = this.valueTypes.findIndex(vt => vt.id === this.draggedColumnId);
+            const dropIndex = this.valueTypes.findIndex(vt => vt.id === dropVtId);
+
+            if (dragIndex === -1 || dropIndex === -1) return;
 
             // Reorder valueTypes array
             const draggedItem = this.valueTypes[dragIndex];
             this.valueTypes.splice(dragIndex, 1);
             this.valueTypes.splice(dropIndex, 0, draggedItem);
 
-            console.log('Column reordered:', draggedItem.name, 'to position', dropIndex);
+            console.log('Column reordered:', draggedItem.name, 'from index', dragIndex, 'to', dropIndex);
 
             // Save new order to backend
             try {
@@ -4103,7 +4108,7 @@ function workspaceV2(orgId, filterPresets) {
         dragColumnEnd(e) {
             e.target.classList.remove('dragging');
             document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-            this.draggedColumnIndex = null;
+            this.draggedColumnId = null;
         },
 
         // Row drag and drop
