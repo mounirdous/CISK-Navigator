@@ -4329,15 +4329,17 @@ function workspaceV2(orgId, filterPresets) {
         // Expand/Collapse Rows
         expandAllRows() {
             const expandInitiative = (initiative, depth = 0) => {
-                console.log('  '.repeat(depth) + `Expanding initiative: ${initiative.name}, has systems: ${!!initiative.systems}, has nested initiatives: ${!!initiative.initiatives}`);
+                console.log('  '.repeat(depth) + `Expanding initiative: ${initiative.name}, collapsed BEFORE: ${initiative.collapsed}`);
                 initiative.collapsed = false;
+                console.log('  '.repeat(depth) + `  collapsed AFTER: ${initiative.collapsed}, has systems: ${!!initiative.systems}, has nested initiatives: ${!!initiative.initiatives}`);
 
                 // Expand systems
                 if (initiative.systems) {
                     console.log('  '.repeat(depth) + `  Found ${initiative.systems.length} systems`);
                     initiative.systems.forEach(system => {
+                        console.log('  '.repeat(depth) + `    System: ${system.name}, collapsed BEFORE: ${system.collapsed}`);
                         system.collapsed = false;
-                        console.log('  '.repeat(depth) + `    System: ${system.name}, has KPIs: ${!!system.kpis}`);
+                        console.log('  '.repeat(depth) + `      collapsed AFTER: ${system.collapsed}, has KPIs: ${!!system.kpis}`);
                         // Expand KPIs (if they have a collapsed property)
                         if (system.kpis) {
                             system.kpis.forEach(kpi => {
@@ -4375,6 +4377,21 @@ function workspaceV2(orgId, filterPresets) {
                     console.log(`  Challenge: ${challenge.name}`);
                     challenge.collapsed = false;
                     challenge.initiatives.forEach(init => expandInitiative(init, 1));
+                });
+            });
+
+            // Verify the state after expansion
+            console.log('\n=== VERIFICATION AFTER EXPAND ===');
+            this.spaces.forEach(space => {
+                space.challenges.forEach(challenge => {
+                    challenge.initiatives.forEach(initiative => {
+                        console.log(`Initiative: ${initiative.name}, collapsed: ${initiative.collapsed}, systems: ${initiative.systems.length}`);
+                        if (initiative.systems) {
+                            initiative.systems.forEach(system => {
+                                console.log(`  System: ${system.name}, collapsed: ${system.collapsed}`);
+                            });
+                        }
+                    });
                 });
             });
         },
