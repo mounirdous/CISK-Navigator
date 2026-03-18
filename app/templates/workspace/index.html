@@ -4382,13 +4382,18 @@ function workspaceV2(orgId, filterPresets) {
 
             // Verify the state after expansion
             console.log('\n=== VERIFICATION AFTER EXPAND ===');
+            console.log('showLevels.systems:', this.showLevels.systems);
+            console.log('showLevels:', JSON.stringify(this.showLevels));
             this.spaces.forEach(space => {
                 space.challenges.forEach(challenge => {
                     challenge.initiatives.forEach(initiative => {
                         console.log(`Initiative: ${initiative.name}, collapsed: ${initiative.collapsed}, systems: ${initiative.systems.length}`);
+                        console.log(`  Render conditions: space.collapsed=${space.collapsed}, challenge.collapsed=${challenge.collapsed}, initiative.collapsed=${initiative.collapsed}`);
                         if (initiative.systems) {
                             initiative.systems.forEach(system => {
                                 console.log(`  System: ${system.name}, collapsed: ${system.collapsed}`);
+                                const shouldShow = this.showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed;
+                                console.log(`    Should show? ${shouldShow} (showLevels.systems=${this.showLevels.systems})`);
                             });
                         }
                     });
