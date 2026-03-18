@@ -158,6 +158,7 @@ class UserOrganizationMembership(db.Model):
     can_view_stakeholders = db.Column(db.Boolean, default=False, nullable=False, comment="View stakeholders")
     can_manage_stakeholders = db.Column(db.Boolean, default=False, nullable=False, comment="Create/edit stakeholders")
     can_view_map = db.Column(db.Boolean, default=True, nullable=False, comment="View map dashboard")
+    can_edit_porters = db.Column(db.Boolean, default=True, nullable=False, comment="Edit Porter's Five Forces analysis")
 
     # Unique constraint: one user cannot be assigned twice to the same organization
     __table_args__ = (db.UniqueConstraint("user_id", "organization_id", name="uq_user_org"),)

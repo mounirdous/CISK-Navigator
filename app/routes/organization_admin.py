@@ -192,10 +192,15 @@ def organization_porters():
 @bp.route("/porters/edit", methods=["GET", "POST"])
 @login_required
 @organization_required
-@any_org_admin_permission_required
 def edit_organization_porters():
     """Edit Porter's Five Forces analysis for the organization"""
     org_id = session.get("organization_id")
+
+    # Check permission to edit Porter's
+    if not current_user.can_edit_porters(org_id):
+        flash("You do not have permission to edit Porter's Five Forces analysis", "danger")
+        return redirect(url_for("organization_admin.organization_porters"))
+
     org = Organization.query.get_or_404(org_id)
 
     if request.method == "POST":

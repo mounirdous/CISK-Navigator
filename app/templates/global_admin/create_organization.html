@@ -330,6 +330,16 @@
                                                         </label>
                                                     </div>
                                                 </div>
+
+                                                <div class="col-md-12">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_edit_porters_{{ user.id }}" id="perm_edit_porters_{{ user.id }}"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('edit_porters', True) %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_edit_porters_{{ user.id }}">
+                                                            <i class="bi bi-grid-3x3"></i> Edit Porter's Five Forces
+                                                        </label>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
