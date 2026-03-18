@@ -2490,7 +2490,10 @@
                                                     </span>
                                                     <!-- Value display by type -->
                                                     <template x-if="vt.kind === 'numeric'">
-                                                        <span><span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span><span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span></span>
+                                                        <span>
+                                                            <span :style="'color: ' + (challenge.rollup_values[String(vt.id)].color || '#6c757d') + (vt.calculation_type === 'formula' ? '; font-style: italic' : '')" x-text="challenge.rollup_values[String(vt.id)].formatted_value || challenge.rollup_values[String(vt.id)].value"></span>
+                                                            <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
+                                                        </span>
                                                     </template>
                                                     <template x-if="vt.kind === 'risk'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">!!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">!!!</span></span></template>
                                                     <template x-if="vt.kind === 'positive_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">★★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">★★★</span></span></template>
