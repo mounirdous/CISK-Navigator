@@ -906,32 +906,38 @@ class DemoDataService:
         for idx, user in enumerate(users):
             role = role_names[idx] if idx < len(role_names) else "viewer"
 
-            # Set permissions based on role
-            is_admin = role == "admin"
-            can_contribute = role in ["admin", "contributor"]
+            # Check if user is already a member
+            existing_membership = UserOrganizationMembership.query.filter_by(
+                user_id=user.id, organization_id=org.id
+            ).first()
 
-            membership = UserOrganizationMembership(
-                user_id=user.id,
-                organization_id=org.id,
-                is_org_admin=is_admin,
-                can_manage_spaces=is_admin,
-                can_manage_value_types=is_admin,
-                can_manage_governance_bodies=is_admin,
-                can_manage_challenges=is_admin,
-                can_manage_initiatives=can_contribute,
-                can_manage_systems=can_contribute,
-                can_manage_kpis=can_contribute,
-                can_view_comments=True,
-                can_add_comments=can_contribute,
-                can_contribute=can_contribute,
-                can_view_action_items=True,
-                can_create_action_items=can_contribute,
-                can_view_stakeholders=True,
-                can_manage_stakeholders=is_admin,
-                can_view_map=True,
-                can_edit_porters=is_admin,
-            )
-            db.session.add(membership)
+            if not existing_membership:
+                # Set permissions based on role
+                is_admin = role == "admin"
+                can_contribute = role in ["admin", "contributor"]
+
+                membership = UserOrganizationMembership(
+                    user_id=user.id,
+                    organization_id=org.id,
+                    is_org_admin=is_admin,
+                    can_manage_spaces=is_admin,
+                    can_manage_value_types=is_admin,
+                    can_manage_governance_bodies=is_admin,
+                    can_manage_challenges=is_admin,
+                    can_manage_initiatives=can_contribute,
+                    can_manage_systems=can_contribute,
+                    can_manage_kpis=can_contribute,
+                    can_view_comments=True,
+                    can_add_comments=can_contribute,
+                    can_contribute=can_contribute,
+                    can_view_action_items=True,
+                    can_create_action_items=can_contribute,
+                    can_view_stakeholders=True,
+                    can_manage_stakeholders=is_admin,
+                    can_view_map=True,
+                    can_edit_porters=is_admin,
+                )
+                db.session.add(membership)
 
         db.session.flush()
 
@@ -1609,8 +1615,12 @@ class DemoDataService:
 
     @staticmethod
     def _create_action_items(org_id, initiatives, kpis, users):
-        """Create sample action items in various states, distributed among demo users"""
+        """Create sample action items and memos, distributed among admin and contributor users only"""
         action_items = []
+
+        # Only use admin and contributor (not viewer - they can't create actions)
+        # Users list is: [admin, contributor, viewer]
+        allowed_users = users[0:2]  # First 2 users only
 
         # Sample action items
         sample_actions = [
@@ -1624,15 +1634,31 @@ class DemoDataService:
             ("Plan next sprint", "Define priorities and deliverables for next period"),
         ]
 
-        # Create 5-10 action items, distributed among demo users only
-        num_items = random.randint(5, 10)
-        for i in range(num_items):
+        # Sample memos
+        sample_memos = [
+            (
+                "Q1 Performance Review Complete",
+                "All Q1 KPIs have been reviewed and validated. Overall performance exceeded targets by 12%.",
+            ),
+            (
+                "New Stakeholder Engagement Protocol",
+                "Updated protocol for stakeholder reviews now includes monthly check-ins rather than quarterly.",
+            ),
+            (
+                "System Integration Success",
+                "Successfully integrated new monitoring systems with existing dashboards. All metrics flowing correctly.",
+            ),
+        ]
+
+        # Create 5-8 action items, distributed between admin and contributor
+        num_actions = random.randint(5, 8)
+        for i in range(num_actions):
             title, description = random.choice(sample_actions)
             status = random.choice(["active", "active", "completed", "draft"])  # Weight towards active
             priority = random.choice(["low", "medium", "medium", "high", "urgent"])  # Weight towards medium
 
-            # Rotate through demo users for ownership
-            user = users[i % len(users)]
+            # Rotate between admin and contributor only
+            user = allowed_users[i % len(allowed_users)]
 
             action_item = ActionItem(
                 organization_id=org_id,
@@ -1647,6 +1673,25 @@ class DemoDataService:
             )
             db.session.add(action_item)
             action_items.append(action_item)
+
+        # Create 2-3 memos
+        num_memos = random.randint(2, 3)
+        for i in range(num_memos):
+            title, description = random.choice(sample_memos)
+            user = allowed_users[i % len(allowed_users)]
+
+            memo = ActionItem(
+                organization_id=org_id,
+                type="memo",
+                title=title,
+                description=description,
+                status="active",  # Memos don't have status like actions
+                owner_user_id=user.id,
+                created_by_user_id=user.id,
+                visibility="shared",
+            )
+            db.session.add(memo)
+            action_items.append(memo)
 
         return len(action_items)
 
