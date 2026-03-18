@@ -3569,12 +3569,127 @@ def get_data():
             )
         return result
 
+    # Helper function to calculate formula value types from rollup values
+    def calculate_formula_value_types(rollup_values_dict, all_value_types, color_config_getter=None):
+        """
+        Calculate formula value types from existing rollup values.
+
+        Args:
+            rollup_values_dict: dict of {value_type_id: {value, formatted_value, ...}}
+            all_value_types: list of all ValueType objects
+            color_config_getter: optional function to get color config for a value type
+
+        Returns:
+            Updated rollup_values_dict with formula value types added
+        """
+        from flask import current_app
+        from simpleeval import FunctionNotDefined, InvalidExpression, simple_eval
+
+        for vt in all_value_types:
+            if not vt.is_formula() or vt.id in rollup_values_dict:
+                continue  # Skip non-formula or already calculated
+
+            if not vt.calculation_config:
+                continue
+
+            mode = vt.calculation_config.get("mode", "simple")
+
+            try:
+                if mode == "advanced":
+                    # Advanced mode: Python expression with variable names
+                    expression = vt.calculation_config.get("expression")
+                    if not expression:
+                        continue
+
+                    # Build context from rollup values
+                    context = {}
+                    for other_vt in all_value_types:
+                        if other_vt.id in rollup_values_dict and not other_vt.is_formula():
+                            var_name = other_vt.name.lower().replace(" ", "_").replace("-", "_")
+                            value = rollup_values_dict[other_vt.id].get("value")
+                            if value is not None:
+                                context[var_name] = float(value)
+
+                    # Evaluate expression
+                    result = simple_eval(expression, names=context)
+                    if result is not None:
+                        calculated_value = float(result)
+                    else:
+                        continue
+
+                else:
+                    # Simple mode: operation on source value types
+                    operation = vt.calculation_config.get("operation")
+                    source_value_type_ids = vt.calculation_config.get("source_value_type_ids", [])
+
+                    if not operation or not source_value_type_ids:
+                        continue
+
+                    # Check if all source value types have rollup values
+                    source_values = []
+                    for source_vt_id in source_value_type_ids:
+                        if source_vt_id in rollup_values_dict:
+                            value = rollup_values_dict[source_vt_id].get("value")
+                            if value is not None:
+                                source_values.append(float(value))
+                            else:
+                                break  # Missing value
+                        else:
+                            break  # Source not in rollup
+
+                    if len(source_values) != len(source_value_type_ids):
+                        continue  # Not all sources available
+
+                    # Apply operation
+                    if operation == "add":
+                        calculated_value = sum(source_values)
+                    elif operation == "subtract":
+                        calculated_value = source_values[0]
+                        for v in source_values[1:]:
+                            calculated_value -= v
+                    elif operation == "multiply":
+                        calculated_value = 1.0
+                        for v in source_values:
+                            calculated_value *= v
+                    elif operation == "divide":
+                        if len(source_values) < 2 or source_values[1] == 0:
+                            continue
+                        calculated_value = source_values[0] / source_values[1]
+                    else:
+                        continue
+
+                # Format and add to rollup values
+                color_config = color_config_getter(vt.id) if color_config_getter else None
+                formatted_value = current_app.jinja_env.filters["format_value"](calculated_value, vt, color_config)
+
+                if color_config and hasattr(color_config, "get_value_color"):
+                    color = color_config.get_value_color(calculated_value)
+                else:
+                    color = current_app.jinja_env.filters["default_value_color"](calculated_value)
+
+                rollup_values_dict[vt.id] = {
+                    "value": calculated_value,
+                    "formatted_value": formatted_value,
+                    "unit_label": vt.unit_label,
+                    "color": color or "#6c757d",
+                    "formula": vt.get_formula_display(),
+                    "is_complete": True,
+                }
+
+            except (FunctionNotDefined, InvalidExpression, ZeroDivisionError, Exception):
+                continue  # Skip on any error
+
+        return rollup_values_dict
+
     # Build full hierarchical tree: Spaces → Challenges → Initiatives → Systems → KPIs
     spaces_data = []
     for space in spaces:
-        # Get space rollup values
+        # Get space rollup values (non-formula value types)
         space_rollup_values = {}
         for vt in value_types:
+            if vt.is_formula():
+                continue  # Skip formulas in first pass
+
             rollup_data = space.get_rollup_value(vt.id)
             if rollup_data and rollup_data.get("value") is not None:
                 # Get color config for formatting
@@ -3603,6 +3718,11 @@ def get_data():
                     "is_complete": rollup_data.get("is_complete", False),
                 }
 
+        # Second pass: Calculate formula value types from rollup values
+        space_rollup_values = calculate_formula_value_types(
+            space_rollup_values, value_types, lambda vt_id: space.get_color_config(vt_id)
+        )
+
         # Get space SWOT completion
         swot_filled, swot_total, swot_status = space.get_swot_completion()
         swot_completion = {
@@ -3616,9 +3736,12 @@ def get_data():
 
         challenges_data = []
         for challenge in space.challenges:
-            # Get challenge rollup values
+            # Get challenge rollup values (non-formula value types)
             challenge_rollup_values = {}
             for vt in value_types:
+                if vt.is_formula():
+                    continue  # Skip formulas in first pass
+
                 rollup_data = challenge.get_rollup_value(vt.id)
                 if rollup_data and rollup_data.get("value") is not None:
                     color_config = challenge.get_color_config(vt.id)
@@ -3641,6 +3764,11 @@ def get_data():
                         "is_complete": rollup_data.get("is_complete", False),
                     }
 
+            # Second pass: Calculate formula value types from rollup values
+            challenge_rollup_values = calculate_formula_value_types(
+                challenge_rollup_values, value_types, lambda vt_id: challenge.get_color_config(vt_id)
+            )
+
             # Get challenge entity links
             challenge_entity_links = get_entity_links("challenge", challenge.id)
 
@@ -3649,9 +3777,12 @@ def get_data():
             for link in challenge.initiative_links:
                 initiative = link.initiative
 
-                # Get initiative rollup values
+                # Get initiative rollup values (non-formula value types)
                 initiative_rollup_values = {}
                 for vt in value_types:
+                    if vt.is_formula():
+                        continue  # Skip formulas in first pass
+
                     rollup_data = initiative.get_rollup_value(vt.id)
                     if rollup_data and rollup_data.get("value") is not None:
                         color_config = initiative.get_color_config(vt.id)
@@ -3674,6 +3805,11 @@ def get_data():
                             "is_complete": rollup_data.get("is_complete", False),
                         }
 
+                # Second pass: Calculate formula value types from rollup values
+                initiative_rollup_values = calculate_formula_value_types(
+                    initiative_rollup_values, value_types, lambda vt_id: initiative.get_color_config(vt_id)
+                )
+
                 # Get initiative form completion
                 form_filled, form_total, form_status = initiative.get_form_completion()
                 form_completion = {
@@ -3690,9 +3826,12 @@ def get_data():
                 for sys_link in initiative.system_links:
                     system = sys_link.system
 
-                    # Get system rollup values
+                    # Get system rollup values (non-formula value types)
                     system_rollup_values = {}
                     for vt in value_types:
+                        if vt.is_formula():
+                            continue  # Skip formulas in first pass
+
                         rollup_data = sys_link.get_rollup_value(vt.id)
                         if rollup_data and rollup_data.get("value") is not None:
                             color_config = sys_link.get_color_config(vt.id)
@@ -3715,6 +3854,11 @@ def get_data():
                                 "is_complete": rollup_data.get("is_complete", False),
                             }
 
+                    # Second pass: Calculate formula value types from rollup values
+                    system_rollup_values = calculate_formula_value_types(
+                        system_rollup_values, value_types, lambda vt_id: sys_link.get_color_config(vt_id)
+                    )
+
                     # Get system entity links
                     system_entity_links = get_entity_links("system", system.id)
 
@@ -3726,6 +3870,39 @@ def get_data():
                         for vt in value_types:
                             # Find config for this value type
                             config = next((c for c in kpi.value_type_configs if c.value_type_id == vt.id), None)
+
+                            # For formula value types: calculate on-the-fly if no config exists but source value types are available
+                            if not config and vt.is_formula():
+                                # Check if this KPI has all required source value types
+                                source_value_type_ids = (
+                                    vt.calculation_config.get("source_value_type_ids", [])
+                                    if vt.calculation_config.get("mode") == "simple"
+                                    else []
+                                )
+
+                                if vt.calculation_config.get("mode") == "advanced":
+                                    # For advanced mode, extract variable names from configs and check if they exist
+                                    can_calculate = True
+                                else:
+                                    # For simple mode, check if all source value types have configs on this KPI
+                                    source_configs = [
+                                        c for c in kpi.value_type_configs if c.value_type_id in source_value_type_ids
+                                    ]
+                                    can_calculate = len(source_configs) == len(source_value_type_ids)
+
+                                if can_calculate:
+                                    # Create temporary config for calculation (not persisted to DB)
+                                    from app.models import KPIValueTypeConfig
+
+                                    temp_config = KPIValueTypeConfig(
+                                        kpi_id=kpi.id,
+                                        value_type_id=vt.id,
+                                        calculation_type="manual",  # Not used for formula value types
+                                    )
+                                    temp_config.value_type = vt
+                                    temp_config.kpi = kpi
+                                    config = temp_config
+
                             if config:
                                 consensus = config.get_consensus_value()
 
