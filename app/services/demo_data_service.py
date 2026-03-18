@@ -533,9 +533,9 @@ class DemoDataService:
                                             "name": "Energy Generation",
                                             "kpis": [
                                                 {"name": "Daily Solar Output", "frequency": "daily"},
-                                                {"name": "Weekly Energy Savings", "frequency": "weekly"},
-                                                {"name": "Monthly Electricity Bill", "frequency": "monthly"},
-                                                {"name": "Yearly Carbon Offset", "frequency": "yearly"},
+                                                {"name": "Weekly Energy Savings Cost", "frequency": "weekly"},
+                                                {"name": "Monthly Electricity Cost", "frequency": "monthly"},
+                                                {"name": "Yearly Carbon Offset Cost", "frequency": "yearly"},
                                             ],
                                         },
                                         {
@@ -543,7 +543,7 @@ class DemoDataService:
                                             "kpis": [
                                                 {"name": "Monthly Installation Cost", "frequency": "monthly"},
                                                 {"name": "Monthly Energy Revenue", "frequency": "monthly"},
-                                                {"name": "Monthly Net Profit", "frequency": "monthly", "formula": True},
+                                                # Net is calculated by formula value type (Revenue - Cost)
                                             ],
                                         },
                                     ],
@@ -574,9 +574,9 @@ class DemoDataService:
                                         {
                                             "name": "Waste Management",
                                             "kpis": [
-                                                {"name": "Weekly Compost Weight", "frequency": "weekly"},
-                                                {"name": "Monthly Recycling Rate", "frequency": "monthly"},
-                                                {"name": "Quarterly Landfill Waste", "frequency": "quarterly"},
+                                                {"name": "Weekly Compost Revenue", "frequency": "weekly"},
+                                                {"name": "Monthly Recycling Revenue", "frequency": "monthly"},
+                                                {"name": "Quarterly Landfill Cost", "frequency": "quarterly"},
                                             ],
                                         }
                                     ],
@@ -608,8 +608,8 @@ class DemoDataService:
                                             "name": "Water Usage",
                                             "kpis": [
                                                 {"name": "Daily Water Consumption", "frequency": "daily"},
-                                                {"name": "Weekly Rainwater Collection", "frequency": "weekly"},
-                                                {"name": "Monthly Water Bill", "frequency": "monthly"},
+                                                {"name": "Weekly Rainwater Collection Revenue", "frequency": "weekly"},
+                                                {"name": "Monthly Water Cost", "frequency": "monthly"},
                                             ],
                                         }
                                     ],
@@ -1390,40 +1390,15 @@ class DemoDataService:
                                 }
                             )
 
-                        # Set up formula configurations for this system
+                        # Add all configs to main list (no more formula KPIs - formulas are at value type level)
                         for config_info in system_configs:
-                            if config_info["is_formula"]:
-                                # For Solar Economics: Net Profit = Revenue - Cost
-                                if (
-                                    "net" in config_info["kpi"].name.lower()
-                                    or "profit" in config_info["kpi"].name.lower()
-                                ):
-                                    # Find Revenue and Cost configs in this system
-                                    revenue_config = next(
-                                        (c["config"] for c in system_configs if "revenue" in c["kpi"].name.lower()),
-                                        None,
-                                    )
-                                    cost_config = next(
-                                        (c["config"] for c in system_configs if "cost" in c["kpi"].name.lower()), None
-                                    )
-
-                                    if revenue_config and cost_config:
-                                        # Set up formula: Revenue - Cost
-                                        config_info["config"].calculation_config = {
-                                            "operation": "subtract",
-                                            "kpi_config_ids": [revenue_config.id, cost_config.id],
-                                        }
-                                        db.session.add(config_info["config"])
-
-                            # Add to main configs list (skip snapshots for formulas)
-                            if not config_info["is_formula"]:
-                                configs_created.append(
-                                    {
-                                        "config": config_info["config"],
-                                        "kpi": config_info["kpi"],
-                                        "frequency": config_info["frequency"],
-                                    }
-                                )
+                            configs_created.append(
+                                {
+                                    "config": config_info["config"],
+                                    "kpi": config_info["kpi"],
+                                    "frequency": config_info["frequency"],
+                                }
+                            )
 
         db.session.flush()
 
@@ -1530,10 +1505,10 @@ class DemoDataService:
         """Select appropriate value type based on KPI name"""
         name_lower = kpi_name.lower()
         for vt in value_types:
-            # Financial value types (specific matching first)
-            if vt.name == "Cost" and "cost" in name_lower:
+            # Financial value types (specific matching first - check for explicit keywords)
+            if vt.name == "Cost" and ("cost" in name_lower or "bill" in name_lower or "expense" in name_lower):
                 return vt
-            if vt.name == "Revenue" and "revenue" in name_lower:
+            if vt.name == "Revenue" and ("revenue" in name_lower or "income" in name_lower or "earnings" in name_lower):
                 return vt
             if vt.name == "Net" and ("net" in name_lower or "profit" in name_lower):
                 return vt
