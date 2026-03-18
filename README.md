@@ -1,53 +1,63 @@
-# 🧭 CISK Navigator v2.11.2
+# 🧭 CISK Navigator v2.10.6
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.11.2-blue)
+![Version](https://img.shields.io/badge/version-2.10.6-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-![Tests](https://img.shields.io/badge/tests-96%20passing-success)
+![Tests](https://img.shields.io/badge/tests-246%20passing-success)
 
-## ✨ What's New in v2.11.0 (March 2026)
+## ✨ What's New in v2.10.6 (March 2026)
 
-### 🔐 **Granular Permissions for Action Items, Stakeholders, and Map** (NEW!)
-Fine-grained access control with 5 new permissions per user-organization:
+### 🚀 **Critical Workspace Fixes**
+Three major regression bugs fixed that were blocking normal workflow:
 
-**New Permission Types**:
-- **View Action Items** - See action register menu and list
-- **Create Action Items** - Create/edit action items (requires View permission)
-- **View Stakeholders** - See stakeholders menu under People & Action
-- **Manage Stakeholders** - Create/edit/delete stakeholders (requires View permission)
-- **View Map** - Access map dashboard and navigation
+**v2.10.6 - Workspace Data Not Refreshing** (CRITICAL)
+- **Issue**: After creating entities (space, challenge, initiative, system, KPI), flash message appeared but entity was invisible until manual refresh
+- **Fix**: Workspace now reloads data from server when returning with `auto_edit=1` parameter
+- **Impact**: Users can now see newly created entities immediately
+
+**v2.10.5 - Empty Entities Hidden** (CRITICAL)
+- **Issue**: Newly created spaces/challenges/systems invisible until populated with children
+- **Root Cause**: Filter logic was hiding entities with no children (`challenges.length > 0`, `systems.kpis.length > 0`)
+- **Fix**: Removed aggressive filters - all entities now visible regardless of children
+- **Impact**: Normal workflow restored (Create → Populate → Build hierarchy)
+
+**v2.10.4 - Filter Panel Auto-Expansion**
+- **Issue**: After entity creation, filter panel stayed expanded hiding the workspace tree
+- **Fix**: When `auto_edit=1` present, force collapse filters and enable edit mode
+- **Result**: Clean workspace view after entity creation
+
+### 🔐 **Porter's Five Forces Permission**
+New granular permission for competitive analysis editing:
+
+**New Permission**:
+- **Can Edit Porter's** - Control who can edit Porter's Five Forces analysis
 
 **Why This Matters**:
-- Previously: Action items accessible to all, stakeholders required org admin
-- Now: Fine-grained control - separate VIEW vs CREATE/MANAGE rights
-- Menu items automatically hidden when user lacks permissions
-- Direct URL access blocked with friendly error messages
+- Previously: Only org admins could edit Porter's Five Forces
+- Now: Fine-grained control separate from org admin role
+- View access remains available to all members
 
-**Key Features**:
-- Permission dependencies enforced (Create requires View, Manage requires View)
-- JavaScript + backend validation ensures consistency
-- All 4 user/org forms updated (Create/Edit User, Create/Edit Organization)
-- Backward compatible: Existing users get sensible defaults
-- Database migration handles 6 million+ records safely
+### 🔧 **CSRF Token Fixes**
+Fixed missing CSRF tokens in 12 create/edit routes:
+- Porter's Five Forces edit page
+- Space create/edit/SWOT
+- Challenge create/edit
+- Initiative create/edit
+- System create/edit
+- KPI create
+- Value Type create/edit
+- Governance Body create/edit
 
-**Default Behavior**:
-- Action items & map: Enabled for all (backward compatibility)
-- Stakeholders: Disabled by default (new opt-in feature)
-- Contribute Values: Enabled for all
+### 🎨 **Workspace UI Improvements**
+- Added + icon at organization level to create spaces (consistent with other entity levels)
+- Complete hierarchy now has + icons: Organization → Space → Challenge → Initiative → System → KPI
 
-### 🎨 **Custom Branding & Icons**
-- **Entity Type Defaults**: Organizations can now customize default icons/colors for all entity types
-- **Workspace Icons**: Fixed icons to use configured defaults from Branding Manager (v2.11.2)
-- **Onboarding Fix**: Entity defaults now created automatically during organization onboarding (v2.11.1)
-
-### 🔧 **Bug Fixes** (v2.11.1, v2.11.2)
-- Fixed CSRF token error on space SWOT page (v2.10.5)
-- Fixed workspace icons showing Christmas trees instead of custom branding (v2.11.2)
-- Fixed entity defaults not being created during onboarding (v2.11.1)
-- Added "Contribute Values" permission to organization forms (v2.10.6)
+### 📝 **Documentation**
+- Added `CLAUDE.md` with semantic versioning guidelines
+- Clarified x.y.z version bump rules (major/minor/patch)
 
 ## ✨ What's New in v1.33.32 (March 2026)
 
