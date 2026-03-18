@@ -2434,7 +2434,32 @@ def create_value_type():
             default_aggregation_formula=form.default_aggregation_formula.data,
             display_order=form.display_order.data,
             is_active=form.is_active.data,
+            calculation_type=form.calculation_type.data or "manual",
         )
+
+        # Handle formula configuration
+        if form.calculation_type.data == "formula":
+            if form.formula_operation.data and form.formula_source_ids.data:
+                try:
+                    source_ids = [int(id.strip()) for id in form.formula_source_ids.data.split(",") if id.strip()]
+                    value_type.calculation_config = {
+                        "operation": form.formula_operation.data,
+                        "source_value_type_ids": source_ids,
+                    }
+
+                    # Validate formula configuration
+                    is_valid, error_message = value_type.validate_formula_config()
+                    if not is_valid:
+                        flash(f"Formula validation error: {error_message}", "danger")
+                        return render_template(
+                            "organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf
+                        )
+                except (ValueError, KeyError) as e:
+                    flash(f"Invalid formula configuration: {e}", "danger")
+                    return render_template(
+                        "organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf
+                    )
+
         db.session.add(value_type)
         db.session.flush()
 
@@ -2448,6 +2473,7 @@ def create_value_type():
                 "numeric_format": value_type.numeric_format,
                 "unit_label": value_type.unit_label,
                 "default_aggregation_formula": value_type.default_aggregation_formula,
+                "calculation_type": value_type.calculation_type,
                 "organization_id": value_type.organization_id,
             },
         )

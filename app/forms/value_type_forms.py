@@ -1,7 +1,7 @@
 """Value Type forms"""
 
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, IntegerField, SelectField, StringField, SubmitField
+from wtforms import BooleanField, HiddenField, IntegerField, SelectField, StringField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
 
 
@@ -38,6 +38,12 @@ class ValueTypeCreateForm(FlaskForm):
     )
     display_order = IntegerField("Display Order", default=0)
     is_active = BooleanField("Active", default=True)
+
+    # Formula fields (hidden, managed by JavaScript)
+    calculation_type = HiddenField(default="manual")
+    formula_operation = HiddenField()
+    formula_source_ids = HiddenField()  # Comma-separated value type IDs
+
     submit = SubmitField("Create Value Type")
 
 
@@ -47,4 +53,10 @@ class ValueTypeEditForm(FlaskForm):
     unit_label = StringField("Unit Label (e.g., €, tCO2e)", validators=[Optional(), Length(max=50)])
     is_active = BooleanField("Active")
     display_order = IntegerField("Display Order")
+
+    # Formula fields (hidden, managed by JavaScript) - NOT editable after creation
+    calculation_type = HiddenField()
+    formula_operation = HiddenField()
+    formula_source_ids = HiddenField()
+
     submit = SubmitField("Save Changes")
