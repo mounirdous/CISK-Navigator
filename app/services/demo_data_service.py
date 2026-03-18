@@ -900,16 +900,45 @@ class DemoDataService:
                 user_info.append({"username": username, "email": email, "role": role, "is_existing": False})
         db.session.flush()
 
-        # Set first user as org admin if not already
-        if not users[0].is_global_admin:
-            users[0].is_global_admin = True
+        # Add all demo users as members of the organization
+        from app.models import UserOrganizationMembership
+
+        for idx, user in enumerate(users):
+            role = role_names[idx] if idx < len(role_names) else "viewer"
+
+            # Set permissions based on role
+            is_admin = role == "admin"
+            can_contribute = role in ["admin", "contributor"]
+
+            membership = UserOrganizationMembership(
+                user_id=user.id,
+                organization_id=org.id,
+                is_org_admin=is_admin,
+                can_manage_spaces=is_admin,
+                can_manage_value_types=is_admin,
+                can_manage_governance_bodies=is_admin,
+                can_manage_challenges=is_admin,
+                can_manage_initiatives=can_contribute,
+                can_manage_systems=can_contribute,
+                can_manage_kpis=can_contribute,
+                can_view_comments=True,
+                can_add_comments=can_contribute,
+                can_contribute=can_contribute,
+                can_view_action_items=True,
+                can_create_action_items=can_contribute,
+                can_view_stakeholders=True,
+                can_manage_stakeholders=is_admin,
+                can_view_map=True,
+                can_edit_porters=is_admin,
+            )
+            db.session.add(membership)
+
+        db.session.flush()
 
         # Check for user "moun" (dev testing user) and add them as org admin
         moun_user = User.query.filter((User.login == "moun") | (User.email.like("%moun%"))).first()
         if moun_user and (moun_user.is_super_admin or moun_user.is_global_admin):
             # Check if already a member
-            from app.models import UserOrganizationMembership
-
             existing_membership = UserOrganizationMembership.query.filter_by(
                 user_id=moun_user.id, organization_id=org.id
             ).first()
