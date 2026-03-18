@@ -1076,7 +1076,7 @@ def space_swot(space_id):
     """View SWOT analysis for a space"""
     org_id = session.get("organization_id")
     space = Space.query.filter_by(id=space_id, organization_id=org_id).first_or_404()
-    return render_template("organization_admin/space_swot.html", space=space)
+    return render_template("organization_admin/space_swot.html", space=space, csrf_token=generate_csrf)
 
 
 @bp.route("/spaces/<int:space_id>/swot/edit", methods=["GET", "POST"])

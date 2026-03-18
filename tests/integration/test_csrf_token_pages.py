@@ -255,6 +255,24 @@ class TestCSRFTokenAvailability:
         response = authenticated_org_user.get(f"/toolbox/actions/{action_item.id}/edit")
         self.assert_no_csrf_errors(response)
 
+    def test_space_swot(self, authenticated_org_user, sample_organization, org_user):
+        """Test /org-admin/spaces/<id>/swot has csrf_token"""
+        from app import db
+        from app.models import Space
+
+        # Create a test space
+        space = Space(
+            name="Test Space",
+            description="Test Description",
+            organization_id=sample_organization.id,
+            created_by=org_user.id,
+        )
+        db.session.add(space)
+        db.session.commit()
+
+        response = authenticated_org_user.get(f"/org-admin/spaces/{space.id}/swot")
+        self.assert_no_csrf_errors(response)
+
 
 @pytest.mark.parametrize(
     "route",

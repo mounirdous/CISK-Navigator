@@ -230,6 +230,20 @@ def index():
         filled, total, status = org.get_porters_completion()
         porters_completion = {"filled": filled, "total": total, "status": status}
 
+    # Get entity type defaults (for logos/icons in tree)
+    entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
+    entity_defaults = {}
+    for default in entity_defaults_raw:
+        logo_url = None
+        if default.default_logo_data and default.default_logo_mime_type:
+            logo_url = f"data:{default.default_logo_mime_type};base64,{base64.b64encode(default.default_logo_data).decode('utf-8')}"
+
+        entity_defaults[default.entity_type] = {
+            "color": default.default_color,
+            "icon": default.default_icon,
+            "logo": logo_url,
+        }
+
     # Get filter presets for this user (from database)
     filter_presets_objs = (
         UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
@@ -248,8 +262,10 @@ def index():
         organization=org,
         org_logo=org_logo,
         porters_completion=porters_completion,
+        entity_defaults=entity_defaults,
         filter_presets=filter_presets,
         filter_presets_json=Markup(filter_presets_json),
+        can_contribute=current_user.can_contribute(org_id),
         csrf_token=generate_csrf,
     )
 

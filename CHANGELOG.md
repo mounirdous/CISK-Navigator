@@ -5,6 +5,37 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.5] - 2026-03-18
+
+### Fixed - Workspace Icons from Branding Manager
+**Critical Bug**: Workspace tree was showing default icons instead of custom branding
+
+**Issue**: After setting custom icons in Branding Manager, workspace tree still showed generic fallback icons (tree emojis, folders, etc.) instead of the configured custom icons.
+
+**Root Cause**: The workspace index route wasn't passing `entity_defaults` to the template, so custom logos/icons from EntityTypeDefault weren't available.
+
+**Fix**:
+- Added entity_defaults building logic to workspace index route
+- Now reads EntityTypeDefault for the organization and passes logos/icons to template
+- Tree nodes will use custom branding from Branding Manager
+
+**Files Modified**:
+- `app/routes/workspace.py` - Added entity_defaults to index route (same pattern as dashboard)
+
+### Fixed - CSRF Token in Space SWOT (CRITICAL HOTFIX)
+**Critical Bug**: Space SWOT page returned 500 error
+
+**Error**: `jinja2.exceptions.UndefinedError: 'csrf_token' is undefined` on `/org-admin/spaces/<id>/swot`
+
+**Fix**: Added `csrf_token=generate_csrf` to space_swot render_template call
+
+**Test Coverage**:
+- Added `/org-admin/spaces/<id>/swot` to CSRF token tests
+
+**Files Modified**:
+- `app/routes/organization_admin.py` - Added csrf_token to space_swot
+- `tests/integration/test_csrf_token_pages.py` - Added test
+
 ## [2.10.4] - 2026-03-18
 
 ### Added - Permission-Based UI Visibility for Action Items
