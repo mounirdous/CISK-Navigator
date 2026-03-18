@@ -221,6 +221,12 @@ class TestCSRFTokenAvailability:
         response = authenticated_admin.get("/global-admin/organizations/archived")
         self.assert_no_csrf_errors(response)
 
+    # Auth Routes
+    def test_auth_change_password(self, authenticated_org_user):
+        """Test /auth/change-password has csrf_token"""
+        response = authenticated_org_user.get("/auth/change-password")
+        self.assert_no_csrf_errors(response)
+
 
 @pytest.mark.parametrize(
     "route",

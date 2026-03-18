@@ -5,6 +5,25 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.3] - 2026-03-18
+
+### Added - Test Coverage for Change Password CSRF
+**Test Addition**: Added `/auth/change-password` to CSRF token integration tests
+
+**Why**: The production incident showed this route was missing from test coverage. Now all auth routes with POST functionality are tested.
+
+**Test Added**: `test_auth_change_password` in `tests/integration/test_csrf_token_pages.py`
+
+**Test Coverage**: Now have comprehensive CSRF token tests for:
+- Organization admin routes
+- Workspace routes
+- Dashboards
+- Global admin routes
+- Super admin routes
+- **Auth routes (including change password)**
+
+This ensures no render_template calls will miss csrf_token parameter going forward.
+
 ## [2.10.2] - 2026-03-18
 
 ### Fixed - CSRF Token in Change Password (CRITICAL HOTFIX)
