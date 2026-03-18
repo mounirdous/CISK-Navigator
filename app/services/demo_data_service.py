@@ -553,21 +553,31 @@ class DemoDataService:
         users = []
         for idx, email in enumerate(user_emails):
             username = email.split("@")[0]
-            user = User(
-                login=username,
-                email=email,
-                display_name=f"Demo User {idx + 1}",
-                is_active=True,
-                is_global_admin=False,
-                must_change_password=True,
-            )
-            user.set_password("Demo2026!")
-            db.session.add(user)
-            users.append(user)
+
+            # Check if user with this login or email already exists
+            existing_user = User.query.filter((User.login == username) | (User.email == email)).first()
+
+            if existing_user:
+                # Use existing user instead of creating new one
+                users.append(existing_user)
+            else:
+                # Create new user (Password: Demo2026! - no forced change)
+                user = User(
+                    login=username,
+                    email=email,
+                    display_name=f"Demo User {idx + 1}",
+                    is_active=True,
+                    is_global_admin=False,
+                    must_change_password=False,  # No forced password change for demo users
+                )
+                user.set_password("Demo2026!")
+                db.session.add(user)
+                users.append(user)
         db.session.flush()
 
-        # Set first user as org admin
-        users[0].is_global_admin = True
+        # Set first user as org admin if not already
+        if not users[0].is_global_admin:
+            users[0].is_global_admin = True
 
         # Create stakeholders
         stakeholder_map_dict = {}

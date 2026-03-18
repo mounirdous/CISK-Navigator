@@ -133,43 +133,29 @@
                                 placeholder="admin@example.com, user1@example.com, user2@example.com"
                             ></textarea>
                             <div class="form-text">
+                                <strong>Password for all demo users: Demo2026!</strong> (no forced change)<br>
                                 Leave empty to create 3 generic demo users. First user will be an admin.
                             </div>
                         </div>
 
                         <!-- Years of History -->
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label for="years_of_history" class="form-label">
                                 <i class="fas fa-calendar-alt text-warning me-1"></i>
-                                Years of History
+                                Years of Historical Data
                             </label>
                             <input
                                 type="number"
                                 class="form-control"
                                 id="years_of_history"
                                 name="years_of_history"
-                                value="2"
+                                value="3"
                                 min="1"
                                 max="5"
                             />
                             <div class="form-text">
-                                Historical snapshots will go back this many years
-                            </div>
-                        </div>
-
-                        <!-- Snapshot Frequency -->
-                        <div class="col-md-3">
-                            <label for="snapshot_frequency" class="form-label">
-                                <i class="fas fa-clock text-danger me-1"></i>
-                                Base Snapshot Frequency
-                            </label>
-                            <select class="form-select" id="snapshot_frequency" name="snapshot_frequency">
-                                <option value="daily">Daily</option>
-                                <option value="weekly" selected>Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                            <div class="form-text">
-                                Note: KPIs labeled "Weekly", "Daily", etc. will override this
+                                <strong>ALL frequencies will be generated:</strong> Daily, Weekly, Monthly, Quarterly, Yearly KPIs<br>
+                                This setting controls how far back the historical snapshots go.
                             </div>
                         </div>
                     </div>
@@ -184,15 +170,25 @@
                                 <ul class="mb-0 small">
                                     <li><strong>Full Entity Hierarchy:</strong> Spaces, Challenges, Initiatives, Systems, KPIs</li>
                                     <li><strong>Stakeholder Ecosystem:</strong> Stakeholders, Maps, Relationships, Entity Links</li>
-                                    <li><strong>Historical Data:</strong> Snapshots with realistic trends and variations</li>
-                                    <li><strong>KPI Frequencies:</strong> Daily, Weekly, Monthly, Quarterly, Yearly KPIs</li>
+                                    <li><strong>Historical Data:</strong> Thousands of snapshots with realistic trends (±10% variation)</li>
+                                    <li><strong>🎯 ALL KPI Frequencies Demonstrated:</strong>
+                                        <ul class="mt-1">
+                                            <li><strong>Daily:</strong> e.g., "Daily Steps Count", "Daily Attendance Rate"</li>
+                                            <li><strong>Weekly:</strong> e.g., "Weekly Training Hours", "Weekly Running Distance"</li>
+                                            <li><strong>Monthly:</strong> e.g., "Monthly Revenue", "Monthly Water Bill"</li>
+                                            <li><strong>Quarterly:</strong> e.g., "Quarterly Fitness Test", "Quarterly Landfill Waste"</li>
+                                            <li><strong>Yearly:</strong> e.g., "Yearly Goals Scored", "Yearly Carbon Offset"</li>
+                                        </ul>
+                                    </li>
                                 </ul>
                             </div>
                             <div class="col-md-6">
                                 <ul class="mb-0 small">
                                     <li><strong>Action Items:</strong> Mix of open, in-progress, resolved, dismissed</li>
                                     <li><strong>Public/Private Spaces:</strong> Realistic access control mix</li>
-                                    <li><strong>Demo Users:</strong> With configurable emails for testing</li>
+                                    <li><strong>Demo Users:</strong> Password: <code>Demo2026!</code> (no forced change)</li>
+                                    <li><strong>Porter's Five Forces:</strong> Complete competitive analysis</li>
+                                    <li><strong>SWOT Analysis:</strong> For every space (36 analyses total)</li>
                                     <li><strong>Realistic Values:</strong> Trends, variations, and meaningful data</li>
                                 </ul>
                             </div>

@@ -1703,7 +1703,11 @@ def demo_generator_create():
             "success",
         )
         flash(
-            f"📊 Created: {result['users']} users, {result['stakeholders']} stakeholders, "
+            "🔑 LOGIN CREDENTIALS: Username = first part of email | Password = Demo2026! (no forced change)",
+            "warning",
+        )
+        flash(
+            f"📊 Created: {len(result['users'])} users, {result['stakeholders']} stakeholders, "
             f"{result['stakeholder_maps']} maps, {result['spaces']} spaces, "
             f"{result['challenges']} challenges, {result['initiatives']} initiatives, "
             f"{result['systems']} systems, {result['kpis']} KPIs, "
