@@ -1981,6 +1981,55 @@
                     </label>
                 </div>
             </div>
+
+            <!-- Column Visibility -->
+            <div class="filter-section" style="border-top: 2px solid #e9ecef; padding-top: 1rem; margin-top: 1rem;">
+                <div class="filter-section-header" style="margin-bottom: 0.75rem;">
+                    <i class="bi bi-table"></i>
+                    <span>Column Visibility</span>
+                    <div style="margin-left: auto; display: flex; gap: 0.5rem;">
+                        <button @click="selectAllColumns()" class="btn btn-sm btn-outline-primary" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                            <i class="bi bi-check-all"></i> All
+                        </button>
+                        <button @click="deselectAllColumns()" class="btn btn-sm btn-outline-secondary" style="font-size: 0.7rem; padding: 0.15rem 0.5rem;">
+                            <i class="bi bi-x"></i> None
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Search columns -->
+                <div style="margin-bottom: 0.75rem;">
+                    <input type="text"
+                           x-model="columnSearchQuery"
+                           class="form-control form-control-sm"
+                           placeholder="🔍 Search columns..."
+                           style="font-size: 0.85rem;">
+                </div>
+
+                <!-- Column checkboxes -->
+                <div style="max-height: 300px; overflow-y: auto; background: #f8f9fa; border-radius: 8px; padding: 0.75rem;">
+                    <template x-for="vt in filteredValueTypesForColumnVisibility()" :key="vt.id">
+                        <label class="toggle-label" style="margin-bottom: 0.5rem; padding: 0.5rem; background: white; border-radius: 6px; border: 1px solid #e9ecef;">
+                            <label class="toggle-switch">
+                                <input type="checkbox"
+                                       :checked="visibleValueTypeIds.includes(vt.id)"
+                                       @change="toggleColumnVisibility(vt.id)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-size: 0.85rem; font-weight: 500;" x-text="vt.name"></span>
+                            <span style="font-size: 0.75rem; color: #6c757d; margin-left: 0.25rem;" x-text="`(${vt.unit_label})`"></span>
+                        </label>
+                    </template>
+                    <div x-show="filteredValueTypesForColumnVisibility().length === 0" style="text-align: center; padding: 1rem; color: #6c757d; font-size: 0.85rem;">
+                        No columns found
+                    </div>
+                </div>
+
+                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #6c757d; text-align: center;">
+                    <i class="bi bi-info-circle"></i>
+                    <span x-text="`${visibleValueTypeIds.length} of ${valueTypes.length} columns visible`"></span>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -2088,7 +2137,7 @@
                     </template>
                     {% endif %}
                 </div>
-                <template x-for="(vt, index) in valueTypes" :key="vt.id">
+                <template x-for="(vt, index) in visibleValueTypes" :key="vt.id">
                     <div class="ws-header-cell"
                          :class="{'draggable-column': editMode, 'column-collapsed': vt.collapsed}"
                          :draggable="editMode"
@@ -2216,7 +2265,7 @@
                                 </template>
                             </div>
                         </div>
-                        <template x-for="vt in valueTypes" :key="vt.id">
+                        <template x-for="vt in visibleValueTypes" :key="vt.id">
                             <div class="ws-cell value-cell text-center"
                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                  :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'">
@@ -2358,7 +2407,7 @@
                                         </template>
                                     </div>
                                 </div>
-                                <template x-for="vt in valueTypes" :key="vt.id">
+                                <template x-for="vt in visibleValueTypes" :key="vt.id">
                                     <div class="ws-cell value-cell text-center"
                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                          :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'">
@@ -2481,7 +2530,7 @@
                                                 </template>
                                             </div>
                                         </div>
-                                        <template x-for="vt in valueTypes" :key="vt.id">
+                                        <template x-for="vt in visibleValueTypes" :key="vt.id">
                                             <div class="ws-cell value-cell text-center"
                                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                  :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'">
@@ -2617,7 +2666,7 @@
                                                         </template>
                                                     </div>
                                                 </div>
-                                                <template x-for="vt in valueTypes" :key="vt.id">
+                                                <template x-for="vt in visibleValueTypes" :key="vt.id">
                                                     <div class="ws-cell value-cell text-center"
                                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                          :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'">
@@ -2783,7 +2832,7 @@
                                                             </template>
                                                         </div>
                                                     </div>
-                                                    <template x-for="vt in valueTypes" :key="vt.id">
+                                                    <template x-for="vt in visibleValueTypes" :key="vt.id">
                                                         <!-- KPI Cell: Show with consensus styling if config exists, otherwise clean N/A -->
                                                         <div class="ws-cell text-center"
                                                              :class="{
@@ -3126,9 +3175,14 @@ function workspaceV2(orgId, filterPresets) {
         showArchivedKPIs: false,
         showBadges: true,  // Toggle for all badges/decorations (governance badges, icons, etc.)
 
+        // Column Visibility
+        visibleValueTypeIds: [],  // IDs of visible value type columns (empty = all visible)
+        columnSearchQuery: '',
+
         // Filter Presets
         showSavePresetModal: false,
         newPresetName: '',
+        activePresetName: '',  // Track which preset is currently active
 
         // Computed
         get filteredSpaces() {
@@ -3232,11 +3286,13 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         get hasActiveFilters() {
+            const hasColumnFilter = this.visibleValueTypeIds.length > 0 && this.visibleValueTypeIds.length < this.valueTypes.length;
             return this.spaceTypeFilter !== 'all' ||
                    this.selectedGovernanceBodies.length > 0 ||
                    this.selectedSpaces.length > 0 ||
                    this.selectedGroups.length > 0 ||
-                   this.selectedImpactLevels.length > 0;
+                   this.selectedImpactLevels.length > 0 ||
+                   hasColumnFilter;
         },
 
         get activeFilterCount() {
@@ -3246,6 +3302,7 @@ function workspaceV2(orgId, filterPresets) {
             if (this.selectedSpaces.length > 0) count++;
             if (this.selectedGroups.length > 0) count++;
             if (this.selectedImpactLevels.length > 0) count++;
+            if (this.visibleValueTypeIds.length > 0 && this.visibleValueTypeIds.length < this.valueTypes.length) count++;
             return count;
         },
 
@@ -3333,6 +3390,11 @@ function workspaceV2(orgId, filterPresets) {
                     ...vt,
                     collapsed: false
                 }));
+
+                // Initialize visibleValueTypeIds if empty (first load or no filter applied)
+                if (this.visibleValueTypeIds.length === 0) {
+                    this.visibleValueTypeIds = this.valueTypes.map(vt => vt.id);
+                }
 
                 this.governanceBodies = data.governanceBodies;
                 this.groups = data.groups;
@@ -3593,6 +3655,7 @@ function workspaceV2(orgId, filterPresets) {
             this.selectedSpaces = [];
             this.selectedGroups = [];
             this.selectedImpactLevels = [];
+            this.visibleValueTypeIds = this.valueTypes.map(vt => vt.id);  // Reset to all visible
         },
 
         // Filter Toggle Methods
@@ -3735,6 +3798,11 @@ function workspaceV2(orgId, filterPresets) {
                 this.selectedImpactLevels = impactParams;
             }
 
+            const visibleVtParams = urlParams.getAll('visibleValueTypeIds');
+            if (visibleVtParams.length > 0) {
+                this.visibleValueTypeIds = visibleVtParams.map(id => parseInt(id));
+            }
+
             // Auto-enable edit mode and collapse filters if returning from entity creation
             const autoEdit = urlParams.has('auto_edit') && urlParams.get('auto_edit') === '1';
             if (autoEdit) {
@@ -3791,7 +3859,8 @@ function workspaceV2(orgId, filterPresets) {
                 selectedGovernanceBodies: [...this.selectedGovernanceBodies],
                 selectedSpaces: [...this.selectedSpaces],
                 selectedGroups: [...this.selectedGroups],
-                selectedImpactLevels: [...this.selectedImpactLevels]
+                selectedImpactLevels: [...this.selectedImpactLevels],
+                visibleValueTypeIds: [...this.visibleValueTypeIds]
             };
         },
 
@@ -3813,8 +3882,48 @@ function workspaceV2(orgId, filterPresets) {
             if (filters.selectedImpactLevels && filters.selectedImpactLevels.length > 0) {
                 parts.push(`Impact: ${filters.selectedImpactLevels.length} selected`);
             }
+            if (filters.visibleValueTypeIds && filters.visibleValueTypeIds.length > 0 && filters.visibleValueTypeIds.length < this.valueTypes.length) {
+                parts.push(`Columns: ${filters.visibleValueTypeIds.length} of ${this.valueTypes.length} visible`);
+            }
 
             return parts.length > 0 ? parts.join(', ') : 'No filters applied';
+        },
+
+        // Column Visibility Methods
+        selectAllColumns() {
+            this.visibleValueTypeIds = this.valueTypes.map(vt => vt.id);
+        },
+
+        deselectAllColumns() {
+            this.visibleValueTypeIds = [];
+        },
+
+        toggleColumnVisibility(vtId) {
+            const index = this.visibleValueTypeIds.indexOf(vtId);
+            if (index > -1) {
+                this.visibleValueTypeIds.splice(index, 1);
+            } else {
+                this.visibleValueTypeIds.push(vtId);
+            }
+        },
+
+        filteredValueTypesForColumnVisibility() {
+            const query = this.columnSearchQuery.toLowerCase().trim();
+            if (!query) return this.valueTypes;
+
+            return this.valueTypes.filter(vt =>
+                vt.name.toLowerCase().includes(query) ||
+                vt.unit_label.toLowerCase().includes(query)
+            );
+        },
+
+        get visibleValueTypes() {
+            // If no specific columns selected, show all
+            if (this.visibleValueTypeIds.length === 0) {
+                return this.valueTypes;
+            }
+            // Otherwise, filter to only visible columns
+            return this.valueTypes.filter(vt => this.visibleValueTypeIds.includes(vt.id));
         },
 
         async saveCurrentPreset() {
