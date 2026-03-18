@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.2] - 2026-03-18
+
+### Fixed - Network Visualization Right-Click
+**Bug Fix**: Right-click context menu now works consistently on all nodes in stakeholder network
+
+**Issue**: Right-click detection failed intermittently, especially after scrolling or when network wasn't at top of page. Used page coordinates instead of canvas-relative coordinates.
+
+**Solution**: Calculate click position relative to network element using `getBoundingClientRect()`, then convert to canvas coordinates. Works reliably at any scroll position or zoom level.
+
 ## [2.8.1] - 2026-03-18
 
 ### Fixed - Complete Cascade Delete Resolution
