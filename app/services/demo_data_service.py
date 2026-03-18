@@ -1077,16 +1077,23 @@ class DemoDataService:
             base_value = random.uniform(50, 500)
             trend = random.choice([-0.01, 0, 0.01, 0.02])  # -1%, 0%, +1%, +2% per snapshot
 
-            # Decide workflow: 40% use "Contribute" mode (with contributions), 60% use "Enter Data" mode
-            use_contributions = (config.id % 5) < 2  # Deterministic: some KPIs have contributions
-            contributors = ["Alice Johnson", "Bob Smith", "Carol Williams"]
+            contributor_name = random.choice(["Alice Johnson", "Bob Smith", "Carol Williams"])
 
-            # Generate historical snapshots (all past periods get consensus snapshots)
-            for idx, snapshot_date in enumerate(dates[:-1]):  # All dates except the most recent
+            # Generate all snapshots (historical + current)
+            for idx, snapshot_date in enumerate(dates):
                 # Apply trend
                 value = base_value * (1 + trend) ** idx
                 consensus_value = value * random.uniform(0.9, 1.1)  # ±10% variation
 
+                # Create one contribution per KPI for immediate consensus
+                contribution = Contribution(
+                    kpi_value_type_config_id=config.id,
+                    contributor_name=contributor_name,
+                    numeric_value=Decimal(str(round(consensus_value, 2))),
+                )
+                db.session.add(contribution)
+
+                # Create snapshot with immediate consensus (contributor_count=1)
                 snapshot = KPISnapshot(
                     kpi_value_type_config_id=config.id,
                     snapshot_date=snapshot_date,
@@ -1098,48 +1105,11 @@ class DemoDataService:
                     owner_user_id=user_id,
                     consensus_status="strong",
                     consensus_value=Decimal(str(round(consensus_value, 2))),
-                    contributor_count=random.randint(1, 3),
+                    contributor_count=1,  # One contribution = immediate consensus
                     is_rollup_eligible=True,
                 )
                 db.session.add(snapshot)
                 snapshot_count += 1
-
-            # Handle CURRENT period (most recent date) based on workflow
-            if dates:
-                current_date = dates[-1]
-                current_value = base_value * (1 + trend) ** (len(dates) - 1)
-
-                if use_contributions:
-                    # WORKFLOW 1: "Contribute" mode - Multiple pending opinions (NO snapshot yet)
-                    num_contributors = random.randint(2, 3)
-                    for i in range(num_contributors):
-                        contrib_value = current_value * random.uniform(0.95, 1.05)  # ±5% variation
-                        contribution = Contribution(
-                            kpi_value_type_config_id=config.id,
-                            contributor_name=contributors[i],
-                            numeric_value=Decimal(str(round(contrib_value, 2))),
-                        )
-                        db.session.add(contribution)
-                    # No snapshot created - contributions are pending consensus
-                else:
-                    # WORKFLOW 2: "Enter Data" mode - Direct entry with immediate consensus
-                    consensus_value = current_value * random.uniform(0.9, 1.1)
-                    snapshot = KPISnapshot(
-                        kpi_value_type_config_id=config.id,
-                        snapshot_date=current_date,
-                        year=current_date.year,
-                        quarter=(current_date.month - 1) // 3 + 1,
-                        month=current_date.month,
-                        snapshot_batch_id=str(uuid.uuid4()),
-                        is_public=True,
-                        owner_user_id=user_id,
-                        consensus_status="strong",
-                        consensus_value=Decimal(str(round(consensus_value, 2))),
-                        contributor_count=1,  # Single direct entry
-                        is_rollup_eligible=True,
-                    )
-                    db.session.add(snapshot)
-                    snapshot_count += 1
 
         return snapshot_count
 
