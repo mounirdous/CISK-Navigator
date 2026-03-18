@@ -667,11 +667,16 @@
         // Get selected config IDs
         const configIds = Array.from(selectedKPIs.keys());
 
-        // Build API URL
+        // Get current form values (may be restored from saved chart)
+        const currentYear = document.getElementById('year_start').value || {{ current_year }};
+        const currentViewType = document.getElementById('view_type').value || '{{ view_type }}';
+        const showTargets = document.getElementById('show_targets').checked;
+
+        // Build API URL with current form values
         const params = new URLSearchParams({
-            year: {{ current_year }},
-            view_type: '{{ view_type }}',
-            show_targets: '{{ "true" if show_targets else "false" }}',
+            year: currentYear,
+            view_type: currentViewType,
+            show_targets: showTargets ? 'true' : 'false',
         });
         configIds.forEach(id => params.append('config_ids', id));
 
@@ -695,7 +700,7 @@
                 }
             });
 
-            renderChart(data);
+            renderChart(data, currentViewType, currentYear);
         } catch (error) {
             alert('Error loading chart: ' + error.message);
         }
@@ -710,7 +715,7 @@
         } : { r: 0, g: 0, b: 0 };
     }
 
-    function renderChart(data) {
+    function renderChart(data, viewType, year) {
         const ctx = document.getElementById('snapshotChart').getContext('2d');
         const chartType = document.getElementById('chart-type').value;
 
@@ -718,6 +723,10 @@
         if (snapshotChart) {
             snapshotChart.destroy();
         }
+
+        // Build chart title with current settings
+        const viewTypeDisplay = viewType ? viewType.charAt(0).toUpperCase() + viewType.slice(1) : 'Quarterly';
+        const chartTitle = `KPI Trends - ${viewTypeDisplay} ${year || {{ current_year }}}`;
 
         // Create new chart
         snapshotChart = new Chart(ctx, {
@@ -735,7 +744,7 @@
                     },
                     title: {
                         display: true,
-                        text: 'KPI Trends - {{ view_type|capitalize }} {{ current_year }}'
+                        text: chartTitle
                     }
                 },
                 scales: {
@@ -776,6 +785,27 @@
             configColors[configId] = kpi.color;
         });
 
+        // Get current form values
+        const yearStart = parseInt(document.getElementById('year_start').value) || {{ year_start }};
+        const yearEnd = parseInt(document.getElementById('year_end').value) || {{ year_end }};
+        const viewType = document.getElementById('view_type').value || '{{ view_type }}';
+        const spaceId = document.getElementById('space_id').value || null;
+        const valueTypeId = document.getElementById('value_type_id').value || null;
+
+        // Get period filter (quarters or months)
+        let periodFilter = null;
+        if (viewType === 'quarterly') {
+            const checkedQuarters = Array.from(document.querySelectorAll('input[name="quarters"]:checked')).map(cb => cb.value);
+            if (checkedQuarters.length > 0) {
+                periodFilter = checkedQuarters.join(',');
+            }
+        } else if (viewType === 'monthly') {
+            const checkedMonths = Array.from(document.querySelectorAll('input[name="months"]:checked')).map(cb => cb.value);
+            if (checkedMonths.length > 0) {
+                periodFilter = checkedMonths.join(',');
+            }
+        }
+
         try {
             const response = await fetch('{{ url_for("workspace.save_chart") }}', {
                 method: 'POST',
@@ -786,12 +816,13 @@
                 body: JSON.stringify({
                     name: name,
                     description: description,
-                    year_start: {{ year_start }},
-                    year_end: {{ year_end }},
-                    view_type: '{{ view_type }}',
+                    year_start: yearStart,
+                    year_end: yearEnd,
+                    view_type: viewType,
                     chart_type: document.getElementById('chart-type').value,
-                    space_id: {{ selected_space_id or 'null' }},
-                    value_type_id: {{ selected_value_type_id or 'null' }},
+                    space_id: spaceId ? parseInt(spaceId) : null,
+                    value_type_id: valueTypeId ? parseInt(valueTypeId) : null,
+                    period_filter: periodFilter,
                     config_colors: configColors,
                     is_shared: isShared
                 })
@@ -945,6 +976,47 @@
                 }
             }
 
+            // Restore time range
+            if (chart.year_start) {
+                document.getElementById('year_start').value = chart.year_start;
+            }
+            if (chart.year_end) {
+                document.getElementById('year_end').value = chart.year_end;
+            }
+
+            // Restore view type
+            if (chart.view_type) {
+                document.getElementById('view_type').value = chart.view_type;
+                updatePeriodSelection(); // Update period checkboxes display
+            }
+
+            // Restore space and value type filters
+            if (chart.space_id) {
+                document.getElementById('space_id').value = chart.space_id;
+            } else {
+                document.getElementById('space_id').value = '';
+            }
+            if (chart.value_type_id) {
+                document.getElementById('value_type_id').value = chart.value_type_id;
+            } else {
+                document.getElementById('value_type_id').value = '';
+            }
+
+            // Restore period filter (quarters or months)
+            document.querySelectorAll('.period-check').forEach(cb => cb.checked = false);
+            if (chart.period_filter) {
+                const periods = chart.period_filter.split(',').map(p => p.trim());
+                periods.forEach(period => {
+                    if (chart.view_type === 'quarterly') {
+                        const checkbox = document.getElementById('q' + period);
+                        if (checkbox) checkbox.checked = true;
+                    } else if (chart.view_type === 'monthly') {
+                        const checkbox = document.getElementById('m' + period);
+                        if (checkbox) checkbox.checked = true;
+                    }
+                });
+            }
+
             // Update chart type
             document.getElementById('chart-type').value = chart.chart_type;
 
@@ -955,7 +1027,7 @@
             document.getElementById('chart-search-results').style.display = 'none';
             document.getElementById('chart-search').value = '';
 
-            // Auto-render chart
+            // Auto-render chart with restored settings
             document.getElementById('update-chart-btn').click();
 
             // Show success toast
