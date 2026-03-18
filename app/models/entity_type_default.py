@@ -38,7 +38,7 @@ class EntityTypeDefault(db.Model):
     __table_args__ = (db.UniqueConstraint("organization_id", "entity_type", name="uq_entity_type_defaults_org_type"),)
 
     # Relationships
-    organization = db.relationship("Organization", backref=db.backref("entity_defaults", passive_deletes=True))
+    organization = db.relationship("Organization", back_populates="entity_defaults")
     updater = db.relationship("User", foreign_keys=[updated_by], backref="entity_defaults_updated")
 
     def __repr__(self):

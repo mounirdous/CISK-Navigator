@@ -41,7 +41,7 @@ class SavedChart(db.Model):
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    organization = db.relationship("Organization", backref="saved_charts")
+    organization = db.relationship("Organization", back_populates="saved_charts")
     created_by = db.relationship("User", backref="saved_charts")
     space = db.relationship("Space")
     value_type = db.relationship("ValueType")
