@@ -5,6 +5,70 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.4] - 2026-03-18
+
+### Fixed - CSRF Token Errors + Porter's Permission + Workspace UI
+
+**New Permission**: `can_edit_porters` - Control who can edit Porter's Five Forces analysis
+
+**Why This Matters:**
+Previously, only org admins could edit Porter's Five Forces analysis. Now you have fine-grained control over who can edit competitive analysis while still allowing others to view it.
+
+**Migration:**
+- Database migration adds `can_edit_porters` column to user_organization_memberships
+- Existing users: defaults to TRUE (maintains backward compatibility)
+- server_default="1" ensures all existing memberships get the permission
+
+**UI Updates:**
+All permission forms now include Porter's Five Forces checkbox:
+- Create User (Global Admin → Users → Create)
+- Edit User (Global Admin → Users → Edit)
+- Create Organization (Global Admin → Organizations → Create)
+- Edit Organization (Global Admin → Organizations → Edit)
+
+**Porter's Template Updates:**
+- Edit button now checks `can_edit_porters` permission instead of generic org admin check
+- Consistent permission model with other entity editing permissions
+
+**Workspace UI Enhancement:**
+- Added + icon at organization level in workspace edit mode to create new spaces
+- Consistent with other entity-level + icons (challenges, initiatives, systems, KPIs)
+- Requires `can_manage_spaces` permission
+- Complete hierarchy: Organization [+] → Space [+] → Challenge [+] → Initiative [+] → System [+]
+
+**CSRF Token Fixes:**
+Fixed missing csrf_token in 12 create/edit routes that were causing 500 errors:
+- Porter's Five Forces edit page
+- Space create
+- Space SWOT edit
+- Challenge create
+- Initiative create
+- System create
+- KPI create
+- Value Type create/edit
+- Governance Body create/edit
+
+**Test Coverage:**
+- Added comprehensive tests for Porter's permission checks
+- Added tests for all 14 modified entity create/edit routes
+- Fixed 3 pre-existing test failures in workspace and stakeholder routes
+- All 246 integration tests passing
+
+**Files Modified:**
+- `migrations/versions/0604faa9fc5b_*.py` - Database migration
+- `app/models/organization.py` - Added can_edit_porters column
+- `app/models/user.py` - Added can_edit_porters() permission check method
+- `app/routes/organization_admin.py` - Updated Porter's route + fixed 11 csrf_token issues
+- `app/routes/global_admin.py` - Updated all 4 routes to save Porter's permission
+- `app/templates/organization_admin/organization_porters.html` - Updated Edit button permission check
+- `app/templates/global_admin/create_user.html` - Added Porter's permission checkbox
+- `app/templates/global_admin/edit_user.html` - Added Porter's permission checkbox
+- `app/templates/global_admin/create_organization.html` - Added Porter's permission checkbox
+- `app/templates/global_admin/edit_organization.html` - Added Porter's permission checkbox
+- `app/templates/workspace/index.html` - Added + icon for creating spaces at org level
+- `tests/integration/test_csrf_token_pages.py` - Added Porter's and entity route tests
+- `tests/integration/test_workspace.py` - Fixed workspace API tests
+
 ## [2.11.2] - 2026-03-18
 
 ### Fixed - Workspace Icons Showing Christmas Trees (HOTFIX)
