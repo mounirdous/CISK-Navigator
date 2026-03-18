@@ -287,6 +287,9 @@ def onboarding():
     org_id = session.get("organization_id")
     org_name = session.get("organization_name")
 
+    # Ensure entity type defaults exist for this organization (for icons/logos)
+    EntityTypeDefault.ensure_defaults_exist(org_id)
+
     # Get step from query parameter (default to 1)
     step = request.args.get("step", 1, type=int)
 
