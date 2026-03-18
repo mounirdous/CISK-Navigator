@@ -2073,6 +2073,20 @@
                             </template>
                         </span>
                     </template>
+
+                    <!-- Action icons for creating spaces (edit mode only) -->
+                    {% if current_user.can_manage_spaces(org_id) %}
+                    <template x-if="editMode">
+                        <span class="action-icons ms-2">
+                            <a href="{{ url_for('organization_admin.create_space') }}?return_to=workspace"
+                               class="text-success"
+                               title="Add Space to Organization"
+                               @click.stop>
+                                <i class="bi bi-plus-circle"></i>
+                            </a>
+                        </span>
+                    </template>
+                    {% endif %}
                 </div>
                 <template x-for="(vt, index) in valueTypes" :key="vt.id">
                     <div class="ws-header-cell"
