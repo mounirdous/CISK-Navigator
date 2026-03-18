@@ -646,6 +646,7 @@ class DemoDataService:
                 {"name": "CO2", "kind": "numeric", "unit_label": "kg"},
                 {"name": "Cost", "kind": "numeric", "unit_label": "$"},
                 {"name": "Revenue", "kind": "numeric", "unit_label": "$"},
+                {"name": "Net", "kind": "numeric", "unit_label": "$"},
                 {"name": "Temperature", "kind": "numeric", "unit_label": "°C"},
                 {"name": "Percentage", "kind": "numeric", "unit_label": "%"},
                 {"name": "Hours", "kind": "numeric", "unit_label": "hrs"},
@@ -1533,7 +1534,11 @@ class DemoDataService:
                 return vt
 
             # Green Home-specific value types
-            if vt.name == "Energy" and ("energy" in name_lower or "solar" in name_lower or "electricity" in name_lower):
+            if (
+                vt.name == "Energy"
+                and ("energy" in name_lower or "solar" in name_lower or "electricity" in name_lower)
+                and "revenue" not in name_lower
+            ):
                 return vt
             if vt.name == "Water" and ("water" in name_lower or "usage" in name_lower):
                 return vt
