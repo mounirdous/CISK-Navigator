@@ -2996,6 +2996,7 @@ def configure_rollup(vt_id):
         current_challenge_rule=current_challenge_rule,
         entity_defaults=entity_defaults,
         form=form,
+        csrf_token=generate_csrf,
     )
 
 
