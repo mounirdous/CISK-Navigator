@@ -1154,8 +1154,45 @@ class DemoDataService:
                 if len(source_ids) == len(source_names):
                     # Set up formula
                     vt.calculation_type = "formula"
-                    vt.calculation_config = {"operation": operation, "source_value_type_ids": source_ids}
+                    vt.calculation_config = {
+                        "mode": "simple",
+                        "operation": operation,
+                        "source_value_type_ids": source_ids,
+                    }
                     db.session.add(vt)
+
+                    # Create default rollup rules for formula value types (consistent formatting)
+                    from app.models import RollupRule
+
+                    # System level
+                    rule_system = RollupRule(
+                        source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
+                        value_type_id=vt.id,
+                        rollup_enabled=True,
+                        display_scale="thousands",
+                        display_decimals=1,
+                    )
+                    db.session.add(rule_system)
+
+                    # Initiative level
+                    rule_initiative = RollupRule(
+                        source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
+                        value_type_id=vt.id,
+                        rollup_enabled=True,
+                        display_scale="thousands",
+                        display_decimals=1,
+                    )
+                    db.session.add(rule_initiative)
+
+                    # Challenge level
+                    rule_challenge = RollupRule(
+                        source_type=RollupRule.SOURCE_CHALLENGE,
+                        value_type_id=vt.id,
+                        rollup_enabled=True,
+                        display_scale="thousands",
+                        display_decimals=1,
+                    )
+                    db.session.add(rule_challenge)
 
         db.session.flush()
 
@@ -1260,7 +1297,7 @@ class DemoDataService:
                             else "External Consultant"
                         ),
                         handover_organization=f"{space_data['name']} Operations Team",
-                        deliverables='[{"name": "Phase 1 Completion", "date": "Q2 2026"}, {"name": "Full Implementation", "date": "Q4 2026"}]',
+                        deliverables="1 | Phase 1 Completion | Q2 2026\n2 | Full Implementation | Q4 2026",
                         group_label=random.choice(["A", "B", "C"]),
                         impact_on_challenge="high",
                         impact_rationale=f"Critical initiative for achieving {challenge_data['name']} objectives. Direct impact on strategic goals.",
@@ -1306,89 +1343,109 @@ class DemoDataService:
                             kpis_created.append(kpi)
 
                             # Assign appropriate value type based on KPI name
-                            vt = DemoDataService._select_value_type(kpi.name, value_types)
+                            primary_vt = DemoDataService._select_value_type(kpi.name, value_types)
 
                             # Check if this is a formula KPI
                             is_formula = kpi_data.get("formula", False)
 
-                            # Set format and scale examples based on value type
-                            display_scale = None
-                            display_decimals = None
-                            if vt.name in ["Cost", "Revenue", "Net"]:
-                                # Financial metrics: show in thousands with 1 decimal
-                                display_scale = "thousands"
-                                display_decimals = 1
-                            elif vt.name == "Currency":
-                                # Other currency: show as-is with 2 decimals
-                                display_decimals = 2
-                            elif vt.name in ["Count", "Score"]:
-                                # Integer format - no decimals
-                                display_decimals = 0
+                            # Get Cost and Revenue value types
+                            cost_vt = next((vt for vt in value_types if vt.name == "Cost"), None)
+                            revenue_vt = next((vt for vt in value_types if vt.name == "Revenue"), None)
 
-                            # Set targets to demonstrate 3 target types
-                            target_value = None
-                            target_direction = None
-                            target_date = None
+                            # Create configs for each value type on this KPI
+                            value_types_for_kpi = []
 
-                            # Distribute target types across KPIs (1 in 3 gets a target)
-                            if kpi_idx % 3 == 0:
-                                # Type 1: MAXIMIZE (higher is better)
-                                target_direction = "maximize"
-                                if vt.name in ["Revenue", "Count"]:
-                                    target_value = Decimal("1000")
-                                elif vt.name == "Percentage":
-                                    target_value = Decimal("85")
-                                elif vt.name == "Hours":
-                                    target_value = Decimal("40")
-                                target_date = date.today() + timedelta(days=180)
-                            elif kpi_idx % 3 == 1:
-                                # Type 2: MINIMIZE (lower is better)
-                                target_direction = "minimize"
-                                if vt.name in ["Cost", "Currency"]:
-                                    target_value = Decimal("500")
-                                elif vt.name == "Count":
-                                    target_value = Decimal("10")
-                                elif vt.name == "Distance":
-                                    target_value = Decimal("5")
-                                target_date = date.today() + timedelta(days=180)
-                            elif kpi_idx % 3 == 2:
-                                # Type 3: EXACT (at target is best)
-                                target_direction = "exact"
-                                if vt.name == "Percentage":
-                                    target_value = Decimal("75")
+                            # Add primary metric if it's not financial
+                            if primary_vt and primary_vt.name not in ["Cost", "Revenue", "Net"]:
+                                value_types_for_kpi.append(primary_vt)
+
+                            # ALWAYS add Cost and Revenue to all KPIs
+                            if cost_vt:
+                                value_types_for_kpi.append(cost_vt)
+                            if revenue_vt:
+                                value_types_for_kpi.append(revenue_vt)
+
+                            for vt in value_types_for_kpi:
+                                # Set format and scale examples based on value type
+                                display_scale = None
+                                display_decimals = None
+                                if vt.name in ["Cost", "Revenue", "Net"]:
+                                    # Financial metrics: show in thousands with 1 decimal
+                                    display_scale = "thousands"
+                                    display_decimals = 1
+                                elif vt.name == "Currency":
+                                    # Other currency: show as-is with 2 decimals
+                                    display_decimals = 2
                                 elif vt.name in ["Count", "Score"]:
-                                    target_value = Decimal("50")
-                                target_date = date.today() + timedelta(days=180)
+                                    # Integer format - no decimals
+                                    display_decimals = 0
 
-                            config = KPIValueTypeConfig(
-                                kpi_id=kpi.id,
-                                value_type_id=vt.id,
-                                calculation_type="formula" if is_formula else "manual",
-                                display_scale=display_scale,
-                                display_decimals=display_decimals,
-                                target_value=target_value,
-                                target_direction=target_direction,
-                                target_date=target_date,
-                            )
-                            db.session.add(config)
-                            db.session.flush()
+                                # Set targets to demonstrate 3 target types (only on primary VT)
+                                target_value = None
+                                target_direction = None
+                                target_date = None
+
+                                if vt == primary_vt:
+                                    # Distribute target types across KPIs (1 in 3 gets a target)
+                                    if kpi_idx % 3 == 0:
+                                        # Type 1: MAXIMIZE (higher is better)
+                                        target_direction = "maximize"
+                                        if vt.name in ["Revenue", "Count"]:
+                                            target_value = Decimal("1000")
+                                        elif vt.name == "Percentage":
+                                            target_value = Decimal("85")
+                                        elif vt.name == "Hours":
+                                            target_value = Decimal("40")
+                                        target_date = date.today() + timedelta(days=180)
+                                    elif kpi_idx % 3 == 1:
+                                        # Type 2: MINIMIZE (lower is better)
+                                        target_direction = "minimize"
+                                        if vt.name in ["Cost", "Currency"]:
+                                            target_value = Decimal("500")
+                                        elif vt.name == "Count":
+                                            target_value = Decimal("10")
+                                        elif vt.name == "Distance":
+                                            target_value = Decimal("5")
+                                        target_date = date.today() + timedelta(days=180)
+                                    elif kpi_idx % 3 == 2:
+                                        # Type 3: EXACT (at target is best)
+                                        target_direction = "exact"
+                                        if vt.name == "Percentage":
+                                            target_value = Decimal("75")
+                                        elif vt.name in ["Count", "Score"]:
+                                            target_value = Decimal("50")
+                                        target_date = date.today() + timedelta(days=180)
+
+                                config = KPIValueTypeConfig(
+                                    kpi_id=kpi.id,
+                                    value_type_id=vt.id,
+                                    calculation_type="formula" if is_formula else "manual",
+                                    display_scale=display_scale,
+                                    display_decimals=display_decimals,
+                                    target_value=target_value,
+                                    target_direction=target_direction,
+                                    target_date=target_date,
+                                )
+                                db.session.add(config)
+                                db.session.flush()
+
+                                # Store for snapshot generation (only if not formula VT)
+                                if vt.name != "Net":
+                                    system_configs.append(
+                                        {
+                                            "config": config,
+                                            "kpi": kpi,
+                                            "kpi_data": kpi_data,
+                                            "frequency": kpi_data["frequency"],
+                                            "is_formula": is_formula,
+                                        }
+                                    )
 
                             # Assign governance body to KPI (distributed across different bodies)
                             if kpi_idx < len(governance_bodies):
                                 gb = governance_bodies[kpi_idx % len(governance_bodies)]
                                 gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=gb.id)
                                 db.session.add(gb_link)
-
-                            # Store for formula setup
-                            system_configs.append(
-                                {
-                                    "config": config,
-                                    "kpi": kpi,
-                                    "kpi_data": kpi_data,
-                                    "frequency": kpi_data["frequency"],
-                                    "is_formula": is_formula,
-                                }
-                            )
 
                         # Add all configs to main list (no more formula KPIs - formulas are at value type level)
                         for config_info in system_configs:
