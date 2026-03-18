@@ -1269,6 +1269,21 @@ class DemoDataService:
                 db.session.flush()
                 challenges_created.append(challenge)
 
+                # Create rollup rules for Net formula value type (Challenge level)
+                from app.models import RollupRule
+
+                net_vt = next((vt for vt in value_types if vt.name == "Net"), None)
+                if net_vt:
+                    rule = RollupRule(
+                        source_type=RollupRule.SOURCE_CHALLENGE,
+                        source_id=challenge.id,
+                        value_type_id=net_vt.id,
+                        rollup_enabled=True,
+                        display_scale="thousands",
+                        display_decimals=1,
+                    )
+                    db.session.add(rule)
+
                 for initiative_idx, initiative_data in enumerate(challenge_data["initiatives"]):
                     # Fill in complete initiative form with realistic data
                     initiative = Initiative(
@@ -1298,6 +1313,19 @@ class DemoDataService:
                         challenge_id=challenge.id, initiative_id=initiative.id, display_order=initiative_idx + 1
                     )
                     db.session.add(link)
+                    db.session.flush()
+
+                    # Create rollup rules for Net formula value type (Initiative level)
+                    if net_vt:
+                        rule = RollupRule(
+                            source_type=RollupRule.SOURCE_CHALLENGE_INITIATIVE,
+                            source_id=link.id,
+                            value_type_id=net_vt.id,
+                            rollup_enabled=True,
+                            display_scale="thousands",
+                            display_decimals=1,
+                        )
+                        db.session.add(rule)
 
                     for system_idx, system_data in enumerate(initiative_data["systems"]):
                         system = System(
@@ -1315,6 +1343,18 @@ class DemoDataService:
                         )
                         db.session.add(sys_link)
                         db.session.flush()
+
+                        # Create rollup rules for Net formula value type (System level)
+                        if net_vt:
+                            rule = RollupRule(
+                                source_type=RollupRule.SOURCE_INITIATIVE_SYSTEM,
+                                source_id=sys_link.id,
+                                value_type_id=net_vt.id,
+                                rollup_enabled=True,
+                                display_scale="thousands",
+                                display_decimals=1,
+                            )
+                            db.session.add(rule)
 
                         # Track configs for this system (for formula setup)
                         system_configs = []
