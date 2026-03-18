@@ -903,54 +903,51 @@ class DemoDataService:
         # Add all demo users as members of the organization
         from app.models import UserOrganizationMembership
 
+        # Track which users we've already added to prevent duplicates
+        added_user_ids = set()
+
         for idx, user in enumerate(users):
+            # Skip if we've already added this user
+            if user.id in added_user_ids:
+                continue
+
             role = role_names[idx] if idx < len(role_names) else "viewer"
 
-            # Check if user is already a member
-            existing_membership = UserOrganizationMembership.query.filter_by(
-                user_id=user.id, organization_id=org.id
-            ).first()
+            # Set permissions based on role
+            is_admin = role == "admin"
+            can_contribute = role in ["admin", "contributor"]
 
-            if not existing_membership:
-                # Set permissions based on role
-                is_admin = role == "admin"
-                can_contribute = role in ["admin", "contributor"]
-
-                membership = UserOrganizationMembership(
-                    user_id=user.id,
-                    organization_id=org.id,
-                    is_org_admin=is_admin,
-                    can_manage_spaces=is_admin,
-                    can_manage_value_types=is_admin,
-                    can_manage_governance_bodies=is_admin,
-                    can_manage_challenges=is_admin,
-                    can_manage_initiatives=can_contribute,
-                    can_manage_systems=can_contribute,
-                    can_manage_kpis=can_contribute,
-                    can_view_comments=True,
-                    can_add_comments=can_contribute,
-                    can_contribute=can_contribute,
-                    can_view_action_items=True,
-                    can_create_action_items=can_contribute,
-                    can_view_stakeholders=True,
-                    can_manage_stakeholders=is_admin,
-                    can_view_map=True,
-                    can_edit_porters=is_admin,
-                )
-                db.session.add(membership)
+            membership = UserOrganizationMembership(
+                user_id=user.id,
+                organization_id=org.id,
+                is_org_admin=is_admin,
+                can_manage_spaces=is_admin,
+                can_manage_value_types=is_admin,
+                can_manage_governance_bodies=is_admin,
+                can_manage_challenges=is_admin,
+                can_manage_initiatives=can_contribute,
+                can_manage_systems=can_contribute,
+                can_manage_kpis=can_contribute,
+                can_view_comments=True,
+                can_add_comments=can_contribute,
+                can_contribute=can_contribute,
+                can_view_action_items=True,
+                can_create_action_items=can_contribute,
+                can_view_stakeholders=True,
+                can_manage_stakeholders=is_admin,
+                can_view_map=True,
+                can_edit_porters=is_admin,
+            )
+            db.session.add(membership)
+            added_user_ids.add(user.id)
 
         db.session.flush()
 
         # Check for user "moun" (dev testing user) and add them as org admin
         moun_user = User.query.filter((User.login == "moun") | (User.email.like("%moun%"))).first()
         if moun_user and (moun_user.is_super_admin or moun_user.is_global_admin):
-            # Check if already a member
-            existing_membership = UserOrganizationMembership.query.filter_by(
-                user_id=moun_user.id, organization_id=org.id
-            ).first()
-
-            if not existing_membership:
-                # Add moun as org admin with full permissions
+            # Only add if not already added above
+            if moun_user.id not in added_user_ids:
                 membership = UserOrganizationMembership(
                     user_id=moun_user.id,
                     organization_id=org.id,
