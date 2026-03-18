@@ -3732,9 +3732,21 @@ function workspaceV2(orgId, filterPresets) {
                 this.selectedImpactLevels = impactParams;
             }
 
-            // Expand filters if any were loaded from URL (but NOT for entity mention links)
-            if (urlParams.toString() && !fromEntityLink) {
+            // Check if we have actual filter parameters (not just navigation params like auto_edit)
+            const hasFilterParams = urlParams.has('spaceTypeFilter') ||
+                                   gbParams.length > 0 ||
+                                   spaceParams.length > 0 ||
+                                   groupParams.length > 0 ||
+                                   impactParams.length > 0;
+
+            // Expand filters only if actual filter parameters were loaded (not for entity mention links or auto_edit)
+            if (hasFilterParams && !fromEntityLink) {
                 this.filtersExpanded = true;
+            }
+
+            // Auto-enable edit mode if returning from entity creation
+            if (urlParams.has('auto_edit') && urlParams.get('auto_edit') === '1') {
+                this.editMode = true;
             }
 
             // Load action items count
