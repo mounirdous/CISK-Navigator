@@ -5,6 +5,26 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.1] - 2026-03-18
+
+### Fixed - Entity Defaults Not Created During Onboarding
+
+**Critical Bug**: Organizations created via onboarding wizard had missing entity type defaults
+
+**Issue**: When users created an organization using the onboarding wizard, no EntityTypeDefault records were created. This caused workspace icons to display generic fallback icons (tree emojis 🌲) instead of the custom icons/logos configured in Branding Manager.
+
+**Root Cause**: The `EntityTypeDefault.ensure_defaults_exist(org_id)` method was only called in the branding_manager route, but NOT in the onboarding route. Organizations created through other paths (like global admin) worked correctly.
+
+**Fix**:
+- Added `EntityTypeDefault.ensure_defaults_exist(org_id)` call at the start of the onboarding function
+- This ensures all 6 entity type defaults (organization, space, challenge, initiative, system, kpi) are created with proper icons/colors
+- Created missing defaults for existing organizations that were created via onboarding
+
+**Impact**: Any organization created via onboarding after March 14, 2026 would have had this issue. Fixed for all future onboarding flows.
+
+**Files Modified**:
+- `app/routes/organization_admin.py` - Added ensure_defaults_exist() call in onboarding route
+
 ## [2.11.0] - 2026-03-18
 
 ### Added - Granular Permissions for Action Items, Stakeholders, and Map

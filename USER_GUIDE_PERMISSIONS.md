@@ -1,8 +1,8 @@
 # CISK Navigator - User Permissions Guide
 
-**Version 1.12.0 - March 2026**
+**Version 2.11.0 - March 2026**
 
-This guide explains the per-organization user permission system introduced in v1.12.0.
+This guide explains the per-organization user permission system introduced in v1.12.0 and expanded in v2.11.0.
 
 ---
 
@@ -20,7 +20,9 @@ CISK Navigator now supports **granular permissions** allowing administrators to 
 
 ## 📋 Permission Types
 
-Each user-organization membership has **6 independent permissions**:
+Each user-organization membership has **11 independent permissions**:
+
+### Structural Entity Permissions (v1.12.0)
 
 | Permission | Controls Access To |
 |------------|-------------------|
@@ -31,10 +33,32 @@ Each user-organization membership has **6 independent permissions**:
 | **Systems** | Create, edit, delete systems |
 | **KPIs** | Create, edit, delete KPIs |
 
+### Feature Access Permissions (v2.11.0)
+
+| Permission | Controls Access To |
+|------------|-------------------|
+| **Contribute Values** | Enter/edit values in workspace cells |
+| **View Action Items** | View action register menu and list |
+| **Create Action Items** | Create/edit action items (requires View permission) |
+| **View Stakeholders** | View stakeholders menu and list under People & Action |
+| **Manage Stakeholders** | Create/edit/delete stakeholders (requires View permission) |
+| **View Map** | View map dashboard menu and page |
+
 ### Default Behavior
-- **New users**: All permissions enabled by default
-- **Existing users** (after v1.12.0 upgrade): All permissions enabled by default
+
+**Structural Entity Permissions**:
+- **New users**: All structural permissions enabled by default
+- **Existing users** (after v1.12.0 upgrade): All structural permissions enabled by default
+
+**Feature Access Permissions** (v2.11.0):
+- **Contribute Values**: Enabled by default (new and existing users)
+- **View/Create Action Items**: Enabled by default (backward compatibility)
+- **View Map**: Enabled by default (backward compatibility)
+- **View/Manage Stakeholders**: Disabled by default (new feature in v2.11.0)
+
+**Admin Overrides**:
 - **Global administrators**: Always have full access, regardless of permission settings
+- **Organization administrators**: Always have full access within their organization
 
 ---
 
@@ -63,12 +87,23 @@ Each user-organization membership has **6 independent permissions**:
 3. Fill in basic information (login, email, display name, password)
 4. Check **organization checkboxes** for organizations user should access
 5. For each checked organization, **permission checkboxes appear below**:
+
+   **Structural Permissions**:
    - ☑️ Spaces
    - ☑️ Value Types
    - ☑️ Challenges
    - ☑️ Initiatives
    - ☑️ Systems
    - ☑️ KPIs
+
+   **Feature Permissions**:
+   - ☑️ Contribute Values (enter/edit data in workspace)
+   - ☑️ View Action Items
+   - ☑️ Create Action Items (requires View Action Items)
+   - ☐ View Stakeholders
+   - ☐ Manage Stakeholders (requires View Stakeholders)
+   - ☑️ View Map
+
 6. **Uncheck permissions** you want to restrict
 7. Click **Create User**
 
@@ -119,15 +154,52 @@ Each user-organization membership has **6 independent permissions**:
 - Can create/edit/delete value types
 - Cannot modify organizational structure
 
+### Example 5: Data Entry User (NEW in v2.11.0)
+**Scenario**: User should only enter values in workspace, no structural changes
+
+**Solution**: Create user with only **Contribute Values** checked
+- Can enter/edit values in workspace cells
+- Cannot create or edit any entities (spaces, challenges, KPIs, etc.)
+- Cannot view action items, stakeholders, or map
+
+### Example 6: Action Items Viewer (NEW in v2.11.0)
+**Scenario**: User needs to see action items but not create them
+
+**Solution**: Create user with only **View Action Items** checked
+- Can see action register menu and view all action items
+- Cannot create, edit, or delete action items
+- Ideal for stakeholders who need visibility but not editing rights
+
+### Example 7: Stakeholder Manager (NEW in v2.11.0)
+**Scenario**: User manages stakeholders and map but nothing else
+
+**Solution**: Create user with these permissions:
+- ☑️ **View Stakeholders**
+- ☑️ **Manage Stakeholders**
+- ☑️ **View Map**
+- All structural permissions unchecked
+- Can add/edit stakeholders and view them on the map
+- Cannot modify organizational structure
+
 ---
 
 ## 🚫 What Happens When Permission is Denied?
 
 ### In the UI
+
+**Structural Permissions**:
 - **Buttons are hidden** automatically
   - "Create Space", "Create Challenge", "Create KPI" buttons disappear
   - "Edit", "Delete" buttons disappear from lists
 - User only sees entities, cannot modify them
+
+**Feature Permissions (NEW in v2.11.0)**:
+- **No Contribute Values**: Workspace cells are read-only, "Edit Mode" button hidden
+- **No View Action Items**: "Action Register" menu item hidden
+- **No Create Action Items**: "+ New Action Item" button hidden, existing items read-only
+- **No View Stakeholders**: "Stakeholders" menu item hidden under People & Action
+- **No Manage Stakeholders**: "+ New Stakeholder" button hidden, edit/delete buttons hidden
+- **No View Map**: "Map" navigation icon hidden, direct URL access blocked
 
 ### Direct URL Access
 - User is **redirected to Administration page**
@@ -171,20 +243,37 @@ Each user-organization membership has **6 independent permissions**:
   4. Save changes
 
 ### Workspace Access
-- Permissions only control **create/edit/delete operations**
+- Structural permissions only control **create/edit/delete operations** on entities
 - Users can **always view** workspace data (if they have org access)
-- Users can **always enter values** on KPI cells
-- Users can **always add comments**
+- Users need **Contribute Values** permission to enter/edit values on KPI cells (NEW in v2.11.0)
+- Users can **always add comments** (commenting permission coming in future release)
 
-### Permission Independence
-- Permissions are independent
+### Permission Dependencies (NEW in v2.11.0)
+- **Most permissions are independent**
 - Having "Challenges" permission doesn't give "Initiatives" permission
 - You can have any combination of permissions
 
+**However, some permissions have dependencies**:
+- **Create Action Items** requires **View Action Items**
+  - If you uncheck "View Action Items", "Create Action Items" is automatically unchecked
+- **Manage Stakeholders** requires **View Stakeholders**
+  - If you uncheck "View Stakeholders", "Manage Stakeholders" is automatically unchecked
+
+These dependencies are enforced in the UI with JavaScript and validated on the backend.
+
 ### Backward Compatibility
-- After upgrading to v1.12.0, **all existing users have all permissions**
+
+**v1.12.0 Upgrade**:
+- After upgrading to v1.12.0, **all existing users have all structural permissions**
 - You must explicitly uncheck permissions to restrict access
 - This ensures no disruption to existing workflows
+
+**v2.11.0 Upgrade** (NEW):
+- **Contribute Values**: Enabled for all existing users (backward compatibility)
+- **View/Create Action Items**: Enabled for all existing users (backward compatibility)
+- **View Map**: Enabled for all existing users (backward compatibility)
+- **View/Manage Stakeholders**: Disabled for all existing users (new feature, opt-in)
+- This ensures existing workflows continue without changes
 
 ---
 
@@ -230,4 +319,4 @@ If you encounter issues with the permission system:
 
 ---
 
-*Last updated: March 8, 2026 - v1.12.0*
+*Last updated: March 18, 2026 - v2.11.0*

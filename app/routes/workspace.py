@@ -3512,15 +3512,20 @@ def get_data():
         .all()
     )
 
-    # Get entity type defaults for logo fallbacks
+    # Get entity type defaults for logo/icon fallbacks
     entity_defaults = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
     default_logos = {}
+    default_icons = {}
     for default in entity_defaults:
+        # Store default logo if exists
         if default.default_logo_data and default.default_logo_mime_type:
             default_logos[default.entity_type] = (
                 f"data:{default.default_logo_mime_type};base64,"
                 f"{base64.b64encode(default.default_logo_data).decode('utf-8')}"
             )
+        # Store default icon (text/emoji)
+        if default.default_icon:
+            default_icons[default.entity_type] = default.default_icon
 
     # Helper function to get logo URL for an entity
     def get_logo_url(entity, entity_type):
@@ -3533,6 +3538,13 @@ def get_data():
         ):
             return f"data:{entity.logo_mime_type};base64,{base64.b64encode(entity.logo_data).decode('utf-8')}"
         return default_logos.get(entity_type)
+
+    # Helper function to get icon for an entity
+    def get_icon(entity, entity_type):
+        """Get icon - entity's own icon or default icon for the type"""
+        if hasattr(entity, "icon") and entity.icon:
+            return entity.icon
+        return default_icons.get(entity_type)
 
     # Helper function to get entity links
     from app.models import EntityLink
@@ -3805,6 +3817,7 @@ def get_data():
                                 "name": kpi.name,
                                 "display_order": kpi.display_order,
                                 "logo_url": get_logo_url(kpi, "kpi"),
+                                "icon": get_icon(kpi, "kpi"),
                                 "values": kpi_values,
                                 "is_archived": kpi.is_archived,
                                 "archived_at": kpi.archived_at.strftime("%Y-%m-%d") if kpi.archived_at else None,
@@ -3821,6 +3834,7 @@ def get_data():
                             "link_id": sys_link.id,  # For parent change operations
                             "name": system.name,
                             "logo_url": get_logo_url(system, "system"),
+                            "icon": get_icon(system, "system"),
                             "rollup_values": system_rollup_values,
                             "entity_links": system_entity_links,
                             "kpis": kpis_data,
@@ -3833,6 +3847,7 @@ def get_data():
                         "link_id": link.id,  # For parent change operations
                         "name": initiative.name,
                         "logo_url": get_logo_url(initiative, "initiative"),
+                        "icon": get_icon(initiative, "initiative"),
                         "group_label": initiative.group_label,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "rollup_values": initiative_rollup_values,
@@ -3847,6 +3862,7 @@ def get_data():
                     "id": challenge.id,
                     "name": challenge.name,
                     "logo_url": get_logo_url(challenge, "challenge"),
+                    "icon": get_icon(challenge, "challenge"),
                     "display_order": challenge.display_order,
                     "rollup_values": challenge_rollup_values,
                     "entity_links": challenge_entity_links,
@@ -3859,6 +3875,7 @@ def get_data():
                 "id": space.id,
                 "name": space.name,
                 "logo_url": get_logo_url(space, "space"),
+                "icon": get_icon(space, "space"),
                 "display_order": space.display_order,
                 "is_private": space.is_private,
                 "space_label": space.space_label,
