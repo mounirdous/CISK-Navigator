@@ -1,7 +1,7 @@
 """Forms for stakeholder mapping."""
 
 from flask_wtf import FlaskForm
-from wtforms import IntegerField, SelectField, StringField, TextAreaField
+from wtforms import IntegerField, SelectField, SelectMultipleField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Email, Length, NumberRange, Optional
 
 
@@ -47,6 +47,12 @@ class StakeholderForm(FlaskForm):
         default="shared",
     )
     notes = TextAreaField("Notes", validators=[Optional()])
+    maps = SelectMultipleField(
+        "Add to Maps",
+        coerce=int,
+        validators=[DataRequired()],
+        description="Select at least one map (Ctrl+Click or Cmd+Click to select multiple)",
+    )
 
 
 class StakeholderRelationshipForm(FlaskForm):

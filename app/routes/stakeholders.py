@@ -176,6 +176,17 @@ def create():
     )
     form.site_id.choices = [(0, "-- No Site --")] + [(s.id, f"{s.name} ({s.country.name})") for s in sites]
 
+    # Populate map choices (all maps visible to current user in this organization)
+    all_maps = StakeholderMap.query.filter_by(organization_id=org_id).order_by(StakeholderMap.name).all()
+    visible_maps = [m for m in all_maps if m.is_visible_to_user(current_user)]
+    form.maps.choices = [
+        (m.id, f"{m.name} ({'Private' if m.visibility == 'private' else 'Shared'})") for m in visible_maps
+    ]
+
+    if not visible_maps:
+        flash("No maps available. Please create a map first.", "warning")
+        return redirect(url_for("stakeholders.create_map", organization_id=org_id))
+
     if form.validate_on_submit():
         stakeholder = Stakeholder(
             organization_id=org_id,
@@ -193,6 +204,15 @@ def create():
         )
 
         db.session.add(stakeholder)
+        db.session.flush()  # Get stakeholder.id before adding to maps
+
+        # Add stakeholder to selected maps
+        selected_map_ids = form.maps.data
+        for map_id in selected_map_ids:
+            stakeholder_map = StakeholderMap.query.get(map_id)
+            if stakeholder_map and stakeholder_map.is_visible_to_user(current_user):
+                stakeholder_map.add_stakeholder(stakeholder.id)
+
         db.session.commit()
 
         AuditService.log_action(
@@ -200,10 +220,10 @@ def create():
             entity_type="stakeholder",
             entity_id=stakeholder.id,
             entity_name=stakeholder.name,
-            description=f"Created stakeholder: {stakeholder.name}",
+            description=f"Created stakeholder: {stakeholder.name} and added to {len(selected_map_ids)} map(s)",
         )
 
-        flash(f"Stakeholder '{stakeholder.name}' created successfully", "success")
+        flash(f"Stakeholder '{stakeholder.name}' created and added to {len(selected_map_ids)} map(s)", "success")
         return redirect(url_for("stakeholders.index", organization_id=org_id))
 
     return render_template("stakeholders/create.html", form=form, organization=organization, csrf_token=generate_csrf)
@@ -236,9 +256,23 @@ def edit(id):
     )
     form.site_id.choices = [(0, "-- No Site --")] + [(s.id, f"{s.name} ({s.country.name})") for s in sites]
 
-    # Set current value
+    # Populate map choices
+    all_maps = (
+        StakeholderMap.query.filter_by(organization_id=stakeholder.organization_id).order_by(StakeholderMap.name).all()
+    )
+    visible_maps = [m for m in all_maps if m.is_visible_to_user(current_user)]
+    form.maps.choices = [
+        (m.id, f"{m.name} ({'Private' if m.visibility == 'private' else 'Shared'})") for m in visible_maps
+    ]
+
+    # Set current values
     if request.method == "GET":
         form.site_id.data = stakeholder.site_id if stakeholder.site_id else 0
+        # Get current maps for this stakeholder
+        current_map_ids = [
+            m.map_id for m in StakeholderMapMembership.query.filter_by(stakeholder_id=stakeholder.id).all()
+        ]
+        form.maps.data = current_map_ids
 
     if form.validate_on_submit():
         stakeholder.name = form.name.data
@@ -252,6 +286,25 @@ def edit(id):
         stakeholder.visibility = form.visibility.data
         stakeholder.notes = form.notes.data
         stakeholder.updated_at = datetime.utcnow()
+
+        # Update map memberships
+        selected_map_ids = set(form.maps.data)
+        current_memberships = StakeholderMapMembership.query.filter_by(stakeholder_id=stakeholder.id).all()
+        current_map_ids = set(m.map_id for m in current_memberships)
+
+        # Remove from maps that are no longer selected
+        maps_to_remove = current_map_ids - selected_map_ids
+        for map_id in maps_to_remove:
+            membership = StakeholderMapMembership.query.filter_by(map_id=map_id, stakeholder_id=stakeholder.id).first()
+            if membership:
+                db.session.delete(membership)
+
+        # Add to newly selected maps
+        maps_to_add = selected_map_ids - current_map_ids
+        for map_id in maps_to_add:
+            stakeholder_map = StakeholderMap.query.get(map_id)
+            if stakeholder_map and stakeholder_map.is_visible_to_user(current_user):
+                stakeholder_map.add_stakeholder(stakeholder.id)
 
         db.session.commit()
 

@@ -5,6 +5,42 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-03-18
+
+### Feature - Mandatory Map Assignment for Stakeholders
+**Breaking Change**: Stakeholders must now belong to at least one map
+
+**Why**: Stakeholders should always be organized into maps for better management and filtering. Creating orphan stakeholders caused confusion about which map they belonged to.
+
+**What Changed**:
+
+**Create Stakeholder**:
+- New required field: "Add to Maps" (multi-select)
+- Must select at least one map when creating a stakeholder
+- Automatically adds stakeholder to selected maps after creation
+- Shows error if no maps available (redirects to create map first)
+
+**Edit Stakeholder**:
+- Can now view and modify which maps a stakeholder belongs to
+- Add to new maps or remove from existing maps
+- Pre-selects current maps when editing
+
+**Database Migration** (Local DB):
+- Added all 4 existing stakeholders to both maps ("My Map" and "Other Map")
+- Result: Both maps now show 4 stakeholders each
+- No more orphan stakeholders
+
+**Technical Details**:
+- Added `maps` field to `StakeholderForm` (SelectMultipleField)
+- Updated create/edit routes to handle map assignments
+- Updated templates to display map selection UI
+- Form validation requires at least one map selection
+
+**User Experience**:
+- Clear understanding: every stakeholder belongs to specific map(s)
+- Better organization: maps now represent actual stakeholder groupings
+- No confusion: selecting a map shows exactly who belongs to it
+
 ## [2.9.2] - 2026-03-18
 
 ### Fixed - Map Filtering in Network Visualization

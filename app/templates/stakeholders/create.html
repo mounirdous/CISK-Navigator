@@ -76,6 +76,15 @@
                         </div>
 
                         <div class="mb-3">
+                            {{ form.maps.label(class="form-label") }}
+                            {{ form.maps(class="form-select" + (" is-invalid" if form.maps.errors else ""), size=5, multiple=True) }}
+                            {% if form.maps.errors %}
+                            <div class="invalid-feedback">{{ form.maps.errors[0] }}</div>
+                            {% endif %}
+                            <small class="text-muted">{{ form.maps.description }}</small>
+                        </div>
+
+                        <div class="mb-3">
                             {{ form.notes.label(class="form-label") }}
                             {{ form.notes(class="form-control", rows=4) }}
                         </div>
