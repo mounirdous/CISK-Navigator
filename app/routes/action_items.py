@@ -69,6 +69,7 @@ def index():
         stats=stats,
         filter_form=filter_form,
         current_filters={"type": item_type, "status": status_filter, "visibility": visibility_filter},
+        can_contribute=current_user.can_contribute(org_id),
         csrf_token=generate_csrf,
     )
 
@@ -79,6 +80,12 @@ def index():
 def create():
     """Create new action item or memo"""
     org_id = session.get("organization_id")
+
+    # Check permission
+    if not current_user.can_contribute(org_id):
+        flash("You do not have permission to create action items", "danger")
+        return redirect(url_for("action_items.index"))
+
     form = ActionItemCreateForm()
 
     # Populate owner choices with organization users
@@ -128,6 +135,11 @@ def create():
 def edit(item_id):
     """Edit action item or memo"""
     item = ActionItem.query.get_or_404(item_id)
+
+    # Check permission
+    if not current_user.can_contribute(item.organization_id):
+        flash("You do not have permission to edit action items", "danger")
+        return redirect(url_for("action_items.index"))
 
     # Check ownership
     if item.owner_user_id != current_user.id:
@@ -180,6 +192,13 @@ def edit(item_id):
 @organization_required
 def delete(item_id):
     """Delete action item or memo"""
+    org_id = session.get("organization_id")
+
+    # Check permission
+    if not current_user.can_contribute(org_id):
+        flash("You do not have permission to delete action items", "danger")
+        return redirect(url_for("action_items.index"))
+
     if ActionItemService.delete_item(item_id, current_user.id):
         flash("Item deleted successfully", "success")
     else:
@@ -194,6 +213,10 @@ def delete(item_id):
 def toggle_status(item_id):
     """Quick toggle between active and completed"""
     item = ActionItem.query.get_or_404(item_id)
+
+    # Check permission
+    if not current_user.can_contribute(item.organization_id):
+        return jsonify({"error": "Permission denied"}), 403
 
     if item.owner_user_id != current_user.id:
         return jsonify({"error": "Unauthorized"}), 403

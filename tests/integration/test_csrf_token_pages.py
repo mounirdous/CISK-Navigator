@@ -227,6 +227,34 @@ class TestCSRFTokenAvailability:
         response = authenticated_org_user.get("/auth/change-password")
         self.assert_no_csrf_errors(response)
 
+    def test_org_admin_onboarding(self, authenticated_org_user, sample_organization):
+        """Test /org-admin/onboarding has csrf_token"""
+        response = authenticated_org_user.get(f"/org-admin/onboarding?org_id={sample_organization.id}")
+        self.assert_no_csrf_errors(response)
+
+    def test_action_items_edit(self, authenticated_org_user, sample_organization, org_user):
+        """Test /toolbox/actions/<id>/edit has csrf_token"""
+        from app import db
+        from app.models import ActionItem
+
+        # Create a test action item
+        action_item = ActionItem(
+            organization_id=sample_organization.id,
+            owner_user_id=org_user.id,
+            created_by_user_id=org_user.id,
+            title="Test Action",
+            description="Test Description",
+            type="action",
+            status="active",
+            priority="medium",
+            visibility="shared",
+        )
+        db.session.add(action_item)
+        db.session.commit()
+
+        response = authenticated_org_user.get(f"/toolbox/actions/{action_item.id}/edit")
+        self.assert_no_csrf_errors(response)
+
 
 @pytest.mark.parametrize(
     "route",

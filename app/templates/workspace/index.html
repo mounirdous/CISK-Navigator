@@ -1655,7 +1655,8 @@
             </button>
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <!-- Edit Mode Toggle -->
+            <!-- Edit Mode Toggle (only show if user can contribute) -->
+            {% if can_contribute %}
             <button @click="editMode = !editMode"
                     class="btn btn-sm"
                     :class="editMode ? 'btn-warning' : 'btn-outline-light'"
@@ -1663,6 +1664,7 @@
                 <i class="bi bi-pencil-square"></i>
                 <span x-text="editMode ? 'Exit Edit Mode' : 'Edit Mode'"></span>
             </button>
+            {% endif %}
 
             <!-- Tree Controls (Rows) -->
             <div class="btn-group btn-group-sm">

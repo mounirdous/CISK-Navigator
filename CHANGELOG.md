@@ -5,6 +5,41 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.4] - 2026-03-18
+
+### Added - Permission-Based UI Visibility for Action Items
+**Feature**: Hide action item create/edit buttons based on user permissions
+
+**Changes**:
+- Show "Action Register" menu to all users with organization context
+- Hide "New Item" button if user cannot contribute
+- Hide edit/delete buttons if user cannot contribute
+- Added permission checks to action_items routes (create, edit, delete, toggle_status)
+
+**Permission Logic**:
+- Action Register visible to all org members (can view own and shared items)
+- Create/Edit/Delete requires `can_contribute` permission
+- Users can only edit/delete their own items
+
+**Test Coverage**:
+- Added `/org-admin/onboarding` to CSRF token tests
+- Added `/toolbox/actions/<id>/edit` to CSRF token tests
+
+**Files Modified**:
+- `app/templates/base.html` - Changed action_items menu visibility from org_admin to all org members
+- `app/routes/action_items.py` - Added permission checks to create, edit, delete, toggle_status
+- `app/templates/action_items/index.html` - Hide create button and action buttons based on permissions
+- `tests/integration/test_csrf_token_pages.py` - Added tests for onboarding and action items edit
+
+### Fixed - CSRF Token in Onboarding (CRITICAL HOTFIX)
+**Critical Bug**: Onboarding wizard returned 500 error
+
+**Error**: `jinja2.exceptions.UndefinedError: 'csrf_token' is undefined` on `/org-admin/onboarding`
+
+**Root Cause**: The onboarding route didn't pass `csrf_token=generate_csrf` to the template.
+
+**Fix**: Added `csrf_token=generate_csrf` to onboarding render_template call in `app/routes/organization_admin.py`
+
 ## [2.10.3] - 2026-03-18
 
 ### Added - Test Coverage for Change Password CSRF

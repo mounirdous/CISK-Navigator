@@ -508,6 +508,7 @@ def onboarding():
         step=step,
         form=form,
         entity_defaults=entity_defaults,
+        csrf_token=generate_csrf,
     )
 
 
