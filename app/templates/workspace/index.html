@@ -3715,6 +3715,13 @@ function workspaceV2(orgId, filterPresets) {
             this.selectedGroups = [];
             this.selectedImpactLevels = [];
             this.visibleValueTypeIds = this.valueTypes.map(vt => vt.id);  // Reset to all visible
+            // Reset display options to defaults
+            this.showLevels.spaces = true;
+            this.showLevels.challenges = true;
+            this.showLevels.initiatives = true;
+            this.showLevels.systems = true;
+            this.showLevels.kpis = true;
+            this.showArchivedKPIs = false;
         },
 
         // Filter Toggle Methods
