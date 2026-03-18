@@ -5,6 +5,25 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-03-18
+
+### Feature - Add to Map Modal
+**New Feature**: Implemented "Add to Map" functionality from context menu
+
+**What it does**:
+- Right-click on any stakeholder node → "Add to Map"
+- Opens modal showing all available maps for the organization
+- Select a map and add the stakeholder with one click
+- Shows map visibility (private 🔒 or shared 👥) and stakeholder count
+- Validates: prevents duplicates, requires map selection
+- Auto-reloads visualization after successful addition
+
+**Technical Details**:
+- Modal uses existing `/stakeholders/maps/<map_id>/add-stakeholder` endpoint
+- Displays stakeholder name in modal header for clarity
+- Follows same pattern as relationship modal (Bootstrap 5, CSRF protection)
+- Gracefully handles case when no maps exist (shows create map link)
+
 ## [2.8.4] - 2026-03-18
 
 ### Fixed - Context Menu in Fullscreen Mode

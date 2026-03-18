@@ -583,6 +583,52 @@
     </div>
 </div>
 
+<!-- Add to Map Modal -->
+<div class="modal fade" id="addToMapModal" tabindex="-1" aria-labelledby="addToMapModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addToMapModalLabel">Add to Map</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">
+                    Select a map to add <strong id="stakeholderNameDisplay"></strong> to:
+                </p>
+                <form id="addToMapForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" id="stakeholderIdForMap" name="stakeholder_id" value=""/>
+
+                    <div class="mb-3">
+                        <label for="mapSelect" class="form-label">Select Map</label>
+                        <select class="form-select" id="mapSelect" name="map_id" required>
+                            <option value="">Choose a map...</option>
+                            {% for map in maps %}
+                            <option value="{{ map.id }}">
+                                {{ '🔒 ' if map.visibility == 'private' else '👥 ' }}{{ map.name }} ({{ map.stakeholder_count }} stakeholders)
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    {% if maps|length == 0 %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> No maps available.
+                        <a href="{{ url_for('stakeholders.create_map', organization_id=organization.id) }}" class="alert-link">Create a map</a> first.
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAddToMap()" {% if maps|length == 0 %}disabled{% endif %}>
+                    <i class="bi bi-plus-circle"></i> Add to Map
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- vis.js Library -->
 <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
 <link href="https://unpkg.com/vis-network/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
@@ -1337,6 +1383,55 @@ async function submitRelationship() {
     }
 }
 
+async function submitAddToMap() {
+    const form = document.getElementById('addToMapForm');
+    const formData = new FormData(form);
+
+    const mapId = formData.get('map_id');
+    const stakeholderId = formData.get('stakeholder_id');
+    const csrfToken = formData.get('csrf_token');
+
+    if (!mapId) {
+        alert('Please select a map');
+        return;
+    }
+
+    if (!stakeholderId) {
+        alert('No stakeholder selected');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/stakeholders/maps/${mapId}/add-stakeholder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({
+                stakeholder_id: parseInt(stakeholderId)
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to add stakeholder to map');
+        }
+
+        // Close modal and reload page
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addToMapModal'));
+        modal.hide();
+
+        // Show success message
+        alert('Stakeholder added to map successfully!');
+        location.reload();
+    } catch (error) {
+        console.error('Error adding to map:', error);
+        alert('Error: ' + error.message);
+    }
+}
+
 // Fullscreen functionality
 function toggleFullscreen() {
     const card = document.getElementById('networkCard');
@@ -1993,9 +2088,17 @@ async function contextMenuAction(action) {
             break;
 
         case 'addToMap':
-            // Show map selection modal or create new map with this stakeholder
-            alert('Add to Map feature: Select a map to add ' + stakeholder.name + ' to');
-            // TODO: Implement map selection modal
+            // Pre-fill stakeholder info in the add to map modal
+            document.getElementById('stakeholderIdForMap').value = nodeId;
+            document.getElementById('stakeholderNameDisplay').textContent = stakeholder.name;
+            document.getElementById('mapSelect').value = ''; // Reset selection
+
+            // Show the modal
+            const addToMapModalElement = document.getElementById('addToMapModal');
+            if (addToMapModalElement) {
+                const addToMapModal = new bootstrap.Modal(addToMapModalElement);
+                addToMapModal.show();
+            }
             break;
 
         case 'delete':
