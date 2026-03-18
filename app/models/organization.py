@@ -63,6 +63,7 @@ class Organization(db.Model):
     saved_charts = db.relationship("SavedChart", back_populates="organization", cascade="all, delete-orphan")
     geography_regions = db.relationship("GeographyRegion", back_populates="organization", cascade="all, delete-orphan")
     entity_defaults = db.relationship("EntityTypeDefault", back_populates="organization", cascade="all, delete-orphan")
+    filter_presets = db.relationship("UserFilterPreset", back_populates="organization", cascade="all, delete-orphan")
     deleter = db.relationship("User", foreign_keys=[deleted_by])
 
     def soft_delete(self, user_id):

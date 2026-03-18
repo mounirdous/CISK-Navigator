@@ -2137,7 +2137,7 @@
                     </template>
                     {% endif %}
                 </div>
-                <template x-for="(vt, index) in visibleValueTypes" :key="vt.id">
+                <template x-for="(vt, index) in getVisibleValueTypes()" :key="vt.id">
                     <div class="ws-header-cell"
                          :class="{'draggable-column': editMode, 'column-collapsed': vt.collapsed}"
                          :draggable="editMode"
@@ -2265,7 +2265,7 @@
                                 </template>
                             </div>
                         </div>
-                        <template x-for="vt in visibleValueTypes" :key="vt.id">
+                        <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                             <div class="ws-cell value-cell text-center"
                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                  :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'">
@@ -2407,7 +2407,7 @@
                                         </template>
                                     </div>
                                 </div>
-                                <template x-for="vt in visibleValueTypes" :key="vt.id">
+                                <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                     <div class="ws-cell value-cell text-center"
                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                          :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'">
@@ -2530,7 +2530,7 @@
                                                 </template>
                                             </div>
                                         </div>
-                                        <template x-for="vt in visibleValueTypes" :key="vt.id">
+                                        <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                             <div class="ws-cell value-cell text-center"
                                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                  :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'">
@@ -2666,7 +2666,7 @@
                                                         </template>
                                                     </div>
                                                 </div>
-                                                <template x-for="vt in visibleValueTypes" :key="vt.id">
+                                                <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                     <div class="ws-cell value-cell text-center"
                                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                          :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'">
@@ -2832,7 +2832,7 @@
                                                             </template>
                                                         </div>
                                                     </div>
-                                                    <template x-for="vt in visibleValueTypes" :key="vt.id">
+                                                    <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                         <!-- KPI Cell: Show with consensus styling if config exists, otherwise clean N/A -->
                                                         <div class="ws-cell text-center"
                                                              :class="{
@@ -3917,9 +3917,9 @@ function workspaceV2(orgId, filterPresets) {
             );
         },
 
-        get visibleValueTypes() {
+        getVisibleValueTypes() {
             // If no specific columns selected, show all
-            if (this.visibleValueTypeIds.length === 0) {
+            if (this.visibleValueTypeIds.length === 0 || this.visibleValueTypeIds.length === this.valueTypes.length) {
                 return this.valueTypes;
             }
             // Otherwise, filter to only visible columns

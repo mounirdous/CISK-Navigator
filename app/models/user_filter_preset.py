@@ -44,7 +44,7 @@ class UserFilterPreset(db.Model):
 
     # Relationships
     user = db.relationship("User", backref="filter_presets")
-    organization = db.relationship("Organization", backref="filter_presets")
+    organization = db.relationship("Organization", back_populates="filter_presets")
 
     # Constraints and indexes
     __table_args__ = (db.UniqueConstraint("user_id", "organization_id", "name", name="uq_user_org_preset_name"),)
