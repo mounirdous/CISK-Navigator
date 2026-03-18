@@ -9,6 +9,7 @@ import yaml
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
+from markupsafe import Markup
 
 from app.decorators import super_admin_required
 from app.extensions import db
@@ -1702,10 +1703,20 @@ def demo_generator_create():
             f"✅ Demo organization '{result['organization'].name}' created successfully!",
             "success",
         )
-        flash(
-            "🔑 LOGIN CREDENTIALS: Username = first part of email | Password = Demo2026! (no forced change)",
-            "warning",
-        )
+
+        # Display login credentials for each user
+        credentials_msg = "🔑 LOGIN CREDENTIALS (Password: Demo2026! for all):<br>"
+        for user_data in result["user_info"]:
+            role_label = user_data["role"].upper()
+            status = "(existing)" if user_data["is_existing"] else "(new)"
+            credentials_msg += (
+                f"&nbsp;&nbsp;• <strong>{role_label}</strong> {status}: "
+                f"Username = <code>{user_data['username']}</code> | "
+                f"Email = {user_data['email']}<br>"
+            )
+        credentials_msg += "No forced password change required."
+        flash(Markup(credentials_msg), "warning")
+
         flash(
             f"📊 Created: {len(result['users'])} users, {result['stakeholders']} stakeholders, "
             f"{result['stakeholder_maps']} maps, {result['spaces']} spaces, "

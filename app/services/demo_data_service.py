@@ -558,22 +558,36 @@ class DemoDataService:
                 f"demo.viewer@{scenario_key}.local",
             ]
 
-        users = []
-        for idx, email in enumerate(user_emails):
-            username = email.split("@")[0]
+        # Generate unique usernames for this scenario
+        role_names = ["admin", "contributor", "viewer"]
 
-            # Check if user with this login or email already exists
-            existing_user = User.query.filter((User.login == username) | (User.email == email)).first()
+        users = []
+        user_info = []  # Track user details for display
+        for idx, email in enumerate(user_emails):
+            # Generate unique username based on role and scenario
+            role = role_names[idx] if idx < len(role_names) else f"user{idx + 1}"
+            base_username = f"demo_{role}_{scenario_key}"
+
+            # Ensure username is unique by checking DB
+            username = base_username
+            counter = 1
+            while User.query.filter_by(login=username).first():
+                username = f"{base_username}_{counter}"
+                counter += 1
+
+            # Check if user with this email already exists
+            existing_user = User.query.filter_by(email=email).first()
 
             if existing_user:
                 # Use existing user instead of creating new one
                 users.append(existing_user)
+                user_info.append({"username": existing_user.login, "email": email, "role": role, "is_existing": True})
             else:
                 # Create new user (Password: Demo2026! - no forced change)
                 user = User(
                     login=username,
                     email=email,
-                    display_name=f"Demo User {idx + 1}",
+                    display_name=f"Demo {role.title()}",
                     is_active=True,
                     is_global_admin=False,
                     must_change_password=False,  # No forced password change for demo users
@@ -581,6 +595,7 @@ class DemoDataService:
                 user.set_password("Demo2026!")
                 db.session.add(user)
                 users.append(user)
+                user_info.append({"username": username, "email": email, "role": role, "is_existing": False})
         db.session.flush()
 
         # Set first user as org admin if not already
@@ -824,6 +839,7 @@ class DemoDataService:
         return {
             "organization": org,
             "users": users,
+            "user_info": user_info,
             "stakeholders": len(stakeholder_map_dict),
             "stakeholder_maps": len(stakeholder_maps),
             "spaces": len(spaces_created),
