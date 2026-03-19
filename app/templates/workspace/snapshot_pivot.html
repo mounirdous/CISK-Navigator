@@ -25,11 +25,16 @@
     </div>
 
     <!-- Filters -->
-    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
-            <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;" x-data="{ filtersOpen: false }">
+        <div class="card-header" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border-radius: 12px 12px 0 0; border: none; cursor: pointer;" @click="filtersOpen = !filtersOpen">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+                <button type="button" class="btn btn-link text-white p-0" style="text-decoration: none;">
+                    <i class="bi" :class="filtersOpen ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem;"></i>
+                </button>
+            </div>
         </div>
-        <div class="card-body p-4">
+        <div class="card-body p-4" x-show="filtersOpen" x-collapse>
             <form method="GET" action="{{ url_for('workspace.snapshot_pivot') }}" id="filter-form">
                 <div class="row g-3 mb-3">
                     <div class="col-md-3">
@@ -95,118 +100,32 @@
                 <!-- Time Range Selection -->
                 <div class="card" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px;">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="mb-0"><i class="bi bi-calendar-range"></i> Time Range</h6>
-                            <div class="btn-group btn-group-sm" role="group">
-                                <input type="radio" class="btn-check" name="range_mode_toggle" id="range_mode_simple" value="simple" {% if not use_custom_range %}checked{% endif %} autocomplete="off">
-                                <label class="btn btn-outline-secondary" for="range_mode_simple" style="border-radius: 6px 0 0 6px;">Simple</label>
+                        <h6 class="mb-3"><i class="bi bi-calendar-range"></i> Time Range</h6>
 
-                                <input type="radio" class="btn-check" name="range_mode_toggle" id="range_mode_custom" value="custom" {% if use_custom_range %}checked{% endif %} autocomplete="off">
-                                <label class="btn btn-outline-secondary" for="range_mode_custom" style="border-radius: 0 6px 6px 0;">Custom Dates</label>
+                        <input type="hidden" name="use_custom_range" id="use_custom_range" value="true">
+                        <input type="hidden" name="start_month" id="start_month" value="{{ start_month if start_month else 1 }}">
+                        <input type="hidden" name="start_year_custom" id="start_year_custom" value="{{ start_year_custom if start_year_custom else available_years[0] }}">
+                        <input type="hidden" name="end_month" id="end_month" value="{{ end_month if end_month else 12 }}">
+                        <input type="hidden" name="end_year_custom" id="end_year_custom" value="{{ end_year_custom if end_year_custom else available_years[-1] }}">
+
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-calendar-event"></i> Start Date</label>
+                                <input type="text"
+                                       id="start-date-picker"
+                                       class="form-control form-control-lg"
+                                       placeholder="Select start date..."
+                                       value="{% if start_month and start_year_custom %}{{ '%04d-%02d-01'|format(start_year_custom, start_month) }}{% endif %}"
+                                       style="border-radius: 8px; cursor: pointer;">
                             </div>
-                        </div>
-
-                        <!-- Simple Mode -->
-                        <div id="simple-range-mode" {% if use_custom_range %}style="display: none;"{% endif %}>
-                            <div class="row g-3">
-                            <!-- Year Range -->
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold">Year Range</label>
-                                <div class="row g-2">
-                                    <div class="col">
-                                        <label class="form-label small">From</label>
-                                        <select name="year_start" id="year_start" class="form-select form-select-sm" style="border-radius: 6px;">
-                                            {% for y in available_years %}
-                                            <option value="{{ y }}" {% if y == year_start %}selected{% endif %}>{{ y }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col">
-                                        <label class="form-label small">To</label>
-                                        <select name="year_end" id="year_end" class="form-select form-select-sm" style="border-radius: 6px;">
-                                            {% for y in available_years %}
-                                            <option value="{{ y }}" {% if y == year_end %}selected{% endif %}>{{ y }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Period Selection (Quarters or Months) -->
-                            <div class="col-md-12">
-                                <label class="form-label fw-bold">Period Selection (optional)</label>
-                                <div id="period-selection">
-                                    <!-- Quarterly options -->
-                                    <div id="quarterly-periods" style="display: none;">
-                                        <div class="btn-group w-100" role="group">
-                                            <input type="checkbox" class="btn-check period-check" id="q1" name="quarters" value="1" autocomplete="off" {% if 1 in selected_quarters %}checked{% endif %}>
-                                            <label class="btn btn-outline-primary" for="q1" style="border-radius: 6px 0 0 6px;">Q1</label>
-
-                                            <input type="checkbox" class="btn-check period-check" id="q2" name="quarters" value="2" autocomplete="off" {% if 2 in selected_quarters %}checked{% endif %}>
-                                            <label class="btn btn-outline-primary" for="q2">Q2</label>
-
-                                            <input type="checkbox" class="btn-check period-check" id="q3" name="quarters" value="3" autocomplete="off" {% if 3 in selected_quarters %}checked{% endif %}>
-                                            <label class="btn btn-outline-primary" for="q3">Q3</label>
-
-                                            <input type="checkbox" class="btn-check period-check" id="q4" name="quarters" value="4" autocomplete="off" {% if 4 in selected_quarters %}checked{% endif %}>
-                                            <label class="btn btn-outline-primary" for="q4" style="border-radius: 0 6px 6px 0;">Q4</label>
-                                        </div>
-                                    </div>
-
-                                    <!-- Monthly options -->
-                                    <div id="monthly-periods" style="display: none;">
-                                        <div class="row g-2">
-                                            {% for month_num, month_name in [(1, 'Jan'), (2, 'Feb'), (3, 'Mar'), (4, 'Apr'), (5, 'May'), (6, 'Jun'), (7, 'Jul'), (8, 'Aug'), (9, 'Sep'), (10, 'Oct'), (11, 'Nov'), (12, 'Dec')] %}
-                                            <div class="col-3">
-                                                <input type="checkbox" class="btn-check period-check" id="m{{ month_num }}" name="months" value="{{ month_num }}" autocomplete="off" {% if month_num in selected_months %}checked{% endif %}>
-                                                <label class="btn btn-outline-primary btn-sm w-100" for="m{{ month_num }}" style="border-radius: 6px;">{{ month_name }}</label>
-                                            </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-
-                                    <small class="text-muted d-block mt-2">
-                                        <i class="bi bi-info-circle"></i> Applies same periods to all years. Use "Custom Dates" for month-level ranges.
-                                    </small>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-
-                        <!-- Custom Date Mode -->
-                        <div id="custom-range-mode" {% if not use_custom_range %}style="display: none;"{% endif %}>
-                            <input type="hidden" name="use_custom_range" id="use_custom_range" value="{% if use_custom_range %}true{% else %}false{% endif %}">
-                            <!-- Hidden fields for month/year (auto-populated from calendar) -->
-                            <input type="hidden" name="start_month" id="start_month" value="{% if use_custom_range %}{{ start_month }}{% else %}1{% endif %}">
-                            <input type="hidden" name="start_year_custom" id="start_year_custom" value="{% if use_custom_range %}{{ start_year_custom }}{% else %}{{ available_years[0] }}{% endif %}">
-                            <input type="hidden" name="end_month" id="end_month" value="{% if use_custom_range %}{{ end_month }}{% else %}12{% endif %}">
-                            <input type="hidden" name="end_year_custom" id="end_year_custom" value="{% if use_custom_range %}{{ end_year_custom }}{% else %}{{ available_years[-1] }}{% endif %}">
-
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold"><i class="bi bi-calendar-event"></i> Start Date</label>
-                                    <input type="text"
-                                           id="start-date-picker"
-                                           class="form-control form-control-lg"
-                                           placeholder="Select start date..."
-                                           value="{% if use_custom_range and start_month and start_year_custom %}{{ '%04d-%02d-01'|format(start_year_custom, start_month) }}{% endif %}"
-                                           style="border-radius: 8px; cursor: pointer;">
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-bold"><i class="bi bi-calendar-check"></i> End Date</label>
-                                    <input type="text"
-                                           id="end-date-picker"
-                                           class="form-control form-control-lg"
-                                           placeholder="Select end date..."
-                                           value="{% if use_custom_range and end_month and end_year_custom %}{{ '%04d-%02d-01'|format(end_year_custom, end_month) }}{% endif %}"
-                                           style="border-radius: 8px; cursor: pointer;">
-                                </div>
-                                <div class="col-12">
-                                    <div class="alert alert-success mb-0" style="border-radius: 8px; border-left: 4px solid #28a745;">
-                                        <i class="bi bi-calendar2-heart"></i>
-                                        <strong>Date Picker:</strong> Pick any date range you want! Click the calendar fields above to select start and end dates.
-                                    </div>
-                                </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-calendar-check"></i> End Date</label>
+                                <input type="text"
+                                       id="end-date-picker"
+                                       class="form-control form-control-lg"
+                                       placeholder="Select end date..."
+                                       value="{% if end_month and end_year_custom %}{{ '%04d-%02d-01'|format(end_year_custom, end_month) }}{% endif %}"
+                                       style="border-radius: 8px; cursor: pointer;">
                             </div>
                         </div>
                     </div>
@@ -232,6 +151,87 @@
         </div>
     </div>
 
+    <!-- Chart Builder -->
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
+        <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
+            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Chart Builder</h5>
+        </div>
+        <div class="card-body">
+            <!-- Load Saved Chart Section -->
+            <div class="mb-4 p-4" style="background: linear-gradient(135deg, rgba(102, 16, 242, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-radius: 12px; border: 2px dashed rgba(102, 16, 242, 0.3);">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-folder-open" style="font-size: 1.75rem; color: #6610f2; margin-right: 12px;"></i>
+                    <div>
+                        <h6 class="mb-0">Load Saved Chart</h6>
+                        <small class="text-muted">Start with a previously saved configuration</small>
+                    </div>
+                </div>
+
+                <div class="position-relative">
+                    <i class="bi bi-search position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem;"></i>
+                    <input type="text" id="chart-search" class="form-control form-control-lg"
+                           placeholder="Click to browse saved charts or type to search..."
+                           style="padding-left: 44px; border-radius: 10px; border: 2px solid #dee2e6; font-size: 0.95rem;">
+                    <div id="chart-search-results" class="mt-3" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- Show Load Chart button when section is collapsed -->
+            <div id="load-chart-collapsed" class="text-center mb-4 p-3" style="display: none; background: linear-gradient(135deg, rgba(102, 16, 242, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); border-radius: 12px;">
+                <button class="btn btn-outline-primary btn-lg" onclick="document.querySelector('.mb-4.p-4[style*=\'dashed\']').style.display='block'; this.parentElement.style.display='none';" style="border-radius: 8px;">
+                    <i class="bi bi-folder-open"></i> Load Different Chart
+                </button>
+            </div>
+
+            <div class="text-center mb-4">
+                <span class="badge bg-secondary" style="font-size: 0.9rem; padding: 8px 16px; border-radius: 20px;">OR BUILD NEW</span>
+            </div>
+
+            <!-- Selected KPIs Display -->
+            <div class="mb-3">
+                <label class="form-label">Selected KPIs:</label>
+                <div id="selected-kpis-display" class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    Select KPIs from the table below to see them charted here.
+                </div>
+                <div id="kpi-color-pickers" style="display: none;"></div>
+            </div>
+
+            <!-- Chart Type -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label for="chart-type" class="form-label">Chart Type</label>
+                    <select id="chart-type" class="form-select">
+                        <option value="line">Line Chart</option>
+                        <option value="bar">Bar Chart</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Chart Canvas -->
+            <div style="position: relative; height: 400px;">
+                <canvas id="snapshotChart"></canvas>
+            </div>
+
+            <div id="no-chart-message" class="alert alert-warning mt-3" style="display: none;">
+                <i class="bi bi-exclamation-triangle"></i>
+                Please select at least one KPI from the table below.
+            </div>
+
+            <!-- Save Chart Section -->
+            <div class="mt-4 p-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="text-white">
+                        <h6 class="mb-1"><i class="bi bi-heart"></i> Like this chart?</h6>
+                        <small>Save it for quick access later</small>
+                    </div>
+                    <button class="btn btn-light btn-lg" style="border-radius: 8px; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#saveChartModal">
+                        <i class="bi bi-bookmark-plus"></i> Save This Chart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Onboarding Modal -->
     <div class="modal fade" id="onboardingModal" tabindex="-1">
@@ -361,11 +361,16 @@
     </div>
 
     <!-- Data Table -->
-    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
-            <h5 class="mb-0"><i class="bi bi-table"></i> KPI Data</h5>
+    <div class="card shadow-sm mb-4" style="border: none; border-radius: 12px;" x-data="{ kpiDataOpen: true }">
+        <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0; border: none; cursor: pointer;" @click="kpiDataOpen = !kpiDataOpen">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-table"></i> KPI Data</h5>
+                <button type="button" class="btn btn-link text-white p-0" style="text-decoration: none;">
+                    <i class="bi" :class="kpiDataOpen ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem;"></i>
+                </button>
+            </div>
         </div>
-        <div class="card-body">
+        <div class="card-body" x-show="kpiDataOpen" x-collapse>
             {% if pivot_data.kpis %}
             <!-- Quick Find KPI Search -->
             <div class="mb-4 p-3" style="background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(102, 126, 234, 0.05) 100%); border-radius: 10px; border: 2px solid rgba(0, 123, 255, 0.15);">
@@ -477,86 +482,6 @@
         </div>
     </div>
 
-    <!-- Chart Builder -->
-    <div class="card shadow-sm" style="border: none; border-radius: 12px;">
-        <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border-radius: 12px 12px 0 0; border: none;">
-            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Chart Builder</h5>
-        </div>
-        <div class="card-body">
-            <!-- Load Saved Chart Section -->
-            <div class="mb-4 p-4" style="background: linear-gradient(135deg, rgba(102, 16, 242, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-radius: 12px; border: 2px dashed rgba(102, 16, 242, 0.3);">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="bi bi-folder-open" style="font-size: 1.75rem; color: #6610f2; margin-right: 12px;"></i>
-                    <div>
-                        <h6 class="mb-0">Load Saved Chart</h6>
-                        <small class="text-muted">Start with a previously saved configuration</small>
-                    </div>
-                </div>
-
-                <div class="position-relative">
-                    <i class="bi bi-search position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem;"></i>
-                    <input type="text" id="chart-search" class="form-control form-control-lg"
-                           placeholder="Click to browse saved charts or type to search..."
-                           style="padding-left: 44px; border-radius: 10px; border: 2px solid #dee2e6; font-size: 0.95rem;">
-                    <div id="chart-search-results" class="mt-3" style="display: none;"></div>
-                </div>
-            </div>
-
-            <div class="text-center mb-4">
-                <span class="badge bg-secondary" style="font-size: 0.9rem; padding: 8px 16px; border-radius: 20px;">OR BUILD NEW</span>
-            </div>
-
-            <div id="chart-controls" class="mb-3">
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label class="form-label">Selected KPIs:</label>
-                        <div id="selected-kpis-display" class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
-                            Select KPIs from the table above or use Quick Add search.
-                        </div>
-                        <div id="kpi-color-pickers" style="display: none;"></div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-md-3">
-                        <label for="chart-type" class="form-label">Chart Type</label>
-                        <select id="chart-type" class="form-select">
-                            <option value="line">Line Chart</option>
-                            <option value="bar">Bar Chart</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button id="update-chart-btn" class="btn btn-primary w-100">
-                            <i class="bi bi-graph-up"></i> Update Chart
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div style="position: relative; height: 400px;">
-                <canvas id="snapshotChart"></canvas>
-            </div>
-
-            <div id="no-chart-message" class="alert alert-warning mt-3" style="display: none;">
-                <i class="bi bi-exclamation-triangle"></i>
-                Please select at least one KPI from the table above.
-            </div>
-
-            <!-- Save Chart Section -->
-            <div class="mt-4 p-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="text-white">
-                        <h6 class="mb-1"><i class="bi bi-heart"></i> Like this chart?</h6>
-                        <small>Save it for quick access later</small>
-                    </div>
-                    <button class="btn btn-light btn-lg" style="border-radius: 8px; font-weight: 600;" data-bs-toggle="modal" data-bs-target="#saveChartModal">
-                        <i class="bi bi-bookmark-plus"></i> Save This Chart
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Quick Guide Button -->
     <div class="mt-4 text-center">
         <button class="btn btn-outline-primary btn-lg" data-bs-toggle="modal" data-bs-target="#onboardingModal" style="border-radius: 10px; padding: 12px 32px;">
@@ -616,6 +541,9 @@
             }
 
             updateSelectedKPIsDisplay();
+
+            // Auto-update chart
+            updateChartData();
         });
     });
 
@@ -655,10 +583,14 @@
         }
     }
 
-    // Update chart button
-    document.getElementById('update-chart-btn').addEventListener('click', async function () {
+    // Update chart function (auto-called on KPI selection)
+    async function updateChartData() {
         if (selectedKPIs.size === 0) {
             document.getElementById('no-chart-message').style.display = 'block';
+            if (snapshotChart) {
+                snapshotChart.destroy();
+                snapshotChart = null;
+            }
             return;
         }
 
@@ -667,16 +599,25 @@
         // Get selected config IDs
         const configIds = Array.from(selectedKPIs.keys());
 
-        // Get current form values (may be restored from saved chart)
-        const currentYear = document.getElementById('year_start').value || {{ current_year }};
+        // Get current form values
         const currentViewType = document.getElementById('view_type').value || '{{ view_type }}';
         const showTargets = document.getElementById('show_targets').checked;
 
+        // Get date range from form
+        const startMonth = document.getElementById('start_month').value;
+        const startYear = document.getElementById('start_year_custom').value;
+        const endMonth = document.getElementById('end_month').value;
+        const endYear = document.getElementById('end_year_custom').value;
+
         // Build API URL with current form values
         const params = new URLSearchParams({
-            year: currentYear,
             view_type: currentViewType,
             show_targets: showTargets ? 'true' : 'false',
+            use_custom_range: 'true',
+            start_month: startMonth,
+            start_year_custom: startYear,
+            end_month: endMonth,
+            end_year_custom: endYear
         });
         configIds.forEach(id => params.append('config_ids', id));
 
@@ -700,9 +641,16 @@
                 }
             });
 
-            renderChart(data, currentViewType, currentYear);
+            renderChart(data, currentViewType);
         } catch (error) {
             alert('Error loading chart: ' + error.message);
+        }
+    }
+
+    // Auto-update chart when chart type changes
+    document.getElementById('chart-type').addEventListener('change', function() {
+        if (selectedKPIs.size > 0) {
+            updateChartData();
         }
     });
 
@@ -715,7 +663,7 @@
         } : { r: 0, g: 0, b: 0 };
     }
 
-    function renderChart(data, viewType, year) {
+    function renderChart(data, viewType) {
         const ctx = document.getElementById('snapshotChart').getContext('2d');
         const chartType = document.getElementById('chart-type').value;
 
@@ -726,7 +674,7 @@
 
         // Build chart title with current settings
         const viewTypeDisplay = viewType ? viewType.charAt(0).toUpperCase() + viewType.slice(1) : 'Quarterly';
-        const chartTitle = `KPI Trends - ${viewTypeDisplay} ${year || {{ current_year }}}`;
+        const chartTitle = `KPI Trends - ${viewTypeDisplay}`;
 
         // Create new chart
         snapshotChart = new Chart(ctx, {
@@ -786,25 +734,11 @@
         });
 
         // Get current form values
-        const yearStart = parseInt(document.getElementById('year_start').value) || {{ year_start }};
-        const yearEnd = parseInt(document.getElementById('year_end').value) || {{ year_end }};
         const viewType = document.getElementById('view_type').value || '{{ view_type }}';
         const spaceId = document.getElementById('space_id').value || null;
         const valueTypeId = document.getElementById('value_type_id').value || null;
-
-        // Get period filter (quarters or months)
-        let periodFilter = null;
-        if (viewType === 'quarterly') {
-            const checkedQuarters = Array.from(document.querySelectorAll('input[name="quarters"]:checked')).map(cb => cb.value);
-            if (checkedQuarters.length > 0) {
-                periodFilter = checkedQuarters.join(',');
-            }
-        } else if (viewType === 'monthly') {
-            const checkedMonths = Array.from(document.querySelectorAll('input[name="months"]:checked')).map(cb => cb.value);
-            if (checkedMonths.length > 0) {
-                periodFilter = checkedMonths.join(',');
-            }
-        }
+        const startYear = parseInt(document.getElementById('start_year_custom').value);
+        const endYear = parseInt(document.getElementById('end_year_custom').value);
 
         try {
             const response = await fetch('{{ url_for("workspace.save_chart") }}', {
@@ -816,13 +750,12 @@
                 body: JSON.stringify({
                     name: name,
                     description: description,
-                    year_start: yearStart,
-                    year_end: yearEnd,
+                    start_year_custom: startYear,
+                    end_year_custom: endYear,
                     view_type: viewType,
                     chart_type: document.getElementById('chart-type').value,
                     space_id: spaceId ? parseInt(spaceId) : null,
                     value_type_id: valueTypeId ? parseInt(valueTypeId) : null,
-                    period_filter: periodFilter,
                     config_colors: configColors,
                     is_shared: isShared
                 })
@@ -976,18 +909,9 @@
                 }
             }
 
-            // Restore time range
-            if (chart.year_start) {
-                document.getElementById('year_start').value = chart.year_start;
-            }
-            if (chart.year_end) {
-                document.getElementById('year_end').value = chart.year_end;
-            }
-
             // Restore view type
             if (chart.view_type) {
                 document.getElementById('view_type').value = chart.view_type;
-                updatePeriodSelection(); // Update period checkboxes display
             }
 
             // Restore space and value type filters
@@ -1002,19 +926,14 @@
                 document.getElementById('value_type_id').value = '';
             }
 
-            // Restore period filter (quarters or months)
-            document.querySelectorAll('.period-check').forEach(cb => cb.checked = false);
-            if (chart.period_filter) {
-                const periods = chart.period_filter.split(',').map(p => p.trim());
-                periods.forEach(period => {
-                    if (chart.view_type === 'quarterly') {
-                        const checkbox = document.getElementById('q' + period);
-                        if (checkbox) checkbox.checked = true;
-                    } else if (chart.view_type === 'monthly') {
-                        const checkbox = document.getElementById('m' + period);
-                        if (checkbox) checkbox.checked = true;
-                    }
-                });
+            // Restore date ranges if available
+            if (chart.year_start) {
+                document.getElementById('start_year_custom').value = chart.year_start;
+                document.getElementById('start_month').value = 1;
+            }
+            if (chart.year_end) {
+                document.getElementById('end_year_custom').value = chart.year_end;
+                document.getElementById('end_month').value = 12;
             }
 
             // Update chart type
@@ -1028,7 +947,23 @@
             document.getElementById('chart-search').value = '';
 
             // Auto-render chart with restored settings
-            document.getElementById('update-chart-btn').click();
+            updateChartData();
+
+            // Collapse the "Load Saved Chart" section and show "Load Different Chart" button
+            const loadChartSection = document.querySelector('.mb-4.p-4[style*="dashed"]');
+            const collapsedButton = document.getElementById('load-chart-collapsed');
+            if (loadChartSection && collapsedButton) {
+                loadChartSection.style.display = 'none';
+                collapsedButton.style.display = 'block';
+            }
+
+            // Scroll to chart after a brief delay to let it render
+            setTimeout(() => {
+                const chartCanvas = document.getElementById('snapshotChart');
+                if (chartCanvas) {
+                    chartCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }, 500);
 
             // Show success toast
             showToast('success', 'Chart Loaded', chart.name);
@@ -1036,49 +971,6 @@
             showToast('error', 'Error', error.message);
         }
     }
-
-    // Toggle between simple and custom date range modes
-    document.querySelectorAll('[name="range_mode_toggle"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            const simpleMode = document.getElementById('simple-range-mode');
-            const customMode = document.getElementById('custom-range-mode');
-            const useCustomInput = document.getElementById('use_custom_range');
-
-            if (this.value === 'custom') {
-                simpleMode.style.display = 'none';
-                customMode.style.display = 'block';
-                useCustomInput.value = 'true';
-            } else {
-                simpleMode.style.display = 'block';
-                customMode.style.display = 'none';
-                useCustomInput.value = 'false';
-            }
-        });
-    });
-
-    // Show/hide period selection based on view type (only in simple mode)
-    function updatePeriodSelection() {
-        const viewType = document.getElementById('view_type').value;
-        const quarterlyDiv = document.getElementById('quarterly-periods');
-        const monthlyDiv = document.getElementById('monthly-periods');
-
-        quarterlyDiv.style.display = 'none';
-        monthlyDiv.style.display = 'none';
-
-        if (viewType === 'quarterly') {
-            quarterlyDiv.style.display = 'block';
-        } else if (viewType === 'monthly') {
-            monthlyDiv.style.display = 'block';
-        }
-    }
-
-    document.getElementById('view_type').addEventListener('change', updatePeriodSelection);
-    updatePeriodSelection(); // Initialize on load
-
-    // Auto-clear period selections when view type changes
-    document.getElementById('view_type').addEventListener('change', function () {
-        document.querySelectorAll('.period-check').forEach(cb => cb.checked = false);
-    });
 
     // Dynamic Space/Challenge filtering
     const spaceSelect = document.getElementById('space_id');

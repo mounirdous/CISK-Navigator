@@ -5,6 +5,20 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.0] - 2026-03-19
+
+### Changed
+
+- **Snapshot Pivot Page Modernization**: Complete UI/UX overhaul for better usability
+  - Moved chart to top of page (after filters, before KPI table) for immediate visibility
+  - Simplified time range selection to custom date picker only (removed complex year/quarter/month selectors)
+  - Made filters and KPI data table collapsible to reduce clutter
+  - Removed "Update Chart" button - chart now updates automatically when selecting/deselecting KPIs
+  - Auto-updates chart when changing chart type
+  - When loading saved chart: auto-collapses "Load Saved Chart" section, scrolls to chart, shows "Load Different Chart" button
+  - Updated backend API to support date ranges (`start_year_custom`, `end_year_custom`, `start_month`, `end_month`)
+  - Backward compatible with existing saved charts using old `year_start`/`year_end` format
+
 ## [2.12.1] - 2026-03-19
 
 ### Fixed

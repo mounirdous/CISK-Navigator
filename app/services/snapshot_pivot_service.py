@@ -259,15 +259,24 @@ class SnapshotPivotService:
         kpi_config_ids: List[int],
         view_type: str = "quarterly",
         show_targets: bool = False,
+        start_year: int = None,
+        end_year: int = None,
+        start_month: int = 1,
+        end_month: int = 12,
     ) -> Dict:
         """
         Get data formatted for charting
 
         Args:
             organization_id: Organization ID
-            year: Year to analyze
+            year: Year to analyze (fallback for backward compatibility)
             kpi_config_ids: List of KPI config IDs to include
             view_type: 'monthly', 'quarterly', or 'yearly'
+            show_targets: Include target lines
+            start_year: Start year (optional, overrides year)
+            end_year: End year (optional)
+            start_month: Start month (1-12)
+            end_month: End month (1-12)
 
         Returns:
             Dict with structure suitable for Chart.js:
@@ -284,8 +293,11 @@ class SnapshotPivotService:
                 ]
             }
         """
+        # Use start_year if provided, otherwise fall back to year
+        year_param = start_year if start_year else year
+
         # Get pivot data
-        pivot = SnapshotPivotService.get_pivot_data(organization_id, year, view_type)
+        pivot = SnapshotPivotService.get_pivot_data(organization_id, year_param, view_type)
 
         # Filter to selected KPIs
         selected_kpis = [kpi for kpi in pivot["kpis"] if kpi["config_id"] in kpi_config_ids]

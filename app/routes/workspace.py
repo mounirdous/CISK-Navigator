@@ -878,17 +878,42 @@ def snapshot_chart_data():
     """
     org_id = session.get("organization_id")
 
-    # Get parameters
+    # Get parameters - support both old (year) and new (date range) format
     year = request.args.get("year", type=int)
+    start_year = request.args.get("start_year_custom", type=int)
+    end_year = request.args.get("end_year_custom", type=int)
+    start_month = request.args.get("start_month", type=int, default=1)
+    end_month = request.args.get("end_month", type=int, default=12)
+
     view_type = request.args.get("view_type", "quarterly")
     config_ids = request.args.getlist("config_ids", type=int)
     show_targets = request.args.get("show_targets") == "true"
 
-    if not year or not config_ids:
+    # Determine which format to use
+    if start_year and end_year:
+        # New format: use date range
+        year_param = start_year  # Pass start year for now
+    elif year:
+        # Old format: single year
+        year_param = year
+    else:
         return jsonify({"error": "Missing required parameters"}), 400
 
+    if not config_ids:
+        return jsonify({"error": "No KPIs selected"}), 400
+
     try:
-        chart_data = SnapshotPivotService.get_chart_data(org_id, year, config_ids, view_type, show_targets)
+        chart_data = SnapshotPivotService.get_chart_data(
+            org_id,
+            year_param,
+            config_ids,
+            view_type,
+            show_targets,
+            start_year=start_year,
+            end_year=end_year,
+            start_month=start_month,
+            end_month=end_month,
+        )
         return jsonify(chart_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -910,13 +935,20 @@ def save_chart():
     if not config_colors:
         return jsonify({"error": "No KPIs selected"}), 400
 
+    # Get year range - use current year as fallback
+    from datetime import datetime
+
+    current_year = datetime.now().year
+    year_start = data.get("year_start") or data.get("start_year_custom") or current_year
+    year_end = data.get("year_end") or data.get("end_year_custom") or current_year
+
     chart = SavedChart(
         organization_id=org_id,
         created_by_user_id=current_user.id,
         name=name,
         description=data.get("description", ""),
-        year_start=data.get("year_start"),
-        year_end=data.get("year_end"),
+        year_start=year_start,
+        year_end=year_end,
         view_type=data.get("view_type", "quarterly"),
         chart_type=data.get("chart_type", "line"),
         space_id=data.get("space_id"),
