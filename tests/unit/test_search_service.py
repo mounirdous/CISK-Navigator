@@ -41,13 +41,11 @@ class TestSearchService:
         # Create initiatives
         initiative1 = Initiative(
             organization_id=sample_organization.id,
-            challenge_id=challenge1.id,
             name="Digital Sales",
             description="Expand online sales channels",
         )
         initiative2 = Initiative(
             organization_id=sample_organization.id,
-            challenge_id=challenge2.id,
             name="Process Automation",
             description="Automate manual processes",
         )

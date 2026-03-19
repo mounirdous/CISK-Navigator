@@ -17,11 +17,23 @@ def run_test_suite_task(self, user_id=None):
     Returns:
         Dict with test results and coverage data
     """
-    # Update task state to show progress
-    self.update_state(state="PROGRESS", meta={"status": "Executing tests..."})
+    # Update progress: Starting
+    self.update_state(state="PROGRESS", meta={"status": "Discovering test files...", "step": 1})
+
+    # Create progress callback
+    def update_progress(message, step=2):
+        self.update_state(state="PROGRESS", meta={"status": message, "step": step})
 
     # Run the tests
-    results = TestRunnerService.run_tests(include_coverage=True)
+    results = TestRunnerService.run_tests(include_coverage=True, progress_callback=update_progress)
+
+    # Update progress: Processing results
+    test_results = results.get("test_results", {})
+    total_tests = test_results.get("total", 0)
+    passed = test_results.get("passed", 0)
+    failed = test_results.get("failed", 0)
+
+    update_progress(f"Completed: {passed} passed, {failed} failed out of {total_tests} tests", step=3)
 
     # Save to database if successful
     if results.get("status") != "error":

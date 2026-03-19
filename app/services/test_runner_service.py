@@ -15,19 +15,26 @@ class TestRunnerService:
     """Service to run pytest and parse results"""
 
     @staticmethod
-    def run_tests(include_coverage: bool = True, test_path: Optional[str] = None) -> Dict:
+    def run_tests(include_coverage: bool = True, test_path: Optional[str] = None, progress_callback=None) -> Dict:
         """
         Run pytest and return structured results
 
         Args:
             include_coverage: Whether to run with coverage analysis
             test_path: Optional specific test path (default: all tests)
+            progress_callback: Optional callback function to report progress
 
         Returns:
             Dict with test results, coverage, and metadata
         """
         project_root = Path(__file__).parent.parent.parent
         test_directory = project_root / "tests" if test_path is None else Path(test_path)
+
+        # Report progress if callback provided
+        if progress_callback:
+            # Count test files
+            test_files = list(test_directory.rglob("test_*.py"))
+            progress_callback(f"Found {len(test_files)} test files, executing tests...")
 
         # Build pytest command
         cmd = [

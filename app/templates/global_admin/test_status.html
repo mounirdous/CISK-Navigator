@@ -193,7 +193,9 @@ function pollStatus() {
                 updateSteps(1);
             } else if (data.state === 'PROGRESS') {
                 document.getElementById('statusText').textContent = data.status || 'Running tests...';
-                updateSteps(2);
+                // Use step from server if available, otherwise default to 2
+                const step = data.step || 2;
+                updateSteps(step);
             } else if (data.state === 'SUCCESS') {
                 clearInterval(timerInterval);
                 clearInterval(pollInterval);
