@@ -1606,7 +1606,7 @@ def bulk_delete_organizations():
 @super_admin_required
 def bulk_delete_users():
     """Bulk delete selected users"""
-    from app.models import User
+    from app.models import ActionItem, CellComment, User
 
     user_ids = request.form.getlist("user_ids")
 
@@ -1630,9 +1630,21 @@ def bulk_delete_users():
                     continue
 
                 user_name = user.display_name or user.login
+
+                # Delete related data first (to avoid foreign key constraints)
+                # 1. Delete cell comments created/updated by this user
+                CellComment.query.filter_by(user_id=user_id).delete()
+
+                # 2. Delete action items owned by this user
+                ActionItem.query.filter_by(owner_user_id=user_id).delete()
+
+                # 3. Delete action items created by this user
+                ActionItem.query.filter_by(created_by_user_id=user_id).delete()
+
+                # Now safe to delete user
                 db.session.delete(user)
                 deleted_count += 1
-                print(f"[BULK DELETE] Deleted user: {user_name} (ID: {user_id})")
+                print(f"[BULK DELETE] Deleted user and related data: {user_name} (ID: {user_id})")
         except Exception as e:
             flash(f"Error deleting user ID {user_id}: {str(e)}", "danger")
             db.session.rollback()
@@ -1640,7 +1652,7 @@ def bulk_delete_users():
 
     try:
         db.session.commit()
-        flash(f"Successfully deleted {deleted_count} user(s)", "success")
+        flash(f"Successfully deleted {deleted_count} user(s) and their related data", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error committing bulk delete: {str(e)}", "danger")
