@@ -156,6 +156,51 @@ def health_dashboard():
     return render_template("global_admin/health_dashboard.html", health=health_data)
 
 
+@bp.route("/health-dashboard/migration-check")
+@login_required
+@global_admin_required
+def migration_health_check():
+    """Run migration health check script and display results"""
+    import subprocess
+    from pathlib import Path
+
+    project_root = Path(__file__).parent.parent.parent
+    script_path = project_root / "scripts" / "check_migrations.py"
+
+    if not script_path.exists():
+        flash("Migration health check script not found", "danger")
+        return redirect(url_for("global_admin.health_dashboard"))
+
+    try:
+        # Run the script
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            capture_output=True,
+            text=True,
+            cwd=str(project_root),
+            timeout=30,
+        )
+
+        # Parse output
+        output = result.stdout
+        exit_code = result.returncode
+        status = "success" if exit_code == 0 else "error"
+
+        return render_template(
+            "global_admin/migration_check_results.html",
+            output=output,
+            exit_code=exit_code,
+            status=status,
+        )
+
+    except subprocess.TimeoutExpired:
+        flash("Migration check timed out (>30s)", "danger")
+        return redirect(url_for("global_admin.health_dashboard"))
+    except Exception as e:
+        flash(f"Error running migration check: {str(e)}", "danger")
+        return redirect(url_for("global_admin.health_dashboard"))
+
+
 # User Management Routes
 
 

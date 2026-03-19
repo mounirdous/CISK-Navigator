@@ -5,6 +5,24 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.13.1] - 2026-03-19
+
+### Fixed
+
+- **CRITICAL: User Deletion Foreign Key Constraints** - Fixed missing foreign key cleanup that would break user deletion
+  - Added `MentionNotification.mentioned_user_id` deletion (users who were @mentioned in comments)
+  - Added `SystemAnnouncement.created_by` check (prevents deletion of users who created announcements)
+  - Applied fixes to both bulk user deletion and demo user cleanup
+  - **Impact**: User deletion now works correctly without foreign key constraint violations
+
+### Added
+
+- **Migration Health Check Route** - Added functional route to run migration health check script
+  - New route: `/global-admin/health-dashboard/migration-check`
+  - Displays migration chain integrity, revision validity, and dangerous operations
+  - Fixed broken "View Migration Health Check Script" link in health dashboard
+  - Now shows actual script output with color-coded results
+
 ## [2.13.0] - 2026-03-19
 
 ### Changed

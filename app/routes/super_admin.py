@@ -1607,6 +1607,8 @@ def bulk_delete_organizations():
 def bulk_delete_users():
     """Bulk delete selected users"""
     from app.models import ActionItem, CellComment, SavedChart, User
+    from app.models.announcement import SystemAnnouncement
+    from app.models.cell_comment import MentionNotification
 
     user_ids = request.form.getlist("user_ids")
 
@@ -1632,17 +1634,30 @@ def bulk_delete_users():
 
                 user_name = user.display_name or user.login
 
+                # Check if user created system announcements
+                announcement_count = SystemAnnouncement.query.filter_by(created_by=user_id).count()
+                if announcement_count > 0:
+                    flash(
+                        f"Cannot delete {user_name}: has {announcement_count} system announcement(s). "
+                        f"Delete or reassign announcements first.",
+                        "warning",
+                    )
+                    continue
+
                 # Delete related data first (to avoid foreign key constraints)
                 # 1. Delete cell comments created/updated by this user
                 CellComment.query.filter_by(user_id=user_id).delete()
 
-                # 2. Delete action items owned by this user
+                # 2. Delete mentions where this user was mentioned
+                MentionNotification.query.filter_by(mentioned_user_id=user_id).delete()
+
+                # 3. Delete action items owned by this user
                 ActionItem.query.filter_by(owner_user_id=user_id).delete()
 
-                # 3. Delete action items created by this user
+                # 4. Delete action items created by this user
                 ActionItem.query.filter_by(created_by_user_id=user_id).delete()
 
-                # 4. Delete saved charts created by this user
+                # 5. Delete saved charts created by this user
                 SavedChart.query.filter_by(created_by_user_id=user_id).delete()
 
                 # Now safe to delete user
@@ -1691,6 +1706,7 @@ def demo_generator():
 def demo_generator_create():
     """Create demo organization"""
     from app.models import ActionItem, CellComment, SavedChart, User
+    from app.models.cell_comment import MentionNotification
     from app.services.demo_data_service import DemoDataService
 
     scenario_key = request.form.get("scenario_key")
@@ -1723,6 +1739,7 @@ def demo_generator_create():
 
             # Delete related data
             CellComment.query.filter_by(user_id=demo_user.id).delete()
+            MentionNotification.query.filter_by(mentioned_user_id=demo_user.id).delete()
             ActionItem.query.filter_by(owner_user_id=demo_user.id).delete()
             ActionItem.query.filter_by(created_by_user_id=demo_user.id).delete()
             SavedChart.query.filter_by(created_by_user_id=demo_user.id).delete()
