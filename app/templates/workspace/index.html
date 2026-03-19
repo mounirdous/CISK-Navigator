@@ -3887,10 +3887,14 @@ function workspaceV2(orgId, filterPresets) {
                                        groupParams.length > 0 ||
                                        impactParams.length > 0;
 
-                // Expand filters only if actual filter parameters were loaded (not for entity mention links)
-                if (hasFilterParams && !fromEntityLink) {
+                // Check if loaded from preset (should stay collapsed to show data immediately)
+                const fromPreset = urlParams.has('fromPreset');
+
+                // Expand filters only if actual filter parameters were loaded (not for entity mention links or presets)
+                if (hasFilterParams && !fromEntityLink && !fromPreset) {
                     this.filtersExpanded = true;
                 }
+                // If from preset, keep collapsed (filtersExpanded already false by default)
             }
 
             // Load action items count
@@ -4728,6 +4732,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     if (preset && preset.filters) {
                         const params = new URLSearchParams();
+                        // Add marker to indicate this is from preset load (so filters auto-collapse)
+                        params.append('fromPreset', '1');
                         for (const [key, value] of Object.entries(preset.filters)) {
                             if (Array.isArray(value)) {
                                 value.forEach(v => params.append(key, v));
