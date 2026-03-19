@@ -1606,7 +1606,7 @@ def bulk_delete_organizations():
 @super_admin_required
 def bulk_delete_users():
     """Bulk delete selected users"""
-    from app.models import ActionItem, CellComment, User
+    from app.models import ActionItem, CellComment, SavedChart, User
 
     user_ids = request.form.getlist("user_ids")
 
@@ -1641,6 +1641,9 @@ def bulk_delete_users():
 
                 # 3. Delete action items created by this user
                 ActionItem.query.filter_by(created_by_user_id=user_id).delete()
+
+                # 4. Delete saved charts created by this user
+                SavedChart.query.filter_by(created_by_user_id=user_id).delete()
 
                 # Now safe to delete user
                 db.session.delete(user)
@@ -1687,7 +1690,7 @@ def demo_generator():
 @super_admin_required
 def demo_generator_create():
     """Create demo organization"""
-    from app.models import ActionItem, CellComment, User
+    from app.models import ActionItem, CellComment, SavedChart, User
     from app.services.demo_data_service import DemoDataService
 
     scenario_key = request.form.get("scenario_key")
@@ -1722,6 +1725,7 @@ def demo_generator_create():
             CellComment.query.filter_by(user_id=demo_user.id).delete()
             ActionItem.query.filter_by(owner_user_id=demo_user.id).delete()
             ActionItem.query.filter_by(created_by_user_id=demo_user.id).delete()
+            SavedChart.query.filter_by(created_by_user_id=demo_user.id).delete()
 
             # Delete user
             db.session.delete(demo_user)
