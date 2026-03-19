@@ -64,7 +64,7 @@ def index():
     )
 
     # Check if user is admin
-    is_admin = current_user.is_instance_admin() or current_user.is_global_admin() or current_user.is_superadmin
+    is_admin = current_user.is_super_admin or current_user.is_global_admin
 
     return render_template(
         "action_items/index.html",
@@ -199,7 +199,7 @@ def delete(item_id):
     org_id = session.get("organization_id")
 
     # Check permission - admins can delete any item, contributors can delete their own
-    is_admin = current_user.is_instance_admin() or current_user.is_global_admin() or current_user.is_superadmin
+    is_admin = current_user.is_super_admin or current_user.is_global_admin
     if not is_admin and not current_user.can_contribute(org_id):
         flash("You do not have permission to delete action items", "danger")
         return redirect(url_for("action_items.index"))
@@ -220,7 +220,7 @@ def bulk_delete():
     org_id = session.get("organization_id")
 
     # Check permission - admins can delete any items
-    is_admin = current_user.is_instance_admin() or current_user.is_global_admin() or current_user.is_superadmin
+    is_admin = current_user.is_super_admin or current_user.is_global_admin
     if not is_admin and not current_user.can_contribute(org_id):
         flash("You do not have permission to delete action items", "danger")
         return redirect(url_for("action_items.index"))
