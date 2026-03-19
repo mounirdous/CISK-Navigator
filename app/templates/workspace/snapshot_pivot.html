@@ -524,7 +524,77 @@
             onboardingModal.show();
             localStorage.setItem('hasSeenSnapshotOnboarding', 'true');
         }
+
+        // Check if we're loading a chart after filter reload
+        const urlParams = new URLSearchParams(window.location.search);
+        const loadChartId = urlParams.get('load_chart_id');
+        if (loadChartId) {
+            // Load chart and select KPIs now that filters are applied
+            loadChartAfterFilterReload(parseInt(loadChartId));
+        }
     });
+
+    // Load chart after page has reloaded with correct filters
+    async function loadChartAfterFilterReload(chartId) {
+        try {
+            const response = await fetch(`{{ url_for('workspace.load_chart', chart_id=0) }}`.replace('/0', `/${chartId}`));
+            const chart = await response.json();
+
+            // Clear current selection
+            selectedKPIs.clear();
+            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false);
+
+            // Now select KPIs with saved colors (they should be in the table now)
+            const configColors = chart.config_colors;
+            let foundCount = 0;
+            for (const [configId, color] of Object.entries(configColors)) {
+                const id = parseInt(configId);
+                const checkbox = document.querySelector(`.kpi-checkbox[data-config-id="${id}"]`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                    selectedKPIs.set(id, { id: id, name: checkbox.dataset.kpiName, color: color });
+                    foundCount++;
+                }
+            }
+
+            // Update display
+            updateSelectedKPIsDisplay();
+
+            // Auto-render chart with restored settings
+            if (foundCount > 0) {
+                updateChartData();
+
+                // Collapse the "Load Saved Chart" section and show "Load Different Chart" button
+                const loadChartSection = document.querySelector('.mb-4.p-4[style*="dashed"]');
+                const collapsedButton = document.getElementById('load-chart-collapsed');
+                if (loadChartSection && collapsedButton) {
+                    loadChartSection.style.display = 'none';
+                    collapsedButton.style.display = 'block';
+                }
+
+                // Scroll to chart after a brief delay to let it render
+                setTimeout(() => {
+                    const chartCanvas = document.getElementById('snapshotChart');
+                    if (chartCanvas) {
+                        chartCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }, 500);
+
+                // Show success toast
+                showToast('success', 'Chart Loaded', `${chart.name} (${foundCount} KPIs)`);
+            } else {
+                showToast('error', 'No KPIs Found', 'The saved chart KPIs are not visible with current filters');
+            }
+
+            // Clean up URL
+            const url = new URL(window.location);
+            url.searchParams.delete('load_chart_id');
+            window.history.replaceState({}, '', url);
+
+        } catch (error) {
+            showToast('error', 'Error Loading Chart', error.message);
+        }
+    }
 
     // Handle KPI checkbox selection
     document.querySelectorAll('.kpi-checkbox').forEach(checkbox => {
@@ -894,27 +964,14 @@
             const response = await fetch(`{{ url_for('workspace.load_chart', chart_id=0) }}`.replace('/0', `/${chartId}`));
             const chart = await response.json();
 
-            // Clear current selection
-            selectedKPIs.clear();
-            document.querySelectorAll('.kpi-checkbox').forEach(cb => cb.checked = false);
-
-            // Select KPIs with saved colors
+            // Store config colors for later
             const configColors = chart.config_colors;
-            for (const [configId, color] of Object.entries(configColors)) {
-                const id = parseInt(configId);
-                const checkbox = document.querySelector(`.kpi-checkbox[data-config-id="${id}"]`);
-                if (checkbox) {
-                    checkbox.checked = true;
-                    selectedKPIs.set(id, { id: id, name: checkbox.dataset.kpiName, color: color });
-                }
-            }
 
-            // Restore view type
+            // First, restore filters to ensure KPIs are visible
             if (chart.view_type) {
                 document.getElementById('view_type').value = chart.view_type;
             }
 
-            // Restore space and value type filters
             if (chart.space_id) {
                 document.getElementById('space_id').value = chart.space_id;
             } else {
@@ -939,34 +996,21 @@
             // Update chart type
             document.getElementById('chart-type').value = chart.chart_type;
 
-            // Update display
-            updateSelectedKPIsDisplay();
+            // Show loading message
+            showToast('info', 'Loading Chart', 'Applying filters and loading data...');
 
-            // Hide search results
-            document.getElementById('chart-search-results').style.display = 'none';
-            document.getElementById('chart-search').value = '';
+            // Submit form to reload page with correct filters
+            // This ensures the KPI table shows the right KPIs
+            const form = document.getElementById('filter-form');
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
 
-            // Auto-render chart with restored settings
-            updateChartData();
+            // Add chart_id to URL so we can auto-select KPIs after reload
+            params.set('load_chart_id', chartId);
 
-            // Collapse the "Load Saved Chart" section and show "Load Different Chart" button
-            const loadChartSection = document.querySelector('.mb-4.p-4[style*="dashed"]');
-            const collapsedButton = document.getElementById('load-chart-collapsed');
-            if (loadChartSection && collapsedButton) {
-                loadChartSection.style.display = 'none';
-                collapsedButton.style.display = 'block';
-            }
+            // Reload page with filters
+            window.location.href = `{{ url_for('workspace.snapshot_pivot') }}?${params.toString()}`;
 
-            // Scroll to chart after a brief delay to let it render
-            setTimeout(() => {
-                const chartCanvas = document.getElementById('snapshotChart');
-                if (chartCanvas) {
-                    chartCanvas.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 500);
-
-            // Show success toast
-            showToast('success', 'Chart Loaded', chart.name);
         } catch (error) {
             showToast('error', 'Error', error.message);
         }
