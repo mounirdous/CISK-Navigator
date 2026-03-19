@@ -210,24 +210,48 @@ class ActionItemService:
         return item
 
     @staticmethod
-    def delete_item(item_id, user_id):
+    def delete_item(item_id, user_id, is_admin=False):
         """
         Delete an action item
 
         Args:
             item_id: ActionItem ID
-            user_id: User performing the deletion (must be owner)
+            user_id: User performing the deletion (must be owner or admin)
+            is_admin: If True, bypass owner check (for admins)
 
         Returns:
             True if deleted, False if not found/unauthorized
         """
         item = ActionItem.query.get(item_id)
-        if not item or item.owner_user_id != user_id:
+        if not item:
+            return False
+
+        # Allow if user is owner OR if they're an admin
+        if not is_admin and item.owner_user_id != user_id:
             return False
 
         db.session.delete(item)
         db.session.commit()
         return True
+
+    @staticmethod
+    def bulk_delete_items(item_ids, user_id, is_admin=False):
+        """
+        Delete multiple action items
+
+        Args:
+            item_ids: List of ActionItem IDs
+            user_id: User performing the deletion
+            is_admin: If True, bypass owner check (for admins)
+
+        Returns:
+            Number of items deleted
+        """
+        deleted_count = 0
+        for item_id in item_ids:
+            if ActionItemService.delete_item(item_id, user_id, is_admin):
+                deleted_count += 1
+        return deleted_count
 
     @staticmethod
     def get_stats_for_user(user, organization_id):

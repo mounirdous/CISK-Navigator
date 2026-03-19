@@ -63,6 +63,9 @@ def index():
         type_filter=item_type, status_filter=status_filter, visibility_filter=visibility_filter
     )
 
+    # Check if user is admin
+    is_admin = current_user.is_instance_admin() or current_user.is_global_admin() or current_user.is_superadmin
+
     return render_template(
         "action_items/index.html",
         items=items,
@@ -70,6 +73,7 @@ def index():
         filter_form=filter_form,
         current_filters={"type": item_type, "status": status_filter, "visibility": visibility_filter},
         can_contribute=current_user.can_contribute(org_id),
+        is_admin=is_admin,
         csrf_token=generate_csrf,
     )
 
@@ -194,15 +198,46 @@ def delete(item_id):
     """Delete action item or memo"""
     org_id = session.get("organization_id")
 
-    # Check permission
-    if not current_user.can_contribute(org_id):
+    # Check permission - admins can delete any item, contributors can delete their own
+    is_admin = current_user.is_instance_admin() or current_user.is_global_admin() or current_user.is_superadmin
+    if not is_admin and not current_user.can_contribute(org_id):
         flash("You do not have permission to delete action items", "danger")
         return redirect(url_for("action_items.index"))
 
-    if ActionItemService.delete_item(item_id, current_user.id):
+    if ActionItemService.delete_item(item_id, current_user.id, is_admin=is_admin):
         flash("Item deleted successfully", "success")
     else:
         flash("Error deleting item (not found or unauthorized)", "danger")
+
+    return redirect(url_for("action_items.index"))
+
+
+@bp.route("/bulk-delete", methods=["POST"])
+@login_required
+@organization_required
+def bulk_delete():
+    """Bulk delete action items or memos"""
+    org_id = session.get("organization_id")
+
+    # Check permission - admins can delete any items
+    is_admin = current_user.is_instance_admin() or current_user.is_global_admin() or current_user.is_superadmin
+    if not is_admin and not current_user.can_contribute(org_id):
+        flash("You do not have permission to delete action items", "danger")
+        return redirect(url_for("action_items.index"))
+
+    # Get item IDs from form
+    item_ids = request.form.getlist("item_ids", type=int)
+    if not item_ids:
+        flash("No items selected", "warning")
+        return redirect(url_for("action_items.index"))
+
+    # Delete items
+    deleted_count = ActionItemService.bulk_delete_items(item_ids, current_user.id, is_admin=is_admin)
+
+    if deleted_count > 0:
+        flash(f"Successfully deleted {deleted_count} item(s)", "success")
+    else:
+        flash("No items were deleted (not found or unauthorized)", "danger")
 
     return redirect(url_for("action_items.index"))
 

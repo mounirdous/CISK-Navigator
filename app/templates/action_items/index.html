@@ -94,12 +94,34 @@
     {% if items %}
     <div class="card">
         <div class="card-body">
+            {% if is_admin %}
+            <!-- Bulk Actions Toolbar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-check-square"></i> Select All
+                    </button>
+                    <button type="button" id="deselect-all-btn" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-square"></i> Deselect All
+                    </button>
+                    <span id="selected-count" class="ms-2 text-muted">0 selected</span>
+                </div>
+                <form method="POST" action="{{ url_for('action_items.bulk_delete') }}" id="bulk-delete-form" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-sm btn-danger" id="bulk-delete-btn" disabled onclick="return confirm('Delete all selected items?')">
+                        <i class="bi bi-trash"></i> Delete Selected
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead>
                         <tr>
+                            {% if is_admin %}<th style="width: 3%"><input type="checkbox" id="select-all-checkbox"></th>{% endif %}
                             <th style="width: 5%">Type</th>
-                            <th style="width: 30%">Title</th>
+                            <th style="width: 27%">Title</th>
                             <th style="width: 10%">Status</th>
                             <th style="width: 10%">Priority</th>
                             <th style="width: 10%">Due Date</th>
@@ -112,6 +134,11 @@
                     <tbody>
                         {% for item in items %}
                         <tr {% if item.is_overdue %}class="table-warning"{% endif %}>
+                            {% if is_admin %}
+                            <td>
+                                <input type="checkbox" class="item-checkbox" name="item_ids" value="{{ item.id }}" form="bulk-delete-form">
+                            </td>
+                            {% endif %}
                             <td>
                                 {% if item.type == 'memo' %}
                                     <span class="badge bg-info">📝 Memo</span>
@@ -179,19 +206,22 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if can_contribute and item.owner_user_id == current_user.id %}
                                 <div class="btn-group btn-group-sm">
+                                    {% if can_contribute and item.owner_user_id == current_user.id %}
                                     <a href="{{ url_for('action_items.edit', item_id=item.id) }}" class="btn btn-outline-primary">
                                         <i class="bi bi-pencil"></i>
                                     </a>
+                                    {% endif %}
+
+                                    {% if (can_contribute and item.owner_user_id == current_user.id) or is_admin %}
                                     <form method="POST" action="{{ url_for('action_items.delete', item_id=item.id) }}" style="display:inline" onsubmit="return confirm('Delete this item?')">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-danger">
+                                        <button type="submit" class="btn btn-outline-danger" title="{% if is_admin %}Admin: Delete any item{% else %}Delete your item{% endif %}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
+                                    {% endif %}
                                 </div>
-                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -206,4 +236,60 @@
     </div>
     {% endif %}
 </div>
+
+{% if is_admin %}
+<script>
+    // Bulk selection functionality
+    const selectAllCheckbox = document.getElementById('select-all-checkbox');
+    const selectAllBtn = document.getElementById('select-all-btn');
+    const deselectAllBtn = document.getElementById('deselect-all-btn');
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    const selectedCountSpan = document.getElementById('selected-count');
+    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+
+    function updateSelectedCount() {
+        const checkedCount = document.querySelectorAll('.item-checkbox:checked').length;
+        selectedCountSpan.textContent = `${checkedCount} selected`;
+        bulkDeleteBtn.disabled = checkedCount === 0;
+
+        // Update select all checkbox state
+        if (selectAllCheckbox) {
+            selectAllCheckbox.checked = checkedCount === itemCheckboxes.length && checkedCount > 0;
+            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < itemCheckboxes.length;
+        }
+    }
+
+    // Select/deselect all via checkbox in header
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            itemCheckboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCount();
+        });
+    }
+
+    // Select all button
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function() {
+            itemCheckboxes.forEach(cb => cb.checked = true);
+            updateSelectedCount();
+        });
+    }
+
+    // Deselect all button
+    if (deselectAllBtn) {
+        deselectAllBtn.addEventListener('click', function() {
+            itemCheckboxes.forEach(cb => cb.checked = false);
+            updateSelectedCount();
+        });
+    }
+
+    // Update count when individual checkboxes change
+    itemCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    // Initialize count on page load
+    updateSelectedCount();
+</script>
+{% endif %}
 {% endblock %}
