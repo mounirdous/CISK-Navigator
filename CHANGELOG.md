@@ -5,6 +5,26 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.1] - 2026-03-19
+
+### Fixed
+
+- **Column Drag-and-Drop with Hidden Columns**: Fixed issue where dragging columns to reorder would move the wrong columns when some columns were hidden via Column Visibility. Now uses value type IDs instead of visible array indices.
+
+- **Expand/Collapse All Rows**: Fixed "Expand All Rows" button not fully expanding nested initiatives, systems, and KPIs after using "Collapse All Rows". Added recursive expansion logic and Alpine.js reactivity fixes with `$nextTick()`.
+
+- **Challenge Row Value Spacing**: Fixed inconsistent spacing between numeric values and unit labels at challenge level (e.g., `8289713.41kWh` → `8289713.41 kWh`). Now matches formatting at space, initiative, and system levels.
+
+- **Clear All Filters**: "Clear All Filters" button now properly resets Display Options (showLevels) to all enabled and showArchivedKPIs to false.
+
+- **Net Formula Value Type Display**: Added rollup display rules for Net formula value type at Challenge, Initiative, and System levels with thousands scale and 1 decimal place. Fixes issue where Net values showed full unformatted numbers.
+
+- **Demo Data Generation**: Fixed cell comments deletion order to prevent NOT NULL constraint violations. Comments are now deleted before configs when regenerating demo organizations.
+
+### Changed
+
+- Added demo cell comments generation (10 comments on ~20% of KPI configs) to test deletion workflow in future regenerations.
+
 ## [2.11.0] - 2026-03-18
 
 ### Added - Demo Data Generator
