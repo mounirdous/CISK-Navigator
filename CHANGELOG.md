@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.2] - 2026-03-19
+
+### Fixed
+
+- **Test Runner Polling** - Fixed session authentication issue
+  - Added `credentials: 'same-origin'` to fetch() call
+  - Ensures cookies are sent with poll requests
+  - Fixes "Waiting to start..." stuck state
+
 ## [2.14.1] - 2026-03-19
 
 ### Improved

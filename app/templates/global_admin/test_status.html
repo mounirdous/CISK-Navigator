@@ -183,7 +183,9 @@ timerInterval = setInterval(() => {
 
 // Poll for status
 function pollStatus() {
-    fetch("{{ url_for('global_admin.test_status_poll', task_id=task_id) }}")
+    fetch("{{ url_for('global_admin.test_status_poll', task_id=task_id) }}", {
+        credentials: 'same-origin'
+    })
         .then(response => response.json())
         .then(data => {
             console.log('Task state:', data.state);
