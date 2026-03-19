@@ -1615,9 +1615,10 @@ def bulk_delete_users():
         return redirect(url_for("super_admin.bulk_operations"))
 
     deleted_count = 0
-    for user_id in user_ids:
+    for user_id_str in user_ids:
         try:
-            user = User.query.get(int(user_id))
+            user_id = int(user_id_str)  # Convert to integer for database queries
+            user = User.query.get(user_id)
             if user:
                 # Protect super admins
                 if user.is_super_admin:
@@ -1646,7 +1647,7 @@ def bulk_delete_users():
                 deleted_count += 1
                 print(f"[BULK DELETE] Deleted user and related data: {user_name} (ID: {user_id})")
         except Exception as e:
-            flash(f"Error deleting user ID {user_id}: {str(e)}", "danger")
+            flash(f"Error deleting user ID {user_id_str}: {str(e)}", "danger")
             db.session.rollback()
             continue
 
@@ -1686,6 +1687,7 @@ def demo_generator():
 @super_admin_required
 def demo_generator_create():
     """Create demo organization"""
+    from app.models import ActionItem, CellComment, User
     from app.services.demo_data_service import DemoDataService
 
     scenario_key = request.form.get("scenario_key")
@@ -1708,6 +1710,27 @@ def demo_generator_create():
     snapshot_frequency = request.form.get("snapshot_frequency", "weekly")
 
     try:
+        # CLEANUP: Delete old demo users before creating new ones
+        demo_users = User.query.filter(User.email.like("%@demo.local")).all()
+        cleanup_count = 0
+        for demo_user in demo_users:
+            # Skip super admins
+            if demo_user.is_super_admin:
+                continue
+
+            # Delete related data
+            CellComment.query.filter_by(user_id=demo_user.id).delete()
+            ActionItem.query.filter_by(owner_user_id=demo_user.id).delete()
+            ActionItem.query.filter_by(created_by_user_id=demo_user.id).delete()
+
+            # Delete user
+            db.session.delete(demo_user)
+            cleanup_count += 1
+
+        if cleanup_count > 0:
+            db.session.commit()
+            flash(f"🧹 Cleaned up {cleanup_count} old demo user(s)", "info")
+
         result = DemoDataService.create_demo_organization(
             scenario_key=scenario_key,
             user_emails=user_emails,
