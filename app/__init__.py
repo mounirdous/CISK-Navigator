@@ -9,8 +9,12 @@ from flask import Flask
 
 from app.config import config
 from app.extensions import db, login_manager, migrate
+from celery_app import make_celery
 
-__version__ = "2.13.1"
+__version__ = "2.14.0"
+
+# Global Celery instance (will be initialized in create_app)
+celery = None
 
 # Enable INFO level logging for aggregation service
 logging.basicConfig(level=logging.INFO)
@@ -33,6 +37,20 @@ def create_app(config_name=None):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+
+    # Initialize Celery
+    global celery
+    try:
+        celery = make_celery(app)
+        app.celery = celery
+        app.config["CELERY_ENABLED"] = True
+    except Exception as e:
+        # Celery initialization failed (Redis not available)
+        print(f"Warning: Celery initialization failed: {e}")
+        print("Test runner feature will be disabled")
+        celery = None
+        app.celery = None
+        app.config["CELERY_ENABLED"] = False
 
     # Configure login manager
     login_manager.login_view = "auth.login"

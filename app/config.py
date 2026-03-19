@@ -54,6 +54,18 @@ class Config:
     # Free tier: 50,000 map loads/month
     MAPBOX_ACCESS_TOKEN = os.environ.get("MAPBOX_ACCESS_TOKEN", "")
 
+    # Celery Configuration
+    CELERY_BROKER_URL = os.environ.get("REDIS_URL") or "redis://localhost:6379/0"
+    CELERY_RESULT_BACKEND = os.environ.get("REDIS_URL") or "redis://localhost:6379/0"
+    CELERY_TASK_SERIALIZER = "json"
+    CELERY_RESULT_SERIALIZER = "json"
+    CELERY_ACCEPT_CONTENT = ["json"]
+    CELERY_TIMEZONE = "UTC"
+    CELERY_ENABLE_UTC = True
+    CELERY_TASK_TRACK_STARTED = True
+    CELERY_TASK_TIME_LIMIT = 600  # 10 minutes max for any task
+    CELERY_RESULT_EXPIRES = 3600  # Results expire after 1 hour
+
 
 class DevelopmentConfig(Config):
     """Development configuration"""

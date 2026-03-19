@@ -30,6 +30,7 @@ from .stakeholder import Stakeholder, StakeholderEntityLink, StakeholderRelation
 from .stakeholder_map import StakeholderMap, StakeholderMapMembership
 from .system import InitiativeSystemLink, System
 from .system_setting import SystemSetting
+from .test_execution import TestExecution
 from .user import User
 from .user_filter_preset import UserFilterPreset
 from .value_type import KPIValueTypeConfig, ValueType
@@ -80,4 +81,5 @@ __all__ = [
     "StakeholderEntityLink",
     "StakeholderMap",
     "StakeholderMapMembership",
+    "TestExecution",
 ]

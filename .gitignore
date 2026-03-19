@@ -76,3 +76,4 @@ requirements-*.txt
 !requirements.txt
 .local-pc-notes
 .coverage
+coverage.json

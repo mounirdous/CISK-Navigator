@@ -5,6 +5,77 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.0] - 2026-03-19
+
+### Added
+
+- **Test Suite Runner UI with Celery Background Tasks** - Production-ready async test execution
+  - **Celery + Redis Integration** - Proper background task queue for long-running operations
+    - Tests run asynchronously without blocking Flask
+    - Server stays responsive during test execution
+    - Scalable architecture ready for production
+    - Redis for message broker and result backend
+  - **Real-time Progress Monitoring**
+    - Beautiful loading overlay with animated spinner
+    - Live progress steps (Queueing → Executing → Analyzing → Complete)
+    - Elapsed time counter
+    - AJAX polling every 2 seconds for status updates
+    - Automatic redirect when tests complete
+  - **Test Execution & Results**
+    - New route: `/global-admin/health-dashboard/run-tests` (POST to trigger)
+    - Test status page with live polling
+    - Beautiful visual results with progress bars, circular progress charts, and status badges
+    - Code coverage analysis with module-level breakdown
+    - Coverage visualization with color-coded bars (high/medium/low)
+    - Failed test details with error messages
+    - Raw pytest output for debugging
+  - **Test Execution History** - Track test trends over time
+    - New route: `/global-admin/health-dashboard/test-history`
+    - Stores all test runs in database (`test_executions` table)
+    - Interactive trend charts using Chart.js:
+      - Pass rate trend over time
+      - Coverage percentage progression
+      - Test results distribution (passed/failed/skipped)
+      - Execution duration tracking
+    - Execution history table with filtering
+    - Tracks who executed tests and when
+
+### Technical Details
+
+- **Celery Configuration**
+  - Added `celery_app.py` - Celery application factory
+  - Added `app/tasks.py` - Background task definitions
+  - Configured Redis as broker and result backend
+  - Task timeout: 10 minutes max
+  - Results expire after 1 hour
+- **New Dependencies**
+  - `celery==5.6.2` - Distributed task queue
+  - `redis==7.3.0` - Message broker and result backend
+  - Supporting libraries: `amqp`, `billiard`, `kombu`, `vine`
+- **Database Model**
+  - Added `TestExecution` model to track test run history
+  - Migration `19d31425d0e7` creates `test_executions` table
+  - Links test executions to user who ran them
+- **Services**
+  - `TestRunnerService` - Backend service for test execution
+  - Parses pytest output for structured results
+  - Extracts coverage data from coverage.json
+  - Calculates per-module coverage statistics
+  - Saves execution history for trend analysis
+
+### Deployment Notes
+
+**Local Development:**
+- Redis must be running: `brew services start redis`
+- Start Celery worker: `celery -A app.celery worker --loglevel=info --pool=solo`
+- Flask server runs normally: `flask run --port 5003`
+
+**Production (Render):**
+- Add Redis service (managed Redis or external)
+- Set `REDIS_URL` environment variable
+- Add Celery worker as background worker: `celery -A app.celery worker --loglevel=info`
+- See deployment guide in README.md
+
 ## [2.13.1] - 2026-03-19
 
 ### Fixed

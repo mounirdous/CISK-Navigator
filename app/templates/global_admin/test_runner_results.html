@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}Test Suite Results{% endblock %}
+
+{% block extra_css %}
+<style>
+.test-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2.5rem 2rem;
+    border-radius: 16px;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.test-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.test-section {
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.test-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.test-section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-badge.success {
+    background: rgba(25, 135, 84, 0.15);
+    color: #198754;
+    border: 2px solid rgba(25, 135, 84, 0.3);
+}
+
+.status-badge.failed {
+    background: rgba(220, 53, 69, 0.15);
+    color: #dc3545;
+    border: 2px solid rgba(220, 53, 69, 0.3);
+}
+
+.status-badge.timeout {
+    background: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+/* Progress Bars */
+.progress-card {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.progress-bar-container {
+    height: 40px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid var(--border-color);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: white;
+    transition: width 1s ease-in-out;
+}
+
+.progress-bar-fill.passed {
+    background: linear-gradient(90deg, #198754 0%, #20c997 100%);
+}
+
+.progress-bar-fill.failed {
+    background: linear-gradient(90deg, #dc3545 0%, #fd7e14 100%);
+}
+
+.progress-bar-fill.skipped {
+    background: linear-gradient(90deg, #6c757d 0%, #adb5bd 100%);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    transition: all var(--transition-fast);
+    border: 2px solid var(--border-color);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--accent-primary);
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 1rem;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+}
+
+.stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Coverage Visualization */
+.coverage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.coverage-module {
+    background: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 1.25rem;
+    border: 2px solid var(--border-color);
+    transition: all var(--transition-fast);
+}
+
+.coverage-module:hover {
+    border-color: var(--accent-primary);
+    transform: translateX(4px);
+}
+
+.coverage-module-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: var(--text-primary);
+}
+
+.coverage-bar {
+    height: 8px;
+    background: var(--bg-primary);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.coverage-bar-fill {
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+}
+
+.coverage-bar-fill.high {
+    background: linear-gradient(90deg, #198754 0%, #20c997 100%);
+}
+
+.coverage-bar-fill.medium {
+    background: linear-gradient(90deg, #ffc107 0%, #fd7e14 100%);
+}
+
+.coverage-bar-fill.low {
+    background: linear-gradient(90deg, #dc3545 0%, #e83e8c 100%);
+}
+
+.coverage-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.coverage-percent {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Failed Tests */
+.failed-test {
+    background: rgba(220, 53, 69, 0.05);
+    border-left: 4px solid #dc3545;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.failed-test-path {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-weight: 700;
+    color: #dc3545;
+    margin-bottom: 0.5rem;
+}
+
+.failed-test-error {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Circular Progress */
+.circular-progress {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto;
+}
+
+.circular-progress svg {
+    transform: rotate(-90deg);
+}
+
+.circular-progress-bg {
+    fill: none;
+    stroke: var(--bg-secondary);
+    stroke-width: 12;
+}
+
+.circular-progress-fill {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s ease-in-out;
+}
+
+.circular-progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.output-section {
+    background: #1e1e1e;
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #d4d4d4;
+    max-height: 400px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="test-header">
+        <h1>
+            <i class="bi bi-clipboard-check-fill"></i>
+            Test Suite Execution
+        </h1>
+        <p>Automated test results with code coverage analysis</p>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div style="color: var(--text-secondary);">
+            <i class="bi bi-clock"></i>
+            Executed: {{ timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+        </div>
+        <div>
+            <a href="{{ url_for('global_admin.health_dashboard') }}" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i>
+                Back to Dashboard
+            </a>
+            <a href="{{ url_for('global_admin.run_tests') }}" class="btn btn-primary">
+                <i class="bi bi-arrow-clockwise"></i>
+                Re-run Tests
+            </a>
+        </div>
+    </div>
+
+    {% if results.status == 'error' or results.status == 'timeout' %}
+    <!-- Error State -->
+    <div class="test-section">
+        <div class="test-section-header">
+            <div class="test-section-title">
+                <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 2rem;"></i>
+                Test Execution Failed
+            </div>
+            <span class="status-badge {{ results.status }}">
+                <i class="bi bi-x-circle-fill"></i>
+                {{ results.status|title }}
+            </span>
+        </div>
+        <div class="alert alert-danger">
+            {{ results.get('error', 'Unknown error occurred') }}
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Test Results Summary -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #198754 0%, #20c997 100%); color: white;">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="stat-value" style="color: #198754;">{{ results.test_results.passed }}</div>
+            <div class="stat-label">Passed</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%); color: white;">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="stat-value" style="color: #dc3545;">{{ results.test_results.failed }}</div>
+            <div class="stat-label">Failed</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%); color: white;">
+                <i class="bi bi-skip-forward-fill"></i>
+            </div>
+            <div class="stat-value" style="color: #6c757d;">{{ results.test_results.skipped }}</div>
+            <div class="stat-label">Skipped</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <i class="bi bi-speedometer2"></i>
+            </div>
+            <div class="stat-value" style="color: var(--accent-primary);">{{ "%.2f"|format(results.test_results.duration) }}s</div>
+            <div class="stat-label">Duration</div>
+        </div>
+    </div>
+
+    <!-- Overall Status -->
+    <div class="test-section">
+        <div class="test-section-header">
+            <div class="test-section-title">
+                <i class="bi bi-bar-chart-fill" style="color: var(--accent-primary);"></i>
+                Test Pass Rate
+            </div>
+            <span class="status-badge {{ 'success' if results.status == 'success' else 'failed' }}">
+                <i class="bi bi-{{ 'check' if results.status == 'success' else 'x' }}-circle-fill"></i>
+                {{ results.status|title }}
+            </span>
+        </div>
+
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <div class="progress-card">
+                    <div class="progress-label">
+                        <span>Passed Tests</span>
+                        <span>{{ results.test_results.passed }} / {{ results.test_results.total }}</span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill passed"
+                             style="width: {% if results.test_results.total > 0 %}{{ (results.test_results.passed / results.test_results.total * 100)|round }}{% else %}0{% endif %}%">
+                            {% if results.test_results.total > 0 %}
+                            {{ (results.test_results.passed / results.test_results.total * 100)|round|int }}%
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="circular-progress">
+                    <svg width="150" height="150">
+                        <circle class="circular-progress-bg" cx="75" cy="75" r="60"></circle>
+                        <circle class="circular-progress-fill"
+                                cx="75" cy="75" r="60"
+                                style="stroke: {% if results.test_results.total > 0 and (results.test_results.passed / results.test_results.total * 100) >= 80 %}#198754{% elif results.test_results.total > 0 and (results.test_results.passed / results.test_results.total * 100) >= 50 %}#ffc107{% else %}#dc3545{% endif %};
+                                       stroke-dasharray: 377;
+                                       stroke-dashoffset: {{ 377 - (377 * results.test_results.passed / results.test_results.total if results.test_results.total > 0 else 0) }};">
+                        </circle>
+                    </svg>
+                    <div class="circular-progress-text">
+                        {% if results.test_results.total > 0 %}
+                        {{ (results.test_results.passed / results.test_results.total * 100)|round|int }}%
+                        {% else %}
+                        0%
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Code Coverage -->
+    {% if results.coverage %}
+    <div class="test-section">
+        <div class="test-section-header">
+            <div class="test-section-title">
+                <i class="bi bi-shield-check" style="color: #198754;"></i>
+                Code Coverage
+            </div>
+            <span class="status-badge success">
+                <i class="bi bi-check-circle-fill"></i>
+                {{ "%.2f"|format(results.coverage.total_percent) }}%
+            </span>
+        </div>
+
+        <div class="progress-card">
+            <div class="progress-label">
+                <span>Overall Coverage</span>
+                <span>{{ results.coverage.covered_lines }} / {{ results.coverage.total_lines }} lines</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill passed" style="width: {{ results.coverage.total_percent }}%">
+                    {{ "%.1f"|format(results.coverage.total_percent) }}%
+                </div>
+            </div>
+        </div>
+
+        <h5 class="mt-4 mb-3" style="font-weight: 700;">Coverage by Module</h5>
+        <div class="coverage-grid">
+            {% for module_name, module_data in results.coverage.modules.items() %}
+            <div class="coverage-module">
+                <div class="coverage-module-name">{{ module_name }}</div>
+                <div class="coverage-bar">
+                    <div class="coverage-bar-fill {% if module_data.percent >= 70 %}high{% elif module_data.percent >= 40 %}medium{% else %}low{% endif %}"
+                         style="width: {{ module_data.percent }}%"></div>
+                </div>
+                <div class="coverage-stats">
+                    <span class="coverage-percent">{{ "%.1f"|format(module_data.percent) }}%</span>
+                    <span>{{ module_data.covered_lines }}/{{ module_data.total_lines }} lines</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Failed Tests -->
+    {% if results.test_results.failed > 0 %}
+    <div class="test-section">
+        <div class="test-section-header">
+            <div class="test-section-title">
+                <i class="bi bi-exclamation-octagon-fill" style="color: #dc3545;"></i>
+                Failed Tests
+            </div>
+            <span class="status-badge failed">
+                <i class="bi bi-x-circle-fill"></i>
+                {{ results.test_results.failed }} Failed
+            </span>
+        </div>
+
+        {% for failed_test in results.test_results.failed_tests %}
+        <div class="failed-test">
+            <div class="failed-test-path">{{ failed_test.path }}</div>
+            <div class="failed-test-error">{{ failed_test.error }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Raw Output -->
+    <div class="test-section">
+        <div class="test-section-header">
+            <div class="test-section-title">
+                <i class="bi bi-terminal-fill"></i>
+                Test Output
+            </div>
+        </div>
+        <div class="output-section">{{ results.output }}</div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -11,6 +11,7 @@ from .full_backup_service import FullBackupService
 from .full_restore_service import FullRestoreService
 from .organization_clone_service import OrganizationCloneService
 from .sso_service import SSOService
+from .test_runner_service import TestRunnerService
 from .value_type_usage_service import ValueTypeUsageService
 from .yaml_export_service import YAMLExportService
 from .yaml_import_service import YAMLImportService
@@ -28,4 +29,5 @@ __all__ = [
     "OrganizationCloneService",
     "ExcelExportService",
     "SSOService",
+    "TestRunnerService",
 ]

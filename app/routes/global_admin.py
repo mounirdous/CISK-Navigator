@@ -35,7 +35,7 @@ from app.models import (
     UserOrganizationMembership,
     ValueType,
 )
-from app.services import AuditService, OrganizationCloneService
+from app.services import AuditService, OrganizationCloneService, TestRunnerService
 
 bp = Blueprint("global_admin", __name__, url_prefix="/global-admin")
 
@@ -153,7 +153,7 @@ def health_dashboard():
     except Exception as e:
         health_data["recent_activity"]["error"] = str(e)
 
-    return render_template("global_admin/health_dashboard.html", health=health_data)
+    return render_template("global_admin/health_dashboard.html", health=health_data, csrf_token=generate_csrf)
 
 
 @bp.route("/health-dashboard/migration-check")
@@ -199,6 +199,123 @@ def migration_health_check():
     except Exception as e:
         flash(f"Error running migration check: {str(e)}", "danger")
         return redirect(url_for("global_admin.health_dashboard"))
+
+
+@bp.route("/health-dashboard/run-tests", methods=["GET", "POST"])
+@login_required
+@global_admin_required
+def run_tests():
+    """Trigger async test suite execution"""
+    from flask import current_app
+
+    # Check if Celery is enabled
+    if not current_app.config.get("CELERY_ENABLED"):
+        flash("Test runner is not available. Redis/Celery is not configured.", "warning")
+        return redirect(url_for("global_admin.health_dashboard"))
+
+    from app.tasks import run_test_suite_task
+
+    if request.method == "POST":
+        try:
+            # Start async task
+            task = run_test_suite_task.delay(user_id=current_user.id)
+
+            # Redirect to status page with task ID
+            return redirect(url_for("global_admin.test_status", task_id=task.id))
+        except Exception as e:
+            flash(f"Failed to start test execution: {str(e)}", "danger")
+            return redirect(url_for("global_admin.health_dashboard"))
+
+    # GET request - show form to trigger tests
+    return render_template("global_admin/run_tests_trigger.html")
+
+
+@bp.route("/health-dashboard/test-status/<task_id>")
+@login_required
+@global_admin_required
+def test_status(task_id):
+    """Show test execution status with live polling"""
+    return render_template(
+        "global_admin/test_status.html",
+        task_id=task_id,
+    )
+
+
+@bp.route("/health-dashboard/test-status/<task_id>/poll")
+@login_required
+@global_admin_required
+def test_status_poll(task_id):
+    """Poll endpoint for test execution status (returns JSON)"""
+    from flask import jsonify
+
+    from app.tasks import run_test_suite_task
+
+    # Get task result
+    task = run_test_suite_task.AsyncResult(task_id)
+
+    if task.state == "PENDING":
+        response = {
+            "state": task.state,
+            "status": "Waiting to start...",
+        }
+    elif task.state == "PROGRESS":
+        response = {
+            "state": task.state,
+            "status": task.info.get("status", "Running..."),
+        }
+    elif task.state == "SUCCESS":
+        response = {
+            "state": task.state,
+            "result": task.info,
+        }
+    elif task.state == "FAILURE":
+        response = {
+            "state": task.state,
+            "status": str(task.info),
+        }
+    else:
+        response = {
+            "state": task.state,
+            "status": "Unknown state",
+        }
+
+    return jsonify(response)
+
+
+@bp.route("/health-dashboard/test-result/<task_id>")
+@login_required
+@global_admin_required
+def test_result(task_id):
+    """Display test results after task completion"""
+    from app.tasks import run_test_suite_task
+
+    # Get task result
+    task = run_test_suite_task.AsyncResult(task_id)
+
+    if task.state != "SUCCESS":
+        flash("Test execution did not complete successfully", "danger")
+        return redirect(url_for("global_admin.health_dashboard"))
+
+    results = task.info
+
+    return render_template(
+        "global_admin/test_runner_results.html",
+        results=results,
+        timestamp=datetime.now(),
+    )
+
+
+@bp.route("/health-dashboard/test-history")
+@login_required
+@global_admin_required
+def test_history():
+    """View test execution history with trends"""
+    executions = TestRunnerService.get_test_history(limit=30)
+
+    return render_template(
+        "global_admin/test_history.html",
+        executions=executions,
+    )
 
 
 # User Management Routes

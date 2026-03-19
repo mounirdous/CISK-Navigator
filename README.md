@@ -1,12 +1,59 @@
-# 🧭 CISK Navigator v2.11.0
+# 🧭 CISK Navigator v2.14.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.11.0-blue)
+![Version](https://img.shields.io/badge/version-2.14.0-blue)
 ![Python](https://img.shields.io/badge/python-3.14+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-254%20passing-success)
+
+## ✨ What's New in v2.14.0 (March 2026)
+
+### 🧪 **Test Suite Runner with Celery + Redis**
+Production-ready async test execution with beautiful UI:
+
+**Async Background Processing**:
+- **Celery + Redis** for proper task queueing
+- Tests run in background without blocking server
+- Flask stays responsive during test execution
+- Scalable architecture for production
+
+**Real-Time Progress Monitoring**:
+- Beautiful loading overlay with animated spinner
+- Live progress steps (Queueing → Executing → Complete)
+- Elapsed time counter
+- AJAX polling for status updates
+- Automatic redirect when done
+
+**Test Results & Coverage**:
+- Execute full pytest suite from Health Dashboard
+- Visual progress bars and circular charts
+- Module-level code coverage breakdown
+- Color-coded coverage (high/medium/low)
+- Failed test details with error messages
+- Raw pytest output for debugging
+
+**Test History & Trends**:
+- Track test execution history over time
+- Interactive Chart.js graphs:
+  - Pass rate trends
+  - Coverage progression
+  - Test distribution
+  - Execution duration
+- See who ran tests and when
+
+**How to Use**:
+1. Start Redis: `brew services start redis` (or Render managed Redis)
+2. Start Celery worker: `celery -A app.celery worker --loglevel=info --pool=solo`
+3. Access: Global Admin → Health Dashboard → Run Test Suite
+4. Tests run in background, page polls for completion
+
+**Production Deployment on Render**:
+- Add managed Redis service
+- Set `REDIS_URL` environment variable
+- Add Celery worker as background worker
+- See full deployment guide below
 
 ## ✨ What's New in v2.11.0 (March 2026)
 
