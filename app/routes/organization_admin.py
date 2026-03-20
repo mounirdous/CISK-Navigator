@@ -2724,6 +2724,8 @@ def edit_value_type(vt_id):
             value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data
+        if form.default_aggregation_formula.data:
+            value_type.default_aggregation_formula = form.default_aggregation_formula.data
 
         # Handle list options update
         if value_type.kind == "list" and form.list_options_json.data:

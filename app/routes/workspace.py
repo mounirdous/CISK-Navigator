@@ -4016,7 +4016,7 @@ def get_data():
                                     "has_target": config.target_value is not None or bool(getattr(config, "target_list_value", None)),
                                     "list_label": vt.get_list_option_label(_list_val) if _list_val else None,
                                     "list_color": vt.get_list_option_color(_list_val) if _list_val else None,
-                                    "target_value": config.target_value,
+                                    "target_value": current_app.jinja_env.filters["format_value"](config.target_value, vt, config) if config.target_value is not None else None,
                                     "target_date": (
                                         config.target_date.strftime("%Y-%m-%d") if config.target_date else None
                                     ),

@@ -12,9 +12,10 @@ from app.services.consensus_service import ConsensusService
 class MockContribution:
     """Mock contribution for testing"""
 
-    def __init__(self, numeric_value=None, qualitative_level=None):
+    def __init__(self, numeric_value=None, qualitative_level=None, list_value=None):
         self.numeric_value = numeric_value
         self.qualitative_level = qualitative_level
+        self.list_value = list_value
 
 
 class TestConsensusService:
@@ -229,3 +230,117 @@ class TestAggregationService:
 
         # Sum doesn't make sense for qualitative, should use avg
         assert result == 2
+
+
+class TestListValueType:
+    """Tests for the list value type and its consensus/aggregation behavior"""
+
+    def test_single_list_contribution_consensus(self):
+        """Single list contribution returns strong consensus with the list_value"""
+        contributions = [MockContribution(list_value="yes")]
+        result = ConsensusService.calculate_consensus(contributions)
+
+        assert result["status"] == ConsensusService.STATUS_STRONG
+        assert result["value"] == "yes"
+        assert result["count"] == 1
+        assert result["is_rollup_eligible"] is True
+
+    def test_unanimous_list_consensus(self):
+        """All same list value → strong consensus"""
+        contributions = [
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="yes"),
+        ]
+        result = ConsensusService.calculate_consensus(contributions)
+
+        assert result["status"] == ConsensusService.STATUS_STRONG
+        assert result["value"] == "yes"
+        assert result["count"] == 3
+
+    def test_majority_list_consensus(self):
+        """Majority same list value → weak consensus"""
+        contributions = [
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="no"),
+        ]
+        result = ConsensusService.calculate_consensus(contributions)
+
+        assert result["status"] == ConsensusService.STATUS_WEAK
+        assert result["value"] == "yes"
+
+    def test_split_list_no_consensus(self):
+        """Even split → no consensus"""
+        contributions = [
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="yes"),
+            MockContribution(list_value="no"),
+            MockContribution(list_value="no"),
+        ]
+        result = ConsensusService.calculate_consensus(contributions)
+
+        assert result["status"] == ConsensusService.STATUS_NO_CONSENSUS
+        assert result["value"] is None
+
+    def test_list_value_type_model(self, db, sample_organization):
+        """ValueType with kind='list' stores options and helpers work correctly"""
+        vt = ValueType(
+            name="Approved?",
+            kind="list",
+            list_options=[
+                {"key": "yes", "label": "Yes", "color": "#28a745"},
+                {"key": "no", "label": "No", "color": "#dc3545"},
+            ],
+            organization_id=sample_organization.id,
+            default_aggregation_formula="mode",
+        )
+        db.session.add(vt)
+        db.session.commit()
+
+        assert vt.is_list() is True
+        assert vt.is_numeric() is False
+        assert vt.get_list_option_label("yes") == "Yes"
+        assert vt.get_list_option_label("no") == "No"
+        assert vt.get_list_option_color("yes") == "#28a745"
+        assert vt.get_list_option_color("no") == "#dc3545"
+        assert vt.get_list_option_label("unknown") == "unknown"  # falls back to key for unknown options
+
+    def test_list_mode_aggregation(self, db, sample_organization):
+        """Mode aggregation returns the most frequent list value"""
+        vt = ValueType(
+            name="Status",
+            kind="list",
+            list_options=[
+                {"key": "yes", "label": "Yes", "color": "#28a745"},
+                {"key": "no", "label": "No", "color": "#dc3545"},
+            ],
+            organization_id=sample_organization.id,
+            default_aggregation_formula="mode",
+        )
+        db.session.add(vt)
+        db.session.commit()
+
+        values = ["yes", "yes", "no"]
+        result = AggregationService.aggregate_values(values, "mode", vt)
+        assert result == "yes"
+
+    def test_list_mode_tie_returns_none(self, db, sample_organization):
+        """Mode aggregation returns None when there's a tie"""
+        vt = ValueType(
+            name="Status",
+            kind="list",
+            list_options=[
+                {"key": "yes", "label": "Yes", "color": "#28a745"},
+                {"key": "no", "label": "No", "color": "#dc3545"},
+            ],
+            organization_id=sample_organization.id,
+            default_aggregation_formula="mode",
+        )
+        db.session.add(vt)
+        db.session.commit()
+
+        values = ["yes", "no"]
+        result = AggregationService.aggregate_values(values, "mode", vt)
+        assert result is None
