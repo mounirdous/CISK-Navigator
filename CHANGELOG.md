@@ -5,6 +5,27 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.3] - 2026-03-21
+
+### Fixed
+- Aggregation formula options are now consistent across all 3 surfaces (create, edit, rollup config)
+  - **List** types show only "Mode (most frequent)" — no sum/min/max/avg/count
+  - **Numeric** types show sum/min/max/avg/median/count — no mode
+  - **Qualitative** types (risk, sentiment, etc.) show min/max/avg — no sum or mode
+  - `configure_rollup.html`: replaced 3 hardcoded formula selects with `get_valid_formulas()` loop
+  - `create_value_type.html`: JS `updateFormulaOptions()` hides/disables invalid formulas per kind
+  - `edit_value_type.html`: formula select rendered server-side from `get_valid_formulas()`
+
+## [2.15.2] - 2026-03-20
+
+### Fixed
+- `MockContribution` in unit tests updated to include `list_value` field
+- Target value tooltip in workspace now uses the KPI's format filter (e.g. no trailing decimals for integer KPIs)
+
+### Added
+- 8 new unit tests for list value type: consensus (single/unanimous/majority/split), aggregation (mode/tie), model helpers
+- Default aggregation formula field in Edit Value Type form — allows changing the rollup formula after creation
+
 ## [2.15.1] - 2026-03-20
 
 ### Fixed

@@ -393,13 +393,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show/hide options based on kind
         Array.from(formulaSelect.options).forEach(option => {
-            if (option.value === 'sum') {
-                option.style.display = isNumeric ? 'block' : 'none';
+            const v = option.value;
+            if (v === 'sum') {
+                option.style.display = isNumeric ? '' : 'none';
                 option.disabled = !isNumeric;
-            }
-            if (option.value === 'mode') {
-                option.style.display = isList ? 'block' : 'none';
+            } else if (v === 'mode') {
+                option.style.display = isList ? '' : 'none';
                 option.disabled = !isList;
+            } else if (['min', 'max', 'avg', 'median', 'count'].includes(v)) {
+                option.style.display = isList ? 'none' : '';
+                option.disabled = isList;
             }
         });
 

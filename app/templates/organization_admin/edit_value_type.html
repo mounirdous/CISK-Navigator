@@ -193,7 +193,12 @@
                         </div>
                         <div class="mb-3">
                             {{ form.default_aggregation_formula.label(class="form-label fw-semibold") }}
-                            {{ form.default_aggregation_formula(class="form-select") }}
+                            <select class="form-select" name="default_aggregation_formula">
+                                {% for f in value_type.get_valid_formulas() %}
+                                    {% set labels = {'sum': 'Sum', 'min': 'Minimum', 'max': 'Maximum', 'avg': 'Average', 'median': 'Median', 'count': 'Count', 'mode': 'Mode (most frequent)'} %}
+                                    <option value="{{ f }}" {{ 'selected' if value_type.default_aggregation_formula == f }}>{{ labels.get(f, f) }}</option>
+                                {% endfor %}
+                            </select>
                             <small class="form-text text-muted">
                                 <i class="bi bi-info-circle"></i> How values are rolled up across the hierarchy
                             </small>
