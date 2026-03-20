@@ -1192,12 +1192,15 @@ def create_challenge(space_id):
     form = ChallengeCreateForm()
 
     if form.validate_on_submit():
+        max_order = db.session.query(db.func.max(Challenge.display_order)).filter_by(
+            organization_id=org_id, space_id=space_id
+        ).scalar() or 0
         challenge = Challenge(
             organization_id=org_id,
             space_id=space_id,
             name=form.name.data,
             description=form.description.data,
-            display_order=form.display_order.data,
+            display_order=max_order + 1,
         )
         db.session.add(challenge)
         db.session.flush()
@@ -1243,7 +1246,6 @@ def edit_challenge(challenge_id):
         challenge.name = form.name.data
         challenge.description = form.description.data
         challenge.space_id = form.space_id.data
-        challenge.display_order = form.display_order.data
 
         # Audit log
         new_values = {
@@ -1349,8 +1351,11 @@ def create_initiative(challenge_id):
         db.session.add(initiative)
         db.session.flush()  # Get the ID
 
-        # Link to challenge
-        link = ChallengeInitiativeLink(challenge_id=challenge_id, initiative_id=initiative.id, display_order=0)
+        # Link to challenge with next display_order
+        max_init_order = db.session.query(db.func.max(ChallengeInitiativeLink.display_order)).filter_by(
+            challenge_id=challenge_id
+        ).scalar() or 0
+        link = ChallengeInitiativeLink(challenge_id=challenge_id, initiative_id=initiative.id, display_order=max_init_order + 1)
         db.session.add(link)
 
         # Audit log
@@ -1438,8 +1443,11 @@ def edit_initiative(initiative_id):
         existing_challenge_ids = [link.challenge_id for link in initiative.challenge_links]
         for challenge_id in new_challenge_ids:
             if challenge_id not in existing_challenge_ids:
+                max_ord = db.session.query(db.func.max(ChallengeInitiativeLink.display_order)).filter_by(
+                    challenge_id=challenge_id
+                ).scalar() or 0
                 new_link = ChallengeInitiativeLink(
-                    challenge_id=challenge_id, initiative_id=initiative.id, display_order=0
+                    challenge_id=challenge_id, initiative_id=initiative.id, display_order=max_ord + 1
                 )
                 db.session.add(new_link)
 
@@ -1552,8 +1560,11 @@ def create_system(initiative_id):
         db.session.add(system)
         db.session.flush()  # Get the ID
 
-        # Link to initiative
-        link = InitiativeSystemLink(initiative_id=initiative_id, system_id=system.id, display_order=0)
+        # Link to initiative with next display_order
+        max_sys_order = db.session.query(db.func.max(InitiativeSystemLink.display_order)).filter_by(
+            initiative_id=initiative_id
+        ).scalar() or 0
+        link = InitiativeSystemLink(initiative_id=initiative_id, system_id=system.id, display_order=max_sys_order + 1)
         db.session.add(link)
 
         # Audit log

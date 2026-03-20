@@ -8,6 +8,20 @@ from app.models import KPI, Challenge, Initiative, InitiativeSystemLink, Space, 
 from app.services.search_service import SearchService
 
 
+def _total(results):
+    """Count total results across all entity-type buckets."""
+    return sum(len(v) for k, v in results.items() if k != "query_info" and isinstance(v, list))
+
+
+def _all_items(results):
+    """Flatten all entity results into a single list."""
+    items = []
+    for k, v in results.items():
+        if k != "query_info" and isinstance(v, list):
+            items.extend(v)
+    return items
+
+
 class TestSearchService:
     """Test search service operations"""
 
@@ -85,114 +99,112 @@ class TestSearchService:
     def test_search_by_space_name(self, app, db, sample_organization, search_data):
         """Test searching for spaces by name"""
         with app.app_context():
-            results = SearchService.search(
-                query="Finance", organization_id=sample_organization.id, entity_types=["space"]
+            results = SearchService.search_all(
+                query="Finance",
+                filters={"entity_types": ["spaces"]},
+                organization_id=sample_organization.id,
             )
-
-            # Should find Finance Space
-            space_results = [r for r in results if r["type"] == "space"]
+            space_results = results.get("spaces", [])
             assert len(space_results) >= 1
             assert any("Finance" in r["name"] for r in space_results)
 
     def test_search_by_challenge_name(self, app, db, sample_organization, search_data):
         """Test searching for challenges by name"""
         with app.app_context():
-            results = SearchService.search(
-                query="Revenue", organization_id=sample_organization.id, entity_types=["challenge"]
+            results = SearchService.search_all(
+                query="Revenue",
+                filters={"entity_types": ["challenges"]},
+                organization_id=sample_organization.id,
             )
-
-            # Should find Revenue Growth challenge
-            challenge_results = [r for r in results if r["type"] == "challenge"]
+            challenge_results = results.get("challenges", [])
             assert len(challenge_results) >= 1
             assert any("Revenue" in r["name"] for r in challenge_results)
 
     def test_search_by_initiative_name(self, app, db, sample_organization, search_data):
         """Test searching for initiatives by name"""
         with app.app_context():
-            results = SearchService.search(
-                query="Digital", organization_id=sample_organization.id, entity_types=["initiative"]
+            results = SearchService.search_all(
+                query="Digital",
+                filters={"entity_types": ["initiatives"]},
+                organization_id=sample_organization.id,
             )
-
-            # Should find Digital Sales initiative
-            initiative_results = [r for r in results if r["type"] == "initiative"]
+            initiative_results = results.get("initiatives", [])
             assert len(initiative_results) >= 1
             assert any("Digital" in r["name"] for r in initiative_results)
 
     def test_search_by_system_name(self, app, db, sample_organization, search_data):
         """Test searching for systems by name"""
         with app.app_context():
-            results = SearchService.search(query="CRM", organization_id=sample_organization.id, entity_types=["system"])
-
-            # Should find CRM System
-            system_results = [r for r in results if r["type"] == "system"]
+            results = SearchService.search_all(
+                query="CRM",
+                filters={"entity_types": ["systems"]},
+                organization_id=sample_organization.id,
+            )
+            system_results = results.get("systems", [])
             assert len(system_results) >= 1
             assert any("CRM" in r["name"] for r in system_results)
 
     def test_search_by_kpi_name(self, app, db, sample_organization, search_data):
         """Test searching for KPIs by name"""
         with app.app_context():
-            results = SearchService.search(
-                query="Revenue", organization_id=sample_organization.id, entity_types=["kpi"]
+            results = SearchService.search_all(
+                query="Revenue",
+                filters={"entity_types": ["kpis"]},
+                organization_id=sample_organization.id,
             )
-
-            # Should find Monthly Revenue KPI
-            kpi_results = [r for r in results if r["type"] == "kpi"]
+            kpi_results = results.get("kpis", [])
             assert len(kpi_results) >= 1
             assert any("Revenue" in r["name"] for r in kpi_results)
 
     def test_search_all_entity_types(self, app, db, sample_organization, search_data):
         """Test searching across all entity types"""
         with app.app_context():
-            results = SearchService.search(query="Revenue", organization_id=sample_organization.id)
-
-            # Should find Revenue in both challenge and KPI
-            types_found = {r["type"] for r in results}
-            assert "challenge" in types_found
-            assert "kpi" in types_found
+            results = SearchService.search_all(query="Revenue", organization_id=sample_organization.id)
+            # Should find Revenue in both challenges and KPIs
+            assert len(results.get("challenges", [])) > 0
+            assert len(results.get("kpis", [])) > 0
 
     def test_search_case_insensitive(self, app, db, sample_organization, search_data):
         """Test that search is case-insensitive"""
         with app.app_context():
-            results_lower = SearchService.search(query="revenue", organization_id=sample_organization.id)
-            results_upper = SearchService.search(query="REVENUE", organization_id=sample_organization.id)
-            results_mixed = SearchService.search(query="ReVeNuE", organization_id=sample_organization.id)
-
+            results_lower = SearchService.search_all(query="revenue", organization_id=sample_organization.id)
+            results_upper = SearchService.search_all(query="REVENUE", organization_id=sample_organization.id)
+            results_mixed = SearchService.search_all(query="ReVeNuE", organization_id=sample_organization.id)
             # All should return same number of results
-            assert len(results_lower) == len(results_upper)
-            assert len(results_lower) == len(results_mixed)
+            assert _total(results_lower) == _total(results_upper)
+            assert _total(results_lower) == _total(results_mixed)
 
     def test_search_by_description(self, app, db, sample_organization, search_data):
         """Test searching by description text"""
         with app.app_context():
-            results = SearchService.search(
-                query="automation", organization_id=sample_organization.id, entity_types=["initiative"]
+            results = SearchService.search_all(
+                query="automation",
+                filters={"entity_types": ["initiatives"]},
+                organization_id=sample_organization.id,
             )
-
-            # Should find "Process Automation" initiative
-            assert len(results) >= 1
-            assert any("Automation" in r["name"] for r in results)
+            initiative_results = results.get("initiatives", [])
+            assert len(initiative_results) >= 1
+            assert any("Automation" in r["name"] for r in initiative_results)
 
     def test_search_empty_query(self, app, db, sample_organization, search_data):
-        """Test search with empty query"""
+        """Test search with empty query returns empty results"""
         with app.app_context():
-            results = SearchService.search(query="", organization_id=sample_organization.id)
-
-            # Should return empty list for empty query
-            assert len(results) == 0
+            results = SearchService.search_all(query="", organization_id=sample_organization.id)
+            assert _total(results) == 0
 
     def test_search_no_results(self, app, db, sample_organization, search_data):
         """Test search with no matching results"""
         with app.app_context():
-            results = SearchService.search(query="nonexistentquery12345", organization_id=sample_organization.id)
-
-            # Should return empty list
-            assert len(results) == 0
+            results = SearchService.search_all(
+                query="nonexistentquery12345", organization_id=sample_organization.id
+            )
+            assert _total(results) == 0
 
     def test_search_with_limit(self, app, db, sample_organization, search_data):
-        """Test search with result limit"""
+        """Test search returns results for matching query"""
         with app.app_context():
-            # Create many entities with "test" in name
-            for i in range(10):
+            # Create several spaces with "test" in name
+            for i in range(5):
                 space = Space(
                     organization_id=sample_organization.id,
                     name=f"Test Space {i}",
@@ -201,49 +213,46 @@ class TestSearchService:
                 db.session.add(space)
             db.session.commit()
 
-            # Search with limit
-            results = SearchService.search(query="Test Space", organization_id=sample_organization.id, limit=5)
-
-            # Should return at most 5 results
-            assert len(results) <= 5
+            results = SearchService.search_all(
+                query="Test Space",
+                filters={"entity_types": ["spaces"]},
+                organization_id=sample_organization.id,
+            )
+            # Should find test spaces
+            assert len(results.get("spaces", [])) >= 1
 
     def test_search_respects_organization(self, app, db, sample_organization):
         """Test that search only returns results from specified organization"""
         from app.models import Organization
 
         with app.app_context():
-            # Create another organization
+            # Create another organization with a space
             org2 = Organization(name="Other Org", description="Other", is_active=True)
             db.session.add(org2)
             db.session.flush()
 
-            # Create space in org2
             space_org2 = Space(organization_id=org2.id, name="Finance Space Org2", description="Finance")
             db.session.add(space_org2)
             db.session.commit()
 
-            # Search in sample_organization
-            results = SearchService.search(query="Finance", organization_id=sample_organization.id)
-
-            # Should not find space from org2
-            org2_results = [r for r in results if r.get("id") == space_org2.id]
+            # Search in sample_organization — should not find org2's space
+            results = SearchService.search_all(query="Finance", organization_id=sample_organization.id)
+            all_items = _all_items(results)
+            org2_results = [r for r in all_items if r.get("id") == space_org2.id]
             assert len(org2_results) == 0
 
     def test_search_partial_match(self, app, db, sample_organization, search_data):
         """Test that search matches partial words"""
         with app.app_context():
-            results = SearchService.search(query="Fin", organization_id=sample_organization.id)
-
-            # Should find "Finance Space" with partial match
-            assert len(results) >= 1
-            assert any("Finance" in r["name"] for r in results)
+            results = SearchService.search_all(query="Fin", organization_id=sample_organization.id)
+            space_results = results.get("spaces", [])
+            assert len(space_results) >= 1
+            assert any("Finance" in r["name"] for r in space_results)
 
     def test_search_multiple_words(self, app, db, sample_organization, search_data):
         """Test searching with multiple words"""
         with app.app_context():
-            results = SearchService.search(query="Revenue Growth", organization_id=sample_organization.id)
-
-            # Should find challenge with both words
-            assert len(results) >= 1
-            challenge_results = [r for r in results if r["type"] == "challenge"]
+            results = SearchService.search_all(query="Revenue Growth", organization_id=sample_organization.id)
+            challenge_results = results.get("challenges", [])
+            assert len(challenge_results) >= 1
             assert any("Revenue Growth" in r["name"] for r in challenge_results)

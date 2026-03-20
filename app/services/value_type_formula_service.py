@@ -81,7 +81,7 @@ class ValueTypeFormulaService:
             snapshot = KPISnapshot.query.filter_by(
                 kpi_value_type_config_id=config.id, snapshot_date=snapshot_date
             ).first()
-            return snapshot.value if snapshot else None
+            return snapshot.consensus_value if snapshot else None
 
         # If this is a formula value type, calculate it recursively
         return ValueTypeFormulaService.calculate_formula_value(
@@ -152,7 +152,7 @@ class ValueTypeFormulaService:
         # Get all configs for this KPI (only manual ones have snapshots)
         configs = (
             KPIValueTypeConfig.query.filter_by(kpi_id=kpi_id)
-            .join(ValueType)
+            .join(ValueType, KPIValueTypeConfig.value_type_id == ValueType.id)
             .filter(ValueType.calculation_type == ValueType.CALC_MANUAL)
             .all()
         )
@@ -163,8 +163,8 @@ class ValueTypeFormulaService:
                 kpi_value_type_config_id=config.id, snapshot_date=snapshot_date
             ).first()
 
-            if snapshot and snapshot.value is not None:
-                values[config.value_type_id] = snapshot.value
+            if snapshot and snapshot.consensus_value is not None:
+                values[config.value_type_id] = snapshot.consensus_value
 
         return values
 

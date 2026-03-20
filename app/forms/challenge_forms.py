@@ -16,5 +16,4 @@ class ChallengeEditForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=200)])
     description = TextAreaField("Description")
     space_id = SelectField("Parent Space", coerce=int, validators=[DataRequired()])
-    display_order = IntegerField("Display Order")
     submit = SubmitField("Save Changes")

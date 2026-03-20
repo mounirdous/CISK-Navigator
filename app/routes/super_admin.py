@@ -1436,13 +1436,13 @@ def documentation():
     index_path = docs_path / "COMPLETE_DOCUMENTATION_INDEX.md"
     index_content = None
     if index_path.exists():
-        with open(index_path, "r") as f:
+        with open(index_path, "r", encoding="utf-8") as f:
             index_content = f.read()
 
     # Parse YAML files for quick stats
     journey_stats = {}
     for journey_file in user_journeys:
-        with open(journey_file, "r") as f:
+        with open(journey_file, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
             role_name = data.get("role", {}).get("name", journey_file.stem)
             journey_count = len(data.get("journeys", []))
@@ -1474,7 +1474,7 @@ def documentation_journey(role):
         flash(f"Journey file not found: {role}", "danger")
         return redirect(url_for("super_admin.documentation"))
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         journey_data = yaml.safe_load(f)
 
     return render_template(
@@ -1493,7 +1493,7 @@ def documentation_concept(concept):
         flash(f"Concept file not found: {concept}", "danger")
         return redirect(url_for("super_admin.documentation"))
 
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         concept_data = yaml.safe_load(f)
 
     return render_template(
@@ -1511,7 +1511,7 @@ def documentation_ui_audit():
         flash("UI/UX audit file not found", "danger")
         return redirect(url_for("super_admin.documentation"))
 
-    with open(docs_path, "r") as f:
+    with open(docs_path, "r", encoding="utf-8") as f:
         audit_data = yaml.safe_load(f)
 
     return render_template("super_admin/documentation/ui_audit.html", audit_data=audit_data, csrf_token=generate_csrf)
@@ -1527,7 +1527,7 @@ def documentation_analysis():
         flash("Simplification analysis file not found", "danger")
         return redirect(url_for("super_admin.documentation"))
 
-    with open(docs_path, "r") as f:
+    with open(docs_path, "r", encoding="utf-8") as f:
         analysis_content = f.read()
 
     return render_template(

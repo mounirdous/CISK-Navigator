@@ -13,11 +13,10 @@ class TestMigrationHealthCheckRoute:
                 "/auth/login", data={"login": sample_user.login, "password": "password123"}, follow_redirects=True
             )
 
-            response = client.get("/global-admin/health-dashboard/migration-check", follow_redirects=True)
+            response = client.get("/global-admin/health-dashboard/migration-check", follow_redirects=False)
 
-            # Should redirect to login or show access denied
-            assert response.status_code == 200
-            assert b"Access denied" in response.data or b"permission required" in response.data.lower()
+            # Non-admin should be redirected (302) away from the protected route
+            assert response.status_code in (302, 403)
 
     def test_migration_check_accessible_by_admin(self, app, db, admin_user):
         """Test that global admins can access migration check"""

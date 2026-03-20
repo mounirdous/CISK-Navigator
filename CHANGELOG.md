@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.8] - 2026-03-20
+
+### Fixed
+- **Challenge position changes on rename** - Editing a challenge name no longer affects its display order; `display_order` field removed from edit form and is now only set via drag-and-drop
+- **New entities always at bottom** - Challenges, initiatives, and systems are now created with `display_order = max + 1` so each new item gets a unique sequential position
+- **All test suite fixes** - Fixed formula service using `snapshot.value` (wrong field; now uses `consensus_value`), ambiguous join in formula service, wrong KPISnapshot field name in tests, and missing `kind` on ValueType in tests
+- **File encoding** - Documentation routes now open files with `encoding='utf-8'` to prevent UnicodeDecodeError on Windows
+
 ## [2.14.7] - 2026-03-20
 
 ### Fixed

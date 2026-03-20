@@ -76,11 +76,11 @@ class TestActionItemAdminDelete:
 
         # Login as admin and delete
         with app.test_client() as client:
-            # Set organization context
+            client.post("/auth/login", data={"login": admin_user.login, "password": "admin123"}, follow_redirects=True)
+
+            # Set organization context after login so it is not cleared by the login redirect chain
             with client.session_transaction() as sess:
                 sess["organization_id"] = sample_organization.id
-
-            client.post("/auth/login", data={"login": admin_user.login, "password": "admin123"}, follow_redirects=True)
 
             delete_response = client.post(f"/toolbox/actions/{action.id}/delete", follow_redirects=True)
 
@@ -217,11 +217,11 @@ class TestActionItemAdminDelete:
 
         # Bulk delete as admin
         with app.test_client() as client:
-            # Set organization context
+            client.post("/auth/login", data={"login": admin_user.login, "password": "admin123"}, follow_redirects=True)
+
+            # Set organization context after login so it is not cleared by the login redirect chain
             with client.session_transaction() as sess:
                 sess["organization_id"] = sample_organization.id
-
-            client.post("/auth/login", data={"login": admin_user.login, "password": "admin123"}, follow_redirects=True)
 
             delete_response = client.post(
                 "/toolbox/actions/bulk-delete",
