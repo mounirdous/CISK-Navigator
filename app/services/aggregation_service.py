@@ -205,25 +205,26 @@ class AggregationService:
                 logger.info(f"    System Link {link.id}: Rollup DISABLED by rule")
                 continue
 
-            total_systems += 1
-
             # Get the system-level aggregation (KPIs → System)
             system_agg = AggregationService.get_kpi_to_system_rollup(link, value_type_id)
 
-            # Accept any value, even if incomplete (partial data)
-            if system_agg and system_agg["value"] is not None:
+            # Only count this system if it actually has KPIs configured for this VT
+            if not system_agg or system_agg.get("count_total", 0) == 0:
+                logger.info(f"    ⏭ System Link {link.id}: No KPIs for this value type — skipped")
+                continue
+
+            total_systems += 1
+
+            if system_agg["value"] is not None:
                 eligible_values.append(system_agg["value"])
                 status = "✓" if system_agg["is_complete"] else "⚠"
                 logger.info(
                     f"    {status} System Link {link.id}: Added value {system_agg['value']} ({'complete' if system_agg['is_complete'] else 'partial'})"
                 )
             else:
-                if system_agg:
-                    logger.info(
-                        f"    ❌ System Link {link.id}: value={system_agg.get('value')}, is_complete={system_agg.get('is_complete')}"
-                    )
-                else:
-                    logger.info(f"    ❌ System Link {link.id}: No aggregation returned")
+                logger.info(
+                    f"    ❌ System Link {link.id}: value={system_agg.get('value')}, is_complete={system_agg.get('is_complete')}"
+                )
 
         # Determine formula (even if no values, for consistent return structure)
         formula = None
@@ -288,25 +289,26 @@ class AggregationService:
                 logger.info(f"    Initiative Link {link.id}: Rollup DISABLED by rule")
                 continue
 
-            total_initiatives += 1
-
             # Get the initiative-level aggregation
             initiative_agg = AggregationService.get_system_to_initiative_rollup(link.initiative_id, value_type_id)
 
-            # Accept any value, even if incomplete (partial data)
-            if initiative_agg and initiative_agg["value"] is not None:
+            # Only count this initiative if it actually has systems with KPIs for this VT
+            if not initiative_agg or initiative_agg.get("count_total", 0) == 0:
+                logger.info(f"    ⏭ Initiative {link.initiative_id}: No systems with this value type — skipped")
+                continue
+
+            total_initiatives += 1
+
+            if initiative_agg["value"] is not None:
                 eligible_values.append(initiative_agg["value"])
                 status = "✓" if initiative_agg["is_complete"] else "⚠"
                 logger.info(
                     f"    {status} Initiative {link.initiative_id}: Added value {initiative_agg['value']} ({'complete' if initiative_agg['is_complete'] else 'partial'})"
                 )
             else:
-                if initiative_agg:
-                    logger.info(
-                        f"    ❌ Initiative {link.initiative_id}: value={initiative_agg.get('value')}, is_complete={initiative_agg.get('is_complete')}"
-                    )
-                else:
-                    logger.info(f"    ❌ Initiative {link.initiative_id}: No aggregation returned")
+                logger.info(
+                    f"    ❌ Initiative {link.initiative_id}: value={initiative_agg.get('value')}, is_complete={initiative_agg.get('is_complete')}"
+                )
 
         # Determine formula (even if no values, for consistent return structure)
         formula = value_type.default_aggregation_formula
@@ -369,25 +371,26 @@ class AggregationService:
                 logger.info(f"    Challenge {challenge.id} ({challenge.name}): Rollup DISABLED by rule")
                 continue
 
-            total_challenges += 1
-
             # Get the challenge-level aggregation
             challenge_agg = AggregationService.get_initiative_to_challenge_rollup(challenge.id, value_type_id)
 
-            # Accept any value, even if incomplete (partial data)
-            if challenge_agg and challenge_agg["value"] is not None:
+            # Only count this challenge if it actually has initiatives with this VT
+            if not challenge_agg or challenge_agg.get("count_total", 0) == 0:
+                logger.info(f"    ⏭ Challenge {challenge.id} ({challenge.name}): No initiatives with this value type — skipped")
+                continue
+
+            total_challenges += 1
+
+            if challenge_agg["value"] is not None:
                 eligible_values.append(challenge_agg["value"])
                 status = "✓" if challenge_agg["is_complete"] else "⚠"
                 logger.info(
                     f"    {status} Challenge {challenge.id} ({challenge.name}): Added value {challenge_agg['value']} ({'complete' if challenge_agg['is_complete'] else 'partial'})"
                 )
             else:
-                if challenge_agg:
-                    logger.info(
-                        f"    ❌ Challenge {challenge.id} ({challenge.name}): value={challenge_agg.get('value')}, is_complete={challenge_agg.get('is_complete')}"
-                    )
-                else:
-                    logger.info(f"    ❌ Challenge {challenge.id} ({challenge.name}): No aggregation returned")
+                logger.info(
+                    f"    ❌ Challenge {challenge.id} ({challenge.name}): value={challenge_agg.get('value')}, is_complete={challenge_agg.get('is_complete')}"
+                )
 
         # Determine formula (even if no values, for consistent return structure)
         formula = value_type.default_aggregation_formula
