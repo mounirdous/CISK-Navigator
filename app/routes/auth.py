@@ -171,7 +171,7 @@ def profile():
             logo_url = f"data:{org.logo_mime_type};base64,{base64.b64encode(org.logo_data).decode('utf-8')}"
             org_logos[org.id] = logo_url
 
-    return render_template("auth/profile.html", form=form, org_logos=org_logos)
+    return render_template("auth/profile.html", form=form, org_logos=org_logos, csrf_token=generate_csrf)
 
 
 @bp.route("/switch-organization/<int:org_id>", methods=["POST"])
