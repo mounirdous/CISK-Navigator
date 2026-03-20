@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.15] - 2026-03-20
+
+### Added
+- **Tooltips on rollup completeness indicators** — hovering the ✓ or ⚠ badge on a rolled-up cell now shows exactly how many children contributed data (e.g. "2 of 3 system(s) have data — roll-up is partial")
+
 ## [2.14.14] - 2026-03-20
 
 ### Fixed
