@@ -2,7 +2,7 @@
 Authentication routes
 """
 
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import generate_csrf
 
@@ -114,7 +114,9 @@ def login():
 
         # Success message
         flash(f"Welcome back, {user.display_name or user.login}!", "success")
-        return redirect(url_for("workspace.dashboard"))
+        resp = make_response(redirect(url_for("workspace.dashboard")))
+        resp.set_cookie("dark_mode", "1" if user.dark_mode else "0", max_age=365 * 24 * 3600)
+        return resp
 
     # Check SSO status - only use SSOConfig as single source of truth
     sso_config = SSOConfig.get_instance()
@@ -155,7 +157,9 @@ def profile():
         current_user.dark_mode = form.dark_mode.data
         db.session.commit()
         flash("Profile updated successfully.", "success")
-        return redirect(url_for("auth.profile"))
+        resp = make_response(redirect(url_for("auth.profile")))
+        resp.set_cookie("dark_mode", "1" if current_user.dark_mode else "0", max_age=365 * 24 * 3600)
+        return resp
 
     # Pre-populate form with current values
     if request.method == "GET":

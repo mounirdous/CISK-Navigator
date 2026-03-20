@@ -351,7 +351,7 @@
 
     </style>
 </head>
-<body{% if current_user.is_authenticated and current_user.dark_mode %} class="dark-mode"{% endif %}>
+<body{% if (current_user.is_authenticated and current_user.dark_mode) or (not current_user.is_authenticated and request.cookies.get('dark_mode') == '1') %} class="dark-mode"{% endif %}>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container-fluid">
             {% if session.organization_id %}
