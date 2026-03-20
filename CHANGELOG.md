@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.10] - 2026-03-20
+
+### Fixed
+- **Last-used org now takes priority over default org** — login now picks the most recently visited organization first; the profile default org is only a fallback when no last-used org is recorded
+
 ## [2.14.9] - 2026-03-20
 
 ### Added

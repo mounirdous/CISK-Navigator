@@ -75,19 +75,8 @@ def login():
         # Determine which organization to log into
         selected_org = None
 
-        # Priority 1: User's explicit default organization (if set and user has access)
-        if user.default_organization_id:
-            default_org = Organization.query.get(user.default_organization_id)
-            if (
-                default_org
-                and default_org.is_active
-                and not default_org.is_deleted
-                and user.has_organization_access(default_org.id)
-            ):
-                selected_org = default_org
-
-        # Priority 2: Last organization the user was in
-        if not selected_org and user.last_organization_id:
+        # Priority 1: Last organization the user was in (most recent activity wins)
+        if user.last_organization_id:
             last_org = Organization.query.get(user.last_organization_id)
             if (
                 last_org
@@ -96,6 +85,17 @@ def login():
                 and user.has_organization_access(last_org.id)
             ):
                 selected_org = last_org
+
+        # Priority 2: User's explicit default organization (fallback if no last-used)
+        if not selected_org and user.default_organization_id:
+            default_org = Organization.query.get(user.default_organization_id)
+            if (
+                default_org
+                and default_org.is_active
+                and not default_org.is_deleted
+                and user.has_organization_access(default_org.id)
+            ):
+                selected_org = default_org
 
         # Priority 3: First available organization
         if not selected_org and active_orgs:
@@ -373,17 +373,17 @@ def sso_callback():
     # Determine which organization to log into
     selected_org = None
 
-    # Priority 1: User's explicit default organization (if set and user has access)
-    if user.default_organization_id:
-        default_org = Organization.query.get(user.default_organization_id)
-        if default_org and default_org.is_active and user.has_organization_access(default_org.id):
-            selected_org = default_org
-
-    # Priority 2: Last organization the user was in
-    if not selected_org and user.last_organization_id:
+    # Priority 1: Last organization the user was in (most recent activity wins)
+    if user.last_organization_id:
         last_org = Organization.query.get(user.last_organization_id)
         if last_org and last_org.is_active and user.has_organization_access(last_org.id):
             selected_org = last_org
+
+    # Priority 2: User's explicit default organization (fallback if no last-used)
+    if not selected_org and user.default_organization_id:
+        default_org = Organization.query.get(user.default_organization_id)
+        if default_org and default_org.is_active and user.has_organization_access(default_org.id):
+            selected_org = default_org
 
     # Priority 3: First available organization
     if not selected_org and active_orgs:
