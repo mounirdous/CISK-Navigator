@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.16] - 2026-03-20
+
+### Fixed
+- **Rollup completeness tooltip showing "undefined of undefined"** — workspace route now passes `count_total` and `count_included` in rollup data for all four levels (space, challenge, initiative, system)
+
 ## [2.14.15] - 2026-03-20
 
 ### Added

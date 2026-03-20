@@ -3748,6 +3748,8 @@ def get_data():
                     "color": color or "#6c757d",
                     "formula": rollup_data.get("formula"),
                     "is_complete": rollup_data.get("is_complete", False),
+                    "count_total": rollup_data.get("count_total", 0),
+                    "count_included": rollup_data.get("count_included", 0),
                 }
 
         # Second pass: Calculate formula value types from rollup values
@@ -3794,6 +3796,8 @@ def get_data():
                         "color": color or "#6c757d",
                         "formula": rollup_data.get("formula"),
                         "is_complete": rollup_data.get("is_complete", False),
+                        "count_total": rollup_data.get("count_total", 0),
+                        "count_included": rollup_data.get("count_included", 0),
                     }
 
             # Second pass: Calculate formula value types from rollup values
@@ -3835,6 +3839,8 @@ def get_data():
                             "color": color or "#6c757d",
                             "formula": rollup_data.get("formula"),
                             "is_complete": rollup_data.get("is_complete", False),
+                            "count_total": rollup_data.get("count_total", 0),
+                            "count_included": rollup_data.get("count_included", 0),
                         }
 
                 # Second pass: Calculate formula value types from rollup values
@@ -3884,6 +3890,8 @@ def get_data():
                                 "color": color or "#6c757d",
                                 "formula": rollup_data.get("formula"),
                                 "is_complete": rollup_data.get("is_complete", False),
+                                "count_total": rollup_data.get("count_total", 0),
+                                "count_included": rollup_data.get("count_included", 0),
                             }
 
                     # Second pass: Calculate formula value types from rollup values
