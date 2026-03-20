@@ -2178,13 +2178,24 @@
                                 </span>
                             </template>
                         </template>
-                        <!-- Rollup Config Icon (Edit Mode Only, Manual Numeric Only) -->
+                        <!-- Rollup Config Icon (Edit Mode Only) -->
+                        <!-- Non-formula: single icon at left:4px -->
                         <template x-if="editMode && vt.kind === 'numeric' && vt.calculation_type !== 'formula'">
                             <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspace') }}`.replace('/0/', `/${vt.id}/`)"
                                class="rollup-config-icon"
                                :title="'Configure rollup display for ' + vt.name"
                                @click.stop
                                style="position: absolute; top: 4px; left: 4px; font-size: 0.8rem; opacity: 0.6; transition: opacity 0.2s; text-decoration: none;">
+                                <i class="bi bi-sliders"></i>
+                            </a>
+                        </template>
+                        <!-- Formula: second icon at left:22px (next to formula icon) -->
+                        <template x-if="editMode && vt.calculation_type === 'formula'">
+                            <a :href="`{{ url_for('organization_admin.configure_rollup', vt_id=0, return_to='workspace') }}`.replace('/0/', `/${vt.id}/`)"
+                               class="rollup-config-icon"
+                               :title="'Configure rollup display for ' + vt.name"
+                               @click.stop
+                               style="position: absolute; top: 4px; left: 22px; font-size: 0.8rem; opacity: 0.6; transition: opacity 0.2s; text-decoration: none;">
                                 <i class="bi bi-sliders"></i>
                             </a>
                         </template>

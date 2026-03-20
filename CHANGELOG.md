@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.13] - 2026-03-20
+
+### Added
+- **Rollup settings icon for formula value types** — formula VTs now show two icons in edit mode: the formula icon (left) and the rollup settings icon (right); non-formula VTs continue to show only the rollup settings icon
+
 ## [2.14.12] - 2026-03-20
 
 ### Fixed
