@@ -227,6 +227,11 @@ class TestCSRFTokenAvailability:
         response = authenticated_org_user.get("/auth/change-password")
         self.assert_no_csrf_errors(response)
 
+    def test_auth_profile(self, authenticated_org_user):
+        """Test /auth/profile has csrf_token"""
+        response = authenticated_org_user.get("/auth/profile")
+        self.assert_no_csrf_errors(response)
+
     def test_org_admin_onboarding(self, authenticated_org_user, sample_organization):
         """Test /org-admin/onboarding has csrf_token"""
         response = authenticated_org_user.get(f"/org-admin/onboarding?org_id={sample_organization.id}")
