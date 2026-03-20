@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.11] - 2026-03-20
+
+### Removed
+- **Default organization setting** — removed `default_organization_id` from user profile and database; login now uses last-visited organization (auto-saved on switch) then falls back to first available
+
 ## [2.14.10] - 2026-03-20
 
 ### Fixed

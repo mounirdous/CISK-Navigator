@@ -86,18 +86,7 @@ def login():
             ):
                 selected_org = last_org
 
-        # Priority 2: User's explicit default organization (fallback if no last-used)
-        if not selected_org and user.default_organization_id:
-            default_org = Organization.query.get(user.default_organization_id)
-            if (
-                default_org
-                and default_org.is_active
-                and not default_org.is_deleted
-                and user.has_organization_access(default_org.id)
-            ):
-                selected_org = default_org
-
-        # Priority 3: First available organization
+        # Priority 2: First available organization
         if not selected_org and active_orgs:
             selected_org = active_orgs[0]
 
@@ -160,28 +149,10 @@ def profile():
 
     form = ProfileEditForm()
 
-    # Populate organization choices
-    user_orgs = current_user.get_organizations()
-    org_choices = [(0, "-- None (use first available) --")] + [(org.id, org.name) for org in user_orgs if org.is_active]
-    form.default_organization.choices = org_choices
-
     if form.validate_on_submit():
         current_user.display_name = form.display_name.data
         current_user.email = form.email.data
         current_user.dark_mode = form.dark_mode.data
-
-        # Handle default organization
-        default_org_id = form.default_organization.data
-        if default_org_id == 0:
-            current_user.default_organization_id = None
-        else:
-            # Verify user has access
-            if current_user.has_organization_access(default_org_id):
-                current_user.default_organization_id = default_org_id
-            else:
-                flash("You do not have access to the selected organization", "danger")
-                return redirect(url_for("auth.profile"))
-
         db.session.commit()
         flash("Profile updated successfully.", "success")
         return redirect(url_for("auth.profile"))
@@ -191,7 +162,6 @@ def profile():
         form.display_name.data = current_user.display_name
         form.email.data = current_user.email
         form.dark_mode.data = current_user.dark_mode
-        form.default_organization.data = current_user.default_organization_id or 0
 
     # Get organization logos for display
     org_logos = {}
@@ -379,13 +349,7 @@ def sso_callback():
         if last_org and last_org.is_active and user.has_organization_access(last_org.id):
             selected_org = last_org
 
-    # Priority 2: User's explicit default organization (fallback if no last-used)
-    if not selected_org and user.default_organization_id:
-        default_org = Organization.query.get(user.default_organization_id)
-        if default_org and default_org.is_active and user.has_organization_access(default_org.id):
-            selected_org = default_org
-
-    # Priority 3: First available organization
+    # Priority 2: First available organization
     if not selected_org and active_orgs:
         selected_org = active_orgs[0]
 

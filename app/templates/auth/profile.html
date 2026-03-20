@@ -204,19 +204,6 @@
                             {% endif %}
                         </div>
 
-                        <div class="mb-4">
-                            {{ form.default_organization.label(class="form-label") }}
-                            {{ form.default_organization(class="form-select") }}
-                            <small class="form-text text-muted">
-                                <i class="bi bi-info-circle"></i>
-                                Choose which organization to log into automatically. You can switch organizations anytime using the navbar.
-                            </small>
-                            {% if form.default_organization.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.default_organization.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
 
                         <div class="mb-4">
                             <div class="form-check form-switch">

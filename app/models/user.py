@@ -37,9 +37,6 @@ class User(UserMixin, db.Model):
     navbar_position = db.Column(db.String(10), default="top", nullable=False)  # 'top' or 'left'
     navbar_autohide = db.Column(db.Boolean, default=False, nullable=False)
     beta_tester = db.Column(db.Boolean, default=False, nullable=False)  # Enable beta feature access
-    default_organization_id = db.Column(
-        db.Integer, db.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
-    )
     last_organization_id = db.Column(
         db.Integer, db.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
     )
