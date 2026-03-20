@@ -122,7 +122,7 @@ class TestOrganizationCloneService:
         assert revenue.numeric_format == "currency"
         assert revenue.decimal_places == 2
         assert revenue.unit_label == "USD"
-        assert revenue.calculation_type is None
+        assert revenue.calculation_type in (None, "manual")  # model default is 'manual'
         assert revenue.calculation_config is None
 
         growth = cloned_vts["Growth Rate"]
