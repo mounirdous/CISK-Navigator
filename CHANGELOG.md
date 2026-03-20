@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.9] - 2026-03-20
+
+### Added
+- **Remember last organization** - The last organization a user switched to is now automatically selected on next login (priority: explicit default > last used > first available). Works for both password and SSO login.
+
 ## [2.14.8] - 2026-03-20
 
 ### Fixed

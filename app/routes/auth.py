@@ -75,7 +75,7 @@ def login():
         # Determine which organization to log into
         selected_org = None
 
-        # Priority 1: User's default organization (if set and user has access)
+        # Priority 1: User's explicit default organization (if set and user has access)
         if user.default_organization_id:
             default_org = Organization.query.get(user.default_organization_id)
             if (
@@ -86,7 +86,18 @@ def login():
             ):
                 selected_org = default_org
 
-        # Priority 2: First available organization
+        # Priority 2: Last organization the user was in
+        if not selected_org and user.last_organization_id:
+            last_org = Organization.query.get(user.last_organization_id)
+            if (
+                last_org
+                and last_org.is_active
+                and not last_org.is_deleted
+                and user.has_organization_access(last_org.id)
+            ):
+                selected_org = last_org
+
+        # Priority 3: First available organization
         if not selected_org and active_orgs:
             selected_org = active_orgs[0]
 
@@ -214,6 +225,10 @@ def switch_organization(org_id):
     session["organization_logo"] = (
         url_for("logo.organization_logo", entity_id=organization.id) if organization.logo_data else None
     )
+
+    # Remember last selected organization for next login
+    current_user.last_organization_id = organization.id
+    db.session.commit()
 
     flash(f"Switched to {organization.name}", "success")
     return redirect(url_for("workspace.dashboard"))
@@ -358,13 +373,19 @@ def sso_callback():
     # Determine which organization to log into
     selected_org = None
 
-    # Priority 1: User's default organization (if set and user has access)
+    # Priority 1: User's explicit default organization (if set and user has access)
     if user.default_organization_id:
         default_org = Organization.query.get(user.default_organization_id)
         if default_org and default_org.is_active and user.has_organization_access(default_org.id):
             selected_org = default_org
 
-    # Priority 2: First available organization
+    # Priority 2: Last organization the user was in
+    if not selected_org and user.last_organization_id:
+        last_org = Organization.query.get(user.last_organization_id)
+        if last_org and last_org.is_active and user.has_organization_access(last_org.id):
+            selected_org = last_org
+
+    # Priority 3: First available organization
     if not selected_org and active_orgs:
         selected_org = active_orgs[0]
 

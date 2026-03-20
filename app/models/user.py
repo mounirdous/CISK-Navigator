@@ -40,6 +40,9 @@ class User(UserMixin, db.Model):
     default_organization_id = db.Column(
         db.Integer, db.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
     )
+    last_organization_id = db.Column(
+        db.Integer, db.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
+    )
 
     # SSO Fields
     sso_provider = db.Column(db.String(50), nullable=True)  # 'oidc', 'saml', 'google', 'azure', etc.
