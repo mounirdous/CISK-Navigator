@@ -5,6 +5,44 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.7] - 2026-03-20
+
+### Fixed
+- **Workspace empty org** - Org name + Porter's Five Forces icon now always visible when not loading, even with zero spaces
+- **Duplicate org header** - Removed redundant header block that caused org name to appear twice when a space existed
+- **"No data found" noise** - Empty state now only shows when spaces exist but are all filtered out, not when the org genuinely has no spaces yet
+
+## [2.14.6] - 2026-03-20
+
+### Fixed
+- **Organization clone visibility** - Cloned org now automatically adds the cloning user as org admin, making it appear in the navigation menu and workspace switcher
+
+## [2.14.5] - 2026-03-20
+
+### Fixed
+- **Organization clone** - Removed non-existent slug fields (`space_id`, `challenge_id`, `initiative_id`, `system_id`) from Space/Challenge/Initiative/System clone constructors
+
+## [2.14.4] - 2026-03-20
+
+### Fixed
+- **Organization clone** - Removed non-existent `qualitative_options` field from ValueType clone; added missing `calculation_type` and `calculation_config` fields
+
+### Added
+- **Clone service tests** - 11 unit tests covering organization clone: value types, spaces, challenges, initiatives, systems, ID isolation, error handling
+
+## [2.14.3] - 2026-03-19
+
+### Added
+- **Live test counters** - Real-time Passed / Failed / Run counters update as each test completes
+
+### Improved
+- **Test runner progress steps** - Step 3 (Analyzing coverage) and Step 4 (Generating report) now activate correctly during execution
+- **Faster coverage analysis** - Removed `--cov-report=term-missing` (terminal output unused by UI); only `--cov-report=json` is generated — no data loss
+- **Streaming test output** - Switched from `subprocess.run()` to `subprocess.Popen()` for line-by-line output parsing
+
+### Fixed
+- **Step indicator not advancing** - Poll endpoint was missing `step` field in PROGRESS response, causing UI to always show step 2
+
 ## [2.14.2] - 2026-03-19
 
 ### Fixed

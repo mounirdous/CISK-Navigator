@@ -31,10 +31,10 @@ class TestRunnerService:
         test_directory = project_root / "tests" if test_path is None else Path(test_path)
 
         # Report progress if callback provided
+        # Count test files for initial progress message
+        test_files = list(test_directory.rglob("test_*.py"))
         if progress_callback:
-            # Count test files
-            test_files = list(test_directory.rglob("test_*.py"))
-            progress_callback(f"Found {len(test_files)} test files, executing tests...")
+            progress_callback(f"Found {len(test_files)} test files, executing tests...", passed=0, failed=0, total=0)
 
         # Build pytest command
         cmd = [
@@ -44,34 +44,94 @@ class TestRunnerService:
             str(test_directory),
             "-v",  # Verbose output
             "--tb=short",  # Short traceback format
-            "-q",  # Quiet
         ]
 
         if include_coverage:
             cmd.extend(
                 [
                     "--cov=app",
-                    "--cov-report=term-missing",
                     "--cov-report=json",
                 ]
             )
 
         try:
-            # Run pytest
-            result = subprocess.run(
+            # Stream pytest output line by line for live progress
+            process = subprocess.Popen(
                 cmd,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
                 text=True,
                 cwd=str(project_root),
-                timeout=300,  # 5 minute timeout
             )
 
-            # Parse output
-            output = result.stdout + result.stderr
-            exit_code = result.returncode
+            output_lines = []
+            passed = failed = skipped = 0
+
+            import threading
+            timed_out = threading.Event()
+
+            def _kill_after(proc, seconds, flag):
+                if not flag.wait(seconds):
+                    proc.kill()
+
+            timer = threading.Thread(target=_kill_after, args=(process, 300, timed_out), daemon=True)
+            timer.start()
+
+            for line in process.stdout:
+                output_lines.append(line)
+                stripped = line.rstrip()
+                if " PASSED" in stripped:
+                    passed += 1
+                    if progress_callback:
+                        progress_callback(
+                            f"Running tests... {passed + failed} done ({passed} passed, {failed} failed)",
+                            passed=passed, failed=failed, total=0,
+                        )
+                elif " FAILED" in stripped or " ERROR" in stripped:
+                    failed += 1
+                    if progress_callback:
+                        progress_callback(
+                            f"Running tests... {passed + failed} done ({passed} passed, {failed} failed)",
+                            passed=passed, failed=failed, total=0,
+                        )
+                # For non-coverage runs: break at summary line, avoids waiting for child handles on Windows
+                if not include_coverage and " passed" in stripped and " in " in stripped and stripped.endswith("s"):
+                    break
+
+            process.stdout.close()
+            timed_out.set()
+
+            def kill_tree(proc):
+                """Kill process and all children (Windows-safe)."""
+                import platform
+                if platform.system() == "Windows":
+                    subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True)
+                else:
+                    proc.kill()
+                proc.wait()
+
+            if not include_coverage:
+                kill_tree(process)
+            else:
+                try:
+                    process.wait(timeout=120)
+                except subprocess.TimeoutExpired:
+                    kill_tree(process)
+            if progress_callback:
+                msg = "Analyzing coverage..." if include_coverage else "Finalizing results..."
+                progress_callback(msg, step=3, passed=passed, failed=failed, total=passed + failed)
+
+            if process.returncode is None:
+                return {"status": "timeout", "error": "Test execution timed out (5 minutes)"}
+
+            output = "".join(output_lines)
+            exit_code = process.returncode
 
             # Parse test results
             test_results = TestRunnerService._parse_test_output(output)
+
+            if progress_callback:
+                progress_callback("Generating report...", step=4, passed=passed, failed=failed, total=passed + failed)
 
             # Parse coverage if enabled
             coverage_data = None
@@ -90,11 +150,6 @@ class TestRunnerService:
                 "summary": TestRunnerService._generate_summary(test_results, coverage_data),
             }
 
-        except subprocess.TimeoutExpired:
-            return {
-                "status": "timeout",
-                "error": "Test execution timed out (5 minutes)",
-            }
         except Exception as e:
             return {
                 "status": "error",

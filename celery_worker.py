@@ -3,6 +3,9 @@ Celery worker entry point
 Run with: celery -A celery_worker worker --loglevel=info --pool=solo
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from app import create_app
 
 # Create Flask app first to get config

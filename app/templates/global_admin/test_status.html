@@ -70,6 +70,41 @@
     100% { background-position: 200% 0%; }
 }
 
+.live-counters {
+    display: none;
+    gap: 1.5rem;
+    justify-content: center;
+    margin: 1rem 0;
+}
+
+.live-counters.visible {
+    display: flex;
+}
+
+.live-counter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.live-counter-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.live-counter-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #999;
+}
+
+.counter-passed .live-counter-value { color: #198754; }
+.counter-failed .live-counter-value { color: #dc3545; }
+.counter-total .live-counter-value  { color: #667eea; }
+
 .test-steps {
     background: #f8f9fa;
     border-radius: 12px;
@@ -137,6 +172,21 @@
 
         <div class="progress-bar-animated"></div>
 
+        <div class="live-counters" id="liveCounters">
+            <div class="live-counter counter-passed">
+                <span class="live-counter-value" id="countPassed">0</span>
+                <span class="live-counter-label">Passed</span>
+            </div>
+            <div class="live-counter counter-failed">
+                <span class="live-counter-value" id="countFailed">0</span>
+                <span class="live-counter-label">Failed</span>
+            </div>
+            <div class="live-counter counter-total">
+                <span class="live-counter-value" id="countTotal">0</span>
+                <span class="live-counter-label">Run</span>
+            </div>
+        </div>
+
         <div class="test-steps">
             <div class="test-step active" id="step1">
                 <span class="test-step-icon">1</span>
@@ -195,9 +245,15 @@ function pollStatus() {
                 updateSteps(1);
             } else if (data.state === 'PROGRESS') {
                 document.getElementById('statusText').textContent = data.status || 'Running tests...';
-                // Use step from server if available, otherwise default to 2
                 const step = data.step || 2;
                 updateSteps(step);
+                if (data.passed > 0 || data.failed > 0) {
+                    const counters = document.getElementById('liveCounters');
+                    counters.classList.add('visible');
+                    document.getElementById('countPassed').textContent = data.passed;
+                    document.getElementById('countFailed').textContent = data.failed;
+                    document.getElementById('countTotal').textContent = data.passed + data.failed;
+                }
             } else if (data.state === 'SUCCESS') {
                 clearInterval(timerInterval);
                 clearInterval(pollInterval);

@@ -16,6 +16,7 @@ from app.models import (
     RollupRule,
     Space,
     System,
+    UserOrganizationMembership,
     ValueType,
 )
 
@@ -24,7 +25,7 @@ class OrganizationCloneService:
     """Service for cloning organizations"""
 
     @staticmethod
-    def clone_organization(source_org_id, new_org_name, new_org_description=None):
+    def clone_organization(source_org_id, new_org_name, new_org_description=None, cloned_by_user_id=None):
         """
         Clone an organization with all its structure.
 
@@ -89,7 +90,8 @@ class OrganizationCloneService:
                     decimal_places=old_vt.decimal_places,
                     unit_label=old_vt.unit_label,
                     default_aggregation_formula=old_vt.default_aggregation_formula,
-                    qualitative_options=old_vt.qualitative_options,
+                    calculation_type=old_vt.calculation_type,
+                    calculation_config=old_vt.calculation_config,
                     is_active=old_vt.is_active,
                 )
                 db.session.add(new_vt)
@@ -101,7 +103,6 @@ class OrganizationCloneService:
             for old_space in source_org.spaces:
                 new_space = Space(
                     organization_id=new_org.id,
-                    space_id=old_space.space_id,
                     name=old_space.name,
                     description=old_space.description,
                     space_label=old_space.space_label,
@@ -117,7 +118,6 @@ class OrganizationCloneService:
                 new_challenge = Challenge(
                     organization_id=new_org.id,
                     space_id=space_map[old_challenge.space_id].id,
-                    challenge_id=old_challenge.challenge_id,
                     name=old_challenge.name,
                     description=old_challenge.description,
                     display_order=old_challenge.display_order,
@@ -131,7 +131,6 @@ class OrganizationCloneService:
             for old_init in source_org.initiatives:
                 new_init = Initiative(
                     organization_id=new_org.id,
-                    initiative_id=old_init.initiative_id,
                     name=old_init.name,
                     description=old_init.description,
                 )
@@ -144,7 +143,6 @@ class OrganizationCloneService:
             for old_system in source_org.systems:
                 new_system = System(
                     organization_id=new_org.id,
-                    system_id=old_system.system_id,
                     name=old_system.name,
                     description=old_system.description,
                 )
@@ -317,6 +315,15 @@ class OrganizationCloneService:
                 )
                 db.session.add(new_rule)
                 stats["rollup_rules"] += 1
+
+            # Add the cloning user as org admin so the new org is visible in their menu
+            if cloned_by_user_id:
+                membership = UserOrganizationMembership(
+                    user_id=cloned_by_user_id,
+                    organization_id=new_org.id,
+                    is_org_admin=True,
+                )
+                db.session.add(membership)
 
             db.session.commit()
 

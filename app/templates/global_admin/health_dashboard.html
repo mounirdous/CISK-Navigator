@@ -521,6 +521,9 @@
             {% if config.get('CELERY_ENABLED') %}
             <form id="runTestForm" method="POST" action="{{ url_for('global_admin.run_tests') }}" style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="text" name="test_path" placeholder="tests/unit/test_models.py (leave empty for all)"
+                       class="form-control form-control-sm d-inline-block mb-2"
+                       style="width: 340px; vertical-align: middle;">
                 <button type="submit"
                         onclick="showTestRunningOverlay(event)"
                         class="btn btn-primary btn-sm me-2"

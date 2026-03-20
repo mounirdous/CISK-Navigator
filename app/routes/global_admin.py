@@ -217,8 +217,8 @@ def run_tests():
 
     if request.method == "POST":
         try:
-            # Start async task
-            task = run_test_suite_task.delay(user_id=current_user.id)
+            test_path = request.form.get("test_path") or None
+            task = run_test_suite_task.delay(user_id=current_user.id, test_path=test_path)
 
             # Redirect to status page with task ID
             return redirect(url_for("global_admin.test_status", task_id=task.id))
@@ -262,6 +262,10 @@ def test_status_poll(task_id):
         response = {
             "state": task.state,
             "status": task.info.get("status", "Running..."),
+            "step": task.info.get("step", 2),
+            "passed": task.info.get("passed", 0),
+            "failed": task.info.get("failed", 0),
+            "total": task.info.get("total", 0),
         }
     elif task.state == "SUCCESS":
         response = {
@@ -856,7 +860,10 @@ def clone_organization(org_id):
 
     if form.validate_on_submit():
         result = OrganizationCloneService.clone_organization(
-            source_org_id=org_id, new_org_name=form.new_name.data, new_org_description=form.new_description.data
+            source_org_id=org_id,
+            new_org_name=form.new_name.data,
+            new_org_description=form.new_description.data,
+            cloned_by_user_id=current_user.id,
         )
 
         if result["success"]:
