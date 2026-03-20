@@ -2847,13 +2847,6 @@
                                                                 <i class="bi bi-link-45deg linked-kpi-indicator" title="This KPI has linked values"></i>
                                                             </template>
 
-                                                            <!-- Archived badge -->
-                                                            <template x-if="showBadges && kpi.is_archived">
-                                                                <span class="archived-badge" :title="'Archived on ' + kpi.archived_at">
-                                                                    <i class="bi bi-archive"></i> Archived
-                                                                </span>
-                                                            </template>
-
                                                             <!-- Governance body badges -->
                                                             <template x-if="showBadges">
                                                                 <template x-for="gb in kpi.governance_bodies" :key="gb.id">
@@ -2873,22 +2866,12 @@
                                                                        @click.stop>
                                                                         <i class="bi bi-pencil-square"></i>
                                                                     </a>
-                                                                    <template x-if="!kpi.is_archived">
-                                                                        <a href="#"
-                                                                           class="text-warning"
-                                                                           title="Archive KPI"
-                                                                           @click.prevent.stop="archiveKPI(kpi)">
-                                                                            <i class="bi bi-archive"></i>
-                                                                        </a>
-                                                                    </template>
-                                                                    <template x-if="kpi.is_archived">
-                                                                        <a href="#"
-                                                                           class="text-success"
-                                                                           title="Restore KPI"
-                                                                           @click.prevent.stop="restoreKPI(kpi)">
-                                                                            <i class="bi bi-arrow-counterclockwise"></i>
-                                                                        </a>
-                                                                    </template>
+                                                                    <a href="#"
+                                                                       class="text-danger"
+                                                                       title="Delete KPI"
+                                                                       @click.prevent.stop="deleteKPI(kpi)">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </a>
                                                                 </span>
                                                             </template>
                                                         </div>
@@ -4611,53 +4594,29 @@ function workspaceV2(orgId, filterPresets) {
             }
         },
 
-        async archiveKPI(kpi) {
-            if (!confirm(`Archive KPI "${kpi.name}"?\n\nArchived KPIs can be restored later.`)) {
+        async deleteKPI(kpi) {
+            if (!confirm(`Delete KPI "${kpi.name}"?\n\nWARNING: This will permanently delete the KPI and ALL its contributions, snapshots, and value configurations. This cannot be undone.`)) {
                 return;
             }
 
             try {
-                const response = await fetch(`/org-admin/kpis/${kpi.id}/archive`, {
+                const form = new FormData();
+                form.append('csrf_token', '{{ csrf_token() }}');
+                const response = await fetch(`/org-admin/kpis/${kpi.id}/delete`, {
                     method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: form
                 });
 
                 const result = await response.json();
                 if (result.success) {
                     await this.loadData();
                 } else {
-                    alert('Failed to archive KPI: ' + result.error);
+                    alert('Cannot delete KPI: ' + result.error);
                 }
             } catch (error) {
-                console.error('Error archiving KPI:', error);
-                alert('Error archiving KPI. Please try again.');
-            }
-        },
-
-        async restoreKPI(kpi) {
-            if (!confirm(`Restore KPI "${kpi.name}"?`)) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/org-admin/kpis/${kpi.id}/unarchive`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token() }}'
-                    }
-                });
-
-                const result = await response.json();
-                if (result.success) {
-                    await this.loadData();
-                } else {
-                    alert('Failed to restore KPI: ' + result.error);
-                }
-            } catch (error) {
-                console.error('Error restoring KPI:', error);
-                alert('Error restoring KPI. Please try again.');
+                console.error('Error deleting KPI:', error);
+                alert('Error deleting KPI. Please try again.');
             }
         }
     }

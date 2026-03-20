@@ -34,6 +34,7 @@ class ValueTypeCreateForm(FlaskForm):
             ("avg", "Average"),
             ("median", "Median"),
             ("count", "Count"),
+            ("mode", "Mode (most frequent)"),
         ],
         validators=[DataRequired()],
     )

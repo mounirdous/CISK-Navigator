@@ -2253,11 +2253,14 @@ def edit_kpi(kpi_id):
 @permission_required("can_manage_kpis")
 def delete_kpi(kpi_id):
     """Delete a KPI"""
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.content_type == "multipart/form-data"
     org_id = session.get("organization_id")
     kpi = KPI.query.get_or_404(kpi_id)
 
     # Verify ownership
     if kpi.initiative_system_link.initiative.organization_id != org_id:
+        if is_ajax:
+            return jsonify({"success": False, "error": "Access denied"}), 403
         flash("Access denied", "danger")
         return redirect(url_for("workspace.index"))
 
@@ -2267,21 +2270,23 @@ def delete_kpi(kpi_id):
     linked_consumers = KPIValueTypeConfig.query.filter_by(linked_source_kpi_id=kpi_id).all()
     if linked_consumers:
         consumer_info = []
-        for consumer in linked_consumers[:3]:  # Show up to 3 examples
+        for consumer in linked_consumers[:3]:
             consumer_kpi = consumer.kpi
             org_name = consumer_kpi.initiative_system_link.initiative.organization.name
             consumer_info.append(f"{consumer_kpi.name} (Org: {org_name})")
 
-        flash(
-            f'Cannot delete KPI "{kpi.name}" - it is being used as a linked source by {len(linked_consumers)} other KPI(s): {", ".join(consumer_info)}{"..." if len(linked_consumers) > 3 else ""}. Please contact those organizations to remove the link first.',
-            "danger",
-        )
+        error_msg = f'Cannot delete — linked source for {len(linked_consumers)} KPI(s): {", ".join(consumer_info)}'
+        if is_ajax:
+            return jsonify({"success": False, "error": error_msg}), 400
+        flash(error_msg, "danger")
         return redirect(url_for("workspace.index"))
 
     kpi_name = kpi.name
     db.session.delete(kpi)
     db.session.commit()
 
+    if is_ajax:
+        return jsonify({"success": True})
     flash(f'KPI "{kpi_name}" deleted successfully', "success")
     return redirect(url_for("workspace.index"))
 

@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.1] - 2026-03-20
+
+### Fixed
+- **List value type form submission fails silently** — added "mode" to `default_aggregation_formula` choices in `ValueTypeCreateForm` so WTForms accepts it
+- **Archive KPI replaced by Delete KPI** in workspace edit mode — clicking trash icon permanently deletes the KPI after a confirmation warning; archive/restore buttons removed
+
 ## [2.15.0] - 2026-03-20
 
 ### Added
