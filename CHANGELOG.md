@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.14.14] - 2026-03-20
+
+### Fixed
+- **Rollup settings icon clickable for formula VTs** — added `z-index` and `pointer-events` to ensure the icon receives click events in the column header
+- **Value type deletion blocked by rollup rules** — delete-check page now shows rollup rule count in impact; if rollup rules are the only blocker, a "Force Delete" button is offered that removes rollup rules automatically before deleting the value type
+
 ## [2.14.13] - 2026-03-20
 
 ### Added

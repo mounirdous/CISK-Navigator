@@ -2745,10 +2745,12 @@ def delete_value_type_check(vt_id):
     usage = ValueTypeUsageService.check_usage(vt_id)
 
     # Calculate impact for deletion (counts)
+    inner = usage.get("usage", {}) if usage else {}
     impact = {
-        "kpi_configs": len(usage.get("kpi_configs", [])),
-        "contributions": usage.get("contributions_count", 0),
-        "consensus_values": len(usage.get("kpi_configs", [])),  # Each config has consensus values
+        "kpi_configs": len(inner.get("kpi_configs", [])),
+        "contributions": inner.get("contributions_count", 0),
+        "consensus_values": len(inner.get("kpi_configs", [])),
+        "rollup_rules": inner.get("rollup_rules_count", 0),
     }
 
     return render_template(
@@ -2775,6 +2777,12 @@ def delete_value_type(vt_id):
         if value_type.organization_id != org_id:
             flash("Access denied", "danger")
             return redirect(url_for("organization_admin.value_types"))
+
+        # Handle force deletion: delete rollup rules first
+        if request.form.get("force") == "true":
+            from app.models import RollupRule
+
+            RollupRule.query.filter_by(value_type_id=vt_id).delete()
 
         # Double check if it can be deleted
         can_delete, reason = ValueTypeUsageService.can_delete(vt_id)

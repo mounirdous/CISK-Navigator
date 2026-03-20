@@ -73,12 +73,42 @@
                         <li><strong>{{ impact.kpi_configs }}</strong> KPI configuration(s) will be deleted</li>
                         <li><strong>{{ impact.contributions }}</strong> contributed value(s) will be deleted</li>
                         <li><strong>{{ impact.consensus_values }}</strong> consensus value(s) will be deleted</li>
+                        {% if impact.rollup_rules > 0 %}
+                        <li><strong>{{ impact.rollup_rules }}</strong> roll-up rule(s) will be deleted</li>
+                        {% endif %}
                         <li>All color configurations for this value type will be removed</li>
                         <li>Workspace columns for this value type will disappear</li>
                     </ul>
                 </div>
 
+                {% if not can_delete and usage.usage.rollup_rules_count > 0 and usage.usage.kpi_configs|length == 0 and usage.usage.contributions_count == 0 and usage.usage.linked_consumers|length == 0 %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    This value type is only blocked by <strong>{{ usage.usage.rollup_rules_count }} roll-up rule(s)</strong>.
+                    You can force-delete it — the roll-up rules will be removed automatically.
+                </div>
+                {% elif not can_delete %}
+                <div class="alert alert-danger">
+                    <i class="bi bi-x-circle me-2"></i>
+                    <strong>Cannot delete:</strong> {{ reason }}
+                </div>
+                {% endif %}
+
                 <form method="POST" action="{{ url_for('organization_admin.delete_value_type', vt_id=value_type.id) }}">
+                    {{ csrf_token() }}
+                    {% if not can_delete and usage.usage.rollup_rules_count > 0 and usage.usage.kpi_configs|length == 0 and usage.usage.contributions_count == 0 and usage.usage.linked_consumers|length == 0 %}
+                    <input type="hidden" name="force" value="true">
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit"
+                                class="btn btn-danger btn-lg"
+                                onclick="return confirm('⚠️ FINAL CONFIRMATION ⚠️\n\nYou are about to PERMANENTLY DELETE the value type:\n\'{{ value_type.name }}\'\n\nThis will also delete {{ usage.usage.rollup_rules_count }} roll-up rule(s).\n\nThis action CANNOT be undone!\n\nClick OK to proceed.')">
+                            <i class="bi bi-trash-fill"></i> Force Delete (remove roll-up rules)
+                        </button>
+                        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                    {% elif can_delete %}
                     <div class="d-flex gap-2 pt-3 border-top">
                         <button type="submit"
                                 class="btn btn-danger btn-lg"
@@ -89,6 +119,13 @@
                             <i class="bi bi-x-circle"></i> Cancel
                         </a>
                     </div>
+                    {% else %}
+                    <div class="pt-3 border-top">
+                        <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                    {% endif %}
                 </form>
             </div>
         </div>
