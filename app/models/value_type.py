@@ -28,8 +28,9 @@ class ValueType(db.Model):
     KIND_NEGATIVE_IMPACT = "negative_impact"
     KIND_LEVEL = "level"
     KIND_SENTIMENT = "sentiment"
+    KIND_LIST = "list"
 
-    KINDS = [KIND_NUMERIC, KIND_RISK, KIND_POSITIVE_IMPACT, KIND_NEGATIVE_IMPACT, KIND_LEVEL, KIND_SENTIMENT]
+    KINDS = [KIND_NUMERIC, KIND_RISK, KIND_POSITIVE_IMPACT, KIND_NEGATIVE_IMPACT, KIND_LEVEL, KIND_SENTIMENT, KIND_LIST]
 
     # Numeric formats
     FORMAT_INTEGER = "integer"
@@ -42,8 +43,9 @@ class ValueType(db.Model):
     FORMULA_AVG = "avg"
     FORMULA_MEDIAN = "median"
     FORMULA_COUNT = "count"
+    FORMULA_MODE = "mode"  # Most frequent value — used for list types
 
-    FORMULAS = [FORMULA_SUM, FORMULA_MIN, FORMULA_MAX, FORMULA_AVG, FORMULA_MEDIAN, FORMULA_COUNT]
+    FORMULAS = [FORMULA_SUM, FORMULA_MIN, FORMULA_MAX, FORMULA_AVG, FORMULA_MEDIAN, FORMULA_COUNT, FORMULA_MODE]
 
     # Calculation types
     CALC_MANUAL = "manual"
@@ -67,6 +69,9 @@ class ValueType(db.Model):
     default_aggregation_formula = db.Column(db.String(20), nullable=False, default=FORMULA_SUM)
     display_order = db.Column(db.Integer, default=0, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+
+    # List type options: [{"key": "yes", "label": "Yes", "color": "#28a745"}, ...]
+    list_options = db.Column(db.JSON, nullable=True)
 
     # Formula configuration
     calculation_type = db.Column(db.String(20), nullable=False, default=CALC_MANUAL, comment="manual or formula")
@@ -95,7 +100,7 @@ class ValueType(db.Model):
         return self.kind == self.KIND_NUMERIC
 
     def is_qualitative(self):
-        """Check if this is a qualitative value type"""
+        """Check if this is a qualitative value type (fixed 3-level scale)"""
         return self.kind in [
             self.KIND_RISK,
             self.KIND_POSITIVE_IMPACT,
@@ -103,6 +108,33 @@ class ValueType(db.Model):
             self.KIND_LEVEL,
             self.KIND_SENTIMENT,
         ]
+
+    def is_list(self):
+        """Check if this is a list (custom choices) value type"""
+        return self.kind == self.KIND_LIST
+
+    def get_list_options(self):
+        """Return list options as a list of dicts, empty list if not a list type"""
+        if not self.is_list() or not self.list_options:
+            return []
+        return self.list_options
+
+    def get_list_option(self, key):
+        """Get a single list option dict by key"""
+        for opt in self.get_list_options():
+            if opt.get("key") == key:
+                return opt
+        return None
+
+    def get_list_option_label(self, key):
+        """Get the display label for a list option key"""
+        opt = self.get_list_option(key)
+        return opt["label"] if opt else key
+
+    def get_list_option_color(self, key):
+        """Get the color for a list option key"""
+        opt = self.get_list_option(key)
+        return opt.get("color") if opt else None
 
     @classmethod
     def get_smart_default_formula(cls, kind):
@@ -118,6 +150,7 @@ class ValueType(db.Model):
             cls.KIND_NEGATIVE_IMPACT: cls.FORMULA_MAX,  # Negative → worst case
             cls.KIND_LEVEL: cls.FORMULA_MAX,  # Level → highest level
             cls.KIND_SENTIMENT: cls.FORMULA_AVG,  # Sentiment → average mood
+            cls.KIND_LIST: cls.FORMULA_MODE,  # List → most frequent value
         }
         return smart_defaults.get(kind, cls.FORMULA_SUM)
 
@@ -130,6 +163,7 @@ class ValueType(db.Model):
             self.KIND_NEGATIVE_IMPACT: f"{self.name} shows worst negative impact",
             self.KIND_LEVEL: f"{self.name} shows highest level reached",
             self.KIND_SENTIMENT: f"{self.name} averages sentiment across all items",
+            self.KIND_LIST: f"{self.name} shows the most frequent choice (mode)",
         }
         return explanations.get(self.kind, f"{self.name} aggregates using {self.default_aggregation_formula}")
 
@@ -140,8 +174,10 @@ class ValueType(db.Model):
         For qualitative types, SUM is not valid (you can't sum risk levels).
         """
         if self.is_numeric():
-            # Numeric types can use all formulas
             return [self.FORMULA_SUM, self.FORMULA_MIN, self.FORMULA_MAX, self.FORMULA_AVG]
+        elif self.is_list():
+            # List types use mode (most frequent value) only
+            return [self.FORMULA_MODE]
         else:
             # Qualitative types cannot use SUM
             return [self.FORMULA_MIN, self.FORMULA_MAX, self.FORMULA_AVG]
@@ -326,6 +362,9 @@ class KPIValueTypeConfig(db.Model):
         nullable=True,
         comment="Snapshot ID to use as baseline (no FK constraint to avoid circular dependency)",
     )
+
+    # Target for list types (key of the desired option)
+    target_list_value = db.Column(db.String(255), nullable=True)
 
     # Display scale (v1.14.6)
     display_scale = db.Column(
@@ -837,8 +876,15 @@ class KPIValueTypeConfig(db.Model):
             return None
 
     def get_value_color(self, value):
-        """Get color for a numeric value based on its sign"""
-        if not self.value_type.is_numeric() or value is None:
+        """Get color for a value based on its type"""
+        if value is None:
+            return None
+
+        # List types: color comes from the option definition
+        if self.value_type.is_list():
+            return self.value_type.get_list_option_color(value)
+
+        if not self.value_type.is_numeric():
             return None
 
         try:

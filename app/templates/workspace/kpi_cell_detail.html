@@ -433,6 +433,11 @@ body.dark-mode .card.border-primary {
                                     {{ form.numeric_value.label(class="form-label") }}
                                     {{ form.numeric_value(class="form-control", id="numeric_value") }}
                                 </div>
+                            {% elif value_type.is_list() %}
+                                <div class="mb-3">
+                                    <label class="form-label">Choice</label>
+                                    {{ form.list_value(class="form-select", id="list_value") }}
+                                </div>
                             {% else %}
                                 <div class="mb-3">
                                     {{ form.qualitative_level.label(class="form-label") }}
@@ -603,6 +608,15 @@ body.dark-mode .card.border-primary {
                                             {% if contrib.qualitative_level == 1 %}☹️ (Negative){% endif %}
                                             {% if contrib.qualitative_level == 2 %}😐 (Neutral){% endif %}
                                             {% if contrib.qualitative_level == 3 %}😊 (Positive){% endif %}
+                                        {% elif value_type.kind == 'list' %}
+                                            {% if contrib.list_value %}
+                                                {% set opt = value_type.get_list_option(contrib.list_value) %}
+                                                {% if opt %}
+                                                    <span style="background: {{ opt.get('color', '#6c757d') }}; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.85rem;">{{ opt.get('label', contrib.list_value) }}</span>
+                                                {% else %}
+                                                    {{ contrib.list_value }}
+                                                {% endif %}
+                                            {% endif %}
                                         {% else %}
                                             Level {{ contrib.qualitative_level }}
                                         {% endif %}
@@ -613,9 +627,10 @@ body.dark-mode .card.border-primary {
                                 <td>
                                     <button class="btn btn-sm btn-outline-primary edit-contrib"
                                             data-name="{{ contrib.contributor_name }}"
-                                            data-value="{{ contrib.numeric_value if contrib.numeric_value is not none else contrib.qualitative_level }}"
+                                            data-value="{{ contrib.numeric_value if contrib.numeric_value is not none else (contrib.list_value if contrib.list_value is not none else contrib.qualitative_level) }}"
                                             data-comment="{{ contrib.comment or '' }}"
-                                            data-is-numeric="{{ '1' if contrib.numeric_value is not none else '0' }}">
+                                            data-is-numeric="{{ '1' if contrib.numeric_value is not none else '0' }}"
+                                            data-is-list="{{ '1' if contrib.list_value is not none else '0' }}">
                                         <i class="bi bi-pencil"></i> Edit
                                     </button>
                                     <button class="btn btn-sm btn-outline-danger delete-contrib"
@@ -668,6 +683,13 @@ body.dark-mode .card.border-primary {
                                     {% if snapshot.consensus_value is not none %}
                                         <span class="fw-bold">{{ snapshot.consensus_value|format_value(value_type, config) }}</span>
                                         {% if value_type.unit_label %}{{ value_type.unit_label }}{% endif %}
+                                    {% elif snapshot.list_value is not none %}
+                                        {% set opt = value_type.get_list_option(snapshot.list_value) %}
+                                        {% if opt %}
+                                            <span style="background: {{ opt.get('color', '#6c757d') }}; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.85rem;">{{ opt.get('label', snapshot.list_value) }}</span>
+                                        {% else %}
+                                            {{ snapshot.list_value }}
+                                        {% endif %}
                                     {% elif snapshot.qualitative_level is not none %}
                                         Level {{ snapshot.qualitative_level }}
                                     {% else %}
@@ -759,6 +781,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const value = this.dataset.value;
             const comment = this.dataset.comment;
             const isNumeric = this.dataset.isNumeric === '1';
+            const isList = this.dataset.isList === '1';
 
             // Pre-populate form
             document.getElementById('contributor_name').value = name;
@@ -767,6 +790,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 const numericField = document.getElementById('numeric_value');
                 if (numericField) {
                     numericField.value = value;
+                }
+            } else if (isList) {
+                const listField = document.getElementById('list_value');
+                if (listField) {
+                    listField.value = value;
                 }
             } else {
                 const qualField = document.getElementById('qualitative_level');

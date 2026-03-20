@@ -200,6 +200,9 @@ class FullBackupService:
                 if vt.unit_label:
                     vt_data["unit_label"] = vt.unit_label
 
+            if vt.kind == "list" and vt.list_options:
+                vt_data["list_options"] = vt.list_options
+
             result.append(vt_data)
 
         return result
@@ -458,6 +461,10 @@ class FullBackupService:
                         "note": "Linked KPIs must exist in target instance for restore to work properly.",
                     }
 
+            # Target for list types
+            if vt.kind == "list" and config.target_list_value:
+                vt_config["target_list_value"] = config.target_list_value
+
             # Export ALL contributions for this value type
             for contrib in config.contributions:
                 contrib_data = {
@@ -469,6 +476,8 @@ class FullBackupService:
                     contrib_data["value"] = float(contrib.numeric_value)
                 if contrib.qualitative_level is not None:
                     contrib_data["level"] = contrib.qualitative_level
+                if contrib.list_value is not None:
+                    contrib_data["list_value"] = contrib.list_value
                 if contrib.comment:
                     contrib_data["comment"] = contrib.comment
 

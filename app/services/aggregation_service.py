@@ -79,6 +79,19 @@ class AggregationService:
             # Count: number of values (useful for "how many" questions)
             return len(values)
 
+        elif formula == "mode":
+            # Mode: most frequent value — used for list types (returns string key)
+            from collections import Counter
+
+            counter = Counter(values)
+            most_common = counter.most_common()
+            if not most_common:
+                return None
+            # Return the most frequent value; if tie, return None (no clear winner)
+            if len(most_common) > 1 and most_common[0][1] == most_common[1][1]:
+                return None  # Tie — no clear mode
+            return most_common[0][0]
+
         return None
 
     @staticmethod

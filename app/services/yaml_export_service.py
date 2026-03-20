@@ -55,6 +55,9 @@ class YAMLExportService:
                 if vt.unit_label:
                     vt_data["unit_label"] = vt.unit_label
 
+            if vt.kind == "list" and vt.list_options:
+                vt_data["list_options"] = vt.list_options
+
             result.append(vt_data)
 
         return result

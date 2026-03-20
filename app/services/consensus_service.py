@@ -42,7 +42,12 @@ class ConsensusService:
 
         if len(contributions) == 1:
             contrib = contributions[0]
-            value = contrib.numeric_value if contrib.numeric_value is not None else contrib.qualitative_level
+            if contrib.numeric_value is not None:
+                value = contrib.numeric_value
+            elif contrib.qualitative_level is not None:
+                value = contrib.qualitative_level
+            else:
+                value = contrib.list_value
             return {
                 "status": ConsensusService.STATUS_STRONG,
                 "value": value,
@@ -57,6 +62,8 @@ class ConsensusService:
                 values.append(float(contrib.numeric_value))
             elif contrib.qualitative_level is not None:
                 values.append(contrib.qualitative_level)
+            elif contrib.list_value is not None:
+                values.append(contrib.list_value)  # string key
 
         if not values:
             return {

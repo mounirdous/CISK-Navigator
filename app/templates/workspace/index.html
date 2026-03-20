@@ -2372,6 +2372,10 @@
                                                     <span x-show="space.rollup_values[String(vt.id)].value == 3">😊</span>
                                                 </span>
                                             </template>
+                                            <template x-if="vt.kind === 'list'">
+                                                <span :style="'background: ' + (space.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'"
+                                                      x-text="space.rollup_values[String(vt.id)].list_label || space.rollup_values[String(vt.id)].value"></span>
+                                            </template>
                                             <!-- Completeness indicator -->
                                             <small class="ms-1" x-show="showBadges"
                                                    :title="space.rollup_values[String(vt.id)].is_complete ? 'All ' + space.rollup_values[String(vt.id)].count_total + ' challenge(s) contributed data' : space.rollup_values[String(vt.id)].count_included + ' of ' + space.rollup_values[String(vt.id)].count_total + ' challenge(s) have data — roll-up is partial'"
@@ -2482,6 +2486,7 @@
                                                     <template x-if="vt.kind === 'negative_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">▼▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">▼▼▼</span></span></template>
                                                     <template x-if="vt.kind === 'level'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">●●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">●●●</span></span></template>
                                                     <template x-if="vt.kind === 'sentiment'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">☹️</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">😐</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">😊</span></span></template>
+                                                    <template x-if="vt.kind === 'list'"><span :style="'background: ' + (challenge.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="challenge.rollup_values[String(vt.id)].list_label || challenge.rollup_values[String(vt.id)].value"></span></template>
                                                     <small class="ms-1" x-show="showBadges"
                                                            :title="challenge.rollup_values[String(vt.id)].is_complete ? 'All ' + challenge.rollup_values[String(vt.id)].count_total + ' initiative(s) contributed data' : challenge.rollup_values[String(vt.id)].count_included + ' of ' + challenge.rollup_values[String(vt.id)].count_total + ' initiative(s) have data — roll-up is partial'"
                                                            x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
@@ -2639,6 +2644,9 @@
                                                                     <span x-show="initiative.rollup_values[String(vt.id)].value == 3">😊</span>
                                                                 </span>
                                                             </template>
+                                                            <template x-if="vt.kind === 'list'">
+                                                                <span :style="'background: ' + (initiative.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="initiative.rollup_values[String(vt.id)].list_label || initiative.rollup_values[String(vt.id)].value"></span>
+                                                            </template>
                                                             <small class="ms-1" x-show="showBadges"
                                                                    :title="initiative.rollup_values[String(vt.id)].is_complete ? 'All ' + initiative.rollup_values[String(vt.id)].count_total + ' system(s) contributed data' : initiative.rollup_values[String(vt.id)].count_included + ' of ' + initiative.rollup_values[String(vt.id)].count_total + ' system(s) have data — roll-up is partial'"
                                                                    x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
@@ -2776,6 +2784,9 @@
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 2">😐</span>
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 3">😊</span>
                                                                         </span>
+                                                                    </template>
+                                                                    <template x-if="vt.kind === 'list'">
+                                                                        <span :style="'background: ' + (system.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="system.rollup_values[String(vt.id)].list_label || system.rollup_values[String(vt.id)].value"></span>
                                                                     </template>
                                                                     <small class="ms-1" x-show="showBadges"
                                                                            :title="system.rollup_values[String(vt.id)].is_complete ? 'All ' + system.rollup_values[String(vt.id)].count_total + ' KPI(s) contributed data' : system.rollup_values[String(vt.id)].count_included + ' of ' + system.rollup_values[String(vt.id)].count_total + ' KPI(s) have data — roll-up is partial'"
@@ -3049,8 +3060,15 @@
                                                                                             </template>
                                                                                         </strong>
                                                                                     </template>
+                                                                                    <!-- List values -->
+                                                                                    <template x-if="vt.kind === 'list'">
+                                                                                        <strong>
+                                                                                            <span :style="'background: ' + (kpi.values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.85rem; white-space: nowrap;'"
+                                                                                                  x-text="kpi.values[String(vt.id)].list_label || kpi.values[String(vt.id)].value"></span>
+                                                                                        </strong>
+                                                                                    </template>
                                                                                     <!-- Other types -->
-                                                                                    <template x-if="!['numeric', 'risk', 'positive_impact', 'negative_impact', 'level', 'sentiment'].includes(vt.kind)">
+                                                                                    <template x-if="!['numeric', 'risk', 'positive_impact', 'negative_impact', 'level', 'sentiment', 'list'].includes(vt.kind)">
                                                                                         <strong x-text="kpi.values[String(vt.id)].value"></strong>
                                                                                     </template>
                                                                                 </span>

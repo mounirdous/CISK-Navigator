@@ -85,7 +85,7 @@
                             {{ form.kind.label(class="form-label fw-semibold") }}
                             {{ form.kind(class="form-select") }}
                             <small class="form-text text-muted">
-                                <i class="bi bi-info-circle"></i> Numeric: numbers | Qualitative: text labels (High/Medium/Low)
+                                <i class="bi bi-info-circle"></i> Numeric: numbers | Qualitative: text labels (High/Medium/Low) | List: custom choices (Yes/No, etc.)
                             </small>
                         </div>
 
@@ -136,6 +136,22 @@
                                 </small>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- List Options (List Kind Only) -->
+                    <div class="form-section" id="list-section" style="display: none;">
+                        <div class="form-section-title">
+                            <i class="bi bi-list-ul"></i>
+                            List Options
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-info-circle"></i> Define the choices users can pick from. Each option gets a label and a color for display.
+                        </p>
+                        <div id="list-options-container"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addListOption()">
+                            <i class="bi bi-plus-circle"></i> Add Option
+                        </button>
+                        {{ form.list_options_json(id="list_options_json") }}
                     </div>
 
                     <!-- Calculation Type (Numeric Only) -->
@@ -283,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const kindSelect = document.querySelector('select[name="kind"]');
     const numericSection = document.getElementById('numeric-section');
     const calculationSection = document.getElementById('calculation-section');
+    const listSection = document.getElementById('list-section');
     const formulaSelect = document.querySelector('select[name="default_aggregation_formula"]');
 
     const calcManualRadio = document.getElementById('calc_manual');
@@ -318,13 +335,17 @@ document.addEventListener('DOMContentLoaded', function() {
         'positive_impact': 'max',
         'negative_impact': 'max',
         'level': 'max',
-        'sentiment': 'avg'
+        'sentiment': 'avg',
+        'list': 'mode'
     };
 
     function toggleNumericSection() {
-        const isNumeric = kindSelect.value === 'numeric';
+        const kind = kindSelect.value;
+        const isNumeric = kind === 'numeric';
+        const isList = kind === 'list';
         numericSection.style.display = isNumeric ? 'block' : 'none';
         calculationSection.style.display = isNumeric ? 'block' : 'none';
+        listSection.style.display = isList ? 'block' : 'none';
     }
 
     function toggleFormulaMode() {
@@ -366,14 +387,19 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateFormulaOptions() {
         const kind = kindSelect.value;
         const isNumeric = kind === 'numeric';
+        const isList = kind === 'list';
         const formulaHelp = document.getElementById('formula-help');
         const currentValue = formulaSelect.value;
 
-        // Show/hide SUM option based on kind
+        // Show/hide options based on kind
         Array.from(formulaSelect.options).forEach(option => {
             if (option.value === 'sum') {
                 option.style.display = isNumeric ? 'block' : 'none';
                 option.disabled = !isNumeric;
+            }
+            if (option.value === 'mode') {
+                option.style.display = isList ? 'block' : 'none';
+                option.disabled = !isList;
             }
         });
 
@@ -387,12 +413,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update help text
         if (isNumeric) {
             formulaHelp.innerHTML = '<i class="bi bi-info-circle"></i> How to aggregate numeric values';
+        } else if (isList) {
+            formulaHelp.innerHTML = '<i class="bi bi-info-circle"></i> List uses "mode" (most frequent choice)';
         } else {
             formulaHelp.innerHTML = '<i class="bi bi-info-circle"></i> How to aggregate qualitative values (SUM not available for ' + kind + ')';
         }
 
-        // Set smart default if current value is invalid for qualitative
-        if (!isNumeric && currentValue === 'sum') {
+        // Set smart default based on kind
+        if (isList) {
+            formulaSelect.value = 'mode';
+        } else if (!isNumeric && currentValue === 'sum') {
             formulaSelect.value = smartDefaults[kind] || 'max';
         } else if (formulaSelect.value === '') {
             formulaSelect.value = smartDefaults[kind] || 'sum';
@@ -523,5 +553,48 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleFormulaMode();
     loadAvailableValueTypes();
 });
+
+// List options management (global scope for onclick handlers)
+let listOptions = [];
+
+function renderListOptions() {
+    const container = document.getElementById('list-options-container');
+    if (!container) return;
+    if (listOptions.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No options yet. Add at least one.</p>';
+    } else {
+        container.innerHTML = listOptions.map((opt, i) => `
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <input type="color" value="${opt.color || '#6c757d'}"
+                       onchange="listOptions[${i}].color = this.value; saveListOptions();"
+                       style="width:36px; height:36px; padding:2px; border:1px solid #ced4da; border-radius:4px; cursor:pointer;"
+                       title="Pick a color for this option">
+                <input type="text" class="form-control form-control-sm" value="${opt.label || ''}" placeholder="Label (e.g. Yes, No, N/A)"
+                       oninput="listOptions[${i}].label = this.value; listOptions[${i}].key = this.value.toLowerCase().replace(/[^a-z0-9]/g,'_'); saveListOptions();">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeListOption(${i})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+}
+
+function addListOption() {
+    const colors = ['#28a745','#dc3545','#ffc107','#17a2b8','#6f42c1','#fd7e14','#6c757d'];
+    listOptions.push({ key: '', label: '', color: colors[listOptions.length % colors.length] });
+    renderListOptions();
+    saveListOptions();
+}
+
+function removeListOption(index) {
+    listOptions.splice(index, 1);
+    renderListOptions();
+    saveListOptions();
+}
+
+function saveListOptions() {
+    const field = document.getElementById('list_options_json');
+    if (field) field.value = JSON.stringify(listOptions);
+}
 </script>
 {% endblock %}

@@ -26,6 +26,7 @@ class Contribution(db.Model):
     contributor_name = db.Column(db.String(200), nullable=False, comment="Free text, e.g., Simon, Paul, Jacques")
     numeric_value = db.Column(db.Numeric(precision=20, scale=6), nullable=True, comment="For numeric value types")
     qualitative_level = db.Column(db.Integer, nullable=True, comment="1, 2, or 3 for qualitative value types")
+    list_value = db.Column(db.String(255), nullable=True, comment="Selected option key for list value types")
     comment = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

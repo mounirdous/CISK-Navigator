@@ -132,14 +132,17 @@ class YAMLImportService:
     @staticmethod
     def _create_value_type(data, organization_id):
         """Create a ValueType from YAML data"""
+        kind = data["kind"]
+        default_formula = data.get("default_aggregation_formula", "mode" if kind == "list" else "sum")
         vt = ValueType(
             organization_id=organization_id,
             name=data["name"],
-            kind=data["kind"],
+            kind=kind,
             numeric_format=data.get("numeric_format"),
             decimal_places=data.get("decimal_places", 2),
             unit_label=data.get("unit_label"),
-            default_aggregation_formula=data.get("default_aggregation_formula", "sum"),
+            default_aggregation_formula=default_formula,
+            list_options=data.get("list_options"),
             is_active=True,
         )
         return vt

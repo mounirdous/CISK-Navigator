@@ -48,6 +48,7 @@ class KPISnapshot(db.Model):
     consensus_status = db.Column(db.String(50), nullable=False)  # 'strong_consensus', 'weak_consensus', etc.
     consensus_value = db.Column(db.Numeric(precision=20, scale=6))  # Numeric value
     qualitative_level = db.Column(db.Integer)  # For qualitative types (1, 2, 3)
+    list_value = db.Column(db.String(255))  # For list types (selected option key)
     contributor_count = db.Column(db.Integer, default=0)
     is_rollup_eligible = db.Column(db.Boolean, default=False)
 
@@ -72,10 +73,12 @@ class KPISnapshot(db.Model):
         return f"<KPISnapshot {self.id} config={self.kpi_value_type_config_id} date={self.snapshot_date}>"
 
     def get_value(self):
-        """Get the appropriate value (numeric or qualitative)"""
+        """Get the appropriate value (numeric, qualitative, or list)"""
         if self.consensus_value is not None:
             return float(self.consensus_value)
-        return self.qualitative_level
+        if self.qualitative_level is not None:
+            return self.qualitative_level
+        return self.list_value
 
     def to_dict(self):
         """Convert snapshot to dictionary for API responses"""
@@ -86,6 +89,7 @@ class KPISnapshot(db.Model):
             "consensus_status": self.consensus_status,
             "consensus_value": float(self.consensus_value) if self.consensus_value else None,
             "qualitative_level": self.qualitative_level,
+            "list_value": self.list_value,
             "contributor_count": self.contributor_count,
             "is_rollup_eligible": self.is_rollup_eligible,
             "notes": self.notes,
@@ -135,6 +139,7 @@ class RollupSnapshot(db.Model):
     # Rollup data
     rollup_value = db.Column(db.Numeric(precision=20, scale=6))
     qualitative_level = db.Column(db.Integer)
+    list_value = db.Column(db.String(255))  # For list types (mode key)
     is_complete = db.Column(db.Boolean, default=False)  # All children had values?
     child_count = db.Column(db.Integer, default=0)  # How many children contributed
 
@@ -155,7 +160,9 @@ class RollupSnapshot(db.Model):
         """Get the appropriate value"""
         if self.rollup_value is not None:
             return float(self.rollup_value)
-        return self.qualitative_level
+        if self.qualitative_level is not None:
+            return self.qualitative_level
+        return self.list_value
 
     def to_dict(self):
         """Convert to dictionary"""
@@ -168,6 +175,7 @@ class RollupSnapshot(db.Model):
             "value_type_id": self.value_type_id,
             "rollup_value": float(self.rollup_value) if self.rollup_value else None,
             "qualitative_level": self.qualitative_level,
+            "list_value": self.list_value,
             "is_complete": self.is_complete,
             "child_count": self.child_count,
             "created_at": self.created_at.isoformat() if self.created_at else None,

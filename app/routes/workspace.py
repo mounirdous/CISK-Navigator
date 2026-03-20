@@ -334,6 +334,11 @@ def kpi_cell_detail(kpi_id, vt_id):
     # Handle contribution form
     form = ContributionForm()
 
+    # Populate list_value choices for list value types
+    if value_type.is_list():
+        list_options = value_type.get_list_options()
+        form.list_value.choices = [("", "Select...")] + [(opt["key"], opt["label"]) for opt in list_options]
+
     # Customize qualitative level choices based on value type kind
     if value_type.is_qualitative():
         if value_type.kind == "risk":
@@ -430,6 +435,8 @@ def kpi_cell_detail(kpi_id, vt_id):
                 )
                 if value_type.is_numeric():
                     contribution.numeric_value = form.numeric_value.data
+                elif value_type.is_list():
+                    contribution.list_value = form.list_value.data or None
                 else:
                     contribution.qualitative_level = form.qualitative_level.data
 
@@ -470,11 +477,14 @@ def kpi_cell_detail(kpi_id, vt_id):
 
         if existing:
             # Update existing contribution
+            existing.numeric_value = None
+            existing.qualitative_level = None
+            existing.list_value = None
             if value_type.is_numeric():
                 existing.numeric_value = form.numeric_value.data
-                existing.qualitative_level = None
+            elif value_type.is_list():
+                existing.list_value = form.list_value.data or None
             else:
-                existing.numeric_value = None
                 existing.qualitative_level = form.qualitative_level.data
             existing.comment = form.comment.data
             flash(f"Contribution from {contributor_name} updated", "success")
@@ -485,6 +495,8 @@ def kpi_cell_detail(kpi_id, vt_id):
             )
             if value_type.is_numeric():
                 contribution.numeric_value = form.numeric_value.data
+            elif value_type.is_list():
+                contribution.list_value = form.list_value.data or None
             else:
                 contribution.qualitative_level = form.qualitative_level.data
 
@@ -3750,6 +3762,8 @@ def get_data():
                     "is_complete": rollup_data.get("is_complete", False),
                     "count_total": rollup_data.get("count_total", 0),
                     "count_included": rollup_data.get("count_included", 0),
+                    "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
+                    "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
                 }
 
         # Second pass: Calculate formula value types from rollup values
@@ -3798,6 +3812,8 @@ def get_data():
                         "is_complete": rollup_data.get("is_complete", False),
                         "count_total": rollup_data.get("count_total", 0),
                         "count_included": rollup_data.get("count_included", 0),
+                        "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
+                        "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
                     }
 
             # Second pass: Calculate formula value types from rollup values
@@ -3841,6 +3857,8 @@ def get_data():
                             "is_complete": rollup_data.get("is_complete", False),
                             "count_total": rollup_data.get("count_total", 0),
                             "count_included": rollup_data.get("count_included", 0),
+                            "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
+                            "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
                         }
 
                 # Second pass: Calculate formula value types from rollup values
@@ -3892,6 +3910,8 @@ def get_data():
                                 "is_complete": rollup_data.get("is_complete", False),
                                 "count_total": rollup_data.get("count_total", 0),
                                 "count_included": rollup_data.get("count_included", 0),
+                                "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
+                                "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
                             }
 
                     # Second pass: Calculate formula value types from rollup values
@@ -3983,6 +4003,7 @@ def get_data():
                                         consensus.get("value"), vt, config
                                     )
 
+                                _list_val = consensus.get("value") if (vt.is_list() and consensus) else None
                                 kpi_values[vt.id] = {
                                     "config_id": config.id,
                                     "value": consensus.get("value") if consensus else None,
@@ -3992,7 +4013,9 @@ def get_data():
                                     "calculation_type": config.calculation_type,
                                     "consensus_status": consensus.get("status") if consensus else "no_data",
                                     "consensus_count": consensus.get("count") if consensus else 0,
-                                    "has_target": config.target_value is not None,
+                                    "has_target": config.target_value is not None or bool(getattr(config, "target_list_value", None)),
+                                    "list_label": vt.get_list_option_label(_list_val) if _list_val else None,
+                                    "list_color": vt.get_list_option_color(_list_val) if _list_val else None,
                                     "target_value": config.target_value,
                                     "target_date": (
                                         config.target_date.strftime("%Y-%m-%d") if config.target_date else None
@@ -4114,6 +4137,7 @@ def get_data():
             "kind": vt.kind,
             "calculation_type": vt.calculation_type,
             "formula_display": vt.get_formula_display() if vt.is_formula() else None,
+            "list_options": vt.list_options if vt.is_list() else None,
         }
         for vt in value_types
     ]

@@ -92,7 +92,8 @@ class SnapshotService:
                 # Update existing snapshot
                 existing.consensus_status = consensus["status"]
                 existing.consensus_value = consensus.get("value") if config.value_type.is_numeric() else None
-                existing.qualitative_level = consensus.get("value") if not config.value_type.is_numeric() else None
+                existing.qualitative_level = consensus.get("value") if config.value_type.is_qualitative() else None
+                existing.list_value = consensus.get("value") if config.value_type.is_list() else None
                 existing.contributor_count = consensus.get("count", 0)
                 existing.is_rollup_eligible = consensus.get("is_rollup_eligible", False)
                 existing.snapshot_label = label or existing.snapshot_label
@@ -114,7 +115,8 @@ class SnapshotService:
             snapshot_label=label,
             consensus_status=consensus["status"],
             consensus_value=consensus.get("value") if config.value_type.is_numeric() else None,
-            qualitative_level=consensus.get("value") if not config.value_type.is_numeric() else None,
+            qualitative_level=consensus.get("value") if config.value_type.is_qualitative() else None,
+            list_value=consensus.get("value") if config.value_type.is_list() else None,
             contributor_count=consensus.get("count", 0),
             is_rollup_eligible=consensus.get("is_rollup_eligible", False),
             notes=notes,

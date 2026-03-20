@@ -1,7 +1,7 @@
 """Value Type forms"""
 
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, HiddenField, IntegerField, SelectField, StringField, SubmitField
+from wtforms import BooleanField, HiddenField, IntegerField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, Length, Optional
 
 
@@ -16,6 +16,7 @@ class ValueTypeCreateForm(FlaskForm):
             ("negative_impact", "Negative Impact (▼)"),
             ("level", "Level (●●● - Generic 3-level)"),
             ("sentiment", "Sentiment (😞😐😊 - Emotions/Feelings)"),
+            ("list", "List (custom choices, e.g. Yes/No)"),
         ],
         validators=[DataRequired()],
     )
@@ -46,6 +47,9 @@ class ValueTypeCreateForm(FlaskForm):
     formula_source_ids = HiddenField()  # For simple mode - comma-separated value type IDs
     formula_expression = HiddenField()  # For advanced mode - Python expression
 
+    # List options (JSON, managed by JavaScript editor)
+    list_options_json = HiddenField()  # [{"key":"yes","label":"Yes","color":"#28a745"},...]
+
     submit = SubmitField("Create Value Type")
 
 
@@ -60,5 +64,8 @@ class ValueTypeEditForm(FlaskForm):
     calculation_type = HiddenField()
     formula_operation = HiddenField()
     formula_source_ids = HiddenField()
+
+    # List options — editable after creation (can add/remove/reorder/recolor)
+    list_options_json = HiddenField()
 
     submit = SubmitField("Save Changes")

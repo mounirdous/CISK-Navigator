@@ -14,5 +14,11 @@ class ContributionForm(FlaskForm):
         coerce=lambda x: int(x) if x else None,
         validators=[Optional()],
     )
+    # Populated dynamically in the route for list value types
+    list_value = SelectField(
+        "Value",
+        choices=[("", "Select...")],
+        validators=[Optional()],
+    )
     comment = TextAreaField("Comment")
     submit = SubmitField("Save Contribution")

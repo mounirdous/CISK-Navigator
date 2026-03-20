@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.0] - 2026-03-20
+
+### Added
+- **List value type** — new "list" kind for custom choice KPIs (Yes/No, status, etc.)
+  - Define options with labels and colors (color picker per option)
+  - "Mode" aggregation (most frequent choice) with tie-breaking (returns no result on tie)
+  - Full rollup/consensus support: list values propagate up the hierarchy with colored badges
+  - Target support: `target_list_value` on KPIValueTypeConfig
+  - Backup/restore: `list_options` and `list_value` included in JSON and YAML exports
+  - Snapshot support: `list_value` saved on KPISnapshot and RollupSnapshot
+  - Workspace display: colored badge showing option label at all levels (KPI, system, initiative, challenge, space)
+  - Organization admin: create/edit value type pages include list options editor
+
 ## [2.14.17] - 2026-03-20
 
 ### Fixed

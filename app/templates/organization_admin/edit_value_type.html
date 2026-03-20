@@ -142,6 +142,23 @@
                     </div>
                     {% endif %}
 
+                    {% if value_type.kind == 'list' %}
+                    <div class="form-section">
+                        <div class="form-section-title">
+                            <i class="bi bi-list-ul"></i>
+                            List Options
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-info-circle"></i> Define the choices users can pick from. Each option gets a label and a color.
+                        </p>
+                        <div id="list-options-container"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addListOption()">
+                            <i class="bi bi-plus-circle"></i> Add Option
+                        </button>
+                        {{ form.list_options_json(id="list_options_json") }}
+                    </div>
+                    {% endif %}
+
                     {% if value_type.kind == 'numeric' %}
                     <div class="form-section">
                         <div class="form-section-title">
@@ -196,3 +213,56 @@
 </div>
 
 {% endblock %}
+
+{% if value_type.kind == 'list' %}
+{% block extra_js %}
+<script>
+let listOptions = {{ value_type.list_options | tojson if value_type.list_options else '[]' }};
+
+function renderListOptions() {
+    const container = document.getElementById('list-options-container');
+    if (!container) return;
+    if (listOptions.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No options yet. Add at least one.</p>';
+    } else {
+        container.innerHTML = listOptions.map((opt, i) => `
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <input type="color" value="${opt.color || '#6c757d'}"
+                       onchange="listOptions[${i}].color = this.value; saveListOptions();"
+                       style="width:36px; height:36px; padding:2px; border:1px solid #ced4da; border-radius:4px; cursor:pointer;"
+                       title="Pick a color for this option">
+                <input type="text" class="form-control form-control-sm" value="${opt.label || ''}" placeholder="Label (e.g. Yes, No, N/A)"
+                       oninput="listOptions[${i}].label = this.value; listOptions[${i}].key = this.value.toLowerCase().replace(/[^a-z0-9]/g,'_'); saveListOptions();">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeListOption(${i})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+}
+
+function addListOption() {
+    const colors = ['#28a745','#dc3545','#ffc107','#17a2b8','#6f42c1','#fd7e14','#6c757d'];
+    listOptions.push({ key: '', label: '', color: colors[listOptions.length % colors.length] });
+    renderListOptions();
+    saveListOptions();
+}
+
+function removeListOption(index) {
+    listOptions.splice(index, 1);
+    renderListOptions();
+    saveListOptions();
+}
+
+function saveListOptions() {
+    const field = document.getElementById('list_options_json');
+    if (field) field.value = JSON.stringify(listOptions);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderListOptions();
+    saveListOptions();
+});
+</script>
+{% endblock %}
+{% endif %}

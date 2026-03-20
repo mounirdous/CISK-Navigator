@@ -2642,6 +2642,15 @@ def create_value_type():
                 flash(f"Invalid formula configuration: {e}", "danger")
                 return render_template("organization_admin/create_value_type.html", form=form, csrf_token=generate_csrf)
 
+        # Handle list options
+        if form.kind.data == "list" and form.list_options_json.data:
+            import json
+
+            try:
+                value_type.list_options = json.loads(form.list_options_json.data)
+            except (ValueError, TypeError):
+                pass
+
         db.session.add(value_type)
         db.session.flush()
 
@@ -2710,6 +2719,15 @@ def edit_value_type(vt_id):
             value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data
+
+        # Handle list options update
+        if value_type.kind == "list" and form.list_options_json.data:
+            import json
+
+            try:
+                value_type.list_options = json.loads(form.list_options_json.data)
+            except (ValueError, TypeError):
+                pass
 
         # Audit log
         new_values = {
