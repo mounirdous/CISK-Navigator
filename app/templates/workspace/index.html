@@ -2393,12 +2393,12 @@
                     </div>
 
                     <!-- Challenges -->
-                    <template x-for="challenge in space.challenges" :key="challenge.id">
+                    <template x-for="challenge in (space.collapsed ? [] : space.challenges)" :key="challenge.id">
                         <div style="display: contents;">
                             <!-- Challenge Row -->
                             <div class="ws-row level-1"
                                  :id="'challenge-' + challenge.id"
-                                 x-show="showLevels.challenges && !space.collapsed"
+                                 x-show="showLevels.challenges"
                                  :draggable="editMode"
                                  @dragstart="dragRowStart($event, challenge, 'challenge', space)"
                                  @dragover.prevent="dragRowOver($event, challenge, 'challenge', space)"
@@ -2503,12 +2503,12 @@
                             </div>
 
                             <!-- Initiatives -->
-                            <template x-for="initiative in challenge.initiatives" :key="initiative.id">
+                            <template x-for="initiative in (challenge.collapsed ? [] : challenge.initiatives)" :key="initiative.id">
                                 <div style="display: contents;">
                                     <!-- Initiative Row -->
                                     <div class="ws-row level-2"
                                          :id="'initiative-' + initiative.id"
-                                         x-show="showLevels.initiatives && !space.collapsed && !challenge.collapsed"
+                                         x-show="showLevels.initiatives"
                                          :draggable="editMode"
                                          @dragstart="dragRowStart($event, initiative, 'initiative', challenge)"
                                          @dragover.prevent="dragRowOver($event, initiative, 'initiative', challenge)"
@@ -2663,12 +2663,12 @@
                                     </div>
 
                                     <!-- Systems -->
-                                    <template x-for="system in initiative.systems" :key="system.id">
+                                    <template x-for="system in (initiative.collapsed ? [] : initiative.systems)" :key="system.id">
                                         <div style="display: contents;">
                                             <!-- System Row -->
                                             <div class="ws-row level-3"
                                                  :id="'system-' + system.id"
-                                                 x-show="showLevels.systems && !space.collapsed && !challenge.collapsed && !initiative.collapsed"
+                                                 x-show="showLevels.systems && !space.collapsed && !challenge.collapsed"
                                                  :draggable="editMode"
                                                  @dragstart="dragRowStart($event, system, 'system', initiative)"
                                                  @dragover.prevent="dragRowOver($event, system, 'system', initiative)"
@@ -2804,11 +2804,11 @@
                                             </div>
 
                                             <!-- KPIs -->
-                                            <template x-for="kpi in system.kpis" :key="kpi.id">
+                                            <template x-for="kpi in (system.collapsed ? [] : system.kpis)" :key="kpi.id">
                                                 <div class="ws-row level-4"
                                                      :id="'kpi-' + kpi.id"
                                                      :data-kpi-id="kpi.id"
-                                                     x-show="showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed && !system.collapsed"
+                                                     x-show="showLevels.kpis && !space.collapsed && !challenge.collapsed && !initiative.collapsed"
                                                      :draggable="editMode"
                                                      @dragstart="dragRowStart($event, kpi, 'kpi', system)"
                                                      @dragover.prevent="dragRowOver($event, kpi, 'kpi', system)"
