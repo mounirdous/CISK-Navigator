@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.5] - 2026-03-21
+
+### Fixed
+- Edit pages for System, Initiative, Challenge, KPI now show per-instance logo first, falling back to entity-type default logo, then icon
+
+## [2.17.4] - 2026-03-21
+
+### Fixed
+- Fixed system pencil edit button in workspace — replaced v1 alert with direct link to edit system page (returns to workspace after save)
+
 ## [2.17.3] - 2026-03-21
 
 ### Fixed

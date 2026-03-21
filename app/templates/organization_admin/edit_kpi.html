@@ -70,7 +70,9 @@
         <div class="card hover-lift">
             <div class="page-header">
                 <div class="page-header-icon">
-                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                    {% if kpi.logo_data %}
+                    <img src="{{ url_for('logo.kpi_logo', entity_id=kpi.id) }}" alt="KPI" style="width: 40px; height: 40px; object-fit: contain;">
+                    {% elif entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
                     <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 40px; height: 40px; object-fit: contain;">
                     {% else %}
                     <span style="font-size: 1.5rem;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
@@ -94,7 +96,9 @@
                             {{ form.name.label(class="form-label fw-semibold") }}
                             <div class="input-group">
                                 <span class="input-group-text">
-                                    {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                    {% if kpi.logo_data %}
+                                    <img src="{{ url_for('logo.kpi_logo', entity_id=kpi.id) }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain;">
+                                    {% elif entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
                                     <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 20px; height: 20px; object-fit: contain;">
                                     {% else %}
                                     <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>

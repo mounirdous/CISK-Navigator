@@ -41,7 +41,9 @@
         <div class="card hover-lift form-card">
             <div class="form-header">
                 <h2>
-                    {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                    {% if initiative.logo_data %}
+                    <img src="{{ url_for('logo.initiative_logo', entity_id=initiative.id) }}" alt="Initiative" style="width: 32px; height: 32px; object-fit: contain; vertical-align: middle;">
+                    {% elif entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
                     <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 32px; height: 32px; object-fit: contain; vertical-align: middle;">
                     {% else %}
                     <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
@@ -59,7 +61,9 @@
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
                             <span class="input-group-text">
-                                {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
+                                {% if initiative.logo_data %}
+                                <img src="{{ url_for('logo.initiative_logo', entity_id=initiative.id) }}" alt="Initiative" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% elif entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
                                 <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 20px; height: 20px; object-fit: contain;">
                                 {% else %}
                                 <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>

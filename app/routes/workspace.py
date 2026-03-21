@@ -4074,6 +4074,7 @@ def get_data():
                             "id": system.id,
                             "link_id": sys_link.id,  # For parent change operations
                             "name": system.name,
+                            "edit_url": url_for("organization_admin.edit_system", system_id=system.id),
                             "logo_url": get_logo_url(system, "system"),
                             "icon": get_icon(system, "system"),
                             "rollup_values": system_rollup_values,

@@ -35,7 +35,9 @@
         <div class="card hover-lift">
             <div class="page-header">
                 <div class="page-header-icon">
-                    {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                    {% if space.logo_data %}
+                    <img src="{{ url_for('logo.space_logo', entity_id=space.id) }}" alt="Space" style="width: 40px; height: 40px; object-fit: contain;">
+                    {% elif entity_defaults.get('space') and entity_defaults['space']['logo'] %}
                     <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 40px; height: 40px; object-fit: contain;">
                     {% else %}
                     <span style="font-size: 1.5rem;">{{ entity_defaults.get('space', {}).get('icon', '🏢') }}</span>
@@ -53,7 +55,9 @@
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
                             <span class="input-group-text">
-                                {% if entity_defaults.get('space') and entity_defaults['space']['logo'] %}
+                                {% if space.logo_data %}
+                                <img src="{{ url_for('logo.space_logo', entity_id=space.id) }}" alt="Space" style="width: 20px; height: 20px; object-fit: contain;">
+                                {% elif entity_defaults.get('space') and entity_defaults['space']['logo'] %}
                                 <img src="{{ entity_defaults['space']['logo'] }}" alt="Space" style="width: 20px; height: 20px; object-fit: contain;">
                                 {% else %}
                                 <span style="font-size: 1.1rem;">{{ entity_defaults.get('space', {}).get('icon', '🏢') }}</span>
