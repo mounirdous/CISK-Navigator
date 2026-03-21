@@ -1,0 +1,301 @@
+{
+  "_comment": "CISK Navigator — Sample Import File (JSON format). Import via: Org Admin → Settings → Import Structure. All IDs (S1, C1, I1, SYS1) are local references only — initiatives or systems sharing the same ID are created once and linked to all referencing challenges/initiatives.",
+
+  "value_types": [
+    {
+      "_comment": "Numeric integer — no unit",
+      "name": "Score",
+      "kind": "numeric",
+      "numeric_format": "integer",
+      "decimal_places": 0,
+      "default_aggregation_formula": "avg"
+    },
+    {
+      "_comment": "Numeric decimal with unit suffix",
+      "name": "Revenue",
+      "kind": "numeric",
+      "numeric_format": "decimal",
+      "decimal_places": 1,
+      "unit_label": "M€",
+      "default_aggregation_formula": "sum"
+    },
+    {
+      "_comment": "Numeric percentage",
+      "name": "Completion %",
+      "kind": "numeric",
+      "numeric_format": "integer",
+      "decimal_places": 0,
+      "unit_label": "%",
+      "default_aggregation_formula": "avg"
+    },
+    {
+      "_comment": "Numeric duration",
+      "name": "Lead Time",
+      "kind": "numeric",
+      "numeric_format": "integer",
+      "decimal_places": 0,
+      "unit_label": "days",
+      "default_aggregation_formula": "avg"
+    },
+    {
+      "_comment": "Sentiment — 3 levels: Negative / Neutral / Positive",
+      "name": "Team Morale",
+      "kind": "sentiment",
+      "default_aggregation_formula": "avg"
+    },
+    {
+      "_comment": "Risk — 3 levels: Low / Medium / High",
+      "name": "Risk Level",
+      "kind": "risk",
+      "default_aggregation_formula": "max"
+    },
+    {
+      "_comment": "Positive Impact — 3 levels: Low / Medium / High positive",
+      "name": "Strategic Impact",
+      "kind": "positive_impact",
+      "default_aggregation_formula": "max"
+    },
+    {
+      "_comment": "List — custom options with colors",
+      "name": "Status",
+      "kind": "list",
+      "default_aggregation_formula": "mode",
+      "list_options": [
+        { "name": "On Track", "color": "#28a745" },
+        { "name": "At Risk",  "color": "#ffc107" },
+        { "name": "Blocked",  "color": "#dc3545" },
+        { "name": "Done",     "color": "#17a2b8" }
+      ]
+    }
+  ],
+
+  "spaces": [
+    {
+      "id": "S1",
+      "name": "Season 1 — Foundation",
+      "display_order": 1,
+      "description": "First 90 days priorities",
+      "space_label": "Q1 2026",
+
+      "challenges": [
+        {
+          "id": "C1",
+          "name": "IT Visibility & Landscape",
+          "display_order": 1,
+          "description": "Gain a clear picture of the IT estate",
+
+          "initiatives": [
+            {
+              "id": "I1",
+              "name": "IT Landscape Snapshot",
+              "display_order": 1,
+              "description": "Document all systems, owners and risks",
+
+              "systems": [
+                {
+                  "id": "SYS1",
+                  "name": "Excel Tracker",
+                  "display_order": 1,
+                  "description": "Lightweight discovery spreadsheet",
+
+                  "kpis": [
+                    {
+                      "name": "Systems Documented",
+                      "display_order": 1,
+                      "description": "Number of IT systems captured in tracker",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "colors": {
+                            "positive": "#28a745",
+                            "zero":     "#6c757d",
+                            "negative": "#dc3545"
+                          },
+                          "display_scale": "default",
+                          "display_decimals": 0,
+                          "target_value": 100,
+                          "target_date": "2026-06-30",
+                          "target_direction": "maximize",
+                          "target_tolerance_pct": 10
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Discovery Coverage",
+                      "display_order": 2,
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 100,
+                          "target_direction": "maximize"
+                        },
+                        {
+                          "name": "Risk Level",
+                          "colors": {
+                            "positive": "#28a745",
+                            "zero":     "#ffc107",
+                            "negative": "#dc3545"
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "id": "SYS2",
+                  "name": "Jira",
+                  "display_order": 2,
+                  "kpis": [
+                    {
+                      "name": "Open Tickets",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "C2",
+          "name": "Stakeholder Alignment",
+          "display_order": 2,
+
+          "initiatives": [
+            {
+              "_comment": "SYS1 reused here — system created once, linked to both I1 and I2",
+              "id": "I2",
+              "name": "Listening Tour",
+              "display_order": 1,
+
+              "systems": [
+                {
+                  "id": "SYS1",
+                  "name": "Excel Tracker",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Stakeholders Met",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 25,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "I3",
+              "name": "Weekly CIO Comms",
+              "display_order": 2,
+
+              "systems": [
+                {
+                  "id": "SYS3",
+                  "name": "Email / Slack",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Comms Sent",
+                      "value_types": [ { "name": "Score" } ]
+                    },
+                    {
+                      "name": "Audience Trust",
+                      "value_types": [ { "name": "Team Morale" } ]
+                    },
+                    {
+                      "name": "Delivery Status",
+                      "value_types": [ { "name": "Status" } ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "S2",
+      "name": "Season 2 — Transformation",
+      "display_order": 2,
+
+      "challenges": [
+        {
+          "id": "C3",
+          "name": "Vendor Governance",
+          "display_order": 1,
+
+          "initiatives": [
+            {
+              "id": "I4",
+              "name": "Vendor Map",
+              "display_order": 1,
+
+              "systems": [
+                {
+                  "id": "SYS4",
+                  "name": "Vendor Registry",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Vendors Mapped",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 100,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Vendor Risk",
+                      "value_types": [ { "name": "Risk Level" } ]
+                    },
+                    {
+                      "name": "Contract Value",
+                      "value_types": [
+                        {
+                          "name": "Revenue",
+                          "display_scale": "default",
+                          "target_value": 5.0,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Avg Delivery Time",
+                      "value_types": [
+                        {
+                          "name": "Lead Time",
+                          "target_value": 14,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Strategic Value",
+                      "value_types": [ { "name": "Strategic Impact" } ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
