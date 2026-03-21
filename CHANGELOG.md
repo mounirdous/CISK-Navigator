@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.0] - 2026-03-21
+
+### Added
+- **Generate Actions from Deliverables** — lightning button on initiative form (view mode, Deliverables section) opens a modal to:
+  - Parse all deliverable rows automatically
+  - Pre-fill title (milestone text), owner (current user), priority (suggested from initiative impact), due date (parsed from date column — supports "Week N" with configurable reference date: today or custom, and "Q1–Q4 YYYY"), status (draft), visibility (shared)
+  - Detect duplicate titles already linked to this initiative (shown with "exists" badge, unchecked by default)
+  - Create selected actions and link them to the initiative via ActionItemMention
+- Header Save button in initiative form edit mode now returns to workspace after saving
+
 ## [2.15.11] - 2026-03-21
 
 ### Fixed

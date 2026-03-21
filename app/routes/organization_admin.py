@@ -3549,9 +3549,10 @@ def initiative_form(initiative_id):
         db.session.commit()
         flash(f"Initiative form for '{initiative.name}' updated successfully", "success")
 
-        # Check if we should return to action items page
         if request.args.get("return_to") == "action_items":
             return redirect(url_for("action_items"))
+        if request.form.get("redirect_after_save") == "workspace":
+            return redirect(url_for("workspace.index"))
 
         return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative.id))
 
@@ -3623,3 +3624,106 @@ def initiative_form(initiative_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
     )
+
+
+@bp.route("/initiatives/<int:initiative_id>/check-action-titles")
+@login_required
+@organization_required
+def check_action_titles(initiative_id):
+    """Return which of the given titles already exist as actions linked to this initiative."""
+    from app.models import ActionItem, ActionItemMention
+
+    org_id = session.get("organization_id")
+    titles = request.args.getlist("titles[]")
+    if not titles:
+        return jsonify({"existing": []})
+
+    # Find actions linked to this initiative
+    linked_ids = db.session.query(ActionItemMention.action_item_id).filter_by(
+        entity_type="initiative", entity_id=initiative_id
+    )
+    existing = (
+        ActionItem.query.filter(
+            ActionItem.id.in_(linked_ids),
+            ActionItem.organization_id == org_id,
+            ActionItem.title.in_(titles),
+        )
+        .with_entities(ActionItem.title)
+        .all()
+    )
+    return jsonify({"existing": [row.title for row in existing]})
+
+
+@bp.route("/initiatives/<int:initiative_id>/generate-actions", methods=["POST"])
+@login_required
+@organization_required
+def generate_actions(initiative_id):
+    """Create action items from selected deliverable rows and link them to the initiative."""
+    from datetime import date, timedelta
+
+    from app.models import ActionItem, ActionItemMention, Initiative, User, UserOrganizationMembership
+    from app.services.action_item_service import ActionItemService
+
+    org_id = session.get("organization_id")
+    initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
+
+    data = request.get_json()
+    if not data or "actions" not in data:
+        return jsonify({"error": "No actions provided"}), 400
+
+    # Validate owner belongs to org
+    valid_owner_ids = {
+        row.user_id
+        for row in UserOrganizationMembership.query.filter_by(organization_id=org_id).with_entities(
+            UserOrganizationMembership.user_id
+        )
+    }
+
+    created = []
+    errors = []
+
+    for action_data in data["actions"]:
+        try:
+            owner_id = int(action_data.get("owner_user_id", current_user.id))
+            if owner_id not in valid_owner_ids:
+                owner_id = current_user.id
+
+            # Parse due date
+            due_date = None
+            raw_date = action_data.get("due_date", "").strip()
+            if raw_date:
+                try:
+                    due_date = date.fromisoformat(raw_date)
+                except ValueError:
+                    pass  # Invalid date left as None
+
+            item = ActionItem(
+                organization_id=org_id,
+                owner_user_id=owner_id,
+                created_by_user_id=current_user.id,
+                title=action_data["title"].strip(),
+                description=action_data.get("description", f"Generated from initiative: {initiative.name}"),
+                type="action",
+                status=action_data.get("status", "draft"),
+                priority=action_data.get("priority", "medium"),
+                due_date=due_date,
+                visibility=action_data.get("visibility", "shared"),
+            )
+            db.session.add(item)
+            db.session.flush()
+
+            # Link to initiative
+            mention = ActionItemMention(
+                action_item_id=item.id,
+                entity_type="initiative",
+                entity_id=initiative_id,
+                mention_text=f"@{initiative.name}",
+            )
+            db.session.add(mention)
+            created.append({"id": item.id, "title": item.title})
+
+        except Exception as e:
+            errors.append({"title": action_data.get("title", "?"), "error": str(e)})
+
+    db.session.commit()
+    return jsonify({"created": len(created), "actions": created, "errors": errors})

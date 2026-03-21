@@ -330,7 +330,7 @@
                 </a>
                 {% endif %}
                 {% if edit_mode %}
-                <button type="submit" form="initiativeForm" class="btn btn-light fw-semibold">
+                <button type="submit" form="initiativeForm" name="redirect_after_save" value="workspace" class="btn btn-light fw-semibold">
                     <i class="bi bi-check-circle"></i> Save
                 </button>
                 {% endif %}
@@ -565,6 +565,11 @@
                         </td>
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: top;">
                             Deliverables
+                            {% if initiative.deliverables and not edit_mode %}
+                            <br><button type="button" class="btn btn-outline-primary btn-sm mt-1" style="font-size: 0.65rem; padding: 0.15rem 0.4rem; white-space: nowrap;" onclick="openGenerateActionsModal()">
+                                <i class="bi bi-lightning-charge"></i> Actions
+                            </button>
+                            {% endif %}
                         </td>
                         <td class="content-cell">
                             {% if initiative.deliverables %}
@@ -739,4 +744,253 @@
         {% endif %}
     </div>
 </div>
+
+{% if not edit_mode and initiative.deliverables %}
+<!-- Generate Actions Modal -->
+<div class="modal fade" id="generateActionsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #9c27b0, #4a148c); color: white;">
+                <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Generate Actions from Deliverables</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Start date for "Week N" calculation -->
+                <div class="alert alert-info py-2 mb-3">
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <span><i class="bi bi-calendar-event"></i> <strong>Reference date</strong> for "Week N" dates:</span>
+                        <div class="form-check form-check-inline mb-0">
+                            <input class="form-check-input" type="radio" name="refDateMode" id="refToday" value="today" checked onchange="updateRefDate()">
+                            <label class="form-check-label" for="refToday">Today (<span id="todayLabel"></span>)</label>
+                        </div>
+                        <div class="form-check form-check-inline mb-0">
+                            <input class="form-check-input" type="radio" name="refDateMode" id="refCustom" value="custom" onchange="updateRefDate()">
+                            <label class="form-check-label" for="refCustom">Custom date:</label>
+                        </div>
+                        <input type="date" id="refDateInput" class="form-control form-control-sm" style="width: 150px;" oninput="updateRefDate()" disabled>
+                    </div>
+                </div>
+
+                <div id="actionsTableContainer"></div>
+            </div>
+            <div class="modal-footer">
+                <span id="createSummary" class="me-auto text-muted small"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitGenerateActions()">
+                    <i class="bi bi-check-circle"></i> Create Selected Actions
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Data passed from server
+const INITIATIVE_ID = {{ initiative.id }};
+const INITIATIVE_IMPACT = "{{ initiative.impact_on_challenge or '' }}";
+const CSRF_TOKEN = "{{ csrf_token() }}";
+const CHECK_TITLES_URL = "{{ url_for('organization_admin.check_action_titles', initiative_id=initiative.id) }}";
+const GENERATE_URL = "{{ url_for('organization_admin.generate_actions', initiative_id=initiative.id) }}";
+const ORG_USERS = [
+    {% for membership in initiative.organization.memberships if membership.user.is_active %}
+    { id: {{ membership.user.id }}, name: "{{ membership.user.display_name or membership.user.login }}" },
+    {% endfor %}
+];
+const CURRENT_USER_ID = {{ current_user.id }};
+
+// Parse deliverables from raw text
+const RAW_DELIVERABLES = {{ initiative.deliverables | tojson }};
+
+function parseDeliverables(raw) {
+    const rows = [];
+    if (!raw) return rows;
+    raw.split('\n').forEach(line => {
+        line = line.trim();
+        if (!line) return;
+        const parts = line.split('|').map(p => p.trim());
+        rows.push({
+            step: parts[0] || '',
+            milestone: parts[1] || parts[0] || '',
+            rawDate: parts[2] || ''
+        });
+    });
+    return rows;
+}
+
+function suggestPriority() {
+    if (INITIATIVE_IMPACT === 'high') return 'high';
+    if (INITIATIVE_IMPACT === 'medium') return 'medium';
+    if (INITIATIVE_IMPACT === 'low') return 'low';
+    return 'medium';
+}
+
+// Date reference
+let refDate = new Date();
+function updateRefDate() {
+    const mode = document.querySelector('input[name="refDateMode"]:checked').value;
+    const customInput = document.getElementById('refDateInput');
+    customInput.disabled = (mode !== 'custom');
+    if (mode === 'custom' && customInput.value) {
+        refDate = new Date(customInput.value + 'T00:00:00');
+    } else {
+        refDate = new Date();
+        refDate.setHours(0,0,0,0);
+    }
+    renderActionsTable(existingTitles);
+}
+
+function parseDate(raw) {
+    if (!raw) return '';
+    raw = raw.trim();
+
+    // Week N
+    const weekMatch = raw.match(/[Ww](?:eek\s*)?(\d+)/);
+    if (weekMatch) {
+        const d = new Date(refDate);
+        d.setDate(d.getDate() + parseInt(weekMatch[1]) * 7);
+        return d.toISOString().split('T')[0];
+    }
+    // Quarter: Q1/Q2/Q3/Q4 YYYY
+    const quarterMatch = raw.match(/Q([1-4])\s*(\d{4})/i);
+    if (quarterMatch) {
+        const q = parseInt(quarterMatch[1]);
+        const y = parseInt(quarterMatch[2]);
+        const month = [0, 3, 6, 9][q - 1];
+        return new Date(y, month, 1).toISOString().split('T')[0];
+    }
+    // ISO date or common formats
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    return '';
+}
+
+let existingTitles = [];
+
+function renderActionsTable(existing) {
+    const rows = parseDeliverables(RAW_DELIVERABLES);
+    const priority = suggestPriority();
+    const ownerOptions = ORG_USERS.map(u =>
+        `<option value="${u.id}" ${u.id === CURRENT_USER_ID ? 'selected' : ''}>${u.name}</option>`
+    ).join('');
+
+    let html = `<table class="table table-sm table-bordered align-middle" style="font-size:0.88rem;">
+        <thead style="background:#f5f7fa;">
+            <tr>
+                <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)" checked></th>
+                <th>Title</th>
+                <th style="width:170px;">Owner</th>
+                <th style="width:110px;">Priority</th>
+                <th style="width:130px;">Due Date</th>
+                <th style="width:100px;">Status</th>
+                <th style="width:100px;">Visibility</th>
+            </tr>
+        </thead><tbody>`;
+
+    rows.forEach((row, i) => {
+        const isDuplicate = existing.includes(row.milestone);
+        const parsedDate = parseDate(row.rawDate);
+        const dupBadge = isDuplicate
+            ? `<span class="badge bg-warning text-dark ms-1" title="Action with this title already linked to this initiative">exists</span>` : '';
+        html += `<tr class="${isDuplicate ? 'table-warning' : ''}">
+            <td><input type="checkbox" class="action-check" data-idx="${i}" ${isDuplicate ? '' : 'checked'}></td>
+            <td>
+                <input type="text" class="form-control form-control-sm" id="title_${i}" value="${row.milestone.replace(/"/g,'&quot;')}">
+                ${row.rawDate ? `<small class="text-muted">Date hint: ${row.rawDate}</small>` : ''}
+                ${dupBadge}
+            </td>
+            <td><select class="form-select form-select-sm" id="owner_${i}">${ownerOptions}</select></td>
+            <td><select class="form-select form-select-sm" id="priority_${i}">
+                <option value="low" ${priority==='low'?'selected':''}>Low</option>
+                <option value="medium" ${priority==='medium'?'selected':''}>Medium</option>
+                <option value="high" ${priority==='high'?'selected':''}>High</option>
+                <option value="urgent">Urgent</option>
+            </select></td>
+            <td><input type="date" class="form-control form-control-sm" id="due_${i}" value="${parsedDate}"></td>
+            <td><select class="form-select form-select-sm" id="status_${i}">
+                <option value="draft" selected>Draft</option>
+                <option value="active">Active</option>
+            </select></td>
+            <td><select class="form-select form-select-sm" id="vis_${i}">
+                <option value="shared" selected>Shared</option>
+                <option value="private">Private</option>
+            </select></td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('actionsTableContainer').innerHTML = html;
+    updateSummary();
+
+    document.querySelectorAll('.action-check').forEach(cb => cb.addEventListener('change', updateSummary));
+}
+
+function toggleAll(master) {
+    document.querySelectorAll('.action-check').forEach(cb => cb.checked = master.checked);
+    updateSummary();
+}
+
+function updateSummary() {
+    const checked = document.querySelectorAll('.action-check:checked').length;
+    document.getElementById('createSummary').textContent = checked
+        ? `${checked} action(s) will be created` : 'None selected';
+}
+
+async function openGenerateActionsModal() {
+    const rows = parseDeliverables(RAW_DELIVERABLES);
+    const titles = rows.map(r => r.milestone);
+
+    // Set today label
+    const today = new Date();
+    document.getElementById('todayLabel').textContent = today.toISOString().split('T')[0];
+
+    // Check for duplicates first
+    const params = titles.map(t => `titles[]=${encodeURIComponent(t)}`).join('&');
+    const resp = await fetch(`${CHECK_TITLES_URL}?${params}`);
+    const data = await resp.json();
+    existingTitles = data.existing || [];
+
+    renderActionsTable(existingTitles);
+    new bootstrap.Modal(document.getElementById('generateActionsModal')).show();
+}
+
+async function submitGenerateActions() {
+    const rows = parseDeliverables(RAW_DELIVERABLES);
+    const actions = [];
+
+    document.querySelectorAll('.action-check:checked').forEach(cb => {
+        const i = parseInt(cb.dataset.idx);
+        actions.push({
+            title: document.getElementById(`title_${i}`).value.trim(),
+            owner_user_id: parseInt(document.getElementById(`owner_${i}`).value),
+            priority: document.getElementById(`priority_${i}`).value,
+            due_date: document.getElementById(`due_${i}`).value,
+            status: document.getElementById(`status_${i}`).value,
+            visibility: document.getElementById(`vis_${i}`).value,
+        });
+    });
+
+    if (!actions.length) { alert('No actions selected.'); return; }
+
+    const resp = await fetch(GENERATE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+        body: JSON.stringify({ actions })
+    });
+    const result = await resp.json();
+
+    if (result.created > 0) {
+        bootstrap.Modal.getInstance(document.getElementById('generateActionsModal')).hide();
+        // Show success banner
+        const banner = document.createElement('div');
+        banner.className = 'alert alert-success alert-dismissible fade show';
+        banner.innerHTML = `<i class="bi bi-check-circle"></i> <strong>${result.created} action(s) created</strong> and linked to this initiative.
+            <a href="/action-items" class="alert-link ms-2">View in Action Items →</a>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.querySelector('.form-body').prepend(banner);
+    } else {
+        alert('No actions were created. ' + (result.errors?.[0]?.error || ''));
+    }
+}
+</script>
+{% endif %}
 {% endblock %}
