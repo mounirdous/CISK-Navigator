@@ -5,6 +5,20 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.20.1] - 2026-03-21
+
+### Fixed
+- Duplicate detection panel: replaced `<details>` with an explicit **Show/Hide differences** toggle button with animated chevron rotation
+
+## [2.20.0] - 2026-03-21
+
+### Added
+- Action Register: **Find Duplicates** button scans all visible items for exact title matches, high word overlap (Jaccard ≥ 60%), shared title prefix (3+ words), and combined title + description similarity
+- Duplicate panel shows grouped results with similarity reason, **differences table** (status, priority, owner, due date, governance bodies, links — only fields that differ are shown), and smart pre-selection for deletion (keeps active/highest-priority item)
+- Duplicate panel: one-click delete of selected items via fetch + page reload; collapsible panel with dismiss button
+- Global Search: **Exact match** checkbox toggle — when enabled, disables fuzzy/Levenshtein matching and only returns substring matches (no typo tolerance)
+- Exact match badge shown in results summary when active; setting preserved across filter changes
+
 ## [2.19.0] - 2026-03-21
 
 ### Added

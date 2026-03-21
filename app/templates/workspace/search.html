@@ -28,7 +28,15 @@
                     <i class="bi bi-search"></i> Search
                 </button>
             </div>
-            <small class="text-muted">Search in spaces, challenges, initiatives, systems, KPIs, value types, and comments</small>
+            <div class="d-flex align-items-center gap-3 mt-2">
+                <small class="text-muted">Search in spaces, challenges, initiatives, systems, KPIs, value types, and comments</small>
+                <label class="d-flex align-items-center gap-1 mb-0 ms-auto" style="cursor:pointer; font-size:0.85rem; user-select:none;">
+                    <input type="checkbox" name="exact" value="1" {% if exact_match %}checked{% endif %}
+                           style="width:15px; height:15px; cursor:pointer;">
+                    <span class="fw-semibold">Exact match</span>
+                    <span class="text-muted">(no fuzzy / typo tolerance)</span>
+                </label>
+            </div>
         </form>
         <!-- Enhanced Search Features Tip -->
         <div class="alert alert-info mt-3" style="font-size: 0.875rem;">
@@ -52,6 +60,11 @@
             <div class="data-label">Search Results</div>
             <div class="h5 mb-0">
                 Showing <strong class="text-primary">{{ total }}</strong> result{{ 's' if total != 1 else '' }} for "<strong>{{ query }}</strong>"
+                {% if exact_match %}
+                <span class="badge bg-warning text-dark ms-2" style="font-size:0.75rem; vertical-align:middle;">
+                    <i class="bi bi-text-paragraph me-1"></i>Exact match
+                </span>
+                {% endif %}
             </div>
         </div>
     </div>

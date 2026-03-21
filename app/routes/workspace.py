@@ -2158,6 +2158,7 @@ def search_page():
     entity_types_param = request.args.get("entity_types", "")
     date_range = request.args.get("date_range", "")
     status_param = request.args.get("status", "")
+    exact_match = request.args.get("exact", "") == "1"
 
     # Parse filters for SearchService and template
     filters = {}
@@ -2175,6 +2176,9 @@ def search_page():
         status_list = status_param.split(",")
         filters["status"] = status_list
 
+    if exact_match:
+        filters["exact"] = True
+
     if not query:
         return render_template(
             "workspace/search.html",
@@ -2185,6 +2189,7 @@ def search_page():
             entity_types=entity_types_list,
             date_range=date_range,
             status=status_list,
+            exact_match=exact_match,
             csrf_token=generate_csrf,
         )
 
@@ -2242,6 +2247,7 @@ def search_page():
         entity_types=entity_types_list,
         date_range=date_range,
         status=status_list,
+        exact_match=exact_match,
         csrf_token=generate_csrf,
     )
 

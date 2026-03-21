@@ -127,6 +127,44 @@
     box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
     outline: none;
 }
+/* Duplicate detection */
+#dup-panel {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+#dup-panel .dup-header {
+    background: linear-gradient(135deg, #ff6f00, #e65100);
+    color: white;
+    padding: 0.75rem 1.25rem;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+}
+.dup-group {
+    border-left: 4px solid #ff6f00;
+    margin: 0.75rem 1rem;
+    padding: 0.6rem 0.75rem;
+    background: #fff8f0;
+    border-radius: 0 8px 8px 0;
+}
+.dup-group .dup-reason {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #e65100; margin-bottom: 0.4rem;
+}
+.dup-group .dup-reason.exact { color: #b71c1c; }
+.dup-group .dup-reason.similar { color: #e65100; }
+.dup-item-link {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.5rem; border-radius: 6px;
+    background: white; border: 1px solid #ffcc80;
+    font-size: 0.82rem; text-decoration: none; color: #37474f;
+    cursor: pointer; margin: 0.15rem;
+    transition: all 0.15s;
+}
+.dup-item-link:hover { border-color: #e65100; color: #e65100; background: #fff3e0; }
+.row-dup-highlight { background: #fff3e0 !important; outline: 2px solid #ff6f00; outline-offset: -2px; }
 </style>
 {% endblock %}
 
@@ -311,18 +349,31 @@
             </div>
             {% endif %}
 
-            <!-- Search -->
-            <div class="col-auto d-flex align-items-end ms-auto">
+            <!-- Search + Duplicate Detect -->
+            <div class="col-auto d-flex align-items-end ms-auto gap-2">
                 <div class="search-box">
                     <i class="bi bi-search"></i>
                     <input type="text" id="action-search" placeholder="Search title, description, owner…"
                            autocomplete="off" class="form-control form-control-sm">
                 </div>
+                <button type="button" id="dup-detect-btn" class="btn btn-sm btn-outline-warning fw-semibold"
+                        title="Scan for duplicate or similar action items">
+                    <i class="bi bi-files me-1"></i> Find Duplicates
+                </button>
             </div>
 
         </div>
     </div>
     </form>
+
+    <!-- Duplicate detection panel (hidden until scan runs) -->
+    <div id="dup-panel" style="display:none;">
+        <div class="dup-header" onclick="toggleDupPanel()">
+            <span><i class="bi bi-files me-2"></i><strong id="dup-panel-title">Potential Duplicates Found</strong></span>
+            <span id="dup-panel-chevron"><i class="bi bi-chevron-up"></i></span>
+        </div>
+        <div id="dup-panel-body" class="py-2"></div>
+    </div>
 
     <!-- Items Table -->
     {% if items %}
@@ -366,7 +417,18 @@
                 <tbody>
                 {% for item in items %}
                 <tr {% if item.is_overdue %}class="row-overdue"{% endif %} id="item-{{ item.id }}"
-                    data-search="{{ [item.title, item.description or '', item.owner_user.display_name or item.owner_user.login] | join(' ') | lower }}">
+                    data-search="{{ [item.title, item.description or '', item.owner_user.display_name or item.owner_user.login] | join(' ') | lower }}"
+                    data-item-id="{{ item.id }}"
+                    data-title="{{ item.title | lower }}"
+                    data-description="{{ (item.description or '') | lower | truncate(300, True, '') }}"
+                    data-owner="{{ item.owner_user.display_name or item.owner_user.login }}"
+                    data-type="{{ item.type }}"
+                    data-status="{{ item.status }}"
+                    data-priority="{{ item.priority }}"
+                    data-due="{{ item.due_date.strftime('%d %b %Y') if item.due_date else '' }}"
+                    data-gbs="{{ item.governance_bodies | map(attribute='name') | join(', ') }}"
+                    data-mentions="{{ item.mentions | map(attribute='mention_text') | join(', ') }}"
+                    data-delete-url="{{ url_for('action_items.delete', item_id=item.id) }}">
                     {% if is_admin %}
                     <td>
                         <input type="checkbox" class="item-checkbox" name="item_ids" value="{{ item.id }}" form="bulk-delete-form">
@@ -535,6 +597,7 @@
 </div>
 
 <script>
+// ── Live search ──────────────────────────────────────────────────────────────
 (function() {
     const searchInput = document.getElementById('action-search');
     if (!searchInput) return;
@@ -543,23 +606,326 @@
         const q = this.value.trim().toLowerCase();
         const rows = document.querySelectorAll('tbody tr[data-search]');
         let visible = 0;
-
         rows.forEach(row => {
             const match = !q || row.dataset.search.includes(q);
             row.style.display = match ? '' : 'none';
             if (match) visible++;
         });
-
         const emptyRow = document.getElementById('search-empty-row');
         if (emptyRow) emptyRow.style.display = (q && visible === 0) ? '' : 'none';
-
         const countEl = document.getElementById('items-count');
         if (countEl) countEl.textContent = visible;
     });
 
-    // Clear search on Escape
     searchInput.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') { this.value = ''; this.dispatchEvent(new Event('input')); }
+    });
+})();
+
+// ── Duplicate detection ──────────────────────────────────────────────────────
+(function() {
+    const STOP_WORDS = new Set(['a','an','the','and','or','to','for','of','in','with','by','on','at',
+        'from','is','it','be','as','up','do','we','all','this','that','are','was','has','had','but',
+        'not','its','our','can','will','into','out','if','they','have','should','their','my','your']);
+
+    const STATUS_RANK = { active: 4, draft: 3, completed: 2, cancelled: 1 };
+
+    function tokenize(text) {
+        return text.toLowerCase()
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .split(/\s+/)
+            .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+    }
+
+    function jaccard(a, b) {
+        const sa = new Set(a), sb = new Set(b);
+        if (!sa.size && !sb.size) return 0;
+        let inter = 0;
+        sa.forEach(w => { if (sb.has(w)) inter++; });
+        const union = new Set([...sa, ...sb]).size;
+        return union ? inter / union : 0;
+    }
+
+    function collectItems() {
+        const rows = document.querySelectorAll('tbody tr[data-item-id]');
+        return Array.from(rows).map(row => ({
+            id: row.dataset.itemId,
+            title: row.dataset.title || '',
+            description: row.dataset.description || '',
+            owner: row.dataset.owner || '',
+            type: row.dataset.type || '',
+            status: row.dataset.status || '',
+            priority: row.dataset.priority || '',
+            due: row.dataset.due || '',
+            gbs: row.dataset.gbs || '',
+            mentions: row.dataset.mentions || '',
+            titleTokens: tokenize(row.dataset.title || ''),
+            descTokens: tokenize(row.dataset.description || ''),
+            displayTitle: row.querySelector('td div[style*="font-weight"]')?.textContent?.trim() || row.dataset.title,
+        }));
+    }
+
+    // Score two items for similarity. Returns { score, reason } or null.
+    function similarity(a, b) {
+        // 1. Exact title
+        if (a.title === b.title) return { score: 1.0, reason: 'exact', label: 'Exact title match' };
+
+        // 2. Title Jaccard
+        const titleJ = jaccard(a.titleTokens, b.titleTokens);
+        if (titleJ >= 0.6) return { score: titleJ, reason: 'similar', label: `${Math.round(titleJ * 100)}% title word overlap` };
+
+        // 3. Strong prefix match (first 4+ shared tokens)
+        const minLen = Math.min(a.titleTokens.length, b.titleTokens.length);
+        if (minLen >= 3) {
+            let prefixMatch = 0;
+            for (let i = 0; i < minLen; i++) {
+                if (a.titleTokens[i] === b.titleTokens[i]) prefixMatch++;
+                else break;
+            }
+            if (prefixMatch >= 3) return { score: 0.7, reason: 'similar', label: `Starts with same ${prefixMatch} words` };
+        }
+
+        // 4. High description overlap + any title overlap
+        if (titleJ >= 0.25 && a.descTokens.length > 5 && b.descTokens.length > 5) {
+            const descJ = jaccard(a.descTokens, b.descTokens);
+            if (descJ >= 0.5) return { score: (titleJ + descJ) / 2, reason: 'similar', label: `Similar title & description (${Math.round(descJ * 100)}% desc overlap)` };
+        }
+
+        return null;
+    }
+
+    // Given a group, decide which to keep (best) and which to suggest deleting.
+    // Keep: highest status rank, then newest id (proxy for most recent).
+    function suggestKeep(group) {
+        return group.reduce((best, item) => {
+            const bRank = STATUS_RANK[best.status] ?? 0;
+            const iRank = STATUS_RANK[item.status] ?? 0;
+            if (iRank > bRank) return item;
+            if (iRank === bRank && parseInt(item.id) > parseInt(best.id)) return item;
+            return best;
+        });
+    }
+
+    // Build a diff table for a group: show which fields differ across items
+    function buildDiffTable(items) {
+        const fields = [
+            { key: 'status',   label: 'Status' },
+            { key: 'priority', label: 'Priority' },
+            { key: 'owner',    label: 'Owner' },
+            { key: 'due',      label: 'Due date' },
+            { key: 'type',     label: 'Type' },
+            { key: 'gbs',      label: 'Governance' },
+            { key: 'mentions', label: 'Links' },
+        ];
+        // Only show fields that differ
+        const diffFields = fields.filter(f => {
+            const vals = items.map(i => i[f.key] || '—');
+            return new Set(vals).size > 1;
+        });
+        if (!diffFields.length) return '<p style="font-size:0.78rem; color:#78909c; margin:0.25rem 0;">All fields are identical except the title.</p>';
+
+        let t = '<table style="font-size:0.78rem; width:100%; border-collapse:collapse; margin-top:0.4rem;">';
+        t += '<thead><tr><th style="text-align:left; padding:2px 6px; color:#78909c;">Field</th>';
+        items.forEach(item => {
+            t += `<th style="text-align:left; padding:2px 6px; max-width:160px; color:#455a64;">${item.displayTitle}</th>`;
+        });
+        t += '</tr></thead><tbody>';
+        diffFields.forEach(f => {
+            const vals = items.map(i => i[f.key] || '—');
+            t += `<tr style="border-top:1px solid #f0f0f0;">
+                <td style="padding:2px 6px; color:#78909c; white-space:nowrap;">${f.label}</td>`;
+            vals.forEach(v => {
+                t += `<td style="padding:2px 6px;">${v || '—'}</td>`;
+            });
+            t += '</tr>';
+        });
+        t += '</tbody></table>';
+        return t;
+    }
+
+    function buildPanel(groups) {
+        const body = document.getElementById('dup-panel-body');
+        const panel = document.getElementById('dup-panel');
+        const titleEl = document.getElementById('dup-panel-title');
+        const total = groups.reduce((n, g) => n + g.items.length, 0);
+
+        titleEl.textContent = `${groups.length} group${groups.length > 1 ? 's' : ''} of potential duplicates (${total} items)`;
+
+        let html = '';
+        groups.forEach((group, gi) => {
+            const keep = suggestKeep(group.items);
+            html += `<div class="dup-group">
+                <div class="dup-reason ${group.reason}">${group.label}</div>
+                <div class="d-flex flex-wrap align-items-center gap-1 mb-2">`;
+
+            group.items.forEach(item => {
+                const isKeep = item.id === keep.id;
+                html += `<span class="dup-item-link" onclick="scrollToItem('${item.id}')">
+                    ${isKeep ? '<i class="bi bi-star-fill text-warning" title="Suggested to keep"></i>' : ''}
+                    <span>${item.displayTitle}</span>
+                    <small class="text-muted">(${item.status})</small>
+                </span>`;
+            });
+
+            // Differences table (toggled via button)
+            const diffId = `dup-diff-${gi}`;
+            html += `</div>
+                <button type="button" class="btn btn-link btn-sm p-0 mb-1"
+                        style="font-size:0.78rem; color:#546e7a; text-decoration:none;"
+                        onclick="toggleDiff('${diffId}', this)">
+                    <i class="bi bi-chevron-right me-1" style="font-size:0.7rem; transition:transform 0.15s;"></i>Show differences
+                </button>
+                <div id="${diffId}" style="display:none; margin-bottom:0.5rem;">
+                    ${buildDiffTable(group.items)}
+                </div>`;
+
+            html += `<div class="d-flex flex-wrap gap-1 align-items-center">
+                <span style="font-size:0.75rem; color:#78909c; me-1">Delete:</span>`;
+
+            group.items.forEach(item => {
+                const isKeep = item.id === keep.id;
+                html += `<label class="d-inline-flex align-items-center gap-1" style="font-size:0.82rem; cursor:pointer;">
+                    <input type="checkbox" class="dup-delete-cb" value="${item.id}"
+                           ${isKeep ? '' : 'checked'}
+                           style="width:14px;height:14px;">
+                    <span>${item.displayTitle}</span>
+                    ${isKeep ? '<span class="badge" style="background:#e8f5e9;color:#2e7d32;font-size:0.65rem;">keep</span>' : ''}
+                </label>`;
+            });
+
+            html += `</div></div>`;
+        });
+
+        html += `<div class="px-3 pb-3 pt-1 d-flex gap-2">
+            <button type="button" onclick="deleteDupSelected()" class="btn btn-sm btn-danger">
+                <i class="bi bi-trash me-1"></i> Delete Selected Duplicates
+            </button>
+            <button type="button" onclick="closeDupPanel()" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x me-1"></i> Dismiss
+            </button>
+        </div>`;
+
+        body.innerHTML = html;
+        panel.style.display = '';
+    }
+
+    window.findDuplicates = function() {
+        const items = collectItems();
+        if (items.length < 2) { alert('Not enough items to compare.'); return; }
+
+        const visited = new Set();
+        const groups = [];
+
+        for (let i = 0; i < items.length; i++) {
+            if (visited.has(items[i].id)) continue;
+            const group = [items[i]];
+
+            for (let j = i + 1; j < items.length; j++) {
+                if (visited.has(items[j].id)) continue;
+                const sim = similarity(items[i], items[j]);
+                if (sim) {
+                    group.push(items[j]);
+                    visited.add(items[j].id);
+                    // Use the highest-confidence reason/label
+                    if (!group._sim || sim.score > group._sim.score) {
+                        group._sim = sim;
+                    }
+                }
+            }
+
+            if (group.length > 1) {
+                visited.add(items[i].id);
+                groups.push({
+                    items: group,
+                    reason: group._sim?.reason || 'similar',
+                    label: group._sim?.label || 'Similar items',
+                });
+            }
+        }
+
+        if (groups.length === 0) {
+            // No duplicates — show brief message
+            const panel = document.getElementById('dup-panel');
+            const body = document.getElementById('dup-panel-body');
+            const titleEl = document.getElementById('dup-panel-title');
+            titleEl.textContent = 'No duplicates found';
+            document.querySelector('#dup-panel .dup-header').style.background = 'linear-gradient(135deg,#2e7d32,#1b5e20)';
+            body.innerHTML = '<p class="px-3 py-2 mb-0" style="font-size:0.85rem; color:#37474f;"><i class="bi bi-check-circle text-success me-2"></i>All items look unique — no duplicates detected.</p><div class="px-3 pb-2"><button type="button" onclick="closeDupPanel()" class="btn btn-sm btn-outline-secondary">Dismiss</button></div>';
+            panel.style.display = '';
+            return;
+        }
+
+        buildPanel(groups);
+        document.getElementById('dup-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    window.scrollToItem = function(id) {
+        // Clear previous highlights
+        document.querySelectorAll('.row-dup-highlight').forEach(r => r.classList.remove('row-dup-highlight'));
+        const row = document.getElementById('item-' + id);
+        if (!row) return;
+        row.classList.add('row-dup-highlight');
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(() => row.classList.remove('row-dup-highlight'), 3000);
+    };
+
+    window.toggleDupPanel = function() {
+        const body = document.getElementById('dup-panel-body');
+        const chevron = document.getElementById('dup-panel-chevron');
+        const hidden = body.style.display === 'none';
+        body.style.display = hidden ? '' : 'none';
+        chevron.innerHTML = hidden ? '<i class="bi bi-chevron-up"></i>' : '<i class="bi bi-chevron-down"></i>';
+    };
+
+    window.toggleDiff = function(id, btn) {
+        const el = document.getElementById(id);
+        const icon = btn.querySelector('i');
+        const hidden = el.style.display === 'none';
+        el.style.display = hidden ? '' : 'none';
+        icon.style.transform = hidden ? 'rotate(90deg)' : '';
+        btn.childNodes[1].textContent = hidden ? 'Hide differences' : 'Show differences';
+    };
+
+    window.closeDupPanel = function() {
+        const panel = document.getElementById('dup-panel');
+        panel.style.display = 'none';
+        // Reset header color in case it was green
+        document.querySelector('#dup-panel .dup-header').style.background = '';
+    };
+
+    window.deleteDupSelected = function() {
+        const checked = document.querySelectorAll('.dup-delete-cb:checked');
+        if (!checked.length) { alert('No items selected for deletion.'); return; }
+        const titles = Array.from(checked).map(cb => {
+            const row = document.getElementById('item-' + cb.value);
+            return row?.querySelector('td div[style*="font-weight"]')?.textContent?.trim() || cb.value;
+        });
+        if (!confirm(`Delete ${checked.length} item(s)?\n\n${titles.map(t => '• ' + t).join('\n')}`)) return;
+
+        // Submit individual delete forms sequentially via fetch
+        const csrfToken = document.querySelector('input[name=csrf_token]')?.value;
+        const ids = Array.from(checked).map(cb => cb.value);
+
+        Promise.all(ids.map(id => {
+            const row = document.getElementById('item-' + id);
+            const url = row?.dataset.deleteUrl || `/toolbox/actions/${id}/delete`;
+            return fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `csrf_token=${encodeURIComponent(csrfToken)}`,
+            });
+        })).then(() => {
+            window.location.reload();
+        }).catch(err => {
+            console.error('Delete failed:', err);
+            window.location.reload();
+        });
+    };
+
+    // Wire up the button
+    document.addEventListener('DOMContentLoaded', function() {
+        const btn = document.getElementById('dup-detect-btn');
+        if (btn) btn.addEventListener('click', findDuplicates);
     });
 })();
 </script>

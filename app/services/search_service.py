@@ -65,6 +65,9 @@ class SearchService:
         if filters is None:
             filters = {}
 
+        # Propagate exact-match mode into parsed so search methods can use it
+        parsed["exact_mode"] = filters.get("exact", False)
+
         # For @requires_action, only search entity types with action items
         modifiers = parsed["modifiers"]
         if "requires_action" in modifiers:
@@ -185,7 +188,7 @@ class SearchService:
         return result
 
     @staticmethod
-    def fuzzy_match(text, query, threshold=None):
+    def fuzzy_match(text, query, threshold=None, exact=False):
         """
         Perform fuzzy string matching using Levenshtein distance.
 
@@ -193,6 +196,7 @@ class SearchService:
             text (str): Text to search in
             query (str): Query to match
             threshold (float): Similarity threshold (0.0-1.0)
+            exact (bool): If True, only match if query is a substring (no fuzzy)
 
         Returns:
             bool: True if match exceeds threshold
@@ -210,6 +214,10 @@ class SearchService:
         # Exact substring match always passes
         if query in text:
             return True
+
+        # In exact mode, stop here — no fuzzy fallback
+        if exact:
+            return False
 
         # Check if query matches any individual word (for multi-word text)
         # This allows "inventroy" to match "Inventory turns improvement"
@@ -239,6 +247,7 @@ class SearchService:
         """
         query = parsed["clean_query"]
         modifiers = parsed["modifiers"]
+        exact = parsed.get("exact_mode", False)
 
         # Base query - join through the relationship chain
         base_query = (
@@ -279,17 +288,17 @@ class SearchService:
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
                 # Check name
-                if SearchService.fuzzy_match(kpi.name, query):
+                if SearchService.fuzzy_match(kpi.name, query, exact=exact):
                     match_score += 2
 
                 # Check description
-                if kpi.description and SearchService.fuzzy_match(kpi.description, query):
+                if kpi.description and SearchService.fuzzy_match(kpi.description, query, exact=exact):
                     match_score += 1
 
                 # Check system name
                 if kpi.initiative_system_link and kpi.initiative_system_link.system:
                     system_name = kpi.initiative_system_link.system.name
-                    if SearchService.fuzzy_match(system_name, query):
+                    if SearchService.fuzzy_match(system_name, query, exact=exact):
                         match_score += 1
 
                 # Skip if no fuzzy match
@@ -340,6 +349,7 @@ class SearchService:
         """
         query = parsed["clean_query"]
         modifiers = parsed["modifiers"]
+        exact = parsed.get("exact_mode", False)
 
         # For @missing_kpis or @requires_action, use Action Items page logic
         if "missing_kpis" in modifiers or "requires_action" in modifiers:
@@ -372,10 +382,10 @@ class SearchService:
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
-                if SearchService.fuzzy_match(system.name, query):
+                if SearchService.fuzzy_match(system.name, query, exact=exact):
                     match_score += 2
 
-                if system.description and SearchService.fuzzy_match(system.description, query):
+                if system.description and SearchService.fuzzy_match(system.description, query, exact=exact):
                     match_score += 1
 
                 # Skip if no fuzzy match
@@ -413,6 +423,7 @@ class SearchService:
         """
         query = parsed["clean_query"]
         modifiers = parsed["modifiers"]
+        exact = parsed.get("exact_mode", False)
 
         # Base query - get ALL initiatives first
         all_initiatives = db.session.query(Initiative).filter(Initiative.organization_id == organization_id).all()
@@ -446,10 +457,10 @@ class SearchService:
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
-                if SearchService.fuzzy_match(initiative.name, query):
+                if SearchService.fuzzy_match(initiative.name, query, exact=exact):
                     match_score += 2
 
-                if initiative.description and SearchService.fuzzy_match(initiative.description, query):
+                if initiative.description and SearchService.fuzzy_match(initiative.description, query, exact=exact):
                     match_score += 1
 
                 # Skip if no fuzzy match
@@ -494,6 +505,7 @@ class SearchService:
             list: Matching Challenge records
         """
         query = parsed["clean_query"]
+        exact = parsed.get("exact_mode", False)
 
         # Get all challenges for organization
         # Note: Challenge model doesn't have is_archived field
@@ -507,10 +519,10 @@ class SearchService:
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
-                if SearchService.fuzzy_match(challenge.name, query):
+                if SearchService.fuzzy_match(challenge.name, query, exact=exact):
                     match_score += 2
 
-                if challenge.description and SearchService.fuzzy_match(challenge.description, query):
+                if challenge.description and SearchService.fuzzy_match(challenge.description, query, exact=exact):
                     match_score += 1
 
                 # Skip if no fuzzy match
@@ -549,6 +561,7 @@ class SearchService:
         """
         query = parsed["clean_query"]
         modifiers = parsed["modifiers"]
+        exact = parsed.get("exact_mode", False)
 
         # Get all spaces for organization
         # Note: Space model doesn't have is_archived field
@@ -566,10 +579,10 @@ class SearchService:
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
-                if SearchService.fuzzy_match(space.name, query):
+                if SearchService.fuzzy_match(space.name, query, exact=exact):
                     match_score += 2
 
-                if space.description and SearchService.fuzzy_match(space.description, query):
+                if space.description and SearchService.fuzzy_match(space.description, query, exact=exact):
                     match_score += 1
 
                 # Skip if no fuzzy match
@@ -615,6 +628,7 @@ class SearchService:
         from app.models import ValueType
 
         query = parsed["clean_query"]
+        exact = parsed.get("exact_mode", False)
 
         # Get all value types for organization
         all_value_types = db.session.query(ValueType).filter(ValueType.organization_id == organization_id).all()
@@ -625,10 +639,10 @@ class SearchService:
             # Fuzzy match logic
             match_score = 0
             if query:  # If there's a text query, check fuzzy match
-                if SearchService.fuzzy_match(value_type.name, query):
+                if SearchService.fuzzy_match(value_type.name, query, exact=exact):
                     match_score += 2
 
-                if value_type.unit_label and SearchService.fuzzy_match(value_type.unit_label, query):
+                if value_type.unit_label and SearchService.fuzzy_match(value_type.unit_label, query, exact=exact):
                     match_score += 1
 
                 # Skip if no fuzzy match
@@ -668,6 +682,7 @@ class SearchService:
         from app.models import CellComment, Initiative, KPIValueTypeConfig
 
         query = parsed["clean_query"]
+        exact = parsed.get("exact_mode", False)
 
         # Only search if there's actual query text (comments need context)
         if not query or len(query) < 3:
@@ -690,7 +705,7 @@ class SearchService:
         for comment in all_comments:
             # Fuzzy match on comment text
             match_score = 0
-            if SearchService.fuzzy_match(comment.comment_text, query):
+            if SearchService.fuzzy_match(comment.comment_text, query, exact=exact):
                 match_score += 1
 
             if match_score > 0:

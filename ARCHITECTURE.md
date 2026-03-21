@@ -38,7 +38,13 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
-### v2.17.7 Recent Changes (March 2026)
+### v2.20.1 Recent Changes (March 2026)
+
+1. **Action Register — Duplicate Detection** — "Find Duplicates" button scans all visible items using Jaccard title similarity, exact match, prefix match, and combined title+description similarity; groups results with a differences table (status, priority, owner, due date, governance bodies, links — only differing fields shown), smart pre-selection for deletion, and a Show/Hide differences toggle
+2. **Global Search — Exact Match** — Checkbox toggle on the search page disables Levenshtein fuzzy matching and restricts results to substring matches only; badge shown in results when active
+3. **Backup Format v3.0** — Action items and memos now included in full backup/restore (owner matched by login, governance body links by name, entity mentions resolved by entity name)
+
+### v2.17.7 Previous Changes (March 2026)
 
 1. **Workspace Collapse/Expand Fixed** — Alpine.js reactivity issue in nested `x-for` loops fixed; collapse at any level (space/challenge/initiative/system) now immediately hides all descendants; collapse state preserved across background data reloads
 2. **System Edit Link** — Workspace pencil icon on systems navigates to `edit_system` page; `edit_url` added to system data in `get_data` API response
