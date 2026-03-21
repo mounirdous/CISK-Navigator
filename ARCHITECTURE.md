@@ -52,7 +52,7 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 1. **Generate Actions from Deliverables & Steps** — Initiative form lightning button parses deliverable rows and success criteria rows into action items with smart date parsing, dedup detection, and bulk creation
 2. **List Value Type** — New "list" kind for choice-based KPIs (Yes/No, status, categories) with per-option colors and Mode aggregation
 3. **Initiative Form Redesign** — Dynamic font sizing, left-aligned content, tight padding, branding icons for system/KPI entries
-4. **Backup/Restore Completeness** — Initiative form fields and Porter's Five Forces now included in full backup/restore
+4. **Backup/Restore Completeness** — Initiative form fields, Porter's Five Forces, and Action Items/Memos now included in full backup/restore (backup format v3.0)
 5. **Aggregation Formula Consistency** — `ValueType.get_valid_formulas()` used across all 3 formula-selection surfaces
 6. **Test Suite Runner** — Celery + Redis async test execution from Health Dashboard (v2.14.0)
 7. **Demo Data Generator** — Three pre-built demo organizations for testing (v2.11.0)

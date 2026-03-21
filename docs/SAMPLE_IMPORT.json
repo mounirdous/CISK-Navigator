@@ -297,5 +297,86 @@
         }
       ]
     }
+  ],
+
+  "action_items": [
+    {
+      "_comment": "Action with due date, governance body, and entity mention",
+      "type": "action",
+      "title": "Complete IT landscape inventory",
+      "description": "Document all systems in @Excel Tracker before the end of Q1.",
+      "status": "active",
+      "priority": "high",
+      "due_date": "2026-06-30",
+      "completed_at": null,
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "system",
+          "entity_name": "Excel Tracker",
+          "mention_text": "@Excel Tracker"
+        }
+      ]
+    },
+    {
+      "_comment": "Completed action with governance body link",
+      "type": "action",
+      "title": "Schedule kick-off with all department heads",
+      "description": "Listening tour kick-off — coordinate with governance.",
+      "status": "completed",
+      "priority": "urgent",
+      "due_date": "2026-04-15",
+      "completed_at": "2026-04-10T09:30:00",
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": []
+    },
+    {
+      "_comment": "Memo — no due date, no priority enforcement",
+      "type": "memo",
+      "title": "CIO onboarding notes — Week 1",
+      "description": "Key observations from the listening tour: infrastructure team is understaffed, Jira backlog exceeds 400 tickets.",
+      "status": "active",
+      "priority": "medium",
+      "due_date": null,
+      "completed_at": null,
+      "visibility": "private",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "system",
+          "entity_name": "Jira",
+          "mention_text": "@Jira"
+        }
+      ]
+    },
+    {
+      "_comment": "Low-priority action linked to an initiative",
+      "type": "action",
+      "title": "Publish weekly CIO comms template",
+      "description": "Create standard template for @Weekly CIO Comms updates.",
+      "status": "draft",
+      "priority": "low",
+      "due_date": "2026-05-01",
+      "completed_at": null,
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "initiative",
+          "entity_name": "Weekly CIO Comms",
+          "mention_text": "@Weekly CIO Comms"
+        }
+      ]
+    }
   ]
 }

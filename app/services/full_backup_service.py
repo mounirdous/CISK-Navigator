@@ -4,7 +4,7 @@ Full Backup/Restore Service
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
 
-BACKUP FORMAT VERSION: 2.0 (Updated 2026-03-17)
+BACKUP FORMAT VERSION: 3.0 (Updated 2026-03-21)
 
 What's backed up:
 ================
@@ -36,6 +36,10 @@ What's backed up:
 ✅ Stakeholder Maps (v2.0+):
    - Named maps with memberships
    - Visibility settings
+✅ Action Items & Memos (v3.0+):
+   - All action items and memos
+   - Governance body links
+   - Entity mentions (by name, resolved on restore)
 
 What's NOT backed up (must exist in target):
 ===========================================
@@ -47,6 +51,7 @@ Version Compatibility:
 =====================
 - Backup format v1.0: Original release (before stakeholders, formulas, linked KPIs)
 - Backup format v2.0: Added stakeholders, maps, formulas, linked KPIs
+- Backup format v3.0: Added action items and memos
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -85,7 +90,7 @@ class FullBackupService:
 
         backup = {
             "metadata": {
-                "backup_format_version": "2.0",  # Backup format version
+                "backup_format_version": "3.0",  # Backup format version
                 "app_version": app_version,  # CISK Navigator version
                 "db_schema_version": DB_SCHEMA_VERSION,  # Database schema version
                 "created_at": datetime.utcnow().isoformat(),
@@ -103,6 +108,7 @@ class FullBackupService:
             "stakeholders": FullBackupService._export_stakeholders(organization_id),
             "stakeholder_maps": FullBackupService._export_stakeholder_maps(organization_id),
             "geography_references": FullBackupService._export_geography_references(organization_id),
+            "action_items": FullBackupService._export_action_items(organization_id),
         }
 
         return backup
@@ -617,6 +623,59 @@ class FullBackupService:
                     "note": "This is a reference only. Geography data must exist in target instance.",
                 }
             )
+
+        return result
+
+    @staticmethod
+    def _export_action_items(organization_id):
+        """Export all action items and memos with governance bodies and entity mentions"""
+        from app.models import (
+            ActionItem,
+            Challenge,
+            Initiative,
+            KPI,
+            Space,
+            System,
+        )
+
+        items = ActionItem.query.filter_by(organization_id=organization_id).order_by(ActionItem.created_at).all()
+
+        result = []
+        for item in items:
+            item_data = {
+                "type": item.type,
+                "title": item.title,
+                "description": item.description,
+                "status": item.status,
+                "priority": item.priority,
+                "due_date": item.due_date.isoformat() if item.due_date else None,
+                "completed_at": item.completed_at.isoformat() if item.completed_at else None,
+                "visibility": item.visibility,
+                "owner_login": item.owner_user.login if item.owner_user else None,
+                "created_by_login": item.created_by_user.login if item.created_by_user else None,
+                "created_at": item.created_at.isoformat(),
+                "governance_bodies": [gb.name for gb in item.governance_bodies],
+                "mentions": [],
+            }
+
+            # Export mentions with entity names (IDs are not portable)
+            entity_models = {
+                "space": Space,
+                "challenge": Challenge,
+                "initiative": Initiative,
+                "system": System,
+                "kpi": KPI,
+            }
+            for mention in item.mentions:
+                model = entity_models.get(mention.entity_type)
+                entity = model.query.get(mention.entity_id) if model else None
+                item_data["mentions"].append({
+                    "entity_type": mention.entity_type,
+                    "entity_name": entity.name if entity else None,
+                    "mention_text": mention.mention_text,
+                })
+
+            result.append(item_data)
 
         return result
 

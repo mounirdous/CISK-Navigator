@@ -1,7 +1,7 @@
 """
-Full Restore Service - v2.0
+Full Restore Service - v3.0
 
-Restores complete organization from JSON backup format v2.0.
+Restores complete organization from JSON backup format v3.0.
 
 Features:
 =========
@@ -18,6 +18,10 @@ Features:
 ✅ **Stakeholder Relationships** (reports_to, influences, etc.)
 ✅ **Stakeholder Entity Links** (stakeholder → CISK entities)
 ✅ **Stakeholder Maps** with memberships
+✅ **Action Items & Memos** (v3.0+):
+   - All action items and memos restored
+   - Governance body links restored
+   - Entity mentions resolved by name (warnings if not found)
 
 Important Notes:
 ================
@@ -26,6 +30,7 @@ Important Notes:
 - Linked KPIs are flagged but not automatically linked (manual step required)
 - Users can be mapped to existing accounts or created new
 - All logos are base64 encoded in backup and restored as binary data
+- Action item owners are matched by login; items skipped if owner not found
 """
 
 import json
@@ -34,6 +39,8 @@ from datetime import datetime
 from app.extensions import db
 from app.models import (
     KPI,
+    ActionItem,
+    ActionItemMention,
     Challenge,
     ChallengeInitiativeLink,
     Contribution,
@@ -116,6 +123,7 @@ class FullRestoreService:
             "stakeholder_relationships": 0,
             "stakeholder_maps": 0,
             "stakeholder_entity_links": 0,
+            "action_items": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
@@ -351,6 +359,11 @@ class FullRestoreService:
             map_stats = FullRestoreService._restore_stakeholder_maps(backup, organization_id, user_map)
             stats["stakeholder_maps"] += map_stats.get("maps", 0)
             stats["warnings"].extend(map_stats.get("warnings", []))
+
+            # Step 6: Restore Action Items and Memos
+            ai_stats = FullRestoreService._restore_action_items(backup, organization_id, user_map, governance_body_map)
+            stats["action_items"] += ai_stats.get("action_items", 0)
+            stats["warnings"].extend(ai_stats.get("warnings", []))
 
             db.session.commit()
             stats["success"] = True
@@ -843,6 +856,116 @@ class FullRestoreService:
                     )
 
         db.session.flush()
+        return stats
+
+    @staticmethod
+    def _restore_action_items(backup, organization_id, user_map, governance_body_map):
+        """Restore action items and memos with governance body links and entity mentions"""
+        from app.models import User
+
+        stats = {"action_items": 0, "warnings": []}
+
+        # Build entity name→id lookup maps for mention resolution
+        entity_lookup = {
+            "space": {s.name: s.id for s in Space.query.filter_by(organization_id=organization_id).all()},
+            "challenge": {c.name: c.id for c in Challenge.query.filter_by(organization_id=organization_id).all()},
+            "initiative": {i.name: i.id for i in Initiative.query.filter_by(organization_id=organization_id).all()},
+            "system": {s.name: s.id for s in System.query.filter_by(organization_id=organization_id).all()},
+            "kpi": {
+                k.name: k.id
+                for k in KPI.query.join(KPI.initiative_system_link)
+                .join(InitiativeSystemLink.initiative)
+                .filter(Initiative.organization_id == organization_id)
+                .all()
+            },
+        }
+
+        for item_data in backup.get("action_items", []):
+            try:
+                # Resolve owner by login
+                owner_login = item_data.get("owner_login")
+                owner_user = user_map.get(owner_login) if owner_login else None
+                if not owner_user and owner_login:
+                    owner_user = User.query.filter_by(login=owner_login).first()
+                if not owner_user:
+                    stats["warnings"].append(
+                        f"Action item '{item_data.get('title')}': owner '{owner_login}' not found, skipped."
+                    )
+                    continue
+
+                # Resolve optional created_by
+                created_by_login = item_data.get("created_by_login")
+                created_by_user = user_map.get(created_by_login) if created_by_login else None
+                if not created_by_user and created_by_login:
+                    created_by_user = User.query.filter_by(login=created_by_login).first()
+
+                # Parse dates
+                due_date = None
+                if item_data.get("due_date"):
+                    try:
+                        due_date = datetime.strptime(item_data["due_date"], "%Y-%m-%d").date()
+                    except ValueError:
+                        pass
+
+                completed_at = None
+                if item_data.get("completed_at"):
+                    try:
+                        completed_at = datetime.fromisoformat(item_data["completed_at"])
+                    except ValueError:
+                        pass
+
+                action_item = ActionItem(
+                    organization_id=organization_id,
+                    owner_user_id=owner_user.id,
+                    created_by_user_id=created_by_user.id if created_by_user else owner_user.id,
+                    type=item_data.get("type", "action"),
+                    title=item_data["title"],
+                    description=item_data.get("description"),
+                    status=item_data.get("status", "active"),
+                    priority=item_data.get("priority", "medium"),
+                    due_date=due_date,
+                    completed_at=completed_at,
+                    visibility=item_data.get("visibility", "shared"),
+                )
+                db.session.add(action_item)
+                db.session.flush()
+
+                # Restore governance body links
+                for gb_name in item_data.get("governance_bodies", []):
+                    gb = governance_body_map.get(gb_name)
+                    if gb:
+                        action_item.governance_bodies.append(gb)
+                    else:
+                        stats["warnings"].append(
+                            f"Action item '{item_data['title']}': governance body '{gb_name}' not mapped (skipped)"
+                        )
+
+                # Restore entity mentions
+                for mention_data in item_data.get("mentions", []):
+                    entity_type = mention_data.get("entity_type")
+                    entity_name = mention_data.get("entity_name")
+                    if not entity_type or not entity_name:
+                        continue
+                    entity_id = entity_lookup.get(entity_type, {}).get(entity_name)
+                    if not entity_id:
+                        stats["warnings"].append(
+                            f"Action item '{item_data['title']}': mention '{entity_name}' ({entity_type}) not found (skipped)"
+                        )
+                        continue
+                    mention = ActionItemMention(
+                        action_item_id=action_item.id,
+                        entity_type=entity_type,
+                        entity_id=entity_id,
+                        mention_text=mention_data.get("mention_text", f"@{entity_name}"),
+                    )
+                    db.session.add(mention)
+
+                db.session.flush()
+                stats["action_items"] += 1
+
+            except Exception as e:
+                stats["warnings"].append(f"Failed to restore action item '{item_data.get('title')}': {str(e)}")
+
         return stats
 
     @staticmethod

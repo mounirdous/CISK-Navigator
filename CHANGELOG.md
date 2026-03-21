@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.19.0] - 2026-03-21
+
+### Added
+- Full backup now includes all action items and memos (type, title, description, status, priority, due date, owner, visibility, governance body links, entity mentions)
+- Full restore now restores action items and memos — owner matched by login, governance bodies by name, entity mentions resolved by entity name (warnings issued for unresolvable mentions)
+- Backup format bumped to v3.0
+- Unit tests for backup/restore of action items covering all cases: export, restore, owner not found, GB links, mention resolution, orphaned mentions
+- Sample JSON (`docs/SAMPLE_IMPORT.json`) updated with action items examples illustrating all types, priorities, and mention patterns
+
 ## [2.18.0] - 2026-03-21
 
 ### Added
