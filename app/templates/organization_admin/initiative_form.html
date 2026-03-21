@@ -792,8 +792,8 @@ const CSRF_TOKEN = "{{ csrf_token() }}";
 const CHECK_TITLES_URL = "{{ url_for('organization_admin.check_action_titles', initiative_id=initiative.id) }}";
 const GENERATE_URL = "{{ url_for('organization_admin.generate_actions', initiative_id=initiative.id) }}";
 const ORG_USERS = [
-    {% for membership in initiative.organization.memberships if membership.user.is_active %}
-    { id: {{ membership.user.id }}, name: "{{ membership.user.display_name or membership.user.login }}" },
+    {% for user in org_users %}
+    { id: {{ user.id }}, name: {{ (user.display_name or user.login) | tojson }} },
     {% endfor %}
 ];
 const CURRENT_USER_ID = {{ current_user.id }};

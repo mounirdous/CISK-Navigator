@@ -3614,6 +3614,16 @@ def initiative_form(initiative_id):
     # Get entity links for this initiative
     entity_links = EntityLink.get_links_for_entity("initiative", initiative.id, current_user.id, include_private=True)
 
+    # Get org users for action generation owner dropdown
+    from app.models import User, UserOrganizationMembership
+    org_users = (
+        db.session.query(User)
+        .join(UserOrganizationMembership, UserOrganizationMembership.user_id == User.id)
+        .filter(UserOrganizationMembership.organization_id == org_id, User.is_active.is_(True))
+        .order_by(User.display_name)
+        .all()
+    )
+
     return render_template(
         "organization_admin/initiative_form.html",
         initiative=initiative,
@@ -3623,6 +3633,7 @@ def initiative_form(initiative_id):
         edit_mode=edit_mode,
         entity_defaults=entity_defaults,
         entity_links=entity_links,
+        org_users=org_users,
     )
 
 
