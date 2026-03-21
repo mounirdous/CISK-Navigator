@@ -431,7 +431,14 @@ body.dark-mode .card.border-primary {
                             {% if value_type.is_numeric() %}
                                 <div class="mb-3">
                                     {{ form.numeric_value.label(class="form-label") }}
+                                    {% if value_type.unit_label %}
+                                    <div class="input-group">
+                                        {{ form.numeric_value(class="form-control", id="numeric_value") }}
+                                        <span class="input-group-text">{{ value_type.unit_label }}</span>
+                                    </div>
+                                    {% else %}
                                     {{ form.numeric_value(class="form-control", id="numeric_value") }}
+                                    {% endif %}
                                 </div>
                             {% elif value_type.is_list() %}
                                 <div class="mb-3">
