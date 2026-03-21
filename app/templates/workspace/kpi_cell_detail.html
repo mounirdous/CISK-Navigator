@@ -627,7 +627,7 @@ body.dark-mode .card.border-primary {
                                 <td>
                                     <button class="btn btn-sm btn-outline-primary edit-contrib"
                                             data-name="{{ contrib.contributor_name }}"
-                                            data-value="{{ contrib.numeric_value if contrib.numeric_value is not none else (contrib.list_value if contrib.list_value is not none else contrib.qualitative_level) }}"
+                                            data-value="{{ contrib.numeric_value | format_value(value_type) if contrib.numeric_value is not none else (contrib.list_value if contrib.list_value is not none else contrib.qualitative_level) }}"
                                             data-comment="{{ contrib.comment or '' }}"
                                             data-is-numeric="{{ '1' if contrib.numeric_value is not none else '0' }}"
                                             data-is-list="{{ '1' if contrib.list_value is not none else '0' }}">
