@@ -3418,28 +3418,50 @@ function workspaceV2(orgId, filterPresets) {
                 const response = await fetch('{{ url_for("workspace.get_data") }}');
                 const data = await response.json();
 
-                // Add UI state to all entities
+                // Build lookup maps of existing collapsed state to preserve across reloads
+                const spaceCollapsed = {};
+                const challengeCollapsed = {};
+                const initiativeCollapsed = {};
+                const systemCollapsed = {};
+                const vtCollapsed = {};
+                for (const s of (this.spaces || [])) {
+                    spaceCollapsed[s.id] = s.collapsed;
+                    for (const c of (s.challenges || [])) {
+                        challengeCollapsed[c.id] = c.collapsed;
+                        for (const i of (c.initiatives || [])) {
+                            initiativeCollapsed[i.id] = i.collapsed;
+                            for (const sys of (i.systems || [])) {
+                                systemCollapsed[sys.id] = sys.collapsed;
+                            }
+                        }
+                    }
+                }
+                for (const vt of (this.valueTypes || [])) {
+                    vtCollapsed[vt.id] = vt.collapsed;
+                }
+
+                // Add UI state to all entities, preserving existing collapsed state
                 this.spaces = data.spaces.map(space => ({
                     ...space,
-                    collapsed: false,
+                    collapsed: spaceCollapsed[space.id] ?? false,
                     challenges: space.challenges.map(challenge => ({
                         ...challenge,
-                        collapsed: false,
+                        collapsed: challengeCollapsed[challenge.id] ?? false,
                         initiatives: challenge.initiatives.map(initiative => ({
                             ...initiative,
-                            collapsed: false,
+                            collapsed: initiativeCollapsed[initiative.id] ?? false,
                             systems: initiative.systems.map(system => ({
                                 ...system,
-                                collapsed: false
+                                collapsed: systemCollapsed[system.id] ?? false
                             }))
                         }))
                     }))
                 }));
 
-                // Add collapsed state to value types
+                // Add collapsed state to value types, preserving existing
                 this.valueTypes = data.valueTypes.map(vt => ({
                     ...vt,
-                    collapsed: false
+                    collapsed: vtCollapsed[vt.id] ?? false
                 }));
 
                 // Initialize visibleValueTypeIds if empty (first load or no filter applied)
