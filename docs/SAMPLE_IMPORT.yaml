@@ -1,0 +1,249 @@
+# CISK Navigator — Sample Import File
+# =====================================================================
+# This file illustrates ALL possible fields accepted by the YAML importer.
+# Import via: Org Admin → Settings → Import Structure (YAML)
+#
+# Format: YAML (JSON is also valid since YAML is a superset of JSON)
+# Rules:
+#   - IDs (S1, C1, I1, SYS1) are local references used for cross-linking only
+#   - An initiative or system with the same ID can appear in multiple places —
+#     it will be created once and linked to all of them
+#   - value_types must be defined before spaces (they are referenced by name)
+#   - Unknown fields are ignored
+# =====================================================================
+
+
+# ─────────────────────────────────────────────────────────────────────
+# VALUE TYPES
+# Define all measurement dimensions first. KPIs reference them by name.
+# ─────────────────────────────────────────────────────────────────────
+value_types:
+
+  # Numeric — integer, no unit
+  - name: "Score"
+    kind: numeric
+    numeric_format: integer        # "integer" or "decimal"
+    decimal_places: 0              # digits after decimal point
+    default_aggregation_formula: avg  # sum | avg | min | max | median | count
+
+  # Numeric — decimal with unit label
+  - name: "Revenue"
+    kind: numeric
+    numeric_format: decimal
+    decimal_places: 1
+    unit_label: "M€"               # shown as suffix on values (e.g. "12.3 M€")
+    default_aggregation_formula: sum
+
+  # Numeric — percentage
+  - name: "Completion %"
+    kind: numeric
+    numeric_format: integer
+    decimal_places: 0
+    unit_label: "%"
+    default_aggregation_formula: avg
+
+  # Numeric — days
+  - name: "Lead Time"
+    kind: numeric
+    numeric_format: integer
+    decimal_places: 0
+    unit_label: "days"
+    default_aggregation_formula: avg
+
+  # Sentiment — 3-level qualitative (Negative / Neutral / Positive)
+  - name: "Team Morale"
+    kind: sentiment
+    default_aggregation_formula: avg   # avg | min | max
+
+  # Risk — 3-level qualitative (Low / Medium / High)
+  - name: "Risk Level"
+    kind: risk
+    default_aggregation_formula: max
+
+  # Positive Impact — 3-level qualitative (Low / Medium / High positive)
+  - name: "Strategic Impact"
+    kind: positive_impact
+    default_aggregation_formula: max
+
+  # List — choice-based (Yes/No, status, categories)
+  - name: "Status"
+    kind: list
+    default_aggregation_formula: mode  # mode is the only meaningful formula for lists
+    list_options:                       # each option: name + display color
+      - name: "On Track"
+        color: "#28a745"
+      - name: "At Risk"
+        color: "#ffc107"
+      - name: "Blocked"
+        color: "#dc3545"
+      - name: "Done"
+        color: "#17a2b8"
+
+
+# ─────────────────────────────────────────────────────────────────────
+# SPACES
+# Top-level containers. Each has challenges → initiatives → systems → KPIs.
+# ─────────────────────────────────────────────────────────────────────
+spaces:
+
+  - id: S1
+    name: "Season 1 — Foundation"
+    display_order: 1
+    description: "First 90 days priorities"   # optional
+    space_label: "Q1 2026"                    # optional short label shown in UI
+
+    challenges:
+
+      # ── Challenge 1 ──────────────────────────────────────────────
+      - id: C1
+        name: "IT Visibility & Landscape"
+        display_order: 1
+        description: "Gain a clear picture of the IT estate"   # optional
+
+        initiatives:
+
+          # ── Initiative — fully populated ───────────────────────
+          - id: I1
+            name: "IT Landscape Snapshot"
+            display_order: 1
+            description: "Document all systems, owners and risks"
+
+            systems:
+
+              # ── System — shared across initiatives via same id ──
+              - id: SYS1
+                name: "Excel Tracker"
+                display_order: 1
+                description: "Lightweight discovery spreadsheet"
+
+                kpis:
+
+                  # KPI with numeric value type — full config
+                  - name: "Systems Documented"
+                    display_order: 1
+                    description: "Number of IT systems captured in tracker"
+                    value_types:
+                      - name: "Completion %"
+                        # Colors for numeric values (green=positive, grey=zero, red=negative)
+                        colors:
+                          positive: "#28a745"
+                          zero: "#6c757d"
+                          negative: "#dc3545"
+                        # Display scale: default | thousands | millions | billions
+                        display_scale: default
+                        # Override decimal places for display only
+                        display_decimals: 0
+                        # Target tracking
+                        target_value: 100
+                        target_date: "2026-06-30"
+                        target_direction: maximize   # maximize | minimize | exact
+                        target_tolerance_pct: 10     # % tolerance for "exact" targets
+
+                  # KPI with multiple value types
+                  - name: "Discovery Coverage"
+                    display_order: 2
+                    value_types:
+                      - name: "Completion %"
+                        target_value: 100
+                        target_direction: maximize
+                      - name: "Risk Level"
+                        colors:
+                          positive: "#28a745"
+                          zero: "#ffc107"
+                          negative: "#dc3545"
+
+              # ── System 2 — minimal (only required fields) ───────
+              - id: SYS2
+                name: "Jira"
+                display_order: 2
+
+                kpis:
+                  - name: "Open Tickets"
+                    value_types:
+                      - name: "Score"
+                        target_value: 0
+                        target_direction: minimize
+
+      # ── Challenge 2 ──────────────────────────────────────────────
+      - id: C2
+        name: "Stakeholder Alignment"
+        display_order: 2
+
+        initiatives:
+
+          # ── Initiative — reusing SYS1 from above (same id) ─────
+          - id: I2
+            name: "Listening Tour"
+            display_order: 1
+
+            systems:
+              # SYS1 reused here — system created once, linked to both I1 and I2
+              - id: SYS1
+                name: "Excel Tracker"
+                display_order: 1
+                kpis:
+                  - name: "Stakeholders Met"
+                    value_types:
+                      - name: "Score"
+                        target_value: 25
+                        target_direction: maximize
+
+          # ── Initiative with sentiment + list KPIs ──────────────
+          - id: I3
+            name: "Weekly CIO Comms"
+            display_order: 2
+
+            systems:
+              - id: SYS3
+                name: "Email / Slack"
+                display_order: 1
+                kpis:
+                  - name: "Comms Sent"
+                    value_types:
+                      - name: "Score"
+                  - name: "Audience Trust"
+                    value_types:
+                      - name: "Team Morale"
+                  - name: "Delivery Status"
+                    value_types:
+                      - name: "Status"
+
+  # ── Space 2 — minimal skeleton (no KPIs yet) ───────────────────────
+  - id: S2
+    name: "Season 2 — Transformation"
+    display_order: 2
+
+    challenges:
+      - id: C3
+        name: "Vendor Governance"
+        display_order: 1
+
+        initiatives:
+          - id: I4
+            name: "Vendor Map"
+            display_order: 1
+
+            systems:
+              - id: SYS4
+                name: "Vendor Registry"
+                display_order: 1
+                kpis:
+                  - name: "Vendors Mapped"
+                    value_types:
+                      - name: "Completion %"
+                        target_value: 100
+                        target_direction: maximize
+                  - name: "Vendor Risk"
+                    value_types:
+                      - name: "Risk Level"
+                  - name: "Contract Revenue"
+                    value_types:
+                      - name: "Revenue"
+                        display_scale: default
+                        target_value: 5.0
+                        target_direction: minimize
+                  - name: "Avg Delivery Time"
+                    value_types:
+                      - name: "Lead Time"
+                        target_value: 14
+                        target_direction: minimize
