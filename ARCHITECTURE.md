@@ -1,7 +1,7 @@
 # CISK Navigator - Technical Architecture
 
 **Last Updated**: March 21, 2026
-**Version**: 2.16.0
+**Version**: 2.17.7
 
 This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
@@ -38,7 +38,16 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
-### v2.16.0 Recent Changes (March 2026)
+### v2.17.7 Recent Changes (March 2026)
+
+1. **Workspace Collapse/Expand Fixed** — Alpine.js reactivity issue in nested `x-for` loops fixed; collapse at any level (space/challenge/initiative/system) now immediately hides all descendants; collapse state preserved across background data reloads
+2. **System Edit Link** — Workspace pencil icon on systems navigates to `edit_system` page; `edit_url` added to system data in `get_data` API response
+3. **Per-Instance Branding on Edit Pages** — Space, Challenge, Initiative, System, KPI edit pages show per-instance logo first, then entity-type default, then icon
+4. **Action Item Governance Bodies** — Many-to-many join table `action_item_governance_body`; multi-select per action in register and Generate Actions modal; GB filter on Action Register page
+5. **Generate Actions from Success Criteria** — Lightning button now parses both deliverables and success criteria rows with source badge (Del./Step)
+6. **Action Register Modernized** — Gradient header, stat cards, multi-status filter (checkboxes), GB filter pills, stats update dynamically with filters
+
+### v2.16.0 Changes (March 2026)
 
 1. **Generate Actions from Deliverables & Steps** — Initiative form lightning button parses deliverable rows and success criteria rows into action items with smart date parsing, dedup detection, and bulk creation
 2. **List Value Type** — New "list" kind for choice-based KPIs (Yes/No, status, categories) with per-option colors and Mode aggregation

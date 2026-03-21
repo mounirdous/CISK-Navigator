@@ -1,12 +1,27 @@
-# 🧭 CISK Navigator v2.16.0
+# 🧭 CISK Navigator v2.17.7
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.16.0-blue)
+![Version](https://img.shields.io/badge/version-2.17.7-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+
+## ✨ What's New in v2.17.7 (March 2026)
+
+### 🛠️ **Workspace Fixes**
+- **Collapse/expand fully works** — collapsing a row at any level (space, challenge, initiative, system) now immediately hides all child rows; fixed Alpine.js reactivity issue in nested loops
+- **Collapse state preserved on data reload** — collapsed rows stay collapsed after background data refreshes (e.g. after editing a KPI value)
+- **System edit link** — pencil icon on system rows in edit mode now navigates to the edit system page (was showing a v1 alert); returns to workspace after save
+
+### 🎨 **Branding Icons on Edit Pages**
+- Edit pages for Space, Challenge, Initiative, System, and KPI now show the **per-instance logo** first, falling back to the entity-type default logo, then the icon — no more hardcoded symbols
+
+### 🔗 **Action Items**
+- "View in Action Items" link from Generate Actions modal now correctly points to `/toolbox/actions/`
+
+---
 
 ## ✨ What's New in v2.16.0 (March 2026)
 
