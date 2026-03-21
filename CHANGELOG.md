@@ -5,6 +5,34 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.17.3] - 2026-03-21
+
+### Fixed
+- Action Register stat cards (Total Actions, Open, Overdue, Completed, Memos) now reflect the active filters — numbers always match what's shown in the table
+
+## [2.17.2] - 2026-03-21
+
+### Changed
+- Generate Actions modal: governance body selection is now **per action row** — small colored abbreviation pills that toggle on click, one column in the table; each action can have its own set of GBs
+- Modal table is now fully compact: `form-select-sm` / `form-control-sm` throughout, title auto-expands from 1 row, visibility shown as 👥/🔒 icon-only select, date hint inline below title, abbreviated source badges (Del./Step)
+
+## [2.17.1] - 2026-03-21
+
+### Fixed
+- Action Register: Status filter now supports multi-select checkboxes (colored per status) instead of single radio — select Draft + Active simultaneously, etc.
+- Generate Actions modal: "View in Action Register" link now correctly points to `/toolbox/actions/` instead of the old `/action-items` data quality page
+
+## [2.17.0] - 2026-03-21
+
+### Added
+- **Governance Bodies on Action Items** — actions can optionally be linked to one or more governance bodies
+  - New `action_item_governance_body` join table (migration `r8m9n0o1p2q3`)
+  - Create/Edit action item pages: checkbox pills for each GB (colored, toggle on click)
+  - Action Register index: GB filter with checkbox pills per body; active filters highlighted
+  - GB badges shown on each row in the action register table
+  - Generate Actions modal: GB checkboxes at the top (applied to all created actions)
+- **Action Register modernized** — new design with gradient header, stat cards with icons, pill-style filters (Type / Status / View / Governance Bodies), cleaner table with priority colors and date formatting, empty state, item count footer
+
 ## [2.16.2] - 2026-03-21
 
 ### Fixed

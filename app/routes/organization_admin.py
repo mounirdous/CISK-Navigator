@@ -3615,7 +3615,7 @@ def initiative_form(initiative_id):
     entity_links = EntityLink.get_links_for_entity("initiative", initiative.id, current_user.id, include_private=True)
 
     # Get org users for action generation owner dropdown
-    from app.models import User, UserOrganizationMembership
+    from app.models import GovernanceBody, User, UserOrganizationMembership
     org_users = (
         db.session.query(User)
         .join(UserOrganizationMembership, UserOrganizationMembership.user_id == User.id)
@@ -3623,6 +3623,9 @@ def initiative_form(initiative_id):
         .order_by(User.display_name)
         .all()
     )
+    org_governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(
+        GovernanceBody.display_order
+    ).all()
 
     return render_template(
         "organization_admin/initiative_form.html",
@@ -3634,6 +3637,7 @@ def initiative_form(initiative_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         org_users=org_users,
+        org_governance_bodies=org_governance_bodies,
     )
 
 
@@ -3693,6 +3697,8 @@ def generate_actions(initiative_id):
     created = []
     errors = []
 
+    from app.models import GovernanceBody
+
     for action_data in data["actions"]:
         try:
             owner_id = int(action_data.get("owner_user_id", current_user.id))
@@ -3722,6 +3728,14 @@ def generate_actions(initiative_id):
             )
             db.session.add(item)
             db.session.flush()
+
+            # Attach per-action governance bodies
+            gb_ids = action_data.get("governance_body_ids", [])
+            if gb_ids:
+                item.governance_bodies = GovernanceBody.query.filter(
+                    GovernanceBody.id.in_(gb_ids),
+                    GovernanceBody.organization_id == org_id,
+                ).all()
 
             # Link to initiative
             mention = ActionItemMention(

@@ -1,295 +1,527 @@
 {% extends "base.html" %}
 
-{% block title %}Action Register & Memos{% endblock %}
+{% block title %}Action Register{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+}
+.stat-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: transform 0.15s;
+}
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card .stat-icon {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+}
+.filter-panel {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+.filter-section-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #78909c;
+    margin-bottom: 0.5rem;
+}
+.filter-pill {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 20px;
+    border: 1.5px solid #dee2e6;
+    background: white;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    white-space: nowrap;
+}
+.filter-pill:hover { border-color: #1565c0; color: #1565c0; }
+.filter-pill.active { background: #1565c0; color: white; border-color: #1565c0; }
+.filter-pill input[type=checkbox],
+.filter-pill input[type=radio] { display: none; }
+
+.gb-pill {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    border: 1.5px solid;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    opacity: 0.65;
+}
+.gb-pill.active { opacity: 1; color: white !important; }
+.gb-pill input[type=checkbox] { display: none; }
+
+.items-table-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    overflow: hidden;
+}
+.items-table thead th {
+    background: #f8f9fa;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #546e7a;
+    border-bottom: 2px solid #e9ecef;
+    padding: 0.75rem 1rem;
+    white-space: nowrap;
+}
+.items-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.1s;
+}
+.items-table tbody tr:hover { background: #f8fafe; }
+.items-table tbody td { padding: 0.7rem 1rem; vertical-align: middle; }
+
+.priority-dot {
+    width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px;
+}
+.badge-status { font-size: 0.72rem; padding: 0.25em 0.6em; border-radius: 6px; font-weight: 600; }
+.row-overdue { background: #fff8e1 !important; }
+.empty-state { text-align: center; padding: 4rem 2rem; color: #90a4ae; }
+.empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; }
+
+.active-filter-count {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: #1565c0; color: white;
+    font-size: 0.65rem; font-weight: 700; margin-left: 4px;
+}
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📝 Action Register & Memos</h2>
+<div class="container-fluid" style="max-width:1400px; padding: 1.5rem;">
+
+    <!-- Header -->
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 style="font-size:1.6rem; font-weight:700; margin:0;">
+                <i class="bi bi-check2-square me-2"></i> Action Register
+            </h1>
+            <p style="margin:0.25rem 0 0; opacity:0.85; font-size:0.9rem;">
+                Track actions and memos for your organization
+            </p>
+        </div>
         {% if can_contribute %}
-        <a href="{{ url_for('action_items.create') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> New Item
+        <a href="{{ url_for('action_items.create') }}" class="btn btn-light btn-sm fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i> New Item
         </a>
         {% endif %}
     </div>
 
-    <!-- Stats Cards -->
-    <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">{{ stats.total_actions }}</h5>
-                    <p class="card-text text-muted">Total Actions</p>
+    <!-- Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-2">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon" style="background:#e3f2fd;">
+                        <i class="bi bi-lightning-charge" style="color:#1565c0;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.4rem; font-weight:700; line-height:1;">{{ stats.total_actions }}</div>
+                        <div style="font-size:0.75rem; color:#78909c;">Total Actions</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">{{ stats.open_actions }}</h5>
-                    <p class="card-text text-muted">Open Actions</p>
+        <div class="col-6 col-md-2">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon" style="background:#e8f5e9;">
+                        <i class="bi bi-play-circle" style="color:#2e7d32;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.4rem; font-weight:700; line-height:1;">{{ stats.open_actions }}</div>
+                        <div style="font-size:0.75rem; color:#78909c;">Open</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center border-warning">
-                <div class="card-body">
-                    <h5 class="card-title text-warning">{{ stats.overdue_actions }}</h5>
-                    <p class="card-text text-muted">Overdue</p>
+        <div class="col-6 col-md-2">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon" style="background:#fff3e0;">
+                        <i class="bi bi-exclamation-triangle" style="color:#e65100;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.4rem; font-weight:700; line-height:1; color:#e65100;">{{ stats.overdue_actions }}</div>
+                        <div style="font-size:0.75rem; color:#78909c;">Overdue</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">{{ stats.completed_actions }}</h5>
-                    <p class="card-text text-muted">Completed</p>
+        <div class="col-6 col-md-2">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon" style="background:#f3e5f5;">
+                        <i class="bi bi-check-circle" style="color:#6a1b9a;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.4rem; font-weight:700; line-height:1;">{{ stats.completed_actions }}</div>
+                        <div style="font-size:0.75rem; color:#78909c;">Completed</div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
-                <div class="card-body">
-                    <h5 class="card-title">{{ stats.total_memos }}</h5>
-                    <p class="card-text text-muted">Memos</p>
+        <div class="col-6 col-md-2">
+            <div class="card stat-card h-100">
+                <div class="card-body d-flex align-items-center gap-3 p-3">
+                    <div class="stat-icon" style="background:#fce4ec;">
+                        <i class="bi bi-sticky" style="color:#880e4f;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.4rem; font-weight:700; line-height:1;">{{ stats.total_memos }}</div>
+                        <div style="font-size:0.75rem; color:#78909c;">Memos</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="GET" action="{{ url_for('action_items.index') }}" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Type</label>
-                    <select name="type_filter" class="form-select" onchange="this.form.submit()">
-                        <option value="all" {% if current_filters.type == 'all' %}selected{% endif %}>All</option>
-                        <option value="action" {% if current_filters.type == 'action' %}selected{% endif %}>Actions</option>
-                        <option value="memo" {% if current_filters.type == 'memo' %}selected{% endif %}>Memos</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status_filter" class="form-select" onchange="this.form.submit()">
-                        <option value="all" {% if current_filters.status == 'all' %}selected{% endif %}>All</option>
-                        <option value="active" {% if current_filters.status == 'active' %}selected{% endif %}>Active</option>
-                        <option value="completed" {% if current_filters.status == 'completed' %}selected{% endif %}>Completed</option>
-                        <option value="cancelled" {% if current_filters.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">View</label>
-                    <select name="visibility_filter" class="form-select" onchange="this.form.submit()">
-                        <option value="all" {% if current_filters.visibility == 'all' %}selected{% endif %}>All Items</option>
-                        <option value="my_items" {% if current_filters.visibility == 'my_items' %}selected{% endif %}>My Items</option>
-                        <option value="team_items" {% if current_filters.visibility == 'team_items' %}selected{% endif %}>Team Items</option>
-                    </select>
-                </div>
-            </form>
-        </div>
-    </div>
+    <form method="GET" action="{{ url_for('action_items.index') }}" id="filter-form">
+    <div class="filter-panel">
+        <div class="row g-3 align-items-start">
 
-    <!-- Items List -->
-    {% if items %}
-    <div class="card">
-        <div class="card-body">
-            {% if is_admin %}
-            <!-- Bulk Actions Toolbar -->
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-check-square"></i> Select All
-                    </button>
-                    <button type="button" id="deselect-all-btn" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-square"></i> Deselect All
-                    </button>
-                    <span id="selected-count" class="ms-2 text-muted">0 selected</span>
+            <!-- Type -->
+            <div class="col-auto">
+                <div class="filter-section-label">Type</div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% for val, label in [('all','All'), ('action','Actions'), ('memo','Memos')] %}
+                    <label class="filter-pill {% if current_filters.type == val %}active{% endif %}">
+                        <input type="radio" name="type_filter" value="{{ val }}" {% if current_filters.type == val %}checked{% endif %} onchange="document.getElementById('filter-form').submit()">
+                        {{ label }}
+                    </label>
+                    {% endfor %}
                 </div>
-                <form method="POST" action="{{ url_for('action_items.bulk_delete') }}" id="bulk-delete-form" style="display:inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-sm btn-danger" id="bulk-delete-btn" disabled onclick="return confirm('Delete all selected items?')">
-                        <i class="bi bi-trash"></i> Delete Selected
-                    </button>
-                </form>
+            </div>
+
+            <!-- Status (multi-select checkboxes) -->
+            <div class="col-auto">
+                <div class="filter-section-label">
+                    Status
+                    {% if current_filters.statuses %}
+                    <span class="active-filter-count">{{ current_filters.statuses|length }}</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% set status_styles = {
+                        'draft':     ('#546e7a', '#f5f5f5'),
+                        'active':    ('#2e7d32', '#e8f5e9'),
+                        'completed': ('#4527a0', '#ede7f6'),
+                        'cancelled': ('#b71c1c', '#ffebee')
+                    } %}
+                    {% for val, label in [('draft','Draft'), ('active','Active'), ('completed','Done'), ('cancelled','Cancelled')] %}
+                    {% set color, bg = status_styles.get(val, ('#546e7a','#f5f5f5')) %}
+                    {% set is_checked = val in current_filters.statuses %}
+                    <label class="filter-pill {% if is_checked %}active{% endif %}"
+                           style="{% if is_checked %}background:{{ color }};border-color:{{ color }};color:white;{% else %}border-color:{{ color }};color:{{ color }};{% endif %}"
+                           id="status-pill-{{ val }}">
+                        <input type="checkbox" name="status_filter" value="{{ val }}"
+                               {% if is_checked %}checked{% endif %}
+                               onchange="document.getElementById('filter-form').submit()">
+                        {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- View -->
+            <div class="col-auto">
+                <div class="filter-section-label">View</div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% for val, label in [('all','All Items'), ('my_items','Mine'), ('team_items','Team')] %}
+                    <label class="filter-pill {% if current_filters.visibility == val %}active{% endif %}">
+                        <input type="radio" name="visibility_filter" value="{{ val }}" {% if current_filters.visibility == val %}checked{% endif %} onchange="document.getElementById('filter-form').submit()">
+                        {{ label }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Governance Bodies -->
+            {% if governance_bodies %}
+            <div class="col-auto">
+                <div class="filter-section-label">
+                    Governance Bodies
+                    {% if current_filters.gb_ids %}
+                    <span class="active-filter-count">{{ current_filters.gb_ids|length }}</span>
+                    {% endif %}
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    {% for gb in governance_bodies %}
+                    {% set is_checked = gb.id in current_filters.gb_ids %}
+                    <label class="gb-pill {% if is_checked %}active{% endif %}"
+                           style="border-color: {{ gb.color }}; color: {{ gb.color }}; {% if is_checked %}background: {{ gb.color }};{% endif %}">
+                        <input type="checkbox" name="gb_filter" value="{{ gb.id }}" {% if is_checked %}checked{% endif %} onchange="document.getElementById('filter-form').submit()">
+                        {{ gb.abbreviation or gb.name }}
+                    </label>
+                    {% endfor %}
+                </div>
             </div>
             {% endif %}
 
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            {% if is_admin %}<th style="width: 3%"><input type="checkbox" id="select-all-checkbox"></th>{% endif %}
-                            <th style="width: 5%">Type</th>
-                            <th style="width: 27%">Title</th>
-                            <th style="width: 10%">Status</th>
-                            <th style="width: 10%">Priority</th>
-                            <th style="width: 10%">Due Date</th>
-                            <th style="width: 10%">Owner</th>
-                            <th style="width: 10%">Visibility</th>
-                            <th style="width: 10%">Mentions</th>
-                            <th style="width: 5%">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in items %}
-                        <tr {% if item.is_overdue %}class="table-warning"{% endif %}>
-                            {% if is_admin %}
-                            <td>
-                                <input type="checkbox" class="item-checkbox" name="item_ids" value="{{ item.id }}" form="bulk-delete-form">
-                            </td>
-                            {% endif %}
-                            <td>
-                                {% if item.type == 'memo' %}
-                                    <span class="badge bg-info">📝 Memo</span>
-                                {% else %}
-                                    <span class="badge bg-primary">✓ Action</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <strong>{{ item.title }}</strong>
-                                {% if item.description %}
-                                <br><small class="text-muted">{{ item.description[:100] }}{% if item.description|length > 100 %}...{% endif %}</small>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if item.type == 'action' %}
-                                    {% if item.status == 'active' %}
-                                        <span class="badge bg-success">Active</span>
-                                    {% elif item.status == 'completed' %}
-                                        <span class="badge bg-secondary">Completed</span>
-                                    {% elif item.status == 'draft' %}
-                                        <span class="badge bg-light text-dark">Draft</span>
-                                    {% elif item.status == 'cancelled' %}
-                                        <span class="badge bg-danger">Cancelled</span>
-                                    {% endif %}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if item.type == 'action' %}
-                                    {% if item.priority == 'urgent' %}
-                                        <span class="badge bg-danger">🔥 Urgent</span>
-                                    {% elif item.priority == 'high' %}
-                                        <span class="badge bg-warning text-dark">High</span>
-                                    {% elif item.priority == 'medium' %}
-                                        <span class="badge bg-info">Medium</span>
-                                    {% elif item.priority == 'low' %}
-                                        <span class="badge bg-secondary">Low</span>
-                                    {% endif %}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if item.due_date %}
-                                    {{ item.due_date.strftime('%Y-%m-%d') }}
-                                    {% if item.is_overdue %}
-                                        <span class="badge bg-danger">Overdue</span>
-                                    {% endif %}
-                                {% endif %}
-                            </td>
-                            <td>{{ item.owner_user.display_name or item.owner_user.login }}</td>
-                            <td>
-                                {% if item.visibility == 'private' %}
-                                    <span class="badge bg-secondary">🔒 Private</span>
-                                {% else %}
-                                    <span class="badge bg-success">👥 Shared</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if item.mentions|length > 0 %}
-                                    {% for mention in item.mentions %}
-                                        <a href="{{ mention.get_entity_url() }}" class="badge bg-primary text-decoration-none me-1 mb-1" title="View {{ mention.entity_type }}: {{ mention.mention_text }}">
-                                            {{ mention.mention_text }} <i class="bi bi-box-arrow-up-right"></i>
-                                        </a>
-                                    {% endfor %}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    {% if can_contribute and item.owner_user_id == current_user.id %}
-                                    <a href="{{ url_for('action_items.edit', item_id=item.id) }}" class="btn btn-outline-primary">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    {% endif %}
-
-                                    {% if (can_contribute and item.owner_user_id == current_user.id) or is_admin %}
-                                    <form method="POST" action="{{ url_for('action_items.delete', item_id=item.id) }}" style="display:inline" onsubmit="return confirm('Delete this item?')">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-outline-danger" title="{% if is_admin %}Admin: Delete any item{% else %}Delete your item{% endif %}">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Clear filters -->
+            {% if current_filters.type != 'all' or current_filters.statuses or current_filters.visibility != 'all' or current_filters.gb_ids %}
+            <div class="col-auto d-flex align-items-end">
+                <a href="{{ url_for('action_items.index') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-x-circle me-1"></i> Clear
+                </a>
             </div>
+            {% endif %}
         </div>
     </div>
+    </form>
+
+    <!-- Items Table -->
+    {% if items %}
+    <div class="items-table-container">
+
+        {% if is_admin %}
+        <div class="d-flex align-items-center gap-2 px-3 py-2 border-bottom" style="background:#f8f9fa;">
+            <button type="button" id="select-all-btn" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-check-square"></i> Select All
+            </button>
+            <button type="button" id="deselect-all-btn" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-square"></i> Deselect All
+            </button>
+            <span id="selected-count" class="text-muted small ms-1">0 selected</span>
+            <form method="POST" action="{{ url_for('action_items.bulk_delete') }}" id="bulk-delete-form" class="ms-auto">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-danger" id="bulk-delete-btn" disabled
+                        onclick="return confirm('Delete all selected items?')">
+                    <i class="bi bi-trash"></i> Delete Selected
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
+        <div class="table-responsive">
+            <table class="table items-table mb-0">
+                <thead>
+                    <tr>
+                        {% if is_admin %}<th style="width:3%"><input type="checkbox" id="select-all-checkbox"></th>{% endif %}
+                        <th style="width:6%">Type</th>
+                        <th>Title</th>
+                        <th style="width:9%">Status</th>
+                        <th style="width:9%">Priority</th>
+                        <th style="width:9%">Due Date</th>
+                        <th style="width:10%">Owner</th>
+                        <th style="width:15%">Governance</th>
+                        <th style="width:10%">Links</th>
+                        <th style="width:6%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in items %}
+                <tr {% if item.is_overdue %}class="row-overdue"{% endif %} id="item-{{ item.id }}">
+                    {% if is_admin %}
+                    <td>
+                        <input type="checkbox" class="item-checkbox" name="item_ids" value="{{ item.id }}" form="bulk-delete-form">
+                    </td>
+                    {% endif %}
+
+                    <!-- Type -->
+                    <td>
+                        {% if item.type == 'memo' %}
+                        <span class="badge" style="background:#e3f2fd; color:#1565c0; font-size:0.72rem;">
+                            <i class="bi bi-sticky"></i> Memo
+                        </span>
+                        {% else %}
+                        <span class="badge" style="background:#e8f5e9; color:#2e7d32; font-size:0.72rem;">
+                            <i class="bi bi-check2"></i> Action
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Title -->
+                    <td>
+                        <div style="font-weight:600; font-size:0.9rem;">{{ item.title }}</div>
+                        {% if item.description %}
+                        <div style="font-size:0.8rem; color:#78909c; margin-top:2px;">
+                            {{ item.description[:120] }}{% if item.description|length > 120 %}…{% endif %}
+                        </div>
+                        {% endif %}
+                    </td>
+
+                    <!-- Status -->
+                    <td>
+                        {% if item.type == 'action' %}
+                        {% set s_styles = {
+                            'active': 'background:#e8f5e9; color:#2e7d32;',
+                            'draft': 'background:#f5f5f5; color:#546e7a;',
+                            'completed': 'background:#ede7f6; color:#4527a0;',
+                            'cancelled': 'background:#ffebee; color:#b71c1c;'
+                        } %}
+                        <span class="badge-status" style="{{ s_styles.get(item.status, '') }}">
+                            {{ item.status | capitalize }}
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Priority -->
+                    <td>
+                        {% if item.type == 'action' %}
+                        {% set p_styles = {
+                            'urgent': ('🔥', '#b71c1c'),
+                            'high': ('▲', '#e65100'),
+                            'medium': ('●', '#1565c0'),
+                            'low': ('▼', '#546e7a')
+                        } %}
+                        {% set icon, color = p_styles.get(item.priority, ('●', '#546e7a')) %}
+                        <span style="font-size:0.82rem; font-weight:600; color:{{ color }};">
+                            {{ icon }} {{ item.priority | capitalize }}
+                        </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Due Date -->
+                    <td style="font-size:0.82rem;">
+                        {% if item.due_date %}
+                        <span {% if item.is_overdue %}style="color:#e65100; font-weight:600;"{% endif %}>
+                            {{ item.due_date.strftime('%d %b %Y') }}
+                            {% if item.is_overdue %}<i class="bi bi-exclamation-circle ms-1"></i>{% endif %}
+                        </span>
+                        {% else %}
+                        <span style="color:#ccc;">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Owner -->
+                    <td style="font-size:0.82rem; color:#37474f;">
+                        {{ item.owner_user.display_name or item.owner_user.login }}
+                    </td>
+
+                    <!-- Governance Bodies -->
+                    <td>
+                        {% if item.governance_bodies %}
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for gb in item.governance_bodies %}
+                            <span class="badge" style="background:{{ gb.color }}20; color:{{ gb.color }}; border:1px solid {{ gb.color }}; font-size:0.68rem; font-weight:700;">
+                                {{ gb.abbreviation or gb.name }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span style="color:#ccc; font-size:0.8rem;">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Mentions/Links -->
+                    <td>
+                        {% if item.mentions %}
+                        <div class="d-flex flex-wrap gap-1">
+                            {% for mention in item.mentions %}
+                            <a href="{{ mention.get_entity_url() }}"
+                               class="badge text-decoration-none"
+                               style="background:#e3f2fd; color:#1565c0; font-size:0.68rem;"
+                               title="{{ mention.entity_type }}: {{ mention.mention_text }}">
+                                {{ mention.mention_text | truncate(20, True) }}
+                                <i class="bi bi-box-arrow-up-right" style="font-size:0.6rem;"></i>
+                            </a>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span style="color:#ccc; font-size:0.8rem;">—</span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Actions -->
+                    <td>
+                        <div class="d-flex gap-1">
+                            {% if can_contribute and item.owner_user_id == current_user.id %}
+                            <a href="{{ url_for('action_items.edit', item_id=item.id) }}"
+                               class="btn btn-sm btn-outline-primary" style="padding:0.2rem 0.45rem;"
+                               title="Edit">
+                                <i class="bi bi-pencil" style="font-size:0.8rem;"></i>
+                            </a>
+                            {% endif %}
+                            {% if (can_contribute and item.owner_user_id == current_user.id) or is_admin %}
+                            <form method="POST" action="{{ url_for('action_items.delete', item_id=item.id) }}"
+                                  style="display:inline" onsubmit="return confirm('Delete this item?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        style="padding:0.2rem 0.45rem;" title="Delete">
+                                    <i class="bi bi-trash" style="font-size:0.8rem;"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="px-3 py-2 border-top" style="font-size:0.8rem; color:#78909c; background:#fafafa;">
+            {{ items|length }} item(s) shown
+        </div>
+    </div>
+
     {% else %}
-    <div class="alert alert-info">
-        <p class="mb-0">No action items or memos found.{% if can_contribute %} <a href="{{ url_for('action_items.create') }}">Create one now!</a>{% endif %}</p>
+    <div class="items-table-container">
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <p style="font-size:1rem; font-weight:500; margin:0;">No items found</p>
+            <p style="font-size:0.85rem; margin-top:0.5rem;">
+                {% if current_filters.type != 'all' or current_filters.statuses or current_filters.gb_ids %}
+                Try adjusting your filters. <a href="{{ url_for('action_items.index') }}">Clear all</a>
+                {% elif can_contribute %}
+                <a href="{{ url_for('action_items.create') }}">Create your first action item</a>
+                {% endif %}
+            </p>
+        </div>
     </div>
     {% endif %}
+
 </div>
 
 {% if is_admin %}
 <script>
-    // Bulk selection functionality
-    const selectAllCheckbox = document.getElementById('select-all-checkbox');
-    const selectAllBtn = document.getElementById('select-all-btn');
-    const deselectAllBtn = document.getElementById('deselect-all-btn');
-    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
-    const selectedCountSpan = document.getElementById('selected-count');
-    const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+const selectAllCb = document.getElementById('select-all-checkbox');
+const selectAllBtn = document.getElementById('select-all-btn');
+const deselectAllBtn = document.getElementById('deselect-all-btn');
+const itemCbs = document.querySelectorAll('.item-checkbox');
+const countSpan = document.getElementById('selected-count');
+const bulkBtn = document.getElementById('bulk-delete-btn');
 
-    function updateSelectedCount() {
-        const checkedCount = document.querySelectorAll('.item-checkbox:checked').length;
-        selectedCountSpan.textContent = `${checkedCount} selected`;
-        bulkDeleteBtn.disabled = checkedCount === 0;
-
-        // Update select all checkbox state
-        if (selectAllCheckbox) {
-            selectAllCheckbox.checked = checkedCount === itemCheckboxes.length && checkedCount > 0;
-            selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < itemCheckboxes.length;
-        }
+function updateCount() {
+    const n = document.querySelectorAll('.item-checkbox:checked').length;
+    countSpan.textContent = `${n} selected`;
+    bulkBtn.disabled = n === 0;
+    if (selectAllCb) {
+        selectAllCb.checked = n === itemCbs.length && n > 0;
+        selectAllCb.indeterminate = n > 0 && n < itemCbs.length;
     }
-
-    // Select/deselect all via checkbox in header
-    if (selectAllCheckbox) {
-        selectAllCheckbox.addEventListener('change', function() {
-            itemCheckboxes.forEach(cb => cb.checked = this.checked);
-            updateSelectedCount();
-        });
-    }
-
-    // Select all button
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', function() {
-            itemCheckboxes.forEach(cb => cb.checked = true);
-            updateSelectedCount();
-        });
-    }
-
-    // Deselect all button
-    if (deselectAllBtn) {
-        deselectAllBtn.addEventListener('click', function() {
-            itemCheckboxes.forEach(cb => cb.checked = false);
-            updateSelectedCount();
-        });
-    }
-
-    // Update count when individual checkboxes change
-    itemCheckboxes.forEach(cb => {
-        cb.addEventListener('change', updateSelectedCount);
-    });
-
-    // Initialize count on page load
-    updateSelectedCount();
+}
+if (selectAllCb) selectAllCb.addEventListener('change', e => { itemCbs.forEach(cb => cb.checked = e.target.checked); updateCount(); });
+if (selectAllBtn) selectAllBtn.addEventListener('click', () => { itemCbs.forEach(cb => cb.checked = true); updateCount(); });
+if (deselectAllBtn) deselectAllBtn.addEventListener('click', () => { itemCbs.forEach(cb => cb.checked = false); updateCount(); });
+itemCbs.forEach(cb => cb.addEventListener('change', updateCount));
+updateCount();
 </script>
 {% endif %}
 {% endblock %}

@@ -8,6 +8,23 @@ from sqlalchemy import Enum
 
 from app.extensions import db
 
+# Many-to-many join table: action items ↔ governance bodies
+action_item_governance_body = db.Table(
+    "action_item_governance_body",
+    db.Column(
+        "action_item_id",
+        db.Integer,
+        db.ForeignKey("action_items.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "governance_body_id",
+        db.Integer,
+        db.ForeignKey("governance_bodies.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
 
 class ActionItem(db.Model):
     """Action items and memos at organization level"""
@@ -54,6 +71,11 @@ class ActionItem(db.Model):
         back_populates="action_item",
         cascade="all, delete-orphan",
         passive_deletes=True,
+    )
+    governance_bodies = db.relationship(
+        "GovernanceBody",
+        secondary="action_item_governance_body",
+        lazy="selectin",
     )
 
     def __repr__(self):

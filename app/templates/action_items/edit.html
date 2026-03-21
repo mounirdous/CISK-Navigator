@@ -180,6 +180,27 @@
                             </div>
                         </div>
 
+                        <!-- Governance Bodies -->
+                        {% if governance_bodies %}
+                        <div class="mb-3">
+                            <label class="form-label">Governance Bodies <span class="text-muted">(optional)</span></label>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for gb in governance_bodies %}
+                                {% set is_checked = gb.id in current_gb_ids %}
+                                <label class="d-flex align-items-center gap-2" style="cursor:pointer; padding:0.3rem 0.7rem; border-radius:20px; border:1.5px solid {{ gb.color }}; {% if is_checked %}background:{{ gb.color }}; color:white;{% else %}background:white;{% endif %} font-size:0.85rem; user-select:none;" id="gb-label-{{ gb.id }}">
+                                    <input type="checkbox" name="governance_body_ids" value="{{ gb.id }}"
+                                           style="display:none;" class="gb-cb" {% if is_checked %}checked{% endif %}
+                                           onchange="updateGbLabel({{ gb.id }}, '{{ gb.color }}', this.checked)">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:{{ gb.color }};{% if is_checked %}background:white;{% endif %}display:inline-block;"></span>
+                                    {{ gb.name }}
+                                    {% if gb.abbreviation %}<span style="font-weight:700; font-size:0.75rem;">({{ gb.abbreviation }})</span>{% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text">Link this item to one or more governance bodies for meeting-based filtering.</div>
+                        </div>
+                        {% endif %}
+
                         <!-- Metadata -->
                         <div class="alert alert-light mt-4">
                             <small class="text-muted">
@@ -219,6 +240,17 @@
 </div>
 
 <script>
+function updateGbLabel(id, color, checked) {
+    const label = document.getElementById('gb-label-' + id);
+    if (checked) {
+        label.style.background = color;
+        label.style.color = 'white';
+    } else {
+        label.style.background = 'white';
+        label.style.color = '';
+    }
+}
+
 // @mention autocomplete
 document.addEventListener('DOMContentLoaded', function() {
     const descriptionField = document.getElementById('description-field');

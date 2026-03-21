@@ -159,6 +159,25 @@
                             </div>
                         </div>
 
+                        <!-- Governance Bodies -->
+                        {% if governance_bodies %}
+                        <div class="mb-3">
+                            <label class="form-label">Governance Bodies <span class="text-muted">(optional)</span></label>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% for gb in governance_bodies %}
+                                <label class="d-flex align-items-center gap-2" style="cursor:pointer; padding:0.3rem 0.7rem; border-radius:20px; border:1.5px solid {{ gb.color }}; background:white; font-size:0.85rem; user-select:none;" id="gb-label-{{ gb.id }}">
+                                    <input type="checkbox" name="governance_body_ids" value="{{ gb.id }}"
+                                           style="display:none;" class="gb-cb" onchange="updateGbLabel({{ gb.id }}, '{{ gb.color }}', this.checked)">
+                                    <span style="width:8px;height:8px;border-radius:50%;background:{{ gb.color }};display:inline-block;"></span>
+                                    {{ gb.name }}
+                                    {% if gb.abbreviation %}<span style="color:{{ gb.color }}; font-weight:700; font-size:0.75rem;">({{ gb.abbreviation }})</span>{% endif %}
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text">Link this item to one or more governance bodies for meeting-based filtering.</div>
+                        </div>
+                        {% endif %}
+
                         <!-- Buttons -->
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ url_for('action_items.index') }}" class="btn btn-secondary">
@@ -189,6 +208,17 @@
 </div>
 
 <script>
+function updateGbLabel(id, color, checked) {
+    const label = document.getElementById('gb-label-' + id);
+    if (checked) {
+        label.style.background = color;
+        label.style.color = 'white';
+    } else {
+        label.style.background = 'white';
+        label.style.color = '';
+    }
+}
+
 // Show/hide action-specific fields based on type selection
 document.addEventListener('DOMContentLoaded', function() {
     const typeSelect = document.getElementById('type-select');

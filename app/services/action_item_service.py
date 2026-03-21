@@ -18,7 +18,9 @@ class ActionItemService:
     """Service for action item and memo operations"""
 
     @staticmethod
-    def get_items_for_user(user, organization_id, item_type=None, status=None, visibility_filter="all"):
+    def get_items_for_user(
+        user, organization_id, item_type=None, status=None, statuses=None, visibility_filter="all", governance_body_ids=None
+    ):
         """
         Get action items/memos for a user in an organization
 
@@ -26,37 +28,45 @@ class ActionItemService:
             user: User object
             organization_id: Organization ID
             item_type: Filter by type ('memo', 'action', or None for all)
-            status: Filter by status (for actions only)
+            statuses: List of statuses to filter by (None = no filter)
             visibility_filter: 'my_items', 'team_items', or 'all'
+            governance_body_ids: List of GB IDs to filter by (None = no filter)
 
         Returns:
             List of ActionItem objects
         """
+        from app.models.action_item import action_item_governance_body
+
         query = ActionItem.query.filter_by(organization_id=organization_id).options(joinedload(ActionItem.mentions))
 
         # Apply type filter
         if item_type:
             query = query.filter_by(type=item_type)
 
-        # Apply status filter (for actions)
-        if status:
-            query = query.filter_by(status=status)
+        # Apply status filter (multi-select list or legacy single value)
+        effective_statuses = statuses or ([status] if status else None)
+        if effective_statuses:
+            query = query.filter(ActionItem.status.in_(effective_statuses))
 
         # Apply visibility filter
         if visibility_filter == "my_items":
-            # Private items owned by user + shared items owned by user
             query = query.filter(ActionItem.owner_user_id == user.id)
         elif visibility_filter == "team_items":
-            # All shared items
             query = query.filter_by(visibility="shared")
         elif visibility_filter == "all":
-            # Private items owned by user + all shared items
             query = query.filter(
                 or_(
                     and_(ActionItem.visibility == "private", ActionItem.owner_user_id == user.id),
                     ActionItem.visibility == "shared",
                 )
             )
+
+        # Apply governance body filter
+        if governance_body_ids:
+            query = query.join(
+                action_item_governance_body,
+                ActionItem.id == action_item_governance_body.c.action_item_id,
+            ).filter(action_item_governance_body.c.governance_body_id.in_(governance_body_ids))
 
         return query.order_by(ActionItem.created_at.desc()).all()
 
@@ -100,6 +110,12 @@ class ActionItemService:
 
         db.session.add(item)
         db.session.flush()  # Get the ID
+
+        # Attach governance bodies
+        if kwargs.get("governance_body_ids"):
+            from app.models import GovernanceBody
+            gbs = GovernanceBody.query.filter(GovernanceBody.id.in_(kwargs["governance_body_ids"])).all()
+            item.governance_bodies = gbs
 
         # Parse and create mentions
         if description:
@@ -172,6 +188,12 @@ class ActionItemService:
         # Mark as completed if status changed to completed
         if "status" in kwargs and kwargs["status"] == "completed" and item.completed_at is None:
             item.completed_at = datetime.utcnow()
+
+        # Update governance bodies if provided (empty list = clear all)
+        if "governance_body_ids" in kwargs:
+            from app.models import GovernanceBody
+            gb_ids = kwargs["governance_body_ids"] or []
+            item.governance_bodies = GovernanceBody.query.filter(GovernanceBody.id.in_(gb_ids)).all() if gb_ids else []
 
         # Update mentions if description changed
         if "description" in kwargs:

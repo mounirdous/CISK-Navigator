@@ -802,6 +802,11 @@ const ORG_USERS = [
     {% endfor %}
 ];
 const CURRENT_USER_ID = {{ current_user.id }};
+const ORG_GBS = [
+    {% for gb in org_governance_bodies %}
+    { id: {{ gb.id }}, name: {{ gb.name | tojson }}, abbr: {{ (gb.abbreviation or gb.name[:4]) | tojson }}, color: {{ gb.color | tojson }} },
+    {% endfor %}
+];
 
 // Parse deliverables and success criteria from raw text
 const RAW_DELIVERABLES = {{ initiative.deliverables | tojson }};
@@ -884,6 +889,34 @@ function parseDate(raw) {
 
 let existingTitles = [];
 
+function gbPillsHtml(rowIdx) {
+    if (!ORG_GBS.length) return '<span class="text-muted" style="font-size:0.75rem;">—</span>';
+    return ORG_GBS.map(gb => `
+        <span class="gb-row-pill" id="gbpill-${rowIdx}-${gb.id}"
+              title="${gb.name}"
+              data-row="${rowIdx}" data-gbid="${gb.id}" data-color="${gb.color}"
+              onclick="toggleRowGb(this)"
+              style="display:inline-flex;align-items:center;justify-content:center;
+                     cursor:pointer;padding:2px 7px;border-radius:12px;font-size:0.7rem;
+                     font-weight:700;border:1.5px solid ${gb.color};color:${gb.color};
+                     background:white;margin:1px;white-space:nowrap;user-select:none;">
+            ${gb.abbr}
+        </span>`).join('');
+}
+
+function toggleRowGb(el) {
+    const color = el.dataset.color;
+    if (el.dataset.selected === '1') {
+        el.dataset.selected = '0';
+        el.style.background = 'white';
+        el.style.color = color;
+    } else {
+        el.dataset.selected = '1';
+        el.style.background = color;
+        el.style.color = 'white';
+    }
+}
+
 function renderActionsTable(existing) {
     const rows = getAllRows();
     const priority = suggestPriority();
@@ -891,17 +924,20 @@ function renderActionsTable(existing) {
         ? ORG_USERS.map(u => `<option value="${u.id}" ${u.id === CURRENT_USER_ID ? 'selected' : ''}>${u.name || '(user #' + u.id + ')'}</option>`).join('')
         : `<option value="${CURRENT_USER_ID}">Me</option>`);
 
-    let html = `<table class="table table-sm table-bordered align-middle" style="font-size:0.88rem; table-layout:auto;">
-        <thead style="background:#f5f7fa;">
+    const gbHeader = ORG_GBS.length ? `<th style="min-width:${Math.max(80, ORG_GBS.length * 38)}px;">Gov. Bodies</th>` : '';
+
+    let html = `<table class="table table-sm table-bordered align-middle" style="font-size:0.82rem; table-layout:auto;">
+        <thead style="background:#f5f7fa; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#546e7a;">
             <tr>
-                <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)" checked></th>
-                <th style="min-width:80px;">Source</th>
+                <th style="width:30px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)" checked></th>
+                <th style="width:70px;">Source</th>
                 <th>Title</th>
-                <th style="width:180px;">Owner</th>
-                <th style="min-width:120px;">Priority</th>
-                <th style="min-width:140px;">Due Date</th>
-                <th style="min-width:110px;">Status</th>
-                <th style="min-width:115px;">Visibility</th>
+                <th style="width:150px;">Owner</th>
+                <th style="width:82px;">Priority</th>
+                <th style="width:82px;">Status</th>
+                <th style="width:50px;" title="Visibility">Vis.</th>
+                <th style="width:116px;">Due Date</th>
+                ${gbHeader}
             </tr>
         </thead><tbody>`;
 
@@ -909,41 +945,49 @@ function renderActionsTable(existing) {
         const isDuplicate = existing.includes(row.milestone);
         const parsedDate = parseDate(row.rawDate);
         const dupBadge = isDuplicate
-            ? `<span class="badge bg-warning text-dark ms-1" title="Action with this title already linked to this initiative">exists</span>` : '';
+            ? `<span class="badge bg-warning text-dark ms-1" style="font-size:0.65rem;" title="Already linked to this initiative">exists</span>` : '';
         const sourceBadge = row.source === 'Step'
-            ? `<span class="badge" style="background:#9c27b0; color:white;">Step</span>`
-            : `<span class="badge" style="background:#0d6efd; color:white;">Deliverable</span>`;
+            ? `<span class="badge" style="background:#9c27b0;color:white;font-size:0.68rem;">Step</span>`
+            : `<span class="badge" style="background:#0d6efd;color:white;font-size:0.68rem;">Del.</span>`;
+        const gbCell = ORG_GBS.length
+            ? `<td style="vertical-align:middle;">${gbPillsHtml(i)}</td>` : '';
+
         html += `<tr class="${isDuplicate ? 'table-warning' : ''}">
-            <td><input type="checkbox" class="action-check" data-idx="${i}" ${isDuplicate ? '' : 'checked'}></td>
-            <td style="white-space:nowrap;">${sourceBadge}</td>
-            <td>
-                <textarea class="form-control form-control-sm" id="title_${i}" rows="2" style="resize:none; overflow:hidden;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${row.milestone.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
-                ${row.rawDate ? `<small class="text-muted">Date hint: ${row.rawDate}</small>` : ''}
+            <td style="text-align:center;"><input type="checkbox" class="action-check" data-idx="${i}" ${isDuplicate ? '' : 'checked'}></td>
+            <td>${sourceBadge}</td>
+            <td style="min-width:160px;">
+                <textarea class="form-control form-control-sm" id="title_${i}" rows="1"
+                    style="resize:none;overflow:hidden;font-size:0.82rem;"
+                    oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                    >${row.milestone.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
+                ${row.rawDate ? `<div style="font-size:0.7rem;color:#90a4ae;margin-top:2px;">📅 ${row.rawDate}</div>` : ''}
                 ${dupBadge}
             </td>
-            <td><select class="form-select" id="owner_${i}">${ownerOptions}</select></td>
-            <td><select class="form-select" id="priority_${i}">
+            <td><select class="form-select form-select-sm" id="owner_${i}">${ownerOptions}</select></td>
+            <td><select class="form-select form-select-sm" id="priority_${i}">
                 <option value="low" ${priority==='low'?'selected':''}>Low</option>
                 <option value="medium" ${priority==='medium'?'selected':''}>Medium</option>
                 <option value="high" ${priority==='high'?'selected':''}>High</option>
                 <option value="urgent">Urgent</option>
             </select></td>
-            <td><input type="date" class="form-control" id="due_${i}" value="${parsedDate}"></td>
-            <td><select class="form-select" id="status_${i}">
+            <td><select class="form-select form-select-sm" id="status_${i}">
                 <option value="draft" selected>Draft</option>
                 <option value="active">Active</option>
             </select></td>
-            <td><select class="form-select" id="vis_${i}">
-                <option value="shared" selected>Shared</option>
-                <option value="private">Private</option>
-            </select></td>
+            <td style="text-align:center;">
+                <select class="form-select form-select-sm" id="vis_${i}" style="padding-left:4px;padding-right:4px;text-align:center;">
+                    <option value="shared" selected title="Shared">👥</option>
+                    <option value="private" title="Private">🔒</option>
+                </select>
+            </td>
+            <td><input type="date" class="form-control form-control-sm" id="due_${i}" value="${parsedDate}"></td>
+            ${gbCell}
         </tr>`;
     });
 
     html += '</tbody></table>';
     document.getElementById('actionsTableContainer').innerHTML = html;
     updateSummary();
-
     document.querySelectorAll('.action-check').forEach(cb => cb.addEventListener('change', updateSummary));
 }
 
@@ -982,6 +1026,8 @@ async function submitGenerateActions() {
 
     document.querySelectorAll('.action-check:checked').forEach(cb => {
         const i = parseInt(cb.dataset.idx);
+        const gbIds = Array.from(document.querySelectorAll(`.gb-row-pill[data-row="${i}"][data-selected="1"]`))
+            .map(el => parseInt(el.dataset.gbid));
         actions.push({
             title: document.getElementById(`title_${i}`).value.trim(),
             owner_user_id: parseInt(document.getElementById(`owner_${i}`).value),
@@ -989,6 +1035,7 @@ async function submitGenerateActions() {
             due_date: document.getElementById(`due_${i}`).value,
             status: document.getElementById(`status_${i}`).value,
             visibility: document.getElementById(`vis_${i}`).value,
+            governance_body_ids: gbIds,
         });
     });
 
@@ -1010,7 +1057,7 @@ async function submitGenerateActions() {
         banner.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>
             <strong>${result.created} action(s) created</strong> and linked to this initiative.
             ${titles ? `<ul class="mb-1 mt-1">${titles}</ul>` : ''}
-            <a href="/action-items" class="alert-link">View in Action Items →</a>
+            <a href="/toolbox/actions/" class="alert-link">View in Action Register →</a>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
         const formBody = document.querySelector('.form-body');
         formBody.prepend(banner);

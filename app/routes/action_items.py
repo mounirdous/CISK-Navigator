@@ -35,33 +35,47 @@ def organization_required(f):
 @organization_required
 def index():
     """Main action items page with list and filters"""
+    from app.models import GovernanceBody
+
     org_id = session.get("organization_id")
 
     # Get filter parameters
     item_type = request.args.get("type_filter", "all")
-    status_filter = request.args.get("status_filter", "all")
+    status_filters = request.args.getlist("status_filter")  # multi-select
     visibility_filter = request.args.get("visibility_filter", "all")
+    gb_ids = request.args.getlist("gb_filter", type=int)
 
     # Convert 'all' to None for service
     type_param = None if item_type == "all" else item_type
-    status_param = None if status_filter == "all" else status_filter
 
     # Get items
     items = ActionItemService.get_items_for_user(
         user=current_user,
         organization_id=org_id,
         item_type=type_param,
-        status=status_param,
+        statuses=status_filters or None,
         visibility_filter=visibility_filter,
+        governance_body_ids=gb_ids or None,
     )
 
-    # Get stats
-    stats = ActionItemService.get_stats_for_user(current_user, org_id)
+    # Compute stats from the filtered items so cards match what's displayed
+    stats = {
+        "total_actions": sum(1 for i in items if i.type == "action"),
+        "open_actions": sum(1 for i in items if i.type == "action" and i.status == "active"),
+        "overdue_actions": sum(1 for i in items if i.is_overdue),
+        "completed_actions": sum(1 for i in items if i.type == "action" and i.status == "completed"),
+        "total_memos": sum(1 for i in items if i.type == "memo"),
+    }
 
     # Filter form for persistence
     filter_form = ActionItemFilterForm(
-        type_filter=item_type, status_filter=status_filter, visibility_filter=visibility_filter
+        type_filter=item_type, visibility_filter=visibility_filter
     )
+
+    # Governance bodies for filter
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(
+        GovernanceBody.display_order
+    ).all()
 
     # Check if user is admin
     is_admin = current_user.is_super_admin or current_user.is_global_admin
@@ -71,7 +85,13 @@ def index():
         items=items,
         stats=stats,
         filter_form=filter_form,
-        current_filters={"type": item_type, "status": status_filter, "visibility": visibility_filter},
+        current_filters={
+            "type": item_type,
+            "statuses": status_filters,
+            "visibility": visibility_filter,
+            "gb_ids": gb_ids,
+        },
+        governance_bodies=governance_bodies,
         can_contribute=current_user.can_contribute(org_id),
         is_admin=is_admin,
         csrf_token=generate_csrf,
@@ -83,6 +103,8 @@ def index():
 @organization_required
 def create():
     """Create new action item or memo"""
+    from app.models import GovernanceBody, User, UserOrganizationMembership
+
     org_id = session.get("organization_id")
 
     # Check permission
@@ -93,8 +115,6 @@ def create():
     form = ActionItemCreateForm()
 
     # Populate owner choices with organization users
-    from app.models import User, UserOrganizationMembership
-
     org_users = (
         db.session.query(User)
         .join(UserOrganizationMembership)
@@ -104,12 +124,17 @@ def create():
     )
     form.owner_user_id.choices = [(u.id, u.display_name or u.login) for u in org_users]
 
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(
+        GovernanceBody.display_order
+    ).all()
+
     # Default to current user
     if request.method == "GET":
         form.owner_user_id.data = current_user.id
 
     if form.validate_on_submit():
         try:
+            gb_ids = request.form.getlist("governance_body_ids", type=int)
             item = ActionItemService.create_item(
                 organization_id=org_id,
                 owner_user_id=form.owner_user_id.data,
@@ -121,6 +146,7 @@ def create():
                 priority=form.priority.data if form.type.data == "action" else "medium",
                 due_date=form.due_date.data,
                 visibility=form.visibility.data,
+                governance_body_ids=gb_ids,
             )
 
             flash(f"{'Action' if item.type == 'action' else 'Memo'} created successfully!", "success")
@@ -130,7 +156,7 @@ def create():
             db.session.rollback()
             flash(f"Error creating item: {str(e)}", "danger")
 
-    return render_template("action_items/create.html", form=form, csrf_token=generate_csrf)
+    return render_template("action_items/create.html", form=form, governance_bodies=governance_bodies, csrf_token=generate_csrf)
 
 
 @bp.route("/<int:item_id>/edit", methods=["GET", "POST"])
@@ -138,6 +164,8 @@ def create():
 @organization_required
 def edit(item_id):
     """Edit action item or memo"""
+    from app.models import GovernanceBody, User, UserOrganizationMembership
+
     item = ActionItem.query.get_or_404(item_id)
 
     # Check permission
@@ -152,9 +180,6 @@ def edit(item_id):
 
     form = ActionItemEditForm(obj=item)
 
-    # Populate owner choices with organization users
-    from app.models import User, UserOrganizationMembership
-
     org_users = (
         db.session.query(User)
         .join(UserOrganizationMembership)
@@ -164,8 +189,14 @@ def edit(item_id):
     )
     form.owner_user_id.choices = [(u.id, u.display_name or u.login) for u in org_users]
 
+    governance_bodies = GovernanceBody.query.filter_by(
+        organization_id=item.organization_id, is_active=True
+    ).order_by(GovernanceBody.display_order).all()
+    current_gb_ids = {gb.id for gb in item.governance_bodies}
+
     if form.validate_on_submit():
         try:
+            gb_ids = request.form.getlist("governance_body_ids", type=int)
             updated_item = ActionItemService.update_item(
                 item_id=item.id,
                 user_id=current_user.id,
@@ -176,6 +207,7 @@ def edit(item_id):
                 due_date=form.due_date.data,
                 owner_user_id=form.owner_user_id.data,
                 visibility=form.visibility.data,
+                governance_body_ids=gb_ids,
             )
 
             if updated_item:
@@ -188,7 +220,14 @@ def edit(item_id):
             db.session.rollback()
             flash(f"Error updating item: {str(e)}", "danger")
 
-    return render_template("action_items/edit.html", form=form, item=item, csrf_token=generate_csrf)
+    return render_template(
+        "action_items/edit.html",
+        form=form,
+        item=item,
+        governance_bodies=governance_bodies,
+        current_gb_ids=current_gb_ids,
+        csrf_token=generate_csrf,
+    )
 
 
 @bp.route("/<int:item_id>/delete", methods=["POST"])
