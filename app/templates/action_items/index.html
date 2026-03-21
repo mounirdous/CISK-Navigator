@@ -3,6 +3,7 @@
 {% block title %}Action Register{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/dist/vis-timeline-graph2d.min.css">
 <style>
 .page-header {
     background: linear-gradient(135deg, #1565c0, #0d47a1);
@@ -127,6 +128,76 @@
     box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
     outline: none;
 }
+/* ── View toggle ── */
+.view-toggle { display:inline-flex; border:1.5px solid #dee2e6; border-radius:8px; overflow:hidden; }
+.view-toggle button {
+    padding:0.3rem 0.75rem; border:none; background:white; font-size:0.82rem;
+    font-weight:600; color:#546e7a; cursor:pointer; transition:all 0.15s;
+}
+.view-toggle button.active { background:#1565c0; color:white; }
+.view-toggle button:hover:not(.active) { background:#f0f4ff; color:#1565c0; }
+
+/* ── Timeline view ── */
+#groupby-bar {
+    background:white; border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.07);
+    padding:0.75rem 1.25rem; margin-bottom:1rem;
+    display:flex; align-items:center; gap:1.25rem; flex-wrap:wrap;
+}
+#groupby-bar .gb-label { font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#78909c; }
+.groupby-pill {
+    padding:0.25rem 0.7rem; border-radius:20px; border:1.5px solid #dee2e6;
+    background:white; font-size:0.82rem; font-weight:600; cursor:pointer;
+    transition:all 0.15s; white-space:nowrap; color:#546e7a;
+}
+.groupby-pill.active { background:#1565c0; color:white; border-color:#1565c0; }
+.groupby-pill:hover:not(.active) { border-color:#1565c0; color:#1565c0; }
+.zoom-pill {
+    padding:0.2rem 0.6rem; border-radius:6px; border:1.5px solid #dee2e6;
+    background:white; font-size:0.78rem; font-weight:600; cursor:pointer;
+    transition:all 0.15s; color:#546e7a;
+}
+.zoom-pill:hover { border-color:#1565c0; color:#1565c0; }
+
+#timeline-container {
+    background:white; border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.07); overflow:hidden;
+}
+#vis-timeline { height:520px; }
+#timeline-undated {
+    background:white; border-radius:10px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.07);
+    margin-top:1rem; padding:1rem 1.25rem;
+}
+
+/* vis item classes */
+.vis-item.priority-urgent { background:#ffebee; border-color:#b71c1c; color:#b71c1c; }
+.vis-item.priority-high   { background:#fff3e0; border-color:#e65100; color:#e65100; }
+.vis-item.priority-medium { background:#e3f2fd; border-color:#1565c0; color:#1565c0; }
+.vis-item.priority-low    { background:#f5f5f5; border-color:#78909c; color:#546e7a; }
+.vis-item.item-overdue    { border-width:2px; border-style:solid; }
+.vis-item.item-overdue .vis-item-content::before { content:"⚠ "; }
+.vis-item.item-memo       { border-style:dashed; opacity:0.85; }
+.vis-item.item-completed  { opacity:0.45; }
+.vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
+.vis-item.item-undated    { border-style:dotted; opacity:0.7; }
+.vis-background.crunch-zone { background:rgba(230,81,0,0.06); border-left:2px dashed #ff6d00; }
+
+/* Item detail popover */
+#item-detail-panel {
+    position:fixed; right:1.5rem; bottom:1.5rem; width:340px;
+    background:white; border-radius:12px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.18); z-index:1050;
+    display:none; overflow:hidden;
+}
+#item-detail-panel .idp-header {
+    padding:0.75rem 1rem; display:flex; align-items:center; justify-content:space-between;
+    border-bottom:1px solid #f0f0f0;
+}
+#item-detail-panel .idp-body { padding:0.75rem 1rem; font-size:0.85rem; }
+#item-detail-panel .idp-row { display:flex; gap:0.5rem; margin-bottom:0.35rem; }
+#item-detail-panel .idp-label { color:#78909c; min-width:80px; font-size:0.78rem; }
+
 /* Duplicate detection */
 #dup-panel {
     background: white;
@@ -349,6 +420,20 @@
             </div>
             {% endif %}
 
+            <!-- View toggle -->
+            <div class="col-auto d-flex align-items-end">
+                <div class="view-toggle">
+                    <button type="button" id="btn-view-table" onclick="switchView('table')"
+                            class="{% if view == 'table' %}active{% endif %}">
+                        <i class="bi bi-table me-1"></i>Table
+                    </button>
+                    <button type="button" id="btn-view-timeline" onclick="switchView('timeline')"
+                            class="{% if view == 'timeline' %}active{% endif %}">
+                        <i class="bi bi-calendar-range me-1"></i>Timeline
+                    </button>
+                </div>
+            </div>
+
             <!-- Search + Duplicate Detect -->
             <div class="col-auto d-flex align-items-end ms-auto gap-2">
                 <div class="search-box">
@@ -366,6 +451,58 @@
     </div>
     </form>
 
+    <!-- Timeline group-by bar (shown only in timeline view) -->
+    <div id="groupby-bar" style="display:none;">
+        <span class="gb-label">Group by</span>
+        <div class="d-flex gap-2 flex-wrap" id="groupby-pills">
+            <button class="groupby-pill active" data-group="priority">Priority</button>
+            <button class="groupby-pill" data-group="owner">Owner</button>
+            <button class="groupby-pill" data-group="governance">Governance Body</button>
+            <button class="groupby-pill" data-group="entity">CISK Entity</button>
+            <button class="groupby-pill" data-group="status">Status</button>
+        </div>
+        <div class="d-flex gap-1 ms-auto align-items-center flex-wrap">
+            <span class="gb-label me-1">Zoom</span>
+            <button class="zoom-pill" onclick="tlZoom('week')">Week</button>
+            <button class="zoom-pill" onclick="tlZoom('month')">Month</button>
+            <button class="zoom-pill" onclick="tlZoom('quarter')">Quarter</button>
+            <button class="zoom-pill" onclick="tlZoom('year')">Year</button>
+            <button class="zoom-pill" onclick="tlZoom('fit')"><i class="bi bi-arrows-fullscreen"></i></button>
+        </div>
+    </div>
+
+    <!-- Timeline view container -->
+    <div id="timeline-view-wrapper" style="display:none;">
+        <div id="timeline-container">
+            <div id="vis-timeline"></div>
+        </div>
+        <div id="timeline-undated" style="display:none;">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-calendar-x text-muted"></i>
+                <strong style="font-size:0.85rem; color:#546e7a;">No due date</strong>
+                <span id="undated-count" class="badge bg-secondary" style="font-size:0.72rem;"></span>
+            </div>
+            <div id="undated-items" class="d-flex flex-wrap gap-2"></div>
+        </div>
+        <!-- Item detail popover -->
+        <div id="item-detail-panel">
+            <div class="idp-header">
+                <span id="idp-title" style="font-weight:700; font-size:0.9rem; max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+                <button type="button" onclick="closeItemDetail()" class="btn-close" style="width:0.7rem; height:0.7rem;"></button>
+            </div>
+            <div class="idp-body">
+                <div class="idp-row"><span class="idp-label">Status</span><span id="idp-status"></span></div>
+                <div class="idp-row"><span class="idp-label">Priority</span><span id="idp-priority"></span></div>
+                <div class="idp-row"><span class="idp-label">Owner</span><span id="idp-owner"></span></div>
+                <div class="idp-row"><span class="idp-label">Due date</span><span id="idp-due"></span></div>
+                <div class="idp-row" id="idp-gbs-row"><span class="idp-label">Governance</span><span id="idp-gbs"></span></div>
+                <div class="idp-row" id="idp-mentions-row"><span class="idp-label">Links</span><span id="idp-mentions"></span></div>
+                <div id="idp-desc" style="font-size:0.8rem; color:#546e7a; margin-top:0.4rem; border-top:1px solid #f0f0f0; padding-top:0.4rem;"></div>
+            </div>
+            <div class="px-3 pb-3 d-flex gap-2" id="idp-actions"></div>
+        </div>
+    </div>
+
     <!-- Duplicate detection panel (hidden until scan runs) -->
     <div id="dup-panel" style="display:none;">
         <div class="dup-header" onclick="toggleDupPanel()">
@@ -376,6 +513,7 @@
     </div>
 
     <!-- Items Table -->
+    <div id="table-view-wrapper">
     {% if items %}
     <div class="items-table-container">
 
@@ -593,6 +731,7 @@
         </div>
     </div>
     {% endif %}
+    </div>{# end #table-view-wrapper #}
 
 </div>
 
@@ -955,4 +1094,251 @@ itemCbs.forEach(cb => cb.addEventListener('change', updateCount));
 updateCount();
 </script>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/dist/vis-timeline-graph2d.min.js"></script>
+<script>
+// ── Timeline view ────────────────────────────────────────────────────────────
+const TL_DATA = {{ timeline_items | tojson }};
+const CSRF_TOKEN = document.querySelector('input[name=csrf_token]')?.value || '';
+
+let tlInstance = null;
+let currentGroupBy = 'priority';
+let activeView = '{{ view }}';
+
+const PRIORITY_ORDER = { urgent:0, high:1, medium:2, low:3 };
+
+const GROUP_CONFIGS = {
+    priority: {
+        staticGroups: [
+            { id:'urgent',    content:'<span style="color:#b71c1c;font-weight:700;">🔥 Urgent</span>' },
+            { id:'high',      content:'<span style="color:#e65100;font-weight:700;">▲ High</span>' },
+            { id:'medium',    content:'<span style="color:#1565c0;font-weight:700;">● Medium</span>' },
+            { id:'low',       content:'<span style="color:#546e7a;font-weight:700;">▼ Low</span>' },
+            { id:'__undated', content:'<span style="color:#90a4ae;">— No due date</span>' },
+        ],
+        getGroup: item => item.priority || 'medium',
+    },
+    owner: {
+        staticGroups: null,
+        getGroup: item => item.owner || 'Unknown',
+    },
+    governance: {
+        staticGroups: null,
+        getGroup: item => item.gbs.length ? item.gbs.join(' · ') : 'No governance body',
+    },
+    entity: {
+        staticGroups: null,
+        getGroup: item => item.mentions.length ? item.mentions[0] : 'No entity link',
+    },
+    status: {
+        staticGroups: [
+            { id:'active',    content:'<span style="color:#2e7d32;font-weight:700;">● Active</span>' },
+            { id:'draft',     content:'<span style="color:#546e7a;font-weight:700;">◌ Draft</span>' },
+            { id:'completed', content:'<span style="color:#4527a0;font-weight:700;">✓ Completed</span>' },
+            { id:'cancelled', content:'<span style="color:#b71c1c;font-weight:700;">✕ Cancelled</span>' },
+        ],
+        getGroup: item => item.status,
+    },
+};
+
+function buildVisData(groupBy) {
+    const cfg = GROUP_CONFIGS[groupBy];
+    const today = new Date().toISOString().split('T')[0];
+
+    let groupSet = cfg.staticGroups
+        ? cfg.staticGroups.map(g => ({ id: g.id, content: g.content }))
+        : null;
+
+    if (!groupSet) {
+        const seen = new Set();
+        TL_DATA.forEach(item => seen.add(cfg.getGroup(item)));
+        groupSet = Array.from(seen).sort().map(id => ({ id, content: `<span style="font-weight:600;">${id}</span>` }));
+        if (TL_DATA.some(i => !i.due_date)) {
+            groupSet.push({ id: '__undated', content: '<span style="color:#90a4ae;">— No due date</span>' });
+        }
+    }
+
+    const visItemsList = [];
+    TL_DATA.forEach(item => {
+        const groupId = item.due_date ? cfg.getGroup(item) : '__undated';
+        const start = item.due_date || today;
+        const classes = [
+            `priority-${item.priority}`,
+            item.is_overdue ? 'item-overdue' : '',
+            item.type === 'memo' ? 'item-memo' : '',
+            item.status === 'completed' ? 'item-completed' : '',
+            item.status === 'cancelled' ? 'item-cancelled' : '',
+            !item.due_date ? 'item-undated' : '',
+        ].filter(Boolean).join(' ');
+
+        const typeIcon = item.type === 'memo' ? '📝' : '✅';
+        const short = item.title_text.length > 32 ? item.title_text.slice(0, 30) + '…' : item.title_text;
+        visItemsList.push({
+            id: item.id,
+            group: groupId,
+            start: start,
+            content: `${typeIcon} ${short}`,
+            title: buildTooltip(item),
+            className: classes,
+        });
+    });
+
+    return { items: visItemsList, groups: groupSet };
+}
+
+function buildTooltip(item) {
+    let t = `<div style="max-width:260px;padding:6px 8px;font-size:0.82rem;">`;
+    t += `<strong>${item.title_text}</strong><br>`;
+    t += `<span style="color:#78909c;">Status: ${item.status} · Priority: ${item.priority}</span><br>`;
+    t += `<span style="color:#78909c;">Owner: ${item.owner}</span><br>`;
+    if (item.due_date) t += `<span style="color:${item.is_overdue ? '#b71c1c' : '#546e7a'};">Due: ${item.due_date}${item.is_overdue ? ' ⚠ Overdue' : ''}</span><br>`;
+    if (item.gbs.length) t += `<span style="color:#546e7a;">GB: ${item.gbs.join(', ')}</span><br>`;
+    if (item.description) t += `<span style="color:#90a4ae;">${item.description.slice(0,100)}${item.description.length>100?'…':''}</span>`;
+    t += '</div>';
+    return t;
+}
+
+function buildCrunchZones() {
+    const dated = TL_DATA.filter(i => i.due_date && i.status !== 'cancelled').map(i => new Date(i.due_date).getTime());
+    if (dated.length < 3) return [];
+    dated.sort((a, b) => a - b);
+    const zones = [];
+    const DAY = 86400000;
+    for (let i = 0; i < dated.length; i++) {
+        const win = dated.filter(d => d >= dated[i] && d <= dated[i] + 3 * DAY);
+        if (win.length >= 3) {
+            const s = new Date(dated[i] - DAY), e = new Date(dated[i] + 4 * DAY);
+            if (zones.length && s <= zones[zones.length-1].end) zones[zones.length-1].end = e;
+            else zones.push({ start: s, end: e });
+        }
+    }
+    return zones.map((z, i) => ({
+        id: `crunch-${i}`, type: 'background',
+        start: z.start, end: z.end, className: 'crunch-zone',
+        title: '⚠ Busy period: multiple items due here',
+    }));
+}
+
+function renderTimeline(groupBy) {
+    currentGroupBy = groupBy;
+    const { items, groups } = buildVisData(groupBy);
+    const crunch = buildCrunchZones();
+    const allItems = [...items, ...crunch];
+    const container = document.getElementById('vis-timeline');
+
+    if (tlInstance) {
+        tlInstance.setData({ items: new vis.DataSet(allItems), groups: new vis.DataSet(groups) });
+    } else {
+        const now = new Date();
+        const s = new Date(+now - 7*86400000), e = new Date(+now + 60*86400000);
+        tlInstance = new vis.Timeline(container, new vis.DataSet(allItems), new vis.DataSet(groups), {
+            start: s, end: e,
+            showCurrentTime: true,
+            orientation: { axis: 'top' },
+            stack: true,
+            showMajorLabels: true,
+            showMinorLabels: true,
+            zoomMin: 86400000 * 3,
+            zoomMax: 86400000 * 730,
+            tooltip: { followMouse: true, overflowMethod: 'cap' },
+            margin: { item: { horizontal: 6, vertical: 4 }, axis: 10 },
+        });
+        tlInstance.on('click', function(props) {
+            if (props.item && typeof props.item === 'number') {
+                const item = TL_DATA.find(i => i.id === props.item);
+                if (item) showItemDetail(item);
+            }
+        });
+    }
+    renderUndated();
+}
+
+function renderUndated() {
+    const undated = TL_DATA.filter(i => !i.due_date);
+    const strip = document.getElementById('timeline-undated');
+    const container = document.getElementById('undated-items');
+    const countEl = document.getElementById('undated-count');
+    if (!undated.length) { strip.style.display = 'none'; return; }
+    strip.style.display = '';
+    countEl.textContent = undated.length;
+    const pColors = { urgent:'#b71c1c', high:'#e65100', medium:'#1565c0', low:'#546e7a' };
+    container.innerHTML = undated.map(item => {
+        const color = pColors[item.priority] || '#546e7a';
+        const short = item.title_text.length > 30 ? item.title_text.slice(0,28)+'…' : item.title_text;
+        return `<span onclick='showItemDetail(TL_DATA.find(i=>i.id===${item.id}))'
+            style="cursor:pointer;padding:0.25rem 0.6rem;border-radius:6px;border:1.5px dashed ${color};
+                   font-size:0.8rem;color:${color};background:white;">${item.type==='memo'?'📝':'✅'} ${short}</span>`;
+    }).join('');
+}
+
+function showItemDetail(item) {
+    if (!item) return;
+    document.getElementById('idp-title').textContent = item.title_text;
+    document.getElementById('idp-status').textContent = item.status;
+    document.getElementById('idp-priority').textContent = item.priority;
+    document.getElementById('idp-owner').textContent = item.owner;
+    document.getElementById('idp-due').textContent = item.due_date || '—';
+    document.getElementById('idp-gbs-row').style.display = item.gbs.length ? '' : 'none';
+    document.getElementById('idp-gbs').textContent = item.gbs.join(', ');
+    document.getElementById('idp-mentions-row').style.display = item.mentions.length ? '' : 'none';
+    document.getElementById('idp-mentions').textContent = item.mentions.join(', ');
+    document.getElementById('idp-desc').textContent = item.description || '';
+    const actions = document.getElementById('idp-actions');
+    actions.innerHTML = '';
+    if (item.can_edit) actions.innerHTML += `<a href="${item.edit_url}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>`;
+    actions.innerHTML += `<a href="#item-${item.id}" class="btn btn-sm btn-outline-secondary" onclick="closeItemDetail();switchView('table')"><i class="bi bi-table me-1"></i>Table row</a>`;
+    document.getElementById('item-detail-panel').style.display = '';
+}
+window.closeItemDetail = () => { document.getElementById('item-detail-panel').style.display = 'none'; };
+
+window.tlZoom = function(preset) {
+    if (!tlInstance) return;
+    const now = new Date(), D = 86400000;
+    const ranges = { week:[now-3*D, +now+7*D], month:[now-5*D, +now+30*D], quarter:[now-7*D, +now+90*D], year:[now-30*D, +now+365*D] };
+    if (preset === 'fit') { tlInstance.fit({ animation:true }); return; }
+    const [s, e] = ranges[preset] || [];
+    if (s) tlInstance.setWindow(new Date(s), new Date(e), { animation:true });
+};
+
+document.querySelectorAll('.groupby-pill').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.groupby-pill').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        renderTimeline(this.dataset.group);
+    });
+});
+
+window.switchView = function(v) {
+    activeView = v;
+    const tableW = document.getElementById('table-view-wrapper');
+    const tlW    = document.getElementById('timeline-view-wrapper');
+    const gbBar  = document.getElementById('groupby-bar');
+    const dupPanel = document.getElementById('dup-panel');
+    if (v === 'timeline') {
+        tableW.style.display = 'none';
+        tlW.style.display = '';
+        gbBar.style.display = '';
+        if (dupPanel) dupPanel.style.display = 'none';
+        document.getElementById('btn-view-table').classList.remove('active');
+        document.getElementById('btn-view-timeline').classList.add('active');
+        if (!tlInstance) renderTimeline(currentGroupBy);
+        else tlInstance.redraw();
+    } else {
+        tableW.style.display = '';
+        tlW.style.display = 'none';
+        gbBar.style.display = 'none';
+        document.getElementById('btn-view-table').classList.add('active');
+        document.getElementById('btn-view-timeline').classList.remove('active');
+    }
+    const url = new URL(window.location);
+    url.searchParams.set('view', v);
+    history.replaceState({}, '', url);
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (activeView === 'timeline') switchView('timeline');
+});
+</script>
 {% endblock %}

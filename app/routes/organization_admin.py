@@ -3434,24 +3434,33 @@ def _delete_all_organization_data(org_id):
     for space in spaces:
         db.session.delete(space)
 
-    # 13. Delete RollupRules (depends on ValueTypes)
+    # 13. Delete Action Items and Memos (and their mentions via cascade)
+    from app.models import ActionItem
+
+    action_items = ActionItem.query.filter_by(organization_id=org_id).all()
+    for ai in action_items:
+        db.session.delete(ai)
+
+    db.session.flush()
+
+    # 15. Delete RollupRules (depends on ValueTypes)
     from app.models import RollupRule
 
     rollup_rules = RollupRule.query.join(ValueType).filter(ValueType.organization_id == org_id).all()
     for rule in rollup_rules:
         db.session.delete(rule)
 
-    # 14. Delete ValueTypes (NOW safe to delete)
+    # 16. Delete ValueTypes (NOW safe to delete)
     value_types = ValueType.query.filter_by(organization_id=org_id).all()
     for vt in value_types:
         db.session.delete(vt)
 
-    # 15. Delete Governance Bodies (NOW safe to delete)
+    # 17. Delete Governance Bodies (NOW safe to delete)
     gov_bodies = GovernanceBody.query.filter_by(organization_id=org_id).all()
     for gb in gov_bodies:
         db.session.delete(gb)
 
-    # 16. Delete Audit Logs
+    # 18. Delete Audit Logs
     from app.models import AuditLog
 
     audit_logs = AuditLog.query.filter_by(organization_id=org_id).all()

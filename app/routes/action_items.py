@@ -80,6 +80,30 @@ def index():
     # Check if user is admin
     is_admin = current_user.is_super_admin or current_user.is_global_admin
 
+    # Active view (table or timeline)
+    view = request.args.get("view", "table")
+
+    # Serialize items for the timeline view (JSON blob injected into template)
+    timeline_items = []
+    for item in items:
+        timeline_items.append({
+            "id": item.id,
+            "title_text": item.title,
+            "description": (item.description or "")[:200],
+            "status": item.status,
+            "priority": item.priority,
+            "type": item.type,
+            "due_date": item.due_date.isoformat() if item.due_date else None,
+            "created_at": item.created_at.strftime("%Y-%m-%d"),
+            "is_overdue": item.is_overdue,
+            "owner": item.owner_user.display_name or item.owner_user.login if item.owner_user else "Unknown",
+            "gbs": [gb.name for gb in item.governance_bodies],
+            "mentions": [m.mention_text for m in item.mentions],
+            "can_edit": item.owner_user_id == current_user.id,
+            "edit_url": url_for("action_items.edit", item_id=item.id),
+            "delete_url": url_for("action_items.delete", item_id=item.id),
+        })
+
     return render_template(
         "action_items/index.html",
         items=items,
@@ -94,6 +118,8 @@ def index():
         governance_bodies=governance_bodies,
         can_contribute=current_user.can_contribute(org_id),
         is_admin=is_admin,
+        view=view,
+        timeline_items=timeline_items,
         csrf_token=generate_csrf,
     )
 
