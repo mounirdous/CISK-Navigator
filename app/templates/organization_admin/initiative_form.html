@@ -671,7 +671,11 @@
                 {% for system_group in kpi_data %}
                 <div class="system-group">
                     <div class="system-header">
-                        <span style="font-weight: bold;">Φ</span>
+                        {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                        <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-right: 4px;">
+                        {% else %}
+                        <span style="font-weight: bold;">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
+                        {% endif %}
                         {{ system_group.system_name }}
                     </div>
                     <table class="kpi-table">
@@ -681,7 +685,12 @@
                                 <span class="status-indicator {{ kpi.status }}"></span>
                             </td>
                             <td class="kpi-name-cell">
-                                <span style="font-weight: bold;">Ψ</span> {{ kpi.name }}
+                                {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
+                                <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 18px; height: 18px; object-fit: contain; vertical-align: middle; margin-right: 4px;">
+                                {% else %}
+                                <span style="font-weight: bold;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
+                                {% endif %}
+                                {{ kpi.name }}
                             </td>
                             <td class="kpi-values-cell">
                                 {% if kpi.value_types %}
