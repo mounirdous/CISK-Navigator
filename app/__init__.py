@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "2.17.8"
+__version__ = "2.17.9"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None

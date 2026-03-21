@@ -2412,19 +2412,25 @@ def delete_initiative(initiative_id):
 
     initiative_name = initiative.name
     initiative_id_for_audit = initiative.id
-
-    # Check if initiative is linked to any challenges
-    challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).all()
-    if challenge_links:
-        flash(
-            f'Cannot delete initiative "{initiative_name}" - it is linked to {len(challenge_links)} challenge(s). Remove links first.',
-            "danger",
-        )
-        return redirect(url_for("organization_admin.initiatives"))
-
     initiative_details = {"description": initiative.description, "organization_id": org_id}
 
+    # Find systems that will be orphaned (only linked to this initiative)
+    systems_to_delete = []
+    for sys_link in initiative.system_links:
+        other_links = InitiativeSystemLink.query.filter(
+            InitiativeSystemLink.system_id == sys_link.system_id,
+            InitiativeSystemLink.initiative_id != initiative_id,
+        ).count()
+        if other_links == 0:
+            systems_to_delete.append(sys_link.system)
+
+    # Delete initiative — cascades: challenge links, system links, KPIs
     db.session.delete(initiative)
+    db.session.flush()
+
+    # Delete systems that are no longer linked to any initiative
+    for system in systems_to_delete:
+        db.session.delete(system)
 
     # Audit log
     AuditService.log_delete("Initiative", initiative_id_for_audit, initiative_name, initiative_details)
@@ -2451,20 +2457,25 @@ def delete_initiative_api(initiative_id):
 
         initiative_name = initiative.name
         initiative_id_for_audit = initiative.id
-
-        # Check if initiative is linked to any challenges
-        challenge_links = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).all()
-        if challenge_links:
-            return jsonify(
-                {
-                    "success": False,
-                    "error": f'Cannot delete initiative "{initiative_name}" - it is linked to {len(challenge_links)} challenge(s). Remove links first.',
-                }
-            )
-
         initiative_details = {"description": initiative.description, "organization_id": org_id}
 
+        # Find systems that will be orphaned (only linked to this initiative)
+        systems_to_delete = []
+        for sys_link in initiative.system_links:
+            other_links = InitiativeSystemLink.query.filter(
+                InitiativeSystemLink.system_id == sys_link.system_id,
+                InitiativeSystemLink.initiative_id != initiative_id,
+            ).count()
+            if other_links == 0:
+                systems_to_delete.append(sys_link.system)
+
+        # Delete initiative — cascades: challenge links, system links, KPIs
         db.session.delete(initiative)
+        db.session.flush()
+
+        # Delete systems that are no longer linked to any initiative
+        for system in systems_to_delete:
+            db.session.delete(system)
 
         # Audit log
         AuditService.log_delete("Initiative", initiative_id_for_audit, initiative_name, initiative_details)
