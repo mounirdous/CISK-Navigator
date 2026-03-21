@@ -782,6 +782,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const comment = this.dataset.comment;
             const isNumeric = this.dataset.isNumeric === '1';
             const isList = this.dataset.isList === '1';
+            isEditMode = true;
 
             // Pre-populate form
             document.getElementById('contributor_name').value = name;
@@ -856,6 +857,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const entryModeModal = new bootstrap.Modal(document.getElementById('entryModeModal'));
     const entryModeInput = document.getElementById('entry_mode');
     let formSubmitAllowed = false;
+    let isEditMode = false;  // True when editing an existing contribution
 
     // Check consensus status
     const consensusStatus = '{{ consensus.status }}';
@@ -864,21 +866,21 @@ document.addEventListener('DOMContentLoaded', function() {
     contributionForm.addEventListener('submit', function(event) {
         // If form submission already confirmed, allow it to proceed
         if (formSubmitAllowed) {
-            // Don't prevent default - let form submit
-            console.log('Form submission allowed - proceeding');
+            return;
+        }
+
+        // Editing an existing contribution → always "contributing" mode, no modal
+        if (isEditMode) {
+            isEditMode = false;
             return;
         }
 
         // Only show modal if there's strong consensus
         if (hasStrongConsensus) {
-            console.log('Strong consensus detected - showing modal');
             event.preventDefault();
             entryModeModal.show();
             return;
         }
-
-        // No consensus - allow normal submission
-        console.log('No consensus - normal submission');
     });
 
     // Handle modal confirmation
