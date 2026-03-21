@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.11] - 2026-03-21
+
+### Fixed
+- Backup/restore now includes initiative form fields: mission, responsible person, team members, handover organization, deliverables, steps (success criteria), impact level, impact rationale
+- Backup/restore now includes Porter's Five Forces data (stored on organization)
+
 ## [2.15.10] - 2026-03-21
 
 ### Fixed

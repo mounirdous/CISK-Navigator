@@ -15,9 +15,10 @@ What's backed up:
 ✅ Full CISK hierarchy:
    - Spaces (with SWOT analysis)
    - Challenges
-   - Initiatives
+   - Initiatives (with mission, responsible person, team, deliverables, steps, impact)
    - Systems
    - KPIs (with logos)
+✅ Porter's Five Forces (on organization)
 ✅ KPI Configurations:
    - Value type configs
    - Colors (positive/zero/negative)
@@ -115,6 +116,11 @@ class FullBackupService:
             "name": org.name,
             "description": org.description,
             "is_active": org.is_active,
+            "porters_new_entrants": org.porters_new_entrants,
+            "porters_suppliers": org.porters_suppliers,
+            "porters_buyers": org.porters_buyers,
+            "porters_substitutes": org.porters_substitutes,
+            "porters_rivalry": org.porters_rivalry,
         }
 
         # Export logo if present
@@ -290,6 +296,14 @@ class FullBackupService:
                         "name": initiative.name,
                         "description": initiative.description,
                         "group_label": initiative.group_label,
+                        "mission": initiative.mission,
+                        "responsible_person": initiative.responsible_person,
+                        "team_members": initiative.team_members,
+                        "handover_organization": initiative.handover_organization,
+                        "deliverables": initiative.deliverables,
+                        "success_criteria": initiative.success_criteria,
+                        "impact_on_challenge": initiative.impact_on_challenge,
+                        "impact_rationale": initiative.impact_rationale,
                         "systems": [],
                     }
 

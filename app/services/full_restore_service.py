@@ -236,19 +236,25 @@ class FullRestoreService:
                     else:
                         stats["errors"].append(f"Governance body ID {action} not found for '{gb_name}'")
 
-            # Step 1.5: Restore organization logo
+            # Step 1.5: Restore organization logo and Porter's Five Forces
             org_data = backup.get("organization", {})
+            org = Organization.query.get(organization_id)
             if "logo" in org_data:
                 try:
                     import base64
 
-                    org = Organization.query.get(organization_id)
                     org.logo_data = base64.b64decode(org_data["logo"]["data"])
                     org.logo_mime_type = org_data["logo"]["mime_type"]
                     db.session.flush()
                     stats["logos_restored"] += 1
                 except Exception as e:
                     stats["warnings"].append(f"Failed to restore organization logo: {str(e)}")
+
+            # Restore Porter's Five Forces
+            for field in ("porters_new_entrants", "porters_suppliers", "porters_buyers", "porters_substitutes", "porters_rivalry"):
+                if field in org_data:
+                    setattr(org, field, org_data[field])
+            db.session.flush()
 
             # Step 2: Import Value Types
             # First pass: Create all value types without formulas
@@ -444,6 +450,14 @@ class FullRestoreService:
                             name=init_name,
                             description=initiative_data.get("description"),
                             group_label=initiative_data.get("group_label"),
+                            mission=initiative_data.get("mission"),
+                            responsible_person=initiative_data.get("responsible_person"),
+                            team_members=initiative_data.get("team_members"),
+                            handover_organization=initiative_data.get("handover_organization"),
+                            deliverables=initiative_data.get("deliverables"),
+                            success_criteria=initiative_data.get("success_criteria"),
+                            impact_on_challenge=initiative_data.get("impact_on_challenge"),
+                            impact_rationale=initiative_data.get("impact_rationale"),
                         )
 
                         # Restore initiative logo if present
