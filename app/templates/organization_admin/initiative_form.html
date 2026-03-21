@@ -329,6 +329,11 @@
                     <i class="bi bi-pencil"></i> Edit
                 </a>
                 {% endif %}
+                {% if edit_mode %}
+                <button type="submit" form="initiativeForm" class="btn btn-light fw-semibold">
+                    <i class="bi bi-check-circle"></i> Save
+                </button>
+                {% endif %}
                 {% if request.args.get('return_to') == 'action_items' %}
                 <a href="{{ url_for('action_items') }}" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left"></i> Back to Action Items
@@ -343,7 +348,7 @@
 
         <div class="form-body">
             {% if edit_mode %}
-            <form method="POST" novalidate>
+            <form method="POST" novalidate id="initiativeForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
 
                 <div class="kpi-overview">
