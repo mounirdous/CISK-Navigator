@@ -1,12 +1,74 @@
-# 🧭 CISK Navigator v2.14.11
+# 🧭 CISK Navigator v2.16.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.14.11-blue)
-![Python](https://img.shields.io/badge/python-3.14+-green)
+![Version](https://img.shields.io/badge/version-2.16.0-blue)
+![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
-![Tests](https://img.shields.io/badge/tests-322%20passing-success)
+![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+
+## ✨ What's New in v2.16.0 (March 2026)
+
+### ⚡ **Generate Actions from Deliverables & Success Criteria**
+Turn initiative milestones into action items in seconds:
+
+**Smart Parsing**:
+- Lightning button on the Deliverables section of the initiative form (view mode)
+- Parses all deliverable rows and success criteria rows automatically
+- Extracts title from milestone text, due date from the date column
+
+**Intelligent Pre-fill**:
+- **Title** — milestone or success criterion text
+- **Owner** — current user (dropdown of all org members)
+- **Priority** — suggested from initiative impact level (High impact → High priority)
+- **Due date** — auto-parsed from "Week N" (configurable reference date: today or custom picker), "Q1–Q4 YYYY", or ISO date
+- **Status** — Draft by default
+- **Visibility** — Shared by default
+
+**Deduplication**:
+- Detects actions already linked to this initiative with the same title
+- Duplicate rows shown with an "exists" badge and unchecked by default
+- No accidental duplicates created
+
+**Bulk Creation**:
+- Review and edit all rows before creating
+- Uncheck any row to skip it
+- One click creates all selected actions and links them to the initiative
+
+### 📝 **Initiative Form Improvements**
+- **Header Save button** — Save button added next to "Back to Workspace" in edit mode (no more scrolling to bottom to save); returns to workspace after save
+- **Branding icons** — System and KPI entries in initiative view use stored branding (logo/icon) instead of hardcoded Greek letters (Φ/Ψ)
+- **Contribution decimal formatting** — Editing a contribution pre-fills the value with correct decimal places (e.g. `10` not `10.00000`)
+- **Edit contribution skips modal** — Editing an existing contribution no longer triggers the "new data vs contributing" mode selector
+- **View mode redesign** — Left-aligned content, vertical-align top, dynamic font sizing (short text larger, long text smaller), tight padding for maximum info density, colored category headers, styled deliverable/steps tables
+
+### 🛡️ **Bug Fixes**
+- Organization deletion no longer fails with `NotNullViolation` on `cell_comments` — `passive_deletes=True` added to defer FK handling to DB-level CASCADE
+- Aggregation formula options consistent across all 3 surfaces (create value type, edit value type, rollup config): List → Mode only; Numeric → sum/min/max/avg/median/count; Qualitative → min/max/avg
+
+### 💾 **Backup/Restore Completeness**
+- Backup and restore now cover **initiative form fields**: mission, responsible person, team members, handover organization, deliverables, success criteria, impact level, impact rationale
+- Backup and restore now cover **Porter's Five Forces** data
+
+## ✨ What's New in v2.15.0 (March 2026)
+
+### 📋 **List Value Type**
+New "list" kind for choice-based KPIs (Yes/No, status, categories):
+
+**Features**:
+- Define any number of options with custom labels and colors (per-option color picker)
+- **Mode aggregation** (most frequent choice) with tie-breaking — returns no result on tie
+- Full rollup and consensus support: list values propagate up the full hierarchy with colored badges
+- Target support: set a target list value per KPI config
+- Snapshot support: `list_value` saved in KPI and rollup snapshots
+- Workspace display: colored badge at all levels (KPI, system, initiative, challenge, space)
+- Backup/restore: `list_options` and `list_value` included in JSON and YAML exports
+
+**Aggregation Consistency**:
+- List value types show only "Mode (most frequent)" in all formula selectors
+- Numeric types show sum/min/max/avg/median/count
+- Qualitative types show min/max/avg
 
 ## ✨ What's New in v2.14.0 (March 2026)
 
@@ -717,13 +779,17 @@ Fixed missing CSRF tokens in 12 create/edit routes:
   - Tracks: who, what, when, old/new values
   - Super Admin access only
 
-### Value Types (6 Kinds)
+### Value Types (7 Kinds)
 - **Numeric**: Cost, CO2 emissions, licenses, people, time, etc.
   - Integer or decimal format
   - Configurable decimal places (e.g., €1,234.56)
   - Unit labels (€, tCO2e, licenses, days, etc.)
   - Sign-based colors per KPI (positive/negative/zero)
   - Display scale options: Normal, Thousands (k), Millions (M)
+- **List**: Custom choice-based KPIs (Yes/No, status, categories)
+  - Define options with labels and colors
+  - Mode aggregation (most frequent choice) with tie-breaking
+  - Colored badges in workspace at all hierarchy levels
 - **Risk**: 3 levels (!, !!, !!!) - Low, Medium, High risk
 - **Positive Impact**: 3 levels (★, ★★, ★★★) - Impact magnitude
 - **Negative Impact**: 3 levels (▼, ▼▼, ▼▼▼) - Negative consequences

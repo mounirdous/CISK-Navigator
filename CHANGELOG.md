@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.16.2] - 2026-03-21
+
+### Fixed
+- Generate Actions modal: title column now uses an auto-expanding textarea so long milestone titles wrap and are fully visible (and still editable)
+
+## [2.16.1] - 2026-03-21
+
+### Fixed
+- Generate Actions modal: success criteria (Steps) rows now also appear in the modal, each tagged with a colored "Step" or "Deliverable" badge — the modal now opens from both the Deliverables and Steps label cells
+- Generate Actions modal: success banner after creation now shows the list of created action titles and scrolls into view automatically
+
 ## [2.16.0] - 2026-03-21
 
 ### Added

@@ -1,7 +1,7 @@
-# CISK Navigator - Technical Architecture v2.0
+# CISK Navigator - Technical Architecture
 
-**Last Updated**: March 7, 2026
-**Version**: 2.0.0
+**Last Updated**: March 21, 2026
+**Version**: 2.16.0
 
 This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
@@ -38,7 +38,17 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
-### v2.0 Major Changes
+### v2.16.0 Recent Changes (March 2026)
+
+1. **Generate Actions from Deliverables & Steps** — Initiative form lightning button parses deliverable rows and success criteria rows into action items with smart date parsing, dedup detection, and bulk creation
+2. **List Value Type** — New "list" kind for choice-based KPIs (Yes/No, status, categories) with per-option colors and Mode aggregation
+3. **Initiative Form Redesign** — Dynamic font sizing, left-aligned content, tight padding, branding icons for system/KPI entries
+4. **Backup/Restore Completeness** — Initiative form fields and Porter's Five Forces now included in full backup/restore
+5. **Aggregation Formula Consistency** — `ValueType.get_valid_formulas()` used across all 3 formula-selection surfaces
+6. **Test Suite Runner** — Celery + Redis async test execution from Health Dashboard (v2.14.0)
+7. **Demo Data Generator** — Three pre-built demo organizations for testing (v2.11.0)
+
+### v2.0 Foundation
 
 1. **Database Migration**: SQLite → PostgreSQL for production persistence
 2. **Color System Refactor**: Colors moved from ValueType to KPIValueTypeConfig level
@@ -70,16 +80,23 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 
 ### Frontend
 - **Bootstrap 5**: Responsive UI framework
+- **Bootstrap Icons**: Icon library
 - **SortableJS 1.15**: Drag-and-drop library (loaded from CDN)
-- **Vanilla JavaScript**: Tree expansion and form interactions
+- **Chart.js 4.4**: Interactive charts (trends, coverage, test history)
+- **Vanilla JavaScript**: Tree expansion, form interactions, AJAX polling
+
+### Background Processing
+- **Celery**: Async task queue for long-running operations (test runner)
+- **Redis**: Message broker for Celery (managed Redis on Render)
 
 ### Deployment
 - **Gunicorn 21.2**: Production WSGI server
-- **Render**: Cloud platform with managed PostgreSQL
+- **Render**: Cloud platform with managed PostgreSQL and Redis
 
 ### Testing
 - **pytest 7.4**: Testing framework
 - **pytest-flask 1.3**: Flask-specific test fixtures
+- **pytest-cov**: Code coverage reporting
 
 ## Application Structure
 
@@ -124,14 +141,19 @@ CISK-Navigator/
 │   │   └── workspace.py        # Main workspace
 │   │
 │   ├── services/                # Business logic services
-│   │   ├── consensus_service.py         # Consensus calculation
-│   │   ├── aggregation_service.py       # Roll-up aggregation
+│   │   ├── consensus_service.py         # Consensus calculation (supports list/numeric/qualitative)
+│   │   ├── aggregation_service.py       # Roll-up aggregation (sum/min/max/avg/median/count/mode)
 │   │   ├── deletion_impact_service.py   # Deletion impact analysis
 │   │   ├── value_type_usage_service.py  # Value type usage checking
 │   │   ├── excel_export_service.py      # Excel export with grouping
 │   │   ├── yaml_export_service.py       # YAML structure export
 │   │   ├── yaml_import_service.py       # YAML structure import
-│   │   └── organization_clone_service.py # Organization cloning
+│   │   ├── organization_clone_service.py # Organization cloning
+│   │   ├── full_backup_service.py       # Full JSON backup (includes initiative form fields, Porter's)
+│   │   ├── full_restore_service.py      # Full JSON restore
+│   │   ├── action_items_service.py      # Action items quality dashboard
+│   │   ├── action_item_service.py       # Action item CRUD helpers
+│   │   └── test_runner_service.py       # Async pytest execution via Celery
 │   │
 │   ├── templates/               # Jinja2 templates
 │   │   ├── base.html           # Base layout

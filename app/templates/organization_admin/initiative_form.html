@@ -602,6 +602,11 @@
                     <tr style="border-bottom: 1px solid #e8e8e8; background: #fafafa;">
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: top;">
                             Steps
+                            {% if initiative.success_criteria and not edit_mode %}
+                            <br><button type="button" class="btn btn-outline-primary btn-sm mt-1" style="font-size: 0.65rem; padding: 0.15rem 0.4rem; white-space: nowrap;" onclick="openGenerateActionsModal()">
+                                <i class="bi bi-lightning-charge"></i> Actions
+                            </button>
+                            {% endif %}
                         </td>
                         <td class="content-cell">
                             {% if initiative.success_criteria %}
@@ -745,13 +750,13 @@
     </div>
 </div>
 
-{% if not edit_mode and initiative.deliverables %}
+{% if not edit_mode and (initiative.deliverables or initiative.success_criteria) %}
 <!-- Generate Actions Modal -->
 <div class="modal fade" id="generateActionsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header" style="background: linear-gradient(135deg, #9c27b0, #4a148c); color: white;">
-                <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Generate Actions from Deliverables</h5>
+                <h5 class="modal-title"><i class="bi bi-lightning-charge"></i> Generate Actions from Deliverables &amp; Steps</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -798,10 +803,11 @@ const ORG_USERS = [
 ];
 const CURRENT_USER_ID = {{ current_user.id }};
 
-// Parse deliverables from raw text
+// Parse deliverables and success criteria from raw text
 const RAW_DELIVERABLES = {{ initiative.deliverables | tojson }};
+const RAW_SUCCESS_CRITERIA = {{ initiative.success_criteria | tojson }};
 
-function parseDeliverables(raw) {
+function parseSource(raw, sourceLabel) {
     const rows = [];
     if (!raw) return rows;
     raw.split('\n').forEach(line => {
@@ -811,10 +817,22 @@ function parseDeliverables(raw) {
         rows.push({
             step: parts[0] || '',
             milestone: parts[1] || parts[0] || '',
-            rawDate: parts[2] || ''
+            rawDate: parts[2] || '',
+            source: sourceLabel
         });
     });
     return rows;
+}
+
+function parseDeliverables(raw) {
+    return parseSource(raw, 'Deliverable');
+}
+
+function getAllRows() {
+    return [
+        ...parseSource(RAW_DELIVERABLES, 'Deliverable'),
+        ...parseSource(RAW_SUCCESS_CRITERIA, 'Step')
+    ];
 }
 
 function suggestPriority() {
@@ -867,7 +885,7 @@ function parseDate(raw) {
 let existingTitles = [];
 
 function renderActionsTable(existing) {
-    const rows = parseDeliverables(RAW_DELIVERABLES);
+    const rows = getAllRows();
     const priority = suggestPriority();
     const ownerOptions = (ORG_USERS.length
         ? ORG_USERS.map(u => `<option value="${u.id}" ${u.id === CURRENT_USER_ID ? 'selected' : ''}>${u.name || '(user #' + u.id + ')'}</option>`).join('')
@@ -877,6 +895,7 @@ function renderActionsTable(existing) {
         <thead style="background:#f5f7fa;">
             <tr>
                 <th style="width:36px;"><input type="checkbox" id="checkAll" onchange="toggleAll(this)" checked></th>
+                <th style="min-width:80px;">Source</th>
                 <th>Title</th>
                 <th style="width:180px;">Owner</th>
                 <th style="min-width:120px;">Priority</th>
@@ -891,10 +910,14 @@ function renderActionsTable(existing) {
         const parsedDate = parseDate(row.rawDate);
         const dupBadge = isDuplicate
             ? `<span class="badge bg-warning text-dark ms-1" title="Action with this title already linked to this initiative">exists</span>` : '';
+        const sourceBadge = row.source === 'Step'
+            ? `<span class="badge" style="background:#9c27b0; color:white;">Step</span>`
+            : `<span class="badge" style="background:#0d6efd; color:white;">Deliverable</span>`;
         html += `<tr class="${isDuplicate ? 'table-warning' : ''}">
             <td><input type="checkbox" class="action-check" data-idx="${i}" ${isDuplicate ? '' : 'checked'}></td>
+            <td style="white-space:nowrap;">${sourceBadge}</td>
             <td>
-                <input type="text" class="form-control form-control-sm" id="title_${i}" value="${row.milestone.replace(/"/g,'&quot;')}">
+                <textarea class="form-control form-control-sm" id="title_${i}" rows="2" style="resize:none; overflow:hidden;" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'">${row.milestone.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</textarea>
                 ${row.rawDate ? `<small class="text-muted">Date hint: ${row.rawDate}</small>` : ''}
                 ${dupBadge}
             </td>
@@ -936,7 +959,7 @@ function updateSummary() {
 }
 
 async function openGenerateActionsModal() {
-    const rows = parseDeliverables(RAW_DELIVERABLES);
+    const rows = getAllRows();
     const titles = rows.map(r => r.milestone);
 
     // Set today label
@@ -954,7 +977,7 @@ async function openGenerateActionsModal() {
 }
 
 async function submitGenerateActions() {
-    const rows = parseDeliverables(RAW_DELIVERABLES);
+    const rows = getAllRows();
     const actions = [];
 
     document.querySelectorAll('.action-check:checked').forEach(cb => {
@@ -980,13 +1003,18 @@ async function submitGenerateActions() {
 
     if (result.created > 0) {
         bootstrap.Modal.getInstance(document.getElementById('generateActionsModal')).hide();
-        // Show success banner
+        // Show success banner at top of page and scroll to it
         const banner = document.createElement('div');
         banner.className = 'alert alert-success alert-dismissible fade show';
-        banner.innerHTML = `<i class="bi bi-check-circle"></i> <strong>${result.created} action(s) created</strong> and linked to this initiative.
-            <a href="/action-items" class="alert-link ms-2">View in Action Items →</a>
+        const titles = (result.actions || []).map(a => `<li>${a.title}</li>`).join('');
+        banner.innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>
+            <strong>${result.created} action(s) created</strong> and linked to this initiative.
+            ${titles ? `<ul class="mb-1 mt-1">${titles}</ul>` : ''}
+            <a href="/action-items" class="alert-link">View in Action Items →</a>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
-        document.querySelector('.form-body').prepend(banner);
+        const formBody = document.querySelector('.form-body');
+        formBody.prepend(banner);
+        formBody.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
         alert('No actions were created. ' + (result.errors?.[0]?.error || ''));
     }
