@@ -43,7 +43,7 @@ class CellComment(db.Model):
     mentioned_user_ids = db.Column(db.JSON)  # Array of user IDs mentioned in this comment
 
     # Relationships
-    config = db.relationship("KPIValueTypeConfig", backref="comments")
+    config = db.relationship("KPIValueTypeConfig", backref=db.backref("comments", passive_deletes=True))
     user = db.relationship("User", foreign_keys=[user_id], backref="comments_authored")
     resolved_by = db.relationship("User", foreign_keys=[resolved_by_user_id], backref="comments_resolved")
 
