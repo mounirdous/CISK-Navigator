@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.8] - 2026-03-21
+
+### Fixed
+- Initiative form: `pre-wrap` cells (Mission, Team, Rationale) no longer show blank space above text — Jinja template whitespace stripped with `| trim` and inline rendering
+- `text-align: left !important` + `vertical-align: top !important` now correctly override any inherited alignment
+- Padding tightened across all view-mode cells for maximum info density (category: 0.75→0.4rem, label: 0.6→0.35rem, content: 0.5→0.4rem, line-height: 1.6→1.45)
+
 ## [2.15.7] - 2026-03-21
 
 ### Fixed
