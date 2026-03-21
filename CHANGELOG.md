@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.15.7] - 2026-03-21
+
+### Fixed
+- Initiative form view mode: fixed structural table bug where "Project" rowspan pushed Mission content into an overflow 4th column (appeared top-right instead of inline)
+- All content cells now left-aligned with vertical-align: top
+
+### Improved
+- Initiative form: dynamic font sizing — short text (< 60 chars) renders larger (1.3rem), long text (> 350 chars) renders smaller (0.85rem), applied to all fields
+- Category column (Project/What/Who/How/Impact) now uses colored gradient backgrounds matching their accent colors
+- Label column styled with uppercase tracking for a cleaner hierarchy
+- Deliverables and Steps tables now have styled headers matching their section color + alternating row shading
+- Overall card look: white background, subtle shadow, clean borders
+
 ## [2.15.6] - 2026-03-21
 
 ### Fixed
