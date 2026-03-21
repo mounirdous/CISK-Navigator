@@ -108,6 +108,25 @@
     background: #1565c0; color: white;
     font-size: 0.65rem; font-weight: 700; margin-left: 4px;
 }
+.search-box {
+    position: relative;
+}
+.search-box i {
+    position: absolute; left: 0.65rem; top: 50%; transform: translateY(-50%);
+    color: #90a4ae; pointer-events: none; font-size: 0.9rem;
+}
+.search-box input {
+    padding-left: 2rem;
+    border-radius: 8px;
+    border: 1.5px solid #dee2e6;
+    font-size: 0.85rem;
+    min-width: 220px;
+}
+.search-box input:focus {
+    border-color: #1565c0;
+    box-shadow: 0 0 0 3px rgba(21,101,192,0.1);
+    outline: none;
+}
 </style>
 {% endblock %}
 
@@ -291,6 +310,16 @@
                 </a>
             </div>
             {% endif %}
+
+            <!-- Search -->
+            <div class="col-auto d-flex align-items-end ms-auto">
+                <div class="search-box">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="action-search" placeholder="Search title, description, owner…"
+                           autocomplete="off" class="form-control form-control-sm">
+                </div>
+            </div>
+
         </div>
     </div>
     </form>
@@ -336,7 +365,8 @@
                 </thead>
                 <tbody>
                 {% for item in items %}
-                <tr {% if item.is_overdue %}class="row-overdue"{% endif %} id="item-{{ item.id }}">
+                <tr {% if item.is_overdue %}class="row-overdue"{% endif %} id="item-{{ item.id }}"
+                    data-search="{{ [item.title, item.description or '', item.owner_user.display_name or item.owner_user.login] | join(' ') | lower }}">
                     {% if is_admin %}
                     <td>
                         <input type="checkbox" class="item-checkbox" name="item_ids" value="{{ item.id }}" form="bulk-delete-form">
@@ -472,12 +502,17 @@
                     </td>
                 </tr>
                 {% endfor %}
+                <tr id="search-empty-row" style="display:none;">
+                    <td colspan="20" class="text-center py-4 text-muted">
+                        <i class="bi bi-search me-2"></i>No items match your search.
+                    </td>
+                </tr>
                 </tbody>
             </table>
         </div>
 
         <div class="px-3 py-2 border-top" style="font-size:0.8rem; color:#78909c; background:#fafafa;">
-            {{ items|length }} item(s) shown
+            <span id="items-count">{{ items|length }}</span> item(s) shown
         </div>
     </div>
 
@@ -498,6 +533,36 @@
     {% endif %}
 
 </div>
+
+<script>
+(function() {
+    const searchInput = document.getElementById('action-search');
+    if (!searchInput) return;
+
+    searchInput.addEventListener('input', function() {
+        const q = this.value.trim().toLowerCase();
+        const rows = document.querySelectorAll('tbody tr[data-search]');
+        let visible = 0;
+
+        rows.forEach(row => {
+            const match = !q || row.dataset.search.includes(q);
+            row.style.display = match ? '' : 'none';
+            if (match) visible++;
+        });
+
+        const emptyRow = document.getElementById('search-empty-row');
+        if (emptyRow) emptyRow.style.display = (q && visible === 0) ? '' : 'none';
+
+        const countEl = document.getElementById('items-count');
+        if (countEl) countEl.textContent = visible;
+    });
+
+    // Clear search on Escape
+    searchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { this.value = ''; this.dispatchEvent(new Event('input')); }
+    });
+})();
+</script>
 
 {% if is_admin %}
 <script>

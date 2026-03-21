@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.18.0] - 2026-03-21
+
+### Added
+- Action Register: live search box filters rows instantly by title, description, and owner — updates row count, shows "no results" message, clears on Escape
+
 ## [2.17.9] - 2026-03-21
 
 ### Fixed
