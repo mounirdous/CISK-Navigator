@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.9] - 2026-03-22
+
+### Fixed
+- Backup/restore: entity links now export `created_by_login` and restore it correctly — links created before this field was tracked had NULL, causing the old creator-only permission check to always deny deletion
+
 ## [2.30.8] - 2026-03-22
 
 ### Fixed

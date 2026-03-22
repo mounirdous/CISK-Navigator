@@ -259,7 +259,7 @@ class FullBackupService:
             .order_by(EntityLink.display_order)
             .all()
         )
-        return [{"url": lnk.url, "title": lnk.title or "", "is_public": lnk.is_public} for lnk in links]
+        return [{"url": lnk.url, "title": lnk.title or "", "is_public": lnk.is_public, "created_by_login": lnk.creator.login if lnk.creator else None} for lnk in links]
 
     @staticmethod
     def _export_filter_presets(organization_id):

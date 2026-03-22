@@ -410,6 +410,9 @@ class FullRestoreService:
             url = (link_data.get("url") or "").strip()
             is_valid, _ = EntityLink.validate_url(url)
             if is_valid:
+                from app.models import User
+                creator_login = link_data.get("created_by_login")
+                creator = User.query.filter_by(login=creator_login).first() if creator_login else None
                 db.session.add(
                     EntityLink(
                         entity_type=entity_type,
@@ -417,6 +420,7 @@ class FullRestoreService:
                         url=url,
                         title=link_data.get("title") or None,
                         is_public=bool(link_data.get("is_public", True)),
+                        created_by=creator.id if creator else None,
                     )
                 )
                 count += 1
