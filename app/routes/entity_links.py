@@ -111,7 +111,7 @@ def delete_link():
 
     # Check permission: creator or org admin
     org_id = session.get("organization_id")
-    membership = current_user.get_organization_membership(org_id) if org_id else None
+    membership = next((m for m in current_user.organization_memberships if m.organization_id == org_id), None) if org_id else None
     is_org_admin = membership and membership.is_org_admin
     if link.created_by != current_user.id and not is_org_admin and not current_user.is_global_admin:
         flash("Permission denied. Only the creator or an org admin can delete this link.", "danger")
