@@ -4014,6 +4014,15 @@ def get_data():
                                     )
 
                                 _list_val = consensus.get("value") if (vt.is_list() and consensus) else None
+
+                                # Collect non-empty contribution comments for tooltip
+                                _comment_lines = [
+                                    f"{c.contributor_name}: {c.comment.strip()}"
+                                    for c in getattr(config, "contributions", [])
+                                    if c.comment and c.comment.strip()
+                                ]
+                                _comments_tooltip = ("\n\nComments:\n" + "\n".join(_comment_lines)) if _comment_lines else ""
+
                                 kpi_values[vt.id] = {
                                     "config_id": config.id,
                                     "value": consensus.get("value") if consensus else None,
@@ -4023,6 +4032,7 @@ def get_data():
                                     "calculation_type": config.calculation_type,
                                     "consensus_status": consensus.get("status") if consensus else "no_data",
                                     "consensus_count": consensus.get("count") if consensus else 0,
+                                    "comments_tooltip": _comments_tooltip,
                                     "has_target": config.target_value is not None or bool(getattr(config, "target_list_value", None)),
                                     "list_label": vt.get_list_option_label(_list_val) if _list_val else None,
                                     "list_color": vt.get_list_option_color(_list_val) if _list_val else None,

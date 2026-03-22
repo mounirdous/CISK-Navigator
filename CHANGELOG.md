@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.3] - 2026-03-22
+
+### Added
+- Workspace tree: cell tooltip now appends contributor comments (contributor name + comment text) when present
+
+### Clarified
+- `no_data` tooltip: zero (0) values are handled correctly — `0 is not None` in Python, `0 != null` in JS — zeros never trigger no_data
+
 ## [2.30.2] - 2026-03-22
 
 ### Added
