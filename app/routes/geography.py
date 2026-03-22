@@ -799,7 +799,7 @@ def api_map_kpis():
                             "region_name": region_name,
                             "country_name": country_name,
                             "value": (
-                                str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value else "No data"
+                                str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value is not None else "No data"
                             ),
                             "period": latest_snapshot.period.strftime("%Y-%m") if latest_snapshot else None,
                             "target": str(target_value) if target_value else None,
