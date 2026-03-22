@@ -4,7 +4,7 @@ Full Backup/Restore Service
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
 
-BACKUP FORMAT VERSION: 5.0 (Updated 2026-03-22)
+BACKUP FORMAT VERSION: 6.0 (Updated 2026-03-22)
 
 What's backed up:
 ================
@@ -44,10 +44,11 @@ What's backed up:
    - All URL links attached to Space, Challenge, Initiative, System, KPI, Action Item
 ✅ Saved Views / Filter Presets (v5.0+):
    - All workspace and action register saved views per user
+✅ Full Geography hierarchy (v6.0+):
+   - Regions (org-scoped), Countries (with coordinates), Sites (with coordinates)
 
-What's NOT backed up (must exist in target):
-===========================================
-⚠️  Geography data (Regions, Countries, Sites) - Global data, referenced by name only
+What's NOT backed up:
+=====================
 ⚠️  User passwords - Users matched by login/email
 ⚠️  Audit logs - Historical data not portable
 
@@ -58,6 +59,7 @@ Version Compatibility:
 - Backup format v3.0: Added action items and memos
 - Backup format v4.0: Added EntityLink (URL links) for all CISK entities and action items
 - Backup format v5.0: Added saved views (UserFilterPreset) per user
+- Backup format v6.0: Full geography hierarchy (was incorrectly treated as global)
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -96,7 +98,7 @@ class FullBackupService:
 
         backup = {
             "metadata": {
-                "backup_format_version": "5.0",  # Backup format version
+                "backup_format_version": "6.0",  # Backup format version
                 "app_version": app_version,  # CISK Navigator version
                 "db_schema_version": DB_SCHEMA_VERSION,  # Database schema version
                 "created_at": datetime.utcnow().isoformat(),
@@ -113,7 +115,7 @@ class FullBackupService:
             "spaces": FullBackupService._export_spaces(organization_id),
             "stakeholders": FullBackupService._export_stakeholders(organization_id),
             "stakeholder_maps": FullBackupService._export_stakeholder_maps(organization_id),
-            "geography_references": FullBackupService._export_geography_references(organization_id),
+            "geography": FullBackupService._export_geography(organization_id),
             "action_items": FullBackupService._export_action_items(organization_id),
             "filter_presets": FullBackupService._export_filter_presets(organization_id),
         }
@@ -631,35 +633,52 @@ class FullBackupService:
         return result
 
     @staticmethod
-    def _export_geography_references(organization_id):
+    def _export_geography(organization_id):
         """
-        Export geography references (sites used by this organization).
+        Export full geography hierarchy (Regions → Countries → Sites) for this organization.
 
-        Note: Geography data (regions, countries, sites) is global and shared across organizations.
-        We only export which sites are referenced by this organization's stakeholders.
-        On restore, these sites must already exist in the target instance.
+        Note: GeographyRegion has organization_id — geography is per-org, not global.
+        Full export is required for portability.
         """
-        from app.models import GeographySite, Stakeholder
+        from app.models import GeographyRegion
 
-        # Get all sites used by stakeholders in this org
-        sites = (
-            db.session.query(GeographySite)
-            .join(Stakeholder, GeographySite.id == Stakeholder.site_id)
-            .filter(Stakeholder.organization_id == organization_id, Stakeholder.site_id.isnot(None))
-            .distinct()
+        regions = (
+            GeographyRegion.query
+            .filter_by(organization_id=organization_id)
+            .order_by(GeographyRegion.display_order, GeographyRegion.name)
             .all()
         )
 
         result = []
-        for site in sites:
-            result.append(
-                {
-                    "site_name": site.name,
-                    "country_name": site.country.name if site.country else None,
-                    "region_name": site.country.region.name if site.country and site.country.region else None,
-                    "note": "This is a reference only. Geography data must exist in target instance.",
+        for region in regions:
+            region_data = {
+                "name": region.name,
+                "code": region.code,
+                "display_order": region.display_order,
+                "countries": [],
+            }
+            for country in region.countries:
+                country_data = {
+                    "name": country.name,
+                    "code": country.code,
+                    "iso_code": country.iso_code,
+                    "latitude": float(country.latitude) if country.latitude is not None else None,
+                    "longitude": float(country.longitude) if country.longitude is not None else None,
+                    "display_order": country.display_order,
+                    "sites": [],
                 }
-            )
+                for site in country.sites:
+                    country_data["sites"].append({
+                        "name": site.name,
+                        "code": site.code,
+                        "address": site.address,
+                        "latitude": float(site.latitude) if site.latitude is not None else None,
+                        "longitude": float(site.longitude) if site.longitude is not None else None,
+                        "is_active": site.is_active,
+                        "display_order": site.display_order,
+                    })
+                region_data["countries"].append(country_data)
+            result.append(region_data)
 
         return result
 

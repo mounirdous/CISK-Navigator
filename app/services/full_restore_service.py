@@ -1,7 +1,7 @@
 """
-Full Restore Service - v5.0
+Full Restore Service - v6.0
 
-Restores complete organization from JSON backup format v5.0.
+Restores complete organization from JSON backup format v6.0.
 
 Features:
 =========
@@ -24,11 +24,13 @@ Features:
    - Entity mentions resolved by name (warnings if not found)
 ✅ **Saved Views / Filter Presets** (v5.0+):
    - Workspace and action register presets restored per user
+✅ **Full Geography hierarchy** (v6.0+):
+   - Regions (org-scoped), Countries, Sites created on restore
+   - KPI geography assignments and stakeholder sites resolved from restored hierarchy
 
 Important Notes:
 ================
 - Restore REQUIRES matching DB schema version
-- Geography sites must already exist in target instance
 - Linked KPIs are flagged but not automatically linked (manual step required)
 - Users can be mapped to existing accounts or created new
 - All logos are base64 encoded in backup and restored as binary data
@@ -129,6 +131,9 @@ class FullRestoreService:
             "stakeholder_maps": 0,
             "stakeholder_entity_links": 0,
             "action_items": 0,
+            "geography_regions": 0,
+            "geography_countries": 0,
+            "geography_sites": 0,
             "filter_presets_restored": 0,
             "entity_links_restored": 0,
             "logos_restored": 0,
@@ -326,6 +331,13 @@ class FullRestoreService:
                     except Exception as e:
                         stats["errors"].append(f"ValueType formula '{vt_data.get('name')}': {str(e)}")
 
+            # Step 2.5: Restore Geography hierarchy (regions → countries → sites)
+            geo_map, geo_stats = FullRestoreService._restore_geography(backup, organization_id)
+            stats["geography_regions"] += geo_stats.get("regions", 0)
+            stats["geography_countries"] += geo_stats.get("countries", 0)
+            stats["geography_sites"] += geo_stats.get("sites", 0)
+            stats["warnings"].extend(geo_stats.get("warnings", []))
+
             # Step 3: Import Spaces with full hierarchy
             for space_data in backup.get("spaces", []):
                 try:
@@ -336,6 +348,7 @@ class FullRestoreService:
                         governance_body_map,
                         initiative_map,
                         system_map,
+                        geo_map,
                     )
                     for key in [
                         "spaces",
@@ -357,7 +370,7 @@ class FullRestoreService:
                     stats["errors"].append(f"Space '{space_data.get('name')}': {str(e)}")
 
             # Step 4: Restore Stakeholders and Maps
-            stakeholder_stats = FullRestoreService._restore_stakeholders(backup, organization_id, user_map)
+            stakeholder_stats = FullRestoreService._restore_stakeholders(backup, organization_id, user_map, geo_map)
             stats["stakeholders"] += stakeholder_stats.get("stakeholders", 0)
             stats["stakeholder_relationships"] += stakeholder_stats.get("stakeholder_relationships", 0)
             stats["stakeholder_entity_links"] += stakeholder_stats.get("stakeholder_entity_links", 0)
@@ -443,8 +456,91 @@ class FullRestoreService:
         return count, warnings
 
     @staticmethod
+    def _restore_geography(backup, organization_id):
+        """
+        Restore full geography hierarchy (Regions → Countries → Sites) for the org.
+
+        Reads from backup["geography"] (v6.0+). Falls back to backup["geography_references"]
+        for older backups (v4/v5) — those only had site names, so no hierarchy can be created.
+
+        Returns:
+            geo_map: {"region:Name": Region, "country:Name": Country, "site:Name": Site}
+            stats dict
+        """
+        from app.models import GeographyCountry, GeographyRegion, GeographySite
+
+        geo_map = {}
+        stats = {"regions": 0, "countries": 0, "sites": 0, "warnings": []}
+
+        for region_data in backup.get("geography", []):
+            region_name = region_data.get("name")
+            if not region_name:
+                continue
+
+            region = GeographyRegion.query.filter_by(organization_id=organization_id, name=region_name).first()
+            if not region:
+                region = GeographyRegion(
+                    organization_id=organization_id,
+                    name=region_name,
+                    code=region_data.get("code"),
+                    display_order=region_data.get("display_order", 0),
+                )
+                db.session.add(region)
+                db.session.flush()
+                stats["regions"] += 1
+
+            geo_map[f"region:{region_name}"] = region
+
+            for country_data in region_data.get("countries", []):
+                country_name = country_data.get("name")
+                if not country_name:
+                    continue
+
+                country = GeographyCountry.query.filter_by(region_id=region.id, name=country_name).first()
+                if not country:
+                    country = GeographyCountry(
+                        region_id=region.id,
+                        name=country_name,
+                        code=country_data.get("code"),
+                        iso_code=country_data.get("iso_code"),
+                        latitude=country_data.get("latitude"),
+                        longitude=country_data.get("longitude"),
+                        display_order=country_data.get("display_order", 0),
+                    )
+                    db.session.add(country)
+                    db.session.flush()
+                    stats["countries"] += 1
+
+                geo_map[f"country:{country_name}"] = country
+
+                for site_data in country_data.get("sites", []):
+                    site_name = site_data.get("name")
+                    if not site_name:
+                        continue
+
+                    site = GeographySite.query.filter_by(country_id=country.id, name=site_name).first()
+                    if not site:
+                        site = GeographySite(
+                            country_id=country.id,
+                            name=site_name,
+                            code=site_data.get("code"),
+                            address=site_data.get("address"),
+                            latitude=site_data.get("latitude"),
+                            longitude=site_data.get("longitude"),
+                            is_active=site_data.get("is_active", True),
+                            display_order=site_data.get("display_order", 0),
+                        )
+                        db.session.add(site)
+                        db.session.flush()
+                        stats["sites"] += 1
+
+                    geo_map[f"site:{site_name}"] = site
+
+        return geo_map, stats
+
+    @staticmethod
     def _restore_space_hierarchy(
-        space_data, organization_id, value_type_map, governance_body_map, initiative_map, system_map
+        space_data, organization_id, value_type_map, governance_body_map, initiative_map, system_map, geo_map=None
     ):
         """Restore space with full hierarchy"""
         stats = {
@@ -605,7 +701,7 @@ class FullRestoreService:
                         for kpi_data in system_data.get("kpis", []):
                             try:
                                 kpi_stats = FullRestoreService._restore_kpi_with_data(
-                                    kpi_data, init_sys_link.id, value_type_map, governance_body_map
+                                    kpi_data, init_sys_link.id, value_type_map, governance_body_map, geo_map
                                 )
                                 stats["kpis"] += kpi_stats.get("kpis", 0)
                                 stats["contributions"] += kpi_stats.get("contributions", 0)
@@ -625,7 +721,7 @@ class FullRestoreService:
         return stats
 
     @staticmethod
-    def _restore_kpi_with_data(kpi_data, init_sys_link_id, value_type_map, governance_body_map):
+    def _restore_kpi_with_data(kpi_data, init_sys_link_id, value_type_map, governance_body_map, geo_map=None):
         """Restore KPI with all data including logo, formulas, and linked KPIs"""
         import base64
 
@@ -675,45 +771,41 @@ class FullRestoreService:
                 stats["errors"].append(f"KPI '{kpi_data['name']}': Governance body '{gb_name}' not mapped (skipped)")
 
         # Restore geography assignments (region/country/site links)
-        from app.models import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment
+        from app.models import KPIGeographyAssignment
 
+        _geo = geo_map or {}
         for geo_data in kpi_data.get("geography_assignments", []):
             try:
                 level = geo_data.get("level")
                 geo_assignment = KPIGeographyAssignment(kpi_id=kpi.id)
 
                 if level == "site":
-                    # Find site by name (must exist in target instance)
                     site_name = geo_data.get("site_name")
-                    site = GeographySite.query.filter_by(name=site_name).first()
+                    site = _geo.get(f"site:{site_name}")
                     if site:
                         geo_assignment.site_id = site.id
                         db.session.add(geo_assignment)
                         stats["geography_assignments"] = stats.get("geography_assignments", 0) + 1
                     else:
-                        stats["errors"].append(f"KPI '{kpi_data['name']}': Site '{site_name}' not found (skipped)")
+                        stats["errors"].append(f"KPI '{kpi_data['name']}': Site '{site_name}' not found in geography (skipped)")
                 elif level == "country":
-                    # Find country by name
                     country_name = geo_data.get("country_name")
-                    country = GeographyCountry.query.filter_by(name=country_name).first()
+                    country = _geo.get(f"country:{country_name}")
                     if country:
                         geo_assignment.country_id = country.id
                         db.session.add(geo_assignment)
                         stats["geography_assignments"] = stats.get("geography_assignments", 0) + 1
                     else:
-                        stats["errors"].append(
-                            f"KPI '{kpi_data['name']}': Country '{country_name}' not found (skipped)"
-                        )
+                        stats["errors"].append(f"KPI '{kpi_data['name']}': Country '{country_name}' not found in geography (skipped)")
                 elif level == "region":
-                    # Find region by name
                     region_name = geo_data.get("region_name")
-                    region = GeographyRegion.query.filter_by(name=region_name).first()
+                    region = _geo.get(f"region:{region_name}")
                     if region:
                         geo_assignment.region_id = region.id
                         db.session.add(geo_assignment)
                         stats["geography_assignments"] = stats.get("geography_assignments", 0) + 1
                     else:
-                        stats["errors"].append(f"KPI '{kpi_data['name']}': Region '{region_name}' not found (skipped)")
+                        stats["errors"].append(f"KPI '{kpi_data['name']}': Region '{region_name}' not found in geography (skipped)")
             except Exception as e:
                 stats["errors"].append(f"KPI '{kpi_data['name']}': Failed to restore geography assignment: {str(e)}")
 
@@ -791,7 +883,7 @@ class FullRestoreService:
         return stats
 
     @staticmethod
-    def _restore_stakeholders(backup, organization_id, user_map):
+    def _restore_stakeholders(backup, organization_id, user_map, geo_map=None):
         """Restore stakeholders with relationships and entity links"""
         from app.models import KPI, Challenge, Initiative, Space, System
 
@@ -811,13 +903,14 @@ class FullRestoreService:
                 if stakeholder_data.get("created_by_login"):
                     created_by_user = user_map.get(stakeholder_data["created_by_login"])
 
-                # Find site by name (geography reference)
+                # Find site via geo_map (restored geography hierarchy)
                 site = None
                 if stakeholder_data.get("site_name"):
-                    site = GeographySite.query.filter_by(name=stakeholder_data["site_name"]).first()
+                    site_name = stakeholder_data["site_name"]
+                    site = (geo_map or {}).get(f"site:{site_name}")
                     if not site:
                         stats["warnings"].append(
-                            f"Stakeholder '{stakeholder_data['name']}': Site '{stakeholder_data['site_name']}' not found. "
+                            f"Stakeholder '{stakeholder_data['name']}': Site '{site_name}' not found in geography. "
                             "Stakeholder will be created without site assignment."
                         )
 
