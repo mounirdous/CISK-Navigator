@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.1] - 2026-03-22
+
+### Changed
+- Workspace tree: direct and inherited link icons are now visually distinct — direct links show a blue `🔗` (bi-link-45deg, #3b82f6), inherited links show an amber `🔗` (bi-link, #f59e0b); both hidden when badges toggle is off
+
 ## [2.27.0] - 2026-03-22
 
 ### Added
