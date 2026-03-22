@@ -2,7 +2,7 @@
 Entity Links routes for managing URLs attached to entities
 """
 
-from flask import Blueprint, flash, jsonify, redirect, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, request, session, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
