@@ -40,12 +40,14 @@ def login():
         if user is None or not user.check_password(form.password.data):
             # Audit log failed login
             AuditService.log_login(user, success=False, reason="Invalid credentials")
+            db.session.commit()
             flash("Invalid login or password", "danger")
             return redirect(url_for("auth.login"))
 
         if not user.is_active:
             # Audit log failed login
             AuditService.log_login(user, success=False, reason="Account inactive")
+            db.session.commit()
             flash("Your account is inactive", "danger")
             return redirect(url_for("auth.login"))
 
@@ -62,6 +64,7 @@ def login():
 
             # Audit log successful login
             AuditService.log_login(user, success=True)
+            db.session.commit()
 
             # Handle password change requirement
             if user.must_change_password and not session.get("_pwd_check_done"):
@@ -105,6 +108,7 @@ def login():
 
         # Audit log successful login
         AuditService.log_login(user, success=True)
+        db.session.commit()
 
         # Handle password change requirement
         if user.must_change_password and not session.get("_pwd_check_done"):
@@ -133,6 +137,7 @@ def logout():
     if current_user.is_authenticated:
         # Audit log before logging out
         AuditService.log_logout(current_user)
+        db.session.commit()
         logout_user()
     session.pop("organization_id", None)
     session.pop("organization_name", None)

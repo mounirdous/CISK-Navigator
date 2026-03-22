@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.33.0] - 2026-03-22
+
+### Added
+- Audit logs: LOGIN_SUCCESS, LOGIN_FAILED, and LOGOUT events now correctly persisted to the database (missing `db.session.commit()` was causing them to be silently dropped)
+- Audit logs UI: organization filter added to the filter panel
+- Audit logs UI: organization name, full user-agent (truncated with full text on hover) now displayed per log entry
+
 ## [2.32.5] - 2026-03-22
 
 ### Fixed

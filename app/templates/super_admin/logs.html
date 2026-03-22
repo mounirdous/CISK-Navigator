@@ -123,6 +123,17 @@
                     {% endfor %}
                 </select>
             </div>
+            <div class="col-md-2">
+                <label class="form-label">Organization</label>
+                <select name="organization" class="form-select">
+                    <option value="">All Orgs</option>
+                    {% for org in organizations %}
+                    <option value="{{ org.id }}" {% if org.id|string == current_filters.organization %}selected{% endif %}>
+                        {{ org.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
             <div class="col-md-1">
                 <label class="form-label">Limit</label>
                 <select name="limit" class="form-select">
@@ -186,10 +197,18 @@
                                 <div class="log-meta">
                                     <i class="fas fa-user"></i> {{ log.user_login or 'system' }}
                                     <span class="mx-2">•</span>
-                                    <i class="fas fa-clock"></i> {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    <i class="fas fa-clock"></i> {{ log.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+                                    {% if log.organization %}
+                                    <span class="mx-2">•</span>
+                                    <i class="fas fa-building"></i> {{ log.organization.name }}
+                                    {% endif %}
                                     {% if log.ip_address %}
                                     <span class="mx-2">•</span>
                                     <i class="fas fa-globe"></i> {{ log.ip_address }}
+                                    {% endif %}
+                                    {% if log.user_agent %}
+                                    <span class="mx-2">•</span>
+                                    <i class="fas fa-desktop"></i> <span title="{{ log.user_agent }}" style="cursor:help;">{{ log.user_agent[:60] }}{% if log.user_agent|length > 60 %}…{% endif %}</span>
                                     {% endif %}
                                 </div>
 

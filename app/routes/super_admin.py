@@ -357,6 +357,7 @@ def logs():
     action_filter = request.args.get("action", "")
     entity_type_filter = request.args.get("entity_type", "")
     user_filter = request.args.get("user", "")
+    organization_filter = request.args.get("organization", "")
     search_query = request.args.get("search", "")
     limit = request.args.get("limit", 100, type=int)
 
@@ -369,8 +370,9 @@ def logs():
         query = query.filter_by(entity_type=entity_type_filter)
     if user_filter:
         query = query.filter_by(user_login=user_filter)
+    if organization_filter:
+        query = query.filter_by(organization_id=int(organization_filter))
     if search_query:
-        # Search in entity_name and description
         query = query.filter(
             db.or_(AuditLog.entity_name.ilike(f"%{search_query}%"), AuditLog.description.ilike(f"%{search_query}%"))
         )
@@ -388,6 +390,7 @@ def logs():
         .order_by(AuditLog.user_login)
         .all()
     )
+    organizations = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
 
     actions = [a[0] for a in distinct_actions]
     entity_types = [e[0] for e in distinct_entity_types]
@@ -399,10 +402,12 @@ def logs():
         actions=actions,
         entity_types=entity_types,
         users=users,
+        organizations=organizations,
         current_filters={
             "action": action_filter,
             "entity_type": entity_type_filter,
             "user": user_filter,
+            "organization": organization_filter,
             "search": search_query,
             "limit": limit,
         },
