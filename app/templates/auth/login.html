@@ -189,6 +189,22 @@ body.dark-mode .btn-sso:hover {
 .sso-section {
     margin-bottom: 1.5rem;
 }
+
+.login-copyright {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+}
+
+.login-copyright span {
+    display: block;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
 </style>
 {% endblock %}
 
@@ -253,6 +269,11 @@ body.dark-mode .btn-sso:hover {
                     {{ form.submit(class="btn btn-login text-white") }}
                 </div>
             </form>
+
+            <div class="login-copyright">
+                <span>CISK Navigator</span>
+                &copy; 2026 M. Dous &mdash; All rights reserved
+            </div>
         </div>
     </div>
 </div>
