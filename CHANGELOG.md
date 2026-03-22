@@ -5,6 +5,29 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.24.1] - 2026-03-22
+
+### Fixed
+- Timeline group labels: count badge no longer runs into the group name (e.g. "space3") — added `&nbsp;` separator and switched badge to `display:inline-block` with `line-height` for reliable vis-timeline rendering
+
+## [2.24.0] - 2026-03-22
+
+### Added
+- Timeline CISK Entity view now groups actions under their **parent Challenge** as top-level section headers; Initiatives, Systems, and KPIs appear indented beneath the challenge they belong to, with breadcrumb hints (e.g. "← Initiative Name" for system rows)
+- Branding Manager: added **Save All Changes** button at the bottom of the page so users no longer need to scroll back to the top after editing action priority colors
+
+### Changed
+- Timeline item labels no longer show the green checkmark emoji for actions (only memos retain the 📝 icon)
+- CISK Entity group keys now use `entity_id` instead of raw mention text for reliable parent-chain lookup
+- Route builds full hierarchy for System and KPI mentions: System → Initiative → Challenge, KPI → System → Initiative → Challenge
+
+## [2.23.2] - 2026-03-22
+
+### Fixed
+- CISK Entity view: replaced broken vis-timeline `nestedGroups` with flat **section header rows** — entity types (Challenges, Initiatives, Systems…) now appear as bold colored divider rows, with entity names indented beneath them; left-border color matches branding per entity type
+- CISK Entity view: entity child names no longer show "@" prefix or trailing entity-ID digits
+- Timeline height calculation accounts for zero-item header rows (32px) vs item-bearing rows (44px+)
+
 ## [2.23.1] - 2026-03-22
 
 ### Fixed

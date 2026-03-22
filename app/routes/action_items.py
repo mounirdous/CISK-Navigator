@@ -102,7 +102,111 @@ def index():
     # Active view (table or timeline)
     view = request.args.get("view", "table")
 
-    # Serialize items for the timeline view (JSON blob injected into template)
+    # Build full CISK hierarchy map for the Entity timeline view.
+    # entity_parents[entity_type][entity_id] = {"challenge": {id, name}, "initiative": {id, name} | None, "system": {id, name} | None}
+    from app.models import Challenge, ChallengeInitiativeLink, Initiative
+    from app.models.system import InitiativeSystemLink, System
+    from app.models.kpi import KPI
+
+    # Collect mentioned entity ids by type
+    mentioned: dict = {"initiative": set(), "system": set(), "kpi": set()}
+    for item in items:
+        for m in item.mentions:
+            if m.entity_type in mentioned:
+                mentioned[m.entity_type].add(m.entity_id)
+
+    # initiative_id → challenge info
+    _init_challenge: dict = {}
+    all_initiative_ids = set(mentioned["initiative"])
+
+    # For systems: system_id → initiative_id(s) via InitiativeSystemLink
+    _sys_initiative: dict = {}  # system_id → initiative_id (first found)
+    if mentioned["system"]:
+        isl_rows = (
+            db.session.query(InitiativeSystemLink)
+            .filter(InitiativeSystemLink.system_id.in_(list(mentioned["system"])))
+            .all()
+        )
+        for isl in isl_rows:
+            if isl.system_id not in _sys_initiative:
+                _sys_initiative[isl.system_id] = isl.initiative_id
+                all_initiative_ids.add(isl.initiative_id)
+
+    # For KPIs: kpi_id → initiative_id via InitiativeSystemLink
+    _kpi_initiative: dict = {}  # kpi_id → initiative_id
+    _kpi_system: dict = {}       # kpi_id → system_id
+    if mentioned["kpi"]:
+        kpi_rows = (
+            db.session.query(KPI, InitiativeSystemLink)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .filter(KPI.id.in_(list(mentioned["kpi"])))
+            .all()
+        )
+        for kpi, isl in kpi_rows:
+            _kpi_initiative[kpi.id] = isl.initiative_id
+            _kpi_system[kpi.id] = isl.system_id
+            all_initiative_ids.add(isl.initiative_id)
+
+    # Resolve all needed initiative → challenge
+    if all_initiative_ids:
+        ch_links = (
+            db.session.query(ChallengeInitiativeLink, Challenge)
+            .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+            .filter(ChallengeInitiativeLink.initiative_id.in_(list(all_initiative_ids)))
+            .all()
+        )
+        for link, challenge in ch_links:
+            if link.initiative_id not in _init_challenge:
+                _init_challenge[link.initiative_id] = {"id": challenge.id, "name": challenge.name}
+
+    # Resolve initiative names
+    _initiative_names: dict = {}
+    if all_initiative_ids:
+        init_rows = Initiative.query.filter(Initiative.id.in_(list(all_initiative_ids))).all()
+        for init in init_rows:
+            _initiative_names[init.id] = init.name
+
+    # Resolve system names for KPI parents
+    all_system_ids = set(_kpi_system.values()) | set(_sys_initiative.keys())
+    _system_names: dict = {}
+    if all_system_ids:
+        sys_rows = System.query.filter(System.id.in_(list(all_system_ids))).all()
+        for sys in sys_rows:
+            _system_names[sys.id] = sys.name
+
+    # Build entity_parents: {entity_type: {entity_id: {challenge, initiative, system}}}
+    # Used by JS to place each mention under the correct challenge bucket.
+    entity_parents: dict = {}
+
+    for init_id in mentioned["initiative"]:
+        ch = _init_challenge.get(init_id)
+        entity_parents[f"initiative__{init_id}"] = {"challenge": ch}
+
+    for sys_id in mentioned["system"]:
+        init_id = _sys_initiative.get(sys_id)
+        ch = _init_challenge.get(init_id) if init_id else None
+        init_name = _initiative_names.get(init_id) if init_id else None
+        entity_parents[f"system__{sys_id}"] = {
+            "challenge": ch,
+            "initiative": {"id": init_id, "name": init_name} if init_id else None,
+        }
+
+    for kpi_id in mentioned["kpi"]:
+        init_id = _kpi_initiative.get(kpi_id)
+        sys_id = _kpi_system.get(kpi_id)
+        ch = _init_challenge.get(init_id) if init_id else None
+        init_name = _initiative_names.get(init_id) if init_id else None
+        sys_name = _system_names.get(sys_id) if sys_id else None
+        entity_parents[f"kpi__{kpi_id}"] = {
+            "challenge": ch,
+            "initiative": {"id": init_id, "name": init_name} if init_id else None,
+            "system": {"id": sys_id, "name": sys_name} if sys_id else None,
+        }
+
+    # keep backward-compat alias
+    initiative_challenge_map = {str(init_id): ch for init_id, ch in _init_challenge.items()}
+
+    # Serialize items — include entity_id in mentions so JS can look up the challenge map
     timeline_items = []
     for item in items:
         timeline_items.append({
@@ -118,7 +222,7 @@ def index():
             "is_overdue": item.is_overdue,
             "owner": item.owner_user.display_name or item.owner_user.login if item.owner_user else "Unknown",
             "gbs": [gb.name for gb in item.governance_bodies],
-            "mentions": [{"type": m.entity_type, "text": m.mention_text} for m in item.mentions],
+            "mentions": [{"type": m.entity_type, "text": m.mention_text, "entity_id": m.entity_id} for m in item.mentions],
             "can_edit": item.owner_user_id == current_user.id,
             "edit_url": url_for("action_items.edit", item_id=item.id),
             "delete_url": url_for("action_items.delete", item_id=item.id),
@@ -141,6 +245,8 @@ def index():
         view=view,
         timeline_items=timeline_items,
         priority_colors=priority_colors,
+        initiative_challenge_map=initiative_challenge_map,
+        entity_parents=entity_parents,
         csrf_token=generate_csrf,
     )
 
