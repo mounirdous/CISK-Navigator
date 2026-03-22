@@ -708,7 +708,7 @@
                                 {% if kpi.value_types %}
                                     {% for vt in kpi.value_types %}
                                     <span class="value-badge" style="{% if vt.color %}color: {{ vt.color }};{% endif %}">
-                                        {{ vt.name }}: {{ vt.formatted_value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}
+                                        {{ vt.name }}: {{ vt.formatted_value if vt.formatted_value != '' else '—' }}{% if vt.unit_label and vt.formatted_value != '' %} {{ vt.unit_label }}{% endif %}
                                     </span>
                                     {% endfor %}
                                 {% else %}

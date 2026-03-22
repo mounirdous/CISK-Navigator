@@ -3593,13 +3593,17 @@ def initiative_form(initiative_id):
             for config in kpi.value_type_configs:
                 consensus = config.get_consensus_value()
                 if consensus:
+                    raw_value = consensus.get("value")
+                    formatted_value = current_app.jinja_env.filters["format_value"](
+                        raw_value, config.value_type, config
+                    )
                     value_types_data.append(
                         {
                             "name": config.value_type.name,
-                            "value": consensus.get("value"),
-                            "formatted_value": consensus.get("formatted_value"),
+                            "value": raw_value,
+                            "formatted_value": formatted_value,
                             "unit_label": config.value_type.unit_label,
-                            "color": config.get_value_color(consensus.get("value")),
+                            "color": config.get_value_color(raw_value),
                             "kind": config.value_type.kind,
                         }
                     )
