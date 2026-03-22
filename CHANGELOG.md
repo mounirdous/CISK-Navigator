@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.2] - 2026-03-22
+
+### Added
+- Global Admin: consistent secondary sub-nav bar (Dashboard / Organizations / Users / Backup & Restore / Health) with active tab highlighting — appears on all `/global-admin/` pages
+- Removed redundant flat links from main navbar in global-admin mode (now handled by sub-nav)
+
 ## [2.30.1] - 2026-03-22
 
 ### Added
