@@ -2207,6 +2207,7 @@ def search_page():
         "kpis": search_results.get("kpis", []),
         "value_types": search_results.get("value_types", []),
         "comments": search_results.get("comments", []),
+        "entity_links": search_results.get("entity_links", []),
     }
 
     # Add space_name to challenges if missing (template expects it)

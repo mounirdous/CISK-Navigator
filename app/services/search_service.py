@@ -10,6 +10,7 @@ from Levenshtein import ratio
 
 from app.extensions import db
 from app.models import KPI, Challenge, Initiative, InitiativeSystemLink, Space, System
+from app.models import EntityLink
 
 
 class SearchService:
@@ -93,6 +94,7 @@ class SearchService:
             "spaces": [],
             "value_types": [],
             "comments": [],
+            "entity_links": [],
             "query_info": {
                 "original_query": query,
                 "parsed_query": parsed["clean_query"],
@@ -122,6 +124,8 @@ class SearchService:
 
         if "comments" in entity_types:
             results["comments"] = SearchService.search_comments(parsed, filters, organization_id)
+
+        results["entity_links"] = SearchService.search_entity_links(parsed, organization_id)
 
         return results
 
@@ -724,6 +728,43 @@ class SearchService:
         return results[:50]  # Return top 50 comments
 
     @staticmethod
+    def search_entity_links(parsed, organization_id):
+        """Search public entity links by title and URL within the organization."""
+        clean_query = parsed.get("clean_query", "").strip().lower()
+        exact_mode = parsed.get("exact_mode", False)
+        if not clean_query:
+            return []
+
+        pattern = f"%{clean_query}%"
+        links = (
+            EntityLink.query
+            .filter(
+                EntityLink.is_public == True,
+                db.or_(
+                    EntityLink.title.ilike(pattern),
+                    EntityLink.url.ilike(pattern),
+                ),
+            )
+            .limit(20)
+            .all()
+        )
+
+        results = []
+        for link in links:
+            title = link.title or link.url
+            if not exact_mode or clean_query in title.lower() or clean_query in link.url.lower():
+                results.append({
+                    "id": link.id,
+                    "title": link.title or "",
+                    "url": link.url,
+                    "entity_type": link.entity_type,
+                    "entity_id": link.entity_id,
+                    "icon": link.get_display_icon(),
+                    "creator": link.creator.login if link.creator else None,
+                })
+        return results
+
+    @staticmethod
     def _empty_results():
         """Return empty search results structure."""
         return {
@@ -734,5 +775,6 @@ class SearchService:
             "spaces": [],
             "value_types": [],
             "comments": [],
+            "entity_links": [],
             "query_info": {"original_query": "", "parsed_query": "", "modifiers": [], "operators": {}},
         }

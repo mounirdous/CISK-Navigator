@@ -331,6 +331,39 @@
 </div>
 {% endif %}
 
+<!-- URL Links -->
+{% if results.entity_links %}
+<div class="card mb-3 hover-lift fade-in">
+    <div class="card-header text-white" style="background-color: #0ea5e9;">
+        <h5 class="mb-0"><i class="bi bi-link-45deg"></i> URL Links ({{ results.entity_links|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for link in results.entity_links %}
+            <div class="list-group-item d-flex justify-content-between align-items-center hover-lift" style="transition: all 0.2s;">
+                <div class="d-flex align-items-center gap-3 flex-grow-1 min-width-0">
+                    <span style="font-size: 1.3rem; flex-shrink: 0;">{{ link.icon }}</span>
+                    <div class="min-width-0">
+                        <div class="fw-semibold">{{ link.title or link.url }}</div>
+                        <small class="text-muted text-truncate d-block" style="max-width: 400px;">{{ link.url }}</small>
+                        <small class="text-muted">
+                            <span class="badge bg-secondary" style="font-size: 0.7rem;">{{ link.entity_type }}</span>
+                            {% if link.creator %}<span class="ms-1">by {{ link.creator }}</span>{% endif %}
+                        </small>
+                    </div>
+                </div>
+                <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer"
+                   class="btn btn-sm btn-outline-primary ms-3 flex-shrink-0"
+                   title="Open link" onclick="event.stopPropagation();">
+                    <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Comments -->
 {% if current_user.can_view_comments(session.organization_id) and results.comments %}
 <div class="card mb-3 hover-lift fade-in">
