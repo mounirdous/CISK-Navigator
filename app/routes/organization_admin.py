@@ -3597,14 +3597,17 @@ def initiative_form(initiative_id):
                     formatted_value = current_app.jinja_env.filters["format_value"](
                         raw_value, config.value_type, config
                     )
+                    vt = config.value_type
                     value_types_data.append(
                         {
-                            "name": config.value_type.name,
+                            "name": vt.name,
                             "value": raw_value,
                             "formatted_value": formatted_value,
-                            "unit_label": config.value_type.unit_label,
+                            "unit_label": vt.unit_label,
                             "color": config.get_value_color(raw_value),
-                            "kind": config.value_type.kind,
+                            "kind": vt.kind,
+                            "list_label": vt.get_list_option_label(raw_value) if vt.is_list() and raw_value else None,
+                            "list_color": vt.get_list_option_color(raw_value) if vt.is_list() and raw_value else None,
                         }
                     )
 
