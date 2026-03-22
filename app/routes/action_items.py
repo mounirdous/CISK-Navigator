@@ -12,6 +12,7 @@ from flask_wtf.csrf import generate_csrf
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
 from app.models import ActionItem, EntityLink, EntityTypeDefault
+from app.models.user_filter_preset import UserFilterPreset
 from app.services.action_item_service import ActionItemService
 
 
@@ -104,6 +105,16 @@ def index():
 
     # Active view (table or timeline)
     view = request.args.get("view", "table")
+
+    # Timeline group-by (saved in presets)
+    group_by = request.args.get("group_by", "priority")
+
+    # Saved views for this user
+    action_presets = (
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="action_items")
+        .order_by(UserFilterPreset.name)
+        .all()
+    )
 
     # Build full CISK hierarchy map for the Entity timeline view.
     # entity_parents[entity_type][entity_id] = {"challenge": {id, name}, "initiative": {id, name} | None, "system": {id, name} | None}
@@ -247,10 +258,12 @@ def index():
         can_contribute=current_user.can_contribute(org_id),
         is_admin=is_admin,
         view=view,
+        group_by=group_by,
         timeline_items=timeline_items,
         priority_colors=priority_colors,
         initiative_challenge_map=initiative_challenge_map,
         entity_parents=entity_parents,
+        action_presets=[p.to_dict() for p in action_presets],
         csrf_token=generate_csrf,
     )
 
@@ -710,3 +723,64 @@ def import_json():
         flash("Errors: " + "; ".join(row_errors[:5]), "warning")
 
     return redirect(url_for("action_items.index"))
+
+
+# ---------------------------------------------------------------------------
+# Saved Views (presets) API
+# ---------------------------------------------------------------------------
+
+@bp.route("/api/presets")
+@login_required
+@organization_required
+def get_presets():
+    """List all saved views for current user"""
+    org_id = session.get("organization_id")
+    presets = (
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="action_items")
+        .order_by(UserFilterPreset.name)
+        .all()
+    )
+    return jsonify([p.to_dict() for p in presets])
+
+
+@bp.route("/api/presets", methods=["POST"])
+@login_required
+@organization_required
+def save_preset():
+    """Save a new view preset"""
+    org_id = session.get("organization_id")
+    data = request.get_json()
+    name = (data.get("name") or "").strip()
+    filters = data.get("filters", {})
+
+    if not name:
+        return jsonify({"error": "View name is required"}), 400
+
+    existing = UserFilterPreset.query.filter_by(
+        user_id=current_user.id, organization_id=org_id, feature="action_items", name=name
+    ).first()
+    if existing:
+        return jsonify({"error": f"A view named '{name}' already exists"}), 400
+
+    preset = UserFilterPreset(
+        user_id=current_user.id, organization_id=org_id, feature="action_items", name=name, filters=filters
+    )
+    db.session.add(preset)
+    db.session.commit()
+    return jsonify(preset.to_dict()), 201
+
+
+@bp.route("/api/presets/<int:preset_id>", methods=["DELETE"])
+@login_required
+@organization_required
+def delete_preset(preset_id):
+    """Delete a saved view"""
+    org_id = session.get("organization_id")
+    preset = UserFilterPreset.query.get(preset_id)
+    if not preset:
+        return jsonify({"error": "Not found"}), 404
+    if preset.user_id != current_user.id or preset.organization_id != org_id:
+        return jsonify({"error": "Access denied"}), 403
+    db.session.delete(preset)
+    db.session.commit()
+    return jsonify({"success": True})

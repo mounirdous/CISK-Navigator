@@ -30,12 +30,16 @@ class UserFilterPreset(db.Model):
 
     # Preset metadata
     name = db.Column(db.String(100), nullable=False, comment="User-defined name for this filter preset")
+    feature = db.Column(
+        db.String(50), nullable=False, default="workspace",
+        comment="Feature this preset belongs to: 'workspace' or 'action_items'"
+    )
 
     # Filter configuration (JSON)
     filters = db.Column(
         db.JSON,
         nullable=False,
-        comment="Complete filter state including: space_type, governance_bodies, groups, show_archived, show_all_columns, show_levels",
+        comment="Complete filter state as JSON dict",
     )
 
     # Timestamps
@@ -47,7 +51,9 @@ class UserFilterPreset(db.Model):
     organization = db.relationship("Organization", back_populates="filter_presets")
 
     # Constraints and indexes
-    __table_args__ = (db.UniqueConstraint("user_id", "organization_id", "name", name="uq_user_org_preset_name"),)
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "organization_id", "feature", "name", name="uq_user_org_feature_preset_name"),
+    )
 
     def __repr__(self):
         return f"<UserFilterPreset {self.id} user={self.user_id} org={self.organization_id} name='{self.name}'>"

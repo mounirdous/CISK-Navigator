@@ -5,6 +5,20 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.28.1] - 2026-03-22
+
+### Fixed
+- Timeline: switched from deprecated legacy vis-timeline bundle (`dist/vis-timeline-graph2d.min.js`) to standalone UMD build — eliminates console deprecation warning
+- Saved Views dropdown: replaced unsafe inline `onclick` with `data-` attributes + event delegation — fixes `Uncaught SyntaxError: Unexpected end of input` when preset filters contain quotes or special characters
+
+## [2.28.0] - 2026-03-22
+
+### Added
+- **Action Register: Saved Views** — save and load named filter/view combinations from a "📑 Views" button in the toolbar. Stores: type, status, visibility, governance bodies, view mode (table/timeline), and group-by. Load any saved view in one click — perfect for switching between stakeholder meeting contexts
+- `group_by` is now a URL parameter so timeline grouping is preserved when loading a view
+- `UserFilterPreset` model extended with `feature` column (`workspace` / `action_items`) to keep workspace and action register presets separate
+- Migration `t1u2v3w4x5y6` adds `feature` column to `user_filter_presets`
+
 ## [2.27.2] - 2026-03-22
 
 ### Changed

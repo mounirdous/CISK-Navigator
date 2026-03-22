@@ -327,6 +327,53 @@
                 <i class="bi bi-plus-lg me-1"></i> New Item
             </a>
             {% endif %}
+
+            <!-- Saved Views dropdown -->
+            <div class="dropdown" id="views-dropdown-wrapper">
+                <button class="btn btn-outline-light btn-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                        id="views-dropdown-btn" title="Saved Views">
+                    <i class="bi bi-bookmark-star me-1"></i> Views
+                    {% if action_presets %}<span class="badge bg-light text-dark ms-1" style="font-size:0.65rem;">{{ action_presets|length }}</span>{% endif %}
+                </button>
+                <div class="dropdown-menu dropdown-menu-end p-2" style="min-width:260px; max-width:320px;" id="views-dropdown-menu">
+                    {% if action_presets %}
+                    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;padding:0 0.25rem 0.4rem;">Saved views</div>
+                    {% for preset in action_presets %}
+                    <div class="d-flex align-items-center gap-1 mb-1">
+                        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 text-start preset-load-btn"
+                                style="font-size:0.82rem;padding:4px 8px;"
+                                data-preset-filters='{{ preset.filters|tojson }}'>
+                            <i class="bi bi-bookmark-fill me-1" style="color:#667eea;font-size:0.75rem;"></i>
+                            {{ preset.name }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger preset-delete-btn"
+                                style="padding:3px 7px;"
+                                data-preset-id="{{ preset.id }}"
+                                data-preset-name="{{ preset.name|e }}"
+                                title="Delete">
+                            <i class="bi bi-trash" style="font-size:0.72rem;"></i>
+                        </button>
+                    </div>
+                    {% endfor %}
+                    <hr class="my-2">
+                    {% endif %}
+                    <!-- Save current view -->
+                    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;padding:0 0.25rem 0.4rem;">
+                        Save current view
+                    </div>
+                    <div class="d-flex gap-1">
+                        <input type="text" id="preset-name-input" class="form-control form-control-sm"
+                               placeholder="View name…" maxlength="100"
+                               style="font-size:0.82rem;"
+                               onkeydown="if(event.key==='Enter'){saveActionPreset();}">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="saveActionPreset()"
+                                style="white-space:nowrap;font-size:0.82rem;">
+                            <i class="bi bi-floppy"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div class="dropdown">
                 <button class="btn btn-outline-light btn-sm" data-bs-toggle="dropdown" title="Import / Export">
                     <i class="bi bi-arrow-down-up"></i>
@@ -1298,7 +1345,7 @@ updateCount();
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/dist/vis-timeline-graph2d.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
 <script>
 // ── Timeline view ────────────────────────────────────────────────────────────
 const TL_DATA = {{ timeline_items | tojson }};
@@ -1750,6 +1797,16 @@ window.tlNav = function(dir) {
     tlInstance.setWindow(new Date(+win.start + shift), new Date(+win.end + shift), { animation: true });
 };
 
+// Apply group_by from URL param on load
+(function() {
+    const urlGroupBy = {{ group_by|tojson }};
+    if (urlGroupBy && urlGroupBy !== 'priority') {
+        document.querySelectorAll('.groupby-pill').forEach(b => {
+            b.classList.toggle('active', b.dataset.group === urlGroupBy);
+        });
+    }
+})();
+
 document.querySelectorAll('.groupby-pill').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.groupby-pill').forEach(b => b.classList.remove('active'));
@@ -1790,6 +1847,83 @@ window.switchView = function(v) {
 document.addEventListener('DOMContentLoaded', function() {
     if (activeView === 'timeline') switchView('timeline');
 });
+
+// ── Saved Views (presets) ─────────────────────────────────────────────────
+
+// Wire up preset load/delete buttons via event delegation (avoids inline onclick + tojson quoting issues)
+document.getElementById('views-dropdown-menu')?.addEventListener('click', function(e) {
+    const loadBtn = e.target.closest('.preset-load-btn');
+    if (loadBtn) {
+        try { loadActionPreset(JSON.parse(loadBtn.dataset.presetFilters)); }
+        catch(err) { alert('Failed to parse preset filters'); }
+        return;
+    }
+    const delBtn = e.target.closest('.preset-delete-btn');
+    if (delBtn) {
+        e.stopPropagation();
+        deleteActionPreset(delBtn.dataset.presetId, delBtn.dataset.presetName);
+    }
+});
+
+function _getCurrentActionFilters() {
+    const form = document.getElementById('filter-form');
+    const type_filter = form.querySelector('input[name="type_filter"]:checked')?.value || 'all';
+    const visibility_filter = form.querySelector('input[name="visibility_filter"]:checked')?.value || 'all';
+    const status_filter = [...form.querySelectorAll('input[name="status_filter"]:checked')].map(el => el.value);
+    const gb_filter = [...form.querySelectorAll('input[name="gb_filter"]:checked')].map(el => el.value);
+    const group_by = document.querySelector('.groupby-pill.active')?.dataset.group || 'priority';
+    const view = activeView || 'table';
+    return { type_filter, visibility_filter, status_filter, gb_filter, group_by, view };
+}
+
+async function saveActionPreset() {
+    const input = document.getElementById('preset-name-input');
+    const name = (input.value || '').trim();
+    if (!name) { input.focus(); return; }
+
+    const filters = _getCurrentActionFilters();
+    try {
+        const resp = await fetch('{{ url_for("action_items.save_preset") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+            body: JSON.stringify({ name, filters })
+        });
+        const data = await resp.json();
+        if (resp.ok) {
+            input.value = '';
+            // Close dropdown and reload page to reflect new preset in list
+            bootstrap.Dropdown.getInstance(document.getElementById('views-dropdown-btn'))?.hide();
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to save view');
+        }
+    } catch (e) {
+        alert('Failed to save view');
+    }
+}
+
+function loadActionPreset(filters) {
+    const params = new URLSearchParams();
+    params.set('type_filter', filters.type_filter || 'all');
+    params.set('visibility_filter', filters.visibility_filter || 'all');
+    (filters.status_filter || []).forEach(v => params.append('status_filter', v));
+    (filters.gb_filter || []).forEach(v => params.append('gb_filter', v));
+    if (filters.view) params.set('view', filters.view);
+    if (filters.group_by) params.set('group_by', filters.group_by);
+    window.location.href = '{{ url_for("action_items.index") }}?' + params.toString();
+}
+
+async function deleteActionPreset(id, name) {
+    if (!confirm(`Delete view "${name}"?`)) return;
+    try {
+        const resp = await fetch(`/toolbox/actions/api/presets/${id}`, {
+            method: 'DELETE',
+            headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
+        });
+        if (resp.ok) window.location.reload();
+        else alert('Failed to delete view');
+    } catch(e) { alert('Failed to delete view'); }
+}
 
 // ── Bulk start-date setter ───────────────────────────────────────────────────
 const PRIORITY_LEAD_DAYS = { urgent: 2, high: 5, medium: 7, low: 14 };

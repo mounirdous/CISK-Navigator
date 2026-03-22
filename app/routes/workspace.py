@@ -246,7 +246,7 @@ def index():
 
     # Get filter presets for this user (from database)
     filter_presets_objs = (
-        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="workspace")
         .order_by(UserFilterPreset.name)
         .all()
     )
@@ -3057,7 +3057,7 @@ def get_filter_presets():
     org_id = session.get("organization_id")
 
     presets = (
-        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id)
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="workspace")
         .order_by(UserFilterPreset.name)
         .all()
     )
@@ -3079,14 +3079,16 @@ def save_filter_preset():
     if not name:
         return jsonify({"error": "Preset name is required"}), 400
 
-    # Check if name already exists
-    existing = UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, name=name).first()
+    # Check if name already exists (within workspace feature)
+    existing = UserFilterPreset.query.filter_by(
+        user_id=current_user.id, organization_id=org_id, feature="workspace", name=name
+    ).first()
 
     if existing:
         return jsonify({"error": f"A preset named '{name}' already exists"}), 400
 
     # Create new preset
-    preset = UserFilterPreset(user_id=current_user.id, organization_id=org_id, name=name, filters=filters)
+    preset = UserFilterPreset(user_id=current_user.id, organization_id=org_id, feature="workspace", name=name, filters=filters)
 
     db.session.add(preset)
     db.session.flush()  # Flush to get the preset.id
@@ -3124,9 +3126,11 @@ def update_filter_preset(preset_id):
         if not new_name:
             return jsonify({"error": "Preset name cannot be empty"}), 400
 
-        # Check if new name conflicts with another preset
+        # Check if new name conflicts with another preset (within same feature)
         existing = (
-            UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, name=new_name)
+            UserFilterPreset.query.filter_by(
+                user_id=current_user.id, organization_id=org_id, feature=preset.feature, name=new_name
+            )
             .filter(UserFilterPreset.id != preset_id)
             .first()
         )
