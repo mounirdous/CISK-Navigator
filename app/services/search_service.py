@@ -730,38 +730,70 @@ class SearchService:
     @staticmethod
     def search_entity_links(parsed, organization_id):
         """Search public entity links by title and URL within the organization."""
+        from app.models import Challenge, Initiative, Space, System
+
         clean_query = parsed.get("clean_query", "").strip().lower()
         exact_mode = parsed.get("exact_mode", False)
         if not clean_query:
             return []
+
+        # Build org-scoped entity ID subqueries
+        space_ids = db.session.query(Space.id).filter_by(organization_id=organization_id).subquery()
+        challenge_ids = db.session.query(Challenge.id).filter_by(organization_id=organization_id).subquery()
+        initiative_ids = db.session.query(Initiative.id).filter_by(organization_id=organization_id).subquery()
+        system_ids = db.session.query(System.id).filter_by(organization_id=organization_id).subquery()
+        kpi_ids = (
+            db.session.query(KPI.id)
+            .join(KPI.initiative_system_link)
+            .join(InitiativeSystemLink.initiative)
+            .filter(Initiative.organization_id == organization_id)
+            .subquery()
+        )
+
+        org_filter = db.or_(
+            db.and_(EntityLink.entity_type == "space", EntityLink.entity_id.in_(space_ids)),
+            db.and_(EntityLink.entity_type == "challenge", EntityLink.entity_id.in_(challenge_ids)),
+            db.and_(EntityLink.entity_type == "initiative", EntityLink.entity_id.in_(initiative_ids)),
+            db.and_(EntityLink.entity_type == "system", EntityLink.entity_id.in_(system_ids)),
+            db.and_(EntityLink.entity_type == "kpi", EntityLink.entity_id.in_(kpi_ids)),
+        )
 
         pattern = f"%{clean_query}%"
         links = (
             EntityLink.query
             .filter(
                 EntityLink.is_public == True,
+                org_filter,
                 db.or_(
                     EntityLink.title.ilike(pattern),
                     EntityLink.url.ilike(pattern),
                 ),
             )
-            .limit(20)
+            .limit(50)
             .all()
         )
 
+        # Deduplicate by URL — same URL on multiple entities should appear once
+        seen_urls = set()
         results = []
         for link in links:
             title = link.title or link.url
-            if not exact_mode or clean_query in title.lower() or clean_query in link.url.lower():
-                results.append({
-                    "id": link.id,
-                    "title": link.title or "",
-                    "url": link.url,
-                    "entity_type": link.entity_type,
-                    "entity_id": link.entity_id,
-                    "icon": link.get_display_icon(),
-                    "creator": link.creator.login if link.creator else None,
-                })
+            if exact_mode and clean_query not in title.lower() and clean_query not in link.url.lower():
+                continue
+            if link.url in seen_urls:
+                continue
+            seen_urls.add(link.url)
+            results.append({
+                "id": link.id,
+                "title": link.title or "",
+                "url": link.url,
+                "entity_type": link.entity_type,
+                "entity_id": link.entity_id,
+                "icon": link.get_display_icon(),
+                "creator": link.creator.login if link.creator else None,
+            })
+            if len(results) >= 20:
+                break
         return results
 
     @staticmethod

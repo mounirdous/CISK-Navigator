@@ -2501,6 +2501,7 @@ def advanced_search():
         + len(results.get("initiatives", []))
         + len(results.get("challenges", []))
         + len(results.get("spaces", []))
+        + len(results.get("entity_links", []))
     )
 
     results["total_results"] = total_results

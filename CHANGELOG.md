@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.31.2] - 2026-03-22
+
+### Fixed
+- URL link search: deduplicate results by URL (same link on multiple entities appeared multiple times)
+- URL link search: filter by current organization only (links from other orgs no longer appear)
+
+## [2.31.1] - 2026-03-22
+
+### Added
+- Navbar live search: URL links now appear in results with open-in-new-tab button (no edit button)
+- Navbar search filters: "URL Links" checkbox to show/hide link results
+- Search page: updated description to mention "links"
+
 ## [2.31.0] - 2026-03-22
 
 ### Added
