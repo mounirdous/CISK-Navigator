@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.1] - 2026-03-22
+
+### Added
+- Workspace tree: hovering over any entity name (Space, Challenge, Initiative, System, KPI) now shows its description as a native browser tooltip — only active outside edit mode, only when a description exists
+
 ## [2.25.0] - 2026-03-22
 
 ### Added

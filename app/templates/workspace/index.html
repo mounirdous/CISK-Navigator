@@ -2256,7 +2256,7 @@
                                     <span class="completion-badge badge-complete" title="SWOT complete">✓</span>
                                 </template>
 
-                                <span x-text="space.name"></span>
+                                <span x-text="space.name" :title="!editMode && space.description ? space.description : false"></span>
 
                                 <!-- Space label badge -->
                                 <template x-if="showBadges && space.space_label">
@@ -2416,7 +2416,7 @@
                                         <span x-show="!challenge.logo_url && challenge.icon && !editMode && showBadges" class="entity-icon-text" x-text="challenge.icon"></span>
                                         <i x-show="!challenge.logo_url && !challenge.icon && (editMode || !showBadges)" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
-                                        <span x-text="challenge.name"></span>
+                                        <span x-text="challenge.name" :title="!editMode && challenge.description ? challenge.description : false"></span>
 
                                         <!-- Entity links popover -->
                                         <template x-if="showBadges && challenge.entity_links && challenge.entity_links.length > 0">
@@ -2545,7 +2545,7 @@
                                                     <span class="completion-badge badge-complete" title="Form complete">✓</span>
                                                 </template>
 
-                                                <span x-text="initiative.name"></span>
+                                                <span x-text="initiative.name" :title="!editMode && initiative.description ? initiative.description : false"></span>
 
                                                 <!-- Entity links popover -->
                                                 <template x-if="showBadges && initiative.entity_links && initiative.entity_links.length > 0">
@@ -2686,7 +2686,7 @@
                                                         <span x-show="!system.logo_url && system.icon && !editMode && showBadges" class="entity-icon-text" x-text="system.icon"></span>
                                                         <i x-show="!system.logo_url && !system.icon && (editMode || !showBadges)" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
 
-                                                        <span x-text="system.name"></span>
+                                                        <span x-text="system.name" :title="!editMode && system.description ? system.description : false"></span>
 
                                                         <!-- Entity links popover -->
                                                         <template x-if="showBadges && system.entity_links && system.entity_links.length > 0">
@@ -2831,7 +2831,7 @@
                                                                 </span>
                                                             </template>
 
-                                                            <span x-text="kpi.name"></span>
+                                                            <span x-text="kpi.name" :title="!editMode && kpi.description ? kpi.description : false"></span>
 
                                                             <!-- Entity links popover -->
                                                             <template x-if="showBadges && kpi.entity_links && kpi.entity_links.length > 0">
