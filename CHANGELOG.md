@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.29.4] - 2026-03-22
+
+### Fixed
+- Renaming an organization to the name of an archived org no longer crashes with `IntegrityError` — the archived org is automatically renamed to `{name}_archived_YYYYMMDD` to free up the name, and a flash info message explains what happened
+- Renaming to an active org's name shows a clear error message instead of a 500
+
 ## [2.29.3] - 2026-03-22
 
 ### Fixed

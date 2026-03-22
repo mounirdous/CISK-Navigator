@@ -678,6 +678,36 @@ def edit_organization(org_id):
         form.users.data = [m.user_id for m in org.user_memberships]
 
     if form.validate_on_submit():
+        new_name = form.name.data.strip()
+
+        # Check for name conflict (including archived orgs) before touching the session
+        if new_name.upper() != org.name.upper():
+            conflict = Organization.query.filter(
+                Organization.name == new_name,
+                Organization.id != org.id
+            ).first()
+            if conflict:
+                if conflict.is_deleted:
+                    # Auto-rename the archived org with a unique suffix to free up the name
+                    from datetime import date
+                    base = f"{conflict.name}_archived_{date.today().strftime('%Y%m%d')}"
+                    unique_name = base
+                    suffix = 1
+                    while Organization.query.filter_by(name=unique_name).first():
+                        unique_name = f"{base}_{suffix}"
+                        suffix += 1
+                    old_archived_name = conflict.name
+                    conflict.name = unique_name
+                    db.session.flush()
+                    flash(
+                        f'Archived organization "{old_archived_name}" was automatically renamed to '
+                        f'"{unique_name}" to free up the name.',
+                        "info",
+                    )
+                else:
+                    flash(f'An active organization named "{new_name}" already exists.', "danger")
+                    return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users)
+
         # Capture old values for audit
         old_values = {
             "name": org.name,
@@ -687,7 +717,7 @@ def edit_organization(org_id):
         }
 
         # Apply changes
-        org.name = form.name.data
+        org.name = new_name
         org.description = form.description.data
         org.is_active = form.is_active.data
 
