@@ -5,6 +5,29 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.32.2] - 2026-03-22
+
+### Added
+- Workspace: Level Focus mode toggle now persisted per user per org in the database (works across devices)
+- Workspace: Badges/decorations (🎄) toggle state now persisted per user per org in the database
+- Workspace: Level Focus toggle has a tooltip explaining its behaviour
+
+### Changed
+- Added `preferences` JSON column to `user_organization_memberships` (migration `u2v3w4x5y6z7`)
+- New `POST /workspace/api/preferences` endpoint to save arbitrary per-user per-org UI preferences
+
+## [2.32.1] - 2026-03-22
+
+### Added
+- Workspace toolbar: "Expand One Level" (⌄|) and "Collapse One Level" (|⌃) buttons between the expand-all and collapse-all buttons
+
+## [2.32.0] - 2026-03-22
+
+### Added
+- Workspace presets: tree collapse/expand state is now saved and restored with presets
+- Workspace presets: "Save View" always enabled (no longer blocked when no data filter is set)
+- Workspace presets: moved out of the "Filters & Display" panel into a compact Bootstrap dropdown in the toolbar (saves vertical space, always accessible)
+
 ## [2.31.3] - 2026-03-22
 
 ### Fixed

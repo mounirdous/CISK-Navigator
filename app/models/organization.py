@@ -131,6 +131,9 @@ class UserOrganizationMembership(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
+    # User preferences per org (e.g. workspace display options)
+    preferences = db.Column(db.JSON, nullable=True, default=dict, comment="Per-user per-org UI preferences")
+
     # Last used workspace preset (for persistence across sessions)
     last_workspace_preset_id = db.Column(
         db.Integer,

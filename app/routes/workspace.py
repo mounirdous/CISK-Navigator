@@ -255,6 +255,14 @@ def index():
     filter_presets = filter_presets_objs
     filter_presets_json = json.dumps([preset.to_dict() for preset in filter_presets_objs])
 
+    # Read user preferences for this org
+    membership = UserOrganizationMembership.query.filter_by(
+        user_id=current_user.id, organization_id=org_id
+    ).first()
+    prefs = membership.preferences or {} if membership else {}
+    ws_focus_mode = bool(prefs.get("ws_focus_mode", False))
+    ws_show_badges = bool(prefs.get("ws_show_badges", True))
+
     return render_template(
         "workspace/index.html",
         org_name=org_name,
@@ -267,6 +275,8 @@ def index():
         filter_presets_json=Markup(filter_presets_json),
         can_contribute=current_user.can_contribute(org_id),
         csrf_token=generate_csrf,
+        ws_focus_mode=ws_focus_mode,
+        ws_show_badges=ws_show_badges,
     )
 
 
@@ -3049,6 +3059,27 @@ def api_get_value_types_for_linking(kpi_id):
 # =============================================================================
 # FILTER PRESET API ENDPOINTS
 # =============================================================================
+
+
+@bp.route("/api/preferences", methods=["POST"])
+@login_required
+@organization_required
+def save_preferences():
+    """Save a user preference key/value for the current org membership."""
+    org_id = session.get("organization_id")
+    data = request.get_json() or {}
+
+    membership = UserOrganizationMembership.query.filter_by(
+        user_id=current_user.id, organization_id=org_id
+    ).first()
+    if not membership:
+        return jsonify({"error": "Membership not found"}), 404
+
+    prefs = dict(membership.preferences or {})
+    prefs.update(data)
+    membership.preferences = prefs
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 @bp.route("/api/filter-presets")
