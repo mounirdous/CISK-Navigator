@@ -1304,8 +1304,11 @@
 
             <!-- Location Section -->
             <div class="detail-section">
-                <div class="detail-section-title">Location Hierarchy</div>
-                <div class="location-hierarchy" id="detailsLocation">
+                <div class="detail-section-title" style="cursor:pointer; display:flex; justify-content:space-between; align-items:center; user-select:none;" onclick="toggleLocationTree()">
+                    Location Hierarchy
+                    <span id="locationTreeToggleIcon" style="font-size:11px; color:#aaa;">&#9654; show</span>
+                </div>
+                <div id="detailsLocation" style="display:none; margin-top:8px;">
                     <!-- Populated dynamically -->
                 </div>
             </div>
@@ -1316,6 +1319,12 @@
                 <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 14px; color: #666;">
                     <i class="bi bi-calendar3"></i> <span id="detailsPeriod"></span>
                 </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="detail-section" id="detailsCommentsSection" style="display: none;">
+                <div class="detail-section-title">Contributor Comments</div>
+                <div id="detailsComments" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
         </div>
 
@@ -2050,9 +2059,12 @@ function openDetailsPanel(kpi, kpiId = null) {
         document.getElementById('detailsDescriptionSection').style.display = 'none';
     }
 
-    // Update location hierarchy
-    const locationHTML = buildLocationHierarchy(props);
+    // Update location hierarchy — collect all locations for this KPI
+    const allLocations = (kpiIndexMap[props.kpi_id] || []).map(idx => allKPIs[idx].properties);
+    const locationHTML = buildLocationHierarchy(allLocations.length > 0 ? allLocations : [props]);
     document.getElementById('detailsLocation').innerHTML = locationHTML;
+    document.getElementById('detailsLocation').style.display = 'none';
+    document.getElementById('locationTreeToggleIcon').innerHTML = '&#9654; show';
 
     // Update period (if available)
     if (props.period) {
@@ -2061,6 +2073,27 @@ function openDetailsPanel(kpi, kpiId = null) {
     } else {
         document.getElementById('detailsPeriodSection').style.display = 'none';
     }
+
+    // Update comments (if available)
+    const comments = props.comments || [];
+    if (comments.length > 0) {
+        document.getElementById('detailsCommentsSection').style.display = 'block';
+        document.getElementById('detailsComments').innerHTML = comments.map(c => `
+            <div style="padding: 10px 12px; background: #f8f9fa; border-radius: 8px; border-left: 3px solid #667eea;">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 4px;">
+                    <span style="font-size: 11px; font-weight: 700; color: #667eea; text-transform: uppercase; letter-spacing: 0.4px;">${c.contributor}</span>
+                    ${c.updated_at ? `<span style="font-size: 10px; color: #aaa;">${c.updated_at}</span>` : ''}
+                </div>
+                <div style="font-size: 13px; color: #444; line-height: 1.5;">${c.comment}</div>
+            </div>
+        `).join('');
+    } else {
+        document.getElementById('detailsCommentsSection').style.display = 'none';
+    }
+
+    // Show "Center on Map" only for single-location KPIs
+    const locationCount = (kpiIndexMap[props.kpi_id] || []).length;
+    document.getElementById('detailsMapBtn').style.display = locationCount === 1 ? '' : 'none';
 
     // Update action button
     document.getElementById('detailsViewBtn').href =
@@ -2094,46 +2127,59 @@ function closeDetailsPanel() {
     renderKPIList(filtered);
 }
 
-function buildLocationHierarchy(props) {
-    const locationType = props.location_type;
-    const locationName = props.location_name;
+function buildLocationHierarchy(locationProps) {
+    // Build a tree: { regionName → { countries: Set, sites: { countryName → Set } } }
+    // Each assignment contributes one node; we infer the full path from parent fields.
+    const tree = new Map(); // region → { countrySet, siteMap: country → Set }
 
-    let html = '';
-
-    // Build based on location type
-    if (locationType === 'region') {
-        html = `
-            <div class="location-item">
-                <div class="location-icon region">🌍</div>
-                <div class="location-info">
-                    <div class="location-type">Region</div>
-                    <div class="location-name">${locationName}</div>
-                </div>
-            </div>
-        `;
-    } else if (locationType === 'country') {
-        html = `
-            <div class="location-item">
-                <div class="location-icon country">🏳️</div>
-                <div class="location-info">
-                    <div class="location-type">Country</div>
-                    <div class="location-name">${locationName}</div>
-                </div>
-            </div>
-        `;
-    } else if (locationType === 'site') {
-        html = `
-            <div class="location-item">
-                <div class="location-icon site">📍</div>
-                <div class="location-info">
-                    <div class="location-type">Site</div>
-                    <div class="location-name">${locationName}</div>
-                </div>
-            </div>
-        `;
+    function ensureRegion(rName) {
+        if (!tree.has(rName)) tree.set(rName, { countries: new Set(), siteMap: new Map() });
+        return tree.get(rName);
     }
 
-    return html;
+    locationProps.forEach(p => {
+        if (p.location_type === 'region') {
+            ensureRegion(p.location_name);
+        } else if (p.location_type === 'country') {
+            const r = ensureRegion(p.region_name || '—');
+            r.countries.add(p.location_name);
+        } else if (p.location_type === 'site') {
+            const r = ensureRegion(p.region_name || '—');
+            const cName = p.country_name || '—';
+            r.countries.add(cName);
+            if (!r.siteMap.has(cName)) r.siteMap.set(cName, new Set());
+            r.siteMap.get(cName).add(p.location_name);
+        }
+    });
+
+    const row = (icon, color, name, indent) => `
+        <div style="display:flex; align-items:center; gap:5px; padding:2px 0 2px ${indent}px;">
+            <span style="font-size:10px; color:${color};">${icon}</span>
+            <span style="font-size:12px; color:#333;">${name}</span>
+        </div>`;
+
+    let html = '';
+    tree.forEach((node, regionName) => {
+        html += row('&#9670;', '#8b5cf6', regionName, 0);
+        node.countries.forEach(cName => {
+            html += row('&#9656;', '#10b981', cName, 12);
+            if (node.siteMap.has(cName)) {
+                node.siteMap.get(cName).forEach(sName => {
+                    html += row('&#8226;', '#f59e0b', sName, 24);
+                });
+            }
+        });
+    });
+
+    return html || '<span style="font-size:12px;color:#999;">No location data</span>';
+}
+
+function toggleLocationTree() {
+    const el = document.getElementById('detailsLocation');
+    const icon = document.getElementById('locationTreeToggleIcon');
+    const visible = el.style.display !== 'none';
+    el.style.display = visible ? 'none' : 'block';
+    icon.innerHTML = visible ? '&#9654; show' : '&#9660; hide';
 }
 
 // Close button handler

@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.6] - 2026-03-22
+
+### Fixed
+- Map dashboard: location hierarchy panel is now collapsible (collapsed by default) and renders as a tree (region → country → site) instead of a flat list
+- Map dashboard: "Center on Map" button hidden for multi-location KPIs
+- Map dashboard: contributor comments now show the last updated date for data freshness
+- Map dashboard: API includes parent region/country names for proper tree rendering
+
 ## [2.30.5] - 2026-03-22
 
 ### Fixed

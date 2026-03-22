@@ -763,6 +763,29 @@ def api_map_kpis():
                 )
                 target_value = primary_config.target_value if primary_config else None
 
+                # Collect non-empty contribution comments
+                comments = []
+                if primary_config:
+                    for contrib in primary_config.contributions:
+                        if contrib.comment and contrib.comment.strip():
+                            comments.append({
+                                "contributor": contrib.contributor_name,
+                                "comment": contrib.comment.strip(),
+                                "updated_at": contrib.updated_at.strftime("%Y-%m-%d") if contrib.updated_at else None,
+                            })
+
+                # Build parent chain for tree display
+                region_name = None
+                country_name = None
+                if location_type == "site" and assignment.site:
+                    if assignment.site.country:
+                        country_name = assignment.site.country.name
+                        if assignment.site.country.region:
+                            region_name = assignment.site.country.region.name
+                elif location_type == "country" and assignment.country:
+                    if assignment.country.region:
+                        region_name = assignment.country.region.name
+
                 features.append(
                     {
                         "type": "Feature",
@@ -773,12 +796,15 @@ def api_map_kpis():
                             "kpi_code": f"KPI-{kpi.id}",  # KPI model has no code field
                             "location_name": location_name,
                             "location_type": location_type,
+                            "region_name": region_name,
+                            "country_name": country_name,
                             "value": (
                                 str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value else "No data"
                             ),
                             "period": latest_snapshot.period.strftime("%Y-%m") if latest_snapshot else None,
                             "target": str(target_value) if target_value else None,
                             "unit": unit_label,
+                            "comments": comments,
                         },
                     }
                 )
