@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.5] - 2026-03-22
+
+### Fixed
+- Map dashboard: KPIs assigned to multiple regions/locations now appear only once in the left sidebar — all location names are listed on the card (e.g. "Europe, Asia")
+- Map dashboard: hovering/clicking a sidebar card highlights all markers for that KPI across all its locations
+- Map dashboard: filter badges now count unique KPIs, not total location assignments
+- Map dashboard: Mapbox token now correctly loaded from `MAPBOX_ACCESS_TOKEN` env var
+
 ## [2.30.4] - 2026-03-22
 
 ### Fixed

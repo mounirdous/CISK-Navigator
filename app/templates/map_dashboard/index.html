@@ -1339,7 +1339,7 @@
 <script>
 // Mapbox access token - get free token at https://account.mapbox.com/access-tokens/
 // Free tier: 50,000 map loads/month
-mapboxgl.accessToken = '{{ config.get("MAPBOX_ACCESS_TOKEN", "pk.YOUR_TOKEN_HERE") }}';
+mapboxgl.accessToken = '{{ config["MAPBOX_ACCESS_TOKEN"] or "pk.YOUR_TOKEN_HERE" }}';
 
 console.log('=== MAPBOX MAP INITIALIZATION ===');
 
@@ -1381,9 +1381,12 @@ let kpiMarkers = []; // Store all KPI markers for toggle
 let markersVisible = true;
 let allKPIs = []; // Store all KPIs for sidebar
 let currentFilter = 'all'; // Current filter selection
-let activeKPIIndex = null; // Track which KPI is in details panel
+let activeKPIId = null; // Track which KPI is in details panel (by kpi_id)
 let searchTimeout = null; // For debounced search
 let markerBounds = null; // Store bounds for "Show All" button
+
+// Build a map: kpi_id → [marker indices] (set after allKPIs is populated)
+let kpiIndexMap = {}; // kpi_id → [indices in kpiMarkers array]
 
 // Fetch YOUR country data
 fetch('{{ url_for("geography.api_countries_json") }}')
@@ -1628,6 +1631,13 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
                     if (data.features && data.features.length > 0) {
                         allKPIs = data.features; // Store for sidebar
+                        // Build kpi_id → indices map for marker highlight
+                        kpiIndexMap = {};
+                        allKPIs.forEach((feature, idx) => {
+                            const id = feature.properties.kpi_id;
+                            if (!kpiIndexMap[id]) kpiIndexMap[id] = [];
+                            kpiIndexMap[id].push(idx);
+                        });
                         try {
                             renderKPIList(allKPIs); // Populate sidebar
                         } catch (renderError) {
@@ -1673,7 +1683,7 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                 // Add click handler to open details panel
                 el.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    openDetailsPanel(feature, markerIndex);
+                    openDetailsPanel(feature, feature.properties.kpi_id);
                 });
 
                 // Add hover effect to close country popup
@@ -1826,21 +1836,35 @@ function renderKPIList(kpis) {
         return;
     }
 
-    listContainer.innerHTML = kpis.map((feature, index) => {
+    // Deduplicate by kpi_id — collect all location names per KPI
+    const kpiMap = new Map();
+    kpis.forEach(feature => {
+        const id = feature.properties.kpi_id;
+        if (!kpiMap.has(id)) {
+            kpiMap.set(id, { feature, locations: [feature.properties.location_name] });
+        } else {
+            kpiMap.get(id).locations.push(feature.properties.location_name);
+        }
+    });
+
+    const uniqueKPIs = Array.from(kpiMap.values());
+
+    listContainer.innerHTML = uniqueKPIs.map(({ feature, locations }) => {
         const props = feature.properties;
         const levelClass = `level-${props.location_type}`;
         const icon = props.location_type === 'region' ? '🌍' :
                      props.location_type === 'country' ? '🏳️' : '📍';
-        const isActive = activeKPIIndex === index ? 'active' : '';
+        const isActive = activeKPIId === props.kpi_id ? 'active' : '';
+        const locationLabel = locations.join(', ');
 
         return `
-            <div class="kpi-list-item ${isActive}" data-kpi-index="${index}">
+            <div class="kpi-list-item ${isActive}" data-kpi-id="${props.kpi_id}">
                 <div class="kpi-item-header">
                     <div class="kpi-item-name">${props.kpi_name}</div>
                     <div class="kpi-item-level ${levelClass}">${icon} ${props.location_type}</div>
                 </div>
                 <div class="kpi-item-location">
-                    <i class="bi bi-geo-alt"></i> ${props.location_name}
+                    <i class="bi bi-geo-alt"></i> ${locationLabel}
                 </div>
                 <div>
                     <span class="kpi-item-value">${props.value}</span>
@@ -1852,33 +1876,36 @@ function renderKPIList(kpis) {
 
     // Add event listeners to items
     document.querySelectorAll('.kpi-list-item').forEach((item) => {
-        const index = parseInt(item.dataset.kpiIndex);
+        const kpiId = parseInt(item.dataset.kpiId);
+        const { feature } = kpiMap.get(kpiId);
 
         item.addEventListener('click', () => {
-            openDetailsPanel(kpis[index], index);
+            openDetailsPanel(feature, kpiId);
         });
 
         item.addEventListener('mouseenter', () => {
             item.classList.add('highlighted');
-            highlightMarker(index);
+            highlightMarkersForKPI(kpiId);
         });
 
         item.addEventListener('mouseleave', () => {
             item.classList.remove('highlighted');
-            unhighlightMarker(index);
+            unhighlightMarkersForKPI(kpiId);
         });
     });
 }
 
 function updateFilterBadges() {
-    const regionCount = allKPIs.filter(kpi => kpi.properties.location_type === 'region').length;
-    const countryCount = allKPIs.filter(kpi => kpi.properties.location_type === 'country').length;
-    const siteCount = allKPIs.filter(kpi => kpi.properties.location_type === 'site').length;
+    // Count unique KPIs (deduplicated by kpi_id)
+    const uniqueIds = new Set(allKPIs.map(kpi => kpi.properties.kpi_id));
+    const regionIds = new Set(allKPIs.filter(kpi => kpi.properties.location_type === 'region').map(kpi => kpi.properties.kpi_id));
+    const countryIds = new Set(allKPIs.filter(kpi => kpi.properties.location_type === 'country').map(kpi => kpi.properties.kpi_id));
+    const siteIds = new Set(allKPIs.filter(kpi => kpi.properties.location_type === 'site').map(kpi => kpi.properties.kpi_id));
 
-    document.getElementById('badgeAll').textContent = allKPIs.length;
-    document.getElementById('badgeRegion').textContent = regionCount;
-    document.getElementById('badgeCountry').textContent = countryCount;
-    document.getElementById('badgeSite').textContent = siteCount;
+    document.getElementById('badgeAll').textContent = uniqueIds.size;
+    document.getElementById('badgeRegion').textContent = regionIds.size;
+    document.getElementById('badgeCountry').textContent = countryIds.size;
+    document.getElementById('badgeSite').textContent = siteIds.size;
 }
 
 function setupSidebarInteractions() {
@@ -1932,26 +1959,32 @@ function setupSidebarInteractions() {
     });
 }
 
-function highlightMarker(index) {
-    if (kpiMarkers[index]) {
-        const el = kpiMarkers[index].getElement().querySelector('div');
-        if (el) {
-            el.style.transform = 'scale(1.3)';
-            el.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.6)';
-            el.style.zIndex = '1000';
+function highlightMarkersForKPI(kpiId) {
+    const indices = kpiIndexMap[kpiId] || [];
+    indices.forEach(index => {
+        if (kpiMarkers[index]) {
+            const el = kpiMarkers[index].getElement().querySelector('div');
+            if (el) {
+                el.style.transform = 'scale(1.3)';
+                el.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.6)';
+                el.style.zIndex = '1000';
+            }
         }
-    }
+    });
 }
 
-function unhighlightMarker(index) {
-    if (kpiMarkers[index]) {
-        const el = kpiMarkers[index].getElement().querySelector('div');
-        if (el) {
-            el.style.transform = 'scale(1)';
-            el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-            el.style.zIndex = '';
+function unhighlightMarkersForKPI(kpiId) {
+    const indices = kpiIndexMap[kpiId] || [];
+    indices.forEach(index => {
+        if (kpiMarkers[index]) {
+            const el = kpiMarkers[index].getElement().querySelector('div');
+            if (el) {
+                el.style.transform = 'scale(1)';
+                el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+                el.style.zIndex = '';
+            }
         }
-    }
+    });
 }
 
 function zoomToKPI(kpi) {
@@ -1968,25 +2001,23 @@ function zoomToKPI(kpi) {
 
 let currentDetailKPI = null;
 
-function openDetailsPanel(kpi, kpiIndex = null) {
+function openDetailsPanel(kpi, kpiId = null) {
     currentDetailKPI = kpi;
-    activeKPIIndex = kpiIndex;
+    activeKPIId = kpiId !== null ? kpiId : kpi.properties.kpi_id;
 
     // Re-render list to show active state
-    if (kpiIndex !== null) {
-        const query = document.getElementById('kpiSearch').value.toLowerCase();
-        let filtered = allKPIs.filter(kpiItem => {
-            const props = kpiItem.properties;
-            return props.kpi_name.toLowerCase().includes(query) ||
-                   props.location_name.toLowerCase().includes(query);
-        });
+    const query = document.getElementById('kpiSearch').value.toLowerCase();
+    let filtered = allKPIs.filter(kpiItem => {
+        const props = kpiItem.properties;
+        return props.kpi_name.toLowerCase().includes(query) ||
+               props.location_name.toLowerCase().includes(query);
+    });
 
-        if (currentFilter !== 'all') {
-            filtered = filtered.filter(kpiItem => kpiItem.properties.location_type === currentFilter);
-        }
-
-        renderKPIList(filtered);
+    if (currentFilter !== 'all') {
+        filtered = filtered.filter(kpiItem => kpiItem.properties.location_type === currentFilter);
     }
+
+    renderKPIList(filtered);
 
     const props = kpi.properties;
 
@@ -2046,7 +2077,7 @@ function closeDetailsPanel() {
     document.getElementById('detailsOverlay').classList.remove('visible');
     document.body.style.overflow = '';
     currentDetailKPI = null;
-    activeKPIIndex = null;
+    activeKPIId = null;
 
     // Re-render list to clear active state
     const query = document.getElementById('kpiSearch').value.toLowerCase();
