@@ -3945,6 +3945,11 @@ function workspaceV2(orgId, filterPresets) {
                 try { this.pendingTreeState = JSON.parse(treeStateParam); } catch (e) {}
             }
 
+            const focusLevelModeParam = urlParams.get('focusLevelMode');
+            if (focusLevelModeParam !== null) {
+                this.focusLevelMode = focusLevelModeParam === 'true';
+            }
+
             // Auto-enable edit mode and collapse filters if returning from entity creation
             const autoEdit = urlParams.has('auto_edit') && urlParams.get('auto_edit') === '1';
             if (autoEdit) {
@@ -4024,7 +4029,7 @@ function workspaceV2(orgId, filterPresets) {
                     }
                 }
             }
-            return { ...this.getCurrentFilters(), treeState: JSON.stringify(treeState) };
+            return { ...this.getCurrentFilters(), treeState: JSON.stringify(treeState), focusLevelMode: this.focusLevelMode };
         },
 
         getPresetDescriptionDetailed(filters) {
