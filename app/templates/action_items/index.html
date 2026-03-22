@@ -202,7 +202,10 @@
 .vis-panel.vis-top, .vis-panel.vis-bottom { border-color:#e9ecef; }
 .vis-label { padding:0.4rem 0.75rem; font-size:0.82rem; border-bottom:1px solid #f0f0f0; }
 .vis-label .vis-inner { display:flex; align-items:center; width:100%; }
-.vis-label input[type="checkbox"] { display:none !important; }
+/* Hide ALL checkboxes inside the group label panel — vis-timeline adds these for nested group toggling */
+.vis-panel.vis-left input[type="checkbox"],
+.vis-label input[type="checkbox"],
+.vis-label input { display:none !important; }
 .vis-group { border-bottom:1px solid #f0f0f0; }
 .vis-item { border-radius:6px; border-width:1.5px; font-size:0.78rem; font-weight:500;
             box-shadow:0 1px 4px rgba(0,0,0,0.08); transition:box-shadow 0.15s; }
@@ -227,10 +230,21 @@
 }
 
 /* ── Nested entity groups ── */
-.vis-label.vis-nesting-group { font-size:0.85rem; font-weight:700; }
-.vis-label.vis-nesting-group .vis-inner { font-size:0.85rem; }
-.vis-label.vis-nested-group .vis-inner { padding-left:1.5rem; font-size:0.78rem; color:#546e7a; }
+.vis-label.vis-nesting-group { font-weight:700; background:#f0f4ff; }
+.vis-label.vis-nesting-group .vis-nesting-group-accordion { font-size:0.8rem; margin-right:4px; flex-shrink:0; }
 .vis-label.vis-nested-group { background:#fafafa; }
+.vis-label.vis-nested-group .vis-inner { padding-left:1.25rem; }
+/* Per entity-type left border colors */
+.vis-label.entity-parent-challenge  { border-left:3px solid {{ entity_defaults.get('challenge',  {}).get('color', '#f59e0b') }}; }
+.vis-label.entity-parent-initiative { border-left:3px solid {{ entity_defaults.get('initiative', {}).get('color', '#8b5cf6') }}; }
+.vis-label.entity-parent-system     { border-left:3px solid {{ entity_defaults.get('system',     {}).get('color', '#ec4899') }}; }
+.vis-label.entity-parent-kpi        { border-left:3px solid {{ entity_defaults.get('kpi',        {}).get('color', '#06b6d4') }}; }
+.vis-label.entity-parent-space      { border-left:3px solid {{ entity_defaults.get('space',      {}).get('color', '#10b981') }}; }
+.vis-label.entity-child-challenge  { border-left:3px solid {{ entity_defaults.get('challenge',  {}).get('color', '#f59e0b') }}44; }
+.vis-label.entity-child-initiative { border-left:3px solid {{ entity_defaults.get('initiative', {}).get('color', '#8b5cf6') }}44; }
+.vis-label.entity-child-system     { border-left:3px solid {{ entity_defaults.get('system',     {}).get('color', '#ec4899') }}44; }
+.vis-label.entity-child-kpi        { border-left:3px solid {{ entity_defaults.get('kpi',        {}).get('color', '#06b6d4') }}44; }
+.vis-label.entity-child-space      { border-left:3px solid {{ entity_defaults.get('space',      {}).get('color', '#10b981') }}44; }
 
 /* ── Timeline legend ── */
 .tl-legend { display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap; }
@@ -1245,10 +1259,19 @@ const ENTITY_TYPE_META = {
 };
 const ENTITY_TYPE_ORDER = ['challenge', 'initiative', 'system', 'kpi', 'space'];
 
+function cleanMentionName(raw) {
+    // Strip leading @ and trailing digits that are entity IDs appended by the mention system
+    return raw.replace(/^@/, '').replace(/\d+$/, '').trim();
+}
+
+function entityParentContent(meta, count) {
+    // Simple inline HTML — no display:flex so it works alongside vis-timeline's accordion arrow
+    const badgeStyle = `background:${meta.color}22;color:${meta.color};border-radius:10px;padding:1px 7px;font-size:0.68rem;font-weight:700;margin-left:6px;`;
+    return `<b style="color:${meta.color};font-size:0.82rem;">${meta.icon} ${meta.label}</b><span style="${badgeStyle}">${count}</span>`;
+}
+
 function buildEntityGroups(itemGroupMap) {
-    // itemGroupMap: { 'challenge__Energy Challenge': 3, '__none': 2, ... }
-    // Returns { groups: [...], getItemGroup: fn }
-    const typeMap = {}; // { etype: Set<entityName> }
+    const typeMap = {}; // { etype: Set<rawMentionText> }
     Object.keys(itemGroupMap).forEach(key => {
         if (key === '__none') return;
         const sep = key.indexOf('__');
@@ -1263,29 +1286,31 @@ function buildEntityGroups(itemGroupMap) {
 
     ENTITY_TYPE_ORDER.forEach(etype => {
         const meta = ENTITY_TYPE_META[etype];
-        const names = typeMap[etype] ? Array.from(typeMap[etype]).sort() : [];
-        if (!names.length) return;
+        const rawNames = typeMap[etype] ? Array.from(typeMap[etype]).sort() : [];
+        if (!rawNames.length) return;
 
-        const childIds = names.map(n => `${etype}__${n}`);
+        const childIds = rawNames.map(n => `${etype}__${n}`);
         const parentCount = childIds.reduce((s, cid) => s + (itemGroupMap[cid] || 0), 0);
-        const bg = meta.color + '18'; // ~10% alpha
 
-        // Parent (collapsible)
+        // Parent group — uses simple inline HTML, no flex, to work with the accordion arrow
         groups.push({
             id: etype,
-            content: grpLabel(`${meta.icon} ${meta.label}`, parentCount, meta.color, bg),
+            content: entityParentContent(meta, parentCount),
             nestedGroups: childIds,
             showNested: true,
-            style: `border-left:3px solid ${meta.color};`,
+            className: `entity-parent-${etype}`,
         });
 
-        // Children
-        names.forEach(name => {
-            const cid = `${etype}__${name}`;
-            const cnt = itemGroupMap[cid] || 0;
+        // Child groups — strip "@" prefix and trailing entity ID digits from display name
+        rawNames.forEach(rawName => {
+            const cid   = `${etype}__${rawName}`;
+            const cnt   = itemGroupMap[cid] || 0;
+            const label = cleanMentionName(rawName);
+            const cntBadge = `<span style="background:rgba(0,0,0,0.07);color:#546e7a;border-radius:8px;padding:0 5px;font-size:0.65rem;font-weight:700;margin-left:4px;">${cnt}</span>`;
             groups.push({
                 id: cid,
-                content: `<span style="font-size:0.78rem;color:#455a64;padding-left:4px;">${name}<span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;padding:0 3px;font-size:0.65rem;font-weight:700;background:rgba(0,0,0,0.07);color:#546e7a;margin-left:4px;">${cnt}</span></span>`,
+                content: `<span style="font-size:0.78rem;color:#37474f;">${label}${cntBadge}</span>`,
+                className: `entity-child-${etype}`,
             });
         });
     });

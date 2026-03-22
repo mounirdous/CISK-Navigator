@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.1] - 2026-03-22
+
+### Fixed
+- CISK Entity view: parent group label (e.g. "Initiative") was invisible due to `inline-flex` conflicting with vis-timeline's accordion arrow — switched to plain inline `<b>` tag
+- CISK Entity view: entity names no longer show the "@" prefix or trailing entity-ID digits
+- Timeline group checkboxes hidden with a stronger CSS selector targeting the entire left panel
+
 ## [2.23.0] - 2026-03-22
 
 ### Added
