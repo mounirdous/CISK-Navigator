@@ -4076,11 +4076,16 @@ def get_data():
                             }
                         )
 
-                    # Inherited links: KPIs → System
-                    system_inherited = []
+                    # Inherited links: KPIs → System (deduplicated by URL, all sources tracked)
+                    _url_map = {}
                     for kd in kpis_data:
                         for lnk in kd["entity_links"]:
-                            system_inherited.append({**lnk, "from_label": f"KPI: {kd['name']}"})
+                            label = f"KPI: {kd['name']}"
+                            if lnk["url"] in _url_map:
+                                _url_map[lnk["url"]]["from_sources"].append(label)
+                            else:
+                                _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
+                    system_inherited = list(_url_map.values())
 
                     systems_data.append(
                         {
@@ -4098,13 +4103,22 @@ def get_data():
                         }
                     )
 
-                # Inherited links: Systems + KPIs → Initiative
-                initiative_inherited = []
+                # Inherited links: Systems + KPIs → Initiative (deduplicated by URL, all sources tracked)
+                _url_map = {}
                 for sd in systems_data:
                     for lnk in sd["entity_links"]:
-                        initiative_inherited.append({**lnk, "from_label": f"System: {sd['name']}"})
+                        label = f"System: {sd['name']}"
+                        if lnk["url"] in _url_map:
+                            _url_map[lnk["url"]]["from_sources"].append(label)
+                        else:
+                            _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
                     for lnk in sd["inherited_links"]:
-                        initiative_inherited.append({**lnk, "from_label": f"{lnk['from_label']} (via {sd['name']})"})
+                        label = f"{lnk['from_sources'][0]} via {sd['name']}" if lnk.get("from_sources") else lnk["from_label"]
+                        if lnk["url"] in _url_map:
+                            _url_map[lnk["url"]]["from_sources"].append(label)
+                        else:
+                            _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
+                initiative_inherited = list(_url_map.values())
 
                 initiatives_data.append(
                     {
@@ -4124,13 +4138,22 @@ def get_data():
                     }
                 )
 
-            # Inherited links: Initiatives + Systems + KPIs → Challenge
-            challenge_inherited = []
+            # Inherited links: Initiatives + Systems + KPIs → Challenge (deduplicated, all sources tracked)
+            _url_map = {}
             for ind in initiatives_data:
                 for lnk in ind["entity_links"]:
-                    challenge_inherited.append({**lnk, "from_label": f"Initiative: {ind['name']}"})
+                    label = f"Initiative: {ind['name']}"
+                    if lnk["url"] in _url_map:
+                        _url_map[lnk["url"]]["from_sources"].append(label)
+                    else:
+                        _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
                 for lnk in ind["inherited_links"]:
-                    challenge_inherited.append({**lnk, "from_label": f"{lnk['from_label']} (via {ind['name']})"})
+                    label = f"{lnk['from_sources'][0]} via {ind['name']}" if lnk.get("from_sources") else lnk["from_label"]
+                    if lnk["url"] in _url_map:
+                        _url_map[lnk["url"]]["from_sources"].append(label)
+                    else:
+                        _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
+            challenge_inherited = list(_url_map.values())
 
             challenges_data.append(
                 {
@@ -4147,13 +4170,22 @@ def get_data():
                 }
             )
 
-        # Inherited links: Challenges + everything below → Space
-        space_inherited = []
+        # Inherited links: Challenges + everything below → Space (deduplicated, all sources tracked)
+        _url_map = {}
         for cd in challenges_data:
             for lnk in cd["entity_links"]:
-                space_inherited.append({**lnk, "from_label": f"Challenge: {cd['name']}"})
+                label = f"Challenge: {cd['name']}"
+                if lnk["url"] in _url_map:
+                    _url_map[lnk["url"]]["from_sources"].append(label)
+                else:
+                    _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
             for lnk in cd["inherited_links"]:
-                space_inherited.append({**lnk, "from_label": f"{lnk['from_label']} (via {cd['name']})"})
+                label = f"{lnk['from_sources'][0]} via {cd['name']}" if lnk.get("from_sources") else lnk["from_label"]
+                if lnk["url"] in _url_map:
+                    _url_map[lnk["url"]]["from_sources"].append(label)
+                else:
+                    _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
+        space_inherited = list(_url_map.values())
 
         spaces_data.append(
             {

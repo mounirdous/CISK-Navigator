@@ -4497,8 +4497,14 @@ function workspaceV2(orgId, filterPresets) {
                 if (ownLinks.length > 0) linksHTML += `<hr style="margin:0.75rem 0;">`;
                 linksHTML += `<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Inherited from children</div>`;
                 linksHTML += inheritedLinks.map(link => {
+                    const sources = link.from_sources || [link.from_label];
+                    const extraCount = sources.length - 1;
+                    const extraBadge = extraCount > 0
+                        ? ` <span style="font-size:0.65rem;background:#e3f2fd;color:#1565c0;border-radius:9px;padding:1px 6px;cursor:default;white-space:nowrap;"
+                                title="${this.escapeHtml(sources.slice(1).join('\n'))}">+${extraCount} more</span>`
+                        : '';
                     return `<div style="margin-bottom:0.6rem;">
-                        <div style="font-size:0.7rem;color:#90a4ae;margin-bottom:0.2rem;">${this.escapeHtml(link.from_label)}</div>
+                        <div style="font-size:0.7rem;color:#90a4ae;margin-bottom:0.2rem;">${this.escapeHtml(sources[0])}${extraBadge}</div>
                         ${renderLink(link)}
                     </div>`;
                 }).join('');
