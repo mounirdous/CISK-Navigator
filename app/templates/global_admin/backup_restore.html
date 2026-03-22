@@ -206,6 +206,12 @@
                     <i class="bi bi-people"></i>
                     <span>{{ stat.stakeholders }} Stakeholders</span>
                 </div>
+                {% if stat.regions or stat.countries or stat.sites %}
+                <div class="org-stat">
+                    <i class="bi bi-globe"></i>
+                    <span>{{ stat.regions }}R / {{ stat.countries }}C / {{ stat.sites }}S Geography</span>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endfor %}

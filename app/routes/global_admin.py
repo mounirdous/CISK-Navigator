@@ -933,6 +933,7 @@ def backup_restore():
 
     # Get entity counts for each org
     from app.models import GovernanceBody, Stakeholder
+    from app.models.geography import GeographyCountry, GeographyRegion, GeographySite
 
     org_stats = []
     for org in orgs:
@@ -954,6 +955,21 @@ def backup_restore():
         gb_count = db.session.query(GovernanceBody).filter_by(organization_id=org.id).count()
         stakeholder_count = db.session.query(Stakeholder).filter_by(organization_id=org.id).count()
 
+        regions_count = GeographyRegion.query.filter_by(organization_id=org.id).count()
+        countries_count = (
+            db.session.query(GeographyCountry)
+            .join(GeographyRegion, GeographyCountry.region_id == GeographyRegion.id)
+            .filter(GeographyRegion.organization_id == org.id)
+            .count()
+        )
+        sites_count = (
+            db.session.query(GeographySite)
+            .join(GeographyCountry, GeographySite.country_id == GeographyCountry.id)
+            .join(GeographyRegion, GeographyCountry.region_id == GeographyRegion.id)
+            .filter(GeographyRegion.organization_id == org.id)
+            .count()
+        )
+
         org_stats.append(
             {
                 "org": org,
@@ -965,6 +981,9 @@ def backup_restore():
                 "value_types": vt_count,
                 "governance_bodies": gb_count,
                 "stakeholders": stakeholder_count,
+                "regions": regions_count,
+                "countries": countries_count,
+                "sites": sites_count,
             }
         )
 
