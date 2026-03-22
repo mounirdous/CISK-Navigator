@@ -1,12 +1,38 @@
-# 🧭 CISK Navigator v2.25.0
+# 🧭 CISK Navigator v2.32.2
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.25.0-blue)
+![Version](https://img.shields.io/badge/version-2.32.2-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+
+## ✨ What's New in v2.32.x (March 2026)
+
+### 💾 **Persistent Workspace Preferences (per user, per org)**
+UI preferences are now saved to the database and restored automatically — works across devices:
+- **Badges/decorations toggle** (🎄) — remembered across sessions; hide cluttered icons for a cleaner view
+- **Level Focus mode** — remembered across sessions; dims parent levels to highlight the deepest expanded level when using the ▼/▲ step buttons
+
+### 🎯 **Level Focus Mode**
+When stepping through tree levels with the ▼/▲ buttons, parent rows are dimmed so you can focus on the deepest active level:
+- Toggle in the **Filters & Display → Display Options** panel
+- Resets automatically on any manual expand/collapse action
+- Tooltip added to the toggle explaining its behaviour
+
+### 📁 **Preset Improvements**
+- Tree collapse/expand state is now **saved and restored with presets**
+- Saving a preset is always enabled — no longer blocked when no data filter is set
+- Preset selector moved to the workspace **toolbar header bar** (compact Bootstrap dropdown, saves vertical space)
+
+### ↕️ **Expand/Collapse One Level**
+Two new buttons in the workspace toolbar step through the tree one level at a time (▼/▲), sitting between the expand-all and collapse-all buttons.
+
+### 🔗 **URL Links in Search**
+- URL links now appear in the **navbar live search** and **global search** with an "Open" button (opens in new tab)
+- "URL Links" filter checkbox added to the search filter panel
+- Duplicate URL results deduplicated; cross-org results correctly excluded
 
 ## ✨ What's New in v2.17.7 (March 2026)
 
