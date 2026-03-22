@@ -10,7 +10,7 @@
                 {% for link in links %}
                 <div style="padding: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa;">
                     <div><a href="{{ link.url }}" target="_blank">{{ link.title or link.url }}</a></div>
-                    <small>{{ 'Public' if link.is_public else 'Private' }} - Added by {{ link.creator.login if link.creator else 'Unknown' }}</small>
+                    <small>{{ 'Public' if link.is_public else 'Private' }} - Added by {{ link.creator.display_name if link.creator else 'Unknown' }}</small>
                     {% if edit_mode %}
                     <form method="POST" action="/entity-links/delete" style="display: inline;" onsubmit="return confirm('Delete this link?');">
                         {% if csrf_token is defined %}

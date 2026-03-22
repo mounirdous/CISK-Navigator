@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.31.3] - 2026-03-22
+
+### Fixed
+- Entity links: show creator's display name instead of login on edit pages
+
 ## [2.31.2] - 2026-03-22
 
 ### Fixed
