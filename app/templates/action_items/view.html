@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% from "_entity_links.html" import render_links %}
+
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.view-card {
+    border-radius: 16px;
+    border: 1.5px solid #e0e0e0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.view-header {
+    background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+    color: white;
+    border-radius: 14px 14px 0 0;
+    padding: 1.5rem;
+}
+.view-header.memo {
+    background: linear-gradient(135deg, #00838f 0%, #006064 100%);
+}
+.meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 0.75rem;
+}
+.meta-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(255,255,255,0.18);
+    color: white;
+}
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #78909c;
+    margin-bottom: 0.4rem;
+}
+.mention-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    border: 1.5px solid #90a4ae;
+    background: white;
+    color: #455a64;
+    font-size: 0.8rem;
+    text-decoration: none;
+}
+.mention-badge:hover { background: #eceff1; color: #1565c0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+
+            <!-- Back + actions bar -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <a href="{{ url_for('action_items.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Back to Register
+                </a>
+                <div class="d-flex gap-2">
+                    {% if can_edit %}
+                    <a href="{{ url_for('action_items.edit', item_id=item.id) }}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-pencil"></i> Edit
+                    </a>
+                    {% endif %}
+                    {% if can_edit or is_admin %}
+                    <form method="POST" action="{{ url_for('action_items.delete', item_id=item.id) }}"
+                          onsubmit="return confirm('Delete this item permanently?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card view-card mb-4">
+                <!-- Header -->
+                <div class="view-header {% if item.type == 'memo' %}memo{% endif %}">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <div class="mb-1" style="font-size:0.78rem; opacity:0.8; font-weight:600; text-transform:uppercase;">
+                                {% if item.type == 'memo' %}📝 Memo{% else %}Action{% endif %}
+                            </div>
+                            <h4 class="mb-2 fw-bold">{{ item.title }}</h4>
+                            <div class="meta-row">
+                                {% if item.type == 'action' %}
+                                <span class="meta-pill">
+                                    <i class="bi bi-flag-fill"></i>
+                                    {{ item.priority | capitalize }}
+                                </span>
+                                <span class="meta-pill">
+                                    {% if item.status == 'active' %}<i class="bi bi-play-circle"></i>
+                                    {% elif item.status == 'completed' %}<i class="bi bi-check-circle"></i>
+                                    {% elif item.status == 'cancelled' %}<i class="bi bi-x-circle"></i>
+                                    {% else %}<i class="bi bi-pencil-square"></i>{% endif %}
+                                    {{ item.status | capitalize }}
+                                </span>
+                                {% if item.is_overdue %}
+                                <span class="meta-pill" style="background:rgba(229,57,53,0.7);">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> Overdue
+                                </span>
+                                {% endif %}
+                                {% endif %}
+                                <span class="meta-pill">
+                                    {% if item.visibility == 'private' %}<i class="bi bi-lock"></i>{% else %}<i class="bi bi-people"></i>{% endif %}
+                                    {{ item.visibility | capitalize }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- Left column: description + mentions -->
+                        <div class="col-md-7">
+                            {% if item.description %}
+                            <div class="mb-4">
+                                <div class="section-title">Description</div>
+                                <div style="white-space:pre-wrap; color:#37474f; font-size:0.92rem; line-height:1.7;">{{ item.description }}</div>
+                            </div>
+                            {% endif %}
+
+                            {% if item.mentions %}
+                            <div class="mb-4">
+                                <div class="section-title">Entity Mentions</div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    {% for mention in item.mentions %}
+                                    <a href="{{ mention.get_entity_url() }}" class="mention-badge" target="_blank">
+                                        {% if mention.entity_type == 'challenge' %}ƒ
+                                        {% elif mention.entity_type == 'initiative' %}δ
+                                        {% elif mention.entity_type == 'system' %}Φ
+                                        {% elif mention.entity_type == 'kpi' %}Ψ
+                                        {% else %}🏢{% endif %}
+                                        {{ mention.mention_text | replace('@', '') }}
+                                        <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;"></i>
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Right column: details -->
+                        <div class="col-md-5">
+                            <div class="mb-3">
+                                <div class="section-title">Owner</div>
+                                <div>{{ item.owner_user.display_name or item.owner_user.login if item.owner_user else '—' }}</div>
+                            </div>
+
+                            {% if item.type == 'action' %}
+                            <div class="mb-3">
+                                <div class="section-title">Dates</div>
+                                <div class="d-flex gap-3">
+                                    <div>
+                                        <small class="text-muted d-block">Start</small>
+                                        {{ item.start_date.strftime('%Y-%m-%d') if item.start_date else '—' }}
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Due</small>
+                                        <span {% if item.is_overdue %}class="text-danger fw-bold"{% endif %}>
+                                            {{ item.due_date.strftime('%Y-%m-%d') if item.due_date else '—' }}
+                                        </span>
+                                    </div>
+                                    {% if item.completed_at %}
+                                    <div>
+                                        <small class="text-muted d-block">Completed</small>
+                                        {{ item.completed_at.strftime('%Y-%m-%d') }}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% elif item.due_date %}
+                            <div class="mb-3">
+                                <div class="section-title">Due date</div>
+                                {{ item.due_date.strftime('%Y-%m-%d') }}
+                            </div>
+                            {% endif %}
+
+                            {% if item.governance_bodies %}
+                            <div class="mb-3">
+                                <div class="section-title">Governance Bodies</div>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for gb in item.governance_bodies %}
+                                    <span class="badge" style="background:{{ gb.color }}; font-size:0.78rem;">{{ gb.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <div class="mb-3">
+                                <div class="section-title">Created</div>
+                                <div style="font-size:0.85rem;">
+                                    {{ item.created_at.strftime('%Y-%m-%d %H:%M') }}
+                                    {% if item.created_by_user %}
+                                    by {{ item.created_by_user.display_name or item.created_by_user.login }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="section-title">Last updated</div>
+                                <div style="font-size:0.85rem;">{{ item.updated_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Entity Links (URLs) -->
+            {{ render_links("action_item", item.id, entity_links, edit_mode=can_edit) }}
+
+        </div>
+    </div>
+</div>
+{% endblock %}

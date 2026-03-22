@@ -26,7 +26,7 @@ def add_link():
         flash("Entity type and ID required", "danger")
         return redirect(request.referrer or url_for("workspace.index"))
 
-    if entity_type not in ["space", "challenge", "initiative", "system", "kpi"]:
+    if entity_type not in ["space", "challenge", "initiative", "system", "kpi", "action_item"]:
         flash("Invalid entity type", "danger")
         return redirect(request.referrer or url_for("workspace.index"))
 

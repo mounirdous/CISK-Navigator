@@ -2,13 +2,16 @@
 Action Items and Memos routes
 """
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
+import json
+from io import BytesIO
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
-from app.models import ActionItem, EntityTypeDefault
+from app.models import ActionItem, EntityLink, EntityTypeDefault
 from app.services.action_item_service import ActionItemService
 
 
@@ -224,6 +227,7 @@ def index():
             "gbs": [gb.name for gb in item.governance_bodies],
             "mentions": [{"type": m.entity_type, "text": m.mention_text, "entity_id": m.entity_id} for m in item.mentions],
             "can_edit": item.owner_user_id == current_user.id,
+            "view_url": url_for("action_items.view", item_id=item.id),
             "edit_url": url_for("action_items.edit", item_id=item.id),
             "delete_url": url_for("action_items.delete", item_id=item.id),
         })
@@ -375,12 +379,15 @@ def edit(item_id):
             db.session.rollback()
             flash(f"Error updating item: {str(e)}", "danger")
 
+    entity_links = EntityLink.get_links_for_entity("action_item", item.id, user_id=current_user.id)
+
     return render_template(
         "action_items/edit.html",
         form=form,
         item=item,
         governance_bodies=governance_bodies,
         current_gb_ids=current_gb_ids,
+        entity_links=entity_links,
         csrf_token=generate_csrf,
     )
 
@@ -507,3 +514,199 @@ def api_search_entities():
     results = ActionItemService.search_entities_for_mention(search_query, org_id, limit=10)
 
     return jsonify(results)
+
+
+@bp.route("/<int:item_id>/view")
+@login_required
+@organization_required
+def view(item_id):
+    """Read-only view of an action item or memo"""
+    item = ActionItem.query.get_or_404(item_id)
+
+    # Respect private visibility
+    is_admin = current_user.is_super_admin or current_user.is_global_admin
+    if item.visibility == "private" and item.owner_user_id != current_user.id and not is_admin:
+        flash("You do not have permission to view this item.", "danger")
+        return redirect(url_for("action_items.index"))
+
+    entity_links = EntityLink.get_links_for_entity(
+        "action_item", item.id, user_id=current_user.id
+    )
+    can_edit = item.owner_user_id == current_user.id
+
+    return render_template(
+        "action_items/view.html",
+        item=item,
+        entity_links=entity_links,
+        can_edit=can_edit,
+        is_admin=is_admin,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/export.json")
+@login_required
+@organization_required
+def export_json():
+    """Export all visible action items as JSON"""
+    from datetime import date as date_type
+
+    org_id = session.get("organization_id")
+    items = ActionItemService.get_items_for_user(user=current_user, organization_id=org_id)
+
+    data = []
+    for item in items:
+        links = EntityLink.get_links_for_entity("action_item", item.id, user_id=current_user.id)
+        data.append({
+            "title": item.title,
+            "description": item.description or "",
+            "type": item.type,
+            "status": item.status,
+            "priority": item.priority,
+            "start_date": item.start_date.isoformat() if item.start_date else None,
+            "due_date": item.due_date.isoformat() if item.due_date else None,
+            "visibility": item.visibility,
+            "owner": item.owner_user.display_name or item.owner_user.login if item.owner_user else None,
+            "governance_bodies": [gb.name for gb in item.governance_bodies],
+            "urls": [{"url": l.url, "title": l.title or "", "is_public": l.is_public} for l in links],
+        })
+
+    payload = json.dumps(data, indent=2, ensure_ascii=False)
+    bio = BytesIO(payload.encode("utf-8"))
+    bio.seek(0)
+    filename = f"action_items_{org_id}_{date_type.today().isoformat()}.json"
+    return send_file(bio, mimetype="application/json", as_attachment=True, download_name=filename)
+
+
+@bp.route("/template.json")
+@login_required
+@organization_required
+def template_json():
+    """Download a blank import template"""
+    template = [
+        {
+            "title": "Example action title",
+            "description": "Optional description. Use @mentions to link entities (e.g. @\"Initiative Name\").",
+            "type": "action",
+            "status": "active",
+            "priority": "medium",
+            "start_date": "2026-04-01",
+            "due_date": "2026-04-30",
+            "visibility": "shared",
+            "governance_bodies": ["Governance Body Name"],
+            "urls": [{"url": "https://example.com/doc", "title": "Reference document", "is_public": True}],
+        },
+        {
+            "title": "Example memo title",
+            "description": "A memo is a note — no deadline or priority tracking.",
+            "type": "memo",
+            "status": "active",
+            "priority": "medium",
+            "start_date": None,
+            "due_date": None,
+            "visibility": "shared",
+            "governance_bodies": [],
+            "urls": [],
+        },
+    ]
+    payload = json.dumps(template, indent=2)
+    bio = BytesIO(payload.encode("utf-8"))
+    bio.seek(0)
+    return send_file(bio, mimetype="application/json", as_attachment=True, download_name="action_items_template.json")
+
+
+@bp.route("/import", methods=["POST"])
+@login_required
+@organization_required
+def import_json():
+    """Import action items from a JSON file"""
+    from datetime import date as date_type
+    from app.models import GovernanceBody
+
+    org_id = session.get("organization_id")
+
+    if not current_user.can_contribute(org_id):
+        flash("You do not have permission to import action items.", "danger")
+        return redirect(url_for("action_items.index"))
+
+    uploaded = request.files.get("json_file")
+    if not uploaded or not uploaded.filename.lower().endswith(".json"):
+        flash("Please upload a .json file.", "danger")
+        return redirect(url_for("action_items.index"))
+
+    try:
+        data = json.loads(uploaded.read().decode("utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError) as e:
+        flash(f"Invalid JSON: {e}", "danger")
+        return redirect(url_for("action_items.index"))
+
+    if not isinstance(data, list):
+        flash("JSON must be an array of action item objects.", "danger")
+        return redirect(url_for("action_items.index"))
+
+    created_count = 0
+    row_errors = []
+
+    for i, row in enumerate(data, start=1):
+        try:
+            title = (row.get("title") or "").strip()
+            if not title:
+                row_errors.append(f"Row {i}: missing title")
+                continue
+
+            start_date = None
+            due_date = None
+            if row.get("start_date"):
+                start_date = date_type.fromisoformat(row["start_date"])
+            if row.get("due_date"):
+                due_date = date_type.fromisoformat(row["due_date"])
+
+            gb_names = row.get("governance_bodies") or []
+            gb_ids = []
+            if gb_names:
+                gbs = GovernanceBody.query.filter(
+                    GovernanceBody.organization_id == org_id,
+                    GovernanceBody.name.in_(gb_names),
+                ).all()
+                gb_ids = [gb.id for gb in gbs]
+
+            item = ActionItemService.create_item(
+                organization_id=org_id,
+                owner_user_id=current_user.id,
+                created_by_user_id=current_user.id,
+                title=title,
+                description=row.get("description") or "",
+                item_type=row.get("type", "action"),
+                status=row.get("status", "active"),
+                priority=row.get("priority", "medium"),
+                start_date=start_date,
+                due_date=due_date,
+                visibility=row.get("visibility", "shared"),
+                governance_body_ids=gb_ids,
+            )
+
+            for url_entry in (row.get("urls") or []):
+                url = (url_entry.get("url") or "").strip()
+                is_valid, _ = EntityLink.validate_url(url)
+                if is_valid:
+                    db.session.add(EntityLink(
+                        entity_type="action_item",
+                        entity_id=item.id,
+                        url=url,
+                        title=url_entry.get("title") or None,
+                        is_public=bool(url_entry.get("is_public", True)),
+                        created_by=current_user.id,
+                    ))
+            db.session.commit()
+            created_count += 1
+
+        except Exception as e:
+            db.session.rollback()
+            row_errors.append(f"Row {i}: {e}")
+
+    if created_count:
+        flash(f"Imported {created_count} item(s) successfully.", "success")
+    if row_errors:
+        flash("Errors: " + "; ".join(row_errors[:5]), "warning")
+
+    return redirect(url_for("action_items.index"))

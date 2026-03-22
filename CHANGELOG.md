@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.25.0] - 2026-03-22
+
+### Added
+- **Action item view page** (`/toolbox/actions/<id>/view`): full read-only detail page showing description, entity mentions, dates, governance bodies, and URLs
+- **URL / Links support for action items**: entity links (URLs with title + public/private flag) can now be attached to action items via the same `EntityLink` system used by spaces, challenges, initiatives, systems, and KPIs — manage links in the edit form and view page
+- **JSON export**: download all visible action items as a structured JSON file (toolbar → ↕ button → Download JSON)
+- **JSON import**: upload a JSON array to bulk-create action items with URLs and governance bodies resolved by name
+- **JSON template**: download a blank import template showing the expected format
+- Timeline click now navigates directly to the action item view page
+- Table view: added eye icon button on every row to open the view page
+- Import modal with file picker accessible from the toolbar
+
+### Changed
+- `EntityLink` route now accepts `entity_type = "action_item"`
+
 ## [2.24.1] - 2026-03-22
 
 ### Fixed
