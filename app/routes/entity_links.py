@@ -109,9 +109,12 @@ def delete_link():
 
     link = EntityLink.query.get_or_404(int(link_id))
 
-    # Check permission (creator only)
-    if link.created_by != current_user.id:
-        flash("Permission denied. Only the creator can delete this link.", "danger")
+    # Check permission: creator or org admin
+    org_id = session.get("organization_id")
+    membership = current_user.get_organization_membership(org_id) if org_id else None
+    is_org_admin = membership and membership.is_org_admin
+    if link.created_by != current_user.id and not is_org_admin and not current_user.is_global_admin:
+        flash("Permission denied. Only the creator or an org admin can delete this link.", "danger")
         return redirect(request.referrer or url_for("workspace.index"))
 
     db.session.delete(link)
