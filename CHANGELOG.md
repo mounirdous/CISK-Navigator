@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.4] - 2026-03-22
+
+### Fixed
+- Workspace tree: cell tooltip correctly shows "Single contributor", "Strong consensus: N contributors", "Weak consensus: N contributors" instead of always showing "No data" — was caused by a mismatch between `ConsensusService` return values (`'strong'`, `'weak'`) and template checks (`'strong_consensus'`, `'weak_consensus'`, `'single'`)
+- CSS classes `consensus-strong`, `consensus-weak`, `consensus-single` on cells now apply correctly using the same logic
+
 ## [2.30.3] - 2026-03-22
 
 ### Added
