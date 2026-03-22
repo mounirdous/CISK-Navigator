@@ -710,8 +710,6 @@ def api_countries_json():
 @organization_required
 def api_map_kpis():
     """Return all KPIs with their geographic locations and latest values for map display"""
-    from sqlalchemy import desc
-
     from app.models import KPI, Initiative, InitiativeSystemLink
 
     org_id = session.get("organization_id")
@@ -730,10 +728,24 @@ def api_map_kpis():
         .all()
     )
 
+    from app.services.consensus_service import ConsensusService
+
     features = []
     for kpi in kpis:
-        # Get latest snapshot value
-        latest_snapshot = kpi.snapshots.order_by(desc("period")).first() if hasattr(kpi, "snapshots") else None
+        # Get current value from contributions via ConsensusService
+        primary_config = kpi.value_type_configs[0] if kpi.value_type_configs else None
+        if primary_config:
+            consensus = ConsensusService.calculate_consensus(primary_config.contributions)
+            consensus_value = consensus["value"]
+            if consensus_value is not None:
+                formatted = primary_config.format_display_value(consensus_value)
+                unit = primary_config.value_type.unit_label if primary_config.value_type else None
+                suffix = primary_config.get_scale_suffix()
+                display_value = f"{formatted}{suffix}{(' ' + unit) if unit else ''}"
+            else:
+                display_value = "No data"
+        else:
+            display_value = "No data"
 
         # Get geographic location for this KPI
         for assignment in kpi.geography_assignments:
@@ -756,11 +768,6 @@ def api_map_kpis():
                     location_type = "region"
 
             if lat and lon:
-                # Get primary value type config for unit and target
-                primary_config = kpi.value_type_configs[0] if kpi.value_type_configs else None
-                unit_label = (
-                    primary_config.value_type.unit_label if primary_config and primary_config.value_type else None
-                )
                 target_value = primary_config.target_value if primary_config else None
 
                 # Collect non-empty contribution comments
@@ -793,17 +800,17 @@ def api_map_kpis():
                         "properties": {
                             "kpi_id": kpi.id,
                             "kpi_name": kpi.name,
-                            "kpi_code": f"KPI-{kpi.id}",  # KPI model has no code field
+                            "initiative_name": kpi.initiative_system_link.initiative.name if kpi.initiative_system_link and kpi.initiative_system_link.initiative else None,
+                            "system_name": kpi.initiative_system_link.system.name if kpi.initiative_system_link and kpi.initiative_system_link.system else None,
+                            "challenge_name": kpi.initiative_system_link.initiative.challenge_links[0].challenge.name if kpi.initiative_system_link and kpi.initiative_system_link.initiative and kpi.initiative_system_link.initiative.challenge_links else None,
                             "location_name": location_name,
                             "location_type": location_type,
                             "region_name": region_name,
                             "country_name": country_name,
-                            "value": (
-                                str(latest_snapshot.value) if latest_snapshot and latest_snapshot.value is not None else "No data"
-                            ),
-                            "period": latest_snapshot.period.strftime("%Y-%m") if latest_snapshot else None,
-                            "target": str(target_value) if target_value else None,
-                            "unit": unit_label,
+                            "value": display_value,
+                            "period": None,
+                            "target": str(target_value) if target_value is not None else None,
+                            "unit": None,
                             "comments": comments,
                         },
                     }

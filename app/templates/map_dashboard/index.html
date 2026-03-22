@@ -1272,7 +1272,7 @@
                 <i class="bi bi-x"></i>
             </button>
             <h3 class="details-kpi-name" id="detailsKpiName">KPI Name</h3>
-            <span class="details-kpi-code" id="detailsKpiCode">KPI-CODE</span>
+            <div id="detailsKpiBreadcrumb" style="font-size:12px; opacity:0.85; margin-top:4px; line-height:1.6;"></div>
         </div>
 
         <div class="details-body">
@@ -2032,7 +2032,8 @@ function openDetailsPanel(kpi, kpiId = null) {
 
     // Update header
     document.getElementById('detailsKpiName').textContent = props.kpi_name;
-    document.getElementById('detailsKpiCode').textContent = props.kpi_code || 'N/A';
+    const crumbs = [props.challenge_name, props.initiative_name, props.system_name].filter(Boolean);
+    document.getElementById('detailsKpiBreadcrumb').textContent = crumbs.join(' › ');
 
     // Update value
     document.getElementById('detailsValue').textContent = props.value;

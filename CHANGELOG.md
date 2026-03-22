@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.30.7] - 2026-03-22
+
+### Fixed
+- Map dashboard: KPI values now computed via ConsensusService (from contributions) — was incorrectly reading from `kpi.snapshots` which is always empty
+- Map dashboard: values now formatted with correct decimal places, scale suffix (k/M), and unit label (e.g. `0 %`, `12.5k €`)
+- Map dashboard: zero values no longer show "No data"
+- Map dashboard: KPI header now shows Challenge › Initiative › System breadcrumb instead of `KPI-{id}`
+
 ## [2.30.6] - 2026-03-22
 
 ### Fixed
