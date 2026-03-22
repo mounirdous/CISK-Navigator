@@ -72,6 +72,11 @@ class EntityTypeDefault(db.Model):
             "initiative": {"color": "#8b5cf6", "icon": "δ"},
             "system": {"color": "#ec4899", "icon": "Φ"},
             "kpi": {"color": "#06b6d4", "icon": "Ψ"},
+            # Action Register priority colors
+            "action_urgent": {"color": "#c62828", "icon": "🔥"},
+            "action_high":   {"color": "#e65100", "icon": "▲"},
+            "action_medium": {"color": "#1565c0", "icon": "●"},
+            "action_low":    {"color": "#78909c", "icon": "▼"},
         }
 
     @staticmethod

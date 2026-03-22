@@ -5,6 +5,28 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.23.0] - 2026-03-22
+
+### Added
+- **Timeline — CISK Entity view**: "CISK Entity" group-by now shows a two-level nested hierarchy — parent rows per entity type (Challenge, Initiative, System, KPI, Space) with branding icon and color, each collapsible to reveal individual entity names with item count badges; items with no entity link appear under "No entity link"
+- **Timeline — filter view persistence**: changing any filter (type, status, GB, visibility) while in timeline view now stays in timeline view instead of resetting to table
+
+### Fixed
+- Tooltip now shows entity links (mentions) for each action item in the timeline
+
+## [2.22.0] - 2026-03-22
+
+### Added
+- **Timeline modernization**: full vis-timeline CSS overhaul — clean group labels, item shadows, hover effects, modern time-axis typography, current-time line
+- **Group count badges**: each group row in the timeline shows an item count badge (e.g. "🔥 Urgent [3]"), dynamically computed
+- **Priority color branding**: action priority colors (Urgent/High/Medium/Low) are now configurable in the Branding Manager; injected as CSS variables (`--p-urgent`, `--p-high`, `--p-medium`, `--p-low`) so the timeline, table, and undated strip all update in real time
+- **Timeline legend**: priority and type legend visible in the group-by bar
+- **Timeline navigation**: ‹ › prev/next buttons shift the view by one window span; zoom buttons (Week/Month/Quarter/Year) now highlight the active preset
+
+### Fixed
+- Timeline checkbox flash: table view wrapper, groupby bar, and timeline wrapper now render with the correct `display` state on initial page load (no more brief checkbox flash when loading `?view=timeline`)
+- Short action item titles (box/point markers) no longer clip — label overflows visibly with `overflow:visible`
+
 ## [2.21.0] - 2026-03-22
 
 ### Added

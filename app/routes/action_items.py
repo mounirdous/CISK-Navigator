@@ -8,8 +8,18 @@ from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
-from app.models import ActionItem
+from app.models import ActionItem, EntityTypeDefault
 from app.services.action_item_service import ActionItemService
+
+
+def _hex_to_rgba(hex_color, alpha=0.12):
+    """Convert #RRGGBB to rgba(r,g,b,alpha) string"""
+    h = hex_color.lstrip('#')
+    try:
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return f"rgba({r},{g},{b},{alpha})"
+    except (ValueError, IndexError):
+        return f"rgba(108,117,125,{alpha})"
 
 bp = Blueprint("action_items", __name__, url_prefix="/toolbox/actions")
 
@@ -80,6 +90,15 @@ def index():
     # Check if user is admin
     is_admin = current_user.is_super_admin or current_user.is_global_admin
 
+    # Priority colors from branding (for timeline CSS variables)
+    hardcoded = EntityTypeDefault.get_hardcoded_defaults()
+    priority_colors = {}
+    for level in ('urgent', 'high', 'medium', 'low'):
+        key = f'action_{level}'
+        db_default = EntityTypeDefault.query.filter_by(organization_id=org_id, entity_type=key).first()
+        color = db_default.default_color if db_default else hardcoded[key]['color']
+        priority_colors[level] = {'color': color, 'bg': _hex_to_rgba(color)}
+
     # Active view (table or timeline)
     view = request.args.get("view", "table")
 
@@ -99,7 +118,7 @@ def index():
             "is_overdue": item.is_overdue,
             "owner": item.owner_user.display_name or item.owner_user.login if item.owner_user else "Unknown",
             "gbs": [gb.name for gb in item.governance_bodies],
-            "mentions": [m.mention_text for m in item.mentions],
+            "mentions": [{"type": m.entity_type, "text": m.mention_text} for m in item.mentions],
             "can_edit": item.owner_user_id == current_user.id,
             "edit_url": url_for("action_items.edit", item_id=item.id),
             "delete_url": url_for("action_items.delete", item_id=item.id),
@@ -121,6 +140,7 @@ def index():
         is_admin=is_admin,
         view=view,
         timeline_items=timeline_items,
+        priority_colors=priority_colors,
         csrf_token=generate_csrf,
     )
 

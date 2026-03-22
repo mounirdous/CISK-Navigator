@@ -690,7 +690,8 @@ def update_branding():
     org_id = session.get("organization_id")
 
     try:
-        entity_types = ["organization", "space", "challenge", "initiative", "system", "kpi"]
+        entity_types = ["organization", "space", "challenge", "initiative", "system", "kpi",
+                        "action_urgent", "action_high", "action_medium", "action_low"]
 
         for entity_type in entity_types:
             color = request.form.get(f"{entity_type}_color")

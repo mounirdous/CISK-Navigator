@@ -158,6 +158,7 @@
     transition:all 0.15s; color:#546e7a;
 }
 .zoom-pill:hover { border-color:#1565c0; color:#1565c0; }
+.zoom-pill.active { background:#1565c0; color:white; border-color:#1565c0; }
 
 #timeline-container {
     background:white; border-radius:10px;
@@ -170,11 +171,23 @@
     margin-top:1rem; padding:1rem 1.25rem;
 }
 
-/* vis item classes */
-.vis-item.priority-urgent { background:#ffebee; border-color:#b71c1c; color:#b71c1c; }
-.vis-item.priority-high   { background:#fff3e0; border-color:#e65100; color:#e65100; }
-.vis-item.priority-medium { background:#e3f2fd; border-color:#1565c0; color:#1565c0; }
-.vis-item.priority-low    { background:#f5f5f5; border-color:#78909c; color:#546e7a; }
+/* ── Priority CSS variables (injected from branding) ── */
+:root {
+    --p-urgent:    {{ priority_colors.urgent.color }};
+    --p-urgent-bg: {{ priority_colors.urgent.bg }};
+    --p-high:      {{ priority_colors.high.color }};
+    --p-high-bg:   {{ priority_colors.high.bg }};
+    --p-medium:    {{ priority_colors.medium.color }};
+    --p-medium-bg: {{ priority_colors.medium.bg }};
+    --p-low:       {{ priority_colors.low.color }};
+    --p-low-bg:    {{ priority_colors.low.bg }};
+}
+
+/* ── vis item classes (use CSS vars so branding changes take effect) ── */
+.vis-item.priority-urgent { background: var(--p-urgent-bg); border-color: var(--p-urgent); color: var(--p-urgent); }
+.vis-item.priority-high   { background: var(--p-high-bg);   border-color: var(--p-high);   color: var(--p-high);   }
+.vis-item.priority-medium { background: var(--p-medium-bg); border-color: var(--p-medium); color: var(--p-medium); }
+.vis-item.priority-low    { background: var(--p-low-bg);    border-color: var(--p-low);    color: var(--p-low);    }
 .vis-item.item-overdue    { border-width:2px; border-style:solid; }
 .vis-item.item-overdue .vis-item-content::before { content:"⚠ "; }
 .vis-item.item-memo       { border-style:dashed; opacity:0.85; }
@@ -182,6 +195,48 @@
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
 .vis-item.item-undated    { border-style:dotted; opacity:0.7; }
 .vis-background.crunch-zone { background:rgba(230,81,0,0.06); border-left:2px dashed #ff6d00; }
+
+/* ── Modern vis-timeline overrides ── */
+.vis-timeline { border:none; font-family: inherit; }
+.vis-panel.vis-left { background:#f8f9fa; border-right:1px solid #e9ecef; min-width:110px; }
+.vis-panel.vis-top, .vis-panel.vis-bottom { border-color:#e9ecef; }
+.vis-label { padding:0.4rem 0.75rem; font-size:0.82rem; border-bottom:1px solid #f0f0f0; }
+.vis-label .vis-inner { display:flex; align-items:center; width:100%; }
+.vis-label input[type="checkbox"] { display:none !important; }
+.vis-group { border-bottom:1px solid #f0f0f0; }
+.vis-item { border-radius:6px; border-width:1.5px; font-size:0.78rem; font-weight:500;
+            box-shadow:0 1px 4px rgba(0,0,0,0.08); transition:box-shadow 0.15s; }
+.vis-item:hover { box-shadow:0 3px 12px rgba(0,0,0,0.16); z-index:10; }
+.vis-item.vis-selected { box-shadow:0 2px 8px rgba(0,0,0,0.22); border-width:2px; }
+.vis-item.vis-range .vis-item-content { padding:1px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vis-item.vis-box  { border-radius:8px; overflow:visible; }
+.vis-item.vis-box  .vis-item-content { white-space:nowrap; overflow:visible; }
+.vis-item.vis-point { overflow:visible; }
+.vis-item.vis-point .vis-item-content { padding:1px 5px; white-space:nowrap; overflow:visible; }
+.vis-time-axis .vis-text { font-size:0.7rem; font-weight:500; color:#78909c; }
+.vis-time-axis .vis-text.vis-major { font-weight:700; color:#546e7a; font-size:0.72rem; }
+.vis-current-time { background:#e53935; opacity:0.65; width:2px; }
+
+/* ── Group label components ── */
+.tl-grp { display:flex; align-items:center; justify-content:space-between; width:100%; padding-right:3px; }
+.tl-grp-label { font-size:0.8rem; font-weight:700; }
+.tl-grp-ct {
+    font-size:0.68rem; font-weight:700; min-width:18px; height:18px; border-radius:9px;
+    display:flex; align-items:center; justify-content:center; padding:0 4px; flex-shrink:0;
+    background:rgba(0,0,0,0.08); color:inherit;
+}
+
+/* ── Nested entity groups ── */
+.vis-label.vis-nesting-group { font-size:0.85rem; font-weight:700; }
+.vis-label.vis-nesting-group .vis-inner { font-size:0.85rem; }
+.vis-label.vis-nested-group .vis-inner { padding-left:1.5rem; font-size:0.78rem; color:#546e7a; }
+.vis-label.vis-nested-group { background:#fafafa; }
+
+/* ── Timeline legend ── */
+.tl-legend { display:flex; align-items:center; gap:0.65rem; flex-wrap:wrap; }
+.tl-leg-pill { display:inline-flex; align-items:center; gap:4px; font-size:0.73rem; font-weight:600; color:#546e7a; }
+.tl-leg-cue { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+.tl-leg-sep { width:1px; height:14px; background:#dee2e6; margin:0 2px; }
 
 /* Item detail popover */
 #item-detail-panel {
@@ -330,6 +385,7 @@
 
     <!-- Filters -->
     <form method="GET" action="{{ url_for('action_items.index') }}" id="filter-form">
+    <input type="hidden" name="view" id="filter-view-hidden" value="{{ view }}">
     <div class="filter-panel">
         <div class="row g-3 align-items-start">
 
@@ -452,7 +508,7 @@
     </form>
 
     <!-- Timeline group-by bar (shown only in timeline view) -->
-    <div id="groupby-bar" style="display:none;">
+    <div id="groupby-bar" {% if view != 'timeline' %}style="display:none;"{% endif %}>
         <span class="gb-label">Group by</span>
         <div class="d-flex gap-2 flex-wrap" id="groupby-pills">
             <button class="groupby-pill active" data-group="priority">Priority</button>
@@ -461,18 +517,32 @@
             <button class="groupby-pill" data-group="entity">CISK Entity</button>
             <button class="groupby-pill" data-group="status">Status</button>
         </div>
+        <!-- Legend -->
+        <div class="tl-legend">
+            <span class="tl-leg-sep"></span>
+            <span class="tl-leg-pill"><span class="tl-leg-cue" style="background:var(--p-urgent);"></span>Urgent</span>
+            <span class="tl-leg-pill"><span class="tl-leg-cue" style="background:var(--p-high);"></span>High</span>
+            <span class="tl-leg-pill"><span class="tl-leg-cue" style="background:var(--p-medium);"></span>Medium</span>
+            <span class="tl-leg-pill"><span class="tl-leg-cue" style="background:var(--p-low);"></span>Low</span>
+            <span class="tl-leg-sep"></span>
+            <span class="tl-leg-pill"><span class="tl-leg-cue" style="border:1.5px dashed #90a4ae;background:white;"></span>Memo</span>
+            <span class="tl-leg-pill" style="opacity:0.45;">■ Done</span>
+        </div>
         <div class="d-flex gap-1 ms-auto align-items-center flex-wrap">
-            <span class="gb-label me-1">Zoom</span>
-            <button class="zoom-pill" onclick="tlZoom('week')">Week</button>
-            <button class="zoom-pill" onclick="tlZoom('month')">Month</button>
-            <button class="zoom-pill" onclick="tlZoom('quarter')">Quarter</button>
-            <button class="zoom-pill" onclick="tlZoom('year')">Year</button>
-            <button class="zoom-pill" onclick="tlZoom('fit')"><i class="bi bi-arrows-fullscreen"></i></button>
+            <button class="zoom-pill" onclick="tlNav(-1)" title="Previous period"><i class="bi bi-chevron-left"></i></button>
+            <button class="zoom-pill" onclick="tlNav(1)"  title="Next period"><i class="bi bi-chevron-right"></i></button>
+            <span class="tl-leg-sep mx-1"></span>
+            <span class="gb-label me-1">View</span>
+            <button class="zoom-pill" id="zoom-week"    onclick="tlZoom('week')">Week</button>
+            <button class="zoom-pill active" id="zoom-month"   onclick="tlZoom('month')">Month</button>
+            <button class="zoom-pill" id="zoom-quarter" onclick="tlZoom('quarter')">Quarter</button>
+            <button class="zoom-pill" id="zoom-year"    onclick="tlZoom('year')">Year</button>
+            <button class="zoom-pill" onclick="tlZoom('fit')" title="Fit all"><i class="bi bi-arrows-fullscreen"></i></button>
         </div>
     </div>
 
     <!-- Timeline view container -->
-    <div id="timeline-view-wrapper" style="display:none;">
+    <div id="timeline-view-wrapper" {% if view != 'timeline' %}style="display:none;"{% endif %}>
         <div id="timeline-container">
             <div id="vis-timeline"></div>
         </div>
@@ -528,7 +598,7 @@
     </div>
 
     <!-- Items Table -->
-    <div id="table-view-wrapper">
+    <div id="table-view-wrapper" {% if view == 'timeline' %}style="display:none;"{% endif %}>
     {% if items %}
     <div class="items-table-container">
 
@@ -1151,6 +1221,7 @@ updateCount();
 // ── Timeline view ────────────────────────────────────────────────────────────
 const TL_DATA = {{ timeline_items | tojson }};
 const CSRF_TOKEN = document.querySelector('input[name=csrf_token]')?.value || '';
+const ENTITY_DEFAULTS = {{ entity_defaults | tojson }};
 
 let tlInstance = null;
 let currentGroupBy = 'priority';
@@ -1158,14 +1229,84 @@ let activeView = '{{ view }}';
 
 const PRIORITY_ORDER = { urgent:0, high:1, medium:2, low:3 };
 
+function grpLabel(label, count, color, bg) {
+    const badgeBg = bg || 'rgba(0,0,0,0.1)';
+    const badge = `<span style="display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:9px;padding:0 4px;font-size:0.68rem;font-weight:700;background:${badgeBg};color:${color};margin-left:5px;">${count}</span>`;
+    return `<span style="font-weight:700;color:${color};display:inline-flex;align-items:center;">${label}${badge}</span>`;
+}
+
+// Entity type metadata (order, icons, colors from branding)
+const ENTITY_TYPE_META = {
+    challenge:  { label: 'Challenge',  icon: ENTITY_DEFAULTS.challenge?.icon  || 'ƒ', color: ENTITY_DEFAULTS.challenge?.color  || '#f59e0b' },
+    initiative: { label: 'Initiative', icon: ENTITY_DEFAULTS.initiative?.icon || 'δ', color: ENTITY_DEFAULTS.initiative?.color || '#8b5cf6' },
+    system:     { label: 'System',     icon: ENTITY_DEFAULTS.system?.icon     || 'Φ', color: ENTITY_DEFAULTS.system?.color     || '#ec4899' },
+    kpi:        { label: 'KPI',        icon: ENTITY_DEFAULTS.kpi?.icon        || 'Ψ', color: ENTITY_DEFAULTS.kpi?.color        || '#06b6d4' },
+    space:      { label: 'Space',      icon: ENTITY_DEFAULTS.space?.icon      || '🏢', color: ENTITY_DEFAULTS.space?.color      || '#10b981' },
+};
+const ENTITY_TYPE_ORDER = ['challenge', 'initiative', 'system', 'kpi', 'space'];
+
+function buildEntityGroups(itemGroupMap) {
+    // itemGroupMap: { 'challenge__Energy Challenge': 3, '__none': 2, ... }
+    // Returns { groups: [...], getItemGroup: fn }
+    const typeMap = {}; // { etype: Set<entityName> }
+    Object.keys(itemGroupMap).forEach(key => {
+        if (key === '__none') return;
+        const sep = key.indexOf('__');
+        if (sep < 0) return;
+        const etype = key.slice(0, sep);
+        const name  = key.slice(sep + 2);
+        if (!typeMap[etype]) typeMap[etype] = new Set();
+        typeMap[etype].add(name);
+    });
+
+    const groups = [];
+
+    ENTITY_TYPE_ORDER.forEach(etype => {
+        const meta = ENTITY_TYPE_META[etype];
+        const names = typeMap[etype] ? Array.from(typeMap[etype]).sort() : [];
+        if (!names.length) return;
+
+        const childIds = names.map(n => `${etype}__${n}`);
+        const parentCount = childIds.reduce((s, cid) => s + (itemGroupMap[cid] || 0), 0);
+        const bg = meta.color + '18'; // ~10% alpha
+
+        // Parent (collapsible)
+        groups.push({
+            id: etype,
+            content: grpLabel(`${meta.icon} ${meta.label}`, parentCount, meta.color, bg),
+            nestedGroups: childIds,
+            showNested: true,
+            style: `border-left:3px solid ${meta.color};`,
+        });
+
+        // Children
+        names.forEach(name => {
+            const cid = `${etype}__${name}`;
+            const cnt = itemGroupMap[cid] || 0;
+            groups.push({
+                id: cid,
+                content: `<span style="font-size:0.78rem;color:#455a64;padding-left:4px;">${name}<span style="display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;border-radius:8px;padding:0 3px;font-size:0.65rem;font-weight:700;background:rgba(0,0,0,0.07);color:#546e7a;margin-left:4px;">${cnt}</span></span>`,
+            });
+        });
+    });
+
+    // No-mention group
+    const noneCount = itemGroupMap['__none'] || 0;
+    if (noneCount > 0) {
+        groups.push({ id: '__none', content: grpLabel('— No entity link', noneCount, '#90a4ae', '') });
+    }
+
+    return groups;
+}
+
 const GROUP_CONFIGS = {
     priority: {
         staticGroups: [
-            { id:'urgent',    content:'<span style="color:#b71c1c;font-weight:700;">🔥 Urgent</span>' },
-            { id:'high',      content:'<span style="color:#e65100;font-weight:700;">▲ High</span>' },
-            { id:'medium',    content:'<span style="color:#1565c0;font-weight:700;">● Medium</span>' },
-            { id:'low',       content:'<span style="color:#546e7a;font-weight:700;">▼ Low</span>' },
-            { id:'__undated', content:'<span style="color:#90a4ae;">— No due date</span>' },
+            { id:'urgent',    getLabel: n => grpLabel('🔥 Urgent', n, 'var(--p-urgent)', 'var(--p-urgent-bg)') },
+            { id:'high',      getLabel: n => grpLabel('▲ High',    n, 'var(--p-high)',   'var(--p-high-bg)')   },
+            { id:'medium',    getLabel: n => grpLabel('● Medium',  n, 'var(--p-medium)', 'var(--p-medium-bg)') },
+            { id:'low',       getLabel: n => grpLabel('▼ Low',     n, 'var(--p-low)',    'var(--p-low-bg)')    },
+            { id:'__undated', getLabel: n => grpLabel('— No date', n, '#90a4ae',         '')                   },
         ],
         getGroup: item => item.priority || 'medium',
     },
@@ -1179,14 +1320,15 @@ const GROUP_CONFIGS = {
     },
     entity: {
         staticGroups: null,
-        getGroup: item => item.mentions.length ? item.mentions[0] : 'No entity link',
+        // handled specially in buildVisData — this getGroup is a fallback
+        getGroup: item => item.mentions.length ? `${item.mentions[0].type}__${item.mentions[0].text}` : '__none',
     },
     status: {
         staticGroups: [
-            { id:'active',    content:'<span style="color:#2e7d32;font-weight:700;">● Active</span>' },
-            { id:'draft',     content:'<span style="color:#546e7a;font-weight:700;">◌ Draft</span>' },
-            { id:'completed', content:'<span style="color:#4527a0;font-weight:700;">✓ Completed</span>' },
-            { id:'cancelled', content:'<span style="color:#b71c1c;font-weight:700;">✕ Cancelled</span>' },
+            { id:'active',    getLabel: n => grpLabel('● Active',    n, '#2e7d32', 'rgba(46,125,50,0.1)')    },
+            { id:'draft',     getLabel: n => grpLabel('◌ Draft',     n, '#546e7a', 'rgba(84,110,122,0.1)')  },
+            { id:'completed', getLabel: n => grpLabel('✓ Completed', n, '#4527a0', 'rgba(69,39,160,0.1)')   },
+            { id:'cancelled', getLabel: n => grpLabel('✕ Cancelled', n, '#b71c1c', 'rgba(183,28,28,0.1)')   },
         ],
         getGroup: item => item.status,
     },
@@ -1196,16 +1338,31 @@ function buildVisData(groupBy) {
     const cfg = GROUP_CONFIGS[groupBy];
     const today = new Date().toISOString().split('T')[0];
 
-    let groupSet = cfg.staticGroups
-        ? cfg.staticGroups.map(g => ({ id: g.id, content: g.content }))
-        : null;
+    // Compute item counts per group first (for badges)
+    const itemGroupMap = {};
+    TL_DATA.forEach(item => {
+        const isUndated = !item.start_date && !item.due_date && groupBy !== 'entity';
+        const gid = isUndated ? '__undated' : cfg.getGroup(item);
+        itemGroupMap[gid] = (itemGroupMap[gid] || 0) + 1;
+    });
 
-    if (!groupSet) {
+    let groupSet;
+    if (cfg.staticGroups) {
+        groupSet = cfg.staticGroups.map(g => ({
+            id: g.id,
+            content: g.getLabel ? g.getLabel(itemGroupMap[g.id] || 0) : g.content,
+        }));
+    } else if (groupBy === 'entity') {
+        groupSet = buildEntityGroups(itemGroupMap);
+    } else {
         const seen = new Set();
         TL_DATA.forEach(item => seen.add(cfg.getGroup(item)));
-        groupSet = Array.from(seen).sort().map(id => ({ id, content: `<span style="font-weight:600;">${id}</span>` }));
+        groupSet = Array.from(seen).sort().map(id => ({
+            id,
+            content: grpLabel(id, itemGroupMap[id] || 0, '#546e7a', ''),
+        }));
         if (TL_DATA.some(i => !i.due_date && !i.start_date)) {
-            groupSet.push({ id: '__undated', content: '<span style="color:#90a4ae;">— No due date</span>' });
+            groupSet.push({ id: '__undated', content: grpLabel('— No date', itemGroupMap['__undated'] || 0, '#90a4ae', '') });
         }
     }
 
@@ -1213,7 +1370,8 @@ function buildVisData(groupBy) {
     TL_DATA.forEach(item => {
         const hasStart = !!item.start_date;
         const hasDue = !!item.due_date;
-        const isUndated = !hasStart && !hasDue;
+        // In entity view, don't override group to __undated — keep entity grouping
+        const isUndated = !hasStart && !hasDue && groupBy !== 'entity';
         const groupId = isUndated ? '__undated' : cfg.getGroup(item);
 
         const classes = [
@@ -1226,12 +1384,13 @@ function buildVisData(groupBy) {
         ].filter(Boolean).join(' ');
 
         const typeIcon = item.type === 'memo' ? '📝' : '✅';
-        const short = item.title_text.length > 32 ? item.title_text.slice(0, 30) + '…' : item.title_text;
+        // For range bars show short label; for boxes/points show full title (no trunc) since bar is narrow
+        const shortLabel = item.title_text.length > 30 ? item.title_text.slice(0, 28) + '…' : item.title_text;
 
         const visItem = {
             id: item.id,
             group: groupId,
-            content: `${typeIcon} ${short}`,
+            content: `${typeIcon} ${shortLabel}`,
             title: buildTooltip(item),
             className: classes,
         };
@@ -1273,6 +1432,7 @@ function buildTooltip(item) {
         t += `<span style="color:#90a4ae;">${days} day${days !== 1 ? 's' : ''} duration</span><br>`;
     }
     if (item.gbs.length) t += `<span style="color:#546e7a;">GB: ${item.gbs.join(', ')}</span><br>`;
+    if (item.mentions.length) t += `<span style="color:#546e7a;">Links: ${item.mentions.map(m => m.text).join(', ')}</span><br>`;
     if (item.description) t += `<span style="color:#90a4ae;">${item.description.slice(0,100)}${item.description.length>100?'…':''}</span>`;
     t += '</div>';
     return t;
@@ -1334,6 +1494,7 @@ function renderTimeline(groupBy) {
             zoomMax: 86400000 * 730,
             tooltip: { followMouse: true, overflowMethod: 'cap' },
             margin: { item: { horizontal: 6, vertical: 4 }, axis: 10 },
+            groupCheckboxes: false,
         });
         tlInstance.on('click', function(props) {
             if (props.item && typeof props.item === 'number') {
@@ -1367,7 +1528,13 @@ function renderUndated() {
     if (!undated.length) { strip.style.display = 'none'; return; }
     strip.style.display = '';
     countEl.textContent = undated.length;
-    const pColors = { urgent:'#b71c1c', high:'#e65100', medium:'#1565c0', low:'#546e7a' };
+    const root = getComputedStyle(document.documentElement);
+    const pColors = {
+        urgent: root.getPropertyValue('--p-urgent').trim() || '#b71c1c',
+        high:   root.getPropertyValue('--p-high').trim()   || '#e65100',
+        medium: root.getPropertyValue('--p-medium').trim() || '#1565c0',
+        low:    root.getPropertyValue('--p-low').trim()    || '#546e7a',
+    };
     container.innerHTML = undated.map(item => {
         const color = pColors[item.priority] || '#546e7a';
         const short = item.title_text.length > 30 ? item.title_text.slice(0,28)+'…' : item.title_text;
@@ -1394,7 +1561,7 @@ function showItemDetail(item) {
     document.getElementById('idp-gbs-row').style.display = item.gbs.length ? '' : 'none';
     document.getElementById('idp-gbs').textContent = item.gbs.join(', ');
     document.getElementById('idp-mentions-row').style.display = item.mentions.length ? '' : 'none';
-    document.getElementById('idp-mentions').textContent = item.mentions.join(', ');
+    document.getElementById('idp-mentions').textContent = item.mentions.map(m => m.text).join(', ');
     document.getElementById('idp-desc').textContent = item.description || '';
     const actions = document.getElementById('idp-actions');
     actions.innerHTML = '';
@@ -1404,13 +1571,35 @@ function showItemDetail(item) {
 }
 window.closeItemDetail = () => { document.getElementById('item-detail-panel').style.display = 'none'; };
 
+// Days per zoom preset (for navigation)
+const ZOOM_DAYS = { week: 7, month: 30, quarter: 91, year: 365 };
+let currentZoomPreset = 'month';
+
 window.tlZoom = function(preset) {
     if (!tlInstance) return;
-    const now = new Date(), D = 86400000;
-    const ranges = { week:[now-3*D, +now+7*D], month:[now-5*D, +now+30*D], quarter:[now-7*D, +now+90*D], year:[now-30*D, +now+365*D] };
     if (preset === 'fit') { tlInstance.fit({ animation:true }); return; }
-    const [s, e] = ranges[preset] || [];
-    if (s) tlInstance.setWindow(new Date(s), new Date(e), { animation:true });
+    const D = 86400000;
+    const days = ZOOM_DAYS[preset] || 30;
+    // Center the current window mid-point in the new range if possible
+    const win = tlInstance.getWindow();
+    const mid = (+win.start + +win.end) / 2;
+    const s = new Date(mid - days * D * 0.15);
+    const e = new Date(mid + days * D * 0.85);
+    tlInstance.setWindow(s, e, { animation: true });
+    currentZoomPreset = preset;
+    // Update active styling
+    document.querySelectorAll('.zoom-pill[id^="zoom-"]').forEach(btn => btn.classList.remove('active'));
+    const el = document.getElementById(`zoom-${preset}`);
+    if (el) el.classList.add('active');
+};
+
+window.tlNav = function(dir) {
+    if (!tlInstance) return;
+    const win = tlInstance.getWindow();
+    const span = +win.end - +win.start;
+    // Shift by 80% of the current window span
+    const shift = span * 0.8 * dir;
+    tlInstance.setWindow(new Date(+win.start + shift), new Date(+win.end + shift), { animation: true });
 };
 
 document.querySelectorAll('.groupby-pill').forEach(btn => {
@@ -1446,6 +1635,8 @@ window.switchView = function(v) {
     const url = new URL(window.location);
     url.searchParams.set('view', v);
     history.replaceState({}, '', url);
+    const vHidden = document.getElementById('filter-view-hidden');
+    if (vHidden) vHidden.value = v;
 };
 
 document.addEventListener('DOMContentLoaded', function() {
