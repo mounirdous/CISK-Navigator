@@ -1688,7 +1688,6 @@ function renderTimeline(groupBy) {
             zoomMax: 86400000 * 730,
             tooltip: { followMouse: true, overflowMethod: 'cap' },
             margin: { item: { horizontal: 6, vertical: 4 }, axis: 10 },
-            groupCheckboxes: false,
         });
         tlInstance.on('click', function(props) {
             if (props.item && typeof props.item === 'number') {
@@ -1846,6 +1845,12 @@ window.switchView = function(v) {
 
 document.addEventListener('DOMContentLoaded', function() {
     if (activeView === 'timeline') switchView('timeline');
+    // Apply zoom from URL param (set when loading a saved view)
+    const urlZoom = new URLSearchParams(window.location.search).get('zoom');
+    if (urlZoom && ZOOM_DAYS[urlZoom]) {
+        // Defer until timeline is rendered
+        setTimeout(() => tlZoom(urlZoom), 100);
+    }
 });
 
 // ── Saved Views (presets) ─────────────────────────────────────────────────
@@ -1873,7 +1878,8 @@ function _getCurrentActionFilters() {
     const gb_filter = [...form.querySelectorAll('input[name="gb_filter"]:checked')].map(el => el.value);
     const group_by = document.querySelector('.groupby-pill.active')?.dataset.group || 'priority';
     const view = activeView || 'table';
-    return { type_filter, visibility_filter, status_filter, gb_filter, group_by, view };
+    const zoom = currentZoomPreset || 'month';
+    return { type_filter, visibility_filter, status_filter, gb_filter, group_by, view, zoom };
 }
 
 async function saveActionPreset() {
@@ -1910,6 +1916,7 @@ function loadActionPreset(filters) {
     (filters.gb_filter || []).forEach(v => params.append('gb_filter', v));
     if (filters.view) params.set('view', filters.view);
     if (filters.group_by) params.set('group_by', filters.group_by);
+    if (filters.zoom) params.set('zoom', filters.zoom);
     window.location.href = '{{ url_for("action_items.index") }}?' + params.toString();
 }
 
