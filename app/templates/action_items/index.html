@@ -1933,7 +1933,9 @@ async function saveActionPreset(overwrite) {
         if (resp.ok) {
             input.value = '';
             bootstrap.Dropdown.getInstance(document.getElementById('views-dropdown-btn'))?.hide();
-            window.location.reload();
+            // Navigate with the saved filters so the URL reflects exactly what was saved
+            // (avoids stale URL params like ?zoom=week overriding the newly saved state)
+            loadActionPreset(filters);
         } else if (resp.status === 409 && data.exists) {
             if (confirm(`A view named "${name}" already exists. Overwrite it?`)) {
                 saveActionPreset(true);
