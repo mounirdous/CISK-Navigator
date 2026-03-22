@@ -44,6 +44,7 @@ from app.models import (
     Challenge,
     ChallengeInitiativeLink,
     Contribution,
+    EntityLink,
     GeographySite,
     GovernanceBody,
     Initiative,
@@ -124,6 +125,7 @@ class FullRestoreService:
             "stakeholder_maps": 0,
             "stakeholder_entity_links": 0,
             "action_items": 0,
+            "entity_links_restored": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
@@ -339,6 +341,7 @@ class FullRestoreService:
                         "contributions",
                         "governance_body_links",
                         "geography_assignments",
+                        "entity_links_restored",
                         "logos_restored",
                         "formulas_restored",
                         "linked_kpis_restored",
@@ -363,6 +366,7 @@ class FullRestoreService:
             # Step 6: Restore Action Items and Memos
             ai_stats = FullRestoreService._restore_action_items(backup, organization_id, user_map, governance_body_map)
             stats["action_items"] += ai_stats.get("action_items", 0)
+            stats["entity_links_restored"] += ai_stats.get("entity_links_restored", 0)
             stats["warnings"].extend(ai_stats.get("warnings", []))
 
             db.session.commit()
@@ -374,6 +378,26 @@ class FullRestoreService:
             stats["errors"].append(f"Restore failed: {str(e)}")
 
         return stats
+
+    @staticmethod
+    def _restore_entity_links(entity_type, entity_id, data):
+        """Create EntityLink records from a backup entity dict. Returns count created."""
+        count = 0
+        for link_data in data.get("links", []):
+            url = (link_data.get("url") or "").strip()
+            is_valid, _ = EntityLink.validate_url(url)
+            if is_valid:
+                db.session.add(
+                    EntityLink(
+                        entity_type=entity_type,
+                        entity_id=entity_id,
+                        url=url,
+                        title=link_data.get("title") or None,
+                        is_public=bool(link_data.get("is_public", True)),
+                    )
+                )
+                count += 1
+        return count
 
     @staticmethod
     def _restore_space_hierarchy(
@@ -389,6 +413,7 @@ class FullRestoreService:
             "contributions": 0,
             "governance_body_links": 0,
             "geography_assignments": 0,
+            "entity_links_restored": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
@@ -423,6 +448,7 @@ class FullRestoreService:
         db.session.add(space)
         db.session.flush()
         stats["spaces"] += 1
+        stats["entity_links_restored"] += FullRestoreService._restore_entity_links("space", space.id, space_data)
 
         # Restore challenges
         for challenge_data in space_data.get("challenges", []):
@@ -449,6 +475,7 @@ class FullRestoreService:
                 db.session.add(challenge)
                 db.session.flush()
                 stats["challenges"] += 1
+                stats["entity_links_restored"] += FullRestoreService._restore_entity_links("challenge", challenge.id, challenge_data)
 
                 # Restore initiatives
                 for initiative_data in challenge_data.get("initiatives", []):
@@ -486,6 +513,7 @@ class FullRestoreService:
                         db.session.flush()
                         initiative_map[init_name] = initiative
                         stats["initiatives"] += 1
+                        stats["entity_links_restored"] += FullRestoreService._restore_entity_links("initiative", initiative.id, initiative_data)
 
                     # Link Challenge to Initiative
                     link = ChallengeInitiativeLink(challenge_id=challenge.id, initiative_id=initiative.id)
@@ -518,6 +546,7 @@ class FullRestoreService:
                             db.session.flush()
                             system_map[sys_name] = system
                             stats["systems"] += 1
+                            stats["entity_links_restored"] += FullRestoreService._restore_entity_links("system", system.id, system_data)
 
                         # Link Initiative to System
                         init_sys_link = InitiativeSystemLink.query.filter_by(
@@ -539,6 +568,7 @@ class FullRestoreService:
                                 stats["contributions"] += kpi_stats.get("contributions", 0)
                                 stats["governance_body_links"] += kpi_stats.get("governance_body_links", 0)
                                 stats["geography_assignments"] += kpi_stats.get("geography_assignments", 0)
+                                stats["entity_links_restored"] += kpi_stats.get("entity_links_restored", 0)
                                 stats["logos_restored"] += kpi_stats.get("logos_restored", 0)
                                 stats["formulas_restored"] += kpi_stats.get("formulas_restored", 0)
                                 stats["linked_kpis_restored"] += kpi_stats.get("linked_kpis_restored", 0)
@@ -561,6 +591,7 @@ class FullRestoreService:
             "contributions": 0,
             "governance_body_links": 0,
             "geography_assignments": 0,
+            "entity_links_restored": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
@@ -588,6 +619,7 @@ class FullRestoreService:
         db.session.add(kpi)
         db.session.flush()
         stats["kpis"] += 1
+        stats["entity_links_restored"] += FullRestoreService._restore_entity_links("kpi", kpi.id, kpi_data)
 
         # Restore governance body links
         for gb_name in kpi_data.get("governance_bodies", []):
@@ -863,7 +895,7 @@ class FullRestoreService:
         """Restore action items and memos with governance body links and entity mentions"""
         from app.models import User
 
-        stats = {"action_items": 0, "warnings": []}
+        stats = {"action_items": 0, "entity_links_restored": 0, "warnings": []}
 
         # Build entity name→id lookup maps for mention resolution
         entity_lookup = {
@@ -968,6 +1000,7 @@ class FullRestoreService:
                     )
                     db.session.add(mention)
 
+                stats["entity_links_restored"] += FullRestoreService._restore_entity_links("action_item", action_item.id, item_data)
                 db.session.flush()
                 stats["action_items"] += 1
 

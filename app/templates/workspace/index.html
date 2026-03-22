@@ -2271,9 +2271,9 @@
                                 </template>
 
                                 <!-- Entity links popover -->
-                                <template x-if="showBadges && space.entity_links && space.entity_links.length > 0">
+                                <template x-if="showBadges && ((space.entity_links && space.entity_links.length > 0) || (space.inherited_links && space.inherited_links.length > 0))">
                                     <span class="entity-link-icon"
-                                          :title="'Related Links (' + space.entity_links.length + ')'"
+                                          :title="'Links (' + (space.entity_links ? space.entity_links.length : 0) + ' direct, ' + (space.inherited_links ? space.inherited_links.length : 0) + ' inherited)'"
                                           @click.stop="showEntityLinks(space, 'space')">
                                         <i class="bi bi-link-45deg"></i>
                                     </span>
@@ -2419,9 +2419,9 @@
                                         <span x-text="challenge.name" :title="!editMode && challenge.description ? challenge.description : false"></span>
 
                                         <!-- Entity links popover -->
-                                        <template x-if="showBadges && challenge.entity_links && challenge.entity_links.length > 0">
+                                        <template x-if="showBadges && ((challenge.entity_links && challenge.entity_links.length > 0) || (challenge.inherited_links && challenge.inherited_links.length > 0))">
                                             <span class="entity-link-icon"
-                                                  :title="'Related Links (' + challenge.entity_links.length + ')'"
+                                                  :title="'Links (' + (challenge.entity_links ? challenge.entity_links.length : 0) + ' direct, ' + (challenge.inherited_links ? challenge.inherited_links.length : 0) + ' inherited)'"
                                                   @click.stop="showEntityLinks(challenge, 'challenge')">
                                                 <i class="bi bi-link-45deg"></i>
                                             </span>
@@ -2548,9 +2548,9 @@
                                                 <span x-text="initiative.name" :title="!editMode && initiative.description ? initiative.description : false"></span>
 
                                                 <!-- Entity links popover -->
-                                                <template x-if="showBadges && initiative.entity_links && initiative.entity_links.length > 0">
+                                                <template x-if="showBadges && ((initiative.entity_links && initiative.entity_links.length > 0) || (initiative.inherited_links && initiative.inherited_links.length > 0))">
                                                     <span class="entity-link-icon"
-                                                          :title="'Related Links (' + initiative.entity_links.length + ')'"
+                                                          :title="'Links (' + (initiative.entity_links ? initiative.entity_links.length : 0) + ' direct, ' + (initiative.inherited_links ? initiative.inherited_links.length : 0) + ' inherited)'"
                                                           @click.stop="showEntityLinks(initiative, 'initiative')">
                                                         <i class="bi bi-link-45deg"></i>
                                                     </span>
@@ -2689,9 +2689,9 @@
                                                         <span x-text="system.name" :title="!editMode && system.description ? system.description : false"></span>
 
                                                         <!-- Entity links popover -->
-                                                        <template x-if="showBadges && system.entity_links && system.entity_links.length > 0">
+                                                        <template x-if="showBadges && ((system.entity_links && system.entity_links.length > 0) || (system.inherited_links && system.inherited_links.length > 0))">
                                                             <span class="entity-link-icon"
-                                                                  :title="'Related Links (' + system.entity_links.length + ')'"
+                                                                  :title="'Links (' + (system.entity_links ? system.entity_links.length : 0) + ' direct, ' + (system.inherited_links ? system.inherited_links.length : 0) + ' inherited)'"
                                                                   @click.stop="showEntityLinks(system, 'system')">
                                                                 <i class="bi bi-link-45deg"></i>
                                                             </span>
@@ -4443,26 +4443,38 @@ function workspaceV2(orgId, filterPresets) {
 
         // Entity Actions
         showEntityLinks(entity, entityType) {
-            // Build HTML for links
-            if (!entity.entity_links || entity.entity_links.length === 0) {
-                return;
-            }
+            const ownLinks = entity.entity_links || [];
+            const inheritedLinks = entity.inherited_links || [];
+            if (ownLinks.length === 0 && inheritedLinks.length === 0) return;
 
-            let linksHTML = entity.entity_links.map(link => {
+            const renderLink = (link) => {
                 const title = link.title || link.url;
-                const displayUrl = link.url.length > 50 ? link.url.substring(0, 50) + '...' : link.url;
-                return `
-                    <div style="margin-bottom: 0.75rem;">
-                        <a href="${link.url}" target="_blank" style="color: #0d6efd; text-decoration: none; display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 1.2rem;">${link.icon}</span>
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="font-weight: 600;">${this.escapeHtml(title)}</div>
-                                <div style="font-size: 0.85rem; color: #6c757d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.escapeHtml(displayUrl)}</div>
-                            </div>
-                        </a>
-                    </div>
-                `;
-            }).join('');
+                const displayUrl = link.url.length > 55 ? link.url.substring(0, 55) + '…' : link.url;
+                return `<div style="margin-bottom:0.6rem;">
+                    <a href="${link.url}" target="_blank" style="color:#0d6efd;text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
+                        <span style="font-size:1.1rem;flex-shrink:0;">${link.icon}</span>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-weight:600;">${this.escapeHtml(title)}</div>
+                            <div style="font-size:0.8rem;color:#6c757d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.escapeHtml(displayUrl)}</div>
+                        </div>
+                    </a>
+                </div>`;
+            };
+
+            let linksHTML = '';
+            if (ownLinks.length > 0) {
+                linksHTML += ownLinks.map(renderLink).join('');
+            }
+            if (inheritedLinks.length > 0) {
+                if (ownLinks.length > 0) linksHTML += `<hr style="margin:0.75rem 0;">`;
+                linksHTML += `<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Inherited from children</div>`;
+                linksHTML += inheritedLinks.map(link => {
+                    return `<div style="margin-bottom:0.6rem;">
+                        <div style="font-size:0.7rem;color:#90a4ae;margin-bottom:0.2rem;">${this.escapeHtml(link.from_label)}</div>
+                        ${renderLink(link)}
+                    </div>`;
+                }).join('');
+            }
 
             const modalHTML = `
                 <div class="modal fade" id="entityLinksModal" tabindex="-1" aria-hidden="true">

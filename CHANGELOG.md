@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.27.0] - 2026-03-22
+
+### Added
+- **Full backup (JSON) now includes URL links** for all entities: Space, Challenge, Initiative, System, KPI, and Action Item — each exports a `links` array with url, title, is_public
+- **Full restore (JSON) now restores URL links**: `EntityLink` records are recreated for all entities on restore; count reported in restore stats as `entity_links_restored`
+- Backup format bumped to v4.0
+- YAML export/import intentionally excludes links (YAML is structural templates, not instance data)
+
+## [2.26.0] - 2026-03-22
+
+### Added
+- Workspace tree: URL links attached to a child entity now bubble up and appear as **inherited links** in the parent entity's links modal, read-only with attribution (e.g. "KPI: Name", "KPI: Name (via System: Name)", "System: Name (via Initiative: Name)", etc.)
+- The link icon badge on Space/Challenge/Initiative/System now lights up when inherited links exist, even if the entity itself has no direct links; tooltip shows separate counts for direct and inherited
+- Inheritance chain: KPI → System → Initiative → Challenge → Space (each level aggregates all children's links with a readable breadcrumb)
+
 ## [2.25.2] - 2026-03-22
 
 ### Fixed

@@ -4076,6 +4076,12 @@ def get_data():
                             }
                         )
 
+                    # Inherited links: KPIs → System
+                    system_inherited = []
+                    for kd in kpis_data:
+                        for lnk in kd["entity_links"]:
+                            system_inherited.append({**lnk, "from_label": f"KPI: {kd['name']}"})
+
                     systems_data.append(
                         {
                             "id": system.id,
@@ -4087,9 +4093,18 @@ def get_data():
                             "icon": get_icon(system, "system"),
                             "rollup_values": system_rollup_values,
                             "entity_links": system_entity_links,
+                            "inherited_links": system_inherited,
                             "kpis": kpis_data,
                         }
                     )
+
+                # Inherited links: Systems + KPIs → Initiative
+                initiative_inherited = []
+                for sd in systems_data:
+                    for lnk in sd["entity_links"]:
+                        initiative_inherited.append({**lnk, "from_label": f"System: {sd['name']}"})
+                    for lnk in sd["inherited_links"]:
+                        initiative_inherited.append({**lnk, "from_label": f"{lnk['from_label']} (via {sd['name']})"})
 
                 initiatives_data.append(
                     {
@@ -4104,9 +4119,18 @@ def get_data():
                         "rollup_values": initiative_rollup_values,
                         "form_completion": form_completion,
                         "entity_links": initiative_entity_links,
+                        "inherited_links": initiative_inherited,
                         "systems": systems_data,
                     }
                 )
+
+            # Inherited links: Initiatives + Systems + KPIs → Challenge
+            challenge_inherited = []
+            for ind in initiatives_data:
+                for lnk in ind["entity_links"]:
+                    challenge_inherited.append({**lnk, "from_label": f"Initiative: {ind['name']}"})
+                for lnk in ind["inherited_links"]:
+                    challenge_inherited.append({**lnk, "from_label": f"{lnk['from_label']} (via {ind['name']})"})
 
             challenges_data.append(
                 {
@@ -4118,9 +4142,18 @@ def get_data():
                     "display_order": challenge.display_order,
                     "rollup_values": challenge_rollup_values,
                     "entity_links": challenge_entity_links,
+                    "inherited_links": challenge_inherited,
                     "initiatives": initiatives_data,
                 }
             )
+
+        # Inherited links: Challenges + everything below → Space
+        space_inherited = []
+        for cd in challenges_data:
+            for lnk in cd["entity_links"]:
+                space_inherited.append({**lnk, "from_label": f"Challenge: {cd['name']}"})
+            for lnk in cd["inherited_links"]:
+                space_inherited.append({**lnk, "from_label": f"{lnk['from_label']} (via {cd['name']})"})
 
         spaces_data.append(
             {
@@ -4135,6 +4168,7 @@ def get_data():
                 "rollup_values": space_rollup_values,
                 "swot_completion": swot_completion,
                 "entity_links": space_entity_links,
+                "inherited_links": space_inherited,
                 "challenges": challenges_data,
             }
         )

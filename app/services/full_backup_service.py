@@ -4,7 +4,7 @@ Full Backup/Restore Service
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
 
-BACKUP FORMAT VERSION: 3.0 (Updated 2026-03-21)
+BACKUP FORMAT VERSION: 4.0 (Updated 2026-03-22)
 
 What's backed up:
 ================
@@ -40,6 +40,8 @@ What's backed up:
    - All action items and memos
    - Governance body links
    - Entity mentions (by name, resolved on restore)
+✅ URL Links / EntityLinks (v4.0+):
+   - All URL links attached to Space, Challenge, Initiative, System, KPI, Action Item
 
 What's NOT backed up (must exist in target):
 ===========================================
@@ -52,6 +54,7 @@ Version Compatibility:
 - Backup format v1.0: Original release (before stakeholders, formulas, linked KPIs)
 - Backup format v2.0: Added stakeholders, maps, formulas, linked KPIs
 - Backup format v3.0: Added action items and memos
+- Backup format v4.0: Added EntityLink (URL links) for all CISK entities and action items
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -59,7 +62,7 @@ import json
 from datetime import datetime
 
 from app import db
-from app.models import GovernanceBody, Space, ValueType
+from app.models import EntityLink, GovernanceBody, Space, ValueType
 
 
 class FullBackupService:
@@ -243,6 +246,16 @@ class FullBackupService:
         return result
 
     @staticmethod
+    def _export_entity_links(entity_type, entity_id):
+        """Return serialized EntityLink records for an entity, or empty list."""
+        links = (
+            EntityLink.query.filter_by(entity_type=entity_type, entity_id=entity_id)
+            .order_by(EntityLink.display_order)
+            .all()
+        )
+        return [{"url": lnk.url, "title": lnk.title or "", "is_public": lnk.is_public} for lnk in links]
+
+    @staticmethod
     def _export_spaces(organization_id):
         """Export spaces with full hierarchy and data including logos"""
         import base64
@@ -261,6 +274,7 @@ class FullBackupService:
                 "swot_weaknesses": space.swot_weaknesses,
                 "swot_opportunities": space.swot_opportunities,
                 "swot_threats": space.swot_threats,
+                "links": FullBackupService._export_entity_links("space", space.id),
                 "challenges": [],
             }
 
@@ -278,6 +292,7 @@ class FullBackupService:
                     "name": challenge.name,
                     "description": challenge.description,
                     "display_order": challenge.display_order,
+                    "links": FullBackupService._export_entity_links("challenge", challenge.id),
                     "initiatives": [],
                 }
 
@@ -310,6 +325,7 @@ class FullBackupService:
                         "success_criteria": initiative.success_criteria,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "impact_rationale": initiative.impact_rationale,
+                        "links": FullBackupService._export_entity_links("initiative", initiative.id),
                         "systems": [],
                     }
 
@@ -333,6 +349,7 @@ class FullBackupService:
                         system_data = {
                             "name": system.name,
                             "description": system.description,
+                            "links": FullBackupService._export_entity_links("system", system.id),
                             "kpis": [],
                         }
 
@@ -373,6 +390,7 @@ class FullBackupService:
             "description": kpi.description,
             "is_archived": kpi.is_archived,
             "display_order": kpi.display_order,
+            "links": FullBackupService._export_entity_links("kpi", kpi.id),
             "governance_bodies": [],
             "geography_assignments": [],
             "value_types": [],
@@ -656,6 +674,7 @@ class FullBackupService:
                 "created_by_login": item.created_by_user.login if item.created_by_user else None,
                 "created_at": item.created_at.isoformat(),
                 "governance_bodies": [gb.name for gb in item.governance_bodies],
+                "links": FullBackupService._export_entity_links("action_item", item.id),
                 "mentions": [],
             }
 
