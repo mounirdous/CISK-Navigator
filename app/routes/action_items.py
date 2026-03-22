@@ -747,11 +747,12 @@ def get_presets():
 @login_required
 @organization_required
 def save_preset():
-    """Save a new view preset"""
+    """Save or overwrite a view preset"""
     org_id = session.get("organization_id")
     data = request.get_json()
     name = (data.get("name") or "").strip()
     filters = data.get("filters", {})
+    overwrite = bool(data.get("overwrite", False))
 
     if not name:
         return jsonify({"error": "View name is required"}), 400
@@ -759,8 +760,13 @@ def save_preset():
     existing = UserFilterPreset.query.filter_by(
         user_id=current_user.id, organization_id=org_id, feature="action_items", name=name
     ).first()
+
     if existing:
-        return jsonify({"error": f"A view named '{name}' already exists"}), 400
+        if not overwrite:
+            return jsonify({"error": f"A view named '{name}' already exists", "exists": True}), 409
+        existing.filters = filters
+        db.session.commit()
+        return jsonify(existing.to_dict()), 200
 
     preset = UserFilterPreset(
         user_id=current_user.id, organization_id=org_id, feature="action_items", name=name, filters=filters

@@ -4,7 +4,7 @@ Full Backup/Restore Service
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
 
-BACKUP FORMAT VERSION: 4.0 (Updated 2026-03-22)
+BACKUP FORMAT VERSION: 5.0 (Updated 2026-03-22)
 
 What's backed up:
 ================
@@ -42,6 +42,8 @@ What's backed up:
    - Entity mentions (by name, resolved on restore)
 ✅ URL Links / EntityLinks (v4.0+):
    - All URL links attached to Space, Challenge, Initiative, System, KPI, Action Item
+✅ Saved Views / Filter Presets (v5.0+):
+   - All workspace and action register saved views per user
 
 What's NOT backed up (must exist in target):
 ===========================================
@@ -55,6 +57,7 @@ Version Compatibility:
 - Backup format v2.0: Added stakeholders, maps, formulas, linked KPIs
 - Backup format v3.0: Added action items and memos
 - Backup format v4.0: Added EntityLink (URL links) for all CISK entities and action items
+- Backup format v5.0: Added saved views (UserFilterPreset) per user
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -62,7 +65,7 @@ import json
 from datetime import datetime
 
 from app import db
-from app.models import EntityLink, GovernanceBody, Space, ValueType
+from app.models import EntityLink, GovernanceBody, Space, UserFilterPreset, ValueType
 
 
 class FullBackupService:
@@ -93,7 +96,7 @@ class FullBackupService:
 
         backup = {
             "metadata": {
-                "backup_format_version": "3.0",  # Backup format version
+                "backup_format_version": "5.0",  # Backup format version
                 "app_version": app_version,  # CISK Navigator version
                 "db_schema_version": DB_SCHEMA_VERSION,  # Database schema version
                 "created_at": datetime.utcnow().isoformat(),
@@ -112,6 +115,7 @@ class FullBackupService:
             "stakeholder_maps": FullBackupService._export_stakeholder_maps(organization_id),
             "geography_references": FullBackupService._export_geography_references(organization_id),
             "action_items": FullBackupService._export_action_items(organization_id),
+            "filter_presets": FullBackupService._export_filter_presets(organization_id),
         }
 
         return backup
@@ -254,6 +258,21 @@ class FullBackupService:
             .all()
         )
         return [{"url": lnk.url, "title": lnk.title or "", "is_public": lnk.is_public} for lnk in links]
+
+    @staticmethod
+    def _export_filter_presets(organization_id):
+        """Export all saved views (filter presets) for the organization, keyed by user login."""
+        presets = UserFilterPreset.query.filter_by(organization_id=organization_id).order_by(UserFilterPreset.id).all()
+        result = []
+        for p in presets:
+            result.append({
+                "user_login": p.user.login if p.user else None,
+                "feature": p.feature,
+                "name": p.name,
+                "filters": p.filters,
+                "created_at": p.created_at.isoformat() if p.created_at else None,
+            })
+        return result
 
     @staticmethod
     def _export_spaces(organization_id):

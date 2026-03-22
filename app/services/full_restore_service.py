@@ -1,7 +1,7 @@
 """
-Full Restore Service - v3.0
+Full Restore Service - v5.0
 
-Restores complete organization from JSON backup format v3.0.
+Restores complete organization from JSON backup format v5.0.
 
 Features:
 =========
@@ -22,6 +22,8 @@ Features:
    - All action items and memos restored
    - Governance body links restored
    - Entity mentions resolved by name (warnings if not found)
+✅ **Saved Views / Filter Presets** (v5.0+):
+   - Workspace and action register presets restored per user
 
 Important Notes:
 ================
@@ -31,6 +33,7 @@ Important Notes:
 - Users can be mapped to existing accounts or created new
 - All logos are base64 encoded in backup and restored as binary data
 - Action item owners are matched by login; items skipped if owner not found
+- Filter presets are matched by user login; skipped if user not in user_map
 """
 
 import json
@@ -58,6 +61,7 @@ from app.models import (
     StakeholderMapMembership,
     StakeholderRelationship,
     System,
+    UserFilterPreset,
     ValueType,
 )
 
@@ -125,6 +129,7 @@ class FullRestoreService:
             "stakeholder_maps": 0,
             "stakeholder_entity_links": 0,
             "action_items": 0,
+            "filter_presets_restored": 0,
             "entity_links_restored": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
@@ -369,6 +374,11 @@ class FullRestoreService:
             stats["entity_links_restored"] += ai_stats.get("entity_links_restored", 0)
             stats["warnings"].extend(ai_stats.get("warnings", []))
 
+            # Step 7: Restore Saved Views (Filter Presets)
+            preset_count, preset_warnings = FullRestoreService._restore_filter_presets(backup, organization_id, user_map)
+            stats["filter_presets_restored"] += preset_count
+            stats["warnings"].extend(preset_warnings)
+
             db.session.commit()
             stats["success"] = True
 
@@ -398,6 +408,39 @@ class FullRestoreService:
                 )
                 count += 1
         return count
+
+    @staticmethod
+    def _restore_filter_presets(backup, organization_id, user_map):
+        """Restore saved views (filter presets) from backup. Returns (count, warnings)."""
+        count = 0
+        warnings = []
+        for p in backup.get("filter_presets", []):
+            login = p.get("user_login")
+            user = user_map.get(login) if login else None
+            if not user:
+                warnings.append(f"Filter preset '{p.get('name')}' skipped: user '{login}' not in restore mapping")
+                continue
+            # Skip if duplicate (same user+org+feature+name already exists)
+            existing = UserFilterPreset.query.filter_by(
+                user_id=user.id,
+                organization_id=organization_id,
+                feature=p.get("feature", "workspace"),
+                name=p.get("name"),
+            ).first()
+            if existing:
+                warnings.append(f"Filter preset '{p.get('name')}' ({p.get('feature')}) for '{login}' already exists, skipped")
+                continue
+            db.session.add(UserFilterPreset(
+                user_id=user.id,
+                organization_id=organization_id,
+                feature=p.get("feature", "workspace"),
+                name=p.get("name"),
+                filters=p.get("filters", {}),
+            ))
+            count += 1
+        if count:
+            db.session.flush()
+        return count, warnings
 
     @staticmethod
     def _restore_space_hierarchy(

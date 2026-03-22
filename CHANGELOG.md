@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.29.1] - 2026-03-22
+
+### Added
+- Action Register: saving a view with an existing name now prompts to confirm overwrite instead of showing an error
+- Action Register: stats cards and filter bar are now collapsible via a funnel button in the header — collapsed by default, state persisted in sessionStorage
+
+### Changed
+- Save preset API returns HTTP 409 (with `exists: true`) for duplicate name, enabling the overwrite flow
+
+## [2.29.0] - 2026-03-22
+
+### Added
+- **Backup/Restore: Saved Views included** — JSON full backup (format v5.0) now exports all workspace and action register saved views (filter presets) per user. Restore maps presets to users via the existing user mapping; presets for unmapped users are skipped with a warning
+- Cascade delete already handled by DB (`ondelete=CASCADE` on `organization_id` FK)
+
 ## [2.28.2] - 2026-03-22
 
 ### Fixed
