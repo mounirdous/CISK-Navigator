@@ -1816,6 +1816,7 @@ window.tlNav = function(dir) {
 (function() {
     const urlGroupBy = {{ group_by|tojson }};
     if (urlGroupBy && urlGroupBy !== 'priority') {
+        currentGroupBy = urlGroupBy;
         document.querySelectorAll('.groupby-pill').forEach(b => {
             b.classList.toggle('active', b.dataset.group === urlGroupBy);
         });
