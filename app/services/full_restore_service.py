@@ -900,6 +900,13 @@ class FullRestoreService:
                     created_by_user = User.query.filter_by(login=created_by_login).first()
 
                 # Parse dates
+                start_date = None
+                if item_data.get("start_date"):
+                    try:
+                        start_date = datetime.strptime(item_data["start_date"], "%Y-%m-%d").date()
+                    except ValueError:
+                        pass
+
                 due_date = None
                 if item_data.get("due_date"):
                     try:
@@ -923,6 +930,7 @@ class FullRestoreService:
                     description=item_data.get("description"),
                     status=item_data.get("status", "active"),
                     priority=item_data.get("priority", "medium"),
+                    start_date=start_date,
                     due_date=due_date,
                     completed_at=completed_at,
                     visibility=item_data.get("visibility", "shared"),

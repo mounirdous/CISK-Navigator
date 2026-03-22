@@ -50,6 +50,7 @@ class ActionItem(db.Model):
         nullable=False,
         default="medium",
     )
+    start_date = db.Column(db.Date)
     due_date = db.Column(db.Date)
     completed_at = db.Column(db.DateTime)
 
@@ -91,6 +92,7 @@ class ActionItem(db.Model):
             "description": self.description,
             "status": self.status,
             "priority": self.priority,
+            "start_date": self.start_date.isoformat() if self.start_date else None,
             "due_date": self.due_date.isoformat() if self.due_date else None,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
             "owner_user_id": self.owner_user_id,

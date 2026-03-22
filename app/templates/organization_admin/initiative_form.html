@@ -840,6 +840,16 @@ function getAllRows() {
     ];
 }
 
+const PRIORITY_LEAD = { high: 5, urgent: 2, medium: 7, low: 14 };
+
+function suggestStart(dueDateStr, priority) {
+    if (!dueDateStr) return '';
+    const d = new Date(dueDateStr + 'T00:00:00');
+    const days = PRIORITY_LEAD[priority] || 7;
+    d.setDate(d.getDate() - days);
+    return d.toISOString().split('T')[0];
+}
+
 function suggestPriority() {
     if (INITIATIVE_IMPACT === 'high') return 'high';
     if (INITIATIVE_IMPACT === 'medium') return 'medium';
@@ -936,6 +946,7 @@ function renderActionsTable(existing) {
                 <th style="width:82px;">Priority</th>
                 <th style="width:82px;">Status</th>
                 <th style="width:50px;" title="Visibility">Vis.</th>
+                <th style="width:116px;">Start Date</th>
                 <th style="width:116px;">Due Date</th>
                 ${gbHeader}
             </tr>
@@ -980,6 +991,8 @@ function renderActionsTable(existing) {
                     <option value="private" title="Private">🔒</option>
                 </select>
             </td>
+            <td><input type="date" class="form-control form-control-sm" id="start_${i}" value="${suggestStart(parsedDate, priority)}"
+                       oninput="this.dataset.manual='1'"></td>
             <td><input type="date" class="form-control form-control-sm" id="due_${i}" value="${parsedDate}"></td>
             ${gbCell}
         </tr>`;
@@ -1032,6 +1045,7 @@ async function submitGenerateActions() {
             title: document.getElementById(`title_${i}`).value.trim(),
             owner_user_id: parseInt(document.getElementById(`owner_${i}`).value),
             priority: document.getElementById(`priority_${i}`).value,
+            start_date: document.getElementById(`start_${i}`)?.value || '',
             due_date: document.getElementById(`due_${i}`).value,
             status: document.getElementById(`status_${i}`).value,
             visibility: document.getElementById(`vis_${i}`).value,

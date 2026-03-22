@@ -3725,7 +3725,15 @@ def generate_actions(initiative_id):
             if owner_id not in valid_owner_ids:
                 owner_id = current_user.id
 
-            # Parse due date
+            # Parse start_date and due_date
+            start_date = None
+            raw_start = action_data.get("start_date", "").strip()
+            if raw_start:
+                try:
+                    start_date = date.fromisoformat(raw_start)
+                except ValueError:
+                    pass
+
             due_date = None
             raw_date = action_data.get("due_date", "").strip()
             if raw_date:
@@ -3743,6 +3751,7 @@ def generate_actions(initiative_id):
                 type="action",
                 status=action_data.get("status", "draft"),
                 priority=action_data.get("priority", "medium"),
+                start_date=start_date,
                 due_date=due_date,
                 visibility=action_data.get("visibility", "shared"),
             )

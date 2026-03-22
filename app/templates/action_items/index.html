@@ -484,6 +484,20 @@
             </div>
             <div id="undated-items" class="d-flex flex-wrap gap-2"></div>
         </div>
+        <!-- Bulk start-date setter banner (shown when items lack start_date) -->
+        <div id="startdate-banner" style="display:none; margin-top:0.75rem;">
+            <div class="d-flex align-items-center gap-3 px-3 py-2 rounded"
+                 style="background:#e8f5e9; border:1.5px solid #a5d6a7; font-size:0.85rem;">
+                <i class="bi bi-calendar-plus text-success" style="font-size:1.1rem;"></i>
+                <span id="startdate-banner-msg" class="flex-grow-1"></span>
+                <button type="button" class="btn btn-sm btn-success fw-semibold"
+                        onclick="openStartDateModal()">
+                    <i class="bi bi-magic me-1"></i> Set Start Dates
+                </button>
+                <button type="button" class="btn-close btn-close-sm" onclick="document.getElementById('startdate-banner').style.display='none'"></button>
+            </div>
+        </div>
+
         <!-- Item detail popover -->
         <div id="item-detail-panel">
             <div class="idp-header">
@@ -494,6 +508,7 @@
                 <div class="idp-row"><span class="idp-label">Status</span><span id="idp-status"></span></div>
                 <div class="idp-row"><span class="idp-label">Priority</span><span id="idp-priority"></span></div>
                 <div class="idp-row"><span class="idp-label">Owner</span><span id="idp-owner"></span></div>
+                <div class="idp-row" id="idp-start-row"><span class="idp-label">Start date</span><span id="idp-start"></span></div>
                 <div class="idp-row"><span class="idp-label">Due date</span><span id="idp-due"></span></div>
                 <div class="idp-row" id="idp-gbs-row"><span class="idp-label">Governance</span><span id="idp-gbs"></span></div>
                 <div class="idp-row" id="idp-mentions-row"><span class="idp-label">Links</span><span id="idp-mentions"></span></div>
@@ -733,6 +748,40 @@
     {% endif %}
     </div>{# end #table-view-wrapper #}
 
+</div>
+
+<!-- Bulk Start Date Modal -->
+<div class="modal fade" id="startDateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background:linear-gradient(135deg,#2e7d32,#1b5e20);color:white;">
+                <h5 class="modal-title"><i class="bi bi-calendar-plus me-2"></i>Set Start Dates</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3" style="font-size:0.85rem;">
+                    <i class="bi bi-lightbulb me-1"></i>
+                    <strong>Smart suggestions</strong> based on priority:
+                    Urgent = 2 days before, High = 5 days, Medium = 7 days, Low = 14 days before due date.
+                    Adjust any date below.
+                </div>
+                <div class="mb-3 d-flex align-items-center gap-2">
+                    <label class="form-label mb-0 fw-semibold" style="white-space:nowrap;">Shift all by</label>
+                    <input type="number" id="sd-offset-days" class="form-control form-control-sm" style="width:80px;" value="7" min="1" max="365">
+                    <span style="font-size:0.85rem;">days before due date</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="applyOffsetToAll()">Apply to all</button>
+                </div>
+                <div id="startdate-table-container" style="max-height:400px; overflow-y:auto;"></div>
+            </div>
+            <div class="modal-footer">
+                <span id="sd-summary" class="me-auto text-muted small"></span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="submitBulkStartDates()">
+                    <i class="bi bi-check-circle me-1"></i> Save Start Dates
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -1155,45 +1204,74 @@ function buildVisData(groupBy) {
         const seen = new Set();
         TL_DATA.forEach(item => seen.add(cfg.getGroup(item)));
         groupSet = Array.from(seen).sort().map(id => ({ id, content: `<span style="font-weight:600;">${id}</span>` }));
-        if (TL_DATA.some(i => !i.due_date)) {
+        if (TL_DATA.some(i => !i.due_date && !i.start_date)) {
             groupSet.push({ id: '__undated', content: '<span style="color:#90a4ae;">— No due date</span>' });
         }
     }
 
     const visItemsList = [];
     TL_DATA.forEach(item => {
-        const groupId = item.due_date ? cfg.getGroup(item) : '__undated';
-        const start = item.due_date || today;
+        const hasStart = !!item.start_date;
+        const hasDue = !!item.due_date;
+        const isUndated = !hasStart && !hasDue;
+        const groupId = isUndated ? '__undated' : cfg.getGroup(item);
+
         const classes = [
             `priority-${item.priority}`,
             item.is_overdue ? 'item-overdue' : '',
             item.type === 'memo' ? 'item-memo' : '',
             item.status === 'completed' ? 'item-completed' : '',
             item.status === 'cancelled' ? 'item-cancelled' : '',
-            !item.due_date ? 'item-undated' : '',
+            isUndated ? 'item-undated' : '',
         ].filter(Boolean).join(' ');
 
         const typeIcon = item.type === 'memo' ? '📝' : '✅';
         const short = item.title_text.length > 32 ? item.title_text.slice(0, 30) + '…' : item.title_text;
-        visItemsList.push({
+
+        const visItem = {
             id: item.id,
             group: groupId,
-            start: start,
             content: `${typeIcon} ${short}`,
             title: buildTooltip(item),
             className: classes,
-        });
+        };
+
+        if (hasStart && hasDue) {
+            // Range bar: start_date → due_date
+            visItem.start = item.start_date;
+            visItem.end = item.due_date;
+            visItem.type = 'range';
+        } else if (hasDue) {
+            // Point at due date (deadline marker)
+            visItem.start = item.due_date;
+            visItem.type = 'box';
+        } else if (hasStart) {
+            // Point at start date
+            visItem.start = item.start_date;
+            visItem.type = 'point';
+        } else {
+            // Undated — place at today as a faded point
+            visItem.start = today;
+            visItem.type = 'point';
+        }
+
+        visItemsList.push(visItem);
     });
 
     return { items: visItemsList, groups: groupSet };
 }
 
 function buildTooltip(item) {
-    let t = `<div style="max-width:260px;padding:6px 8px;font-size:0.82rem;">`;
+    let t = `<div style="max-width:280px;padding:6px 8px;font-size:0.82rem;">`;
     t += `<strong>${item.title_text}</strong><br>`;
     t += `<span style="color:#78909c;">Status: ${item.status} · Priority: ${item.priority}</span><br>`;
     t += `<span style="color:#78909c;">Owner: ${item.owner}</span><br>`;
+    if (item.start_date) t += `<span style="color:#546e7a;">Start: ${item.start_date}</span><br>`;
     if (item.due_date) t += `<span style="color:${item.is_overdue ? '#b71c1c' : '#546e7a'};">Due: ${item.due_date}${item.is_overdue ? ' ⚠ Overdue' : ''}</span><br>`;
+    if (item.start_date && item.due_date) {
+        const days = Math.round((new Date(item.due_date) - new Date(item.start_date)) / 86400000);
+        t += `<span style="color:#90a4ae;">${days} day${days !== 1 ? 's' : ''} duration</span><br>`;
+    }
     if (item.gbs.length) t += `<span style="color:#546e7a;">GB: ${item.gbs.join(', ')}</span><br>`;
     if (item.description) t += `<span style="color:#90a4ae;">${item.description.slice(0,100)}${item.description.length>100?'…':''}</span>`;
     t += '</div>';
@@ -1228,8 +1306,20 @@ function renderTimeline(groupBy) {
     const allItems = [...items, ...crunch];
     const container = document.getElementById('vis-timeline');
 
+    // Dynamic height: sum per-group based on stacked item count
+    // Each stacked item ≈ 38px; group header ≈ 44px; time axis ≈ 60px
+    const itemsPerGroup = {};
+    items.forEach(item => { itemsPerGroup[item.group] = (itemsPerGroup[item.group] || 0) + 1; });
+    let totalH = 60; // time axis
+    groups.forEach(g => {
+        const count = itemsPerGroup[g.id] || 0;
+        totalH += 44 + Math.max(1, count) * 38;
+    });
+    container.style.height = Math.max(380, totalH) + 'px';
+
     if (tlInstance) {
         tlInstance.setData({ items: new vis.DataSet(allItems), groups: new vis.DataSet(groups) });
+        tlInstance.redraw();
     } else {
         const now = new Date();
         const s = new Date(+now - 7*86400000), e = new Date(+now + 60*86400000);
@@ -1253,6 +1343,20 @@ function renderTimeline(groupBy) {
         });
     }
     renderUndated();
+    renderStartDateBanner();
+}
+
+function renderStartDateBanner() {
+    // Items with due_date but no start_date (only actions, skip memos)
+    const missing = TL_DATA.filter(i => i.type === 'action' && i.due_date && !i.start_date);
+    const banner = document.getElementById('startdate-banner');
+    const msg = document.getElementById('startdate-banner-msg');
+    if (missing.length > 0) {
+        msg.textContent = `${missing.length} action${missing.length > 1 ? 's' : ''} have a due date but no start date — smart suggestions available`;
+        banner.style.display = '';
+    } else {
+        banner.style.display = 'none';
+    }
 }
 
 function renderUndated() {
@@ -1279,6 +1383,13 @@ function showItemDetail(item) {
     document.getElementById('idp-status').textContent = item.status;
     document.getElementById('idp-priority').textContent = item.priority;
     document.getElementById('idp-owner').textContent = item.owner;
+    const startRow = document.getElementById('idp-start-row');
+    if (item.start_date) {
+        document.getElementById('idp-start').textContent = item.start_date;
+        startRow.style.display = '';
+    } else {
+        startRow.style.display = 'none';
+    }
     document.getElementById('idp-due').textContent = item.due_date || '—';
     document.getElementById('idp-gbs-row').style.display = item.gbs.length ? '' : 'none';
     document.getElementById('idp-gbs').textContent = item.gbs.join(', ');
@@ -1340,5 +1451,82 @@ window.switchView = function(v) {
 document.addEventListener('DOMContentLoaded', function() {
     if (activeView === 'timeline') switchView('timeline');
 });
+
+// ── Bulk start-date setter ───────────────────────────────────────────────────
+const PRIORITY_LEAD_DAYS = { urgent: 2, high: 5, medium: 7, low: 14 };
+
+function suggestStartDate(item) {
+    if (!item.due_date) return '';
+    const due = new Date(item.due_date + 'T00:00:00');
+    const days = PRIORITY_LEAD_DAYS[item.priority] || 7;
+    due.setDate(due.getDate() - days);
+    return due.toISOString().split('T')[0];
+}
+
+window.openStartDateModal = function() {
+    const missing = TL_DATA.filter(i => i.type === 'action' && i.due_date && !i.start_date);
+    if (!missing.length) return;
+
+    let html = `<table class="table table-sm table-bordered align-middle" style="font-size:0.83rem;">
+        <thead style="background:#f5f7fa; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:#546e7a;">
+            <tr>
+                <th>Action</th>
+                <th style="width:90px;">Priority</th>
+                <th style="width:120px;">Due Date</th>
+                <th style="width:140px;">Start Date</th>
+            </tr>
+        </thead><tbody>`;
+
+    missing.forEach((item, i) => {
+        const suggested = suggestStartDate(item);
+        html += `<tr>
+            <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${item.title_text}">${item.title_text}</td>
+            <td><span style="font-size:0.78rem;font-weight:700;">${item.priority}</span></td>
+            <td style="color:#546e7a;">${item.due_date}</td>
+            <td><input type="date" class="form-control form-control-sm sd-input"
+                       data-item-id="${item.id}" data-due="${item.due_date}" data-priority="${item.priority}"
+                       value="${suggested}"></td>
+        </tr>`;
+    });
+
+    html += '</tbody></table>';
+    document.getElementById('startdate-table-container').innerHTML = html;
+    document.getElementById('sd-summary').textContent = `${missing.length} action(s) will be updated`;
+    new bootstrap.Modal(document.getElementById('startDateModal')).show();
+};
+
+window.applyOffsetToAll = function() {
+    const days = parseInt(document.getElementById('sd-offset-days').value) || 7;
+    document.querySelectorAll('.sd-input').forEach(input => {
+        const due = input.dataset.due;
+        if (!due) return;
+        const d = new Date(due + 'T00:00:00');
+        d.setDate(d.getDate() - days);
+        input.value = d.toISOString().split('T')[0];
+    });
+};
+
+window.submitBulkStartDates = async function() {
+    const inputs = document.querySelectorAll('.sd-input');
+    const items = Array.from(inputs)
+        .filter(inp => inp.value)
+        .map(inp => ({ id: parseInt(inp.dataset.itemId), start_date: inp.value }));
+
+    if (!items.length) { alert('No start dates entered.'); return; }
+
+    const csrfToken = document.querySelector('input[name=csrf_token]')?.value || '';
+    const resp = await fetch('{{ url_for("action_items.bulk_set_start_date") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ items }),
+    });
+    const result = await resp.json();
+    bootstrap.Modal.getInstance(document.getElementById('startDateModal')).hide();
+    if (result.updated > 0) {
+        window.location.reload();
+    } else {
+        alert('No items were updated. Check permissions.');
+    }
+};
 </script>
 {% endblock %}

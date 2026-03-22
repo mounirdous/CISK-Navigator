@@ -648,6 +648,7 @@ class FullBackupService:
                 "description": item.description,
                 "status": item.status,
                 "priority": item.priority,
+                "start_date": item.start_date.isoformat() if item.start_date else None,
                 "due_date": item.due_date.isoformat() if item.due_date else None,
                 "completed_at": item.completed_at.isoformat() if item.completed_at else None,
                 "visibility": item.visibility,

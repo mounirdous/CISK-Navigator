@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.21.0] - 2026-03-22
+
+### Added
+- Action items now have a **start date** field (create/edit forms show start date + due date side-by-side)
+- Timeline view now renders range bars (start → due) for actions with both dates; point markers for actions with only one date; scroll fixed with dynamic height (80px/group)
+- Timeline: item detail panel shows start date and duration when both dates are present
+- Timeline: **smart bulk start date setter** — when actions have a due date but no start date, a green banner appears offering to set them all at once; smart defaults based on priority (Urgent −2 days, High −5, Medium −7, Low −14); adjustable per item or via "shift all by N days" control
+- Initiative form "Generate Actions": start date column auto-suggested from priority + due date; sent to backend on submit
+- Backup/restore now includes `start_date` for action items
+
+### Fixed
+- Timeline scroll: height now adapts to number of groups (no more squished rows)
+
 ## [2.20.2] - 2026-03-22
 
 ### Fixed

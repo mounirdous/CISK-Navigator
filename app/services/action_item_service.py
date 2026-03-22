@@ -103,6 +103,8 @@ class ActionItemService:
             item.status = kwargs["status"]
         if "priority" in kwargs:
             item.priority = kwargs["priority"]
+        if "start_date" in kwargs:
+            item.start_date = kwargs["start_date"]
         if "due_date" in kwargs:
             item.due_date = kwargs["due_date"]
         if "visibility" in kwargs:
@@ -179,9 +181,9 @@ class ActionItemService:
             if field in kwargs and kwargs[field] is not None:
                 setattr(item, field, kwargs[field])
 
-        # For actions only: update status, priority, due_date
+        # For actions only: update status, priority, start_date, due_date
         if item.type == "action":
-            for field in ["status", "priority", "due_date"]:
+            for field in ["status", "priority", "start_date", "due_date"]:
                 if field in kwargs and kwargs[field] is not None:
                     setattr(item, field, kwargs[field])
 

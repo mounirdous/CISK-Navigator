@@ -93,6 +93,7 @@ def index():
             "status": item.status,
             "priority": item.priority,
             "type": item.type,
+            "start_date": item.start_date.isoformat() if item.start_date else None,
             "due_date": item.due_date.isoformat() if item.due_date else None,
             "created_at": item.created_at.strftime("%Y-%m-%d"),
             "is_overdue": item.is_overdue,
@@ -170,6 +171,7 @@ def create():
                 item_type=form.type.data,
                 status=form.status.data if form.type.data == "action" else "active",
                 priority=form.priority.data if form.type.data == "action" else "medium",
+                start_date=form.start_date.data if form.type.data == "action" else None,
                 due_date=form.due_date.data,
                 visibility=form.visibility.data,
                 governance_body_ids=gb_ids,
@@ -230,6 +232,7 @@ def edit(item_id):
                 description=form.description.data,
                 status=form.status.data if item.type == "action" else None,
                 priority=form.priority.data if item.type == "action" else None,
+                start_date=form.start_date.data if item.type == "action" else None,
                 due_date=form.due_date.data,
                 owner_user_id=form.owner_user_id.data,
                 visibility=form.visibility.data,
@@ -330,6 +333,38 @@ def toggle_status(item_id):
     ActionItemService.update_item(item_id=item.id, user_id=current_user.id, status=new_status)
 
     return jsonify({"success": True, "new_status": new_status})
+
+
+@bp.route("/bulk-set-start-date", methods=["POST"])
+@login_required
+@organization_required
+def bulk_set_start_date():
+    """Bulk-set start_date on multiple action items (owner or admin only)."""
+    from datetime import date as date_type
+
+    org_id = session.get("organization_id")
+    is_admin = current_user.is_super_admin or current_user.is_global_admin
+    data = request.get_json()
+    if not data or "items" not in data:
+        return jsonify({"error": "No items provided"}), 400
+
+    updated = 0
+    for entry in data["items"]:
+        item = ActionItem.query.filter_by(id=entry.get("id"), organization_id=org_id).first()
+        if not item:
+            continue
+        if not is_admin and item.owner_user_id != current_user.id:
+            continue
+        raw = entry.get("start_date", "")
+        try:
+            item.start_date = date_type.fromisoformat(raw) if raw else None
+            updated += 1
+        except ValueError:
+            pass
+
+    from app.extensions import db
+    db.session.commit()
+    return jsonify({"updated": updated})
 
 
 @bp.route("/api/search-entities")

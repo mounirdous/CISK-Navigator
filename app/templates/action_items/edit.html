@@ -131,15 +131,24 @@
                             {% endif %}
                         </div>
 
-                        <!-- Due Date -->
-                        <div class="mb-3">
-                            <label for="due_date" class="form-label">{{ form.due_date.label.text }}</label>
-                            {{ form.due_date(class="form-control" + (" is-invalid" if form.due_date.errors else ""), type="date") }}
-                            {% if form.due_date.errors %}
-                                <div class="invalid-feedback">
-                                    {{ form.due_date.errors[0] }}
-                                </div>
-                            {% endif %}
+                        <!-- Start Date / Due Date -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="start_date" class="form-label">{{ form.start_date.label.text }}</label>
+                                {{ form.start_date(class="form-control" + (" is-invalid" if form.start_date.errors else ""), type="date") }}
+                                {% if form.start_date.errors %}
+                                    <div class="invalid-feedback">{{ form.start_date.errors[0] }}</div>
+                                {% endif %}
+                                <div class="form-text">When work begins</div>
+                            </div>
+                            <div class="col-6">
+                                <label for="due_date" class="form-label">{{ form.due_date.label.text }}</label>
+                                {{ form.due_date(class="form-control" + (" is-invalid" if form.due_date.errors else ""), type="date") }}
+                                {% if form.due_date.errors %}
+                                    <div class="invalid-feedback">{{ form.due_date.errors[0] }}</div>
+                                {% endif %}
+                                <div class="form-text">Deadline</div>
+                            </div>
                         </div>
 
                         <!-- Completion Info -->

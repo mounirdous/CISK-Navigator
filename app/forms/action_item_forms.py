@@ -36,6 +36,7 @@ class ActionItemCreateForm(FlaskForm):
         validators=[Optional()],
     )
 
+    start_date = DateField("Start Date", format="%Y-%m-%d", validators=[Optional()])
     due_date = DateField("Due Date", format="%Y-%m-%d", validators=[Optional()])
 
     owner_user_id = SelectField(
@@ -72,6 +73,7 @@ class ActionItemEditForm(FlaskForm):
         validators=[Optional()],
     )
 
+    start_date = DateField("Start Date", format="%Y-%m-%d", validators=[Optional()])
     due_date = DateField("Due Date", format="%Y-%m-%d", validators=[Optional()])
 
     owner_user_id = SelectField(
