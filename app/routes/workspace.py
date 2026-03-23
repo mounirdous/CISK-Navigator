@@ -4117,7 +4117,7 @@ def get_data():
                             {
                                 "id": kpi.id,
                                 "name": kpi.name,
-                                "description": kpi.description[:120] if kpi.description else None,
+                                "description": kpi.description if kpi.description else None,
                                 "display_order": kpi.display_order,
                                 "logo_url": get_logo_url(kpi, "kpi"),
                                 "icon": get_icon(kpi, "kpi"),
@@ -4147,7 +4147,7 @@ def get_data():
                             "id": system.id,
                             "link_id": sys_link.id,  # For parent change operations
                             "name": system.name,
-                            "description": system.description[:120] if system.description else None,
+                            "description": system.description if system.description else None,
                             "edit_url": url_for("organization_admin.edit_system", system_id=system.id),
                             "logo_url": get_logo_url(system, "system"),
                             "icon": get_icon(system, "system"),
@@ -4180,7 +4180,7 @@ def get_data():
                         "id": initiative.id,
                         "link_id": link.id,  # For parent change operations
                         "name": initiative.name,
-                        "description": initiative.description[:120] if initiative.description else None,
+                        "description": initiative.description if initiative.description else None,
                         "logo_url": get_logo_url(initiative, "initiative"),
                         "icon": get_icon(initiative, "initiative"),
                         "group_label": initiative.group_label,
@@ -4215,7 +4215,7 @@ def get_data():
                 {
                     "id": challenge.id,
                     "name": challenge.name,
-                    "description": challenge.description[:120] if challenge.description else None,
+                    "description": challenge.description if challenge.description else None,
                     "logo_url": get_logo_url(challenge, "challenge"),
                     "icon": get_icon(challenge, "challenge"),
                     "display_order": challenge.display_order,
@@ -4247,7 +4247,7 @@ def get_data():
             {
                 "id": space.id,
                 "name": space.name,
-                "description": space.description[:120] if space.description else None,
+                "description": space.description if space.description else None,
                 "logo_url": get_logo_url(space, "space"),
                 "icon": get_icon(space, "space"),
                 "display_order": space.display_order,

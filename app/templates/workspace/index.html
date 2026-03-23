@@ -2292,7 +2292,7 @@
                                     <span class="completion-badge badge-complete" title="SWOT complete">✓</span>
                                 </template>
 
-                                <span x-text="space.name" :title="!editMode && space.description ? space.description : false"></span>
+                                <span x-text="space.name" :data-tooltip="!editMode && space.description ? space.description : null"></span>
 
                                 <!-- Space label badge -->
                                 <template x-if="showBadges && space.space_label">
@@ -2464,7 +2464,7 @@
                                         <span x-show="!challenge.logo_url && challenge.icon && !editMode && showBadges" class="entity-icon-text" x-text="challenge.icon"></span>
                                         <i x-show="!challenge.logo_url && !challenge.icon && (editMode || !showBadges)" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
-                                        <span x-text="challenge.name" :title="!editMode && challenge.description ? challenge.description : false"></span>
+                                        <span x-text="challenge.name" :data-tooltip="!editMode && challenge.description ? challenge.description : null"></span>
 
                                         <!-- Entity links popover -->
                                         <template x-if="showBadges && challenge.entity_links && challenge.entity_links.length > 0">
@@ -2605,7 +2605,7 @@
                                                     <span class="completion-badge badge-complete" title="Form complete">✓</span>
                                                 </template>
 
-                                                <span x-text="initiative.name" :title="!editMode && initiative.description ? initiative.description : false"></span>
+                                                <span x-text="initiative.name" :data-tooltip="!editMode && initiative.description ? initiative.description : null"></span>
 
                                                 <!-- Entity links popover -->
                                                 <template x-if="showBadges && initiative.entity_links && initiative.entity_links.length > 0">
@@ -2754,7 +2754,7 @@
                                                         <span x-show="!system.logo_url && system.icon && !editMode && showBadges" class="entity-icon-text" x-text="system.icon"></span>
                                                         <i x-show="!system.logo_url && !system.icon && (editMode || !showBadges)" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
 
-                                                        <span x-text="system.name" :title="!editMode && system.description ? system.description : false"></span>
+                                                        <span x-text="system.name" :data-tooltip="!editMode && system.description ? system.description : null"></span>
 
                                                         <!-- Entity links popover -->
                                                         <template x-if="showBadges && system.entity_links && system.entity_links.length > 0">
@@ -2906,7 +2906,7 @@
                                                                 </span>
                                                             </template>
 
-                                                            <span x-text="kpi.name" :title="!editMode && kpi.description ? kpi.description : false"></span>
+                                                            <span x-text="kpi.name" :data-tooltip="!editMode && kpi.description ? kpi.description : null"></span>
 
                                                             <!-- Entity links popover -->
                                                             <template x-if="showBadges && kpi.entity_links && kpi.entity_links.length > 0">
@@ -4935,35 +4935,33 @@ document.addEventListener('DOMContentLoaded', function() {
             const presetId = this.dataset.presetId;
             const presetName = this.querySelector('.preset-item-name').textContent;
 
-            if (confirm(`Load filter preset "${presetName}"?`)) {
-                try {
-                    // Mark as last used
-                    await fetch(`/workspace/api/filter-presets/${presetId}/set-last-used`, {
-                        method: 'POST'
-                    });
+            try {
+                // Mark as last used
+                await fetch(`/workspace/api/filter-presets/${presetId}/set-last-used`, {
+                    method: 'POST'
+                });
 
-                    // Fetch preset and navigate with filters as URL params
-                    const response = await fetch(`/workspace/api/filter-presets`);
-                    const presets = await response.json();
-                    const preset = presets.find(p => p.id == presetId);
+                // Fetch preset and navigate with filters as URL params
+                const response = await fetch(`/workspace/api/filter-presets`);
+                const presets = await response.json();
+                const preset = presets.find(p => p.id == presetId);
 
-                    if (preset && preset.filters) {
-                        const params = new URLSearchParams();
-                        // Add marker to indicate this is from preset load (so filters auto-collapse)
-                        params.append('fromPreset', '1');
-                        for (const [key, value] of Object.entries(preset.filters)) {
-                            if (Array.isArray(value)) {
-                                value.forEach(v => params.append(key, v));
-                            } else {
-                                params.append(key, value);
-                            }
+                if (preset && preset.filters) {
+                    const params = new URLSearchParams();
+                    // Add marker to indicate this is from preset load (so filters auto-collapse)
+                    params.append('fromPreset', '1');
+                    for (const [key, value] of Object.entries(preset.filters)) {
+                        if (Array.isArray(value)) {
+                            value.forEach(v => params.append(key, v));
+                        } else {
+                            params.append(key, value);
                         }
-                        window.location.href = '/workspace/?' + params.toString();
                     }
-                } catch (err) {
-                    console.error('Error loading preset:', err);
-                    alert('Failed to load preset');
+                    window.location.href = '/workspace/?' + params.toString();
                 }
+            } catch (err) {
+                console.error('Error loading preset:', err);
+                alert('Failed to load preset');
             }
         });
     });
@@ -4997,5 +4995,65 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 });
+</script>
+
+<!-- Custom multiline description tooltip -->
+<div id="ws-desc-tooltip"></div>
+<style>
+    #ws-desc-tooltip {
+        position: fixed;
+        display: none;
+        background: #1e2533;
+        color: #e8eaf0;
+        padding: 0.5rem 0.75rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        line-height: 1.55;
+        max-width: 340px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        z-index: 9999;
+        pointer-events: none;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+</style>
+<script>
+(function() {
+    const tip = document.getElementById('ws-desc-tooltip');
+    let showTimer;
+
+    document.addEventListener('mouseover', (e) => {
+        const el = e.target.closest('[data-tooltip]');
+        if (el && el.dataset.tooltip) {
+            clearTimeout(showTimer);
+            showTimer = setTimeout(() => {
+                tip.textContent = el.dataset.tooltip;
+                tip.style.display = 'block';
+            }, 300);
+        } else {
+            clearTimeout(showTimer);
+            tip.style.display = 'none';
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (tip.style.display === 'block') {
+            // Keep tooltip within viewport
+            const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+            const y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
+            tip.style.left = x + 'px';
+            tip.style.top  = y + 'px';
+        }
+    });
+
+    document.addEventListener('mouseout', (e) => {
+        const el = e.target.closest('[data-tooltip]');
+        if (el) {
+            clearTimeout(showTimer);
+            tip.style.display = 'none';
+        }
+    });
+})();
 </script>
 {% endblock %}
