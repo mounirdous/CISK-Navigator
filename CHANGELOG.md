@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.4] - 2026-03-23
+
+### Fixed
+- Mobile: initiative form header shrunk (1.1rem h1, tighter padding, no border-radius/margin)
+- Mobile: review nav bar breadcrumb hidden, dots shrunk to 10px so all fit in one row
+
+## [3.3.3] - 2026-03-23
+
+### Fixed
+- Mobile: initiative review nav bar fits in viewport (prev/next show icon only, tab toggle hidden, exit icon only)
+- Mobile: RAG hero card "Add Update" button no longer overflows off-screen (wraps full-width)
+- Mobile: execution tab padding reduced to use full screen width
+
 ## [3.3.2] - 2026-03-23
 
 ### Fixed

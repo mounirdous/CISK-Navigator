@@ -1462,9 +1462,17 @@
             max-height: none !important;
         }
 
-        /* Entity names: Smaller indent on mobile */
+        /* Entity names: Smaller indent on mobile, allow wrapping so names aren't truncated */
         .entity-name {
             padding-left: 0.5rem !important;
+            white-space: normal !important;
+            overflow: visible !important;
+        }
+
+        .entity-name > span {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: unset !important;
         }
 
         .entity-name.level-1 { padding-left: 1rem !important; }
@@ -1502,6 +1510,11 @@
             position: relative !important;
             left: auto !important;
             box-shadow: none !important;
+            /* Allow rows to grow in height when names wrap */
+            height: auto !important;
+            vertical-align: top !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 0.5rem !important;
         }
 
         /* Value cells: More padding for touch, fixed width for consistency */
