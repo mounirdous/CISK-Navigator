@@ -37,12 +37,15 @@ from app.forms import (
 )
 from app.models import (
     KPI,
+    ActionItem,
+    ActionItemMention,
     Challenge,
     ChallengeInitiativeLink,
     EntityLink,
     EntityTypeDefault,
     GovernanceBody,
     Initiative,
+    InitiativeProgressUpdate,
     InitiativeSystemLink,
     KPIGovernanceBodyLink,
     KPIValueTypeConfig,
@@ -3618,6 +3621,7 @@ def initiative_form(initiative_id):
                     "status": status["status"],
                     "status_reason": status["reason"],
                     "value_types": value_types_data,
+                    "first_vt_id": kpi.value_type_configs[0].value_type_id if kpi.value_type_configs else None,
                 }
             )
 
@@ -3655,6 +3659,119 @@ def initiative_form(initiative_id):
         GovernanceBody.display_order
     ).all()
 
+    # Collect all entity references that belong to this initiative
+    # (initiative itself, its systems, and their KPIs)
+    entity_refs = [("initiative", initiative.id, initiative.name)]
+    for sys_link in initiative.system_links:
+        sys = sys_link.system
+        entity_refs.append(("system", sys.id, sys.name))
+        for kpi in sys_link.kpis:
+            entity_refs.append(("kpi", kpi.id, kpi.name))
+
+    # Query all action item mentions for any of these entities
+    from sqlalchemy import or_
+    mention_filters = or_(*[
+        (ActionItemMention.entity_type == etype) & (ActionItemMention.entity_id == eid)
+        for etype, eid, _ename in entity_refs
+    ])
+    all_mentions = ActionItemMention.query.filter(mention_filters).all()
+
+    # Build map: action_item_id → list of source dicts
+    entity_name_map = {(etype, eid): (eid, ename, etype) for etype, eid, ename in entity_refs}
+    action_sources_map = {}
+    for mention in all_mentions:
+        key = (mention.entity_type, mention.entity_id)
+        if key in entity_name_map:
+            _, ename, etype = entity_name_map[key]
+            action_sources_map.setdefault(mention.action_item_id, []).append(
+                {"type": etype, "name": ename}
+            )
+
+    # Get deduplicated action items ordered by status + due date
+    if action_sources_map:
+        linked_actions = (
+            ActionItem.query
+            .filter(ActionItem.id.in_(action_sources_map.keys()), ActionItem.organization_id == org_id)
+            .order_by(ActionItem.status, ActionItem.due_date.asc().nullslast())
+            .all()
+        )
+    else:
+        linked_actions = []
+
+    # Get progress updates for this initiative (newest first)
+    progress_updates = (
+        InitiativeProgressUpdate.query
+        .filter_by(initiative_id=initiative.id)
+        .order_by(InitiativeProgressUpdate.created_at.desc())
+        .all()
+    )
+    active_tab = request.args.get("tab", "form")
+    today = datetime.utcnow().date()
+
+    # Execution Review Navigator
+    nav_context = None
+    nav_param = request.args.get("nav", "")
+    nav_pos_arg = request.args.get("nav_pos", 0, type=int)
+    if nav_param:
+        try:
+            nav_ids = [int(x) for x in nav_param.split(",") if x.strip().isdigit()]
+        except Exception:
+            nav_ids = []
+        if nav_ids and 0 <= nav_pos_arg < len(nav_ids):
+            # Fetch all initiative names for the nav list (org-scoped)
+            from sqlalchemy import func as sqlfunc
+            nav_initiatives = Initiative.query.filter(
+                Initiative.id.in_(nav_ids), Initiative.organization_id == org_id
+            ).all()
+            nav_init_map = {i.id: i for i in nav_initiatives}
+
+            # Get latest RAG per initiative (one query)
+            rag_subq = (
+                db.session.query(
+                    InitiativeProgressUpdate.initiative_id,
+                    sqlfunc.max(InitiativeProgressUpdate.created_at).label("max_at"),
+                )
+                .filter(InitiativeProgressUpdate.initiative_id.in_(nav_ids))
+                .group_by(InitiativeProgressUpdate.initiative_id)
+                .subquery()
+            )
+            latest_rags = db.session.query(
+                InitiativeProgressUpdate.initiative_id,
+                InitiativeProgressUpdate.rag_status,
+            ).join(
+                rag_subq,
+                (InitiativeProgressUpdate.initiative_id == rag_subq.c.initiative_id)
+                & (InitiativeProgressUpdate.created_at == rag_subq.c.max_at),
+            ).all()
+            nav_rag_map = {r.initiative_id: r.rag_status for r in latest_rags}
+
+            # Resolve Space + Challenge context for current initiative
+            from app.models import ChallengeInitiativeLink as CIL
+            first_link = CIL.query.filter_by(initiative_id=initiative.id).first()
+            nav_space_name = first_link.challenge.space.name if first_link and first_link.challenge and first_link.challenge.space else None
+            nav_challenge_name = first_link.challenge.name if first_link and first_link.challenge else None
+
+            prev_pos = nav_pos_arg - 1
+            next_pos = nav_pos_arg + 1
+            prev_id = nav_ids[prev_pos] if prev_pos >= 0 else None
+            next_id = nav_ids[next_pos] if next_pos < len(nav_ids) else None
+
+            nav_context = {
+                "nav_param": nav_param,
+                "pos": nav_pos_arg,
+                "total": len(nav_ids),
+                "prev_id": prev_id,
+                "prev_name": nav_init_map[prev_id].name if prev_id and prev_id in nav_init_map else None,
+                "next_id": next_id,
+                "next_name": nav_init_map[next_id].name if next_id and next_id in nav_init_map else None,
+                "space_name": nav_space_name,
+                "challenge_name": nav_challenge_name,
+                "dots": [
+                    {"id": iid, "name": nav_init_map[iid].name if iid in nav_init_map else f"#{iid}", "rag": nav_rag_map.get(iid)}
+                    for iid in nav_ids
+                ],
+            }
+
     return render_template(
         "organization_admin/initiative_form.html",
         initiative=initiative,
@@ -3666,7 +3783,115 @@ def initiative_form(initiative_id):
         entity_links=entity_links,
         org_users=org_users,
         org_governance_bodies=org_governance_bodies,
+        linked_actions=linked_actions,
+        action_sources_map=action_sources_map,
+        progress_updates=progress_updates,
+        active_tab=active_tab,
+        today=today,
+        nav_context=nav_context,
     )
+
+
+@bp.route("/initiatives/<int:initiative_id>/progress-update", methods=["POST"])
+@login_required
+@organization_required
+def initiative_progress_update_create(initiative_id):
+    """Create a progress update for an initiative"""
+    org_id = session.get("organization_id")
+    initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
+    if not current_user.can_manage_initiatives(org_id):
+        flash("Permission denied.", "error")
+        return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative_id, tab="execution"))
+
+    rag_status = request.form.get("rag_status", "").strip()
+    if rag_status not in ("green", "amber", "red"):
+        flash("Invalid RAG status.", "error")
+        return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative_id, tab="execution"))
+
+    upd = InitiativeProgressUpdate(
+        initiative_id=initiative.id,
+        rag_status=rag_status,
+        accomplishments=request.form.get("accomplishments", "").strip() or None,
+        next_steps=request.form.get("next_steps", "").strip() or None,
+        blockers=request.form.get("blockers", "").strip() or None,
+        created_by=current_user.id,
+    )
+    db.session.add(upd)
+    AuditService.log_create("InitiativeProgressUpdate", initiative.id, initiative.name, {"rag_status": rag_status})
+    db.session.commit()
+    flash("Progress update saved.", "success")
+    redirect_kwargs = {"initiative_id": initiative_id, "tab": "execution"}
+    nav = request.form.get("nav", "")
+    nav_pos = request.form.get("nav_pos", "")
+    if nav:
+        redirect_kwargs["nav"] = nav
+    if nav_pos:
+        redirect_kwargs["nav_pos"] = nav_pos
+    return redirect(url_for("organization_admin.initiative_form", **redirect_kwargs))
+
+
+@bp.route("/initiatives/<int:initiative_id>/progress-update/<int:update_id>/edit", methods=["POST"])
+@login_required
+@organization_required
+def initiative_progress_update_edit(initiative_id, update_id):
+    """Edit a progress update"""
+    org_id = session.get("organization_id")
+    initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
+    upd = InitiativeProgressUpdate.query.filter_by(id=update_id, initiative_id=initiative.id).first_or_404()
+    if not current_user.can_manage_initiatives(org_id):
+        flash("Permission denied.", "error")
+        return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative_id, tab="execution"))
+
+    rag_status = request.form.get("rag_status", "").strip()
+    if rag_status not in ("green", "amber", "red"):
+        flash("Invalid RAG status.", "error")
+        return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative_id, tab="execution"))
+
+    old_rag = upd.rag_status
+    upd.rag_status = rag_status
+    upd.accomplishments = request.form.get("accomplishments", "").strip() or None
+    upd.next_steps = request.form.get("next_steps", "").strip() or None
+    upd.blockers = request.form.get("blockers", "").strip() or None
+    AuditService.log_update(
+        "InitiativeProgressUpdate", upd.id, initiative.name,
+        {"rag_status": old_rag}, {"rag_status": rag_status}
+    )
+    db.session.commit()
+    flash("Progress update updated.", "success")
+    redirect_kwargs = {"initiative_id": initiative_id, "tab": "execution"}
+    nav = request.form.get("nav", "")
+    nav_pos = request.form.get("nav_pos", "")
+    if nav:
+        redirect_kwargs["nav"] = nav
+    if nav_pos:
+        redirect_kwargs["nav_pos"] = nav_pos
+    return redirect(url_for("organization_admin.initiative_form", **redirect_kwargs))
+
+
+@bp.route("/initiatives/<int:initiative_id>/progress-update/<int:update_id>/delete", methods=["POST"])
+@login_required
+@organization_required
+def initiative_progress_update_delete(initiative_id, update_id):
+    """Delete a progress update"""
+    org_id = session.get("organization_id")
+    initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
+    upd = InitiativeProgressUpdate.query.filter_by(id=update_id, initiative_id=initiative.id).first_or_404()
+    if not current_user.can_manage_initiatives(org_id):
+        flash("Permission denied.", "error")
+        return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative_id, tab="execution"))
+
+    AuditService.log_delete("InitiativeProgressUpdate", upd.id, initiative.name)
+    db.session.delete(upd)
+    db.session.commit()
+    flash("Progress update deleted.", "success")
+    redirect_kwargs = {"initiative_id": initiative_id, "tab": "execution"}
+    nav = request.form.get("nav", "")
+    nav_pos = request.form.get("nav_pos", "")
+    if nav:
+        redirect_kwargs["nav"] = nav
+    if nav_pos:
+        redirect_kwargs["nav_pos"] = nav_pos
+    return redirect(url_for("organization_admin.initiative_form", **redirect_kwargs))
 
 
 @bp.route("/initiatives/<int:initiative_id>/check-action-titles")

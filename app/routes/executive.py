@@ -19,6 +19,7 @@ from app.models import (
     EntityTypeDefault,
     GovernanceBody,
     Initiative,
+    InitiativeProgressUpdate,
     InitiativeSystemLink,
     KPIValueTypeConfig,
     Space,
@@ -364,6 +365,37 @@ def dashboard():
             }
         )
 
+    # === EXECUTION PULSE ===
+
+    # Get all initiatives in this org
+    all_initiatives = (
+        Initiative.query
+        .join(ChallengeInitiativeLink, Initiative.id == ChallengeInitiativeLink.initiative_id)
+        .join(Challenge, ChallengeInitiativeLink.challenge_id == Challenge.id)
+        .join(Space, Challenge.space_id == Space.id)
+        .filter(Initiative.organization_id == org_id)
+        .distinct()
+        .all()
+    )
+
+    execution_green  = [i for i in all_initiatives if i.execution_rag == "green"]
+    execution_amber  = [i for i in all_initiatives if i.execution_rag == "amber"]
+    execution_red    = [i for i in all_initiatives if i.execution_rag == "red"]
+    execution_none   = [i for i in all_initiatives if i.execution_rag is None]
+    execution_stale  = [i for i in all_initiatives if i.days_since_execution_update is not None and i.days_since_execution_update > 14]
+
+    execution_pulse = {
+        "total": len(all_initiatives),
+        "green_count": len(execution_green),
+        "amber_count": len(execution_amber),
+        "red_count": len(execution_red),
+        "none_count": len(execution_none),
+        "stale_count": len(execution_stale),
+        "amber_initiatives": sorted(execution_amber, key=lambda i: i.days_since_execution_update or 999),
+        "red_initiatives": sorted(execution_red, key=lambda i: i.days_since_execution_update or 999),
+        "stale_initiatives": sorted(execution_stale, key=lambda i: i.days_since_execution_update or 0, reverse=True),
+    }
+
     # === ALERTS ===
 
     alerts = []
@@ -442,6 +474,8 @@ def dashboard():
         # Entity defaults
         entity_defaults=entity_defaults,
         csrf_token=generate_csrf,
+        # Execution Pulse
+        execution_pulse=execution_pulse,
     )
 
 

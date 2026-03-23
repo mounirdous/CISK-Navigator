@@ -305,6 +305,415 @@
             grid-template-columns: 1fr;
         }
     }
+
+    /* ===== EXECUTION TAB STYLES ===== */
+
+    .initiative-tabs {
+        background: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0 2rem;
+        display: flex;
+        gap: 0;
+    }
+
+    .initiative-tab-btn {
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.85rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: -2px;
+    }
+
+    .initiative-tab-btn:hover {
+        color: #0d6efd;
+    }
+
+    .initiative-tab-btn.active {
+        color: #0d6efd;
+        border-bottom-color: #0d6efd;
+    }
+
+    /* RAG Hero */
+    .rag-hero-card {
+        display: flex;
+        align-items: center;
+        gap: 1.5rem;
+        padding: 1.25rem 1.75rem;
+        border-radius: 12px;
+        margin-bottom: 1.25rem;
+        border: 2px solid transparent;
+    }
+    .rag-hero-card.rag-green { background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border-color: #4caf50; }
+    .rag-hero-card.rag-amber { background: linear-gradient(135deg, #fff8e1, #ffe082); border-color: #ff9800; }
+    .rag-hero-card.rag-red   { background: linear-gradient(135deg, #fce4ec, #f8bbd9); border-color: #e91e63; }
+    .rag-hero-card.rag-none  { background: linear-gradient(135deg, #f5f5f5, #eeeeee); border-color: #bdbdbd; }
+
+    .rag-stoplight {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: center;
+        background: rgba(0,0,0,0.08);
+        padding: 10px 8px;
+        border-radius: 20px;
+    }
+
+    .rag-dot {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        opacity: 0.2;
+        transition: opacity 0.3s;
+    }
+    .rag-dot.active { opacity: 1; }
+    .rag-dot.red    { background: #e53935; }
+    .rag-dot.amber  { background: #fb8c00; }
+    .rag-dot.green  { background: #43a047; }
+    .rag-dot.pulse  { animation: ragPulse 2s infinite; }
+
+    @keyframes ragPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
+        50% { box-shadow: 0 0 0 8px rgba(0,0,0,0.1); }
+    }
+
+    .rag-info { flex: 1; }
+    .rag-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #546e7a; font-weight: 700; }
+    .rag-status-text { font-size: 1.6rem; font-weight: 800; color: #263238; line-height: 1.1; margin: 0.15rem 0; }
+    .rag-freshness { font-size: 0.82rem; font-weight: 500; }
+    .rag-freshness.fresh  { color: #2e7d32; }
+    .rag-freshness.aging  { color: #e65100; }
+    .rag-freshness.stale  { color: #b71c1c; }
+
+    /* Exec cards */
+    .exec-card {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 1.2rem;
+        height: 100%;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    }
+    .exec-card-title {
+        font-size: 0.9rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #455a64;
+        margin-bottom: 1rem;
+        padding-bottom: 0.6rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    /* Action stats */
+    .action-stats {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .action-stat {
+        flex: 1;
+        text-align: center;
+        padding: 0.6rem 0.4rem;
+        border-radius: 8px;
+    }
+    .action-stat .stat-number { display: block; font-size: 1.6rem; font-weight: 800; line-height: 1; }
+    .action-stat .stat-label  { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.2rem; }
+    .action-open   { background: #e3f2fd; }
+    .action-open   .stat-number { color: #1565c0; }
+    .action-open   .stat-label  { color: #1976d2; }
+    .action-inprog { background: #e8f5e9; }
+    .action-inprog .stat-number { color: #2e7d32; }
+    .action-inprog .stat-label  { color: #388e3c; }
+    .action-done   { background: #f5f5f5; }
+    .action-done   .stat-number { color: #757575; }
+    .action-done   .stat-label  { color: #9e9e9e; }
+
+    .action-status-dot {
+        width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* Full action list in execution tab */
+    .action-list-full { display: flex; flex-direction: column; gap: 0; }
+    .action-full-item {
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #f5f5f5;
+        font-size: 0.83rem;
+    }
+    .action-full-item:last-child { border-bottom: none; }
+    .action-title-full { color: #37474f; font-weight: 500; line-height: 1.35; text-decoration: none; }
+
+    .action-full-item.status-draft     .action-status-dot { background: #90a4ae; }
+    .action-full-item.status-active    .action-status-dot { background: #1976d2; }
+    .action-full-item.status-completed .action-status-dot { background: #43a047; }
+    .action-full-item.status-cancelled .action-status-dot { background: #bdbdbd; }
+
+    /* Source badges */
+    .action-source-badge {
+        display: inline-flex; align-items: center; gap: 3px;
+        font-size: 0.7rem; font-weight: 600; padding: 1px 6px;
+        border-radius: 20px;
+    }
+    .source-initiative { background: #e3f2fd; color: #1565c0; }
+    .source-system     { background: #e0f2f1; color: #00695c; }
+    .source-kpi        { background: #f3e5f5; color: #6a1b9a; }
+
+    .action-due { font-size: 0.7rem; color: #78909c; }
+    .action-due.overdue { color: #c62828; font-weight: 700; }
+    .action-priority-high   { font-size: 0.68rem; background: #fff3e0; color: #e65100; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
+    .action-priority-urgent { font-size: 0.68rem; background: #fce4ec; color: #c62828; padding: 1px 5px; border-radius: 3px; font-weight: 700; }
+
+    /* Links & Resources */
+    .exec-links-list { display: flex; flex-direction: column; gap: 0; }
+    .exec-link-row {
+        display: flex; align-items: center; gap: 0.6rem;
+        padding: 0.45rem 0;
+        border-bottom: 1px solid #f5f5f5;
+        font-size: 0.83rem;
+    }
+    .exec-link-row:last-child { border-bottom: none; }
+    .exec-link-favicon { flex-shrink: 0; width: 18px; text-align: center; }
+    .exec-link-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exec-link-title a { color: #1565c0; text-decoration: none; font-weight: 500; }
+    .exec-link-title a:hover { text-decoration: underline; }
+    .exec-link-meta { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+    .exec-link-delete {
+        background: none; border: none; padding: 2px 5px;
+        color: #cfd8dc; font-size: 0.7rem; cursor: pointer;
+        border-radius: 4px; transition: all 0.15s; flex-shrink: 0;
+    }
+    .exec-link-delete:hover { color: #e53935; background: #fce4ec; }
+
+    /* KPI exec */
+    .kpi-exec-group { margin-bottom: 0.75rem; }
+    .kpi-exec-group:last-child { margin-bottom: 0; }
+    .kpi-exec-group-title {
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.06em; color: #78909c;
+        padding-bottom: 0.3rem; margin-bottom: 0.4rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    .kpi-exec-row {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.25rem 0; font-size: 0.83rem;
+    }
+    .kpi-exec-status {
+        width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    }
+    .status-dot-green  { background: #43a047; }
+    .status-dot-yellow { background: #fb8c00; }
+    .status-dot-red    { background: #e53935; }
+    .status-dot-grey   { background: #bdbdbd; }
+    .kpi-exec-name { color: #37474f; font-weight: 500; flex: 1; text-decoration: none; }
+    .kpi-exec-values { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .value-badge-exec {
+        background: #f5f5f5;
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 0.78rem;
+    }
+    .value-badge-exec .vt-name { color: #90a4ae; margin-right: 3px; }
+
+    /* Progress timeline */
+    .progress-timeline { display: flex; flex-direction: column; gap: 0; }
+
+    .progress-entry {
+        border-left: 4px solid #e0e0e0;
+        margin-left: 1rem;
+        padding: 1rem 0 1rem 1.5rem;
+        position: relative;
+    }
+    .progress-entry::before {
+        content: '';
+        position: absolute;
+        left: -10px;
+        top: 1.3rem;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #e0e0e0;
+        border: 2px solid white;
+    }
+    .progress-entry.rag-entry-green { border-left-color: #43a047; }
+    .progress-entry.rag-entry-green::before { background: #43a047; }
+    .progress-entry.rag-entry-amber { border-left-color: #fb8c00; }
+    .progress-entry.rag-entry-amber::before { background: #fb8c00; }
+    .progress-entry.rag-entry-red   { border-left-color: #e53935; }
+    .progress-entry.rag-entry-red::before   { background: #e53935; }
+
+    .progress-entry-meta {
+        display: flex; align-items: center; gap: 0.75rem;
+        margin-bottom: 0.6rem;
+        flex-wrap: wrap;
+    }
+    .progress-date { font-weight: 700; color: #37474f; font-size: 0.9rem; }
+    .progress-freshness { font-size: 0.75rem; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
+    .freshness-fresh { background: #e8f5e9; color: #2e7d32; }
+    .freshness-aging { background: #fff3e0; color: #e65100; }
+    .freshness-stale { background: #fce4ec; color: #b71c1c; }
+    .progress-author { font-size: 0.8rem; color: #78909c; }
+
+    .progress-entry-body { display: flex; flex-direction: column; gap: 0.6rem; }
+
+    .progress-rag {
+        display: flex; align-items: center; gap: 0.75rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .mini-stoplight {
+        display: flex; gap: 4px; align-items: center;
+        background: rgba(0,0,0,0.07);
+        padding: 4px 6px;
+        border-radius: 12px;
+    }
+    .mini-dot {
+        width: 11px; height: 11px; border-radius: 50%; opacity: 0.15; transition: opacity 0.2s;
+    }
+    .mini-dot.on { opacity: 1; }
+    .mini-red   { background: #e53935; }
+    .mini-amber { background: #fb8c00; }
+    .mini-green { background: #43a047; }
+
+    .rag-text-green { color: #2e7d32; font-weight: 700; font-size: 0.95rem; }
+    .rag-text-amber { color: #e65100; font-weight: 700; font-size: 0.95rem; }
+    .rag-text-red   { color: #c62828; font-weight: 700; font-size: 0.95rem; }
+
+    .progress-section { background: #fafafa; border-radius: 6px; padding: 0.5rem 0.75rem; }
+    .progress-section-label {
+        display: block; font-size: 0.73rem; font-weight: 700;
+        text-transform: uppercase; letter-spacing: 0.07em;
+        margin-bottom: 0.25rem;
+    }
+    .accomplishments-label { color: #388e3c; }
+    .nextsteps-label       { color: #1565c0; }
+    .blockers-label        { color: #c62828; }
+    .progress-section-text { font-size: 0.87rem; color: #455a64; white-space: pre-wrap; line-height: 1.5; }
+
+    .progress-entry-actions {
+        display: flex; gap: 0.4rem; margin-top: 0.5rem;
+    }
+
+    /* RAG select buttons in modal */
+    .rag-select-btn {
+        display: flex; align-items: center; gap: 0.6rem;
+        padding: 0.75rem 1.25rem;
+        border: 2px solid #dee2e6;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s;
+        flex: 1;
+        user-select: none;
+    }
+    .rag-select-btn input[type="radio"] { display: none; }
+    .rag-select-circle {
+        width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    }
+    .green-circle { background: #43a047; }
+    .amber-circle { background: #fb8c00; }
+    .red-circle   { background: #e53935; }
+
+    .rag-select-green:has(input:checked) { border-color: #43a047; background: #e8f5e9; color: #2e7d32; }
+    .rag-select-amber:has(input:checked) { border-color: #fb8c00; background: #fff3e0; color: #e65100; }
+    .rag-select-red:has(input:checked)   { border-color: #e53935; background: #fce4ec; color: #c62828; }
+    .rag-select-green:hover { border-color: #43a047; }
+    .rag-select-amber:hover { border-color: #fb8c00; }
+    .rag-select-red:hover   { border-color: #e53935; }
+
+    /* ===== EXECUTION REVIEW NAVIGATOR BAR ===== */
+    .review-nav-bar {
+        background: linear-gradient(135deg, #0d47a1, #1565C0);
+        color: white;
+        padding: 0.6rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .review-nav-prev, .review-nav-next {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: white;
+        text-decoration: none;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.3rem 0.7rem;
+        border-radius: 6px;
+        background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.2);
+        white-space: nowrap;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: background 0.15s;
+        flex-shrink: 0;
+    }
+    .review-nav-prev:hover, .review-nav-next:hover { background: rgba(255,255,255,0.22); color: white; }
+    .review-nav-prev.disabled, .review-nav-next.disabled { opacity: 0.35; pointer-events: none; }
+    .review-nav-center {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+    }
+    .review-nav-breadcrumb {
+        font-size: 0.72rem;
+        opacity: 0.75;
+        letter-spacing: 0.04em;
+    }
+    .review-nav-dots {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .review-nav-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid rgba(255,255,255,0.4);
+        cursor: pointer;
+        transition: transform 0.15s;
+        display: inline-block;
+        text-decoration: none;
+    }
+    .review-nav-dot:hover { transform: scale(1.3); }
+    .review-nav-dot.current { border-color: white; transform: scale(1.3); box-shadow: 0 0 0 2px rgba(255,255,255,0.5); }
+    .review-nav-dot.rag-green  { background: #43a047; }
+    .review-nav-dot.rag-amber  { background: #fb8c00; }
+    .review-nav-dot.rag-red    { background: #e53935; }
+    .review-nav-dot.rag-None   { background: rgba(255,255,255,0.25); }
+    .review-nav-position {
+        font-size: 0.78rem;
+        font-weight: 700;
+        opacity: 0.9;
+        letter-spacing: 0.05em;
+    }
+    .review-nav-exit {
+        color: rgba(255,255,255,0.7);
+        text-decoration: none;
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        border: 1px solid rgba(255,255,255,0.2);
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: all 0.15s;
+    }
+    .review-nav-exit:hover { background: rgba(255,255,255,0.15); color: white; }
 </style>
 {% endblock %}
 
@@ -346,7 +755,84 @@
             </div>
         </div>
 
+        {% if nav_context %}
+        <div class="review-nav-bar">
+            {% if nav_context.prev_id %}
+            <a class="review-nav-prev"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}"
+               title="{{ nav_context.prev_name }}">
+                <i class="bi bi-chevron-left"></i> {{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name and nav_context.prev_name|length > 22 %}…{% endif %}
+            </a>
+            {% else %}
+            <span class="review-nav-prev disabled"><i class="bi bi-chevron-left"></i> Start</span>
+            {% endif %}
+
+            <div class="review-nav-center">
+                {% if nav_context.space_name %}
+                <div class="review-nav-breadcrumb">{{ nav_context.space_name }} › {{ nav_context.challenge_name }}</div>
+                {% endif %}
+                <div class="review-nav-dots">
+                    {% for dot in nav_context.dots %}
+                    <a class="review-nav-dot rag-{{ dot.rag }} {% if loop.index0 == nav_context.pos %}current{% endif %}"
+                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}"
+                       title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}"></a>
+                    {% endfor %}
+                </div>
+                <div class="review-nav-position">{{ nav_context.pos + 1 }} / {{ nav_context.total }}</div>
+            </div>
+
+            {% if nav_context.next_id %}
+            <a class="review-nav-next"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}"
+               title="{{ nav_context.next_name }}">
+                {{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name and nav_context.next_name|length > 22 %}…{% endif %} <i class="bi bi-chevron-right"></i>
+            </a>
+            {% else %}
+            <span class="review-nav-next disabled">End <i class="bi bi-chevron-right"></i></span>
+            {% endif %}
+
+            <a href="{{ url_for('workspace.index') }}" class="review-nav-exit">
+                <i class="bi bi-x-lg"></i> Exit
+            </a>
+        </div>
+
+        <script>
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+            {% if nav_context.prev_id %}
+            if (e.key === 'ArrowLeft') {
+                window.location.href = "{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}";
+            }
+            {% endif %}
+            {% if nav_context.next_id %}
+            if (e.key === 'ArrowRight') {
+                window.location.href = "{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}";
+            }
+            {% endif %}
+        });
+        </script>
+        {% endif %}
+
+        <!-- Tab Navigation -->
+        <div class="initiative-tabs">
+            <button class="initiative-tab-btn {% if active_tab != 'execution' %}active{% endif %}"
+                    onclick="switchTab('form')" id="form-tab">
+                <i class="bi bi-file-earmark-text"></i> Form
+            </button>
+            <button class="initiative-tab-btn {% if active_tab == 'execution' %}active{% endif %}"
+                    onclick="switchTab('execution')" id="execution-tab">
+                <i class="bi bi-activity"></i> Execution
+                {% if initiative.execution_rag %}
+                <span style="display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:2px;background:{% if initiative.execution_rag == 'green' %}#43a047{% elif initiative.execution_rag == 'amber' %}#fb8c00{% else %}#e53935{% endif %};"></span>
+                {% endif %}
+            </button>
+        </div>
+
         <div class="form-body">
+        <div class="tab-content">
+
+        <!-- FORM TAB PANEL -->
+        <div id="form-tab-panel" class="tab-pane {% if active_tab != 'execution' %}show active{% endif %}">
             {% if edit_mode %}
             <form method="POST" novalidate id="initiativeForm">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
@@ -741,7 +1227,345 @@
             {% endif %}
 
             {% endif %}
-        </div>
+        </div><!-- /form-tab-panel -->
+
+        <!-- EXECUTION TAB PANEL -->
+        <div id="execution-tab-panel" class="tab-pane {% if active_tab == 'execution' %}show active{% endif %}" style="padding: 1.5rem;">
+
+            <!-- RAG Status Hero Card -->
+            {% set lpu = initiative.latest_progress_update %}
+            <div class="rag-hero-card rag-{{ initiative.execution_rag or 'none' }}">
+                <div class="rag-stoplight">
+                    <span class="rag-dot red {% if initiative.execution_rag == 'red' %}active pulse{% endif %}"></span>
+                    <span class="rag-dot amber {% if initiative.execution_rag == 'amber' %}active pulse{% endif %}"></span>
+                    <span class="rag-dot green {% if initiative.execution_rag == 'green' %}active pulse{% endif %}"></span>
+                </div>
+                <div class="rag-info">
+                    <div class="rag-label">Execution Status</div>
+                    <div class="rag-status-text">
+                        {% if initiative.execution_rag == 'green' %}On Track
+                        {% elif initiative.execution_rag == 'amber' %}At Risk
+                        {% elif initiative.execution_rag == 'red' %}Off Track
+                        {% else %}<span style="color:#90a4ae;font-size:1.2rem;font-weight:600;">Not Started</span>
+                        {% endif %}
+                    </div>
+                    {% if initiative.days_since_execution_update is not none %}
+                    <div class="rag-freshness {{ lpu.freshness_class }}">
+                        Updated {{ initiative.days_since_execution_update }} day{{ 's' if initiative.days_since_execution_update != 1 else '' }} ago
+                        {% if lpu.author %} &mdash; {{ lpu.author.display_name or lpu.author.login }}{% endif %}
+                    </div>
+                    {% else %}
+                    <div class="rag-freshness stale">No updates yet — start tracking execution below</div>
+                    {% endif %}
+                </div>
+                {% if can_edit %}
+                <button class="btn btn-light btn-sm fw-semibold ms-auto" onclick="openProgressModal('create')">
+                    <i class="bi bi-plus-circle"></i> Add Update
+                </button>
+                {% endif %}
+            </div>
+
+            <!-- Actions + KPI Summary Row -->
+            <div class="row g-3 mb-3">
+                <!-- Action Summary -->
+                <div class="col-md-5">
+                    <div class="exec-card">
+                        <div class="exec-card-title d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-check2-square"></i> Action Items</span>
+                            <span class="text-muted fw-normal" style="font-size:0.75rem;text-transform:none;letter-spacing:0;">{{ linked_actions|length }} total</span>
+                        </div>
+                        {% set draft_cnt = linked_actions | selectattr("status", "eq", "draft") | list | length %}
+                        {% set active_cnt = linked_actions | selectattr("status", "eq", "active") | list | length %}
+                        {% set done_cnt  = linked_actions | selectattr("status", "in", ["completed", "cancelled"]) | list | length %}
+                        <div class="action-stats mb-3">
+                            <div class="action-stat action-open">
+                                <span class="stat-number">{{ draft_cnt }}</span>
+                                <span class="stat-label">Draft</span>
+                            </div>
+                            <div class="action-stat action-inprog">
+                                <span class="stat-number">{{ active_cnt }}</span>
+                                <span class="stat-label">Active</span>
+                            </div>
+                            <div class="action-stat action-done">
+                                <span class="stat-number">{{ done_cnt }}</span>
+                                <span class="stat-label">Done</span>
+                            </div>
+                        </div>
+                        {% if linked_actions %}
+                        <div class="action-list-full">
+                            {% for action in linked_actions %}
+                            {% set sources = action_sources_map.get(action.id, []) %}
+                            <div class="action-full-item status-{{ action.status }}">
+                                <div class="d-flex align-items-start gap-2">
+                                    <span class="action-status-dot mt-1 flex-shrink-0"></span>
+                                    <div style="flex:1;min-width:0;">
+                                        <a class="action-title-full" href="{{ url_for('action_items.edit', item_id=action.id) }}" target="_blank" title="Edit action">{{ action.title }} <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;opacity:0.5;"></i></a>
+                                        <div class="d-flex flex-wrap gap-1 mt-1 align-items-center">
+                                            {% for src in sources %}
+                                            <span class="action-source-badge source-{{ src.type }}" title="Via {{ src.type }}: {{ src.name }}">
+                                                {% if src.type == 'initiative' %}<i class="bi bi-lightning-charge"></i>
+                                                {% elif src.type == 'system' %}<i class="bi bi-cpu"></i>
+                                                {% elif src.type == 'kpi' %}<i class="bi bi-graph-up"></i>
+                                                {% endif %}
+                                                {{ src.name[:28] }}{% if src.name|length > 28 %}…{% endif %}
+                                            </span>
+                                            {% endfor %}
+                                            {% if action.due_date %}
+                                            <span class="action-due {% if action.due_date < today %}overdue{% endif %}">
+                                                <i class="bi bi-calendar3"></i> {{ action.due_date.strftime('%b %d') }}
+                                            </span>
+                                            {% endif %}
+                                            {% if action.priority in ('high', 'urgent') %}
+                                            <span class="action-priority-{{ action.priority }}">{{ action.priority }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-check2-square" style="font-size:1.5rem;opacity:0.3;"></i>
+                            <div class="mt-1" style="font-size:0.85rem;">No action items linked yet</div>
+                            <div style="font-size:0.75rem;margin-top:0.25rem;">Actions linked to this initiative, its systems or KPIs will appear here.</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- KPI Snapshot -->
+                <div class="col-md-7">
+                    <div class="exec-card">
+                        <div class="exec-card-title"><i class="bi bi-graph-up-arrow"></i> KPI Snapshot</div>
+                        {% if kpi_data %}
+                        {% for system_group in kpi_data %}
+                        <div class="kpi-exec-group">
+                            <div class="kpi-exec-group-title">
+                                {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
+                                <img src="{{ entity_defaults['system']['logo'] }}" style="width:12px;height:12px;object-fit:contain;vertical-align:middle;margin-right:3px;">
+                                {% else %}
+                                {{ entity_defaults.get('system', {}).get('icon', 'Φ') }}
+                                {% endif %}
+                                {{ system_group.system_name }}
+                            </div>
+                            {% for kpi in system_group.kpis %}
+                            <div class="kpi-exec-row">
+                                <span class="kpi-exec-status status-dot-{{ kpi.status }}"></span>
+                                {% if kpi.first_vt_id %}
+                                <a class="kpi-exec-name" href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=kpi.first_vt_id) }}" target="_blank" title="Add contribution">{{ kpi.name }} <i class="bi bi-plus-circle" style="font-size:0.65rem;opacity:0.6;"></i></a>
+                                {% else %}
+                                <span class="kpi-exec-name">{{ kpi.name }}</span>
+                                {% endif %}
+                                <span class="kpi-exec-values">
+                                    {% if kpi.value_types %}
+                                    {% for vt in kpi.value_types %}
+                                    <span class="value-badge-exec">
+                                        <span class="vt-name">{{ vt.name }}:</span>
+                                        {% if not vt.formatted_value or vt.formatted_value == '' %}
+                                            <span style="color:#adb5bd">—</span>
+                                        {% elif vt.kind == 'risk' %}
+                                            <strong style="color:{{ vt.color or '#dc3545' }};">{% for i in range(vt.value|int) %}!{% endfor %}</strong>
+                                        {% elif vt.kind == 'positive_impact' %}
+                                            <strong style="color:{{ vt.color or '#198754' }};">{% for i in range(vt.value|int) %}★{% endfor %}</strong>
+                                        {% elif vt.kind == 'negative_impact' %}
+                                            <strong style="color:{{ vt.color or '#dc3545' }};">{% for i in range(vt.value|int) %}▼{% endfor %}</strong>
+                                        {% elif vt.kind == 'level' %}
+                                            <strong style="color:{{ vt.color or '#0d6efd' }};">{% for i in range(vt.value|int) %}●{% endfor %}</strong>
+                                        {% elif vt.kind == 'sentiment' %}
+                                            <strong>{% if vt.value == 1 %}☹️{% elif vt.value == 2 %}😐{% elif vt.value == 3 %}😊{% endif %}</strong>
+                                        {% elif vt.kind == 'list' %}
+                                            <span style="background:{{ vt.list_color or '#6c757d' }};color:white;padding:1px 6px;border-radius:3px;font-size:0.78rem;">{{ vt.list_label or vt.value }}</span>
+                                        {% else %}
+                                            <strong style="color:{{ vt.color or '#333' }};">{{ vt.formatted_value }}{% if vt.unit_label %} {{ vt.unit_label }}{% endif %}</strong>
+                                        {% endif %}
+                                    </span>
+                                    {% endfor %}
+                                    {% else %}
+                                    <span style="color:#adb5bd;font-size:0.78rem;font-style:italic;">No values</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="text-center text-muted py-3" style="font-size:0.85rem;">No connected KPIs</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links & Resources -->
+            <div class="exec-card mb-3" id="exec-links-card">
+                <div class="exec-card-title d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-link-45deg"></i> Links &amp; Resources</span>
+                    {% if can_edit %}
+                    <button class="btn btn-sm btn-outline-primary" onclick="toggleAddLinkForm()" id="add-link-toggle" style="font-size:0.78rem;padding:0.2rem 0.65rem;border-radius:20px;">
+                        <i class="bi bi-plus-lg"></i> Add Link
+                    </button>
+                    {% endif %}
+                </div>
+
+                <!-- Link rows -->
+                {% if entity_links %}
+                <div class="exec-links-list">
+                    {% for link in entity_links %}
+                    <div class="exec-link-row">
+                        <span class="exec-link-favicon">
+                            <img src="https://www.google.com/s2/favicons?domain={{ link.url }}&sz=16"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';"
+                                 style="width:14px;height:14px;vertical-align:middle;">
+                            <i class="bi bi-link-45deg" style="display:none;font-size:0.8rem;color:#90a4ae;"></i>
+                        </span>
+                        <span class="exec-link-title">
+                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
+                                {{ link.title or link.url | truncate(60, True, '…') }}
+                            </a>
+                        </span>
+                        <span class="exec-link-meta">
+                            {% if not link.is_public %}
+                            <span title="Private — only visible to you" style="color:#90a4ae;font-size:0.7rem;"><i class="bi bi-lock-fill"></i></span>
+                            {% endif %}
+                            {% if link.creator %}
+                            <span style="color:#b0bec5;font-size:0.7rem;">{{ link.creator.display_name or link.creator.login }}</span>
+                            {% endif %}
+                        </span>
+                        {% if can_edit and (link.created_by == current_user.id or current_user.is_global_admin) %}
+                        <form method="POST" action="/entity-links/delete" style="display:inline;" onsubmit="return confirm('Delete this link?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                            <input type="hidden" name="link_id" value="{{ link.id }}">
+                            <button type="submit" class="exec-link-delete" title="Delete link">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div id="exec-links-empty" class="text-muted" style="font-size:0.83rem;padding:0.5rem 0 0.75rem;{% if can_edit %}display:block{% else %}display:none{% endif %}">
+                    No links yet — add references, documents or meeting notes.
+                </div>
+                {% if not can_edit %}
+                <div class="text-muted" style="font-size:0.83rem;padding:0.25rem 0;">No links.</div>
+                {% endif %}
+                {% endif %}
+
+                <!-- Inline Add Form (hidden by default) -->
+                {% if can_edit %}
+                <div id="add-link-form" style="display:none;margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #f0f0f0;">
+                    <form method="POST" action="/entity-links/add">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                        <input type="hidden" name="entity_type" value="initiative">
+                        <input type="hidden" name="entity_id" value="{{ initiative.id }}">
+                        <div class="d-flex gap-2 flex-wrap align-items-end">
+                            <div style="flex:2;min-width:200px;">
+                                <label class="form-label mb-1" style="font-size:0.75rem;font-weight:600;color:#546e7a;">URL <span class="text-danger">*</span></label>
+                                <input type="url" name="url" class="form-control form-control-sm" placeholder="https://…" required autocomplete="off">
+                            </div>
+                            <div style="flex:1.5;min-width:150px;">
+                                <label class="form-label mb-1" style="font-size:0.75rem;font-weight:600;color:#546e7a;">Title</label>
+                                <input type="text" name="title" class="form-control form-control-sm" placeholder="Optional label">
+                            </div>
+                            <div style="flex-shrink:0;padding-bottom:0.15rem;">
+                                <div class="form-check form-check-inline mb-0" style="font-size:0.78rem;">
+                                    <input class="form-check-input" type="checkbox" name="is_public" value="true" id="link-public-check" checked>
+                                    <label class="form-check-label" for="link-public-check" style="color:#546e7a;">Public</label>
+                                </div>
+                            </div>
+                            <div style="flex-shrink:0;display:flex;gap:0.4rem;padding-bottom:0.1rem;">
+                                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-save"></i> Save</button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleAddLinkForm()">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Progress Update Timeline -->
+            <div class="exec-card">
+                <div class="exec-card-title d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-clock-history"></i> Progress Log ({{ progress_updates|length }} update{{ 's' if progress_updates|length != 1 else '' }})</span>
+                    {% if can_edit %}
+                    <button class="btn btn-primary btn-sm" onclick="openProgressModal('create')">
+                        <i class="bi bi-plus-circle"></i> Add Progress Update
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if progress_updates %}
+                <div class="progress-timeline">
+                    {% for upd in progress_updates %}
+                    <div class="progress-entry rag-entry-{{ upd.rag_status }}">
+                        <div class="progress-entry-meta">
+                            <span class="progress-date">{{ upd.created_at.strftime('%b %d, %Y') }}</span>
+                            <span class="progress-freshness freshness-{{ upd.freshness_class }}">{{ upd.days_ago }}d ago</span>
+                            {% if upd.author %}<span class="progress-author">by {{ upd.author.display_name or upd.author.login }}</span>{% endif %}
+                        </div>
+                        <div class="progress-entry-body">
+                            <div class="progress-rag">
+                                <div class="mini-stoplight">
+                                    <span class="mini-dot mini-red {{ 'on' if upd.rag_status == 'red' }}"></span>
+                                    <span class="mini-dot mini-amber {{ 'on' if upd.rag_status == 'amber' }}"></span>
+                                    <span class="mini-dot mini-green {{ 'on' if upd.rag_status == 'green' }}"></span>
+                                </div>
+                                <span class="rag-text-{{ upd.rag_status }}">{{ upd.rag_status | capitalize }}</span>
+                            </div>
+                            {% if upd.accomplishments %}
+                            <div class="progress-section">
+                                <span class="progress-section-label accomplishments-label"><i class="bi bi-check2-circle"></i> Accomplishments</span>
+                                <div class="progress-section-text">{{ upd.accomplishments }}</div>
+                            </div>
+                            {% endif %}
+                            {% if upd.next_steps %}
+                            <div class="progress-section">
+                                <span class="progress-section-label nextsteps-label"><i class="bi bi-arrow-right-circle"></i> Next Steps</span>
+                                <div class="progress-section-text">{{ upd.next_steps }}</div>
+                            </div>
+                            {% endif %}
+                            {% if upd.blockers %}
+                            <div class="progress-section">
+                                <span class="progress-section-label blockers-label"><i class="bi bi-exclamation-triangle"></i> Blockers</span>
+                                <div class="progress-section-text">{{ upd.blockers }}</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if can_edit %}
+                        <div class="progress-entry-actions">
+                            <button class="btn btn-sm btn-outline-secondary" title="Edit"
+                                onclick="openProgressModal('edit', {{ upd.id }}, '{{ upd.rag_status }}', {{ upd.accomplishments | tojson }}, {{ upd.next_steps | tojson }}, {{ upd.blockers | tojson }})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST" action="{{ url_for('organization_admin.initiative_progress_update_delete', initiative_id=initiative.id, update_id=upd.id) }}" style="display:inline;" onsubmit="return confirm('Delete this progress update?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                                <input type="hidden" name="nav" value="{{ request.args.get('nav', '') }}">
+                                <input type="hidden" name="nav_pos" value="{{ request.args.get('nav_pos', '') }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-clock" style="font-size:2.5rem;opacity:0.3;"></i>
+                    <div class="mt-2 fw-semibold">No progress updates yet</div>
+                    {% if can_edit %}
+                    <div class="mt-1" style="font-size:0.85rem;">Click <strong>Add Progress Update</strong> to start tracking execution.</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+
+        </div><!-- /execution-tab-panel -->
+
+        </div><!-- /tab-content -->
+        </div><!-- /form-body -->
 
         <!-- Bottom Navigation -->
         {% if not edit_mode %}
@@ -766,6 +1590,127 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Progress Update Modal -->
+{% if not edit_mode %}
+<div class="modal fade" id="progressUpdateModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius:12px;overflow:hidden;">
+            <div class="modal-header" style="background:linear-gradient(135deg,#1565C0,#0d47a1);color:white;padding:1.25rem 1.75rem;">
+                <h5 class="modal-title" id="progressModalTitle"><i class="bi bi-activity"></i> Add Progress Update</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="progressUpdateForm" method="POST" action="{{ url_for('organization_admin.initiative_progress_update_create', initiative_id=initiative.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                <input type="hidden" name="nav" id="progressFormNav" value="{{ request.args.get('nav', '') }}">
+                <input type="hidden" name="nav_pos" id="progressFormNavPos" value="{{ request.args.get('nav_pos', '') }}">
+                <div class="modal-body" style="padding:1.75rem;">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold mb-2">Execution Status <span class="text-danger">*</span></label>
+                        <div class="d-flex gap-2">
+                            <label class="rag-select-btn rag-select-green flex-fill">
+                                <input type="radio" name="rag_status" value="green" required>
+                                <span class="rag-select-circle green-circle"></span>
+                                <span>On Track</span>
+                            </label>
+                            <label class="rag-select-btn rag-select-amber flex-fill">
+                                <input type="radio" name="rag_status" value="amber">
+                                <span class="rag-select-circle amber-circle"></span>
+                                <span>At Risk</span>
+                            </label>
+                            <label class="rag-select-btn rag-select-red flex-fill">
+                                <input type="radio" name="rag_status" value="red">
+                                <span class="rag-select-circle red-circle"></span>
+                                <span>Off Track</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="bi bi-check2-circle text-success"></i> Accomplishments</label>
+                        <textarea class="form-control" name="accomplishments" id="modalAccomplishments" rows="3" placeholder="What was achieved since the last update?"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold"><i class="bi bi-arrow-right-circle text-primary"></i> Next Steps</label>
+                        <textarea class="form-control" name="next_steps" id="modalNextSteps" rows="3" placeholder="What needs to happen next?"></textarea>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold"><i class="bi bi-exclamation-triangle text-warning"></i> Blockers</label>
+                        <textarea class="form-control" name="blockers" id="modalBlockers" rows="2" placeholder="Any obstacles or risks requiring attention?"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer" style="background:#f8f9fa;">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold"><i class="bi bi-save"></i> Save Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const PROGRESS_CREATE_URL = "{{ url_for('organization_admin.initiative_progress_update_create', initiative_id=initiative.id) }}";
+const PROGRESS_EDIT_BASE  = "/org-admin/initiatives/{{ initiative.id }}/progress-update/";
+const ACTIVE_TAB = "{{ active_tab }}";
+
+function switchTab(tab) {
+    // Update button states
+    document.getElementById('form-tab').classList.toggle('active', tab === 'form');
+    document.getElementById('execution-tab').classList.toggle('active', tab === 'execution');
+    // Update panels
+    const formPanel = document.getElementById('form-tab-panel');
+    const execPanel = document.getElementById('execution-tab-panel');
+    formPanel.classList.toggle('show', tab === 'form');
+    formPanel.classList.toggle('active', tab === 'form');
+    execPanel.classList.toggle('show', tab === 'execution');
+    execPanel.classList.toggle('active', tab === 'execution');
+    // Update URL without reload
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url.toString());
+}
+
+function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps, blockers) {
+    const form = document.getElementById('progressUpdateForm');
+    const title = document.getElementById('progressModalTitle');
+    // Sync nav params from current URL (may differ from server-rendered values if navigator moved)
+    const urlParams = new URLSearchParams(window.location.search);
+    document.getElementById('progressFormNav').value = urlParams.get('nav') || '';
+    document.getElementById('progressFormNavPos').value = urlParams.get('nav_pos') || '';
+    // Reset
+    form.querySelectorAll('input[name="rag_status"]').forEach(r => r.checked = false);
+    document.getElementById('modalAccomplishments').value = '';
+    document.getElementById('modalNextSteps').value = '';
+    document.getElementById('modalBlockers').value = '';
+
+    if (mode === 'edit' && updateId) {
+        title.innerHTML = '<i class="bi bi-pencil"></i> Edit Progress Update';
+        form.action = PROGRESS_EDIT_BASE + updateId + '/edit';
+        if (ragStatus) {
+            const radio = form.querySelector(`input[name="rag_status"][value="${ragStatus}"]`);
+            if (radio) radio.checked = true;
+        }
+        document.getElementById('modalAccomplishments').value = accomplishments || '';
+        document.getElementById('modalNextSteps').value = nextSteps || '';
+        document.getElementById('modalBlockers').value = blockers || '';
+    } else {
+        title.innerHTML = '<i class="bi bi-plus-circle"></i> Add Progress Update';
+        form.action = PROGRESS_CREATE_URL;
+    }
+    new bootstrap.Modal(document.getElementById('progressUpdateModal')).show();
+}
+
+function toggleAddLinkForm() {
+    const form = document.getElementById('add-link-form');
+    const btn = document.getElementById('add-link-toggle');
+    if (!form) return;
+    const isVisible = form.style.display !== 'none';
+    form.style.display = isVisible ? 'none' : 'block';
+    if (btn) btn.innerHTML = isVisible
+        ? '<i class="bi bi-plus-lg"></i> Add Link'
+        : '<i class="bi bi-x-lg"></i> Cancel';
+}
+</script>
+{% endif %}
 
 {% if not edit_mode and (initiative.deliverables or initiative.success_criteria) %}
 <!-- Generate Actions Modal -->

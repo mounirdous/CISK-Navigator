@@ -5,6 +5,35 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-03-23
+
+### Added
+- **Execution Review Navigator**: "Start Review" button on workspace page launches a sequential review of all visible initiatives in execution mode
+  - Navigator bar with prev/next arrows, RAG-colored dot map, breadcrumb (Space › Challenge), position counter, and keyboard shortcuts (ArrowLeft/ArrowRight)
+  - Sticky blue bar at the top of each initiative form during review sessions
+  - Exit button returns to workspace; dots are clickable to jump to any initiative directly
+- **Clickable links in Execution tab**: KPI names and action item titles are now links opening in a new tab for quick editing without leaving the review flow
+
+## [3.0.0] - 2026-03-23
+
+### Added (Major Release — Initiative Execution Tracking)
+- **Initiative Execution Tab**: New second tab on every initiative form with a professional governance-ready view:
+  - RAG stoplight hero card (On Track / At Risk / Off Track) with pulse animation and freshness indicator
+  - Action Items summary panel (open / in progress / done counts + mini list)
+  - KPI Snapshot panel with all connected KPI values and qualitative icons
+  - Chronological progress update timeline with color-coded RAG entries
+- **Progress Updates**: Append-only execution log per initiative
+  - Fields: RAG status, Accomplishments, Next Steps, Blockers
+  - Create / Edit / Delete via a sleek modal (RAG select buttons with color feedback)
+  - Freshness badges: fresh (<=7d), aging (<=21d), stale (>21d)
+  - Author and timestamp shown on each entry
+- **Executive Dashboard — Execution Pulse section**:
+  - RAG distribution bar across all initiatives (green/amber/red/not started)
+  - Staleness alert when 14+ days without update
+  - Clickable initiative cards for red and amber items linking directly to Execution tab
+- **Database**: New `initiative_progress_updates` table (migration `v3w4x5y6z7a8`)
+- **Full Backup v7.0**: Progress updates included in initiative backup and restore
+
 ## [2.33.0] - 2026-03-22
 
 ### Added

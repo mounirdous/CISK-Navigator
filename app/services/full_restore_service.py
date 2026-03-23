@@ -53,6 +53,7 @@ from app.models import (
     GeographySite,
     GovernanceBody,
     Initiative,
+    InitiativeProgressUpdate,
     InitiativeSystemLink,
     KPIGovernanceBodyLink,
     KPIValueTypeConfig,
@@ -657,6 +658,21 @@ class FullRestoreService:
                         initiative_map[init_name] = initiative
                         stats["initiatives"] += 1
                         stats["entity_links_restored"] += FullRestoreService._restore_entity_links("initiative", initiative.id, initiative_data)
+
+                        # Restore progress updates
+                        for upd_data in initiative_data.get("progress_updates", []):
+                            try:
+                                upd = InitiativeProgressUpdate(
+                                    initiative_id=initiative.id,
+                                    rag_status=upd_data["rag_status"],
+                                    accomplishments=upd_data.get("accomplishments"),
+                                    next_steps=upd_data.get("next_steps"),
+                                    blockers=upd_data.get("blockers"),
+                                    created_at=datetime.fromisoformat(upd_data["created_at"]),
+                                )
+                                db.session.add(upd)
+                            except Exception:
+                                pass  # Skip malformed progress update entries
 
                     # Link Challenge to Initiative
                     link = ChallengeInitiativeLink(challenge_id=challenge.id, initiative_id=initiative.id)

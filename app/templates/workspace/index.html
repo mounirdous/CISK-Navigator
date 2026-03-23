@@ -1805,6 +1805,15 @@
                 <span style="font-weight: 600; font-size: 0.95rem;">Filters & Display</span>
                 <span x-show="hasActiveFilters" class="filter-active-badge" x-text="`${activeFilterCount} active`"></span>
             </div>
+            <button x-show="!loading && reviewCount > 0"
+                    @click.stop="startReview()"
+                    class="btn btn-sm"
+                    style="background: linear-gradient(135deg, #1565C0, #0d47a1); color: white; font-weight: 600; border: none; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem;"
+                    :title="`Start execution review of ${reviewCount} initiatives`">
+                <i class="bi bi-play-circle-fill"></i>
+                <span>Start Review</span>
+                <span x-text="`(${reviewCount})`" style="opacity:0.85;"></span>
+            </button>
             <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
         </div>
 
@@ -4758,6 +4767,33 @@ function workspaceV2(orgId, filterPresets) {
                 console.error('Error unlinking system:', error);
                 alert('Error unlinking system. Please try again.');
             }
+        },
+
+        getNavInitiativeIds() {
+            const seen = new Set();
+            const ids = [];
+            this.filteredSpaces.forEach(space => {
+                space.challenges.forEach(challenge => {
+                    challenge.initiatives.forEach(initiative => {
+                        if (!seen.has(initiative.id)) {
+                            seen.add(initiative.id);
+                            ids.push(initiative.id);
+                        }
+                    });
+                });
+            });
+            return ids;
+        },
+
+        get reviewCount() {
+            return this.getNavInitiativeIds().length;
+        },
+
+        startReview() {
+            const ids = this.getNavInitiativeIds();
+            if (!ids.length) return;
+            const base = `{{ url_for('organization_admin.initiative_form', initiative_id=0) }}`.replace('0', ids[0]);
+            window.location.href = `${base}?tab=execution&nav=${ids.join(',')}&nav_pos=0`;
         },
 
         async deleteKPI(kpi) {

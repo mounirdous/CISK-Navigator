@@ -17,7 +17,7 @@ from .entity_link import EntityLink
 from .entity_type_default import EntityTypeDefault
 from .geography import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, KPISiteAssignment
 from .governance_body import GovernanceBody, KPIGovernanceBodyLink
-from .initiative import ChallengeInitiativeLink, Initiative
+from .initiative import ChallengeInitiativeLink, Initiative, InitiativeProgressUpdate
 from .kpi import KPI
 from .kpi_snapshot import KPISnapshot, RollupSnapshot
 from .organization import Organization, UserOrganizationMembership
@@ -46,6 +46,7 @@ __all__ = [
     "Space",
     "Challenge",
     "Initiative",
+    "InitiativeProgressUpdate",
     "ChallengeInitiativeLink",
     "System",
     "InitiativeSystemLink",

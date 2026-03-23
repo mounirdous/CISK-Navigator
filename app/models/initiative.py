@@ -50,6 +50,12 @@ class Initiative(db.Model):
 
     # Relationships
     organization = db.relationship("Organization", back_populates="initiatives")
+    progress_updates = db.relationship(
+        "InitiativeProgressUpdate",
+        back_populates="initiative",
+        cascade="all, delete-orphan",
+        order_by="InitiativeProgressUpdate.created_at.desc()",
+    )
     challenge_links = db.relationship(
         "ChallengeInitiativeLink", back_populates="initiative", cascade="all, delete-orphan"
     )
@@ -143,8 +149,69 @@ class Initiative(db.Model):
 
         return (filled, total, status)
 
+    @property
+    def latest_progress_update(self):
+        return self.progress_updates[0] if self.progress_updates else None
+
+    @property
+    def execution_rag(self):
+        """Latest RAG status, or None if never updated."""
+        upd = self.latest_progress_update
+        return upd.rag_status if upd else None
+
+    @property
+    def days_since_execution_update(self):
+        upd = self.latest_progress_update
+        if not upd:
+            return None
+        return (datetime.utcnow() - upd.created_at).days
+
     def __repr__(self):
         return f"<Initiative {self.name}>"
+
+
+class InitiativeProgressUpdate(db.Model):
+    """
+    Periodic progress update for an initiative (execution tracking).
+
+    Captures a manual RAG status + narrative at a point in time,
+    building a chronological log of how execution is progressing.
+    """
+
+    __tablename__ = "initiative_progress_updates"
+
+    id = db.Column(db.Integer, primary_key=True)
+    initiative_id = db.Column(
+        db.Integer, db.ForeignKey("initiatives.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    rag_status = db.Column(db.String(10), nullable=False)  # green | amber | red
+    accomplishments = db.Column(db.Text, nullable=True)
+    next_steps = db.Column(db.Text, nullable=True)
+    blockers = db.Column(db.Text, nullable=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    initiative = db.relationship("Initiative", back_populates="progress_updates")
+    author = db.relationship("User", foreign_keys=[created_by])
+
+    @property
+    def days_ago(self):
+        return (datetime.utcnow() - self.created_at).days
+
+    @property
+    def freshness_class(self):
+        """CSS class based on staleness: fresh / aging / stale"""
+        d = self.days_ago
+        if d <= 7:
+            return "fresh"
+        elif d <= 21:
+            return "aging"
+        return "stale"
+
+    def __repr__(self):
+        return f"<InitiativeProgressUpdate initiative_id={self.initiative_id} rag={self.rag_status}>"
 
 
 class ChallengeInitiativeLink(db.Model):

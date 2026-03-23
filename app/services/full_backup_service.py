@@ -4,7 +4,7 @@ Full Backup/Restore Service
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
 
-BACKUP FORMAT VERSION: 6.0 (Updated 2026-03-22)
+BACKUP FORMAT VERSION: 7.0 (Updated 2026-03-23)
 
 What's backed up:
 ================
@@ -46,6 +46,8 @@ What's backed up:
    - All workspace and action register saved views per user
 ✅ Full Geography hierarchy (v6.0+):
    - Regions (org-scoped), Countries (with coordinates), Sites (with coordinates)
+✅ Initiative Execution Tracking (v7.0+):
+   - Progress updates (RAG status, accomplishments, next steps, blockers, timestamps)
 
 What's NOT backed up:
 =====================
@@ -60,6 +62,7 @@ Version Compatibility:
 - Backup format v4.0: Added EntityLink (URL links) for all CISK entities and action items
 - Backup format v5.0: Added saved views (UserFilterPreset) per user
 - Backup format v6.0: Full geography hierarchy (was incorrectly treated as global)
+- Backup format v7.0: Initiative progress updates (execution tracking)
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -347,6 +350,16 @@ class FullBackupService:
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "impact_rationale": initiative.impact_rationale,
                         "links": FullBackupService._export_entity_links("initiative", initiative.id),
+                        "progress_updates": [
+                            {
+                                "rag_status": upd.rag_status,
+                                "accomplishments": upd.accomplishments,
+                                "next_steps": upd.next_steps,
+                                "blockers": upd.blockers,
+                                "created_at": upd.created_at.isoformat(),
+                            }
+                            for upd in sorted(initiative.progress_updates, key=lambda u: u.created_at)
+                        ],
                         "systems": [],
                     }
 
