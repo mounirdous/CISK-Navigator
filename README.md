@@ -1,12 +1,29 @@
-# 🧭 CISK Navigator v2.32.2
+# 🧭 CISK Navigator v3.3.6
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-2.32.2-blue)
+![Version](https://img.shields.io/badge/version-3.3.6-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+
+## ✨ What's New in v3.3.x (March 2026)
+
+### 📱 **Mobile Improvements**
+- **Workspace entity names** wrap instead of truncating on mobile — full names always visible
+- **Initiative review nav bar** fits the iPhone viewport: icon-only prev/next arrows, no breadcrumb, 10 px dots, icon-only exit button
+- **RAG hero "Add Update" button** wraps full-width on mobile instead of overflowing off screen
+- **Form header** is compact on mobile (smaller heading, tighter padding, full-width card)
+
+### 🎨 **Rating Symbol Improvements**
+- **Level, risk, impact and negative impact cells** now show all 3 slots at all times — filled symbols for the current value, dimmed (20% opacity) copies for empty slots — so the scale is always visible (e.g. `●··`, `★★·`, `!!·`)
+- Symbols are now identical in size (previously `●` and `○` rendered at different sizes)
+
+### 🧹 **Workspace UX**
+- **Consensus border indicators** (coloured left bars on cells) are now hidden when the badges (🎄) toggle is off
+- **Empty cells** show nothing instead of an em-dash placeholder (`—`)
+- **Org-level links** added; entity link UX simplified
 
 ## ✨ What's New in v2.32.x (March 2026)
 
