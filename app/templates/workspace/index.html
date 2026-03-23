@@ -791,6 +791,14 @@
         transform: rotate(-90deg);
     }
 
+    /* ── Execution RAG heat trace (visible when showBadges / Christmas tree ON) ── */
+    /* border-left on display:table-row is ignored — target first cell child instead */
+    .rag-border-red   > .ws-cell:first-child { border-left: 4px solid #ef5350 !important; }
+    .rag-border-amber > .ws-cell:first-child { border-left: 4px solid #ffa726 !important; }
+    /* Parent propagation — same color, thinner border (3px vs 4px) */
+    .rag-parent-red   > .ws-cell:first-child { border-left: 3px solid #ef5350 !important; }
+    .rag-parent-amber > .ws-cell:first-child { border-left: 3px solid #ffa726 !important; }
+
     .tree-dimmed {
         opacity: 0.18;
         transition: opacity 0.25s ease;
@@ -2242,7 +2250,11 @@
                     <!-- Space Row -->
                     <div class="ws-row level-0"
                          :id="'space-' + space.id"
-                         :class="{'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 0}"
+                         :class="{
+                             'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 0,
+                             'rag-parent-red':   showBadges && space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'red')),
+                             'rag-parent-amber': showBadges && !space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'red')) && space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'amber'))
+                         }"
                          x-show="showLevels.spaces"
                          :draggable="editMode"
                          @dragstart="dragRowStart($event, space, 'space', null)"
@@ -2429,7 +2441,11 @@
                             <!-- Challenge Row -->
                             <div class="ws-row level-1"
                                  :id="'challenge-' + challenge.id"
-                                 :class="{'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 1}"
+                                 :class="{
+                                     'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 1,
+                                     'rag-parent-red':   showBadges && challenge.initiatives.some(i => i.execution_rag === 'red'),
+                                     'rag-parent-amber': showBadges && !challenge.initiatives.some(i => i.execution_rag === 'red') && challenge.initiatives.some(i => i.execution_rag === 'amber')
+                                 }"
                                  x-show="showLevels.challenges"
                                  :draggable="editMode"
                                  @dragstart="dragRowStart($event, challenge, 'challenge', space)"
@@ -2547,7 +2563,11 @@
                                     <!-- Initiative Row -->
                                     <div class="ws-row level-2"
                                          :id="'initiative-' + initiative.id"
-                                         :class="{'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 2}"
+                                         :class="{
+                                             'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 2,
+                                             'rag-border-red':   showBadges && initiative.execution_rag === 'red',
+                                             'rag-border-amber': showBadges && initiative.execution_rag === 'amber'
+                                         }"
                                          x-show="showLevels.initiatives"
                                          :draggable="editMode"
                                          @dragstart="dragRowStart($event, initiative, 'initiative', challenge)"
@@ -3290,6 +3310,8 @@ function workspaceV2(orgId, filterPresets) {
         newPresetName: '',
         activePresetName: '',  // Track which preset is currently active
         pendingTreeState: null,  // Tree collapse state to apply after next loadData()
+        _loadDataInProgress: false,  // Guard against concurrent loadData() calls
+        _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
 
         // Level Focus Mode
         focusLevelMode: false,   // When true, dims parent levels when using +/- level buttons
@@ -3473,6 +3495,9 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         async loadData() {
+            // Guard against concurrent calls (e.g., init()'s auto_edit path + x-init both calling loadData)
+            if (this._loadDataInProgress) return;
+            this._loadDataInProgress = true;
             this.loading = true;
             try {
                 const response = await fetch('{{ url_for("workspace.get_data") }}');
@@ -3539,6 +3564,7 @@ function workspaceV2(orgId, filterPresets) {
                 console.error('Failed to load workspace data:', error);
                 alert('Failed to load workspace data. Please refresh the page.');
             } finally {
+                this._loadDataInProgress = false;
                 this.loading = false;
                 // Load trend indicators after data is loaded
                 setTimeout(() => this.loadTrendIndicators(), 100);
@@ -3887,8 +3913,36 @@ function workspaceV2(orgId, filterPresets) {
 
         // Filter Presets
         async init() {
+            // Alpine calls init() automatically AND x-init also calls it — run only once
+            if (this._initDone) return;
+            this._initDone = true;
+
             // Restore Level Focus Mode preference from DB (server-rendered)
             this.focusLevelMode = {{ ws_focus_mode | tojson }};
+
+            // Restore tree expansion state when returning from an entity edit page
+            const _savedState = sessionStorage.getItem('ws_edit_return_state');
+            if (_savedState) {
+                try {
+                    const s = JSON.parse(_savedState);
+                    this.pendingTreeState = s.tree;
+                    if (s.focusLevelMode !== undefined) this.focusLevelMode = s.focusLevelMode;
+                    if (s.focusedLevel  !== undefined) this.focusedLevel  = s.focusedLevel;
+                    if (s.showLevels    !== undefined) this.showLevels    = s.showLevels;
+                } catch(e) {}
+                sessionStorage.removeItem('ws_edit_return_state');
+            }
+
+            // Intercept edit-link clicks (capture phase fires before Alpine's @click.stop)
+            // to snapshot tree state before navigating away to an entity edit page
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href]');
+                if (!link) return;
+                const href = link.getAttribute('href') || '';
+                if (href.includes('/org-admin/') && this.spaces.length > 0) {
+                    this.saveTreeState();
+                }
+            }, { capture: true });
 
             // Prevent browser's automatic hash scroll jump
             // We'll handle scrolling ourselves after data loads
@@ -3989,6 +4043,23 @@ function workspaceV2(orgId, filterPresets) {
 
             // Mobile: Setup horizontal scroll detection
             this.setupMobileScrollIndicator();
+        },
+
+        saveTreeState() {
+            const allChallenges = this.spaces.flatMap(s => s.challenges);
+            const allInitiatives = allChallenges.flatMap(c => c.initiatives);
+            const allSystems = allInitiatives.flatMap(i => i.systems || []);
+            sessionStorage.setItem('ws_edit_return_state', JSON.stringify({
+                tree: {
+                    spaces:      Object.fromEntries(this.spaces.map(s    => [s.id,   s.collapsed])),
+                    challenges:  Object.fromEntries(allChallenges.map(c  => [c.id,   c.collapsed])),
+                    initiatives: Object.fromEntries(allInitiatives.map(i => [i.id,   i.collapsed])),
+                    systems:     Object.fromEntries(allSystems.map(sys   => [sys.id, sys.collapsed]))
+                },
+                focusLevelMode: this.focusLevelMode,
+                focusedLevel:   this.focusedLevel,
+                showLevels:     {...this.showLevels}
+            }));
         },
 
         setupMobileScrollIndicator() {

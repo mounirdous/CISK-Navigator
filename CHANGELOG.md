@@ -5,7 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.1.0] - 2026-03-23
+## [3.2.1] - 2026-03-23
+
+### Fixed
+- Fixed RAG execution heat trace borders not appearing in workspace tree — `border-left` on `display:table-row` is ignored by browsers; CSS now targets the first `ws-cell` child
+- RAG parent borders now use solid colors (same as initiative) rather than faded opacity; only red and amber propagate up to challenges and spaces
+- Fixed workspace tree expansion state and level focus mode not surviving entity edit round-trips — added `_initDone` guard to prevent Alpine's double `init()` call from resetting state, added `_loadDataInProgress` guard for concurrent `loadData()` calls, and replaced `beforeunload` with a targeted capture-phase click listener
+
+## [3.2.0] - 2026-03-23
 
 ### Added
 - **Execution Review Navigator**: "Start Review" button on workspace page launches a sequential review of all visible initiatives in execution mode

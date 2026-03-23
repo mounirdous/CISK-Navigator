@@ -118,7 +118,15 @@ def login():
 
         # Success message
         flash(f"Welcome back, {user.display_name or user.login}!", "success")
-        resp = make_response(redirect(url_for("workspace.dashboard")))
+
+        # Honour the ?next= param set by Flask-Login, but only for safe relative URLs
+        next_url = request.form.get("next") or request.args.get("next", "")
+        if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+            dest = next_url
+        else:
+            dest = url_for("workspace.dashboard")
+
+        resp = make_response(redirect(dest))
         resp.set_cookie("dark_mode", "1" if user.dark_mode else "0", max_age=365 * 24 * 3600)
         return resp
 

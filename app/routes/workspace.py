@@ -4190,6 +4190,7 @@ def get_data():
                         "entity_links": initiative_entity_links,
                         "inherited_links": initiative_inherited,
                         "systems": systems_data,
+                        "execution_rag": initiative.execution_rag,
                     }
                 )
 
