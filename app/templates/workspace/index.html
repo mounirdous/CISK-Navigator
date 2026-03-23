@@ -206,28 +206,28 @@
         background: rgba(49, 130, 206, 0.05) !important;
     }
 
-    /* Consensus visual indicators */
-    .ws-cell.consensus-strong {
+    /* Consensus visual indicators — only visible when badges (xmas tree) are on */
+    .workspace-v2[data-badges-visible="true"] .ws-cell.consensus-strong {
         border-left: 4px solid #28a745 !important;
         background: rgba(40, 167, 69, 0.08) !important;
     }
 
-    .ws-cell.consensus-weak {
+    .workspace-v2[data-badges-visible="true"] .ws-cell.consensus-weak {
         border-left: 3px solid #ffc107 !important;
         background: rgba(255, 193, 7, 0.08) !important;
     }
 
-    .ws-cell.consensus-single {
+    .workspace-v2[data-badges-visible="true"] .ws-cell.consensus-single {
         border-left: 2px solid #17a2b8 !important;
         background: rgba(23, 162, 184, 0.08) !important;
     }
 
-    .ws-cell.consensus-none {
+    .workspace-v2[data-badges-visible="true"] .ws-cell.consensus-none {
         border-left: 2px solid #dc3545 !important;
         background: rgba(220, 53, 69, 0.05) !important;
     }
 
-    .ws-cell.consensus-no-data {
+    .workspace-v2[data-badges-visible="true"] .ws-cell.consensus-no-data {
         border-left: 1px solid #6c757d !important;
     }
 
@@ -2430,7 +2430,6 @@
                                 </template>
                                 <template x-if="!vt.collapsed">
                                     <template x-if="!space.rollup_values || !space.rollup_values[String(vt.id)]">
-                                        <small class="text-muted">—</small>
                                     </template>
                                 </template>
                             </div>
@@ -2545,7 +2544,6 @@
                                         </template>
                                         <template x-if="!vt.collapsed">
                                             <template x-if="!challenge.rollup_values || !challenge.rollup_values[String(vt.id)]">
-                                                <small class="text-muted">—</small>
                                             </template>
                                         </template>
                                     </div>
@@ -2710,7 +2708,6 @@
                                                 </template>
                                                 <template x-if="!vt.collapsed">
                                                     <template x-if="!initiative.rollup_values || !initiative.rollup_values[String(vt.id)]">
-                                                        <small class="text-muted">—</small>
                                                     </template>
                                                 </template>
                                             </div>
@@ -2852,7 +2849,6 @@
                                                         </template>
                                                         <template x-if="!vt.collapsed">
                                                             <template x-if="!system.rollup_values || !system.rollup_values[String(vt.id)]">
-                                                                <small class="text-muted">—</small>
                                                             </template>
                                                         </template>
                                                     </div>
