@@ -108,6 +108,14 @@ def _filters_match(current, preset):
     return True
 
 
+@bp.route("/theory")
+@login_required
+def theory():
+    """CISK Theory — one-page framework overview"""
+    from flask_wtf.csrf import generate_csrf
+    return render_template("workspace/theory.html", csrf_token=generate_csrf)
+
+
 @bp.route("/dashboard")
 @login_required
 @organization_required

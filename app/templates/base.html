@@ -361,7 +361,7 @@
             </a>
             {% endif %}
             <a class="navbar-brand" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
-                <span style="font-weight: 700;">CISK</span> <small style="font-size: 0.75rem; opacity: 0.7; margin-left: 0.25rem;">v{{ app_version }}</small>
+                <span style="font-weight: 700;">CISK</span> <a href="{{ url_for('workspace.theory') }}" style="font-size: 0.75rem; opacity: 0.5; margin-left: 0.25rem; color: inherit; text-decoration: none;" title="CISK Theory" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">v{{ app_version }}</a>
             </a>
             {% if session.organization_id %}
             <a href="{{ url_for('workspace.index') }}" class="navbar-text d-flex align-items-center" style="font-size: 0.85rem; margin-left: 1rem; text-decoration: none; color: #fff; background: rgba(13, 110, 253, 0.2); padding: 0.25rem 0.75rem; border-radius: 12px; border: 1px solid rgba(13, 110, 253, 0.4); transition: all 0.2s; gap: 0.5rem;" onmouseover="this.style.background='rgba(13, 110, 253, 0.3)'; this.style.borderColor='rgba(13, 110, 253, 0.6)';" onmouseout="this.style.background='rgba(13, 110, 253, 0.2)'; this.style.borderColor='rgba(13, 110, 253, 0.4)';" title="Go to Workspace">
@@ -480,6 +480,12 @@
                                     </a>
                                 </li>
                                 {% endif %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.theory') }}">
+                                        <i class="bi bi-infinity"></i> CISK Theory
+                                    </a>
+                                </li>
                             </ul>
                         </li>
                         {# Beta Testing Menu - Only visible if beta is enabled AND user is a beta tester #}

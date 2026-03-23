@@ -1,0 +1,493 @@
+{% extends "base.html" %}
+{% block title %}CISK Theory{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Reset & Base ── */
+.theory-page { background: #030c1a; color: #e8edf5; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+.theory-page a { color: inherit; }
+
+/* ── Hero ── */
+.theory-hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, #0d2a52 0%, #030c1a 70%);
+    padding: 4rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+.theory-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231565c0' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.5;
+}
+.theory-hero-label {
+    font-size: 0.8rem; font-weight: 700; letter-spacing: 0.35em; text-transform: uppercase;
+    color: #4fc3f7; margin-bottom: 1.5rem; opacity: 0.9;
+}
+.theory-hero-title {
+    font-size: clamp(4rem, 12vw, 9rem); font-weight: 900; letter-spacing: -0.02em;
+    line-height: 1;
+    background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 40%, #42a5f5 70%, #1565c0 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 1rem;
+    animation: fadeUp 0.8s ease both;
+}
+.theory-hero-sub {
+    font-size: clamp(1rem, 2.5vw, 1.4rem); color: rgba(200,220,255,0.7);
+    font-weight: 300; letter-spacing: 0.05em; margin-bottom: 4rem;
+    animation: fadeUp 0.8s 0.15s ease both;
+}
+
+/* ── Operator Flow ── */
+.theory-flow {
+    display: flex; align-items: stretch; gap: 0; justify-content: center;
+    flex-wrap: wrap; gap: 0;
+    animation: fadeUp 0.8s 0.3s ease both;
+    position: relative; z-index: 1;
+}
+.flow-pillar {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 1.5rem 2rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(8px);
+    min-width: 140px;
+    transition: transform 0.2s, background 0.2s;
+    cursor: default;
+}
+.flow-pillar:hover { transform: translateY(-4px); background: rgba(255,255,255,0.08); }
+.flow-pillar.chal { border-color: rgba(30,136,229,0.4); }
+.flow-pillar.init { border-color: rgba(0,172,193,0.4); }
+.flow-pillar.syst { border-color: rgba(251,140,0,0.4); }
+.flow-pillar.kpis { border-color: rgba(142,36,170,0.4); }
+.flow-symbol {
+    font-size: 3.5rem; font-weight: 100; line-height: 1;
+    margin-bottom: 0.5rem;
+}
+.flow-pillar.chal .flow-symbol { color: #42a5f5; }
+.flow-pillar.init .flow-symbol { color: #26c6da; }
+.flow-pillar.syst .flow-symbol { color: #ffa726; }
+.flow-pillar.kpis .flow-symbol { color: #ab47bc; }
+.flow-name { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.9; margin-bottom: 0.25rem; }
+.flow-phase { font-size: 0.68rem; letter-spacing: 0.1em; opacity: 0.5; text-transform: uppercase; }
+.flow-operator {
+    display: flex; align-items: center; padding: 0 0.5rem;
+    font-size: 1.1rem; color: rgba(255,255,255,0.25); font-weight: 300;
+    align-self: center;
+}
+.flow-loop {
+    display: flex; align-items: center; padding: 0 0.5rem;
+    color: rgba(100,150,255,0.4); font-size: 0.8rem;
+    align-self: center; letter-spacing: 0.05em;
+}
+.flow-scroll-hint {
+    margin-top: 3rem; font-size: 0.75rem; color: rgba(255,255,255,0.25);
+    letter-spacing: 0.15em; text-transform: uppercase;
+    animation: bounce 2s infinite;
+}
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(6px)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Section wrapper ── */
+.theory-section {
+    max-width: 1400px; margin: 0 auto; padding: 5rem 2rem;
+}
+.theory-section-label {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.3em; text-transform: uppercase;
+    color: #4fc3f7; margin-bottom: 0.75rem;
+}
+.theory-section-title {
+    font-size: clamp(1.6rem, 3vw, 2.4rem); font-weight: 800; color: #e3f2fd;
+    margin-bottom: 3rem; line-height: 1.2;
+}
+
+/* ── Matrix ── */
+.theory-matrix { overflow-x: auto; }
+.matrix-grid {
+    display: grid; grid-template-columns: 160px repeat(4, 1fr);
+    min-width: 900px; border-radius: 16px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.07);
+}
+.matrix-cell {
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    font-size: 0.82rem; line-height: 1.6; color: rgba(220,235,255,0.8);
+    vertical-align: top;
+}
+.matrix-cell:last-child { border-right: none; }
+/* Column color tints */
+.col-chal { background: rgba(30,136,229,0.07); }
+.col-init { background: rgba(0,172,193,0.07); }
+.col-syst { background: rgba(251,140,0,0.07); }
+.col-kpis { background: rgba(142,36,170,0.07); }
+/* Header row */
+.matrix-header {
+    padding: 1.5rem; text-align: center; position: sticky; top: 0; z-index: 2;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+    border-right: 1px solid rgba(255,255,255,0.06);
+}
+.matrix-header:last-child { border-right: none; }
+.matrix-header.col-chal { background: rgba(13,50,115,0.95); }
+.matrix-header.col-init { background: rgba(0,80,100,0.95); }
+.matrix-header.col-syst { background: rgba(110,50,0,0.95); }
+.matrix-header.col-kpis { background: rgba(70,10,100,0.95); }
+.matrix-header-symbol { font-size: 2.2rem; font-weight: 100; line-height: 1; margin-bottom: 0.3rem; }
+.col-chal .matrix-header-symbol { color: #64b5f6; }
+.col-init .matrix-header-symbol { color: #4dd0e1; }
+.col-syst .matrix-header-symbol { color: #ffb74d; }
+.col-kpis .matrix-header-symbol { color: #ce93d8; }
+.matrix-header-name { font-size: 0.8rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.2rem; }
+.matrix-header-op { font-size: 0.65rem; opacity: 0.5; letter-spacing: 0.08em; }
+.matrix-header-phase { font-size: 0.65rem; opacity: 0.45; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.2rem; }
+/* Row label */
+.matrix-row-label {
+    padding: 1.25rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-right: 1px solid rgba(255,255,255,0.1);
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(160,185,220,0.7); vertical-align: middle;
+    display: flex; align-items: flex-start; padding-top: 1.5rem;
+}
+.matrix-corner {
+    background: rgba(255,255,255,0.01);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+/* Tags inside cells */
+.tag {
+    display: inline-block; padding: 0.15rem 0.5rem; border-radius: 20px;
+    font-size: 0.7rem; font-weight: 600; margin: 0.15rem 0.1rem;
+    background: rgba(255,255,255,0.08); color: rgba(220,235,255,0.9);
+}
+.tag-chal { background: rgba(30,136,229,0.2); color: #90caf9; }
+.tag-init { background: rgba(0,172,193,0.2); color: #80deea; }
+.tag-syst { background: rgba(251,140,0,0.2); color: #ffcc80; }
+.tag-kpis { background: rgba(142,36,170,0.2); color: #e1bee7; }
+/* Bullet list in cell */
+.cell-list { margin: 0; padding-left: 1.1rem; }
+.cell-list li { margin-bottom: 0.35rem; }
+.cell-list li:last-child { margin-bottom: 0; }
+/* Highlighted method name */
+.method-name { font-weight: 700; color: rgba(220,235,255,0.95); display: block; margin-bottom: 0.15rem; }
+
+/* ── Pillars Grid ── */
+.pillars-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;
+}
+.pillar-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 14px; padding: 1.75rem;
+    transition: transform 0.2s, background 0.2s;
+}
+.pillar-card:hover { transform: translateY(-3px); background: rgba(255,255,255,0.07); }
+.pillar-card-icon { font-size: 2rem; margin-bottom: 1rem; }
+.pillar-card-title { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #90caf9; margin-bottom: 0.75rem; }
+.pillar-card-body { font-size: 0.82rem; color: rgba(200,220,255,0.65); line-height: 1.7; }
+
+/* ── Divider ── */
+.theory-divider { border: none; border-top: 1px solid rgba(255,255,255,0.07); margin: 0; }
+
+/* ── CTA ── */
+.theory-cta {
+    text-align: center; padding: 5rem 2rem 6rem;
+    background: radial-gradient(ellipse 60% 80% at 50% 50%, rgba(21,101,192,0.15) 0%, transparent 70%);
+}
+.theory-cta-title { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 700; color: #e3f2fd; margin-bottom: 1rem; }
+.theory-cta-sub { color: rgba(200,220,255,0.5); margin-bottom: 2rem; font-size: 0.95rem; }
+.btn-theory { display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.9rem 2.2rem; border-radius: 50px; font-weight: 700; font-size: 0.95rem;
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: white; text-decoration: none; border: none;
+    box-shadow: 0 4px 20px rgba(21,101,192,0.4);
+    transition: all 0.2s;
+}
+.btn-theory:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(21,101,192,0.6); color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="theory-page">
+
+    <!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+    <section class="theory-hero">
+        <div class="theory-hero-label">Framework</div>
+        <div class="theory-hero-title">CISK Theory</div>
+        <div class="theory-hero-sub">A unified governance model from strategic intent to operational measurement</div>
+
+        <div class="theory-flow">
+            <div class="flow-pillar chal">
+                <div class="flow-symbol">∫</div>
+                <div class="flow-name">Challenge</div>
+                <div class="flow-phase">Strategic</div>
+            </div>
+            <div class="flow-operator">∫ : δ &nbsp;→</div>
+            <div class="flow-pillar init">
+                <div class="flow-symbol">δ</div>
+                <div class="flow-name">Initiative</div>
+                <div class="flow-phase">Tactic</div>
+            </div>
+            <div class="flow-operator">δ : Ф &nbsp;→</div>
+            <div class="flow-pillar syst">
+                <div class="flow-symbol">Ф</div>
+                <div class="flow-name">System</div>
+                <div class="flow-phase">Operational</div>
+            </div>
+            <div class="flow-operator">Ф : Ψ &nbsp;→</div>
+            <div class="flow-pillar kpis">
+                <div class="flow-symbol">Ψ</div>
+                <div class="flow-name">KPI</div>
+                <div class="flow-phase">Historic</div>
+            </div>
+            <div class="flow-loop">&nbsp;→ Ψ : ∫ &nbsp;↺</div>
+        </div>
+
+        <div class="flow-scroll-hint"><i class="bi bi-chevron-down"></i>&nbsp; scroll</div>
+    </section>
+
+    <!-- ═══════════════════════════ MATRIX ═══════════════════════════ -->
+    <section class="theory-section">
+        <div class="theory-section-label">Framework Matrix</div>
+        <div class="theory-section-title">Tools, Methods &amp; Technology by Phase</div>
+
+        <div class="theory-matrix">
+        <div class="matrix-grid">
+
+            <!-- ── Header row ── -->
+            <div class="matrix-cell matrix-corner" style="background:rgba(255,255,255,0.01);border-right:1px solid rgba(255,255,255,0.1);border-bottom:2px solid rgba(255,255,255,0.1);"></div>
+
+            <div class="matrix-header col-chal">
+                <div class="matrix-header-symbol">∫</div>
+                <div class="matrix-header-name">Challenge</div>
+                <div class="matrix-header-op">∫ : δ</div>
+                <div class="matrix-header-phase">Strategic</div>
+            </div>
+            <div class="matrix-header col-init">
+                <div class="matrix-header-symbol">δ</div>
+                <div class="matrix-header-name">Initiative</div>
+                <div class="matrix-header-op">δ : Ф</div>
+                <div class="matrix-header-phase">Tactic</div>
+            </div>
+            <div class="matrix-header col-syst">
+                <div class="matrix-header-symbol">Ф</div>
+                <div class="matrix-header-name">System</div>
+                <div class="matrix-header-op">Ф : Ψ</div>
+                <div class="matrix-header-phase">Operational</div>
+            </div>
+            <div class="matrix-header col-kpis">
+                <div class="matrix-header-symbol">Ψ</div>
+                <div class="matrix-header-name">KPI</div>
+                <div class="matrix-header-op">Ψ : ∫</div>
+                <div class="matrix-header-phase">Historic</div>
+            </div>
+
+            <!-- ── Row: Key Technology ── -->
+            <div class="matrix-row-label">Key<br>Technology</div>
+            <div class="matrix-cell col-chal">
+                <span class="tag tag-chal">Collaborative Platforms</span>
+            </div>
+            <div class="matrix-cell col-init">
+                <span class="tag tag-init">Modularity</span>
+                <span class="tag tag-init">Modeling &amp; Simulation</span>
+                <span class="tag tag-init">Quantic</span>
+            </div>
+            <div class="matrix-cell col-syst">
+                <span class="tag tag-syst">Real Time</span>
+                <span class="tag tag-syst">Robotics</span>
+            </div>
+            <div class="matrix-cell col-kpis">
+                <span class="tag tag-kpis">IoT</span>
+                <span class="tag tag-kpis">IA</span>
+            </div>
+
+            <!-- ── Row: Key Tools ── -->
+            <div class="matrix-row-label">Key<br>Tools</div>
+            <div class="matrix-cell col-chal">
+                <ul class="cell-list">
+                    <li>IA Competitive Analysis</li>
+                    <li>CISK Dashboard</li>
+                </ul>
+            </div>
+            <div class="matrix-cell col-init">
+                <ul class="cell-list">
+                    <li>Planning Apps</li>
+                    <li>Digital Twin</li>
+                    <li>Enterprise Modeling</li>
+                </ul>
+            </div>
+            <div class="matrix-cell col-syst">
+                <ul class="cell-list">
+                    <li>Execution Tools</li>
+                    <li>ERP &amp; MES</li>
+                    <li>Robotics</li>
+                </ul>
+            </div>
+            <div class="matrix-cell col-kpis">
+                <ul class="cell-list">
+                    <li>IoT &amp; 5G &amp; Cloud</li>
+                    <li>Ontologies</li>
+                    <li>Data Lakes</li>
+                    <li>Agentic IA</li>
+                </ul>
+            </div>
+
+            <!-- ── Row: Key Methodologies ── -->
+            <div class="matrix-row-label">Key<br>Methods</div>
+            <div class="matrix-cell col-chal">
+                <span class="method-name">Power Circles</span>
+                <ul class="cell-list">
+                    <li><b>WHY</b> — Mission</li>
+                    <li><b>WHO</b> — People, Roles, Lifetime</li>
+                    <li><b>HOW</b> — Plan</li>
+                    <li><b>WHAT</b> — Fixed Agenda</li>
+                    <li><b>WHERE</b> — Scope</li>
+                    <li><b>WHEN</b> — Routines &amp; Rituals</li>
+                    <li><b>HOWMUCH</b> — Metrics</li>
+                    <li><b>WHEREAS</b> — Analysis</li>
+                </ul>
+                <div style="margin-top:0.75rem;">
+                    <span class="tag tag-chal">Fuzzy Impact Maieutics</span>
+                    <span class="tag tag-chal">Monthly PRR</span>
+                    <span class="tag tag-chal">Quasi-decomposable orgs</span>
+                </div>
+            </div>
+            <div class="matrix-cell col-init">
+                <span class="method-name">Initiative Worksheet</span>
+                <ul class="cell-list">
+                    <li>Mission &amp; Key Success Factors</li>
+                    <li>Owner, Team, Rituals</li>
+                    <li>Deliverables, Steps &amp; KPIs</li>
+                </ul>
+                <span class="method-name" style="margin-top:0.75rem;">Effectuation</span>
+                <ul class="cell-list">
+                    <li>Start from what exists</li>
+                    <li>Work with motivated sponsors</li>
+                    <li>Turn surprises into assets</li>
+                    <li>Build the future rather than predict it</li>
+                </ul>
+            </div>
+            <div class="matrix-cell col-syst">
+                <ul class="cell-list">
+                    <li>Composability</li>
+                    <li>Interface Brokerage</li>
+                    <li>Apps Coalescence</li>
+                </ul>
+                <span class="method-name" style="margin-top:0.75rem;">Architecture Layers</span>
+                <ul class="cell-list">
+                    <li>Requirements</li>
+                    <li>Functional</li>
+                    <li>Logic (Controlled / Controlling)</li>
+                    <li>Physical (Digital Twin)</li>
+                </ul>
+            </div>
+            <div class="matrix-cell col-kpis">
+                <span class="method-name">KPI Classification</span>
+                <ul class="cell-list">
+                    <li><b>Runners</b> — stable, recurring</li>
+                    <li><b>Repeaters</b> — periodic</li>
+                    <li><b>Strangers</b> — exceptional</li>
+                </ul>
+                <span class="method-name" style="margin-top:0.75rem;">KPI Dashboard</span>
+                <ul class="cell-list">
+                    <li>URLs to Legacy systems</li>
+                    <li>History IA Mining</li>
+                    <li>RETEX</li>
+                    <li>Story &amp; Narrative Buildup</li>
+                </ul>
+            </div>
+
+            <!-- ── Row: Japanese Methodologies ── -->
+            <div class="matrix-row-label">Japanese<br>Methods</div>
+            <div class="matrix-cell col-chal" style="border-bottom:none;">
+                <span class="tag tag-chal">KAIZEN</span>
+                <span class="tag tag-chal">Quality Circles</span>
+                <span class="tag tag-chal">Pareto</span>
+                <span class="tag tag-chal">QFD</span>
+                <span class="tag tag-chal">Affinity Diagrams</span>
+            </div>
+            <div class="matrix-cell col-init" style="border-bottom:none;">
+                <span class="tag tag-init">DMU</span>
+                <span class="tag tag-init">Set-based Enterprise Modeling</span>
+                <span class="tag tag-init">FMEA</span>
+            </div>
+            <div class="matrix-cell col-syst" style="border-bottom:none;">
+                <span class="tag tag-syst">LEAN</span>
+                <span class="tag tag-syst">MUDA</span>
+                <span class="tag tag-syst">5S</span>
+                <span class="tag tag-syst">JIT &amp; Kanban</span>
+                <span class="tag tag-syst">SMED</span>
+            </div>
+            <div class="matrix-cell col-kpis" style="border-bottom:none;">
+                <span class="tag tag-kpis">RCA &amp; Ishikawa</span>
+                <span class="tag tag-kpis">6 Sigma</span>
+                <span class="tag tag-kpis">ABC Analysis</span>
+            </div>
+
+        </div><!-- /matrix-grid -->
+        </div><!-- /theory-matrix -->
+    </section>
+
+    <hr class="theory-divider">
+
+    <!-- ═══════════════════════════ PILLARS ═══════════════════════════ -->
+    <section class="theory-section" style="padding-top:4rem;">
+        <div class="theory-section-label">Supporting Dimensions</div>
+        <div class="theory-section-title">The Foundations of CISK</div>
+
+        <div class="pillars-grid">
+            <div class="pillar-card">
+                <div class="pillar-card-icon">🧭</div>
+                <div class="pillar-card-title">8W (Bachman+)</div>
+                <div class="pillar-card-body">
+                    The 8W model extends the classic 5W framework — <b>Why, Who, How, What, Where, When, HowMuch, Whereas</b> — to define a complete governance rhythm through Power Circles and structured routines.
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-card-icon">🧠</div>
+                <div class="pillar-card-title">Cognitive</div>
+                <div class="pillar-card-body">
+                    CISK is built around human cognition — sense-making under ambiguity, distributed decision-making, and the maieutic facilitation of collective intelligence across organizational layers.
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-card-icon">🎯</div>
+                <div class="pillar-card-title">Mission</div>
+                <div class="pillar-card-body">
+                    Every CISK entity — from a Challenge down to a KPI — is anchored to a mission statement that answers <em>why</em> it exists, ensuring strategic coherence across all operational levels.
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-card-icon">📐</div>
+                <div class="pillar-card-title">Dimensions</div>
+                <div class="pillar-card-body">
+                    The framework operates across four strategic dimensions: <b>Strategic, Tactic, Operational, Historic</b> — each mapped to a CISK operator and governed by its own cadence and toolset.
+                </div>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-card-icon">🌍</div>
+                <div class="pillar-card-title">Anthropology</div>
+                <div class="pillar-card-body">
+                    Organizations are treated as social systems — tressées (braided) quasi-decomposable structures where culture, trust, and shared rituals are as critical as processes and technology.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="theory-divider">
+
+    <!-- ═══════════════════════════ CTA ═══════════════════════════ -->
+    <div class="theory-cta">
+        <div class="theory-cta-title">Ready to navigate your organization?</div>
+        <div class="theory-cta-sub">Apply the CISK framework to your strategic challenges</div>
+        <a href="{{ url_for('workspace.index') }}" class="btn-theory">
+            <i class="bi bi-grid-3x3-gap-fill"></i> Open Workspace
+        </a>
+    </div>
+
+</div><!-- /theory-page -->
+{% endblock %}
