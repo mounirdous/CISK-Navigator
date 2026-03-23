@@ -2397,29 +2397,29 @@
                                             </template>
                                             <template x-if="vt.kind === 'risk'">
                                                 <span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">!</span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">!!</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">!<span style="opacity:0.2">!!</span></span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">!!<span style="opacity:0.2">!</span></span>
                                                     <span x-show="space.rollup_values[String(vt.id)].value == 3">!!!</span>
                                                 </span>
                                             </template>
                                             <template x-if="vt.kind === 'positive_impact'">
                                                 <span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">★</span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">★★</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">★<span style="opacity:0.2">★★</span></span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">★★<span style="opacity:0.2">★</span></span>
                                                     <span x-show="space.rollup_values[String(vt.id)].value == 3">★★★</span>
                                                 </span>
                                             </template>
                                             <template x-if="vt.kind === 'negative_impact'">
                                                 <span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">▼</span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">▼▼</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">▼<span style="opacity:0.2">▼▼</span></span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">▼▼<span style="opacity:0.2">▼</span></span>
                                                     <span x-show="space.rollup_values[String(vt.id)].value == 3">▼▼▼</span>
                                                 </span>
                                             </template>
                                             <template x-if="vt.kind === 'level'">
                                                 <span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">●</span>
-                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">●●</span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span>
+                                                    <span x-show="space.rollup_values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span>
                                                     <span x-show="space.rollup_values[String(vt.id)].value == 3">●●●</span>
                                                 </span>
                                             </template>
@@ -2543,10 +2543,10 @@
                                                             <span x-show="vt.unit_label" class="ms-1" x-text="vt.unit_label"></span>
                                                         </span>
                                                     </template>
-                                                    <template x-if="vt.kind === 'risk'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">!!</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">!!!</span></span></template>
-                                                    <template x-if="vt.kind === 'positive_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">★★</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">★★★</span></span></template>
-                                                    <template x-if="vt.kind === 'negative_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">▼▼</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">▼▼▼</span></span></template>
-                                                    <template x-if="vt.kind === 'level'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">●●</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">●●●</span></span></template>
+                                                    <template x-if="vt.kind === 'risk'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">!<span style="opacity:0.2">!!</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">!!<span style="opacity:0.2">!</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">!!!</span></span></template>
+                                                    <template x-if="vt.kind === 'positive_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">★<span style="opacity:0.2">★★</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">★★<span style="opacity:0.2">★</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">★★★</span></span></template>
+                                                    <template x-if="vt.kind === 'negative_impact'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">▼<span style="opacity:0.2">▼▼</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">▼▼<span style="opacity:0.2">▼</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">▼▼▼</span></span></template>
+                                                    <template x-if="vt.kind === 'level'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">●●●</span></span></template>
                                                     <template x-if="vt.kind === 'sentiment'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">☹️</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">😐</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">😊</span></span></template>
                                                     <template x-if="vt.kind === 'list'"><span :style="'background: ' + (challenge.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="challenge.rollup_values[String(vt.id)].list_label || challenge.rollup_values[String(vt.id)].value"></span></template>
                                                     <small class="ms-1" x-show="showBadges"
@@ -2677,29 +2677,29 @@
                                                             </template>
                                                             <template x-if="vt.kind === 'risk'">
                                                                 <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">!</span>
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">!!</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">!<span style="opacity:0.2">!!</span></span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">!!<span style="opacity:0.2">!</span></span>
                                                                     <span x-show="initiative.rollup_values[String(vt.id)].value == 3">!!!</span>
                                                                 </span>
                                                             </template>
                                                             <template x-if="vt.kind === 'positive_impact'">
                                                                 <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">★</span>
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">★★</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">★<span style="opacity:0.2">★★</span></span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">★★<span style="opacity:0.2">★</span></span>
                                                                     <span x-show="initiative.rollup_values[String(vt.id)].value == 3">★★★</span>
                                                                 </span>
                                                             </template>
                                                             <template x-if="vt.kind === 'negative_impact'">
                                                                 <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">▼</span>
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">▼▼</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">▼<span style="opacity:0.2">▼▼</span></span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">▼▼<span style="opacity:0.2">▼</span></span>
                                                                     <span x-show="initiative.rollup_values[String(vt.id)].value == 3">▼▼▼</span>
                                                                 </span>
                                                             </template>
                                                             <template x-if="vt.kind === 'level'">
                                                                 <span :style="'color: ' + (initiative.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">●</span>
-                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">●●</span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span>
+                                                                    <span x-show="initiative.rollup_values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span>
                                                                     <span x-show="initiative.rollup_values[String(vt.id)].value == 3">●●●</span>
                                                                 </span>
                                                             </template>
@@ -2818,29 +2818,29 @@
                                                                     </template>
                                                                     <template x-if="vt.kind === 'risk'">
                                                                         <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">!</span>
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">!!</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">!<span style="opacity:0.2">!!</span></span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">!!<span style="opacity:0.2">!</span></span>
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 3">!!!</span>
                                                                         </span>
                                                                     </template>
                                                                     <template x-if="vt.kind === 'positive_impact'">
                                                                         <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">★</span>
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">★★</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">★<span style="opacity:0.2">★★</span></span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">★★<span style="opacity:0.2">★</span></span>
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 3">★★★</span>
                                                                         </span>
                                                                     </template>
                                                                     <template x-if="vt.kind === 'negative_impact'">
                                                                         <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">▼</span>
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">▼▼</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">▼<span style="opacity:0.2">▼▼</span></span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">▼▼<span style="opacity:0.2">▼</span></span>
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 3">▼▼▼</span>
                                                                         </span>
                                                                     </template>
                                                                     <template x-if="vt.kind === 'level'">
                                                                         <span :style="'color: ' + (system.rollup_values[String(vt.id)].color || '#6c757d')">
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">●</span>
-                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">●●</span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span>
+                                                                            <span x-show="system.rollup_values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span>
                                                                             <span x-show="system.rollup_values[String(vt.id)].value == 3">●●●</span>
                                                                         </span>
                                                                     </template>
@@ -3026,8 +3026,8 @@
                                                                                     <!-- Risk values -->
                                                                                     <template x-if="vt.kind === 'risk'">
                                                                                         <strong>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">!</span>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">!!</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">!<span style="opacity:0.2">!!</span></span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">!!<span style="opacity:0.2">!</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">!!!</span>
                                                                                             <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
@@ -3043,8 +3043,8 @@
                                                                                     <!-- Positive Impact values -->
                                                                                     <template x-if="vt.kind === 'positive_impact'">
                                                                                         <strong>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">★</span>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">★★</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">★<span style="opacity:0.2">★★</span></span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">★★<span style="opacity:0.2">★</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">★★★</span>
                                                                                             <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
@@ -3060,8 +3060,8 @@
                                                                                     <!-- Negative Impact values -->
                                                                                     <template x-if="vt.kind === 'negative_impact'">
                                                                                         <strong>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">▼</span>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">▼▼</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">▼<span style="opacity:0.2">▼▼</span></span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">▼▼<span style="opacity:0.2">▼</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">▼▼▼</span>
                                                                                             <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
@@ -3077,8 +3077,8 @@
                                                                                     <!-- Level values -->
                                                                                     <template x-if="vt.kind === 'level'">
                                                                                         <strong>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">●</span>
-                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">●●</span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span>
+                                                                                            <span x-show="kpi.values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">●●●</span>
                                                                                             <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"

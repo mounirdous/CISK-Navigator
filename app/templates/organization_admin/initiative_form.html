@@ -1302,13 +1302,13 @@
                                         {% if vt.formatted_value == '' %}
                                             <span style="color: #adb5bd;">—</span>
                                         {% elif vt.kind == 'risk' %}
-                                            <strong style="color: {{ vt.color or '#dc3545' }};">{% for i in range(vt.value|int) %}!{% endfor %}</strong>
+                                            <strong style="color: {{ vt.color or '#dc3545' }};">{% if vt.value|int == 1 %}!<span style="opacity:0.2">!!</span>{% elif vt.value|int == 2 %}!!<span style="opacity:0.2">!</span>{% elif vt.value|int == 3 %}!!!{% endif %}</strong>
                                         {% elif vt.kind == 'positive_impact' %}
-                                            <strong style="color: {{ vt.color or '#198754' }};">{% for i in range(vt.value|int) %}★{% endfor %}</strong>
+                                            <strong style="color: {{ vt.color or '#198754' }};">{% if vt.value|int == 1 %}★<span style="opacity:0.2">★★</span>{% elif vt.value|int == 2 %}★★<span style="opacity:0.2">★</span>{% elif vt.value|int == 3 %}★★★{% endif %}</strong>
                                         {% elif vt.kind == 'negative_impact' %}
-                                            <strong style="color: {{ vt.color or '#dc3545' }};">{% for i in range(vt.value|int) %}▼{% endfor %}</strong>
+                                            <strong style="color: {{ vt.color or '#dc3545' }};">{% if vt.value|int == 1 %}▼<span style="opacity:0.2">▼▼</span>{% elif vt.value|int == 2 %}▼▼<span style="opacity:0.2">▼</span>{% elif vt.value|int == 3 %}▼▼▼{% endif %}</strong>
                                         {% elif vt.kind == 'level' %}
-                                            <strong style="color: {{ vt.color or '#0d6efd' }};">{% for i in range(vt.value|int) %}●{% endfor %}</strong>
+                                            <strong style="color: {{ vt.color or '#0d6efd' }};">{% if vt.value|int == 1 %}●<span style="opacity:0.2">●●</span>{% elif vt.value|int == 2 %}●●<span style="opacity:0.2">●</span>{% elif vt.value|int == 3 %}●●●{% endif %}</strong>
                                         {% elif vt.kind == 'sentiment' %}
                                             <strong>{% if vt.value == 1 %}☹️{% elif vt.value == 2 %}😐{% elif vt.value == 3 %}😊{% endif %}</strong>
                                         {% elif vt.kind == 'list' %}
@@ -1469,13 +1469,13 @@
                                         {% if not vt.formatted_value or vt.formatted_value == '' %}
                                             <span style="color:#adb5bd">—</span>
                                         {% elif vt.kind == 'risk' %}
-                                            <strong style="color:{{ vt.color or '#dc3545' }};">{% for i in range(vt.value|int) %}!{% endfor %}</strong>
+                                            <strong style="color:{{ vt.color or '#dc3545' }};">{% if vt.value|int == 1 %}!<span style="opacity:0.2">!!</span>{% elif vt.value|int == 2 %}!!<span style="opacity:0.2">!</span>{% elif vt.value|int == 3 %}!!!{% endif %}</strong>
                                         {% elif vt.kind == 'positive_impact' %}
-                                            <strong style="color:{{ vt.color or '#198754' }};">{% for i in range(vt.value|int) %}★{% endfor %}</strong>
+                                            <strong style="color:{{ vt.color or '#198754' }};">{% if vt.value|int == 1 %}★<span style="opacity:0.2">★★</span>{% elif vt.value|int == 2 %}★★<span style="opacity:0.2">★</span>{% elif vt.value|int == 3 %}★★★{% endif %}</strong>
                                         {% elif vt.kind == 'negative_impact' %}
-                                            <strong style="color:{{ vt.color or '#dc3545' }};">{% for i in range(vt.value|int) %}▼{% endfor %}</strong>
+                                            <strong style="color:{{ vt.color or '#dc3545' }};">{% if vt.value|int == 1 %}▼<span style="opacity:0.2">▼▼</span>{% elif vt.value|int == 2 %}▼▼<span style="opacity:0.2">▼</span>{% elif vt.value|int == 3 %}▼▼▼{% endif %}</strong>
                                         {% elif vt.kind == 'level' %}
-                                            <strong style="color:{{ vt.color or '#0d6efd' }};">{% for i in range(vt.value|int) %}●{% endfor %}</strong>
+                                            <strong style="color:{{ vt.color or '#0d6efd' }};">{% if vt.value|int == 1 %}●<span style="opacity:0.2">●●</span>{% elif vt.value|int == 2 %}●●<span style="opacity:0.2">●</span>{% elif vt.value|int == 3 %}●●●{% endif %}</strong>
                                         {% elif vt.kind == 'sentiment' %}
                                             <strong>{% if vt.value == 1 %}☹️{% elif vt.value == 2 %}😐{% elif vt.value == 3 %}😊{% endif %}</strong>
                                         {% elif vt.kind == 'list' %}
