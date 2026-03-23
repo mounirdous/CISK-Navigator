@@ -331,6 +331,17 @@
             </a>
             {% endif %}
 
+            <!-- Start Initiatives Review -->
+            {% if review_initiative_ids %}
+            <button type="button" class="btn btn-light btn-sm fw-semibold"
+                    onclick="startInitiativesReview()"
+                    title="Open Execution Review Navigator for all {{ review_initiative_ids|length }} initiative(s) in the current view">
+                <i class="bi bi-play-circle me-1"></i>
+                Start Initiatives Review
+                <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ review_initiative_ids|length }}</span>
+            </button>
+            {% endif %}
+
             <!-- Filters toggle -->
             <button type="button" id="filters-toggle-btn" class="btn btn-outline-light btn-sm collapsed"
                     title="Show/hide filters & stats"
@@ -1499,7 +1510,7 @@ function buildEntityGroups(itemGroupMap) {
     // ── No mention ──
     const noneCount = itemGroupMap['__none'] || 0;
     if (noneCount > 0) {
-        groups.push({ id: '__none', content: grpLabel('— No entity link', noneCount, '#90a4ae', '') });
+        groups.push({ id: '__none', content: grpLabel('Not linked to any entity', noneCount, '#90a4ae', '') });
     }
 
     return groups;
@@ -2049,5 +2060,16 @@ window.submitBulkStartDates = async function() {
         alert('No items were updated. Check permissions.');
     }
 };
+
+// ── Initiatives Review Navigator ──────────────────────────────────────────
+const REVIEW_INITIATIVES = {{ review_initiative_ids | tojson }};
+function startInitiativesReview() {
+    if (!REVIEW_INITIATIVES.length) return;
+    const ids = REVIEW_INITIATIVES.map(i => i.id);
+    const firstId = ids[0];
+    const navParam = ids.join(',');
+    const back = encodeURIComponent(window.location.href);
+    window.location.href = `/org-admin/initiatives/${firstId}/form?tab=execution&nav=${navParam}&nav_pos=0&nav_back=${back}`;
+}
 </script>
 {% endblock %}

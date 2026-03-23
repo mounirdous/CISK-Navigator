@@ -220,6 +220,12 @@ def index():
     # keep backward-compat alias
     initiative_challenge_map = {str(init_id): ch for init_id, ch in _init_challenge.items()}
 
+    # Ordered initiative list for "Start Initiatives Review" button (sorted by name)
+    review_initiative_ids = sorted(
+        [{"id": iid, "name": _initiative_names.get(iid, f"#{iid}")} for iid in all_initiative_ids],
+        key=lambda x: x["name"].lower()
+    )
+
     # Serialize items — include entity_id in mentions so JS can look up the challenge map
     timeline_items = []
     for item in items:
@@ -264,6 +270,7 @@ def index():
         initiative_challenge_map=initiative_challenge_map,
         entity_parents=entity_parents,
         action_presets=[p.to_dict() for p in action_presets],
+        review_initiative_ids=review_initiative_ids,
         csrf_token=generate_csrf,
     )
 

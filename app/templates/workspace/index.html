@@ -1811,7 +1811,7 @@
                     style="background: linear-gradient(135deg, #1565C0, #0d47a1); color: white; font-weight: 600; border: none; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem;"
                     :title="`Start execution review of ${reviewCount} initiatives`">
                 <i class="bi bi-play-circle-fill"></i>
-                <span>Start Review</span>
+                <span>Start Initiatives Review</span>
                 <span x-text="`(${reviewCount})`" style="opacity:0.85;"></span>
             </button>
             <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
@@ -4793,7 +4793,8 @@ function workspaceV2(orgId, filterPresets) {
             const ids = this.getNavInitiativeIds();
             if (!ids.length) return;
             const base = `{{ url_for('organization_admin.initiative_form', initiative_id=0) }}`.replace('0', ids[0]);
-            window.location.href = `${base}?tab=execution&nav=${ids.join(',')}&nav_pos=0`;
+            const back = encodeURIComponent(window.location.href);
+            window.location.href = `${base}?tab=execution&nav=${ids.join(',')}&nav_pos=0&nav_back=${back}`;
         },
 
         async deleteKPI(kpi) {

@@ -3712,6 +3712,8 @@ def initiative_form(initiative_id):
     nav_context = None
     nav_param = request.args.get("nav", "")
     nav_pos_arg = request.args.get("nav_pos", 0, type=int)
+    nav_back = request.args.get("nav_back", "")
+    nav_tab = request.args.get("nav_tab", "execution")
     if nav_param:
         try:
             nav_ids = [int(x) for x in nav_param.split(",") if x.strip().isdigit()]
@@ -3756,8 +3758,15 @@ def initiative_form(initiative_id):
             prev_id = nav_ids[prev_pos] if prev_pos >= 0 else None
             next_id = nav_ids[next_pos] if next_pos < len(nav_ids) else None
 
+            # In review mode, active tab is driven by nav_tab preference
+            active_tab = nav_tab if nav_tab in ("form", "execution") else "execution"
+
+            from urllib.parse import quote as _urlquote
             nav_context = {
                 "nav_param": nav_param,
+                "nav_back": nav_back,
+                "nav_back_enc": _urlquote(nav_back, safe="") if nav_back else "",
+                "nav_tab": nav_tab,
                 "pos": nav_pos_arg,
                 "total": len(nav_ids),
                 "prev_id": prev_id,
@@ -3827,6 +3836,12 @@ def initiative_progress_update_create(initiative_id):
         redirect_kwargs["nav"] = nav
     if nav_pos:
         redirect_kwargs["nav_pos"] = nav_pos
+    nav_back = request.form.get("nav_back", "")
+    if nav_back:
+        redirect_kwargs["nav_back"] = nav_back
+    nav_tab = request.form.get("nav_tab", "")
+    if nav_tab:
+        redirect_kwargs["nav_tab"] = nav_tab
     return redirect(url_for("organization_admin.initiative_form", **redirect_kwargs))
 
 
@@ -3865,6 +3880,12 @@ def initiative_progress_update_edit(initiative_id, update_id):
         redirect_kwargs["nav"] = nav
     if nav_pos:
         redirect_kwargs["nav_pos"] = nav_pos
+    nav_back = request.form.get("nav_back", "")
+    if nav_back:
+        redirect_kwargs["nav_back"] = nav_back
+    nav_tab = request.form.get("nav_tab", "")
+    if nav_tab:
+        redirect_kwargs["nav_tab"] = nav_tab
     return redirect(url_for("organization_admin.initiative_form", **redirect_kwargs))
 
 
@@ -3891,6 +3912,12 @@ def initiative_progress_update_delete(initiative_id, update_id):
         redirect_kwargs["nav"] = nav
     if nav_pos:
         redirect_kwargs["nav_pos"] = nav_pos
+    nav_back = request.form.get("nav_back", "")
+    if nav_back:
+        redirect_kwargs["nav_back"] = nav_back
+    nav_tab = request.form.get("nav_tab", "")
+    if nav_tab:
+        redirect_kwargs["nav_tab"] = nav_tab
     return redirect(url_for("organization_admin.initiative_form", **redirect_kwargs))
 
 

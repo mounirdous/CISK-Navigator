@@ -714,6 +714,10 @@
         transition: all 0.15s;
     }
     .review-nav-exit:hover { background: rgba(255,255,255,0.15); color: white; }
+    .review-nav-tab-toggle { display:inline-flex; border:1.5px solid rgba(255,255,255,0.3); border-radius:20px; overflow:hidden; flex-shrink:0; }
+    .review-nav-tab-toggle button { padding:0.15rem 0.65rem; border:none; background:transparent; color:rgba(255,255,255,0.6); font-size:0.75rem; font-weight:600; cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .review-nav-tab-toggle button.active { background:rgba(255,255,255,0.22); color:white; }
+    .review-nav-tab-toggle button:hover:not(.active) { background:rgba(255,255,255,0.1); color:rgba(255,255,255,0.9); }
 </style>
 {% endblock %}
 
@@ -743,7 +747,9 @@
                     <i class="bi bi-check-circle"></i> Save
                 </button>
                 {% endif %}
-                {% if request.args.get('return_to') == 'action_items' %}
+                {% if nav_context %}
+                {# Exit button in the nav bar handles navigation back — no duplicate needed #}
+                {% elif request.args.get('return_to') == 'action_items' %}
                 <a href="{{ url_for('action_items') }}" class="btn btn-outline-light">
                     <i class="bi bi-arrow-left"></i> Back to Action Items
                 </a>
@@ -759,7 +765,7 @@
         <div class="review-nav-bar">
             {% if nav_context.prev_id %}
             <a class="review-nav-prev"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
                title="{{ nav_context.prev_name }}">
                 <i class="bi bi-chevron-left"></i> {{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name and nav_context.prev_name|length > 22 %}…{% endif %}
             </a>
@@ -774,7 +780,7 @@
                 <div class="review-nav-dots">
                     {% for dot in nav_context.dots %}
                     <a class="review-nav-dot rag-{{ dot.rag }} {% if loop.index0 == nav_context.pos %}current{% endif %}"
-                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}"
+                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
                        title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}"></a>
                     {% endfor %}
                 </div>
@@ -783,7 +789,7 @@
 
             {% if nav_context.next_id %}
             <a class="review-nav-next"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
                title="{{ nav_context.next_name }}">
                 {{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name and nav_context.next_name|length > 22 %}…{% endif %} <i class="bi bi-chevron-right"></i>
             </a>
@@ -791,24 +797,61 @@
             <span class="review-nav-next disabled">End <i class="bi bi-chevron-right"></i></span>
             {% endif %}
 
-            <a href="{{ url_for('workspace.index') }}" class="review-nav-exit">
+            <div class="review-nav-tab-toggle" id="nav-tab-toggle" data-tab="{{ nav_context.nav_tab }}">
+                <button onclick="setReviewTab('form')" id="nav-tab-btn-form" class="{{ 'active' if nav_context.nav_tab == 'form' else '' }}">
+                    <i class="bi bi-file-text"></i> Definition
+                </button>
+                <button onclick="setReviewTab('execution')" id="nav-tab-btn-execution" class="{{ 'active' if nav_context.nav_tab == 'execution' else '' }}">
+                    <i class="bi bi-activity"></i> Execution
+                </button>
+            </div>
+
+            <a href="{{ nav_context.nav_back if nav_context.nav_back else url_for('workspace.index') }}" class="review-nav-exit">
                 <i class="bi bi-x-lg"></i> Exit
             </a>
         </div>
 
         <script>
+        const NAV_DOTS = {{ nav_context.dots | tojson }};
+        const NAV_TEMPLATE = "{{ url_for('organization_admin.initiative_form', initiative_id=0) }}";
+        const NAV_PARAM = "{{ nav_context.nav_param }}";
+        const NAV_BACK_QS = {{ (('&nav_back=' ~ nav_context.nav_back_enc) if nav_context.nav_back_enc else '') | tojson }};
+        const CUR_POS = {{ nav_context.pos }};
+
+        function navToPos(pos) {
+            if (pos < 0 || pos >= NAV_DOTS.length) return;
+            const dot = NAV_DOTS[pos];
+            const nt = document.getElementById('nav-tab-toggle')?.dataset.tab || '{{ nav_context.nav_tab }}';
+            const base = NAV_TEMPLATE.replace('0', dot.id);
+            window.location.href = base + '?tab=' + nt + '&nav=' + NAV_PARAM + '&nav_pos=' + pos + '&nav_tab=' + nt + NAV_BACK_QS;
+        }
+
+        function findNonGreen(fromPos, direction) {
+            let pos = fromPos + direction;
+            while (pos >= 0 && pos < NAV_DOTS.length) {
+                if (NAV_DOTS[pos].rag !== 'green') return pos;
+                pos += direction;
+            }
+            return -1;
+        }
+
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
-            {% if nav_context.prev_id %}
             if (e.key === 'ArrowLeft') {
-                window.location.href = "{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}";
+                if (e.shiftKey) {
+                    const pos = findNonGreen(CUR_POS, -1);
+                    if (pos >= 0) navToPos(pos);
+                } else {
+                    {% if nav_context.prev_id %}navToPos({{ nav_context.pos - 1 }});{% endif %}
+                }
+            } else if (e.key === 'ArrowRight') {
+                if (e.shiftKey) {
+                    const pos = findNonGreen(CUR_POS, 1);
+                    if (pos >= 0) navToPos(pos);
+                } else {
+                    {% if nav_context.next_id %}navToPos({{ nav_context.pos + 1 }});{% endif %}
+                }
             }
-            {% endif %}
-            {% if nav_context.next_id %}
-            if (e.key === 'ArrowRight') {
-                window.location.href = "{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab=execution&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}";
-            }
-            {% endif %}
         });
         </script>
         {% endif %}
@@ -1542,6 +1585,8 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
                                 <input type="hidden" name="nav" value="{{ request.args.get('nav', '') }}">
                                 <input type="hidden" name="nav_pos" value="{{ request.args.get('nav_pos', '') }}">
+                                <input type="hidden" name="nav_back" value="{{ request.args.get('nav_back', '') }}">
+                                <input type="hidden" name="nav_tab" value="{{ request.args.get('nav_tab', 'execution') }}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -1576,7 +1621,9 @@
                     <i class="bi bi-pencil"></i> Edit Initiative Form
                 </a>
                 {% endif %}
-                {% if request.args.get('return_to') == 'action_items' %}
+                {% if nav_context %}
+                {# Exit button in the nav bar handles navigation back — no duplicate needed #}
+                {% elif request.args.get('return_to') == 'action_items' %}
                 <a href="{{ url_for('action_items') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Action Items
                 </a>
@@ -1604,6 +1651,8 @@
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
                 <input type="hidden" name="nav" id="progressFormNav" value="{{ request.args.get('nav', '') }}">
                 <input type="hidden" name="nav_pos" id="progressFormNavPos" value="{{ request.args.get('nav_pos', '') }}">
+                <input type="hidden" name="nav_back" id="progressFormNavBack" value="{{ request.args.get('nav_back', '') }}">
+                <input type="hidden" name="nav_tab" id="progressFormNavTab" value="{{ request.args.get('nav_tab', 'execution') }}">
                 <div class="modal-body" style="padding:1.75rem;">
                     <div class="mb-4">
                         <label class="form-label fw-bold mb-2">Execution Status <span class="text-danger">*</span></label>
@@ -1676,6 +1725,8 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
     const urlParams = new URLSearchParams(window.location.search);
     document.getElementById('progressFormNav').value = urlParams.get('nav') || '';
     document.getElementById('progressFormNavPos').value = urlParams.get('nav_pos') || '';
+    document.getElementById('progressFormNavBack').value = urlParams.get('nav_back') || '';
+    document.getElementById('progressFormNavTab').value = urlParams.get('nav_tab') || 'execution';
     // Reset
     form.querySelectorAll('input[name="rag_status"]').forEach(r => r.checked = false);
     document.getElementById('modalAccomplishments').value = '';
@@ -1697,6 +1748,32 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
         form.action = PROGRESS_CREATE_URL;
     }
     new bootstrap.Modal(document.getElementById('progressUpdateModal')).show();
+}
+
+function setReviewTab(tab) {
+    // Switch the visible tab
+    switchTab(tab);
+    // Update the toggle button states
+    const toggle = document.getElementById('nav-tab-toggle');
+    if (toggle) {
+        toggle.dataset.tab = tab;
+        document.getElementById('nav-tab-btn-form').classList.toggle('active', tab === 'form');
+        document.getElementById('nav-tab-btn-execution').classList.toggle('active', tab === 'execution');
+    }
+    // Update nav_tab in all nav bar links so next navigation carries the preference
+    document.querySelectorAll('.review-nav-bar a[href]').forEach(a => {
+        try {
+            const u = new URL(a.href, window.location.origin);
+            u.searchParams.set('nav_tab', tab);
+            u.searchParams.set('tab', tab);
+            a.href = u.pathname + u.search;
+        } catch(e) {}
+    });
+    // Also update the current URL so the progress update form picks it up
+    const url = new URL(window.location.href);
+    url.searchParams.set('nav_tab', tab);
+    url.searchParams.set('tab', tab);
+    window.history.replaceState({}, '', url.toString());
 }
 
 function toggleAddLinkForm() {
