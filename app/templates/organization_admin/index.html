@@ -81,9 +81,6 @@
                 <a href="{{ url_for('organization_admin.branding_manager') }}" class="btn btn-primary">
                     <i class="bi bi-palette"></i> Open Branding Manager
                 </a>
-                <a href="{{ url_for('organization_admin.organization_settings') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-gear"></i> Basic Settings
-                </a>
             </div>
         </div>
     </div>
@@ -148,18 +145,18 @@
 
     <div class="col-lg-6">
         <div class="admin-card">
-            <div class="admin-card-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                <i class="bi bi-diagram-3-fill" style="color: white;"></i>
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
+                <i class="bi bi-link-45deg" style="color: white;"></i>
             </div>
             <div class="admin-card-title">
-                <i class="bi bi-diagram-3"></i> Structure Management
+                <i class="bi bi-link-45deg"></i> Organization Links
             </div>
             <div class="admin-card-desc">
-                Manage your organizational structure: Spaces, Challenges, Initiatives, Systems, KPIs, and Value Types.
+                Manage links at the organization level. These appear as chips at the top of the workspace tree and are visible to all members.
             </div>
             <div class="admin-card-actions">
-                <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-primary">
-                    <i class="bi bi-diagram-3-fill"></i> Manage Structure
+                <a href="{{ url_for('organization_admin.organization_links') }}" class="btn btn-primary">
+                    <i class="bi bi-link-45deg"></i> Manage Links
                 </a>
                 <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-tags"></i> Value Types

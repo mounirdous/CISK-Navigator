@@ -4297,6 +4297,25 @@ def get_data():
         {"value": "no_consensus", "label": "No Consensus"},
     ]
 
+    # Org-level entity links (direct)
+    org_entity_links = get_entity_links("organization", org_id)
+
+    # Org inherited = all unique links from every space + their inherited children
+    _org_inh_map = {}
+    for sd in spaces_data:
+        for lnk in sd["entity_links"]:
+            label = f"Space: {sd['name']}"
+            if lnk["url"] in _org_inh_map:
+                _org_inh_map[lnk["url"]]["from_sources"].append(label)
+            else:
+                _org_inh_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
+        for lnk in sd["inherited_links"]:
+            if lnk["url"] in _org_inh_map:
+                _org_inh_map[lnk["url"]]["from_sources"].extend(lnk.get("from_sources", [lnk.get("from_label", "")]))
+            else:
+                _org_inh_map[lnk["url"]] = {**lnk}
+    org_inherited_links = list(_org_inh_map.values())
+
     return jsonify(
         {
             "spaces": spaces_data,
@@ -4304,6 +4323,8 @@ def get_data():
             "governanceBodies": governance_bodies_data,
             "groups": groups_data,
             "impactLevels": impact_levels_data,
+            "orgEntityLinks": org_entity_links,
+            "orgInheritedLinks": org_inherited_links,
         }
     )
 

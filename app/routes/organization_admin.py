@@ -526,17 +526,21 @@ def onboarding():
 # Organization Settings (Logo, Branding)
 
 
-@bp.route("/settings")
+@bp.route("/links")
 @login_required
 @organization_required
 @any_org_admin_permission_required
-def organization_settings():
-    """Organization settings - logo, branding"""
+def organization_links():
+    """Organization-level links management"""
     org_id = session.get("organization_id")
     org = Organization.query.get_or_404(org_id)
+    from app.models import EntityLink
+    entity_links = EntityLink.get_links_for_entity("organization", org_id, current_user.id, include_private=True)
     form = FlaskForm()  # For CSRF
     return render_template(
-        "organization_admin/organization_settings.html", organization=org, form=form, csrf_token=generate_csrf
+        "organization_admin/organization_links.html",
+        organization=org, form=form, csrf_token=generate_csrf,
+        entity_links=entity_links,
     )
 
 
@@ -556,19 +560,19 @@ def upload_logo():
 
     if "logo" not in request.files:
         flash("No file uploaded", "danger")
-        return redirect(url_for("organization_admin.organization_settings"))
+        return redirect(url_for("organization_admin.branding_manager"))
 
     file = request.files["logo"]
     if file.filename == "":
         flash("No file selected", "danger")
-        return redirect(url_for("organization_admin.organization_settings"))
+        return redirect(url_for("organization_admin.branding_manager"))
 
     # Validate file type
     allowed_extensions = {"png", "jpg", "jpeg", "gif", "webp"}
     ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else ""
     if ext not in allowed_extensions:
         flash("Invalid file type. Allowed: PNG, JPG, JPEG, GIF, WEBP", "danger")
-        return redirect(url_for("organization_admin.organization_settings"))
+        return redirect(url_for("organization_admin.branding_manager"))
 
     # Validate file size (max 5MB)
     file.seek(0, os.SEEK_END)
@@ -576,7 +580,7 @@ def upload_logo():
     file.seek(0)
     if file_size > 5 * 1024 * 1024:  # 5MB
         flash("File too large. Maximum size: 5MB", "danger")
-        return redirect(url_for("organization_admin.organization_settings"))
+        return redirect(url_for("organization_admin.branding_manager"))
 
     try:
         # Read image
@@ -614,7 +618,7 @@ def upload_logo():
         db.session.rollback()
         flash(f"Error uploading logo: {str(e)}", "danger")
 
-    return redirect(url_for("organization_admin.organization_settings"))
+    return redirect(url_for("organization_admin.branding_manager"))
 
 
 @bp.route("/settings/delete-logo", methods=["POST"])
@@ -643,7 +647,7 @@ def delete_logo():
     else:
         flash("No logo to delete", "info")
 
-    return redirect(url_for("organization_admin.organization_settings"))
+    return redirect(url_for("organization_admin.branding_manager"))
 
 
 @bp.route("/branding")

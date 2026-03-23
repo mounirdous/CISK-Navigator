@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_entity_links.html" import render_links %}
+
+{% block title %}Organization Links - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-link-45deg"></i> Organization Links</h2>
+        <p class="text-muted mb-0">{{ organization.name }}</p>
+    </div>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Admin
+    </a>
+</div>
+
+{{ render_links('organization', organization.id, entity_links, edit_mode=True) }}
+
+<div class="mt-4">
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Admin
+    </a>
+</div>
+{% endblock %}

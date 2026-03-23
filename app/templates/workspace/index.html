@@ -2161,6 +2161,15 @@
                         </span>
                     </template>
 
+                    <!-- Org-level link chip (badges mode) -->
+                    <template x-if="showBadges && orgData && (orgData.entity_links.length > 0 || orgData.inherited_links.length > 0)">
+                        <span class="entity-link-icon ms-1"
+                              :title="'Links (' + (orgData.entity_links.length + orgData.inherited_links.length) + ')'"
+                              @click.stop="showEntityLinks(orgData, 'organization')">
+                            <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
+                        </span>
+                    </template>
+
                     <!-- Action icons for creating spaces (edit mode only) -->
                     {% if current_user.can_manage_spaces(org_id) %}
                     <template x-if="editMode">
@@ -2307,18 +2316,11 @@
                                 </template>
 
                                 <!-- Entity links popover -->
-                                <template x-if="showBadges && space.entity_links && space.entity_links.length > 0">
+                                <template x-if="showBadges && ((space.entity_links && space.entity_links.length > 0) || (space.inherited_links && space.inherited_links.length > 0))">
                                     <span class="entity-link-icon"
-                                          :title="'Direct links (' + space.entity_links.length + ')'"
+                                          :title="'Links (' + ((space.entity_links||[]).length + (space.inherited_links||[]).length) + ')'"
                                           @click.stop="showEntityLinks(space, 'space')">
                                         <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                    </span>
-                                </template>
-                                <template x-if="showBadges && space.inherited_links && space.inherited_links.length > 0">
-                                    <span class="entity-link-icon"
-                                          :title="'Inherited links (' + space.inherited_links.length + ')'"
-                                          @click.stop="showEntityLinks(space, 'space')">
-                                        <i class="bi bi-link" style="color:#f59e0b;"></i>
                                     </span>
                                 </template>
 
@@ -2467,18 +2469,11 @@
                                         <span x-text="challenge.name" :data-tooltip="!editMode && challenge.description ? challenge.description : null"></span>
 
                                         <!-- Entity links popover -->
-                                        <template x-if="showBadges && challenge.entity_links && challenge.entity_links.length > 0">
+                                        <template x-if="showBadges && ((challenge.entity_links && challenge.entity_links.length > 0) || (challenge.inherited_links && challenge.inherited_links.length > 0))">
                                             <span class="entity-link-icon"
-                                                  :title="'Direct links (' + challenge.entity_links.length + ')'"
+                                                  :title="'Links (' + ((challenge.entity_links||[]).length + (challenge.inherited_links||[]).length) + ')'"
                                                   @click.stop="showEntityLinks(challenge, 'challenge')">
                                                 <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                            </span>
-                                        </template>
-                                        <template x-if="showBadges && challenge.inherited_links && challenge.inherited_links.length > 0">
-                                            <span class="entity-link-icon"
-                                                  :title="'Inherited links (' + challenge.inherited_links.length + ')'"
-                                                  @click.stop="showEntityLinks(challenge, 'challenge')">
-                                                <i class="bi bi-link" style="color:#f59e0b;"></i>
                                             </span>
                                         </template>
 
@@ -2608,18 +2603,11 @@
                                                 <span x-text="initiative.name" :data-tooltip="!editMode && initiative.description ? initiative.description : null"></span>
 
                                                 <!-- Entity links popover -->
-                                                <template x-if="showBadges && initiative.entity_links && initiative.entity_links.length > 0">
+                                                <template x-if="showBadges && ((initiative.entity_links && initiative.entity_links.length > 0) || (initiative.inherited_links && initiative.inherited_links.length > 0))">
                                                     <span class="entity-link-icon"
-                                                          :title="'Direct links (' + initiative.entity_links.length + ')'"
+                                                          :title="'Links (' + ((initiative.entity_links||[]).length + (initiative.inherited_links||[]).length) + ')'"
                                                           @click.stop="showEntityLinks(initiative, 'initiative')">
                                                         <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                                    </span>
-                                                </template>
-                                                <template x-if="showBadges && initiative.inherited_links && initiative.inherited_links.length > 0">
-                                                    <span class="entity-link-icon"
-                                                          :title="'Inherited links (' + initiative.inherited_links.length + ')'"
-                                                          @click.stop="showEntityLinks(initiative, 'initiative')">
-                                                        <i class="bi bi-link" style="color:#f59e0b;"></i>
                                                     </span>
                                                 </template>
 
@@ -2757,18 +2745,11 @@
                                                         <span x-text="system.name" :data-tooltip="!editMode && system.description ? system.description : null"></span>
 
                                                         <!-- Entity links popover -->
-                                                        <template x-if="showBadges && system.entity_links && system.entity_links.length > 0">
+                                                        <template x-if="showBadges && ((system.entity_links && system.entity_links.length > 0) || (system.inherited_links && system.inherited_links.length > 0))">
                                                             <span class="entity-link-icon"
-                                                                  :title="'Direct links (' + system.entity_links.length + ')'"
+                                                                  :title="'Links (' + ((system.entity_links||[]).length + (system.inherited_links||[]).length) + ')'"
                                                                   @click.stop="showEntityLinks(system, 'system')">
                                                                 <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                                            </span>
-                                                        </template>
-                                                        <template x-if="showBadges && system.inherited_links && system.inherited_links.length > 0">
-                                                            <span class="entity-link-icon"
-                                                                  :title="'Inherited links (' + system.inherited_links.length + ')'"
-                                                                  @click.stop="showEntityLinks(system, 'system')">
-                                                                <i class="bi bi-link" style="color:#f59e0b;"></i>
                                                             </span>
                                                         </template>
 
@@ -3309,6 +3290,7 @@ function workspaceV2(orgId, filterPresets) {
         showSavePresetModal: false,
         newPresetName: '',
         activePresetName: '',  // Track which preset is currently active
+        orgData: null,           // Org-level links (direct + inherited from whole tree)
         pendingTreeState: null,  // Tree collapse state to apply after next loadData()
         _loadDataInProgress: false,  // Guard against concurrent loadData() calls
         _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
@@ -3560,6 +3542,11 @@ function workspaceV2(orgId, filterPresets) {
                 this.governanceBodies = data.governanceBodies;
                 this.groups = data.groups;
                 this.impactLevels = data.impactLevels;
+                this.orgData = {
+                    name:            this.orgName,
+                    entity_links:    (data.orgEntityLinks   || []).filter(l => !l.is_private),
+                    inherited_links: data.orgInheritedLinks || [],
+                };
             } catch (error) {
                 console.error('Failed to load workspace data:', error);
                 alert('Failed to load workspace data. Please refresh the page.');
