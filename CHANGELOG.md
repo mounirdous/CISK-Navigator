@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.7] - 2026-03-25
+
+### Fixed
+- Navbar and global search now properly rank and display URL links (entity links) — previously they returned match_score=0 and were cut off by the 15-result limit
+- Entity link search now uses fuzzy matching (typo-tolerant) on both link title and URL, consistent with all other entity types
+
 ## [3.3.6] - 2026-03-23
 
 ### Fixed
