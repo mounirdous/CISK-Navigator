@@ -5,6 +5,20 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2026-03-25
+
+### Added
+- **Link Health**: sync URL probe on every link save — detects file type (PDF, Word, Excel, PowerPoint, image, video, archive, code, web page) and validates reachability
+- **Live URL checker** in entity link forms: spinner + type icon + status badge appear as you type/paste a URL, before saving
+- **SharePoint/OneDrive type detection**: recognises `/:w:/`, `/:x:/`, `/:b:/`, `/:p:/` URL patterns without network requests
+- **Link Health dashboard** (`/org-admin/link-health`): table of all org entity links with real-time SSE-driven bulk check — progress bar, live row updates, live counters
+- Status badges on all entity link displays: Valid / Login required / Broken / Unreachable / Not checked
+- File-type Bootstrap icons on all entity link displays (PDF 📕, Word 📝, Excel 📊, PowerPoint 📐, etc.)
+
+### Changed
+- `entity_links` table gains 3 new columns: `link_status`, `detected_type`, `last_checked_at`
+- `get_display_icon()` now checks `detected_type` first, then URL patterns, then domain
+
 ## [3.3.7] - 2026-03-25
 
 ### Fixed

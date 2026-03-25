@@ -9,7 +9,7 @@ import io
 from datetime import datetime
 from functools import wraps
 
-from flask import Blueprint, current_app, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask import Blueprint, Response, current_app, flash, jsonify, redirect, render_template, request, send_file, session, stream_with_context, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import generate_csrf
@@ -542,6 +542,169 @@ def organization_links():
         organization=org, form=form, csrf_token=generate_csrf,
         entity_links=entity_links,
     )
+
+
+@bp.route("/link-health")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def link_health():
+    """Link health dashboard — shows all org entity links with status."""
+    from collections import Counter
+
+    org_id = session.get("organization_id")
+    org_name = session.get("organization_name")
+
+    links_with_entity = _get_all_org_links_enriched(org_id)
+
+    total = len(links_with_entity)
+    checked = sum(1 for l in links_with_entity if l["link"].last_checked_at is not None)
+    broken = sum(1 for l in links_with_entity if l["link"].link_status == "invalid")
+    unreachable = sum(1 for l in links_with_entity if l["link"].link_status == "unreachable")
+
+    status_counts = Counter(row["link"].link_status for row in links_with_entity)
+    entity_type_counts = Counter(row["link"].entity_type for row in links_with_entity)
+
+    return render_template(
+        "organization_admin/link_health.html",
+        organization_name=org_name,
+        links=links_with_entity,
+        total=total,
+        checked=checked,
+        broken=broken,
+        unreachable=unreachable,
+        status_counts=status_counts,
+        entity_type_counts=entity_type_counts,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/link-health/stream")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def link_health_stream():
+    """SSE endpoint — probes org entity links in real time and streams results.
+    Accepts optional query params: status=<link_status>, entity_type=<type>
+    """
+    import json as _json
+
+    org_id = session.get("organization_id")
+    status_filter = request.args.get("status", "").strip()
+    entity_type_filter = request.args.get("entity_type", "").strip()
+
+    all_rows = _get_all_org_links_enriched(org_id)
+    link_ids = [
+        row["link"].id for row in all_rows
+        if (not status_filter or row["link"].link_status == status_filter)
+        and (not entity_type_filter or row["link"].entity_type == entity_type_filter)
+    ]
+
+    def generate():
+        total = len(link_ids)
+        for i, link_id in enumerate(link_ids):
+            link = EntityLink.query.get(link_id)
+            if not link:
+                continue
+            try:
+                result = link.probe_and_save()
+                db.session.commit()
+            except Exception as e:
+                result = {
+                    "status": "unknown", "detected_type": None,
+                    "bs_icon": "bi-link-45deg", "icon_color": "#6c757d",
+                    "type_label": "", "status_label": "Error",
+                    "status_color": "#dc3545", "status_bg": "danger",
+                    "status_icon": "bi-exclamation-circle", "error": str(e)[:80],
+                }
+                db.session.rollback()
+
+            payload = {
+                "link_id": link_id,
+                "status": result["status"],
+                "detected_type": result.get("detected_type"),
+                "bs_icon": result.get("bs_icon", "bi-link-45deg"),
+                "icon_color": result.get("icon_color", "#6c757d"),
+                "type_label": result.get("type_label", ""),
+                "status_label": result.get("status_label", ""),
+                "status_color": result.get("status_color", "#6c757d"),
+                "status_bg": result.get("status_bg", "secondary"),
+                "status_icon": result.get("status_icon", "bi-question-circle"),
+                "status_code": result.get("status_code"),
+                "progress": i + 1,
+                "total": total,
+            }
+            yield f"data: {_json.dumps(payload)}\n\n"
+
+        yield f"data: {_json.dumps({'done': True, 'total': total})}\n\n"
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+def _get_all_org_links_enriched(org_id):
+    """
+    Return all entity links for an org, each wrapped with resolved entity name.
+    Returns list of dicts: {link, entity_name, entity_label}
+    """
+    # Collect all entity links scoped to this org
+    space_ids = db.session.query(Space.id).filter_by(organization_id=org_id).subquery()
+    challenge_ids = db.session.query(Challenge.id).filter_by(organization_id=org_id).subquery()
+    initiative_ids = db.session.query(Initiative.id).filter_by(organization_id=org_id).subquery()
+    system_ids = db.session.query(System.id).filter_by(organization_id=org_id).subquery()
+    kpi_ids = (
+        db.session.query(KPI.id)
+        .join(KPI.initiative_system_link)
+        .join(InitiativeSystemLink.initiative)
+        .filter(Initiative.organization_id == org_id)
+        .subquery()
+    )
+
+    org_filter = db.or_(
+        db.and_(EntityLink.entity_type == "organization", EntityLink.entity_id == org_id),
+        db.and_(EntityLink.entity_type == "space", EntityLink.entity_id.in_(space_ids)),
+        db.and_(EntityLink.entity_type == "challenge", EntityLink.entity_id.in_(challenge_ids)),
+        db.and_(EntityLink.entity_type == "initiative", EntityLink.entity_id.in_(initiative_ids)),
+        db.and_(EntityLink.entity_type == "system", EntityLink.entity_id.in_(system_ids)),
+        db.and_(EntityLink.entity_type == "kpi", EntityLink.entity_id.in_(kpi_ids)),
+    )
+
+    links = EntityLink.query.filter(org_filter).order_by(EntityLink.entity_type, EntityLink.entity_id).all()
+
+    # Build lookup maps for entity names
+    spaces = {s.id: s.name for s in Space.query.filter_by(organization_id=org_id).all()}
+    challenges = {c.id: c.name for c in Challenge.query.filter_by(organization_id=org_id).all()}
+    initiatives = {i.id: i.name for i in Initiative.query.filter_by(organization_id=org_id).all()}
+    systems = {s.id: s.name for s in System.query.filter_by(organization_id=org_id).all()}
+    kpi_map = {
+        k.id: k.name
+        for k in db.session.query(KPI).join(KPI.initiative_system_link)
+        .join(InitiativeSystemLink.initiative).filter(Initiative.organization_id == org_id).all()
+    }
+
+    name_maps = {
+        "space": spaces, "challenge": challenges, "initiative": initiatives,
+        "system": systems, "kpi": kpi_map,
+    }
+    type_labels = {
+        "space": "Space", "challenge": "Challenge", "initiative": "Initiative",
+        "system": "System", "kpi": "KPI", "organization": "Organization",
+        "action_item": "Action Item",
+    }
+
+    result = []
+    for link in links:
+        nm = name_maps.get(link.entity_type, {})
+        entity_name = nm.get(link.entity_id, f"#{link.entity_id}")
+        result.append({
+            "link": link,
+            "entity_name": entity_name,
+            "entity_label": type_labels.get(link.entity_type, link.entity_type.title()),
+        })
+    return result
 
 
 @bp.route("/settings/upload-logo", methods=["POST"])

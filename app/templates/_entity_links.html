@@ -1,5 +1,6 @@
 {% macro render_links(entity_type, entity_id, links, edit_mode=False) %}
-<!-- Entity Links Section - Simple inline version -->
+{% set form_uid = entity_type ~ '_' ~ entity_id %}
+<!-- Entity Links Section -->
 <div class="entity-links-section" style="margin-top: 2rem;">
     <div class="card">
         <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
@@ -8,16 +9,43 @@
         <div class="card-body">
             {% if links %}
                 {% for link in links %}
-                <div style="padding: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 4px; background: #f8f9fa;">
-                    <div><a href="{{ link.url }}" target="_blank">{{ link.title or link.url }}</a></div>
-                    <small>{{ 'Public' if link.is_public else 'Private' }} - Added by {{ link.creator.display_name if link.creator else 'Unknown' }}</small>
+                {% set type_info = link.get_type_info() %}
+                {% set status_info = link.get_status_info() %}
+                <div style="padding: 0.75rem; margin-bottom: 0.5rem; border: 1px solid #ddd; border-radius: 8px; background: #f8f9fa; display: flex; align-items: center; gap: 0.75rem;">
+                    <!-- Type icon -->
+                    <i class="bi {{ type_info.bs_icon }}" style="color: {{ type_info.color }}; font-size: 1.3rem; flex-shrink: 0;" title="{{ type_info.label }}"></i>
+
+                    <!-- Link info -->
+                    <div style="flex: 1; min-width: 0;">
+                        <div>
+                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" style="font-weight: 500;">
+                                {{ link.title or link.url }}
+                            </a>
+                        </div>
+                        {% if link.title %}
+                        <div style="font-size: 0.8rem; color: #6c757d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ link.url }}</div>
+                        {% endif %}
+                        <div style="font-size: 0.78rem; color: #999; margin-top: 2px;">
+                            {{ 'Public' if link.is_public else 'Private' }}
+                            · Added by {{ link.creator.display_name if link.creator else 'Unknown' }}
+                            {% if link.type_info %}· {{ type_info.label }}{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Status badge -->
+                    <span class="badge bg-{{ status_info.bg }}" style="font-size: 0.7rem; flex-shrink: 0;"
+                          title="{% if link.last_checked_at %}Checked {{ link.last_checked_at.strftime('%Y-%m-%d %H:%M') }}{% else %}Not yet checked{% endif %}">
+                        <i class="bi {{ status_info.icon }}"></i>
+                        {{ status_info.label }}
+                    </span>
+
                     {% if edit_mode %}
-                    <form method="POST" action="/entity-links/delete" style="display: inline;" onsubmit="return confirm('Delete this link?');">
+                    <form method="POST" action="/entity-links/delete" style="display: inline; flex-shrink: 0;" onsubmit="return confirm('Delete this link?');">
                         {% if csrf_token is defined %}
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is callable else csrf_token }}"/>
                         {% endif %}
                         <input type="hidden" name="link_id" value="{{ link.id }}"/>
-                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                     </form>
                     {% endif %}
                 </div>
@@ -28,7 +56,7 @@
 
             {% if edit_mode %}
             <hr>
-            <h6>Add New Link</h6>
+            <h6 class="mb-3"><i class="bi bi-plus-circle"></i> Add New Link</h6>
             <form method="POST" action="/entity-links/add">
                 {% if csrf_token is defined %}
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is callable else csrf_token }}"/>
@@ -36,22 +64,101 @@
                 <input type="hidden" name="entity_type" value="{{ entity_type }}"/>
                 <input type="hidden" name="entity_id" value="{{ entity_id }}"/>
 
-                <div class="mb-2">
-                    <label class="form-label">URL *</label>
-                    <input type="url" name="url" class="form-control" placeholder="https://..." required>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">URL <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="url" name="url" class="form-control" placeholder="https://..."
+                               id="urlInput_{{ form_uid }}" required autocomplete="off">
+                        <span class="input-group-text" id="urlTypeIcon_{{ form_uid }}"
+                              style="min-width: 42px; justify-content: center; transition: all 0.2s;">
+                            <i class="bi bi-link-45deg text-muted"></i>
+                        </span>
+                    </div>
+                    <!-- Live check result line -->
+                    <div id="urlCheckResult_{{ form_uid }}" class="mt-1" style="font-size: 0.82rem; display: none; align-items: center; gap: 6px;"></div>
                 </div>
 
-                <div class="mb-2">
-                    <label class="form-label">Title (optional)</label>
-                    <input type="text" name="title" class="form-control" placeholder="Link title">
+                <div class="mb-3">
+                    <label class="form-label">Title <span class="text-muted">(optional)</span></label>
+                    <input type="text" name="title" class="form-control" placeholder="e.g. Q4 Budget Report">
                 </div>
 
-                <div class="mb-2">
-                    <input type="checkbox" name="is_public" value="true"> Public (shared with organization)
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="is_public" value="true" id="isPublic_{{ form_uid }}">
+                        <label class="form-check-label" for="isPublic_{{ form_uid }}">
+                            Public — visible to all organization members
+                        </label>
+                    </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">Add Link</button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Add Link
+                </button>
             </form>
+
+            <script>
+            (function () {
+                const input   = document.getElementById('urlInput_{{ form_uid }}');
+                const typeEl  = document.getElementById('urlTypeIcon_{{ form_uid }}');
+                const resultEl = document.getElementById('urlCheckResult_{{ form_uid }}');
+                if (!input) return;
+
+                let timer;
+
+                function setSpinner() {
+                    typeEl.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status" style="width:1rem;height:1rem;"></div>';
+                    resultEl.style.display = 'none';
+                }
+
+                function setIdle() {
+                    typeEl.innerHTML = '<i class="bi bi-link-45deg text-muted"></i>';
+                    resultEl.style.display = 'none';
+                }
+
+                function applyResult(data) {
+                    // Type icon in the input-group addon
+                    if (data.detected_type) {
+                        typeEl.innerHTML = `<i class="bi ${data.bs_icon}" style="color:${data.icon_color};" title="${data.type_label}"></i>`;
+                    } else {
+                        typeEl.innerHTML = '<i class="bi bi-link-45deg text-muted"></i>';
+                    }
+
+                    // Status + type line below
+                    const statusIcon  = `<i class="bi ${data.status_icon}" style="color:${data.status_color};"></i>`;
+                    const statusLabel = `<span style="color:${data.status_color}; font-weight:500;">${data.status_label}</span>`;
+                    const typeLabel   = data.type_label ? `<span class="text-muted">· ${data.type_label}</span>` : '';
+                    const codeLabel   = data.status_code ? `<span class="text-muted">(HTTP ${data.status_code})</span>` : '';
+                    resultEl.innerHTML = `${statusIcon} ${statusLabel} ${typeLabel} ${codeLabel}`;
+                    resultEl.style.display = 'flex';
+                }
+
+                function check(url) {
+                    if (!url || url.length < 10) { setIdle(); return; }
+                    setSpinner();
+                    fetch(`/entity-links/probe?url=${encodeURIComponent(url)}`)
+                        .then(r => r.json())
+                        .then(applyResult)
+                        .catch(() => setIdle());
+                }
+
+                input.addEventListener('blur', function () {
+                    clearTimeout(timer);
+                    check(this.value.trim());
+                });
+
+                input.addEventListener('input', function () {
+                    clearTimeout(timer);
+                    const v = this.value.trim();
+                    if (v.length >= 12) timer = setTimeout(() => check(v), 700);
+                    else setIdle();
+                });
+
+                input.addEventListener('paste', function () {
+                    setTimeout(() => check(this.value.trim()), 150);
+                });
+            })();
+            </script>
             {% endif %}
         </div>
     </div>

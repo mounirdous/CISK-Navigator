@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Link Health — {{ organization_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 fade-in">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-heart-pulse-fill" style="color: #0ea5e9;"></i> Link Health</h2>
+        <p class="text-muted mb-0">{{ organization_name }} — {{ total }} link{{ 's' if total != 1 else '' }}</p>
+    </div>
+    <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Back to Admin
+    </a>
+</div>
+
+<!-- Summary cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm">
+            <div class="card-body py-3">
+                <div style="font-size: 2rem; font-weight: 700; color: #0d6efd;">{{ total }}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">Total Links</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm" id="card-checked">
+            <div class="card-body py-3">
+                <div style="font-size: 2rem; font-weight: 700; color: #198754;" id="stat-checked">{{ checked }}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">Checked</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm" id="card-broken">
+            <div class="card-body py-3">
+                <div style="font-size: 2rem; font-weight: 700; color: #dc3545;" id="stat-broken">{{ broken }}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">Broken</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm" id="card-unreachable">
+            <div class="card-body py-3">
+                <div style="font-size: 2rem; font-weight: 700; color: #fd7e14;" id="stat-unreachable">{{ unreachable }}</div>
+                <div class="text-muted" style="font-size: 0.85rem;">Unreachable</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Progress bar (hidden until check starts) -->
+<div id="progressContainer" style="display: none;" class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <span id="progressStatus" style="font-size: 0.85rem; font-weight: 500; color: #0d6efd;">
+            <i class="bi bi-arrow-repeat spin"></i> Checking links…
+        </span>
+        <span id="progressText" class="text-muted" style="font-size: 0.85rem;"></span>
+    </div>
+    <div class="progress" style="height: 8px; border-radius: 8px;">
+        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+             role="progressbar" style="width: 0%; transition: width 0.3s ease;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+    </div>
+</div>
+
+<!-- Toolbar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+        <button id="checkAllBtn" class="btn btn-primary" onclick="startHealthCheck()">
+            <i class="bi bi-arrow-repeat"></i> Check All Links
+        </button>
+        <div class="input-group" style="width: 220px;">
+            <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+            <select class="form-select form-select-sm" id="statusFilter" onchange="filterTable(); updateCheckBtn()">
+                <option value="">All statuses ({{ total }})</option>
+                <option value="valid">Valid ({{ status_counts.get('valid', 0) }})</option>
+                <option value="auth_required">Login required ({{ status_counts.get('auth_required', 0) }})</option>
+                <option value="invalid">Broken ({{ status_counts.get('invalid', 0) }})</option>
+                <option value="unreachable">Unreachable ({{ status_counts.get('unreachable', 0) }})</option>
+                <option value="unknown">Not checked ({{ status_counts.get('unknown', 0) }})</option>
+            </select>
+        </div>
+        <div class="input-group" style="width: 180px;">
+            <span class="input-group-text"><i class="bi bi-tag"></i></span>
+            <select class="form-select form-select-sm" id="typeFilter" onchange="filterTable(); updateCheckBtn()">
+                <option value="">All entity types ({{ total }})</option>
+                {% if entity_type_counts.get('space') %}<option value="space">Space ({{ entity_type_counts.get('space', 0) }})</option>{% endif %}
+                {% if entity_type_counts.get('challenge') %}<option value="challenge">Challenge ({{ entity_type_counts.get('challenge', 0) }})</option>{% endif %}
+                {% if entity_type_counts.get('initiative') %}<option value="initiative">Initiative ({{ entity_type_counts.get('initiative', 0) }})</option>{% endif %}
+                {% if entity_type_counts.get('system') %}<option value="system">System ({{ entity_type_counts.get('system', 0) }})</option>{% endif %}
+                {% if entity_type_counts.get('kpi') %}<option value="kpi">KPI ({{ entity_type_counts.get('kpi', 0) }})</option>{% endif %}
+                {% if entity_type_counts.get('organization') %}<option value="organization">Organization ({{ entity_type_counts.get('organization', 0) }})</option>{% endif %}
+                {% if entity_type_counts.get('action_item') %}<option value="action_item">Action Item ({{ entity_type_counts.get('action_item', 0) }})</option>{% endif %}
+            </select>
+        </div>
+    </div>
+    <span class="text-muted" style="font-size: 0.85rem;" id="visibleCount">{{ total }} link{{ 's' if total != 1 else '' }}</span>
+</div>
+
+<!-- Links table -->
+{% if links %}
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0" id="linksTable">
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 110px;">Entity</th>
+                    <th>Entity Name</th>
+                    <th>Link</th>
+                    <th style="width: 140px;">Type</th>
+                    <th style="width: 160px;">Status</th>
+                    <th style="width: 120px;">Last Checked</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in links %}
+                {% set link = row.link %}
+                {% set type_info = link.get_type_info() %}
+                {% set status_info = link.get_status_info() %}
+                <tr id="link-row-{{ link.id }}"
+                    data-status="{{ link.link_status }}"
+                    data-entity-type="{{ link.entity_type }}"
+                    style="transition: background 0.4s;">
+                    <td>
+                        <span class="badge bg-secondary" style="font-size: 0.72rem;">{{ row.entity_label }}</span>
+                    </td>
+                    <td style="font-size: 0.9rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ row.entity_name }}
+                    </td>
+                    <td style="max-width: 280px;">
+                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" style="font-weight: 500; font-size: 0.9rem;">
+                                {{ link.title or link.url }}
+                            </a>
+                        </div>
+                        {% if link.title %}
+                        <div style="font-size: 0.75rem; color: #999; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ link.url }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="type-cell">
+                        {% if link.detected_type %}
+                        <i class="bi {{ type_info.bs_icon }}" style="color: {{ type_info.color }};" title="{{ type_info.label }}"></i>
+                        <span style="font-size: 0.82rem; color: #555;">{{ type_info.label }}</span>
+                        {% else %}
+                        <span class="text-muted" style="font-size: 0.82rem;">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="status-cell">
+                        <span class="badge bg-{{ status_info.bg }}" style="font-size: 0.75rem;">
+                            <i class="bi {{ status_info.icon }}"></i> {{ status_info.label }}
+                        </span>
+                    </td>
+                    <td class="checked-cell" style="font-size: 0.78rem; color: #999;">
+                        {% if link.last_checked_at %}
+                            {{ link.last_checked_at.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> No links found for this organization yet.
+</div>
+{% endif %}
+
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { display: inline-block; animation: spin 1s linear infinite; }
+</style>
+
+<script>
+const SSE_BASE_URL = '{{ url_for("organization_admin.link_health_stream") }}';
+let evtSource = null;
+let brokenCount = parseInt(document.getElementById('stat-broken').textContent) || 0;
+let unreachableCount = parseInt(document.getElementById('stat-unreachable').textContent) || 0;
+let checkedCount = parseInt(document.getElementById('stat-checked').textContent) || 0;
+
+function getActiveFilters() {
+    return {
+        status: document.getElementById('statusFilter').value,
+        entity_type: document.getElementById('typeFilter').value,
+    };
+}
+
+function updateCheckBtn() {
+    const btn = document.getElementById('checkAllBtn');
+    if (btn.disabled) return;
+    const { status, entity_type } = getActiveFilters();
+    const visibleN = parseInt(document.getElementById('visibleCount').textContent) || 0;
+    if (status || entity_type) {
+        btn.innerHTML = `<i class="bi bi-arrow-repeat"></i> Check Filtered Links (${visibleN})`;
+    } else {
+        btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Check All Links';
+    }
+}
+
+function startHealthCheck() {
+    if (evtSource) { evtSource.close(); }
+
+    const btn = document.getElementById('checkAllBtn');
+    const progress = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    // Build SSE URL with current filters
+    const { status, entity_type } = getActiveFilters();
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    if (entity_type) params.set('entity_type', entity_type);
+    const sseUrl = SSE_BASE_URL + (params.toString() ? '?' + params.toString() : '');
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Checking…';
+    progress.style.display = 'block';
+    progressBar.classList.remove('bg-success');
+    progressBar.classList.add('bg-primary', 'progress-bar-striped', 'progress-bar-animated');
+    progressBar.style.width = '0%';
+    document.getElementById('progressStatus').innerHTML =
+        '<i class="bi bi-arrow-repeat spin"></i> Checking links…';
+    document.getElementById('progressStatus').style.color = '#0d6efd';
+    brokenCount = 0;
+    unreachableCount = 0;
+    checkedCount = 0;
+
+    evtSource = new EventSource(sseUrl);
+
+    evtSource.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+
+        if (data.done) {
+            evtSource.close();
+            btn.disabled = false;
+            progressBar.classList.remove('progress-bar-animated', 'progress-bar-striped');
+            progressBar.classList.add('bg-success');
+            progressBar.style.width = '100%';
+            document.getElementById('progressStatus').innerHTML =
+                '<i class="bi bi-check-circle-fill" style="color:#198754;"></i> <span style="color:#198754;">Done</span>';
+            progressText.textContent = `${data.total} link${data.total !== 1 ? 's' : ''} checked`;
+            updateCheckBtn();
+            return;
+        }
+
+        // Update progress bar
+        const pct = Math.round((data.progress / data.total) * 100);
+        progressBar.style.width = pct + '%';
+        progressBar.setAttribute('aria-valuenow', pct);
+        progressText.textContent = `${data.progress} / ${data.total}`;
+
+        // Update counters
+        checkedCount++;
+        if (data.status === 'invalid') brokenCount++;
+        if (data.status === 'unreachable') unreachableCount++;
+        document.getElementById('stat-checked').textContent = checkedCount;
+        document.getElementById('stat-broken').textContent = brokenCount;
+        document.getElementById('stat-unreachable').textContent = unreachableCount;
+
+        // Update the row
+        const row = document.getElementById('link-row-' + data.link_id);
+        if (!row) return;
+
+        row.setAttribute('data-status', data.status);
+
+        // Type cell
+        const typeCell = row.querySelector('.type-cell');
+        if (data.detected_type) {
+            typeCell.innerHTML = `<i class="bi ${data.bs_icon}" style="color:${data.icon_color};" title="${data.type_label}"></i> <span style="font-size:0.82rem;color:#555;">${data.type_label}</span>`;
+        } else {
+            typeCell.innerHTML = '<span class="text-muted" style="font-size:0.82rem;">—</span>';
+        }
+
+        // Status cell
+        const statusCell = row.querySelector('.status-cell');
+        const codeStr = data.status_code ? ` (${data.status_code})` : '';
+        statusCell.innerHTML = `<span class="badge bg-${data.status_bg}" style="font-size:0.75rem;"><i class="bi ${data.status_icon}"></i> ${data.status_label}${codeStr}</span>`;
+
+        // Checked-at cell
+        const checkedCell = row.querySelector('.checked-cell');
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        checkedCell.textContent = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+        // Flash the row green briefly
+        row.style.background = '#d1fae5';
+        setTimeout(() => { row.style.background = ''; }, 800);
+
+        filterTable(); // Re-apply filter in case status changed
+    };
+
+    evtSource.onerror = function () {
+        evtSource.close();
+        btn.disabled = false;
+        updateCheckBtn();
+    };
+}
+
+function filterTable() {
+    const statusVal = document.getElementById('statusFilter').value;
+    const typeVal = document.getElementById('typeFilter').value;
+    const rows = document.querySelectorAll('#linksTable tbody tr');
+    let visible = 0;
+    rows.forEach(row => {
+        const matchStatus = !statusVal || row.getAttribute('data-status') === statusVal;
+        const matchType = !typeVal || row.getAttribute('data-entity-type') === typeVal;
+        row.style.display = (matchStatus && matchType) ? '' : 'none';
+        if (matchStatus && matchType) visible++;
+    });
+    document.getElementById('visibleCount').textContent = `${visible} link${visible !== 1 ? 's' : ''}`;
+}
+</script>
+{% endblock %}
