@@ -1222,7 +1222,8 @@
                         description: item.url,
                         url: item.url,
                         edit_url: null,
-                        icon: 'bi-link-45deg',
+                        icon: item.bs_icon || 'bi-link-45deg',
+                        icon_color_override: item.icon_color || null,
                         logo: null,
                         match_score: item.match_score || 0,
                         is_external: true
@@ -1249,8 +1250,8 @@
 
             html += '<div style="padding: 4px;">';
             results.forEach(result => {
-                const icon = typeIcons[result.type] || 'bi-circle';
-                const color = typeColors[result.type] || '#6c757d';
+                const icon = result.icon || typeIcons[result.type] || 'bi-circle';
+                const color = result.icon_color_override || typeColors[result.type] || '#6c757d';
                 const label = typeLabels[result.type] || result.type;
 
                 const clickAction = result.is_external ? `window.open('${result.url}', '_blank')` : `window.location.href='${result.url}'`;

@@ -76,6 +76,26 @@ class MentionService:
         return [user.id for user in users]
 
     @staticmethod
+    def resolve_user_mentions_with_logins(usernames: List[str], organization_id: int) -> List[Tuple[str, int]]:
+        """
+        Convert usernames to (login, user_id) pairs within an organization.
+
+        Returns tuples so callers can store the original login text alongside the
+        stable user_id — enabling rename-safe rendering later.
+        """
+        if not usernames:
+            return []
+
+        users = (
+            db.session.query(User)
+            .join(UserOrganizationMembership)
+            .filter(User.login.in_(usernames), UserOrganizationMembership.organization_id == organization_id)
+            .all()
+        )
+
+        return [(user.login, user.id) for user in users]
+
+    @staticmethod
     def resolve_entity_mentions(entity_names: List[str], organization_id: int) -> List[Tuple[str, int, str]]:
         """
         Find entities by name across spaces, challenges, initiatives, systems, KPIs.

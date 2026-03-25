@@ -183,3 +183,38 @@ class CommentEntityMention(db.Model):
         from app.services.mention_service import MentionService
 
         return MentionService.get_entity_url(self.entity_type, self.entity_id, comment_id=self.comment_id)
+
+
+class CommentUserMention(db.Model):
+    """
+    Track user mentions in comments — stores the login text used at mention time.
+
+    This makes rendering rename-safe: even if User.login later changes from
+    "alice" to "alice.smith", we can still match the raw "@alice" in comment_text
+    back to the correct user_id.
+    """
+
+    __tablename__ = "comment_user_mentions"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    comment_id = db.Column(
+        db.Integer, db.ForeignKey("cell_comments.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+
+    # User ID at mention time — SET NULL if user is deleted so the record survives
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    # The login string that was typed (e.g. "alice") — used to match raw "@alice" text
+    mention_login = db.Column(db.String(255), nullable=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    comment = db.relationship("CellComment", backref=db.backref("user_mentions", passive_deletes=True))
+    user = db.relationship("User", foreign_keys=[user_id])
+
+    __table_args__ = (db.Index("idx_comment_user_mention", "comment_id", "user_id"),)
+
+    def __repr__(self):
+        return f"<CommentUserMention comment={self.comment_id} @{self.mention_login} → user={self.user_id}>"

@@ -342,7 +342,7 @@
             {% for link in results.entity_links %}
             <div class="list-group-item d-flex justify-content-between align-items-center hover-lift" style="transition: all 0.2s;">
                 <div class="d-flex align-items-center gap-3 flex-grow-1 min-width-0">
-                    <span style="font-size: 1.3rem; flex-shrink: 0;">{{ link.icon }}</span>
+                    <i class="bi {{ link.bs_icon }}" style="color: {{ link.icon_color }}; font-size: 1.3rem; flex-shrink: 0;"></i>
                     <div class="min-width-0">
                         <div class="fw-semibold">{{ link.title or link.url }}</div>
                         <small class="text-muted text-truncate d-block" style="max-width: 400px;">{{ link.url }}</small>

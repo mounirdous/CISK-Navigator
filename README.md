@@ -1,12 +1,30 @@
-# 🧭 CISK Navigator v3.3.6
+# 🧭 CISK Navigator v3.4.5
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-3.3.6-blue)
+![Version](https://img.shields.io/badge/version-3.4.5-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+
+## ✨ What's New in v3.4.x (March 2026)
+
+### 🔗 **URL Link Intelligence**
+- **Sync URL probe on save** — detects file type (PDF, Word, Excel, PowerPoint, image, video, archive, code, web page) and validates reachability on every link save
+- **Live URL checker in forms** — spinner + type icon + status badge appear as you type/paste, before saving
+- **SharePoint / OneDrive type detection** — recognises `/:w:/`, `/:x:/`, `/:b:/`, `/:p:/` URL patterns without network requests; 1drv.ms short codes supported
+- **Link Health dashboard** (`/org-admin/link-health`) — table of all org entity links with real-time SSE-driven bulk check, live progress bar, row-level status updates and live counters; filter-scoped checking
+- **Consistent type icons everywhere** — same Bootstrap icons (PDF 📕, Word, Excel, PowerPoint…) in workspace link modal, navbar search, global search, and Link Health
+- **Status badges** on all entity link displays: Valid / Login required / Broken / Unreachable / Not checked
+
+### 🔒 **Mention System — Rename-Safe**
+- **Cell comments**: `@user` and `@"Entity"` mentions now resolve using stored IDs at render time — renaming a user login or entity no longer breaks existing mentions
+- New `CommentUserMention` table stores `(comment_id, user_id, mention_login)` at write time
+- **JSON backup/restore** (action item mentions & stakeholder entity links): now use `json_id` cross-references (stable within-backup IDs) instead of entity names — eliminates same-name collision risk on restore; fully backward-compatible
+
+### 🗂️ **Action Register UX**
+- Table / Timeline view toggle moved from the filter panel into the blue header bar
 
 ## ✨ What's New in v3.3.x (March 2026)
 

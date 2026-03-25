@@ -136,6 +136,14 @@
 }
 .view-toggle button.active { background:#1565c0; color:white; }
 .view-toggle button:hover:not(.active) { background:#f0f4ff; color:#1565c0; }
+/* Header variant — sits on the blue bar */
+.view-toggle-header { display:inline-flex; border:1.5px solid rgba(255,255,255,0.45); border-radius:8px; overflow:hidden; }
+.view-toggle-header button {
+    padding:0.3rem 0.75rem; border:none; background:transparent; font-size:0.82rem;
+    font-weight:600; color:rgba(255,255,255,0.8); cursor:pointer; transition:all 0.15s;
+}
+.view-toggle-header button.active { background:rgba(255,255,255,0.22); color:#fff; }
+.view-toggle-header button:hover:not(.active) { background:rgba(255,255,255,0.12); color:#fff; }
 
 /* ── Timeline view ── */
 #groupby-bar {
@@ -341,6 +349,18 @@
                 <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ review_initiative_ids|length }}</span>
             </button>
             {% endif %}
+
+            <!-- View toggle -->
+            <div class="view-toggle-header">
+                <button type="button" id="btn-view-table" onclick="switchView('table')"
+                        class="{% if view == 'table' %}active{% endif %}">
+                    <i class="bi bi-table me-1"></i>Table
+                </button>
+                <button type="button" id="btn-view-timeline" onclick="switchView('timeline')"
+                        class="{% if view == 'timeline' %}active{% endif %}">
+                    <i class="bi bi-calendar-range me-1"></i>Timeline
+                </button>
+            </div>
 
             <!-- Filters toggle -->
             <button type="button" id="filters-toggle-btn" class="btn btn-outline-light btn-sm collapsed"
@@ -624,20 +644,6 @@
                 </a>
             </div>
             {% endif %}
-
-            <!-- View toggle -->
-            <div class="col-auto d-flex align-items-end">
-                <div class="view-toggle">
-                    <button type="button" id="btn-view-table" onclick="switchView('table')"
-                            class="{% if view == 'table' %}active{% endif %}">
-                        <i class="bi bi-table me-1"></i>Table
-                    </button>
-                    <button type="button" id="btn-view-timeline" onclick="switchView('timeline')"
-                            class="{% if view == 'timeline' %}active{% endif %}">
-                        <i class="bi bi-calendar-range me-1"></i>Timeline
-                    </button>
-                </div>
-            </div>
 
             <!-- Search + Duplicate Detect -->
             <div class="col-auto d-flex align-items-end ms-auto gap-2">

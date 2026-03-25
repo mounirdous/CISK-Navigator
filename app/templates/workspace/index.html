@@ -4652,9 +4652,10 @@ function workspaceV2(orgId, filterPresets) {
             const renderLink = (link) => {
                 const title = link.title || link.url;
                 const displayUrl = link.url.length > 55 ? link.url.substring(0, 55) + '…' : link.url;
+                const iconHtml = `<i class="bi ${link.bs_icon || 'bi-link-45deg'}" style="color:${link.icon_color || '#6c757d'};font-size:1.1rem;flex-shrink:0;"></i>`;
                 return `<div style="margin-bottom:0.6rem;">
                     <a href="${link.url}" target="_blank" style="color:#0d6efd;text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
-                        <span style="font-size:1.1rem;flex-shrink:0;">${link.icon}</span>
+                        ${iconHtml}
                         <div style="flex:1;min-width:0;">
                             <div style="font-weight:600;">${this.escapeHtml(title)}</div>
                             <div style="font-size:0.8rem;color:#6c757d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.escapeHtml(displayUrl)}</div>

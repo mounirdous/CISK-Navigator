@@ -785,13 +785,15 @@ class SearchService:
             if link.url in seen_urls:
                 continue
             seen_urls.add(link.url)
+            type_info = link.get_type_info()
             results.append({
                 "id": link.id,
                 "title": link.title or "",
                 "url": link.url,
                 "entity_type": link.entity_type,
                 "entity_id": link.entity_id,
-                "icon": link.get_display_icon(),
+                "bs_icon": type_info["bs_icon"],
+                "icon_color": type_info["color"],
                 "creator": link.creator.login if link.creator else None,
                 "match_score": match_score,
             })

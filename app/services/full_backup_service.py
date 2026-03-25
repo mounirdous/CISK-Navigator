@@ -39,7 +39,7 @@ What's backed up:
 ✅ Action Items & Memos (v3.0+):
    - All action items and memos
    - Governance body links
-   - Entity mentions (by name, resolved on restore)
+   - Entity mentions (by json_id + entity_name fallback — collision-free since v8.0)
 ✅ URL Links / EntityLinks (v4.0+):
    - All URL links attached to Space, Challenge, Initiative, System, KPI, Action Item
 ✅ Saved Views / Filter Presets (v5.0+):
@@ -63,6 +63,7 @@ Version Compatibility:
 - Backup format v5.0: Added saved views (UserFilterPreset) per user
 - Backup format v6.0: Full geography hierarchy (was incorrectly treated as global)
 - Backup format v7.0: Initiative progress updates (execution tracking)
+- Backup format v8.0: json_id cross-references in mentions and stakeholder entity links (collision-free, rename-safe)
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -101,7 +102,7 @@ class FullBackupService:
 
         backup = {
             "metadata": {
-                "backup_format_version": "6.0",  # Backup format version
+                "backup_format_version": "8.0",  # Backup format version
                 "app_version": app_version,  # CISK Navigator version
                 "db_schema_version": DB_SCHEMA_VERSION,  # Database schema version
                 "created_at": datetime.utcnow().isoformat(),
@@ -289,6 +290,7 @@ class FullBackupService:
         result = []
         for space in spaces:
             space_data = {
+                "json_id": space.id,
                 "name": space.name,
                 "description": space.description,
                 "space_label": space.space_label,
@@ -313,6 +315,7 @@ class FullBackupService:
             challenges = sorted(space.challenges, key=lambda c: (c.display_order, c.name))
             for challenge in challenges:
                 challenge_data = {
+                    "json_id": challenge.id,
                     "name": challenge.name,
                     "description": challenge.description,
                     "display_order": challenge.display_order,
@@ -338,6 +341,7 @@ class FullBackupService:
 
                 for initiative in initiatives:
                     initiative_data = {
+                        "json_id": initiative.id,
                         "name": initiative.name,
                         "description": initiative.description,
                         "group_label": initiative.group_label,
@@ -381,6 +385,7 @@ class FullBackupService:
 
                     for system in systems:
                         system_data = {
+                            "json_id": system.id,
                             "name": system.name,
                             "description": system.description,
                             "links": FullBackupService._export_entity_links("system", system.id),
@@ -420,6 +425,7 @@ class FullBackupService:
         import base64
 
         kpi_data = {
+            "json_id": kpi.id,
             "name": kpi.name,
             "description": kpi.description,
             "is_archived": kpi.is_archived,
@@ -603,6 +609,7 @@ class FullBackupService:
                 entity = link.get_entity()
                 entity_link_data = {
                     "entity_type": link.entity_type,
+                    "json_id": link.entity_id,
                     "entity_name": entity.name if entity else f"Unknown {link.entity_type}",
                     "interest_level": link.interest_level,
                     "impact_level": link.impact_level,
@@ -729,7 +736,8 @@ class FullBackupService:
                 "mentions": [],
             }
 
-            # Export mentions with entity names (IDs are not portable)
+            # Export mentions with json_id (stable within-JSON reference, collision-free)
+            # entity_name kept as human-readable fallback for debugging / very old restores
             entity_models = {
                 "space": Space,
                 "challenge": Challenge,
@@ -742,7 +750,8 @@ class FullBackupService:
                 entity = model.query.get(mention.entity_id) if model else None
                 item_data["mentions"].append({
                     "entity_type": mention.entity_type,
-                    "entity_name": entity.name if entity else None,
+                    "json_id": mention.entity_id,      # stable cross-ref within this backup
+                    "entity_name": entity.name if entity else None,  # fallback for old restores
                     "mention_text": mention.mention_text,
                 })
 

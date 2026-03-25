@@ -5,6 +5,38 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.5] - 2026-03-25
+
+### Fixed
+- URL type icons (PDF, Word, Excel, PowerPoint, image, etc.) now appear correctly in navbar live search and global search results — previously all URL links showed a generic chain-link icon regardless of detected type
+
+## [3.4.4] - 2026-03-25
+
+### Changed
+- Action Register: Table / Timeline toggle moved from filter panel into the blue header bar — styled as a semi-transparent pill that matches the header aesthetic
+
+## [3.4.3] - 2026-03-25
+
+### Fixed
+- Workspace link modal now uses Bootstrap icons (matching Link Health dashboard) instead of emoji — type icon and color now consistent everywhere
+
+## [3.4.2] - 2026-03-25
+
+### Fixed
+- **JSON backup/restore: collision-free entity references** — mentions (action items) and stakeholder entity links now store a `json_id` (the source DB id, used only as a within-JSON cross-reference). Restore resolves via `json_id → new_db_id` map built during hierarchy creation, completely eliminating same-name collision risk. `entity_name` kept as fallback for old backups.
+- Backup format bumped to v8.0
+
+## [3.4.1] - 2026-03-25
+
+### Fixed
+- **Mention system rename-safety**: `@user` and `@"Entity"` mentions now resolve using stored IDs at render time instead of re-resolving by name — renaming a user login or entity no longer breaks existing mentions
+- `render_comment_with_mentions()` uses pre-stored `CommentEntityMention` and `CommentUserMention` records (by `comment_id`) and falls back to name-based lookup only for legacy comments that pre-date this fix
+
+### Added
+- `CommentUserMention` table (`comment_user_mentions`) — stores `(comment_id, user_id, mention_login)` at write time, making user mentions rename-safe
+- `MentionService.resolve_user_mentions_with_logins()` — returns `(login, user_id)` pairs so the login text used at mention time is preserved alongside the stable ID
+- `comment_user_mentions` migration (`x5y6z7a8b9c0`)
+
 ## [3.4.0] - 2026-03-25
 
 ### Added

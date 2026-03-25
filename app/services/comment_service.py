@@ -12,7 +12,14 @@ from flask import url_for
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import CellComment, CommentEntityMention, MentionNotification, User, UserOrganizationMembership
+from app.models import (
+    CellComment,
+    CommentEntityMention,
+    CommentUserMention,
+    MentionNotification,
+    User,
+    UserOrganizationMembership,
+)
 from app.services.email_service import EmailService
 from app.services.mention_service import MentionService
 
@@ -87,11 +94,16 @@ class CommentService:
         all_mentions = MentionService.parse_all_mentions(comment_text)
         mentioned_user_ids = []
         entity_mentions = []
+        # List of (login, user_id) pairs for stable ID storage
+        user_mention_pairs = []
 
         if organization_id:
-            # Resolve user mentions
+            # Resolve user mentions — returns list of (login, user_id)
             if all_mentions["users"]:
-                mentioned_user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
+                user_mention_pairs = MentionService.resolve_user_mentions_with_logins(
+                    all_mentions["users"], organization_id
+                )
+                mentioned_user_ids = [uid for _, uid in user_mention_pairs]
 
             # Resolve entity mentions
             if all_mentions["entities"]:
@@ -115,6 +127,12 @@ class CommentService:
             if mentioned_user_id != user_id:
                 notification = MentionNotification(mentioned_user_id=mentioned_user_id, comment_id=comment.id)
                 db.session.add(notification)
+
+        # Store user mentions by ID (login → user_id mapping, rename-safe)
+        for mention_login, mention_user_id in user_mention_pairs:
+            db.session.add(
+                CommentUserMention(comment_id=comment.id, user_id=mention_user_id, mention_login=mention_login)
+            )
 
         # Create entity mention records
         for entity_type, entity_id, mention_text in entity_mentions:
@@ -171,13 +189,17 @@ class CommentService:
 
         # Parse all mentions using shared service
         all_mentions = MentionService.parse_all_mentions(comment_text)
+        new_user_mention_pairs = []
         new_mentioned_user_ids = []
         new_entity_mentions = []
 
         if organization_id:
-            # Resolve user mentions
+            # Resolve user mentions — returns list of (login, user_id)
             if all_mentions["users"]:
-                new_mentioned_user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
+                new_user_mention_pairs = MentionService.resolve_user_mentions_with_logins(
+                    all_mentions["users"], organization_id
+                )
+                new_mentioned_user_ids = [uid for _, uid in new_user_mention_pairs]
 
             # Resolve entity mentions
             if all_mentions["entities"]:
@@ -202,8 +224,14 @@ class CommentService:
                 notification = MentionNotification(mentioned_user_id=user_id, comment_id=comment_id)
                 db.session.add(notification)
 
-        # Handle entity mentions
-        # Delete old entity mentions
+        # Replace stored user mention ID records
+        CommentUserMention.query.filter_by(comment_id=comment_id).delete()
+        for mention_login, mention_user_id in new_user_mention_pairs:
+            db.session.add(
+                CommentUserMention(comment_id=comment_id, user_id=mention_user_id, mention_login=mention_login)
+            )
+
+        # Handle entity mentions — replace all
         CommentEntityMention.query.filter_by(comment_id=comment_id).delete()
 
         # Create new entity mentions
@@ -364,10 +392,14 @@ class CommentService:
         """
         Convert @mentions (users and entities) to clickable links in HTML.
 
+        Uses stored IDs from CommentEntityMention / CommentUserMention when comment_id
+        is provided (rename-safe). Falls back to name-based resolution for old comments
+        that pre-date the ID storage.
+
         Args:
             comment_text: Raw comment text
             organization_id: Organization context
-            comment_id: Optional comment ID for context tracking in entity links
+            comment_id: Comment ID — enables ID-based lookup (rename-safe)
 
         Returns:
             HTML with @mentions as styled elements
@@ -375,55 +407,72 @@ class CommentService:
         if not comment_text:
             return ""
 
-        # Parse all mentions using shared service
-        all_mentions = MentionService.parse_all_mentions(comment_text)
-
         result = comment_text
 
-        # Resolve and render entity mentions first (to handle @"Entity Name" before simple @username)
-        if all_mentions["entities"]:
-            entity_mentions = MentionService.resolve_entity_mentions(all_mentions["entities"], organization_id)
+        # ── Entity mentions ────────────────────────────────────────────────────
+        # Prefer stored CommentEntityMention records (already had IDs from day 1)
+        if comment_id:
+            stored_entity_mentions = CommentEntityMention.query.filter_by(comment_id=comment_id).all()
+            entity_mentions = [(m.entity_type, m.entity_id, m.mention_text) for m in stored_entity_mentions]
+        else:
+            # No comment_id supplied — parse and resolve by name (legacy path)
+            all_mentions = MentionService.parse_all_mentions(comment_text)
+            entity_mentions = (
+                MentionService.resolve_entity_mentions(all_mentions["entities"], organization_id)
+                if all_mentions["entities"]
+                else []
+            )
 
-            # Sort by length descending to replace longer matches first
-            entity_mentions_sorted = sorted(entity_mentions, key=lambda x: len(x[2]), reverse=True)
+        # Sort by mention_text length descending so longer names are replaced first
+        entity_mentions_sorted = sorted(entity_mentions, key=lambda x: len(x[2]), reverse=True)
 
-            for entity_type, entity_id, mention_text in entity_mentions_sorted:
-                # Get URL for entity (with comment context for navigation)
-                entity_url = MentionService.get_entity_url(entity_type, entity_id, comment_id=comment_id)
+        for entity_type, entity_id, mention_text in entity_mentions_sorted:
+            entity_url = MentionService.get_entity_url(entity_type, entity_id, comment_id=comment_id)
+            for pattern in [f'@"{mention_text}"', f"@{mention_text}"]:
+                if pattern in result:
+                    replacement = (
+                        f'<a href="{entity_url}" '
+                        f'class="badge bg-info text-white text-decoration-none" '
+                        f'title="View {entity_type}: {mention_text}" '
+                        f'target="_blank">'
+                        f'{mention_text} <i class="bi bi-box-arrow-up-right"></i>'
+                        f"</a>"
+                    )
+                    result = result.replace(pattern, replacement)
 
-                # Handle both @"Entity Name" and @EntityName patterns
-                patterns = [f'@"{mention_text}"', f"@{mention_text}"]
+        # ── User mentions ──────────────────────────────────────────────────────
+        # Use stored CommentUserMention records when available (rename-safe)
+        if comment_id:
+            stored_user_mentions = CommentUserMention.query.filter_by(comment_id=comment_id).all()
+            # login → User object map via stored user_id
+            stored_ids = [m.user_id for m in stored_user_mentions if m.user_id is not None]
+            users_by_id = {}
+            if stored_ids:
+                for u in db.session.query(User).filter(User.id.in_(stored_ids)).all():
+                    users_by_id[u.id] = u
+            # Build login → user map using the *original* login text
+            user_map = {}
+            for m in stored_user_mentions:
+                if m.user_id and m.user_id in users_by_id:
+                    user_map[m.mention_login] = users_by_id[m.user_id]
+            usernames_to_render = sorted(user_map.keys(), key=len, reverse=True)
+        else:
+            # Legacy path — resolve by current login
+            all_mentions = MentionService.parse_all_mentions(comment_text)
+            if all_mentions["users"]:
+                user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
+                users = db.session.query(User).filter(User.id.in_(user_ids)).all() if user_ids else []
+                user_map = {u.login: u for u in users}
+            else:
+                user_map = {}
+            usernames_to_render = sorted(all_mentions.get("users", []), key=len, reverse=True)
 
-                for pattern in patterns:
-                    if pattern in result:
-                        replacement = (
-                            f'<a href="{entity_url}" '
-                            f'class="badge bg-info text-white text-decoration-none" '
-                            f'title="View {entity_type}: {mention_text}" '
-                            f'target="_blank">'
-                            f'{mention_text} <i class="bi bi-box-arrow-up-right"></i>'
-                            f"</a>"
-                        )
-                        result = result.replace(pattern, replacement)
-
-        # Resolve and render user mentions
-        if all_mentions["users"]:
-            user_ids = MentionService.resolve_user_mentions(all_mentions["users"], organization_id)
-
-            if user_ids:
-                users = db.session.query(User).filter(User.id.in_(user_ids)).all()
-                user_map = {user.login: user for user in users}
-
-                # Sort by length descending to replace longer usernames first
-                sorted_usernames = sorted(all_mentions["users"], key=len, reverse=True)
-
-                for username in sorted_usernames:
-                    user = user_map.get(username)
-                    if user:
-                        pattern = f"@{username}"
-                        # Only replace if not already part of an entity mention replacement
-                        if pattern in result and "badge bg-info" not in result.split(pattern)[0][-50:]:
-                            replacement = f'<span class="mention" data-user-id="{user.id}">@{user.display_name}</span>'
-                            result = result.replace(pattern, replacement, 1)
+        for username in usernames_to_render:
+            user = user_map.get(username)
+            if user:
+                pattern = f"@{username}"
+                if pattern in result and "badge bg-info" not in result.split(pattern)[0][-50:]:
+                    replacement = f'<span class="mention" data-user-id="{user.id}">@{user.display_name}</span>'
+                    result = result.replace(pattern, replacement, 1)
 
         return result

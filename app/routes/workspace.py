@@ -3654,12 +3654,14 @@ def get_data():
         )
         result = []
         for link in links:
+            type_info = link.get_type_info()
             result.append(
                 {
                     "id": link.id,
                     "title": link.title,
                     "url": link.url,
-                    "icon": link.get_display_icon(),
+                    "bs_icon": type_info["bs_icon"],
+                    "icon_color": type_info["color"],
                 }
             )
         return result

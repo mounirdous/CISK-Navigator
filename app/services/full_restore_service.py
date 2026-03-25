@@ -21,7 +21,7 @@ Features:
 ✅ **Action Items & Memos** (v3.0+):
    - All action items and memos restored
    - Governance body links restored
-   - Entity mentions resolved by name (warnings if not found)
+   - Entity mentions resolved by json_id (collision-free); falls back to name for old backups
 ✅ **Saved Views / Filter Presets** (v5.0+):
    - Workspace and action register presets restored per user
 ✅ **Full Geography hierarchy** (v6.0+):
@@ -340,6 +340,8 @@ class FullRestoreService:
             stats["warnings"].extend(geo_stats.get("warnings", []))
 
             # Step 3: Import Spaces with full hierarchy
+            # json_id_map accumulates source_entity_id → new_db_id for all entity types
+            json_id_map = {}  # {entity_type: {source_json_id: new_db_id}}
             for space_data in backup.get("spaces", []):
                 try:
                     space_stats = FullRestoreService._restore_space_hierarchy(
@@ -367,11 +369,16 @@ class FullRestoreService:
                     ]:
                         stats[key] += space_stats.get(key, 0)
                     stats["errors"].extend(space_stats.get("errors", []))
+                    # Merge json_id_map from this space into the global map
+                    for entity_type, id_map in space_stats.get("json_id_map", {}).items():
+                        json_id_map.setdefault(entity_type, {}).update(id_map)
                 except Exception as e:
                     stats["errors"].append(f"Space '{space_data.get('name')}': {str(e)}")
 
             # Step 4: Restore Stakeholders and Maps
-            stakeholder_stats = FullRestoreService._restore_stakeholders(backup, organization_id, user_map, geo_map)
+            stakeholder_stats = FullRestoreService._restore_stakeholders(
+                backup, organization_id, user_map, geo_map, json_id_map
+            )
             stats["stakeholders"] += stakeholder_stats.get("stakeholders", 0)
             stats["stakeholder_relationships"] += stakeholder_stats.get("stakeholder_relationships", 0)
             stats["stakeholder_entity_links"] += stakeholder_stats.get("stakeholder_entity_links", 0)
@@ -383,7 +390,9 @@ class FullRestoreService:
             stats["warnings"].extend(map_stats.get("warnings", []))
 
             # Step 6: Restore Action Items and Memos
-            ai_stats = FullRestoreService._restore_action_items(backup, organization_id, user_map, governance_body_map)
+            ai_stats = FullRestoreService._restore_action_items(
+                backup, organization_id, user_map, governance_body_map, json_id_map
+            )
             stats["action_items"] += ai_stats.get("action_items", 0)
             stats["entity_links_restored"] += ai_stats.get("entity_links_restored", 0)
             stats["warnings"].extend(ai_stats.get("warnings", []))
@@ -562,6 +571,9 @@ class FullRestoreService:
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
             "errors": [],
+            # json_id → new DB id map, built as entities are created
+            # {entity_type: {json_id: new_db_id}}
+            "json_id_map": {},
         }
 
         # Create Space
@@ -592,6 +604,8 @@ class FullRestoreService:
         db.session.add(space)
         db.session.flush()
         stats["spaces"] += 1
+        if "json_id" in space_data:
+            stats["json_id_map"].setdefault("space", {})[space_data["json_id"]] = space.id
         stats["entity_links_restored"] += FullRestoreService._restore_entity_links("space", space.id, space_data)
 
         # Restore challenges
@@ -619,6 +633,8 @@ class FullRestoreService:
                 db.session.add(challenge)
                 db.session.flush()
                 stats["challenges"] += 1
+                if "json_id" in challenge_data:
+                    stats["json_id_map"].setdefault("challenge", {})[challenge_data["json_id"]] = challenge.id
                 stats["entity_links_restored"] += FullRestoreService._restore_entity_links("challenge", challenge.id, challenge_data)
 
                 # Restore initiatives
@@ -657,6 +673,8 @@ class FullRestoreService:
                         db.session.flush()
                         initiative_map[init_name] = initiative
                         stats["initiatives"] += 1
+                        if "json_id" in initiative_data:
+                            stats["json_id_map"].setdefault("initiative", {})[initiative_data["json_id"]] = initiative.id
                         stats["entity_links_restored"] += FullRestoreService._restore_entity_links("initiative", initiative.id, initiative_data)
 
                         # Restore progress updates
@@ -705,6 +723,8 @@ class FullRestoreService:
                             db.session.flush()
                             system_map[sys_name] = system
                             stats["systems"] += 1
+                            if "json_id" in system_data:
+                                stats["json_id_map"].setdefault("system", {})[system_data["json_id"]] = system.id
                             stats["entity_links_restored"] += FullRestoreService._restore_entity_links("system", system.id, system_data)
 
                         # Link Initiative to System
@@ -723,6 +743,8 @@ class FullRestoreService:
                                 kpi_stats = FullRestoreService._restore_kpi_with_data(
                                     kpi_data, init_sys_link.id, value_type_map, governance_body_map, geo_map
                                 )
+                                if "json_id" in kpi_data and kpi_stats.get("kpi_id"):
+                                    stats["json_id_map"].setdefault("kpi", {})[kpi_data["json_id"]] = kpi_stats["kpi_id"]
                                 stats["kpis"] += kpi_stats.get("kpis", 0)
                                 stats["contributions"] += kpi_stats.get("contributions", 0)
                                 stats["governance_body_links"] += kpi_stats.get("governance_body_links", 0)
@@ -778,6 +800,7 @@ class FullRestoreService:
         db.session.add(kpi)
         db.session.flush()
         stats["kpis"] += 1
+        stats["kpi_id"] = kpi.id  # Returned so callers can build json_id_map
         stats["entity_links_restored"] += FullRestoreService._restore_entity_links("kpi", kpi.id, kpi_data)
 
         # Restore governance body links
@@ -903,8 +926,12 @@ class FullRestoreService:
         return stats
 
     @staticmethod
-    def _restore_stakeholders(backup, organization_id, user_map, geo_map=None):
-        """Restore stakeholders with relationships and entity links"""
+    def _restore_stakeholders(backup, organization_id, user_map, geo_map=None, json_id_map=None):
+        """Restore stakeholders with relationships and entity links.
+
+        json_id_map: {entity_type: {source_json_id: new_db_id}} — used first for entity links.
+        Falls back to name-based lookup for old backups without json_id.
+        """
         from app.models import KPI, Challenge, Initiative, Space, System
 
         stats = {
@@ -992,6 +1019,7 @@ class FullRestoreService:
                     )
 
         # Step 3: Create entity links
+        _json_id_map = json_id_map or {}
         for stakeholder_data in backup.get("stakeholders", []):
             stakeholder = stakeholder_map.get(stakeholder_data["name"])
             if not stakeholder:
@@ -1000,37 +1028,48 @@ class FullRestoreService:
             for link_data in stakeholder_data.get("entity_links", []):
                 try:
                     entity_type = link_data["entity_type"]
-                    entity_name = link_data["entity_name"]
 
-                    # Find entity by name
-                    entity = None
-                    if entity_type == "space":
-                        entity = Space.query.filter_by(organization_id=organization_id, name=entity_name).first()
-                    elif entity_type == "challenge":
-                        entity = Challenge.query.filter_by(organization_id=organization_id, name=entity_name).first()
-                    elif entity_type == "initiative":
-                        entity = Initiative.query.filter_by(organization_id=organization_id, name=entity_name).first()
-                    elif entity_type == "system":
-                        entity = System.query.filter_by(organization_id=organization_id, name=entity_name).first()
-                    elif entity_type == "kpi":
-                        entity = (
-                            KPI.query.join(KPI.initiative_system_link)
-                            .join(InitiativeSystemLink.initiative)
-                            .filter(Initiative.organization_id == organization_id, KPI.name == entity_name)
-                            .first()
-                        )
+                    # Prefer json_id (collision-free); fall back to name for old backups
+                    resolved_id = None
+                    source_json_id = link_data.get("json_id")
+                    if source_json_id is not None:
+                        resolved_id = _json_id_map.get(entity_type, {}).get(source_json_id)
 
-                    if not entity:
+                    if resolved_id is None:
+                        entity_name = link_data.get("entity_name")
+                        if entity_name:
+                            if entity_type == "space":
+                                row = Space.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                            elif entity_type == "challenge":
+                                row = Challenge.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                            elif entity_type == "initiative":
+                                row = Initiative.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                            elif entity_type == "system":
+                                row = System.query.filter_by(organization_id=organization_id, name=entity_name).first()
+                            elif entity_type == "kpi":
+                                row = (
+                                    KPI.query.join(KPI.initiative_system_link)
+                                    .join(InitiativeSystemLink.initiative)
+                                    .filter(Initiative.organization_id == organization_id, KPI.name == entity_name)
+                                    .first()
+                                )
+                            else:
+                                row = None
+                            if row:
+                                resolved_id = row.id
+
+                    if not resolved_id:
+                        label = link_data.get("entity_name") or link_data.get("json_id", "?")
                         stats["warnings"].append(
                             f"Entity link for stakeholder '{stakeholder_data['name']}': "
-                            f"{entity_type} '{entity_name}' not found"
+                            f"{entity_type} '{label}' not found"
                         )
                         continue
 
                     entity_link = StakeholderEntityLink(
                         stakeholder_id=stakeholder.id,
                         entity_type=entity_type,
-                        entity_id=entity.id,
+                        entity_id=resolved_id,
                         interest_level=link_data.get("interest_level", 50),
                         impact_level=link_data.get("impact_level", 50),
                         notes=link_data.get("notes"),
@@ -1047,13 +1086,18 @@ class FullRestoreService:
         return stats
 
     @staticmethod
-    def _restore_action_items(backup, organization_id, user_map, governance_body_map):
-        """Restore action items and memos with governance body links and entity mentions"""
+    def _restore_action_items(backup, organization_id, user_map, governance_body_map, json_id_map=None):
+        """Restore action items and memos with governance body links and entity mentions.
+
+        json_id_map: {entity_type: {source_json_id: new_db_id}} — built during hierarchy restore.
+        Used first; falls back to name-based lookup for old backups without json_id.
+        """
         from app.models import User
 
         stats = {"action_items": 0, "entity_links_restored": 0, "warnings": []}
+        json_id_map = json_id_map or {}
 
-        # Build entity name→id lookup maps for mention resolution
+        # Name-based fallback lookup (for old backups without json_id)
         entity_lookup = {
             "space": {s.name: s.id for s in Space.query.filter_by(organization_id=organization_id).all()},
             "challenge": {c.name: c.id for c in Challenge.query.filter_by(organization_id=organization_id).all()},
@@ -1139,20 +1183,31 @@ class FullRestoreService:
                 # Restore entity mentions
                 for mention_data in item_data.get("mentions", []):
                     entity_type = mention_data.get("entity_type")
-                    entity_name = mention_data.get("entity_name")
-                    if not entity_type or not entity_name:
+                    if not entity_type:
                         continue
-                    entity_id = entity_lookup.get(entity_type, {}).get(entity_name)
+
+                    # Prefer json_id (collision-free); fall back to entity_name for old backups
+                    entity_id = None
+                    source_json_id = mention_data.get("json_id")
+                    if source_json_id is not None:
+                        entity_id = json_id_map.get(entity_type, {}).get(source_json_id)
+
+                    if entity_id is None:
+                        entity_name = mention_data.get("entity_name")
+                        if entity_name:
+                            entity_id = entity_lookup.get(entity_type, {}).get(entity_name)
+
                     if not entity_id:
+                        label = mention_data.get("entity_name") or mention_data.get("json_id", "?")
                         stats["warnings"].append(
-                            f"Action item '{item_data['title']}': mention '{entity_name}' ({entity_type}) not found (skipped)"
+                            f"Action item '{item_data['title']}': mention '{label}' ({entity_type}) not found (skipped)"
                         )
                         continue
                     mention = ActionItemMention(
                         action_item_id=action_item.id,
                         entity_type=entity_type,
                         entity_id=entity_id,
-                        mention_text=mention_data.get("mention_text", f"@{entity_name}"),
+                        mention_text=mention_data.get("mention_text", ""),
                     )
                     db.session.add(mention)
 
