@@ -1079,17 +1079,22 @@ def restore_backup():
 
         # Detect format: JSON (full backup) or YAML (structure only)
         if filename.endswith((".json", ".json.gz")):
-            # Full backup - extract governance bodies for mapping
+            # Full backup - detect users that need mapping and governance bodies
             try:
                 import json
 
                 backup_data = json.loads(backup_content)
                 governance_bodies = backup_data.get("governance_bodies", [])
+                backup_users = backup_data.get("users", [])
             except Exception:
                 governance_bodies = []
+                backup_users = []
 
-            if governance_bodies:
-                # Store backup to a temp file (too large for session cookie)
+            # Detect users not auto-resolvable by login
+            unmapped_users = [u for u in backup_users if not User.query.filter_by(login=u["login"]).first()]
+
+            needs_step = unmapped_users or governance_bodies
+            if needs_step:
                 import tempfile
 
                 tmp = tempfile.NamedTemporaryFile(
@@ -1106,13 +1111,16 @@ def restore_backup():
                 session["pending_full_backup_path"] = tmp.name
                 session["full_backup_org_id"] = org_id
                 session["full_backup_governance_bodies"] = [gb["name"] for gb in governance_bodies]
-                # Remove old key if present
+                session.pop("full_backup_user_mapping", None)
                 session.pop("pending_full_backup", None)
 
-                # Redirect to mapping page
-                return redirect(url_for("global_admin.full_backup_governance_mapping"))
+                if unmapped_users:
+                    session["full_backup_unmapped_users"] = [u["login"] for u in unmapped_users]
+                    return redirect(url_for("global_admin.full_backup_user_mapping"))
+                else:
+                    return redirect(url_for("global_admin.full_backup_governance_mapping"))
             else:
-                # No governance bodies, proceed directly
+                # All users found in DB and no governance bodies — proceed directly
                 from app.services.full_restore_service import FullRestoreService
 
                 result = FullRestoreService.restore_from_json(backup_content, org_id)
@@ -1144,6 +1152,10 @@ def restore_backup():
 
                     flash(details, "info")
 
+                    if stats.get("errors"):
+                        flash(f'Restore errors: {len(stats["errors"])}', "danger")
+                        for err in stats["errors"][:5]:
+                            flash(f"  • {err}", "danger")
                     if stats.get("warnings"):
                         flash(f'⚠ {len(stats["warnings"])} warnings', "warning")
                         for warning in stats["warnings"][:5]:
@@ -1152,6 +1164,8 @@ def restore_backup():
                     flash("Restore failed", "danger")
                     error_msg = result.get("error", "Unknown error")
                     flash(error_msg, "danger")
+                    for err in result.get("errors", [])[:5]:
+                        flash(f"  • {err}", "danger")
 
         else:
             # YAML - structure only (backward compatibility)
@@ -1178,6 +1192,107 @@ def restore_backup():
         traceback.print_exc()
 
     return redirect(url_for("global_admin.backup_restore"))
+
+
+@bp.route("/backup-restore/user-mapping", methods=["GET", "POST"])
+@login_required
+@global_admin_required
+def full_backup_user_mapping():
+    """Map backup users that don't exist in DB to existing users or skip them"""
+    import json
+    import os
+
+    backup_path = session.get("pending_full_backup_path")
+    org_id = session.get("full_backup_org_id")
+    unmapped_logins = session.get("full_backup_unmapped_users", [])
+
+    if not backup_path or not os.path.exists(backup_path) or not org_id:
+        flash("No pending backup restore found", "warning")
+        return redirect(url_for("global_admin.backup_restore"))
+
+    with open(backup_path, "r", encoding="utf-8") as f:
+        backup_content = f.read()
+    backup_data = json.loads(backup_content)
+
+    org = db.session.get(Organization, org_id)
+    if not org:
+        flash("Organization not found", "danger")
+        return redirect(url_for("global_admin.backup_restore"))
+
+    # Only show users that couldn't be auto-resolved
+    unmapped_users = [u for u in backup_data.get("users", []) if u["login"] in unmapped_logins]
+    existing_users = User.query.filter(User.is_active.is_(True)).order_by(User.display_name).all()
+    gb_names = session.get("full_backup_governance_bodies", [])
+
+    if request.method == "POST":
+        # Build user mapping from form
+        user_mapping = {}
+        for idx, backup_user in enumerate(unmapped_users):
+            action = request.form.get(f"user_action_{idx}", "skip")
+            backup_login = backup_user["login"]
+            if action == "map":
+                mapped_user_id = request.form.get(f"map_to_user_{idx}", type=int)
+                if mapped_user_id:
+                    user_mapping[backup_login] = {"action": "map", "user_id": mapped_user_id}
+            elif action == "create":
+                user_mapping[backup_login] = {
+                    "action": "create",
+                    "login": backup_login,
+                    "email": backup_user["email"],
+                    "display_name": backup_user["display_name"],
+                    "permissions": backup_user.get("permissions", {}),
+                }
+            # "skip" → not added to mapping
+
+        session["full_backup_user_mapping"] = json.dumps(user_mapping)
+
+        if gb_names:
+            return redirect(url_for("global_admin.full_backup_governance_mapping"))
+
+        # No governance bodies — restore directly
+        import json as _json
+
+        from app.services.full_restore_service import FullRestoreService
+
+        tmp_path = session.pop("pending_full_backup_path", None)
+        session.pop("full_backup_org_id", None)
+        session.pop("full_backup_governance_bodies", None)
+        session.pop("full_backup_unmapped_users", None)
+        user_mapping_json = session.pop("full_backup_user_mapping", "{}")
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+        result = FullRestoreService.restore_from_json(
+            backup_content, org_id, user_mapping=_json.loads(user_mapping_json)
+        )
+
+        if result.get("success"):
+            stats = result.get("stats", result)
+            flash(f"Full restore to {org.name} complete!", "success")
+            details = (
+                f'Restored: {stats.get("spaces", 0)} spaces, {stats.get("challenges", 0)} challenges, '
+                f'{stats.get("initiatives", 0)} initiatives, {stats.get("systems", 0)} systems, '
+                f'{stats.get("kpis", 0)} KPIs, {stats.get("contributions", 0)} contributions'
+            )
+            flash(details, "info")
+            if stats.get("warnings"):
+                for warning in stats["warnings"][:5]:
+                    flash(f"  {warning}", "warning")
+        else:
+            flash("Restore failed: " + result.get("error", "Unknown error"), "danger")
+
+        return redirect(url_for("global_admin.backup_restore"))
+
+    from flask_wtf.csrf import generate_csrf
+
+    return render_template(
+        "global_admin/full_backup_user_mapping.html",
+        unmapped_users=unmapped_users,
+        existing_users=existing_users,
+        org=org,
+        has_governance_bodies=bool(gb_names),
+        csrf_token=generate_csrf,
+    )
 
 
 @bp.route("/backup-restore/governance-mapping", methods=["GET", "POST"])
@@ -1226,17 +1341,26 @@ def full_backup_governance_mapping():
                     gb_id = int(action.split("_")[1])
                     governance_body_mapping[gb_name] = gb_id
 
+            # Pick up user mapping from previous step (if user mapping was done)
+            import json as _json
+
+            user_mapping_json = session.pop("full_backup_user_mapping", None)
+            user_mapping = _json.loads(user_mapping_json) if user_mapping_json else None
+
             # Clear session data and temp file
             tmp_path = session.pop("pending_full_backup_path", None)
             session.pop("pending_full_backup", None)
             session.pop("full_backup_org_id", None)
             session.pop("full_backup_governance_bodies", None)
+            session.pop("full_backup_unmapped_users", None)
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
-            # Restore with governance body mapping
+            # Restore with governance body mapping and optional user mapping
             result = FullRestoreService.restore_from_json(
-                backup_content, org_id, governance_body_mapping=governance_body_mapping
+                backup_content, org_id,
+                governance_body_mapping=governance_body_mapping,
+                user_mapping=user_mapping,
             )
 
             if result.get("success"):
@@ -1266,6 +1390,10 @@ def full_backup_governance_mapping():
 
                 flash(details, "info")
 
+                if stats.get("errors"):
+                    flash(f'Restore errors: {len(stats["errors"])}', "danger")
+                    for err in stats["errors"][:5]:
+                        flash(f"  • {err}", "danger")
                 if stats.get("warnings"):
                     flash(f'⚠ {len(stats["warnings"])} warnings', "warning")
                     for warning in stats["warnings"][:5]:
@@ -1350,5 +1478,37 @@ def clear_organization_comments(org_id):
     except Exception as e:
         db.session.rollback()
         flash(f"Error clearing comments: {str(e)}", "danger")
+
+    return redirect(url_for("global_admin.organizations"))
+
+
+@bp.route("/organizations/<int:org_id>/empty", methods=["POST"])
+@login_required
+@global_admin_required
+def empty_organization(org_id):
+    """Permanently delete ALL data from an organization (structure + contributions + everything)."""
+    from app.routes.organization_admin import _delete_all_organization_data
+
+    org = Organization.query.get_or_404(org_id)
+    confirm_name = request.form.get("confirm_org_name", "").strip()
+
+    if confirm_name != org.name:
+        flash("Organization name confirmation does not match. Deletion cancelled.", "danger")
+        return redirect(url_for("global_admin.organizations"))
+
+    try:
+        AuditService.log_action(
+            action="EMPTY_ORGANIZATION",
+            entity_type="Organization",
+            entity_id=org.id,
+            entity_name=org.name,
+            description=f"Global admin emptied all data for organization {org.name}",
+        )
+        _delete_all_organization_data(org.id)
+        db.session.commit()
+        flash(f"All data permanently deleted from '{org.name}'. The organization is now empty.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error emptying organization: {str(e)}", "danger")
 
     return redirect(url_for("global_admin.organizations"))

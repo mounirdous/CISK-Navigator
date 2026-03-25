@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Map Users - Full Backup Restore{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow">
+                <div class="card-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 class="mb-0 text-white">
+                        <i class="bi bi-people-fill"></i> Map Unknown Users
+                    </h3>
+                    <p class="mb-0 mt-2 text-white">
+                        <strong>Restoring to:</strong> {{ org.name }} &mdash;
+                        The following users from the backup were not found in this instance by login.
+                    </p>
+                </div>
+                <div class="card-body">
+                    <!-- Progress indicator -->
+                    <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded" style="background: var(--bg-tertiary);">
+                        <div class="text-center">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center bg-success text-white fw-bold" style="width:36px;height:36px;">
+                                <i class="bi bi-check"></i>
+                            </div>
+                            <div style="font-size:0.8rem; margin-top:0.25rem;">Upload</div>
+                        </div>
+                        <div style="flex:1;height:2px;background:var(--border-color);"></div>
+                        <div class="text-center">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold text-white" style="width:36px;height:36px;background:#0d6efd;">2</div>
+                            <div style="font-size:0.8rem; margin-top:0.25rem;">Map Users</div>
+                        </div>
+                        <div style="flex:1;height:2px;background:var(--border-color);"></div>
+                        <div class="text-center">
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold" style="width:36px;height:36px;border:2px solid var(--border-color);">
+                                {% if has_governance_bodies %}3{% else %}3{% endif %}
+                            </div>
+                            <div style="font-size:0.8rem; margin-top:0.25rem;">
+                                {% if has_governance_bodies %}Map GB{% else %}Restore{% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>{{ unmapped_users|length }} user(s) not found in this instance.</strong>
+                        For each, choose to <strong>map to an existing account</strong>, <strong>create a new account</strong>, or <strong>skip</strong> (their filter presets and ownership records won't be restored).
+                    </div>
+
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        {% for backup_user in unmapped_users %}
+                        <div class="card mb-3 border">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold fs-5"
+                                         style="width:48px;height:48px;min-width:48px;background:linear-gradient(135deg,#667eea,#764ba2);">
+                                        {{ (backup_user.display_name or backup_user.login)[0].upper() }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ backup_user.display_name }}</div>
+                                        <div class="text-muted small">
+                                            <i class="bi bi-person-badge"></i> {{ backup_user.login }}
+                                            &nbsp;
+                                            <i class="bi bi-envelope"></i> {{ backup_user.email }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="form-check p-3 rounded border h-100" style="background:var(--bg-secondary);">
+                                            <input class="form-check-input" type="radio"
+                                                   name="user_action_{{ loop.index0 }}"
+                                                   id="skip_{{ loop.index0 }}"
+                                                   value="skip" checked>
+                                            <label class="form-check-label w-100" for="skip_{{ loop.index0 }}">
+                                                <strong>Skip</strong>
+                                                <div class="text-muted small">Don't restore this user's personal data</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check p-3 rounded border h-100" style="background:var(--bg-secondary);">
+                                            <input class="form-check-input" type="radio"
+                                                   name="user_action_{{ loop.index0 }}"
+                                                   id="map_{{ loop.index0 }}"
+                                                   value="map"
+                                                   onchange="document.getElementById('map_select_{{ loop.index0 }}').style.display='block'">
+                                            <label class="form-check-label w-100" for="map_{{ loop.index0 }}">
+                                                <strong>Map to existing</strong>
+                                                <div class="text-muted small">Link to an existing account</div>
+                                            </label>
+                                            <div id="map_select_{{ loop.index0 }}" style="display:none; margin-top:0.5rem;">
+                                                <select class="form-select form-select-sm" name="map_to_user_{{ loop.index0 }}">
+                                                    <option value="">-- Select user --</option>
+                                                    {% for u in existing_users %}
+                                                    <option value="{{ u.id }}">{{ u.display_name }} ({{ u.login }})</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check p-3 rounded border h-100" style="background:var(--bg-secondary);">
+                                            <input class="form-check-input" type="radio"
+                                                   name="user_action_{{ loop.index0 }}"
+                                                   id="create_{{ loop.index0 }}"
+                                                   value="create">
+                                            <label class="form-check-label w-100" for="create_{{ loop.index0 }}">
+                                                <strong>Create new</strong>
+                                                <div class="text-muted small">Login: <code>{{ backup_user.login }}</code>, password: <code>ChangeMe123!</code></div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('global_admin.backup_restore') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-arrow-right"></i>
+                                {% if has_governance_bodies %}Next: Map Governance Bodies{% else %}Restore{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// When a non-map radio is selected, hide the map select dropdown
+document.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const idx = this.name.replace('user_action_', '');
+        const mapSelect = document.getElementById('map_select_' + idx);
+        if (mapSelect) {
+            mapSelect.style.display = this.value === 'map' ? 'block' : 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

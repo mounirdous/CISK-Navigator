@@ -4,7 +4,7 @@ Full Backup/Restore Service
 Complete data backup including structure AND data.
 Uses JSON format for portability and human-readability.
 
-BACKUP FORMAT VERSION: 7.0 (Updated 2026-03-23)
+BACKUP FORMAT VERSION: 9.0 (Updated 2026-03-25)
 
 What's backed up:
 ================
@@ -42,6 +42,9 @@ What's backed up:
    - Entity mentions (by json_id + entity_name fallback — collision-free since v8.0)
 ✅ URL Links / EntityLinks (v4.0+):
    - All URL links attached to Space, Challenge, Initiative, System, KPI, Action Item
+✅ Entity Type Branding (v9.0+):
+   - Default colors, icons, display names, descriptions per entity type
+   - Default logos for each entity type (if configured)
 ✅ Saved Views / Filter Presets (v5.0+):
    - All workspace and action register saved views per user
 ✅ Full Geography hierarchy (v6.0+):
@@ -64,6 +67,7 @@ Version Compatibility:
 - Backup format v6.0: Full geography hierarchy (was incorrectly treated as global)
 - Backup format v7.0: Initiative progress updates (execution tracking)
 - Backup format v8.0: json_id cross-references in mentions and stakeholder entity links (collision-free, rename-safe)
+- Backup format v9.0: EntityTypeDefault branding (colors, icons, default logos per entity type)
 - Always restore to same or newer app version for best compatibility
 """
 
@@ -102,7 +106,7 @@ class FullBackupService:
 
         backup = {
             "metadata": {
-                "backup_format_version": "8.0",  # Backup format version
+                "backup_format_version": "9.0",  # Backup format version
                 "app_version": app_version,  # CISK Navigator version
                 "db_schema_version": DB_SCHEMA_VERSION,  # Database schema version
                 "created_at": datetime.utcnow().isoformat(),
@@ -113,6 +117,7 @@ class FullBackupService:
                 "Restore REQUIRES matching DB schema version for data integrity.",
             },
             "organization": FullBackupService._export_organization(org),
+            "entity_branding": FullBackupService._export_entity_branding(organization_id),
             "users": FullBackupService._export_users(organization_id),
             "value_types": FullBackupService._export_value_types(organization_id),
             "governance_bodies": FullBackupService._export_governance_bodies(organization_id),
@@ -150,6 +155,31 @@ class FullBackupService:
             }
 
         return org_data
+
+    @staticmethod
+    def _export_entity_branding(organization_id):
+        """Export EntityTypeDefault branding configuration (colors, icons, logos per entity type)"""
+        import base64
+
+        from app.models import EntityTypeDefault
+
+        defaults = EntityTypeDefault.query.filter_by(organization_id=organization_id).all()
+        result = []
+        for d in defaults:
+            entry = {
+                "entity_type": d.entity_type,
+                "default_color": d.default_color,
+                "default_icon": d.default_icon,
+                "display_name": d.display_name,
+                "description": d.description,
+            }
+            if d.default_logo_data and d.default_logo_mime_type:
+                entry["default_logo"] = {
+                    "mime_type": d.default_logo_mime_type,
+                    "data": base64.b64encode(d.default_logo_data).decode("utf-8"),
+                }
+            result.append(entry)
+        return result
 
     @staticmethod
     def _export_users(organization_id):

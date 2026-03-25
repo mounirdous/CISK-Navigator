@@ -5,6 +5,32 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2026-03-25
+
+### Fixed
+- **Empty org now fully clears all data** — geography (regions/countries/sites), stakeholders, stakeholder maps, user filter presets were not being deleted by the empty org function; fixed
+- **Restore now shows errors in flash messages** — if any entities failed to restore (e.g. value type conflict), errors are now surfaced as danger flash messages even when the overall restore succeeded
+
+## [3.4.9] - 2026-03-25
+
+### Changed
+- **Organization management consolidated in Instance Admin** — `/global-admin/organizations` now has all actions in one place per org: Edit, Clone, Backup (download), Restore (upload modal), Clear Comments, Archive, Empty
+- **"Empty org" moved from Org Admin to Instance Admin** — the Danger Zone in `/org-admin` is removed; only global admins can empty an organization
+
+## [3.4.8] - 2026-03-25
+
+### Added
+- **JSON restore (global admin): user mapping step** — when a backup contains users whose login doesn't exist in the current instance, a new "Map Users" step is shown before restoring. For each unknown user: map to an existing account, create a new one, or skip. Users already in the instance are auto-resolved silently.
+
+## [3.4.7] - 2026-03-25
+
+### Added
+- **JSON backup/restore: entity branding export/import** — `EntityTypeDefault` records (default colors, icons, display names, descriptions, and default logos per entity type) are now included in JSON export and restored on import. Backup format v9.0.
+
+### Fixed
+- **JSON restore: filter presets no longer skipped** — when restoring on the same instance (or when no explicit user mapping is provided), filter preset restore now falls back to a DB login lookup so presets for existing users are always restored
+- **Workspace level focus pill: correct item count** — the level count pill in the grey toolbar now shows the count for the *focused* level (e.g. Challenges when spaces are dimmed), not the parent level
+
 ## [3.4.6] - 2026-03-25
 
 ### Added

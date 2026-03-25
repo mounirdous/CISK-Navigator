@@ -1672,6 +1672,12 @@
                 <i x-show="hasActiveFilters" class="bi bi-funnel-fill" style="color: #ffc107;"></i>
                 <span x-text="filterSummary"></span>
             </span>
+            <template x-if="levelFocusInfo">
+                <span style="display:inline-flex; align-items:center; gap:0.3rem; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35); border-radius:20px; padding:0.15rem 0.65rem; font-size:0.82rem; font-weight:600; color:white;">
+                    <i :class="'bi ' + levelFocusInfo.icon"></i>
+                    <span x-text="levelFocusInfo.count + ' ' + levelFocusInfo.label"></span>
+                </span>
+            </template>
             <a x-show="!loading && actionItemsCount > 0"
                href="{{ url_for('action_items') }}"
                style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: white; opacity: 0.9;"
@@ -3311,7 +3317,7 @@ function workspaceV2(orgId, filterPresets) {
         _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
 
         // Level Focus Mode
-        focusLevelMode: false,   // When true, dims parent levels when using +/- level buttons
+        focusLevelMode: true,    // When true, dims parent levels when using +/- level buttons
         focusedLevel: null,      // null = no focus; 0-4 = deepest visible level
 
         // Computed
@@ -3478,6 +3484,21 @@ function workspaceV2(orgId, filterPresets) {
             const totalSpaces = this.spaces.length;
             const filteredSpaces = this.filteredSpaces.length;
             return `${this.totalCount} items (${filteredSpaces}/${totalSpaces} spaces)`;
+        },
+
+        get levelFocusInfo() {
+            // focusedLevel=1 means spaces are dimmed → challenges are the focused items
+            // focusedLevel=2 → initiatives focused, focusedLevel=3 → systems focused
+            if (!this.focusLevelMode || this.focusedLevel === null) return null;
+            const levels = {
+                1: { label: 'Challenges',  icon: 'bi-bullseye',       count: () => this.filteredSpaces.reduce((n, s) => n + s.challenges.length, 0) },
+                2: { label: 'Initiatives', icon: 'bi-rocket-takeoff',  count: () => this.filteredSpaces.reduce((n, s) => n + s.challenges.reduce((m, c) => m + c.initiatives.length, 0), 0) },
+                3: { label: 'Systems',     icon: 'bi-gear',            count: () => this.filteredSpaces.reduce((n, s) => n + s.challenges.reduce((m, c) => m + c.initiatives.reduce((k, i) => k + i.systems.length, 0), 0), 0) },
+                4: { label: 'KPIs',        icon: 'bi-graph-up',        count: () => this.filteredSpaces.reduce((n, s) => n + s.challenges.reduce((m, c) => m + c.initiatives.reduce((k, i) => k + i.systems.reduce((j, sys) => j + (sys.kpis ? sys.kpis.length : 0), 0), 0), 0), 0) },
+            };
+            const info = levels[this.focusedLevel];
+            if (!info) return null;
+            return { label: info.label, icon: info.icon, count: info.count() };
         },
 
         // Methods

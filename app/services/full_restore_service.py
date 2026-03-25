@@ -136,6 +136,7 @@ class FullRestoreService:
             "geography_countries": 0,
             "geography_sites": 0,
             "filter_presets_restored": 0,
+            "entity_branding_restored": 0,
             "entity_links_restored": 0,
             "logos_restored": 0,
             "formulas_restored": 0,
@@ -277,6 +278,11 @@ class FullRestoreService:
                     setattr(org, field, org_data[field])
             db.session.flush()
 
+            # Step 1.6: Restore entity branding (EntityTypeDefault)
+            branding_count, branding_warnings = FullRestoreService._restore_entity_branding(backup, organization_id)
+            stats["entity_branding_restored"] = branding_count
+            stats["warnings"].extend(branding_warnings)
+
             # Step 2: Import Value Types
             # First pass: Create all value types without formulas
             for vt_data in backup.get("value_types", []):
@@ -413,6 +419,59 @@ class FullRestoreService:
         return stats
 
     @staticmethod
+    def _restore_entity_branding(backup, organization_id):
+        """Restore EntityTypeDefault branding (colors, icons, logos per entity type). Returns (count, warnings)."""
+        import base64
+
+        from app.models import EntityTypeDefault
+
+        count = 0
+        warnings = []
+        for entry in backup.get("entity_branding", []):
+            entity_type = entry.get("entity_type")
+            if not entity_type:
+                continue
+            existing = EntityTypeDefault.query.filter_by(
+                organization_id=organization_id, entity_type=entity_type
+            ).first()
+            if existing:
+                # Update existing record
+                existing.default_color = entry.get("default_color", existing.default_color)
+                existing.default_icon = entry.get("default_icon", existing.default_icon)
+                existing.display_name = entry.get("display_name", existing.display_name)
+                existing.description = entry.get("description", existing.description)
+                if "default_logo" in entry:
+                    try:
+                        existing.default_logo_data = base64.b64decode(entry["default_logo"]["data"])
+                        existing.default_logo_mime_type = entry["default_logo"]["mime_type"]
+                    except Exception as e:
+                        warnings.append(f"Failed to restore default logo for '{entity_type}': {e}")
+                count += 1
+            else:
+                logo_data = None
+                logo_mime = None
+                if "default_logo" in entry:
+                    try:
+                        logo_data = base64.b64decode(entry["default_logo"]["data"])
+                        logo_mime = entry["default_logo"]["mime_type"]
+                    except Exception as e:
+                        warnings.append(f"Failed to decode default logo for '{entity_type}': {e}")
+                db.session.add(EntityTypeDefault(
+                    organization_id=organization_id,
+                    entity_type=entity_type,
+                    default_color=entry.get("default_color", "#6b7280"),
+                    default_icon=entry.get("default_icon", "📋"),
+                    display_name=entry.get("display_name", entity_type.title()),
+                    description=entry.get("description"),
+                    default_logo_data=logo_data,
+                    default_logo_mime_type=logo_mime,
+                ))
+                count += 1
+        if count:
+            db.session.flush()
+        return count, warnings
+
+    @staticmethod
     def _restore_entity_links(entity_type, entity_id, data):
         """Create EntityLink records from a backup entity dict. Returns count created."""
         count = 0
@@ -439,13 +498,18 @@ class FullRestoreService:
     @staticmethod
     def _restore_filter_presets(backup, organization_id, user_map):
         """Restore saved views (filter presets) from backup. Returns (count, warnings)."""
+        from app.models import User
+
         count = 0
         warnings = []
         for p in backup.get("filter_presets", []):
             login = p.get("user_login")
             user = user_map.get(login) if login else None
+            if not user and login:
+                # Not in explicit mapping — try to find by login in DB
+                user = User.query.filter_by(login=login).first()
             if not user:
-                warnings.append(f"Filter preset '{p.get('name')}' skipped: user '{login}' not in restore mapping")
+                warnings.append(f"Filter preset '{p.get('name')}' skipped: user '{login}' not found")
                 continue
             # Skip if duplicate (same user+org+feature+name already exists)
             existing = UserFilterPreset.query.filter_by(

@@ -3638,50 +3638,24 @@ def _delete_all_organization_data(org_id):
     for log in audit_logs:
         db.session.delete(log)
 
+    # 19. Delete Stakeholders (memberships/relationships/entity links cascade)
+    from app.models import Stakeholder, StakeholderMap
+
+    StakeholderMap.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+    Stakeholder.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
+    # 21. Delete Geography (regions, countries, sites — cascade deletes children)
+    from app.models import GeographyRegion
+
+    GeographyRegion.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
+    # 22. Delete User Filter Presets (saved views) for this org
+    from app.models import UserFilterPreset
+
+    UserFilterPreset.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
     db.session.flush()
 
-
-@bp.route("/clear-organization-data", methods=["POST"])
-@login_required
-@organization_required
-def clear_organization_data():
-    """Clear all data from the current organization (DESTRUCTIVE!)"""
-    org_id = session.get("organization_id")
-    org_name = session.get("organization_name")
-
-    # Verify organization name confirmation
-    confirm_name = request.form.get("confirm_org_name", "").strip()
-    if confirm_name != org_name:
-        flash("Organization name confirmation does not match. Data deletion cancelled.", "danger")
-        return redirect(url_for("organization_admin.index"))
-
-    try:
-        # Log the action before deletion
-        AuditService.log_action(
-            action="CLEAR_ALL_DATA",
-            entity_type="Organization",
-            entity_id=org_id,
-            entity_name=org_name,
-            description=f"Complete data deletion for organization {org_name}",
-        )
-
-        # Delete all organization data
-        _delete_all_organization_data(org_id)
-
-        # Commit the transaction
-        db.session.commit()
-
-        flash(
-            f"All data has been permanently deleted from {org_name}. The organization is now empty.",
-            "success",
-        )
-
-        return redirect(url_for("workspace.index"))
-
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error clearing organization data: {str(e)}", "danger")
-        return redirect(url_for("organization_admin.index"))
 
 
 @bp.route("/initiatives/<int:initiative_id>/form", methods=["GET", "POST"])

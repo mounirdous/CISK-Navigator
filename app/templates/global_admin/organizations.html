@@ -176,20 +176,37 @@
                                title="Clone organization">
                                 <i class="bi bi-files"></i> Clone
                             </a>
+                            <a href="{{ url_for('global_admin.create_backup', org_id=org.id) }}"
+                               class="btn btn-outline-info btn-sm"
+                               title="Download full backup">
+                                <i class="bi bi-cloud-download-fill"></i> Backup
+                            </a>
+                            <button type="button" class="btn btn-outline-info btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#restoreOrgModal{{ org.id }}"
+                                    title="Restore from backup file">
+                                <i class="bi bi-cloud-upload-fill"></i> Restore
+                            </button>
                             <form method="POST" action="{{ url_for('global_admin.clear_organization_comments', org_id=org.id) }}" style="display: inline;"
-                                  onsubmit="return confirm('⚠️ Are you sure you want to delete ALL comments and mentions for {{ org.name }}?\n\nThis action cannot be undone and will permanently remove:\n- All KPI cell comments\n- All @mentions\n- All comment history\n\nType YES to confirm this destructive action.');">
+                                  onsubmit="return confirm('Delete ALL comments and mentions for {{ org.name }}? This cannot be undone.');">
                                 {{ csrf_form.hidden_tag() }}
                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Clear all comments">
-                                    <i class="bi bi-chat-left-text"></i> Clear Comments
+                                    <i class="bi bi-chat-left-text"></i> Comments
                                 </button>
                             </form>
                             <form method="POST" action="{{ url_for('global_admin.archive_organization', org_id=org.id) }}" style="display: inline;"
-                                  onsubmit="return confirm('Archive organization {{ org.name }}?\n\nThe organization will be hidden but can be restored later.\nAll data will be preserved.');">
+                                  onsubmit="return confirm('Archive organization {{ org.name }}? It will be hidden but can be restored later.');">
                                 {{ csrf_form.hidden_tag() }}
                                 <button type="submit" class="btn btn-outline-warning btn-sm" title="Archive organization">
                                     <i class="bi bi-archive-fill"></i> Archive
                                 </button>
                             </form>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#emptyOrgModal{{ org.id }}"
+                                    title="Permanently delete all data from this organization">
+                                <i class="bi bi-trash-fill"></i> Empty
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -207,4 +224,87 @@
         </div>
     {% endif %}
 </div>
+
+{% if organizations %}
+{% for org in organizations %}
+
+<!-- Restore modal for {{ org.name }} -->
+<div class="modal fade" id="restoreOrgModal{{ org.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0dcaf0 0%, #0d6efd 100%);">
+                <h5 class="modal-title text-white">
+                    <i class="bi bi-cloud-upload-fill"></i> Restore to {{ org.name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    This will <strong>replace all data</strong> in <strong>{{ org.name }}</strong> with the backup contents. Make sure you have a current backup before proceeding.
+                </div>
+                <form method="POST" action="{{ url_for('global_admin.restore_backup') }}"
+                      enctype="multipart/form-data" id="restoreForm{{ org.id }}">
+                    {{ csrf_form.hidden_tag() }}
+                    <input type="hidden" name="org_id" value="{{ org.id }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Select backup file (.json or .json.gz)</label>
+                        <input type="file" class="form-control" name="backup_upload"
+                               accept=".json,.json.gz,.yaml,.yml" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="restoreForm{{ org.id }}" class="btn btn-primary">
+                    <i class="bi bi-cloud-upload-fill"></i> Restore
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Empty modal for {{ org.name }} -->
+<div class="modal fade" id="emptyOrgModal{{ org.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Empty Organization — {{ org.name }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <strong>THIS CANNOT BE UNDONE.</strong><br>
+                    All data in <strong>{{ org.name }}</strong> will be permanently deleted:<br>
+                    spaces, challenges, initiatives, systems, KPIs, contributions, value types,
+                    governance bodies, stakeholders, action items, comments, and snapshots.<br>
+                    <em>User accounts and org settings are preserved.</em>
+                </div>
+                <p class="mb-2">Type the organization name to confirm:</p>
+                <p class="text-center mb-3"><code class="fs-6 bg-light p-2 rounded">{{ org.name }}</code></p>
+                <form method="POST" action="{{ url_for('global_admin.empty_organization', org_id=org.id) }}" id="emptyOrgForm{{ org.id }}">
+                    {{ csrf_form.hidden_tag() }}
+                    <input type="text" class="form-control mb-3" name="confirm_org_name"
+                           placeholder="Type organization name to confirm" autocomplete="off" required>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="emptyConfirm{{ org.id }}" required>
+                        <label class="form-check-label" for="emptyConfirm{{ org.id }}">
+                            I understand this is permanent and cannot be undone
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" form="emptyOrgForm{{ org.id }}" class="btn btn-danger">
+                    <i class="bi bi-trash-fill"></i> Delete Everything
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
 {% endblock %}

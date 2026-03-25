@@ -268,7 +268,7 @@ def index():
         user_id=current_user.id, organization_id=org_id
     ).first()
     prefs = membership.preferences or {} if membership else {}
-    ws_focus_mode = bool(prefs.get("ws_focus_mode", False))
+    ws_focus_mode = bool(prefs.get("ws_focus_mode", True))
     ws_show_badges = bool(prefs.get("ws_show_badges", True))
 
     return render_template(
