@@ -10,6 +10,7 @@ from .announcement import (
     UserAnnouncementAcknowledgment,
 )
 from .audit_log import AuditLog
+from .benchmark import BenchmarkResult, BenchmarkRun
 from .cell_comment import CellComment, CommentEntityMention, CommentUserMention, MentionNotification
 from .challenge import Challenge
 from .contribution import Contribution
@@ -39,6 +40,8 @@ __all__ = [
     "ActionItem",
     "ActionItemMention",
     "AuditLog",
+    "BenchmarkResult",
+    "BenchmarkRun",
     "User",
     "Organization",
     "UserOrganizationMembership",

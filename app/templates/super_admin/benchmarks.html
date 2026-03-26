@@ -1,0 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}Benchmarks - Super Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('super_admin.index') }}">Super Admin</a></li>
+                    <li class="breadcrumb-item active">Benchmarks</li>
+                </ol>
+            </nav>
+            <h1 class="h2 mb-0">
+                <i class="bi bi-speedometer2 text-primary me-2"></i>
+                Performance Benchmarks
+            </h1>
+            <p class="text-muted mb-0">Measure and compare database &amp; server performance over time</p>
+        </div>
+    </div>
+
+    {# ── Run New Benchmark ── #}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-play-fill-circle text-success me-2"></i>Run New Benchmark</h5>
+                </div>
+                <div class="card-body">
+                    <form id="benchmarkForm" method="POST" action="{{ url_for('super_admin.benchmarks_run') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label for="benchName" class="form-label">Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="benchName" name="name" required
+                                       placeholder="e.g. Post-deploy v3.7">
+                            </div>
+                            <div class="col-md-3">
+                                <label for="benchDesc" class="form-label">Description</label>
+                                <textarea class="form-control" id="benchDesc" name="description" rows="1"
+                                          placeholder="Optional notes"></textarea>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="benchOrg" class="form-label">Organization <span class="text-danger">*</span></label>
+                                <select class="form-select" id="benchOrg" name="org_id" required>
+                                    <option value="">-- Select --</option>
+                                    {% for org in organizations %}
+                                    <option value="{{ org.id }}">{{ org.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="benchIter" class="form-label">Iterations</label>
+                                <select class="form-select" id="benchIter" name="iterations">
+                                    <option value="1">1</option>
+                                    <option value="3">3</option>
+                                    <option value="5" selected>5</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-success w-100" id="btnRunBench">
+                                    <i class="bi bi-play-fill me-1"></i> Run Benchmark
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Saved Runs Table ── #}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-clock-history text-info me-2"></i>Saved Runs</h5>
+                    <button class="btn btn-outline-primary btn-sm" id="btnCompare" disabled>
+                        <i class="bi bi-layout-three-columns me-1"></i> Compare Selected
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    {% if runs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:40px;"><input type="checkbox" id="checkAll" title="Select all"></th>
+                                    <th>Date</th>
+                                    <th>Name</th>
+                                    <th>Org</th>
+                                    <th>Iter.</th>
+                                    <th>Entities</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for run in runs %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="run-check" value="{{ run.id }}"
+                                               data-name="{{ run.name }}">
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <small>{{ run.created_at.strftime('%Y-%m-%d %H:%M') if run.created_at else '-' }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ run.name }}</strong>
+                                        {% if run.description %}
+                                        <br><small class="text-muted">{{ run.description }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if run.organization %}{{ run.organization.name }}{% else %}-{% endif %}
+                                    </td>
+                                    <td>{{ run.iterations }}</td>
+                                    <td>
+                                        <span class="badge bg-primary me-1">{{ run.count_spaces }}S</span>
+                                        <span class="badge bg-success me-1">{{ run.count_challenges }}C</span>
+                                        <span class="badge bg-warning text-dark me-1">{{ run.count_initiatives }}I</span>
+                                        <span class="badge bg-info text-dark me-1">{{ run.count_systems }}Sys</span>
+                                        <span class="badge bg-danger">{{ run.count_kpis }}K</span>
+                                    </td>
+                                    <td class="text-nowrap">
+                                        <button class="btn btn-sm btn-outline-secondary btn-toggle-details"
+                                                data-run-id="{{ run.id }}">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                        <form method="POST" action="{{ url_for('super_admin.benchmarks_delete', run_id=run.id) }}"
+                                              class="d-inline" onsubmit="return confirm('Delete this benchmark run?');">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {# Detail row (hidden by default) #}
+                                <tr class="detail-row d-none" id="details-{{ run.id }}">
+                                    <td colspan="7" class="bg-light p-3">
+                                        <table class="table table-sm table-bordered mb-0 bg-white">
+                                            <thead>
+                                                <tr>
+                                                    <th>Metric</th>
+                                                    <th>Category</th>
+                                                    <th class="text-end">Min</th>
+                                                    <th class="text-end">Avg</th>
+                                                    <th class="text-end">Max</th>
+                                                    <th class="text-end">Median</th>
+                                                    <th class="text-end">P95</th>
+                                                    <th style="width:200px;">Relative</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% set all_max = namespace(val=0) %}
+                                                {% for r in run.results %}
+                                                    {% if r.max_ms > all_max.val %}{% set all_max.val = r.max_ms %}{% endif %}
+                                                {% endfor %}
+                                                {% for r in run.results %}
+                                                {% set meta = metrics.get(r.metric_name, {}) %}
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ meta.get('label', r.metric_name) }}</strong>
+                                                        <br><small class="text-muted">{{ meta.get('description', '') }}</small>
+                                                    </td>
+                                                    <td>
+                                                        {% if meta.get('category') == 'database' %}
+                                                        <span class="badge bg-info">Database</span>
+                                                        {% elif meta.get('category') == 'server' %}
+                                                        <span class="badge bg-warning text-dark">Server</span>
+                                                        {% else %}
+                                                        <span class="badge bg-secondary">{{ meta.get('category', 'other') }}</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-end">{{ "%.1f"|format(r.min_ms) }} ms</td>
+                                                    <td class="text-end"><strong>{{ "%.1f"|format(r.avg_ms) }} ms</strong></td>
+                                                    <td class="text-end">{{ "%.1f"|format(r.max_ms) }} ms</td>
+                                                    <td class="text-end">{{ "%.1f"|format(r.median_ms) }} ms</td>
+                                                    <td class="text-end">{{ "%.1f"|format(r.p95_ms) }} ms</td>
+                                                    <td>
+                                                        {% set pct = (r.avg_ms / all_max.val * 100) if all_max.val > 0 else 0 %}
+                                                        <div class="progress" style="height:18px;">
+                                                            <div class="progress-bar {% if meta.get('category') == 'database' %}bg-info{% else %}bg-warning{% endif %}"
+                                                                 role="progressbar"
+                                                                 style="width:{{ pct|round|int }}%;"
+                                                                 title="{{ "%.1f"|format(r.avg_ms) }} ms">
+                                                                {{ "%.0f"|format(pct) }}%
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-speedometer2 fa-3x mb-3 d-block"></i>
+                        No benchmark runs yet. Run your first benchmark above.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# ── Compare Panel ── #}
+    <div class="row mb-4 d-none" id="comparePanel">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm border-primary">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-layout-three-columns me-2"></i>Comparison</h5>
+                    <button class="btn btn-sm btn-outline-light" id="btnCloseCompare">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="card-body p-0" id="compareBody">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Loading comparison data...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    // ── Form submit spinner ──
+    var form = document.getElementById('benchmarkForm');
+    var btnRun = document.getElementById('btnRunBench');
+    if (form) {
+        form.addEventListener('submit', function() {
+            btnRun.disabled = true;
+            btnRun.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Running...';
+        });
+    }
+
+    // ── Expand / collapse detail rows ──
+    document.querySelectorAll('.btn-toggle-details').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var runId = this.getAttribute('data-run-id');
+            var row = document.getElementById('details-' + runId);
+            var icon = this.querySelector('i');
+            if (row.classList.contains('d-none')) {
+                row.classList.remove('d-none');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                row.classList.add('d-none');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        });
+    });
+
+    // ── Checkbox logic (max 4) ──
+    var checks = document.querySelectorAll('.run-check');
+    var btnCompare = document.getElementById('btnCompare');
+    var checkAll = document.getElementById('checkAll');
+
+    function getSelected() {
+        var sel = [];
+        checks.forEach(function(c) { if (c.checked) sel.push(c); });
+        return sel;
+    }
+
+    function updateCompareBtn() {
+        var sel = getSelected();
+        btnCompare.disabled = sel.length < 2;
+        if (sel.length >= 4) {
+            checks.forEach(function(c) { if (!c.checked) c.disabled = true; });
+        } else {
+            checks.forEach(function(c) { c.disabled = false; });
+        }
+    }
+
+    checks.forEach(function(c) {
+        c.addEventListener('change', updateCompareBtn);
+    });
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            var val = this.checked;
+            var count = 0;
+            checks.forEach(function(c) {
+                if (val && count < 4) { c.checked = true; count++; }
+                else if (!val) { c.checked = false; }
+            });
+            updateCompareBtn();
+        });
+    }
+
+    // ── Metric metadata from server ──
+    var METRICS = {};
+    {% for key, m in metrics.items() %}
+    METRICS['{{ key }}'] = {label: '{{ m.label }}', category: '{{ m.category }}'};
+    {% endfor %}
+
+    // ── Compare ──
+    var comparePanel = document.getElementById('comparePanel');
+    var compareBody = document.getElementById('compareBody');
+    var btnCloseCompare = document.getElementById('btnCloseCompare');
+
+    btnCloseCompare.addEventListener('click', function() {
+        comparePanel.classList.add('d-none');
+    });
+
+    btnCompare.addEventListener('click', function() {
+        var sel = getSelected();
+        if (sel.length < 2) return;
+
+        comparePanel.classList.remove('d-none');
+        compareBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2 text-muted">Loading comparison data...</p></div>';
+
+        var promises = [];
+        sel.forEach(function(c) {
+            var url = '{{ url_for("super_admin.benchmarks_detail", run_id=0) }}'.replace('/0', '/' + c.value);
+            promises.push(fetch(url).then(function(r) { return r.json(); }));
+        });
+
+        Promise.all(promises).then(function(runs) {
+            buildComparison(runs);
+        }).catch(function(err) {
+            compareBody.innerHTML = '<div class="text-center py-4 text-danger">Error loading data: ' + err + '</div>';
+        });
+    });
+
+    function buildComparison(runs) {
+        // Collect all metric names across runs
+        var metricNames = [];
+        var seen = {};
+        runs.forEach(function(run) {
+            (run.results || []).forEach(function(r) {
+                if (!seen[r.metric_name]) {
+                    seen[r.metric_name] = true;
+                    metricNames.push(r.metric_name);
+                }
+            });
+        });
+
+        // Build lookup: run index -> metric_name -> result
+        var lookup = [];
+        runs.forEach(function(run, idx) {
+            var map = {};
+            (run.results || []).forEach(function(r) { map[r.metric_name] = r; });
+            lookup.push(map);
+        });
+
+        // Baseline is first selected run
+        var html = '<div class="table-responsive">';
+        html += '<table class="table table-bordered table-sm align-middle mb-0">';
+        html += '<thead class="table-light"><tr><th>Metric</th>';
+        runs.forEach(function(run, idx) {
+            html += '<th class="text-center">';
+            html += '<strong>' + escapeHtml(run.name) + '</strong><br>';
+            html += '<small class="text-muted">' + (run.created_at ? run.created_at.substring(0, 10) : '') + '</small>';
+            if (idx === 0) html += '<br><span class="badge bg-secondary">baseline</span>';
+            html += '</th>';
+        });
+        html += '</tr></thead><tbody>';
+
+        metricNames.forEach(function(mName) {
+            var meta = METRICS[mName] || {label: mName, category: 'other'};
+            var baseVal = lookup[0][mName] ? lookup[0][mName].avg_ms : null;
+
+            html += '<tr>';
+            html += '<td><strong>' + escapeHtml(meta.label) + '</strong>';
+            if (meta.category === 'database') {
+                html += ' <span class="badge bg-info">DB</span>';
+            } else if (meta.category === 'server') {
+                html += ' <span class="badge bg-warning text-dark">Server</span>';
+            }
+            html += '</td>';
+
+            runs.forEach(function(run, idx) {
+                var r = lookup[idx][mName];
+                if (!r) {
+                    html += '<td class="text-center text-muted">-</td>';
+                    return;
+                }
+                var avg = r.avg_ms;
+                var cellClass = '';
+                var delta = '';
+                if (idx > 0 && baseVal !== null && baseVal > 0) {
+                    var pct = ((avg - baseVal) / baseVal * 100);
+                    if (pct < -1) {
+                        cellClass = 'table-success';
+                        delta = ' <small class="text-success">(' + pct.toFixed(1) + '%)</small>';
+                    } else if (pct > 1) {
+                        cellClass = 'table-danger';
+                        delta = ' <small class="text-danger">(+' + pct.toFixed(1) + '%)</small>';
+                    } else {
+                        delta = ' <small class="text-muted">(~0%)</small>';
+                    }
+                }
+                html += '<td class="text-center ' + cellClass + '">';
+                html += '<strong>' + avg.toFixed(1) + ' ms</strong>' + delta;
+                html += '<br><small class="text-muted">min ' + r.min_ms.toFixed(1) + ' / p95 ' + r.p95_ms.toFixed(1) + '</small>';
+                html += '</td>';
+            });
+
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+
+        // Entity counts comparison
+        html += '<div class="p-3 bg-light border-top"><h6 class="mb-2">Entity Counts at Time of Run</h6>';
+        html += '<div class="table-responsive"><table class="table table-sm table-bordered mb-0 bg-white">';
+        html += '<thead><tr><th>Run</th><th>Spaces</th><th>Challenges</th><th>Initiatives</th><th>Systems</th><th>KPIs</th></tr></thead><tbody>';
+        runs.forEach(function(run) {
+            html += '<tr>';
+            html += '<td><strong>' + escapeHtml(run.name) + '</strong></td>';
+            html += '<td>' + run.count_spaces + '</td>';
+            html += '<td>' + run.count_challenges + '</td>';
+            html += '<td>' + run.count_initiatives + '</td>';
+            html += '<td>' + run.count_systems + '</td>';
+            html += '<td>' + run.count_kpis + '</td>';
+            html += '</tr>';
+        });
+        html += '</tbody></table></div></div>';
+
+        compareBody.innerHTML = html;
+        comparePanel.scrollIntoView({behavior: 'smooth'});
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+})();
+</script>
+{% endblock %}

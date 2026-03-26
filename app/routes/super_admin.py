@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import yaml
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from markupsafe import Markup
@@ -18,6 +18,7 @@ from app.models import (
     AnnouncementTargetOrganization,
     AnnouncementTargetUser,
     AuditLog,
+    BenchmarkRun,
     Organization,
     SSOConfig,
     SystemAnnouncement,
@@ -26,6 +27,7 @@ from app.models import (
     UserAnnouncementAcknowledgment,
     UserOrganizationMembership,
 )
+from app.services.benchmark_service import BenchmarkService
 
 bp = Blueprint("super_admin", __name__, url_prefix="/super-admin")
 
@@ -1799,3 +1801,66 @@ def demo_generator_create():
         db.session.rollback()
         flash(f"Error creating demo organization: {str(e)}", "danger")
         return redirect(url_for("super_admin.demo_generator"))
+
+
+# ---------------------------------------------------------------------------
+# Benchmarks
+# ---------------------------------------------------------------------------
+
+
+@bp.route("/benchmarks")
+@super_admin_required
+def benchmarks():
+    """List all benchmark runs."""
+    runs = BenchmarkRun.query.order_by(BenchmarkRun.created_at.desc()).all()
+    organizations = Organization.query.filter_by(is_active=True).order_by(Organization.name).all()
+    return render_template(
+        "super_admin/benchmarks.html",
+        runs=runs,
+        organizations=organizations,
+        metrics=BenchmarkService.METRICS,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/benchmarks/run", methods=["POST"])
+@super_admin_required
+def benchmarks_run():
+    """Execute a new benchmark run."""
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip() or None
+    org_id = request.form.get("org_id", type=int)
+    iterations = request.form.get("iterations", 5, type=int)
+
+    if not name or not org_id:
+        flash("Name and organization are required.", "danger")
+        return redirect(url_for("super_admin.benchmarks"))
+
+    run = BenchmarkService.run_benchmarks(
+        name=name,
+        description=description,
+        org_id=org_id,
+        user_id=current_user.id,
+        iterations=iterations,
+    )
+    flash(f"Benchmark '{run.name}' completed successfully.", "success")
+    return redirect(url_for("super_admin.benchmarks"))
+
+
+@bp.route("/benchmarks/<int:run_id>")
+@super_admin_required
+def benchmarks_detail(run_id):
+    """Return JSON detail of a single benchmark run (for AJAX comparison)."""
+    run = BenchmarkRun.query.get_or_404(run_id)
+    return jsonify(run.to_dict())
+
+
+@bp.route("/benchmarks/<int:run_id>/delete", methods=["POST"])
+@super_admin_required
+def benchmarks_delete(run_id):
+    """Delete a benchmark run."""
+    run = BenchmarkRun.query.get_or_404(run_id)
+    db.session.delete(run)
+    db.session.commit()
+    flash("Benchmark run deleted.", "info")
+    return redirect(url_for("super_admin.benchmarks"))
