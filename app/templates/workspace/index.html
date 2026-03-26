@@ -5009,7 +5009,7 @@ function workspaceV2(orgId, filterPresets) {
                 panel.querySelector('.ws-dd-vt-name').textContent = vt ? vt.name : '';
                 panel.querySelector('.ws-dd-entity-name').textContent = entity ? entity.name : '';
                 var _ddKpiOnly = true;
-                panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDownFlat(entity, entityType, String(vtId));
+                panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDownFlat(entity, entityType, String(vtId), vt);
                 // Wire KPI-only toggle
                 var kpiBtn = panel.querySelector('.ws-dd-kpi-btn');
                 if (kpiBtn) {
@@ -5021,8 +5021,8 @@ function workspaceV2(orgId, filterPresets) {
                         kpiBtn.classList.toggle('active', _ddKpiOnly);
                         kpiBtn.title = _ddKpiOnly ? 'Show full tree' : 'Show KPIs only';
                         panel.querySelector('.ws-dd-body').innerHTML = _ddKpiOnly
-                            ? self.renderDrillDownFlat(entity, entityType, String(vtId))
-                            : self.renderDrillDown(entity, entityType, String(vtId));
+                            ? self.renderDrillDownFlat(entity, entityType, String(vtId), vt)
+                            : self.renderDrillDown(entity, entityType, String(vtId), vt);
                         // Re-wire toggle clicks for tree mode
                         if (!_ddKpiOnly) {
                             panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
@@ -5076,7 +5076,7 @@ function workspaceV2(orgId, filterPresets) {
                 this._drillDownCloseHandler = null;
             }
         },
-        renderDrillDown(entity, entityType, vtId) {
+        renderDrillDown(entity, entityType, vtId, vt) {
             var rv = entity.rollup_values && entity.rollup_values[vtId];
             var html = '';
             // Meta block
@@ -5108,12 +5108,13 @@ function workspaceV2(orgId, filterPresets) {
             var kpiClr = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.color?kv.color:'#9ca3af'; };
             var ragClr = function(ini) { return ini.execution_rag==='green'?'#22c55e':ini.execution_rag==='amber'?'#f59e0b':ini.execution_rag==='red'?'#ef4444':'#d1d5db'; };
 
+            var self = this;
             var renderKpis = function(kpis) {
                 var h='';
                 for (var i=0; i<kpis.length; i++) {
                     var kpi = kpis[i];
                     if (!kpiOk(kpi)) continue;
-                    h += '<div class="ws-dd-row ws-dd-row-kpi"><span class="ws-dd-leaf-spc"><\/span><i class="bi bi-graph-up ws-dd-icon-kpi"><\/i><span class="ws-dd-rname">' + esc(kpi.name) + '<\/span><span class="ws-dd-rval" style="color:' + kpiClr(kpi) + ';">' + esc(kpiFmt(kpi)) + '<\/span><\/div>';
+                    h += '<div class="ws-dd-row ws-dd-row-kpi"><span class="ws-dd-leaf-spc"><\/span><i class="bi bi-graph-up ws-dd-icon-kpi"><\/i><span class="ws-dd-rname">' + esc(kpi.name) + '<\/span><span class="ws-dd-rval">' + self._fmtKpiVal(kpi, vtId, vt) + '<\/span><\/div>';
                 }
                 return h;
             };
@@ -5162,11 +5163,42 @@ function workspaceV2(orgId, filterPresets) {
             }
             return html;
         },
-        renderDrillDownFlat(entity, entityType, vtId) {
-            var esc = function(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; };
+        _fmtKpiVal(kpi, vtId, vt) {
+            var kv = kpi.values && kpi.values[vtId];
+            if (!kv || kv.consensus_status === 'no_data' || kv.value == null) return '<span style="color:#6c757d;">\u2014<\/span>';
+            var color = kv.color || '#9ca3af';
+            var kind = vt ? vt.kind : 'numeric';
+            var v = kv.value;
+            if (kind === 'risk') {
+                var sym = v==1 ? '!<span style="opacity:0.2">!!<\/span>' : v==2 ? '!!<span style="opacity:0.2">!<\/span>' : v>=3 ? '!!!' : String(v);
+                return '<strong style="color:' + color + ';">' + sym + '<\/strong>';
+            }
+            if (kind === 'positive_impact') {
+                var sym = v==1 ? '\u2605<span style="opacity:0.2">\u2605\u2605<\/span>' : v==2 ? '\u2605\u2605<span style="opacity:0.2">\u2605<\/span>' : v>=3 ? '\u2605\u2605\u2605' : String(v);
+                return '<strong style="color:' + color + ';">' + sym + '<\/strong>';
+            }
+            if (kind === 'negative_impact') {
+                var sym = v==1 ? '\u25BC<span style="opacity:0.2">\u25BC\u25BC<\/span>' : v==2 ? '\u25BC\u25BC<span style="opacity:0.2">\u25BC<\/span>' : v>=3 ? '\u25BC\u25BC\u25BC' : String(v);
+                return '<strong style="color:' + color + ';">' + sym + '<\/strong>';
+            }
+            if (kind === 'engagement') {
+                var sym = v==1 ? '\u25CF<span style="opacity:0.2">\u25CF\u25CF<\/span>' : v==2 ? '\u25CF\u25CF<span style="opacity:0.2">\u25CF<\/span>' : v>=3 ? '\u25CF\u25CF\u25CF' : String(v);
+                return '<strong style="color:' + color + ';">' + sym + '<\/strong>';
+            }
+            // Numeric or other
+            var txt = kv.formatted_value || kv.list_label || String(v);
+            var esc = function(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; };
+            var unit = (vt && vt.unit_label) ? ' <span style="font-size:0.7rem;color:#64748b;">' + esc(vt.unit_label) + '<\/span>' : '';
+            var target = '';
+            if (kv.has_target && kv.target_color) {
+                target = ' <span style="color:' + kv.target_color + ';font-size:0.9rem;" title="Target: ' + (kv.target_progress||0) + '% achieved">\uD83C\uDFAF<\/span>';
+            }
+            return '<strong style="color:' + color + ';">' + esc(txt) + '<\/strong>' + unit + target;
+        },
+        renderDrillDownFlat(entity, entityType, vtId, vt) {
+            var self = this;
             var kpiOk = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return !!(kv&&kv.consensus_status!=='no_data'); };
-            var kpiFmt = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.consensus_status!=='no_data' ? (kv.formatted_value||kv.list_label||String(kv.value)) : '\u2014'; };
-            var kpiClr = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.color?kv.color:'#9ca3af'; };
+            var esc = function(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; };
             // Collect all KPIs from the hierarchy
             var kpis = [];
             var collect = function(e, eType) {
@@ -5180,7 +5212,7 @@ function workspaceV2(orgId, filterPresets) {
             var h = '<div class="ws-dd-table">';
             for (var i=0; i<kpis.length; i++) {
                 var kpi = kpis[i];
-                h += '<div class="ws-dd-row ws-dd-row-kpi"><i class="bi bi-graph-up ws-dd-icon-kpi"><\/i><span class="ws-dd-rname">' + esc(kpi.name) + '<\/span><span class="ws-dd-rval" style="color:' + kpiClr(kpi) + ';">' + esc(kpiFmt(kpi)) + '<\/span><\/div>';
+                h += '<div class="ws-dd-row ws-dd-row-kpi"><i class="bi bi-graph-up ws-dd-icon-kpi"><\/i><span class="ws-dd-rname">' + esc(kpi.name) + '<\/span><span class="ws-dd-rval">' + self._fmtKpiVal(kpi, vtId, vt) + '<\/span><\/div>';
             }
             h += '<\/div>';
             return h;
