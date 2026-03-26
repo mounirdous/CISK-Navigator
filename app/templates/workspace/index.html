@@ -4703,18 +4703,14 @@ function workspaceV2(orgId, filterPresets) {
                 linksHTML += inheritedLinks.map(renderInheritedLink).join('');
             }
 
-            // Add new link form
+            // Add new link form (AJAX, no page reload)
             var addFormHTML = '<div style="border-top:1px solid #dee2e6;padding-top:0.75rem;margin-top:0.75rem;">' +
                 '<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Add New Link<\/div>' +
-                '<form id="elAddForm" method="POST" action="/entity-links/add">' +
-                    '<input type="hidden" name="csrf_token" value="' + csrf + '">' +
-                    '<input type="hidden" name="entity_type" value="' + entityType + '">' +
-                    '<input type="hidden" name="entity_id" value="' + entity.id + '">' +
-                    '<input type="url" class="form-control form-control-sm mb-1" name="url" placeholder="https://..." required>' +
-                    '<input type="text" class="form-control form-control-sm mb-1" name="title" placeholder="Title (optional)">' +
-                    '<input type="hidden" name="is_public" value="true">' +
-                    '<button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"><\/i> Add Link<\/button>' +
-                '<\/form>' +
+                '<div id="elAddForm">' +
+                    '<input type="url" class="form-control form-control-sm mb-1" id="elAddUrl" placeholder="https://..." required>' +
+                    '<input type="text" class="form-control form-control-sm mb-1" id="elAddTitle" placeholder="Title (optional)">' +
+                    '<button type="button" class="btn btn-sm btn-primary" id="elAddBtn"><i class="bi bi-plus-lg"><\/i> Add Link<\/button>' +
+                '<\/div>' +
             '<\/div>';
 
             var modalHTML = '<div class="modal fade" id="entityLinksModal" tabindex="-1" aria-hidden="true">' +
@@ -4793,6 +4789,38 @@ function workspaceV2(orgId, filterPresets) {
                         .then(function() { modal.hide(); self.loadData(); });
                 }
             });
+
+            // Wire add button (AJAX)
+            var addBtn = modalEl.querySelector('#elAddBtn');
+            if (addBtn) {
+                addBtn.addEventListener('click', function() {
+                    var urlVal = modalEl.querySelector('#elAddUrl').value.trim();
+                    var titleVal = modalEl.querySelector('#elAddTitle').value.trim();
+                    if (!urlVal) { alert('URL is required'); return; }
+                    addBtn.disabled = true;
+                    addBtn.innerHTML = 'Adding\u2026';
+                    var formData = new FormData();
+                    formData.append('csrf_token', csrf);
+                    formData.append('entity_type', entityType);
+                    formData.append('entity_id', entity.id);
+                    formData.append('url', urlVal);
+                    formData.append('title', titleVal);
+                    formData.append('is_public', 'true');
+                    fetch('/entity-links/add', {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                        body: formData,
+                        redirect: 'manual'
+                    }).then(function() {
+                        modal.hide();
+                        self.loadData();
+                    }).catch(function() {
+                        alert('Error adding link');
+                        addBtn.disabled = false;
+                        addBtn.innerHTML = '<i class="bi bi-plus-lg"><\/i> Add Link';
+                    });
+                });
+            }
         },
 
         escapeHtml(text) {

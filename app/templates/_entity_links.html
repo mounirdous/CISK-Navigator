@@ -66,9 +66,10 @@
                         <div class="col-md-3">
                             <button type="button" class="btn btn-sm btn-primary" onclick="
                                 var btn=this; btn.disabled=true; btn.textContent='Saving...';
+                                var csrfEl = document.querySelector('input[name=csrf_token]');
                                 fetch('/entity-links/update', {
                                     method:'POST',
-                                    headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() if csrf_token is callable else csrf_token }}'},
+                                    headers:{'Content-Type':'application/json','X-CSRFToken': csrfEl ? csrfEl.value : ''},
                                     body:JSON.stringify({link_id:{{ link.id }},url:document.getElementById('elEditUrl_{{ link.id }}').value.trim(),title:document.getElementById('elEditTitle_{{ link.id }}').value.trim(),is_public:{{ 'true' if link.is_public else 'false' }}})
                                 }).then(r=>r.json()).then(d=>{if(d.success)location.reload();else{alert(d.message);btn.disabled=false;btn.textContent='Save';}}).catch(()=>{alert('Error');btn.disabled=false;btn.textContent='Save';});
                             ">Save</button>
