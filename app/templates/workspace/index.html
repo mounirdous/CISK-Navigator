@@ -1686,7 +1686,7 @@
                 <span x-text="`${actionItemsCount} ${actionItemsCount === 1 ? 'issue' : 'issues'}`"></span>
             </a>
             <!-- Toggle Badges/Decorations -->
-            <button @click="showBadges = !showBadges; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('meta[name=csrf-token]').content}, body: JSON.stringify({ws_show_badges: showBadges})})"
+            <button @click="showBadges = !showBadges; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_show_badges: showBadges})})"
                     class="btn btn-sm btn-outline-light"
                     :class="{'active': showBadges}"
                     style="opacity: 0.9;"
@@ -2022,7 +2022,7 @@
                     </label>
                     <label class="toggle-label">
                         <label class="toggle-switch">
-                            <input type="checkbox" x-model="focusLevelMode" @change="if (!focusLevelMode) focusedLevel = null; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('meta[name=csrf-token]').content}, body: JSON.stringify({ws_focus_mode: focusLevelMode})})">
+                            <input type="checkbox" x-model="focusLevelMode" @change="if (!focusLevelMode) focusedLevel = null; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_focus_mode: focusLevelMode})})">
                             <span class="toggle-slider"></span>
                         </label>
                         <span style="font-size: 0.85rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="When using the ▼/▲ step buttons, dims parent levels so only the deepest expanded level stays in focus. Resets on any manual expand/collapse."><i class="bi bi-layers-half"></i> Level Focus</span>
@@ -3472,8 +3472,8 @@ function workspaceV2(orgId, filterPresets) {
             } finally {
                 this._loadDataInProgress = false;
                 this.loading = false;
-                // Load trend indicators after data is loaded
-                setTimeout(() => this.loadTrendIndicators(), 100);
+                // Trend indicators disabled — API route not yet implemented
+                // setTimeout(() => this.loadTrendIndicators(), 100);
 
                 // Scroll to entity from hash (from global live search)
                 setTimeout(() => this.scrollToHashTarget(), 200);
@@ -3949,6 +3949,21 @@ function workspaceV2(orgId, filterPresets) {
 
             // Mobile: Setup horizontal scroll detection
             this.setupMobileScrollIndicator();
+
+            // Global bridge for tooltip → showEntityLinks
+            var self = this;
+            window._wsShowEntityLinks = function(idx) {
+                try {
+                    var d = window._wsLinkData && window._wsLinkData[idx];
+                    if (d) {
+                        document.getElementById('ws-desc-tooltip').style.display = 'none';
+                        self.showEntityLinks(d.entity, d.entityType);
+                    } else {
+                        console.log('[LINKS] No data for idx:', idx, window._wsLinkData);
+                    }
+                } catch(e) { console.error('[LINKS] Error:', e); }
+            };
+            window._wsLinkData = {};
 
             // Wire up rollup tooltip events (pure DOM)
             var _tipEl = document.getElementById('ws-rollup-tip');
@@ -4597,10 +4612,13 @@ function workspaceV2(orgId, filterPresets) {
                           : '<span class="tt-badge-empty">!<\/span>';
                 h += '<a class="tt-chip" href="' + formUrl + '" onclick="event.stopPropagation()"><i class="bi bi-file-text"><\/i> Form ' + badge + '<\/a>';
             }
-            // Entity links (all levels)
+            // Entity links (all levels) — clickable to open edit modal
             var links = (entity.entity_links||[]).length + (entity.inherited_links||[]).length;
             if (links > 0) {
-                h += '<span class="tt-chip" style="cursor:default;"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
+                var idx = entityType + '_' + entity.id;
+                window._wsLinkData = window._wsLinkData || {};
+                window._wsLinkData[idx] = { entity: entity, entityType: entityType };
+                h += '<span class="tt-chip" onclick="event.stopPropagation();window._wsShowEntityLinks(\'' + idx + '\')"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
             }
             return h;
         },
@@ -4614,87 +4632,166 @@ function workspaceV2(orgId, filterPresets) {
             }
             if (this.orgData) {
                 var links = (this.orgData.entity_links||[]).length + (this.orgData.inherited_links||[]).length;
-                if (links > 0) h += '<span class="tt-chip" style="cursor:default;"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
+                if (links > 0) {
+                    window._wsLinkData = window._wsLinkData || {};
+                    window._wsLinkData['org'] = { entity: this.orgData, entityType: 'organization' };
+                    h += '<span class="tt-chip" onclick="event.stopPropagation();window._wsShowEntityLinks(\'org\')"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
+                }
             }
             return h;
         },
 
         // Entity Actions
         showEntityLinks(entity, entityType) {
-            const ownLinks = entity.entity_links || [];
-            const inheritedLinks = entity.inherited_links || [];
-            if (ownLinks.length === 0 && inheritedLinks.length === 0) return;
+            var ownLinks = entity.entity_links || [];
+            var inheritedLinks = entity.inherited_links || [];
+            var self = this;
+            var csrf = '{{ csrf_token() }}';
 
-            const renderLink = (link) => {
-                const title = link.title || link.url;
-                const displayUrl = link.url.length > 55 ? link.url.substring(0, 55) + '…' : link.url;
-                const iconHtml = `<i class="bi ${link.bs_icon || 'bi-link-45deg'}" style="color:${link.icon_color || '#6c757d'};font-size:1.1rem;flex-shrink:0;"></i>`;
-                return `<div style="margin-bottom:0.6rem;">
-                    <a href="${link.url}" target="_blank" style="color:#0d6efd;text-decoration:none;display:flex;align-items:center;gap:0.5rem;">
-                        ${iconHtml}
-                        <div style="flex:1;min-width:0;">
-                            <div style="font-weight:600;">${this.escapeHtml(title)}</div>
-                            <div style="font-size:0.8rem;color:#6c757d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${this.escapeHtml(displayUrl)}</div>
-                        </div>
-                    </a>
-                </div>`;
+            var renderOwnLink = function(link) {
+                var title = self.escapeHtml(link.title || '');
+                var url = self.escapeHtml(link.url || '');
+                var displayUrl = link.url.length > 55 ? self.escapeHtml(link.url.substring(0, 55)) + '\u2026' : url;
+                var iconHtml = '<i class="bi ' + (link.bs_icon || 'bi-link-45deg') + '" style="color:' + (link.icon_color || '#6c757d') + ';font-size:1.1rem;flex-shrink:0;"><\/i>';
+                return '<div class="el-item" data-link-id="' + link.id + '">' +
+                    '<div class="el-view">' +
+                        '<a href="' + url + '" target="_blank" rel="noopener" style="color:#0d6efd;text-decoration:none;display:flex;align-items:center;gap:0.5rem;flex:1;min-width:0;">' +
+                            iconHtml +
+                            '<div style="flex:1;min-width:0;">' +
+                                '<div style="font-weight:600;">' + self.escapeHtml(link.title || link.url) + '<\/div>' +
+                                '<div style="font-size:0.8rem;color:#6c757d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + displayUrl + '<\/div>' +
+                            '<\/div>' +
+                        '<\/a>' +
+                        '<div style="display:flex;gap:0.25rem;flex-shrink:0;">' +
+                            '<button class="btn btn-sm btn-outline-secondary el-edit-btn" title="Edit"><i class="bi bi-pencil"><\/i><\/button>' +
+                            '<button class="btn btn-sm btn-outline-danger el-del-btn" title="Delete"><i class="bi bi-trash"><\/i><\/button>' +
+                        '<\/div>' +
+                    '<\/div>' +
+                    '<div class="el-edit-form" style="display:none;">' +
+                        '<input type="text" class="form-control form-control-sm mb-1 el-edit-title" placeholder="Title (optional)" value="' + title + '">' +
+                        '<input type="url" class="form-control form-control-sm mb-1 el-edit-url" placeholder="URL" value="' + url + '">' +
+                        '<div style="display:flex;gap:0.5rem;justify-content:flex-end;">' +
+                            '<button class="btn btn-sm btn-secondary el-edit-cancel">Cancel<\/button>' +
+                            '<button class="btn btn-sm btn-primary el-edit-save">Save<\/button>' +
+                        '<\/div>' +
+                    '<\/div>' +
+                '<\/div>';
             };
 
-            let linksHTML = '';
-            if (ownLinks.length > 0) {
-                linksHTML += ownLinks.map(renderLink).join('');
-            }
+            var renderInheritedLink = function(link) {
+                var iconHtml = '<i class="bi ' + (link.bs_icon || 'bi-link-45deg') + '" style="color:' + (link.icon_color || '#6c757d') + ';font-size:1.1rem;flex-shrink:0;"><\/i>';
+                var sources = link.from_sources || [link.from_label];
+                var srcLabel = self.escapeHtml(sources[0]);
+                var extra = sources.length > 1 ? ' <span style="font-size:0.65rem;background:#e3f2fd;color:#1565c0;border-radius:9px;padding:1px 6px;">+' + (sources.length-1) + ' more<\/span>' : '';
+                return '<div style="margin-bottom:0.6rem;">' +
+                    '<div style="font-size:0.7rem;color:#90a4ae;margin-bottom:0.2rem;">' + srcLabel + extra + '<\/div>' +
+                    '<a href="' + self.escapeHtml(link.url) + '" target="_blank" rel="noopener" style="color:#0d6efd;text-decoration:none;display:flex;align-items:center;gap:0.5rem;">' +
+                        iconHtml +
+                        '<div style="flex:1;min-width:0;">' +
+                            '<div style="font-weight:600;">' + self.escapeHtml(link.title || link.url) + '<\/div>' +
+                            '<div style="font-size:0.8rem;color:#6c757d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + self.escapeHtml(link.url.length > 55 ? link.url.substring(0,55)+'\u2026' : link.url) + '<\/div>' +
+                        '<\/div>' +
+                    '<\/a>' +
+                '<\/div>';
+            };
+
+            var linksHTML = '';
+            if (ownLinks.length > 0) linksHTML += ownLinks.map(renderOwnLink).join('');
             if (inheritedLinks.length > 0) {
-                if (ownLinks.length > 0) linksHTML += `<hr style="margin:0.75rem 0;">`;
-                linksHTML += `<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Inherited from children</div>`;
-                linksHTML += inheritedLinks.map(link => {
-                    const sources = link.from_sources || [link.from_label];
-                    const extraCount = sources.length - 1;
-                    const extraBadge = extraCount > 0
-                        ? ` <span style="font-size:0.65rem;background:#e3f2fd;color:#1565c0;border-radius:9px;padding:1px 6px;cursor:default;white-space:nowrap;"
-                                title="${this.escapeHtml(sources.slice(1).join('\n'))}">+${extraCount} more</span>`
-                        : '';
-                    return `<div style="margin-bottom:0.6rem;">
-                        <div style="font-size:0.7rem;color:#90a4ae;margin-bottom:0.2rem;">${this.escapeHtml(sources[0])}${extraBadge}</div>
-                        ${renderLink(link)}
-                    </div>`;
-                }).join('');
+                if (ownLinks.length > 0) linksHTML += '<hr style="margin:0.75rem 0;">';
+                linksHTML += '<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Inherited from children<\/div>';
+                linksHTML += inheritedLinks.map(renderInheritedLink).join('');
             }
 
-            const modalHTML = `
-                <div class="modal fade" id="entityLinksModal" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">
-                                    <i class="bi bi-link-45deg"></i> Related Links - ${this.escapeHtml(entity.name)}
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                ${linksHTML}
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
+            // Add new link form
+            var addFormHTML = '<div style="border-top:1px solid #dee2e6;padding-top:0.75rem;margin-top:0.75rem;">' +
+                '<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Add New Link<\/div>' +
+                '<form id="elAddForm" method="POST" action="/entity-links/add">' +
+                    '<input type="hidden" name="csrf_token" value="' + csrf + '">' +
+                    '<input type="hidden" name="entity_type" value="' + entityType + '">' +
+                    '<input type="hidden" name="entity_id" value="' + entity.id + '">' +
+                    '<input type="url" class="form-control form-control-sm mb-1" name="url" placeholder="https://..." required>' +
+                    '<input type="text" class="form-control form-control-sm mb-1" name="title" placeholder="Title (optional)">' +
+                    '<input type="hidden" name="is_public" value="true">' +
+                    '<button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg"><\/i> Add Link<\/button>' +
+                '<\/form>' +
+            '<\/div>';
 
-            // Remove any existing modal
+            var modalHTML = '<div class="modal fade" id="entityLinksModal" tabindex="-1" aria-hidden="true">' +
+                '<div class="modal-dialog">' +
+                    '<div class="modal-content">' +
+                        '<div class="modal-header">' +
+                            '<h5 class="modal-title"><i class="bi bi-link-45deg"><\/i> Links \u2014 ' + self.escapeHtml(entity.name) + '<\/h5>' +
+                            '<button type="button" class="btn-close" data-bs-dismiss="modal"><\/button>' +
+                        '<\/div>' +
+                        '<div class="modal-body">' + linksHTML + addFormHTML + '<\/div>' +
+                    '<\/div>' +
+                '<\/div>' +
+            '<\/div>';
+
             document.getElementById('entityLinksModal')?.remove();
-
-            // Add modal to DOM
             document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('entityLinksModal'));
+            var modalEl = document.getElementById('entityLinksModal');
+            var modal = new bootstrap.Modal(modalEl);
             modal.show();
+            modalEl.addEventListener('hidden.bs.modal', function() { this.remove(); });
 
-            // Clean up after modal is hidden
-            document.getElementById('entityLinksModal').addEventListener('hidden.bs.modal', function() {
-                this.remove();
+            // Wire edit/delete/save buttons
+            modalEl.addEventListener('click', function(ev) {
+                var item = ev.target.closest('.el-item');
+                if (!item) return;
+                var linkId = item.dataset.linkId;
+                var view = item.querySelector('.el-view');
+                var form = item.querySelector('.el-edit-form');
+
+                // Edit button
+                if (ev.target.closest('.el-edit-btn')) {
+                    view.style.display = 'none';
+                    form.style.display = 'block';
+                    form.querySelector('.el-edit-url').focus();
+                }
+                // Cancel button
+                if (ev.target.closest('.el-edit-cancel')) {
+                    view.style.display = '';
+                    form.style.display = 'none';
+                }
+                // Save button
+                if (ev.target.closest('.el-edit-save')) {
+                    var newUrl = form.querySelector('.el-edit-url').value.trim();
+                    var newTitle = form.querySelector('.el-edit-title').value.trim();
+                    if (!newUrl) { alert('URL is required'); return; }
+                    var saveBtn = ev.target.closest('.el-edit-save');
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Saving\u2026';
+                    fetch('/entity-links/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf },
+                        body: JSON.stringify({ link_id: parseInt(linkId), url: newUrl, title: newTitle, is_public: true })
+                    }).then(function(r) { return r.json(); }).then(function(data) {
+                        if (data.success) {
+                            modal.hide();
+                            self.loadData(); // Refresh workspace data
+                        } else {
+                            alert(data.message || 'Failed to update link');
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = 'Save';
+                        }
+                    }).catch(function() {
+                        alert('Network error');
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Save';
+                    });
+                }
+                // Delete button
+                if (ev.target.closest('.el-del-btn')) {
+                    if (!confirm('Delete this link?')) return;
+                    var formData = new FormData();
+                    formData.append('link_id', linkId);
+                    formData.append('csrf_token', csrf);
+                    fetch('/entity-links/delete', { method: 'POST', body: formData })
+                        .then(function() { modal.hide(); self.loadData(); });
+                }
             });
         },
 
@@ -5285,6 +5382,12 @@ document.addEventListener('DOMContentLoaded', function() {
     #ws-desc-tooltip .tt-badge-empty { color: #f59e0b; }
     #ws-desc-tooltip .tt-badge-partial { color: #60a5fa; }
     #ws-desc-tooltip .tt-badge-complete { color: #4ade80; }
+
+    /* Entity links modal edit items */
+    .el-item { margin-bottom: 0.6rem; }
+    .el-view { display: flex; align-items: center; gap: 0.5rem; }
+    .el-view:hover .el-edit-btn, .el-view:hover .el-del-btn { opacity: 1; }
+    .el-edit-btn, .el-del-btn { opacity: 0.3; transition: opacity 0.15s; padding: 0.15rem 0.35rem; }
 </style>
 <script>
 (function() {

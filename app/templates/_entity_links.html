@@ -40,6 +40,9 @@
                     </span>
 
                     {% if edit_mode %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="flex-shrink:0;"
+                            onclick="var r=this.closest('.entity-links-section').querySelector('#elEditRow_{{ link.id }}'); r.style.display=r.style.display==='none'?'':'none';"
+                            title="Edit"><i class="bi bi-pencil"></i></button>
                     <form method="POST" action="/entity-links/delete" style="display: inline; flex-shrink: 0;" onsubmit="return confirm('Delete this link?');">
                         {% if csrf_token is defined %}
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is callable else csrf_token }}"/>
@@ -48,6 +51,32 @@
                         <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                     </form>
                     {% endif %}
+                </div>
+                {% if edit_mode %}
+                <div id="elEditRow_{{ link.id }}" style="display:none; padding:0.5rem 0.75rem; margin-bottom:0.5rem; border:1px solid #667eea; border-radius:8px; background:#f0f0ff;">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label" style="font-size:0.75rem;margin-bottom:2px;">URL</label>
+                            <input type="url" class="form-control form-control-sm" id="elEditUrl_{{ link.id }}" value="{{ link.url }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label" style="font-size:0.75rem;margin-bottom:2px;">Title</label>
+                            <input type="text" class="form-control form-control-sm" id="elEditTitle_{{ link.id }}" value="{{ link.title or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="
+                                var btn=this; btn.disabled=true; btn.textContent='Saving...';
+                                fetch('/entity-links/update', {
+                                    method:'POST',
+                                    headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() if csrf_token is callable else csrf_token }}'},
+                                    body:JSON.stringify({link_id:{{ link.id }},url:document.getElementById('elEditUrl_{{ link.id }}').value.trim(),title:document.getElementById('elEditTitle_{{ link.id }}').value.trim(),is_public:{{ 'true' if link.is_public else 'false' }}})
+                                }).then(r=>r.json()).then(d=>{if(d.success)location.reload();else{alert(d.message);btn.disabled=false;btn.textContent='Save';}}).catch(()=>{alert('Error');btn.disabled=false;btn.textContent='Save';});
+                            ">Save</button>
+                            <button type="button" class="btn btn-sm btn-secondary" onclick="this.closest('[id^=elEditRow]').style.display='none';">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 </div>
                 {% endfor %}
             {% else %}
