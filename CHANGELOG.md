@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.7.0] - 2026-03-26
+
+### Changed
+- **Enhanced workspace description tooltips with action chips** — hovering entity names now shows clickable Porter's, SWOT, and Form links with completion badges, plus entity link counts directly in the tooltip
+- Removed Porter's Five Forces icon and completion badges from workspace org header row
+- Removed SWOT icon and completion badges from workspace space rows
+- Removed Initiative Form icon and completion badges from workspace initiative rows
+- Removed entity link icons from all workspace tree levels (org, space, challenge, initiative, system, KPI)
+- Tooltip now supports interactive hover (stays open when mouse enters tooltip) for clicking action chip links
+
 ## [3.6.1] - 2026-03-26
 
 ### Changed

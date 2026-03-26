@@ -2156,38 +2156,7 @@
                     <template x-if="!orgLogo">
                         <i class="bi bi-building"></i>
                     </template>
-                    <span x-text="orgName"{% if organization and organization.description %} data-tooltip="{{ organization.description|e }}"{% endif %}></span>
-                    <!-- Porter's Five Forces Link and Completion -->
-                    <template x-if="portersUrl">
-                        <span class="form-view-icon ms-2">
-                            <a :href="portersUrl" class="text-info" title="Porter's Five Forces Analysis" @click.stop>
-                                <i class="bi bi-diagram-3"></i>
-                            </a>
-                            <!-- Completion badge -->
-                            <template x-if="portersCompletion">
-                                <template x-if="portersCompletion.status === 'empty'">
-                                    <span class="completion-badge badge-empty" title="Porter's Five Forces not filled">!</span>
-                                </template>
-                                <template x-if="portersCompletion.status === 'partial'">
-                                    <span class="completion-badge badge-partial" :title="'Porter\'s Five Forces partially filled'" x-text="portersCompletion.filled + '/' + portersCompletion.total"></span>
-                                </template>
-                                <template x-if="portersCompletion.status === 'complete'">
-                                    <span class="completion-badge badge-complete" title="Porter's Five Forces complete">
-                                        <i class="bi bi-check-lg"></i>
-                                    </span>
-                                </template>
-                            </template>
-                        </span>
-                    </template>
-
-                    <!-- Org-level link chip (badges mode) -->
-                    <template x-if="showBadges && orgData && (orgData.entity_links.length > 0 || orgData.inherited_links.length > 0)">
-                        <span class="entity-link-icon ms-1"
-                              :title="'Links (' + (orgData.entity_links.length + orgData.inherited_links.length) + ')'"
-                              @click.stop="showEntityLinks(orgData, 'organization')">
-                            <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                        </span>
-                    </template>
+                    <span x-text="orgName"{% if organization and organization.description %} data-tooltip="{{ organization.description|e }}"{% endif %} :data-tooltip-actions="tooltipActionsOrg()"></span>
 
                     <!-- Action icons for creating spaces (edit mode only) -->
                     {% if current_user.can_manage_spaces(org_id) %}
@@ -2307,26 +2276,7 @@
                                 <span x-show="!space.logo_url && space.icon && !editMode && showBadges" class="entity-icon-text" x-text="space.icon"></span>
                                 <i x-show="!space.logo_url && !space.icon && (editMode || !showBadges)" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
 
-                                <!-- SWOT link with completion badge -->
-                                <template x-if="showBadges">
-                                    <a :href="`{{ url_for('organization_admin.space_swot', space_id=0) }}`.replace('0', space.id)"
-                                       class="swot-link-icon"
-                                       :title="'SWOT Analysis - ' + (space.swot_completion.status === 'complete' ? 'Complete' : space.swot_completion.status === 'partial' ? 'Partial (' + space.swot_completion.filled + '/' + space.swot_completion.total + ')' : 'Empty')"
-                                       @click.stop>
-                                        <i class="bi bi-grid-3x3"></i>
-                                    </a>
-                                </template>
-                                <template x-if="showBadges && space.swot_completion.status === 'empty'">
-                                    <span class="completion-badge badge-empty" title="SWOT not filled">!</span>
-                                </template>
-                                <template x-if="showBadges && space.swot_completion.status === 'partial'">
-                                    <span class="completion-badge badge-partial" :title="'SWOT partially filled: ' + space.swot_completion.filled + '/' + space.swot_completion.total" x-text="space.swot_completion.filled + '/' + space.swot_completion.total"></span>
-                                </template>
-                                <template x-if="showBadges && space.swot_completion.status === 'complete'">
-                                    <span class="completion-badge badge-complete" title="SWOT complete">✓</span>
-                                </template>
-
-                                <span x-text="space.name" :data-tooltip="!editMode && space.description ? space.description : null"></span>
+                                <span x-text="space.name" :data-tooltip="!editMode && space.description ? space.description : null" :data-tooltip-actions="!editMode ? tooltipActions(space, 'space') : null"></span>
 
                                 <!-- Space label badge -->
                                 <template x-if="showBadges && space.space_label">
@@ -2337,15 +2287,6 @@
                                 <template x-if="showBadges && space.is_private">
                                     <span class="private-badge" title="Private space">
                                         <i class="bi bi-lock-fill"></i> Private
-                                    </span>
-                                </template>
-
-                                <!-- Entity links popover -->
-                                <template x-if="showBadges && ((space.entity_links && space.entity_links.length > 0) || (space.inherited_links && space.inherited_links.length > 0))">
-                                    <span class="entity-link-icon"
-                                          :title="'Links (' + ((space.entity_links||[]).length + (space.inherited_links||[]).length) + ')'"
-                                          @click.stop="showEntityLinks(space, 'space')">
-                                        <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
                                     </span>
                                 </template>
 
@@ -2487,16 +2428,7 @@
                                         <span x-show="!challenge.logo_url && challenge.icon && !editMode && showBadges" class="entity-icon-text" x-text="challenge.icon"></span>
                                         <i x-show="!challenge.logo_url && !challenge.icon && (editMode || !showBadges)" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
-                                        <span x-text="challenge.name" :data-tooltip="!editMode && challenge.description ? challenge.description : null"></span>
-
-                                        <!-- Entity links popover -->
-                                        <template x-if="showBadges && ((challenge.entity_links && challenge.entity_links.length > 0) || (challenge.inherited_links && challenge.inherited_links.length > 0))">
-                                            <span class="entity-link-icon"
-                                                  :title="'Links (' + ((challenge.entity_links||[]).length + (challenge.inherited_links||[]).length) + ')'"
-                                                  @click.stop="showEntityLinks(challenge, 'challenge')">
-                                                <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                            </span>
-                                        </template>
+                                        <span x-text="challenge.name" :data-tooltip="!editMode && challenge.description ? challenge.description : null" :data-tooltip-actions="!editMode ? tooltipActions(challenge, 'challenge') : null"></span>
 
                                         <!-- Action icons (edit mode only) -->
                                         <template x-if="editMode">
@@ -2598,35 +2530,7 @@
                                                 <span x-show="!initiative.logo_url && initiative.icon && !editMode && showBadges" class="entity-icon-text" x-text="initiative.icon"></span>
                                                 <i x-show="!initiative.logo_url && !initiative.icon && (editMode || !showBadges)" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
 
-                                                <!-- Form link with completion badge -->
-                                                <template x-if="showBadges">
-                                                    <a :href="`{{ url_for('organization_admin.initiative_form', initiative_id=0) }}`.replace('0', initiative.id)"
-                                                       class="form-link-icon"
-                                                       :title="'Initiative Form - ' + (initiative.form_completion.status === 'complete' ? 'Complete' : initiative.form_completion.status === 'partial' ? 'Partial (' + initiative.form_completion.filled + '/' + initiative.form_completion.total + ')' : 'Empty')"
-                                                       @click.stop>
-                                                        <i class="bi bi-file-text"></i>
-                                                    </a>
-                                                </template>
-                                                <template x-if="showBadges && initiative.form_completion.status === 'empty'">
-                                                    <span class="completion-badge badge-empty" title="Form not filled">!</span>
-                                                </template>
-                                                <template x-if="showBadges && initiative.form_completion.status === 'partial'">
-                                                    <span class="completion-badge badge-partial" :title="'Form partially filled: ' + initiative.form_completion.filled + '/' + initiative.form_completion.total" x-text="initiative.form_completion.filled + '/' + initiative.form_completion.total"></span>
-                                                </template>
-                                                <template x-if="showBadges && initiative.form_completion.status === 'complete'">
-                                                    <span class="completion-badge badge-complete" title="Form complete">✓</span>
-                                                </template>
-
-                                                <span x-text="initiative.name" :data-tooltip="!editMode && initiative.description ? initiative.description : null"></span>
-
-                                                <!-- Entity links popover -->
-                                                <template x-if="showBadges && ((initiative.entity_links && initiative.entity_links.length > 0) || (initiative.inherited_links && initiative.inherited_links.length > 0))">
-                                                    <span class="entity-link-icon"
-                                                          :title="'Links (' + ((initiative.entity_links||[]).length + (initiative.inherited_links||[]).length) + ')'"
-                                                          @click.stop="showEntityLinks(initiative, 'initiative')">
-                                                        <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                                    </span>
-                                                </template>
+                                                <span x-text="initiative.name" :data-tooltip="!editMode && initiative.description ? initiative.description : null" :data-tooltip-actions="!editMode ? tooltipActions(initiative, 'initiative') : null"></span>
 
                                                 <!-- Action icons (edit mode only) -->
                                                 <template x-if="editMode">
@@ -2755,16 +2659,7 @@
                                                         <span x-show="!system.logo_url && system.icon && !editMode && showBadges" class="entity-icon-text" x-text="system.icon"></span>
                                                         <i x-show="!system.logo_url && !system.icon && (editMode || !showBadges)" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
 
-                                                        <span x-text="system.name" :data-tooltip="!editMode && system.description ? system.description : null"></span>
-
-                                                        <!-- Entity links popover -->
-                                                        <template x-if="showBadges && ((system.entity_links && system.entity_links.length > 0) || (system.inherited_links && system.inherited_links.length > 0))">
-                                                            <span class="entity-link-icon"
-                                                                  :title="'Links (' + ((system.entity_links||[]).length + (system.inherited_links||[]).length) + ')'"
-                                                                  @click.stop="showEntityLinks(system, 'system')">
-                                                                <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                                            </span>
-                                                        </template>
+                                                        <span x-text="system.name" :data-tooltip="!editMode && system.description ? system.description : null" :data-tooltip-actions="!editMode ? tooltipActions(system, 'system') : null"></span>
 
                                                         <!-- Action icons (edit mode only) -->
                                                         <template x-if="editMode">
@@ -2896,16 +2791,7 @@
                                                                 </span>
                                                             </template>
 
-                                                            <span x-text="kpi.name" :data-tooltip="!editMode && kpi.description ? kpi.description : null"></span>
-
-                                                            <!-- Entity links popover -->
-                                                            <template x-if="showBadges && kpi.entity_links && kpi.entity_links.length > 0">
-                                                                <span class="entity-link-icon"
-                                                                      :title="'Direct links (' + kpi.entity_links.length + ')'"
-                                                                      @click.stop="showEntityLinks(kpi, 'kpi')">
-                                                                    <i class="bi bi-link-45deg" style="color:#3b82f6;"></i>
-                                                                </span>
-                                                            </template>
+                                                            <span x-text="kpi.name" :data-tooltip="!editMode && kpi.description ? kpi.description : null" :data-tooltip-actions="!editMode ? tooltipActions(kpi, 'kpi') : null"></span>
 
                                                             <!-- Linked KPI indicator -->
                                                             <template x-if="showBadges && kpi.has_linked_sources">
@@ -4690,6 +4576,49 @@ function workspaceV2(orgId, filterPresets) {
             this.valueTypes[index].collapsed = !this.valueTypes[index].collapsed;
         },
 
+        // Tooltip action chip builders
+        tooltipActions(entity, entityType) {
+            var h = '';
+            // SWOT (space level)
+            if (entityType === 'space' && entity.swot_completion) {
+                var sc = entity.swot_completion;
+                var swotUrl = '/org-admin/spaces/' + entity.id + '/swot';
+                var badge = sc.status === 'complete' ? '<span class="tt-badge-complete">\u2713<\/span>'
+                          : sc.status === 'partial' ? '<span class="tt-badge-partial">' + sc.filled + '/' + sc.total + '<\/span>'
+                          : '<span class="tt-badge-empty">!<\/span>';
+                h += '<a class="tt-chip" href="' + swotUrl + '" onclick="event.stopPropagation()"><i class="bi bi-grid-3x3"><\/i> SWOT ' + badge + '<\/a>';
+            }
+            // Initiative Form (initiative level)
+            if (entityType === 'initiative' && entity.form_completion) {
+                var fc = entity.form_completion;
+                var formUrl = '/org-admin/initiatives/' + entity.id + '/form';
+                var badge = fc.status === 'complete' ? '<span class="tt-badge-complete">\u2713<\/span>'
+                          : fc.status === 'partial' ? '<span class="tt-badge-partial">' + fc.filled + '/' + fc.total + '<\/span>'
+                          : '<span class="tt-badge-empty">!<\/span>';
+                h += '<a class="tt-chip" href="' + formUrl + '" onclick="event.stopPropagation()"><i class="bi bi-file-text"><\/i> Form ' + badge + '<\/a>';
+            }
+            // Entity links (all levels)
+            var links = (entity.entity_links||[]).length + (entity.inherited_links||[]).length;
+            if (links > 0) {
+                h += '<span class="tt-chip" style="cursor:default;"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
+            }
+            return h;
+        },
+
+        tooltipActionsOrg() {
+            var h = '';
+            if (this.portersUrl) {
+                var pc = this.portersCompletion;
+                var badge = pc ? (pc.status === 'complete' ? '<span class="tt-badge-complete">\u2713<\/span>' : pc.status === 'partial' ? '<span class="tt-badge-partial">' + pc.filled + '/' + pc.total + '<\/span>' : '<span class="tt-badge-empty">!<\/span>') : '';
+                h += '<a class="tt-chip" href="' + this.portersUrl + '" onclick="event.stopPropagation()"><i class="bi bi-diagram-3"><\/i> Porter\'s ' + badge + '<\/a>';
+            }
+            if (this.orgData) {
+                var links = (this.orgData.entity_links||[]).length + (this.orgData.inherited_links||[]).length;
+                if (links > 0) h += '<span class="tt-chip" style="cursor:default;"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
+            }
+            return h;
+        },
+
         // Entity Actions
         showEntityLinks(entity, entityType) {
             const ownLinks = entity.entity_links || [];
@@ -5333,51 +5262,100 @@ document.addEventListener('DOMContentLoaded', function() {
         border-radius: 8px;
         font-size: 0.82rem;
         line-height: 1.55;
-        max-width: 340px;
-        white-space: pre-wrap;
+        max-width: 380px;
         word-break: break-word;
         z-index: 9999;
-        pointer-events: none;
         box-shadow: 0 4px 16px rgba(0,0,0,0.35);
         border: 1px solid rgba(255,255,255,0.08);
     }
+    #ws-desc-tooltip .tt-desc { white-space: pre-wrap; margin-bottom: 0.4rem; }
+    #ws-desc-tooltip .tt-actions {
+        display: flex; flex-wrap: wrap; gap: 0.35rem; padding-top: 0.4rem;
+        border-top: 1px solid rgba(255,255,255,0.1);
+    }
+    #ws-desc-tooltip .tt-actions:empty { display: none; }
+    #ws-desc-tooltip .tt-chip {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 6px;
+        background: rgba(255,255,255,0.08); color: #94a3b8;
+        text-decoration: none; transition: all 0.15s; cursor: pointer;
+    }
+    #ws-desc-tooltip .tt-chip:hover { background: rgba(255,255,255,0.15); color: #f1f5f9; }
+    #ws-desc-tooltip .tt-chip i { font-size: 0.7rem; }
+    #ws-desc-tooltip .tt-badge-empty { color: #f59e0b; }
+    #ws-desc-tooltip .tt-badge-partial { color: #60a5fa; }
+    #ws-desc-tooltip .tt-badge-complete { color: #4ade80; }
 </style>
 <script>
 (function() {
-    const tip = document.getElementById('ws-desc-tooltip');
-    let showTimer;
+    var tip = document.getElementById('ws-desc-tooltip');
+    var showTimer = null;
+    var hideTimer = null;
+    var overTip = false;
+    var overEl = false;
+    var activeEl = null;
+    var lastX = 0, lastY = 0;
 
-    document.addEventListener('mouseover', (e) => {
-        const el = e.target.closest('[data-tooltip]');
-        if (el && el.dataset.tooltip) {
-            clearTimeout(showTimer);
-            showTimer = setTimeout(() => {
-                tip.textContent = el.dataset.tooltip;
-                tip.style.display = 'block';
-            }, 300);
-        } else {
-            clearTimeout(showTimer);
-            tip.style.display = 'none';
-        }
-    });
+    function render(el) {
+        var desc = el.dataset.tooltip || '';
+        var actions = el.dataset.tooltipActions || '';
+        var html = '';
+        if (desc) html += '<div class="tt-desc">' + desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '<\/div>';
+        if (actions) html += '<div class="tt-actions">' + actions + '<\/div>';
+        return html;
+    }
 
-    document.addEventListener('mousemove', (e) => {
-        if (tip.style.display === 'block') {
-            // Keep tooltip within viewport
-            const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
-            const y = Math.min(e.clientY + 14, window.innerHeight - tip.offsetHeight - 8);
-            tip.style.left = x + 'px';
-            tip.style.top  = y + 'px';
-        }
-    });
+    function position() {
+        var x = Math.min(lastX + 14, window.innerWidth - tip.offsetWidth - 8);
+        var y = Math.min(lastY + 14, window.innerHeight - tip.offsetHeight - 8);
+        tip.style.left = x + 'px';
+        tip.style.top = y + 'px';
+    }
 
-    document.addEventListener('mouseout', (e) => {
-        const el = e.target.closest('[data-tooltip]');
-        if (el) {
-            clearTimeout(showTimer);
-            tip.style.display = 'none';
+    function checkHide() {
+        clearTimeout(hideTimer);
+        if (!overTip && !overEl) {
+            hideTimer = setTimeout(function() {
+                if (!overTip && !overEl) {
+                    tip.style.display = 'none';
+                    activeEl = null;
+                }
+            }, 400);
         }
-    });
+    }
+
+    // Track mouse position for tooltip placement
+    document.addEventListener('mousemove', function(e) { lastX = e.clientX; lastY = e.clientY; });
+
+    // Entity name mouseenter — via event delegation
+    document.addEventListener('mouseenter', function(e) {
+        var el = e.target.closest ? e.target.closest('[data-tooltip],[data-tooltip-actions]') : null;
+        if (!el || (!el.dataset.tooltip && !el.dataset.tooltipActions)) return;
+        overEl = true;
+        clearTimeout(hideTimer);
+        clearTimeout(showTimer);
+        activeEl = el;
+        showTimer = setTimeout(function() {
+            if (!overEl || activeEl !== el) return;
+            var html = render(el);
+            if (!html) return;
+            tip.innerHTML = html;
+            tip.style.display = 'block';
+            position();
+        }, 300);
+    }, true);
+
+    document.addEventListener('mouseleave', function(e) {
+        var el = e.target.closest ? e.target.closest('[data-tooltip],[data-tooltip-actions]') : null;
+        if (!el || el !== activeEl) return;
+        overEl = false;
+        clearTimeout(showTimer);
+        checkHide();
+    }, true);
+
+    // Tooltip itself
+    tip.addEventListener('mouseenter', function() { overTip = true; clearTimeout(hideTimer); });
+    tip.addEventListener('mouseleave', function() { overTip = false; checkHide(); });
 })();
 </script>
 
