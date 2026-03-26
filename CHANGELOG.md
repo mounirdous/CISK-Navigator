@@ -5,32 +5,83 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.1] - 2026-03-26
+
+### Performance
+- **Eager loading of entire workspace hierarchy** — spaces, challenges, initiative links, initiatives, system links, systems, KPIs, value type configs, and governance body links are now loaded in batched `selectinload` queries instead of lazy N+1 queries
+- **Batch entity links loading** — all entity links for the workspace are loaded in a single query with OR conditions by entity type, replacing ~210 individual queries with 1 query + O(1) dict lookups
+- **Estimated reduction**: ~250+ N+1 queries eliminated for a typical workspace load
+
 ## [3.8.0] - 2026-03-26
 
 ### Added
-- **Performance Benchmarks page in Super Admin** — run, view, compare, and delete benchmark runs measuring database and server performance across organizations
+- **Performance Benchmarks page in Super Admin** — run, save, and compare benchmark runs measuring database and server performance
+- Benchmark metrics: DB entity count, DB full hierarchy load, DB value types query
+- Configurable iterations (1-50), name, description per run
+- Entity count snapshot (spaces, challenges, initiatives, systems, KPIs, value types) captured at run time
+- Expandable detail rows showing min/avg/max/median/p95 per metric with relative progress bars
+- Compare up to 4 runs side-by-side with baseline delta percentages, color-coded faster (green) / slower (red)
+- Link from Super Admin dashboard (3-column layout for Testing & Development cards)
+
+## [3.7.2] - 2026-03-26
+
+### Fixed
+- **Entity links CSRF error** — fixed `jinja2.exceptions.UndefinedError: 'csrf_token' is undefined` in `_entity_links.html` macro by using DOM-based CSRF token lookup
+- **Duplicate link on add** — workspace modal add form now uses AJAX (no page reload/redirect), preventing double-submit
+
+## [3.7.1] - 2026-03-26
+
+### Added
+- **Entity links editing from workspace** — click "N links" chip in tooltip to open modal with edit (inline URL/title fields), delete, and add new link functionality
+- **Entity links editing in org admin** — pencil icon on Organization Links page opens inline edit fields with Save/Cancel
+- **Clickable link chips in tooltips** — entity link count chips now open the edit modal via global bridge function
+
+### Fixed
+- **CSRF error on showBadges toggle** — replaced `meta[name=csrf-token]` selector with Jinja `{{ csrf_token() }}`
+- **KPI trend 404 spam** — disabled trend API calls (route not implemented yet)
 
 ## [3.7.0] - 2026-03-26
 
 ### Changed
-- **Enhanced workspace description tooltips with action chips** — hovering entity names now shows clickable Porter's, SWOT, and Form links with completion badges, plus entity link counts directly in the tooltip
-- Removed Porter's Five Forces icon and completion badges from workspace org header row
-- Removed SWOT icon and completion badges from workspace space rows
-- Removed Initiative Form icon and completion badges from workspace initiative rows
-- Removed entity link icons from all workspace tree levels (org, space, challenge, initiative, system, KPI)
-- Tooltip now supports interactive hover (stays open when mouse enters tooltip) for clicking action chip links
+- **Action icons moved to description tooltips** — Porter's Five Forces, SWOT Analysis, Initiative Form, and entity link icons removed from workspace tree rows and moved into interactive tooltip chips with completion badges
+- Tooltip now supports HTML content with clickable action chips (links to SWOT, Form, Porter's pages)
+- Tooltip stays visible while mouse is on entity name OR tooltip itself (500ms grace period, no chasing)
+- Cleaner workspace tree with less visual clutter
+
+## [3.6.3] - 2026-03-26
+
+### Changed
+- **Rich KPI value formatting in drill-down panel** — numeric values show color + unit label + target emoji; qualitative types show proper icons: risk (!), positive impact (stars), negative impact (arrows), engagement (dots)
+
+## [3.6.2] - 2026-03-26
+
+### Changed
+- **Drill-down opens in KPIs-only mode** — panel defaults to flat KPI list; toggle button (graph icon) switches between KPIs-only and full hierarchy tree
 
 ## [3.6.1] - 2026-03-26
 
+### Added
+- **Organization description tooltip** on org name in workspace tree header
+- **Restore imports org description** from backup JSON
+
 ### Changed
-- Added organization description tooltip on the org name in the workspace tree header
-- Removed Backup & Restore card from global admin index page
+- Removed Backup & Restore card from Instance Admin dashboard
+- **Instance Admin navbar matches workspace** — same first row layout with Organizations, People & Actions, Dashboards, Admin dropdowns
+- Workspace pill in Instance Admin returns to previous org (remembered via session)
+- Auto-switch to Instance Admin mode when navigating to `/global-admin/` (no more "Please log in" redirect)
+- No duplicate flash messages when switching between Instance Admin and Workspace
+
+### Fixed
+- **Modern loading card** — workspace loading shows centered card with 5 step-by-step progress indicators (connect, fetch, process, build tree, render), item count detail, and smooth progress bar
 
 ## [3.6.0] - 2026-03-26
 
 ### Added
-- **Rollup hover tooltip on workspace tree value cells** — hovering a space/challenge/initiative/system rollup cell shows a dark tooltip with formula symbol, progress bar, and child coverage counts
-- **Drill-down panel for rollup values** — clicking a rollup cell opens a fixed panel showing the full child hierarchy tree with values, completeness status, and aggregated footer; supports expand/collapse of tree nodes and closes on outside click or Escape
+- **Rollup hover tooltip on workspace tree value cells** — hovering a space/challenge/initiative/system rollup cell shows a dark tooltip with formula symbol, progress bar, and child coverage counts; tooltip stays at initial position with 200ms hide delay
+- **Drill-down panel for rollup values** — clicking a rollup tooltip opens a panel showing the full child hierarchy tree with values, completeness status, and aggregated footer; pure DOM rendering (outside Alpine scope to avoid overflow clipping); supports expand/collapse and closes on outside click or Escape
+
+### Fixed
+- **Alpine `_x_dataStack` errors** — removed 4 empty `<template x-if>` blocks (space, challenge, initiative, system levels) that caused `Cannot set properties of null` errors in Alpine 3
 
 ## [3.5.0] - 2026-03-25
 
