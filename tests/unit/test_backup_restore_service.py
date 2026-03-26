@@ -194,7 +194,7 @@ class TestFullBackupActionItems:
 
     def test_backup_format_version_is_3(self, db, sample_organization):
         backup = FullBackupService.create_full_backup(sample_organization.id)
-        assert backup["metadata"]["backup_format_version"] == "6.0"
+        assert backup["metadata"]["backup_format_version"] == "9.0"
 
 
 # ---------------------------------------------------------------------------
