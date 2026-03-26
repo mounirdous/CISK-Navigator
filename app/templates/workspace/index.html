@@ -5008,7 +5008,35 @@ function workspaceV2(orgId, filterPresets) {
                 panel.querySelector('.ws-dd-type-badge').textContent = entityType ? entityType.charAt(0).toUpperCase() + entityType.slice(1) : '';
                 panel.querySelector('.ws-dd-vt-name').textContent = vt ? vt.name : '';
                 panel.querySelector('.ws-dd-entity-name').textContent = entity ? entity.name : '';
-                panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDown(entity, entityType, String(vtId));
+                var _ddKpiOnly = true;
+                panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDownFlat(entity, entityType, String(vtId));
+                // Wire KPI-only toggle
+                var kpiBtn = panel.querySelector('.ws-dd-kpi-btn');
+                if (kpiBtn) {
+                    kpiBtn.classList.add('active');
+                    kpiBtn.title = 'Show full tree';
+                    kpiBtn.onclick = function(e) {
+                        e.stopPropagation();
+                        _ddKpiOnly = !_ddKpiOnly;
+                        kpiBtn.classList.toggle('active', _ddKpiOnly);
+                        kpiBtn.title = _ddKpiOnly ? 'Show full tree' : 'Show KPIs only';
+                        panel.querySelector('.ws-dd-body').innerHTML = _ddKpiOnly
+                            ? self.renderDrillDownFlat(entity, entityType, String(vtId))
+                            : self.renderDrillDown(entity, entityType, String(vtId));
+                        // Re-wire toggle clicks for tree mode
+                        if (!_ddKpiOnly) {
+                            panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
+                                row.addEventListener('click', function(ev) {
+                                    ev.stopPropagation();
+                                    var children = row.parentElement.querySelector('.ws-dd-children');
+                                    var chevron = row.querySelector('.ws-dd-chevron');
+                                    if (children) children.style.display = children.style.display === 'none' ? '' : 'none';
+                                    if (chevron) { chevron.classList.toggle('bi-chevron-down'); chevron.classList.toggle('bi-chevron-right'); }
+                                });
+                            });
+                        }
+                    };
+                }
                 // Wire toggle clicks
                 panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
                     row.addEventListener('click', function(e) {
@@ -5133,6 +5161,29 @@ function workspaceV2(orgId, filterPresets) {
                 html += '<div class="ws-dd-footer"><span class="ws-dd-footer-label">Aggregated:<\/span><div style="display:flex;align-items:baseline;gap:0.3rem;"><span class="ws-dd-footer-val" style="color:' + (rv.color||'#9ca3af') + ';">' + esc(fmtVal) + '<\/span>' + (unit ? '<span class="ws-dd-footer-unit">' + esc(unit) + '<\/span>' : '') + '<\/div><\/div>';
             }
             return html;
+        },
+        renderDrillDownFlat(entity, entityType, vtId) {
+            var esc = function(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; };
+            var kpiOk = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return !!(kv&&kv.consensus_status!=='no_data'); };
+            var kpiFmt = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.consensus_status!=='no_data' ? (kv.formatted_value||kv.list_label||String(kv.value)) : '\u2014'; };
+            var kpiClr = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.color?kv.color:'#9ca3af'; };
+            // Collect all KPIs from the hierarchy
+            var kpis = [];
+            var collect = function(e, eType) {
+                if (eType === 'system') { (e.kpis||[]).forEach(function(k) { if (kpiOk(k)) kpis.push(k); }); }
+                else if (eType === 'initiative') { (e.systems||[]).forEach(function(s) { collect(s, 'system'); }); }
+                else if (eType === 'challenge') { (e.initiatives||[]).forEach(function(i) { collect(i, 'initiative'); }); }
+                else if (eType === 'space') { (e.challenges||[]).forEach(function(c) { collect(c, 'challenge'); }); }
+            };
+            collect(entity, entityType);
+            if (!kpis.length) return '<div class="ws-dd-empty">No contributing KPIs<\/div>';
+            var h = '<div class="ws-dd-table">';
+            for (var i=0; i<kpis.length; i++) {
+                var kpi = kpis[i];
+                h += '<div class="ws-dd-row ws-dd-row-kpi"><i class="bi bi-graph-up ws-dd-icon-kpi"><\/i><span class="ws-dd-rname">' + esc(kpi.name) + '<\/span><span class="ws-dd-rval" style="color:' + kpiClr(kpi) + ';">' + esc(kpiFmt(kpi)) + '<\/span><\/div>';
+            }
+            h += '<\/div>';
+            return h;
         }
     }
 }
@@ -5349,6 +5400,12 @@ document.addEventListener('DOMContentLoaded', function() {
         font-size: 1rem; padding: 0.25rem; border-radius: 6px;
     }
     .ws-dd-close-btn:hover { color: #f1f5f9; background: rgba(255,255,255,0.1); }
+    .ws-dd-kpi-btn {
+        background: none; border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; cursor: pointer;
+        font-size: 0.85rem; padding: 0.2rem 0.45rem; border-radius: 6px; transition: all 0.15s;
+    }
+    .ws-dd-kpi-btn:hover { color: #4ade80; border-color: rgba(74,222,128,0.4); background: rgba(74,222,128,0.1); }
+    .ws-dd-kpi-btn.active { color: #4ade80; border-color: rgba(74,222,128,0.5); background: rgba(74,222,128,0.15); }
     .ws-dd-body { padding: 0.5rem 0.75rem 0.75rem; }
     .ws-dd-meta-block { margin-bottom: 0.5rem; }
     .ws-dd-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
@@ -5429,6 +5486,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="ws-dd-entity-name"></div>
         </div>
+        <button class="ws-dd-kpi-btn active" title="Toggle: KPIs only / full hierarchy tree">
+            <i class="bi bi-graph-up"></i>
+        </button>
         <button class="ws-dd-close-btn" title="Close">
             <i class="bi bi-x-lg"></i>
         </button>
