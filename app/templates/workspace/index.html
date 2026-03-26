@@ -3482,16 +3482,16 @@ function workspaceV2(orgId, filterPresets) {
             var pts = this.pendingTreeState;
             this.spaces = data.spaces.map(function(space) { return {
                 ...space,
-                collapsed: pts?.spaces?.[space.id] ?? spaceCollapsed[space.id] ?? false,
+                collapsed: pts?.spaces?.[space.id] ?? spaceCollapsed[space.id] ?? true,
                 challenges: space.challenges.map(function(challenge) { return {
                     ...challenge,
-                    collapsed: pts?.challenges?.[challenge.id] ?? challengeCollapsed[challenge.id] ?? false,
+                    collapsed: pts?.challenges?.[challenge.id] ?? challengeCollapsed[challenge.id] ?? true,
                     initiatives: challenge.initiatives.map(function(initiative) { return {
                         ...initiative,
-                        collapsed: pts?.initiatives?.[initiative.id] ?? initiativeCollapsed[initiative.id] ?? false,
+                        collapsed: pts?.initiatives?.[initiative.id] ?? initiativeCollapsed[initiative.id] ?? true,
                         systems: initiative.systems.map(function(system) { return {
                             ...system,
-                            collapsed: pts?.systems?.[system.id] ?? systemCollapsed[system.id] ?? false
+                            collapsed: pts?.systems?.[system.id] ?? systemCollapsed[system.id] ?? true
                         }; })
                     }; })
                 }; })
@@ -5271,8 +5271,34 @@ function workspaceV2(orgId, filterPresets) {
             }
             // Helpers
             var esc = function(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; };
-            var fmtRv = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; return r ? (r.formatted_value||r.list_label||String(r.value)) : '\u2014'; };
-            var rvClr = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; return r&&r.color ? r.color : '#9ca3af'; };
+            var fmtRvHtml = function(e) {
+                var r = e.rollup_values && e.rollup_values[vtId];
+                if (!r || r.value == null) return '<span style="color:#6c757d;">\u2014<\/span>';
+                var v = r.value, color = r.color || '#9ca3af', kind = vt ? vt.kind : 'numeric';
+                if (kind === 'risk') {
+                    var s = v==1?'!<span style="opacity:0.2">!!<\/span>':v==2?'!!<span style="opacity:0.2">!<\/span>':v>=3?'!!!':String(v);
+                    return '<strong style="color:'+color+';">'+s+'<\/strong>';
+                }
+                if (kind === 'positive_impact') {
+                    var s = v==1?'\u2605<span style="opacity:0.2">\u2605\u2605<\/span>':v==2?'\u2605\u2605<span style="opacity:0.2">\u2605<\/span>':v>=3?'\u2605\u2605\u2605':String(v);
+                    return '<strong style="color:'+color+';">'+s+'<\/strong>';
+                }
+                if (kind === 'negative_impact') {
+                    var s = v==1?'\u25BC<span style="opacity:0.2">\u25BC\u25BC<\/span>':v==2?'\u25BC\u25BC<span style="opacity:0.2">\u25BC<\/span>':v>=3?'\u25BC\u25BC\u25BC':String(v);
+                    return '<strong style="color:'+color+';">'+s+'<\/strong>';
+                }
+                if (kind === 'level') {
+                    var s = v==1?'\u25CF<span style="opacity:0.2">\u25CF\u25CF<\/span>':v==2?'\u25CF\u25CF<span style="opacity:0.2">\u25CF<\/span>':v>=3?'\u25CF\u25CF\u25CF':String(v);
+                    return '<strong style="color:'+color+';">'+s+'<\/strong>';
+                }
+                if (kind === 'sentiment') {
+                    var s = v==1?'\u2639\uFE0F':v==2?'\uD83D\uDE10':v>=3?'\uD83D\uDE0A':String(v);
+                    return '<span style="font-size:1.1rem;">'+s+'<\/span>';
+                }
+                var txt = r.formatted_value || r.list_label || String(v);
+                var unit = (vt && vt.unit_label) ? ' <span style="font-size:0.7rem;color:#64748b;">' + esc(vt.unit_label) + '<\/span>' : '';
+                return '<strong style="color:'+color+';">' + esc(txt) + '<\/strong>' + unit;
+            };
             var rvStat = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; if(!r) return '<span class="ws-dd-dot ws-dd-dot-none">\u2013<\/span>'; return r.is_complete?'<span class="ws-dd-dot ws-dd-dot-ok">\u2713<\/span>':'<span class="ws-dd-dot ws-dd-dot-warn">\u26A0<\/span>'; };
             var contributes = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; return !!(r&&r.count_included>0); };
             var kpiOk = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return !!(kv&&kv.consensus_status!=='no_data'); };
@@ -5295,7 +5321,7 @@ function workspaceV2(orgId, filterPresets) {
                 for (var i=0; i<systems.length; i++) {
                     var sys = systems[i];
                     if (!contributes(sys)) continue;
-                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-sys" data-dd-toggle="sys_' + sys.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><i class="bi bi-gear-fill ws-dd-icon-sys"><\/i><span class="ws-dd-rname">' + esc(sys.name) + '<\/span><span class="ws-dd-rval" style="color:' + rvClr(sys) + ';">' + esc(fmtRv(sys)) + '<\/span><span class="ws-dd-rstat">' + rvStat(sys) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-kpi">' + renderKpis(sys.kpis||[]) + '<\/div><\/div>';
+                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-sys" data-dd-toggle="sys_' + sys.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><i class="bi bi-gear-fill ws-dd-icon-sys"><\/i><span class="ws-dd-rname">' + esc(sys.name) + '<\/span><span class="ws-dd-rval">' + fmtRvHtml(sys) + '<\/span><span class="ws-dd-rstat">' + rvStat(sys) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-kpi">' + renderKpis(sys.kpis||[]) + '<\/div><\/div>';
                 }
                 return h;
             };
@@ -5304,7 +5330,7 @@ function workspaceV2(orgId, filterPresets) {
                 for (var i=0; i<initiatives.length; i++) {
                     var ini = initiatives[i];
                     if (!contributes(ini)) continue;
-                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-ini" data-dd-toggle="ini_' + ini.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><span class="ws-dd-rag-dot" style="background:' + ragClr(ini) + ';" title="' + esc(ini.execution_rag||'No status') + '"><\/span><span class="ws-dd-rname">' + esc(ini.name) + '<\/span><span class="ws-dd-rval" style="color:' + rvClr(ini) + ';">' + esc(fmtRv(ini)) + '<\/span><span class="ws-dd-rstat">' + rvStat(ini) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-sys">' + renderSystems(ini.systems||[]) + '<\/div><\/div>';
+                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-ini" data-dd-toggle="ini_' + ini.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><span class="ws-dd-rag-dot" style="background:' + ragClr(ini) + ';" title="' + esc(ini.execution_rag||'No status') + '"><\/span><span class="ws-dd-rname">' + esc(ini.name) + '<\/span><span class="ws-dd-rval">' + fmtRvHtml(ini) + '<\/span><span class="ws-dd-rstat">' + rvStat(ini) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-sys">' + renderSystems(ini.systems||[]) + '<\/div><\/div>';
                 }
                 return h;
             };
@@ -5313,7 +5339,7 @@ function workspaceV2(orgId, filterPresets) {
                 for (var i=0; i<challenges.length; i++) {
                     var ch = challenges[i];
                     if (!contributes(ch)) continue;
-                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-ch" data-dd-toggle="ch_' + ch.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><i class="bi bi-bullseye ws-dd-icon-ch"><\/i><span class="ws-dd-rname">' + esc(ch.name) + '<\/span><span class="ws-dd-rval" style="color:' + rvClr(ch) + ';">' + esc(fmtRv(ch)) + '<\/span><span class="ws-dd-rstat">' + rvStat(ch) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-ini">' + renderInitiatives(ch.initiatives||[]) + '<\/div><\/div>';
+                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-ch" data-dd-toggle="ch_' + ch.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><i class="bi bi-bullseye ws-dd-icon-ch"><\/i><span class="ws-dd-rname">' + esc(ch.name) + '<\/span><span class="ws-dd-rval">' + fmtRvHtml(ch) + '<\/span><span class="ws-dd-rstat">' + rvStat(ch) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-ini">' + renderInitiatives(ch.initiatives||[]) + '<\/div><\/div>';
                 }
                 return h;
             };
@@ -5353,9 +5379,13 @@ function workspaceV2(orgId, filterPresets) {
                 var sym = v==1 ? '\u25BC<span style="opacity:0.2">\u25BC\u25BC<\/span>' : v==2 ? '\u25BC\u25BC<span style="opacity:0.2">\u25BC<\/span>' : v>=3 ? '\u25BC\u25BC\u25BC' : String(v);
                 return '<strong style="color:' + color + ';">' + sym + '<\/strong>';
             }
-            if (kind === 'engagement') {
+            if (kind === 'level') {
                 var sym = v==1 ? '\u25CF<span style="opacity:0.2">\u25CF\u25CF<\/span>' : v==2 ? '\u25CF\u25CF<span style="opacity:0.2">\u25CF<\/span>' : v>=3 ? '\u25CF\u25CF\u25CF' : String(v);
                 return '<strong style="color:' + color + ';">' + sym + '<\/strong>';
+            }
+            if (kind === 'sentiment') {
+                var sym = v==1 ? '\u2639\uFE0F' : v==2 ? '\uD83D\uDE10' : v>=3 ? '\uD83D\uDE0A' : String(v);
+                return '<span style="font-size:1.1rem;">' + sym + '<\/span>';
             }
             // Numeric or other
             var txt = kv.formatted_value || kv.list_label || String(v);
