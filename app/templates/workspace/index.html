@@ -828,32 +828,49 @@
         display: inline-block;
     }
 
-    /* Loading State */
-    .loading-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.95);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
+    /* Loading State — top progress bar */
+    /* Loading State — centered card with steps */
+    .ws-loading-card {
+        display: flex; align-items: center; justify-content: center;
+        flex: 1; min-height: 300px;
     }
-
-    .spinner {
-        border: 4px solid #f3f3f3;
-        border-top: 4px solid #3182ce;
-        border-radius: 50%;
-        width: 50px;
-        height: 50px;
-        animation: spin 1s linear infinite;
+    .ws-loading-inner {
+        background: white; border-radius: 16px; padding: 2rem 2.5rem;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
+        min-width: 320px; max-width: 420px;
     }
-
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+    .ws-loading-header {
+        display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;
+    }
+    .ws-loading-spinner {
+        width: 40px; height: 40px; border-radius: 50%;
+        border: 3px solid #e2e8f0; border-top-color: #3182ce;
+        animation: ws-spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes ws-spin { to { transform: rotate(360deg); } }
+    .ws-loading-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+    .ws-loading-steps { list-style: none; padding: 0; margin: 0; }
+    .ws-loading-steps li {
+        display: flex; align-items: center; gap: 0.6rem;
+        padding: 0.4rem 0; font-size: 0.85rem; color: #64748b;
+        transition: color 0.3s;
+    }
+    .ws-loading-steps li.done { color: #16a34a; }
+    .ws-loading-steps li.active { color: #1e293b; font-weight: 600; }
+    .ws-loading-steps li .step-icon {
+        width: 20px; text-align: center; flex-shrink: 0; font-size: 0.85rem;
+    }
+    .ws-loading-steps li.done .step-icon { color: #16a34a; }
+    .ws-loading-steps li.active .step-icon { color: #3182ce; }
+    .ws-loading-steps li.pending .step-icon { color: #cbd5e1; }
+    .ws-loading-bar-track {
+        height: 4px; background: #e2e8f0; border-radius: 2px;
+        margin-top: 1.25rem; overflow: hidden;
+    }
+    .ws-loading-bar-fill {
+        height: 4px; border-radius: 2px;
+        background: linear-gradient(90deg, #3182ce, #63b3ed);
+        transition: width 0.5s ease;
     }
 
     /* Drag Handles */
@@ -2117,15 +2134,46 @@
         </div>
     </div>
 
-    <!-- Grid -->
-    <div class="ws-grid-container">
-        <!-- Loading State -->
-        <div x-show="loading" class="loading-overlay">
-            <div style="text-align: center;">
-                <div class="spinner"></div>
-                <p class="mt-3" style="font-weight: 600;">Loading workspace...</p>
+    <!-- Loading State — centered card with steps -->
+    <div x-show="loading" class="ws-loading-card">
+        <div class="ws-loading-inner">
+            <div class="ws-loading-header">
+                <div class="ws-loading-spinner"></div>
+                <div class="ws-loading-title">Loading workspace&hellip;</div>
+            </div>
+            <ul class="ws-loading-steps">
+                <li :class="loadingPct >= 10 ? (loadingPct >= 25 ? 'done' : 'active') : 'pending'">
+                    <span class="step-icon"><i :class="loadingPct >= 25 ? 'bi bi-check-lg' : (loadingPct >= 10 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
+                    Connecting to server
+                </li>
+                <li :class="loadingPct >= 25 ? (loadingPct >= 50 ? 'done' : 'active') : 'pending'">
+                    <span class="step-icon"><i :class="loadingPct >= 50 ? 'bi bi-check-lg' : (loadingPct >= 25 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
+                    Fetching organization data
+                </li>
+                <li :class="loadingPct >= 50 ? (loadingPct >= 70 ? 'done' : 'active') : 'pending'">
+                    <span class="step-icon"><i :class="loadingPct >= 70 ? 'bi bi-check-lg' : (loadingPct >= 50 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
+                    Processing response
+                </li>
+                <li :class="loadingPct >= 70 ? (loadingPct >= 95 ? 'done' : 'active') : 'pending'">
+                    <span class="step-icon"><i :class="loadingPct >= 95 ? 'bi bi-check-lg' : (loadingPct >= 70 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
+                    Building workspace tree
+                </li>
+                <li :class="loadingPct >= 95 ? 'done' : 'pending'">
+                    <span class="step-icon"><i :class="loadingPct >= 95 ? 'bi bi-check-lg' : 'bi bi-circle'"></i></span>
+                    Rendering
+                </li>
+            </ul>
+            <div x-show="loadingDetail" style="margin-top:0.75rem;padding:0.5rem 0.75rem;background:#f1f5f9;border-radius:8px;font-size:0.78rem;color:#475569;">
+                <i class="bi bi-database" style="margin-right:0.3rem;"></i> <span x-text="loadingDetail"></span>
+            </div>
+            <div class="ws-loading-bar-track">
+                <div class="ws-loading-bar-fill" :style="'width:' + loadingPct + '%'"></div>
             </div>
         </div>
+    </div>
+
+    <!-- Grid -->
+    <div class="ws-grid-container">
 
         <!-- Empty State (only when spaces exist but are filtered out) -->
         <div x-show="!loading && filteredSpaces.length === 0 && spaces.length > 0" class="empty-state">
@@ -3146,6 +3194,9 @@ function workspaceV2(orgId, filterPresets) {
 
         // UI State
         loading: true,
+        loadingStatus: 'Connecting to server\u2026',
+        loadingPct: 10,
+        loadingDetail: '',
         filtersExpanded: false,
         editMode: false,
         draggedColumnId: null,  // Store value type ID, not index
@@ -3400,8 +3451,14 @@ function workspaceV2(orgId, filterPresets) {
             if (this._loadDataInProgress) return;
             this._loadDataInProgress = true;
             this.loading = true;
+            this.loadingStatus = 'Connecting to server\u2026';
+            this.loadingPct = 10;
             try {
+                this.loadingStatus = 'Fetching workspace data\u2026';
+                this.loadingPct = 25;
                 const response = await fetch('{{ url_for("workspace.get_data") }}');
+                this.loadingStatus = 'Processing response\u2026';
+                this.loadingPct = 50;
                 const data = await response.json();
 
                 // Build lookup maps of existing collapsed state to preserve across reloads
@@ -3425,6 +3482,13 @@ function workspaceV2(orgId, filterPresets) {
                 for (const vt of (this.valueTypes || [])) {
                     vtCollapsed[vt.id] = vt.collapsed;
                 }
+
+                // Count items for status
+                var _nS = data.spaces.length, _nC = 0, _nI = 0, _nSys = 0, _nK = 0;
+                data.spaces.forEach(function(s) { _nC += s.challenges.length; s.challenges.forEach(function(c) { _nI += c.initiatives.length; c.initiatives.forEach(function(i) { _nSys += i.systems.length; i.systems.forEach(function(sys) { _nK += sys.kpis.length; }); }); }); });
+                var _nVt = data.valueTypes.length;
+                this.loadingDetail = _nS + ' spaces, ' + _nC + ' challenges, ' + _nI + ' initiatives, ' + _nSys + ' systems, ' + _nK + ' KPIs, ' + _nVt + ' value types';
+                this.loadingPct = 70;
 
                 // Add UI state to all entities, preserving existing collapsed state
                 // If pendingTreeState is set (loaded from preset), use it as override
@@ -3470,7 +3534,12 @@ function workspaceV2(orgId, filterPresets) {
                 console.error('Failed to load workspace data:', error);
                 alert('Failed to load workspace data. Please refresh the page.');
             } finally {
+                this.loadingStatus = 'Rendering\u2026';
+                this.loadingPct = 95;
                 this._loadDataInProgress = false;
+                // Small delay to let the 95% bar show before hiding
+                await new Promise(function(r) { setTimeout(r, 150); });
+                this.loadingPct = 100;
                 this.loading = false;
                 // Trend indicators disabled — API route not yet implemented
                 // setTimeout(() => this.loadTrendIndicators(), 100);
