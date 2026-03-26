@@ -2156,7 +2156,7 @@
                     <template x-if="!orgLogo">
                         <i class="bi bi-building"></i>
                     </template>
-                    <span x-text="orgName"></span>
+                    <span x-text="orgName"{% if organization and organization.description %} data-tooltip="{{ organization.description|e }}"{% endif %}></span>
                     <!-- Porter's Five Forces Link and Completion -->
                     <template x-if="portersUrl">
                         <span class="form-view-icon ms-2">
@@ -2377,10 +2377,11 @@
                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                             <div class="ws-cell value-cell text-center"
                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
-                                 :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'">
+                                 :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'"
+                                 @mouseenter="showRollupTip(space, 'space', vt.id, $event)" @mouseleave="hideRollupTip()">
                                 <template x-if="!vt.collapsed">
                                     <template x-if="space.rollup_values && space.rollup_values[String(vt.id)]">
-                                        <div>
+                                        <div @click.stop="openDrillDown(space, 'space', vt.id, $event)" style="cursor: pointer;">
                                             <!-- Formula config icon (edit mode only) -->
                                             <template x-if="editMode && vt.kind === 'numeric'">
                                                 <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=space&return_to=workspace`"
@@ -2451,10 +2452,6 @@
                                                    :title="space.rollup_values[String(vt.id)].is_complete ? 'All ' + space.rollup_values[String(vt.id)].count_total + ' challenge(s) contributed data' : space.rollup_values[String(vt.id)].count_included + ' of ' + space.rollup_values[String(vt.id)].count_total + ' challenge(s) have data — roll-up is partial'"
                                                    x-text="space.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                         </div>
-                                    </template>
-                                </template>
-                                <template x-if="!vt.collapsed">
-                                    <template x-if="!space.rollup_values || !space.rollup_values[String(vt.id)]">
                                     </template>
                                 </template>
                             </div>
@@ -2529,10 +2526,11 @@
                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                     <div class="ws-cell value-cell text-center"
                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
-                                         :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'">
+                                         :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'"
+                                         @mouseenter="showRollupTip(challenge, 'challenge', vt.id, $event)" @mouseleave="hideRollupTip()">
                                         <template x-if="!vt.collapsed">
                                             <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
-                                                <div>
+                                                <div @click.stop="openDrillDown(challenge, 'challenge', vt.id, $event)" style="cursor: pointer;">
                                                     <template x-if="editMode && vt.kind === 'numeric'">
                                                         <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=challenge&return_to=workspace`"
                                                            class="formula-config-icon"
@@ -2565,10 +2563,6 @@
                                                            :title="challenge.rollup_values[String(vt.id)].is_complete ? 'All ' + challenge.rollup_values[String(vt.id)].count_total + ' initiative(s) contributed data' : challenge.rollup_values[String(vt.id)].count_included + ' of ' + challenge.rollup_values[String(vt.id)].count_total + ' initiative(s) have data — roll-up is partial'"
                                                            x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                 </div>
-                                            </template>
-                                        </template>
-                                        <template x-if="!vt.collapsed">
-                                            <template x-if="!challenge.rollup_values || !challenge.rollup_values[String(vt.id)]">
                                             </template>
                                         </template>
                                     </div>
@@ -2662,10 +2656,11 @@
                                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                             <div class="ws-cell value-cell text-center"
                                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
-                                                 :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'">
+                                                 :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'"
+                                                 @mouseenter="showRollupTip(initiative, 'initiative', vt.id, $event)" @mouseleave="hideRollupTip()">
                                                 <template x-if="!vt.collapsed">
                                                     <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
-                                                        <div>
+                                                        <div @click.stop="openDrillDown(initiative, 'initiative', vt.id, $event)" style="cursor: pointer;">
                                                             <template x-if="editMode && vt.kind === 'numeric'">
                                                                 <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=initiative&return_to=workspace`"
                                                                    class="formula-config-icon"
@@ -2729,10 +2724,6 @@
                                                                    :title="initiative.rollup_values[String(vt.id)].is_complete ? 'All ' + initiative.rollup_values[String(vt.id)].count_total + ' system(s) contributed data' : initiative.rollup_values[String(vt.id)].count_included + ' of ' + initiative.rollup_values[String(vt.id)].count_total + ' system(s) have data — roll-up is partial'"
                                                                    x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                         </div>
-                                                    </template>
-                                                </template>
-                                                <template x-if="!vt.collapsed">
-                                                    <template x-if="!initiative.rollup_values || !initiative.rollup_values[String(vt.id)]">
                                                     </template>
                                                 </template>
                                             </div>
@@ -2803,10 +2794,11 @@
                                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                     <div class="ws-cell value-cell text-center"
                                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
-                                                         :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'">
+                                                         :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'"
+                                                         @mouseenter="showRollupTip(system, 'system', vt.id, $event)" @mouseleave="hideRollupTip()">
                                                         <template x-if="!vt.collapsed">
                                                             <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
-                                                                <div>
+                                                                <div @click.stop="openDrillDown(system, 'system', vt.id, $event)" style="cursor: pointer;">
                                                                     <template x-if="editMode && vt.kind === 'numeric'">
                                                                         <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=system&return_to=workspace`"
                                                                            class="formula-config-icon"
@@ -2870,10 +2862,6 @@
                                                                            :title="system.rollup_values[String(vt.id)].is_complete ? 'All ' + system.rollup_values[String(vt.id)].count_total + ' KPI(s) contributed data' : system.rollup_values[String(vt.id)].count_included + ' of ' + system.rollup_values[String(vt.id)].count_total + ' KPI(s) have data — roll-up is partial'"
                                                                            x-text="system.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                                 </div>
-                                                            </template>
-                                                        </template>
-                                                        <template x-if="!vt.collapsed">
-                                                            <template x-if="!system.rollup_values || !system.rollup_values[String(vt.id)]">
                                                             </template>
                                                         </template>
                                                     </div>
@@ -3317,6 +3305,15 @@ function workspaceV2(orgId, filterPresets) {
         _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
 
         // Level Focus Mode
+        // Rollup hover tooltip state (used for entity ref only — display handled by DOM)
+        rollupTip: { entity: null, entityType: null, vtId: null },
+        _rollupTipTimer: null,
+
+        // Drill-down state
+        drillDown: { visible: false, entityType: null, entity: null, vtId: null, vtName: null },
+        _ddExpanded: {},
+        _drillDownCloseHandler: null,
+
         focusLevelMode: true,    // When true, dims parent levels when using +/- level buttons
         focusedLevel: null,      // null = no focus; 0-4 = deepest visible level
 
@@ -4066,6 +4063,29 @@ function workspaceV2(orgId, filterPresets) {
 
             // Mobile: Setup horizontal scroll detection
             this.setupMobileScrollIndicator();
+
+            // Wire up rollup tooltip events (pure DOM)
+            var _tipEl = document.getElementById('ws-rollup-tip');
+            if (_tipEl) {
+                var self = this;
+                _tipEl.addEventListener('mouseenter', function() { clearTimeout(self._rollupTipTimer); });
+                _tipEl.addEventListener('mouseleave', function() { self.hideRollupTip(); });
+                _tipEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    _tipEl.style.display = 'none';
+                    self.openDrillDown(self.rollupTip.entity, self.rollupTip.entityType, self.rollupTip.vtId, e);
+                });
+            }
+
+            // Wire up drilldown panel
+            var _ddPanel = document.getElementById('ws-drilldown-panel');
+            if (_ddPanel) {
+                var self = this;
+                _ddPanel.querySelector('.ws-dd-close-btn').addEventListener('click', function() { self.closeDrillDown(); });
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && _ddPanel.style.display !== 'none') self.closeDrillDown();
+                });
+            }
         },
 
         saveTreeState() {
@@ -4916,6 +4936,203 @@ function workspaceV2(orgId, filterPresets) {
                 console.error('Error deleting KPI:', error);
                 alert('Error deleting KPI. Please try again.');
             }
+        },
+
+        // --- Rollup hover tooltip ---
+        showRollupTip(entity, entityType, vtId, event) {
+            clearTimeout(this._rollupTipTimer);
+            // Don't replace tooltip if mouse is over the tooltip itself
+            var tipEl = document.getElementById('ws-rollup-tip');
+            if (tipEl && tipEl.matches(':hover')) return;
+            var rv = entity.rollup_values && entity.rollup_values[String(vtId)];
+            if (!rv || rv.value == null) return;
+            var fmap = { sum: ['\u03A3','Sum'], avg: ['\u2248','Average'], max: ['\u2191','Maximum'], min: ['\u2193','Minimum'], median: ['m','Median'], count: ['#','Count'], mode: ['\u25C9','Mode'] };
+            var pair = fmap[rv.formula] || ['\u2014', rv.formula || '\u2014'];
+            var symbol = pair[0], formulaName = pair[1];
+            var cwords = { space: 'challenge', challenge: 'initiative', initiative: 'system', system: 'KPI' };
+            var pct = rv.count_total > 0 ? Math.round(rv.count_included / rv.count_total * 100) : 0;
+            var childWord = cwords[entityType] || 'item';
+            var barColor = rv.is_complete ? '#22c55e' : '#f59e0b';
+
+            this.rollupTip.entity = entity;
+            this.rollupTip.entityType = entityType;
+            this.rollupTip.vtId = String(vtId);
+
+            var el = document.getElementById('ws-rollup-tip');
+            if (!el) return;
+            el.querySelector('.ws-rt-symbol').textContent = symbol;
+            el.querySelector('.ws-rt-fname').textContent = formulaName;
+            el.querySelector('.ws-rt-bar-fill').style.cssText = 'width:' + pct + '%; background:' + barColor + ';';
+            var countTotal = rv.count_total || 0;
+            el.querySelector('.ws-rt-counts').textContent = (rv.count_included || 0) + ' / ' + countTotal + ' ' + childWord + (countTotal !== 1 ? 's' : '');
+            el.style.left = (event.clientX + 14) + 'px';
+            el.style.top = (event.clientY + 14) + 'px';
+            el.style.display = 'block';
+        },
+        hideRollupTip() {
+            this._rollupTipTimer = setTimeout(function() {
+                var el = document.getElementById('ws-rollup-tip');
+                if (el) el.style.display = 'none';
+            }, 200);
+        },
+        moveRollupTip(event) {
+            var el = document.getElementById('ws-rollup-tip');
+            if (el && el.style.display === 'block') {
+                el.style.left = (event.clientX + 14) + 'px';
+                el.style.top = (event.clientY + 14) + 'px';
+            }
+        },
+
+        // --- Drill-down panel ---
+        openDrillDown(entity, entityType, vtId, event) {
+            var tip = document.getElementById('ws-rollup-tip');
+            if (tip) tip.style.display = 'none';
+            clearTimeout(this._rollupTipTimer);
+
+            this._ddExpanded = {};
+            var vt = this.valueTypes.find(function(v) { return v.id === vtId; });
+            this.drillDown.visible = true;
+            this.drillDown.entityType = entityType;
+            this.drillDown.entity = entity;
+            this.drillDown.vtId = String(vtId);
+            this.drillDown.vtName = vt ? vt.name : '';
+
+            if (this._drillDownCloseHandler) {
+                document.removeEventListener('click', this._drillDownCloseHandler, true);
+            }
+
+            var self = this;
+            setTimeout(function() {
+                var panel = document.getElementById('ws-drilldown-panel');
+                if (!panel) return;
+                panel.querySelector('.ws-dd-type-badge').textContent = entityType ? entityType.charAt(0).toUpperCase() + entityType.slice(1) : '';
+                panel.querySelector('.ws-dd-vt-name').textContent = vt ? vt.name : '';
+                panel.querySelector('.ws-dd-entity-name').textContent = entity ? entity.name : '';
+                panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDown(entity, entityType, String(vtId));
+                // Wire toggle clicks
+                panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
+                    row.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        var children = row.parentElement.querySelector('.ws-dd-children');
+                        var chevron = row.querySelector('.ws-dd-chevron');
+                        if (children) children.style.display = children.style.display === 'none' ? '' : 'none';
+                        if (chevron) { chevron.classList.toggle('bi-chevron-down'); chevron.classList.toggle('bi-chevron-right'); }
+                    });
+                });
+                panel.style.display = 'block';
+                panel.style.left = (event.clientX + 12) + 'px';
+                panel.style.top = (event.clientY - 20) + 'px';
+                var w = panel.offsetWidth, h = panel.offsetHeight;
+                var x = event.clientX + 12, y = event.clientY - 20;
+                if (x + w > window.innerWidth - 8) x = event.clientX - w - 12;
+                if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
+                if (y < 8) y = 8;
+                if (x < 8) x = 8;
+                panel.style.left = x + 'px';
+                panel.style.top = y + 'px';
+                var handler = function(e) {
+                    if (panel && !panel.contains(e.target)) {
+                        self.closeDrillDown();
+                    }
+                };
+                setTimeout(function() { document.addEventListener('click', handler, true); }, 0);
+                self._drillDownCloseHandler = handler;
+            }, 0);
+        },
+        closeDrillDown() {
+            this.drillDown.visible = false;
+            var panel = document.getElementById('ws-drilldown-panel');
+            if (panel) panel.style.display = 'none';
+            if (this._drillDownCloseHandler) {
+                document.removeEventListener('click', this._drillDownCloseHandler, true);
+                this._drillDownCloseHandler = null;
+            }
+        },
+        renderDrillDown(entity, entityType, vtId) {
+            var rv = entity.rollup_values && entity.rollup_values[vtId];
+            var html = '';
+            // Meta block
+            if (rv) {
+                var fmap = { sum:'Sum', avg:'Average', max:'Maximum', min:'Minimum', median:'Median', count:'Count', mode:'Mode' };
+                var formula = fmap[rv.formula] || rv.formula || '\u2014';
+                var cwords = { space:'challenge', challenge:'initiative', initiative:'system', system:'KPI' };
+                var childWord = cwords[entityType] || 'item';
+                var total = rv.count_total || 0;
+                var incl = rv.count_included || 0;
+                var pct = total > 0 ? Math.round(incl / total * 100) : 0;
+                var barColor = rv.is_complete ? '#22c55e' : '#f59e0b';
+                var statusCls = rv.is_complete ? 'ws-dd-status-complete' : 'ws-dd-status-partial';
+                html += '<div class="ws-dd-meta-block"><div class="ws-dd-meta">' +
+                    '<span class="ws-dd-formula-badge">' + formula + '<\/span>' +
+                    '<span class="ws-dd-coverage-text">' + incl + ' / ' + total + ' ' + childWord + (total!==1?'s':'') + '<\/span>' +
+                    '<span class="ws-dd-status-badge ' + statusCls + '">' + (rv.is_complete?'Complete':'Partial') + '<\/span>' +
+                    '<span class="ws-dd-pct-text">' + pct + '%<\/span>' +
+                    '<\/div><div class="ws-dd-progress-track"><div class="ws-dd-progress-fill" style="width:' + pct + '%;background:' + barColor + ';"><\/div><\/div><\/div>';
+            }
+            // Helpers
+            var esc = function(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : ''; };
+            var fmtRv = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; return r ? (r.formatted_value||r.list_label||String(r.value)) : '\u2014'; };
+            var rvClr = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; return r&&r.color ? r.color : '#9ca3af'; };
+            var rvStat = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; if(!r) return '<span class="ws-dd-dot ws-dd-dot-none">\u2013<\/span>'; return r.is_complete?'<span class="ws-dd-dot ws-dd-dot-ok">\u2713<\/span>':'<span class="ws-dd-dot ws-dd-dot-warn">\u26A0<\/span>'; };
+            var contributes = function(e) { var r=e.rollup_values&&e.rollup_values[vtId]; return !!(r&&r.count_included>0); };
+            var kpiOk = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return !!(kv&&kv.consensus_status!=='no_data'); };
+            var kpiFmt = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.consensus_status!=='no_data' ? (kv.formatted_value||kv.list_label||String(kv.value)) : '\u2014'; };
+            var kpiClr = function(kpi) { var kv=kpi.values&&kpi.values[vtId]; return kv&&kv.color?kv.color:'#9ca3af'; };
+            var ragClr = function(ini) { return ini.execution_rag==='green'?'#22c55e':ini.execution_rag==='amber'?'#f59e0b':ini.execution_rag==='red'?'#ef4444':'#d1d5db'; };
+
+            var renderKpis = function(kpis) {
+                var h='';
+                for (var i=0; i<kpis.length; i++) {
+                    var kpi = kpis[i];
+                    if (!kpiOk(kpi)) continue;
+                    h += '<div class="ws-dd-row ws-dd-row-kpi"><span class="ws-dd-leaf-spc"><\/span><i class="bi bi-graph-up ws-dd-icon-kpi"><\/i><span class="ws-dd-rname">' + esc(kpi.name) + '<\/span><span class="ws-dd-rval" style="color:' + kpiClr(kpi) + ';">' + esc(kpiFmt(kpi)) + '<\/span><\/div>';
+                }
+                return h;
+            };
+            var renderSystems = function(systems) {
+                var h='';
+                for (var i=0; i<systems.length; i++) {
+                    var sys = systems[i];
+                    if (!contributes(sys)) continue;
+                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-sys" data-dd-toggle="sys_' + sys.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><i class="bi bi-gear-fill ws-dd-icon-sys"><\/i><span class="ws-dd-rname">' + esc(sys.name) + '<\/span><span class="ws-dd-rval" style="color:' + rvClr(sys) + ';">' + esc(fmtRv(sys)) + '<\/span><span class="ws-dd-rstat">' + rvStat(sys) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-kpi">' + renderKpis(sys.kpis||[]) + '<\/div><\/div>';
+                }
+                return h;
+            };
+            var renderInitiatives = function(initiatives) {
+                var h='';
+                for (var i=0; i<initiatives.length; i++) {
+                    var ini = initiatives[i];
+                    if (!contributes(ini)) continue;
+                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-ini" data-dd-toggle="ini_' + ini.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><span class="ws-dd-rag-dot" style="background:' + ragClr(ini) + ';" title="' + esc(ini.execution_rag||'No status') + '"><\/span><span class="ws-dd-rname">' + esc(ini.name) + '<\/span><span class="ws-dd-rval" style="color:' + rvClr(ini) + ';">' + esc(fmtRv(ini)) + '<\/span><span class="ws-dd-rstat">' + rvStat(ini) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-sys">' + renderSystems(ini.systems||[]) + '<\/div><\/div>';
+                }
+                return h;
+            };
+            var renderChallenges = function(challenges) {
+                var h='';
+                for (var i=0; i<challenges.length; i++) {
+                    var ch = challenges[i];
+                    if (!contributes(ch)) continue;
+                    h += '<div class="ws-dd-node"><div class="ws-dd-row ws-dd-row-ch" data-dd-toggle="ch_' + ch.id + '"><i class="bi bi-chevron-down ws-dd-chevron"><\/i><i class="bi bi-bullseye ws-dd-icon-ch"><\/i><span class="ws-dd-rname">' + esc(ch.name) + '<\/span><span class="ws-dd-rval" style="color:' + rvClr(ch) + ';">' + esc(fmtRv(ch)) + '<\/span><span class="ws-dd-rstat">' + rvStat(ch) + '<\/span><\/div><div class="ws-dd-children ws-dd-branch-ini">' + renderInitiatives(ch.initiatives||[]) + '<\/div><\/div>';
+                }
+                return h;
+            };
+
+            var tree = '';
+            if (entityType === 'space') tree = renderChallenges(entity.challenges || []);
+            else if (entityType === 'challenge') tree = renderInitiatives(entity.initiatives || []);
+            else if (entityType === 'initiative') tree = renderSystems(entity.systems || []);
+            else if (entityType === 'system') tree = renderKpis(entity.kpis || []);
+
+            if (!tree) tree = '<div class="ws-dd-empty">No contributing children<\/div>';
+            html += '<div class="ws-dd-table">' + tree + '<\/div>';
+
+            // Footer
+            if (rv) {
+                var fmtVal = rv.formatted_value || rv.list_label || String(rv.value);
+                var unit = rv.unit_label || '';
+                html += '<div class="ws-dd-footer"><span class="ws-dd-footer-label">Aggregated:<\/span><div style="display:flex;align-items:baseline;gap:0.3rem;"><span class="ws-dd-footer-val" style="color:' + (rv.color||'#9ca3af') + ';">' + esc(fmtVal) + '<\/span>' + (unit ? '<span class="ws-dd-footer-unit">' + esc(unit) + '<\/span>' : '') + '<\/div><\/div>';
+            }
+            return html;
         }
     }
 }
@@ -5080,4 +5297,143 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 })();
 </script>
+
+<!-- Rollup tooltip & drilldown styles -->
+<style>
+    .ws-rollup-tip {
+        position: fixed;
+        z-index: 9997;
+        cursor: pointer;
+        background: #1e2533;
+        color: #e8eaf0;
+        border-radius: 9px;
+        padding: 0.6rem 0.75rem 0.5rem;
+        min-width: 150px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+        border: 1px solid rgba(255,255,255,0.07);
+        transition: opacity 0.12s ease;
+    }
+    .ws-rt-top {
+        display: flex; align-items: baseline; gap: 0.45rem; margin-bottom: 0.45rem;
+    }
+    .ws-rt-symbol { font-size: 1.25rem; font-weight: 800; line-height: 1; color: #7dd3fc; }
+    .ws-rt-fname { font-size: 0.82rem; font-weight: 600; color: #fff; }
+    .ws-rt-bar-track {
+        height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; margin-bottom: 0.4rem; overflow: hidden;
+    }
+    .ws-rt-bar-fill { height: 4px; border-radius: 2px; }
+    .ws-rt-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .ws-rt-counts { font-size: 0.73rem; color: #94a3b8; }
+    .ws-rt-expand { font-size: 0.68rem; color: #60a5fa; opacity: 0.7; }
+
+    .ws-dd-panel {
+        position: fixed; z-index: 9998; background: #1e2533; color: #e8eaf0;
+        border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.08); width: 420px; max-width: 90vw;
+        max-height: 70vh; overflow-y: auto;
+    }
+    .ws-dd-header {
+        display: flex; align-items: flex-start; gap: 0.75rem;
+        padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08);
+        position: sticky; top: 0; background: #1e2533; z-index: 1;
+    }
+    .ws-dd-type-badge {
+        font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+        background: rgba(96,165,250,0.2); color: #93c5fd; padding: 0.15rem 0.5rem;
+        border-radius: 4px; letter-spacing: 0.05em;
+    }
+    .ws-dd-vt-name { font-size: 0.78rem; color: #94a3b8; }
+    .ws-dd-entity-name { font-size: 1rem; font-weight: 700; color: #f1f5f9; }
+    .ws-dd-close-btn {
+        background: none; border: none; color: #94a3b8; cursor: pointer;
+        font-size: 1rem; padding: 0.25rem; border-radius: 6px;
+    }
+    .ws-dd-close-btn:hover { color: #f1f5f9; background: rgba(255,255,255,0.1); }
+    .ws-dd-body { padding: 0.5rem 0.75rem 0.75rem; }
+    .ws-dd-meta-block { margin-bottom: 0.5rem; }
+    .ws-dd-meta { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.35rem; }
+    .ws-dd-formula-badge {
+        font-size: 0.72rem; font-weight: 700; background: rgba(96,165,250,0.15);
+        color: #93c5fd; padding: 0.15rem 0.5rem; border-radius: 4px;
+    }
+    .ws-dd-coverage-text { font-size: 0.75rem; color: #94a3b8; }
+    .ws-dd-status-badge {
+        font-size: 0.65rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 3px;
+    }
+    .ws-dd-status-complete { background: rgba(34,197,94,0.2); color: #4ade80; }
+    .ws-dd-status-partial { background: rgba(245,158,11,0.2); color: #fbbf24; }
+    .ws-dd-pct-text { font-size: 0.72rem; color: #64748b; }
+    .ws-dd-progress-track {
+        height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-bottom: 0.5rem;
+    }
+    .ws-dd-progress-fill { height: 3px; border-radius: 2px; }
+    .ws-dd-table { font-size: 0.82rem; }
+    .ws-dd-node { border-left: 2px solid rgba(255,255,255,0.06); margin-left: 0.5rem; }
+    .ws-dd-row {
+        display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.5rem;
+        border-radius: 5px; cursor: pointer;
+    }
+    .ws-dd-row:hover { background: rgba(255,255,255,0.05); }
+    .ws-dd-row-ch { color: #fbbf24; }
+    .ws-dd-row-ini { color: #60a5fa; }
+    .ws-dd-row-sys { color: #a78bfa; }
+    .ws-dd-row-kpi { color: #4ade80; cursor: default; }
+    .ws-dd-chevron { font-size: 0.65rem; width: 1rem; text-align: center; transition: transform 0.15s; }
+    .ws-dd-rname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e2e8f0; }
+    .ws-dd-rval { font-weight: 600; font-size: 0.78rem; white-space: nowrap; }
+    .ws-dd-rstat { font-size: 0.7rem; }
+    .ws-dd-icon-ch { font-size: 0.7rem; }
+    .ws-dd-icon-sys { font-size: 0.7rem; }
+    .ws-dd-icon-kpi { font-size: 0.65rem; }
+    .ws-dd-rag-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ws-dd-leaf-spc { width: 1rem; }
+    .ws-dd-children { }
+    .ws-dd-dot { font-size: 0.7rem; }
+    .ws-dd-dot-ok { color: #4ade80; }
+    .ws-dd-dot-warn { color: #fbbf24; }
+    .ws-dd-dot-none { color: #475569; }
+    .ws-dd-empty { color: #64748b; font-style: italic; padding: 0.5rem; text-align: center; }
+    .ws-dd-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.5rem 0.75rem; margin-top: 0.5rem;
+        border-top: 1px solid rgba(255,255,255,0.08);
+        font-size: 0.82rem; color: #94a3b8;
+    }
+    .ws-dd-footer-label { font-weight: 600; }
+    .ws-dd-footer-val { font-size: 1.1rem; font-weight: 700; }
+    .ws-dd-footer-unit { font-size: 0.75rem; color: #64748b; }
+</style>
+
+<!-- Rollup hover tooltip — outside workspace-v2 to avoid overflow clipping -->
+<div id="ws-rollup-tip" class="ws-rollup-tip" style="display:none;">
+    <div class="ws-rt-top">
+        <span class="ws-rt-symbol"></span>
+        <span class="ws-rt-fname"></span>
+    </div>
+    <div class="ws-rt-bar-track">
+        <div class="ws-rt-bar-fill"></div>
+    </div>
+    <div class="ws-rt-bottom">
+        <span class="ws-rt-counts"></span>
+        <i class="bi bi-arrows-angle-expand ws-rt-expand"></i>
+    </div>
+</div>
+
+<!-- Drilldown panel — outside workspace-v2 -->
+<div id="ws-drilldown-panel" class="ws-dd-panel" style="display:none;">
+    <div class="ws-dd-header">
+        <div style="flex:1; min-width:0;">
+            <div style="display:flex; align-items:center; gap:0.45rem; margin-bottom:3px;">
+                <span class="ws-dd-type-badge"></span>
+                <span class="ws-dd-vt-name"></span>
+            </div>
+            <div class="ws-dd-entity-name"></div>
+        </div>
+        <button class="ws-dd-close-btn" title="Close">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+    <div class="ws-dd-body"></div>
+</div>
+
 {% endblock %}

@@ -272,6 +272,10 @@ class FullRestoreService:
                 except Exception as e:
                     stats["warnings"].append(f"Failed to restore organization logo: {str(e)}")
 
+            # Restore organization description
+            if "description" in org_data:
+                org.description = org_data["description"]
+
             # Restore Porter's Five Forces
             for field in ("porters_new_entrants", "porters_suppliers", "porters_buyers", "porters_substitutes", "porters_rivalry"):
                 if field in org_data:

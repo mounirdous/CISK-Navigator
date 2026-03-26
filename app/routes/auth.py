@@ -229,12 +229,16 @@ def switch_to_global_admin():
         flash("Access denied: Instance Administrator permission required", "danger")
         return redirect(url_for("workspace.dashboard"))
 
+    # Remember previous org so Workspace pill can return to it
+    session["_previous_org_id"] = session.get("organization_id")
+    session["_previous_org_name"] = session.get("organization_name")
+
     # Clear organization context
     session["organization_id"] = None
     session["organization_name"] = "Instance Admin"
     session["organization_logo"] = None
 
-    flash("Switched to Instance Admin mode", "success")
+    # No flash — the Instance Admin sub-nav makes the mode obvious
     return redirect(url_for("global_admin.index"))
 
 

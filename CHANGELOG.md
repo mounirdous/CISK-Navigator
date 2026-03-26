@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.6.1] - 2026-03-26
+
+### Changed
+- Added organization description tooltip on the org name in the workspace tree header
+- Removed Backup & Restore card from global admin index page
+
+## [3.6.0] - 2026-03-26
+
+### Added
+- **Rollup hover tooltip on workspace tree value cells** — hovering a space/challenge/initiative/system rollup cell shows a dark tooltip with formula symbol, progress bar, and child coverage counts
+- **Drill-down panel for rollup values** — clicking a rollup cell opens a fixed panel showing the full child hierarchy tree with values, completeness status, and aggregated footer; supports expand/collapse of tree nodes and closes on outside click or Escape
+
 ## [3.5.0] - 2026-03-25
 
 ### Fixed
