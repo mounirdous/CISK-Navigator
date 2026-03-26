@@ -14,6 +14,7 @@ from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from markupsafe import Markup
 from sqlalchemy import or_
+from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.forms import ContributionForm
@@ -27,6 +28,7 @@ from app.models import (
     GovernanceBody,
     Initiative,
     InitiativeSystemLink,
+    KPIGovernanceBodyLink,
     KPISnapshot,
     KPIValueTypeConfig,
     Organization,
@@ -3594,7 +3596,29 @@ def get_data():
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
         spaces_query = spaces_query.filter(or_(Space.is_private.is_(False), Space.created_by == current_user.id))
 
-    spaces = spaces_query.order_by(Space.display_order, Space.name).all()
+    # Eager-load the entire hierarchy to avoid N+1 queries
+    spaces = (
+        spaces_query
+        .options(
+            selectinload(Space.challenges)
+            .selectinload(Challenge.initiative_links)
+            .options(
+                selectinload(ChallengeInitiativeLink.initiative)
+                .selectinload(Initiative.system_links)
+                .options(
+                    selectinload(InitiativeSystemLink.system),
+                    selectinload(InitiativeSystemLink.kpis)
+                    .options(
+                        selectinload(KPI.value_type_configs),
+                        selectinload(KPI.governance_body_links)
+                        .selectinload(KPIGovernanceBodyLink.governance_body),
+                    ),
+                ),
+            ),
+        )
+        .order_by(Space.display_order, Space.name)
+        .all()
+    )
 
     # Get value types
     value_types = (
@@ -3642,29 +3666,50 @@ def get_data():
             return entity.icon
         return default_icons.get(entity_type)
 
-    # Helper function to get entity links
+    # Batch-load ALL entity links for this org in ONE query
     from app.models import EntityLink
 
-    def get_entity_links(entity_type, entity_id):
-        """Get all links for a specific entity"""
-        links = (
-            EntityLink.query.filter_by(entity_type=entity_type, entity_id=entity_id)
-            .order_by(EntityLink.display_order)
-            .all()
-        )
-        result = []
-        for link in links:
-            type_info = link.get_type_info()
-            result.append(
-                {
-                    "id": link.id,
-                    "title": link.title,
-                    "url": link.url,
-                    "bs_icon": type_info["bs_icon"],
-                    "icon_color": type_info["color"],
-                }
+    # Collect entity IDs by type
+    _ids_by_type = {"organization": [org_id], "space": [], "challenge": [], "initiative": [], "system": [], "kpi": []}
+    for _sp in spaces:
+        _ids_by_type["space"].append(_sp.id)
+        for _ch in _sp.challenges:
+            _ids_by_type["challenge"].append(_ch.id)
+            for _ci in _ch.initiative_links:
+                _ids_by_type["initiative"].append(_ci.initiative.id)
+                for _sl in _ci.initiative.system_links:
+                    _ids_by_type["system"].append(_sl.system.id)
+                    for _kpi in _sl.kpis:
+                        _ids_by_type["kpi"].append(_kpi.id)
+
+    _or_conditions = []
+    for _etype, _eids in _ids_by_type.items():
+        if _eids:
+            _or_conditions.append(
+                db.and_(EntityLink.entity_type == _etype, EntityLink.entity_id.in_(_eids))
             )
-        return result
+    _all_links = (
+        EntityLink.query.filter(or_(*_or_conditions)).order_by(EntityLink.display_order).all()
+        if _or_conditions else []
+    )
+    # Build lookup: (entity_type, entity_id) → [serialized links]
+    _links_cache = {}
+    for _link in _all_links:
+        _type_info = _link.get_type_info()
+        _key = (_link.entity_type, _link.entity_id)
+        if _key not in _links_cache:
+            _links_cache[_key] = []
+        _links_cache[_key].append({
+            "id": _link.id,
+            "title": _link.title,
+            "url": _link.url,
+            "bs_icon": _type_info["bs_icon"],
+            "icon_color": _type_info["color"],
+        })
+
+    def get_entity_links(entity_type, entity_id):
+        """Get links from pre-loaded cache — O(1) dict lookup, no DB query."""
+        return _links_cache.get((entity_type, entity_id), [])
 
     # Helper function to calculate formula value types from rollup values
     def calculate_formula_value_types(rollup_values_dict, all_value_types, color_config_getter=None):
