@@ -48,6 +48,7 @@
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('action_items.create') }}" novalidate>
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}"/>
+                        <input type="hidden" name="return_to" value="{{ return_to }}"/>
 
                         <!-- Type Selection -->
                         <div class="mb-3">
@@ -189,7 +190,7 @@
 
                         <!-- Buttons -->
                         <div class="d-flex justify-content-between mt-4">
-                            <a href="{{ url_for('action_items.index') }}" class="btn btn-secondary">
+                            <a href="{{ return_to or url_for('action_items.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Cancel
                             </a>
                             <button type="submit" class="btn btn-primary">

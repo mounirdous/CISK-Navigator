@@ -397,7 +397,7 @@
                         {% if item.due_date %} &middot; <i class="bi bi-calendar"></i> Due: {{ item.due_date }}{% endif %}
                     </small>
                 </a>
-                <a href="{{ url_for('action_items.edit', item_id=item.id) }}"
+                <a href="{{ url_for('action_items.edit', item_id=item.id, return_to=request.url) }}"
                    class="btn btn-sm btn-outline-primary ms-2"
                    title="Edit Action Item"
                    onclick="event.stopPropagation();">

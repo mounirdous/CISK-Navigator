@@ -291,11 +291,15 @@ def create():
 
     form = ActionItemCreateForm()
 
-    # Populate owner choices with organization users
+    # Populate owner choices with contributing organization users (exclude read-only)
     org_users = (
         db.session.query(User)
         .join(UserOrganizationMembership)
-        .filter(UserOrganizationMembership.organization_id == org_id, User.is_active.is_(True))
+        .filter(
+            UserOrganizationMembership.organization_id == org_id,
+            User.is_active.is_(True),
+            UserOrganizationMembership.can_contribute.is_(True),
+        )
         .order_by(User.display_name)
         .all()
     )
@@ -308,6 +312,8 @@ def create():
     # Default to current user
     if request.method == "GET":
         form.owner_user_id.data = current_user.id
+
+    return_to = request.args.get("return_to") or request.form.get("return_to")
 
     if form.validate_on_submit():
         try:
@@ -328,13 +334,19 @@ def create():
             )
 
             flash(f"{'Action' if item.type == 'action' else 'Memo'} created successfully!", "success")
-            return redirect(url_for("action_items.index"))
+            return redirect(return_to or url_for("action_items.index"))
 
         except Exception as e:
             db.session.rollback()
             flash(f"Error creating item: {str(e)}", "danger")
 
-    return render_template("action_items/create.html", form=form, governance_bodies=governance_bodies, csrf_token=generate_csrf)
+    return render_template(
+        "action_items/create.html",
+        form=form,
+        governance_bodies=governance_bodies,
+        return_to=return_to or "",
+        csrf_token=generate_csrf,
+    )
 
 
 @bp.route("/<int:item_id>/edit", methods=["GET", "POST"])
@@ -358,10 +370,16 @@ def edit(item_id):
 
     form = ActionItemEditForm(obj=item)
 
+    return_to = request.args.get("return_to") or request.form.get("return_to")
+
     org_users = (
         db.session.query(User)
         .join(UserOrganizationMembership)
-        .filter(UserOrganizationMembership.organization_id == item.organization_id, User.is_active.is_(True))
+        .filter(
+            UserOrganizationMembership.organization_id == item.organization_id,
+            User.is_active.is_(True),
+            UserOrganizationMembership.can_contribute.is_(True),
+        )
         .order_by(User.display_name)
         .all()
     )
@@ -391,7 +409,7 @@ def edit(item_id):
 
             if updated_item:
                 flash("Item updated successfully!", "success")
-                return redirect(url_for("action_items.index"))
+                return redirect(return_to or url_for("action_items.index"))
             else:
                 flash("Error updating item", "danger")
 
@@ -408,6 +426,7 @@ def edit(item_id):
         governance_bodies=governance_bodies,
         current_gb_ids=current_gb_ids,
         entity_links=entity_links,
+        return_to=return_to or "",
         csrf_token=generate_csrf,
     )
 

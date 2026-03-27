@@ -929,7 +929,7 @@
                                 <i class="bi bi-eye" style="font-size:0.8rem;"></i>
                             </a>
                             {% if can_contribute and item.owner_user_id == current_user.id %}
-                            <a href="{{ url_for('action_items.edit', item_id=item.id) }}"
+                            <a href="{{ url_for('action_items.edit', item_id=item.id, return_to=request.url) }}"
                                class="btn btn-sm btn-outline-primary" style="padding:0.2rem 0.45rem;"
                                title="Edit">
                                 <i class="bi bi-pencil" style="font-size:0.8rem;"></i>
@@ -1457,7 +1457,7 @@ function buildEntityGroups(itemGroupMap) {
             const total = entities.reduce((s,e) => s + e.count, 0);
             groups.push({
                 id: `__chal_hdr__${chId}`,
-                content: `<b style="color:${chMeta.color};font-size:0.82rem;">${chMeta.icon} ${name}</b>${_ctBadge(total, chMeta.color)}`,
+                content: `<a href="/workspace/#challenge-${chId}" target="_blank" style="color:${chMeta.color};text-decoration:none;font-size:0.82rem;font-weight:700;">${chMeta.icon} ${name}</a>${_ctBadge(total, chMeta.color)}`,
                 className: `tl-ent-hdr tl-ent-hdr-challenge`,
                 style: `background:${chMeta.color}0d;`,
             });
@@ -1482,7 +1482,7 @@ function buildEntityGroups(itemGroupMap) {
                 }
                 groups.push({
                     id: `${etype}__${entity_id}`,
-                    content: `<span style="font-size:0.79rem;color:${meta.color};padding-left:14px;">${meta.icon} ${label}${crumb}${_ctBadge(count, '#78909c')}</span>`,
+                    content: `<a href="/workspace/#${etype}-${entity_id}" target="_blank" style="color:${meta.color};text-decoration:none;font-size:0.79rem;padding-left:14px;">${meta.icon} ${label}${crumb}</a>${_ctBadge(count, '#78909c')}`,
                     className: `tl-ent-row tl-ent-row-${etype}`,
                 });
             });
@@ -1504,9 +1504,10 @@ function buildEntityGroups(itemGroupMap) {
             });
             typeMap[etype].sort((a,b) => a.rawText.localeCompare(b.rawText)).forEach(({etype, entity_id, rawText, count}) => {
                 const label = cleanMentionName(rawText);
+                const meta2 = ENTITY_TYPE_META[etype];
                 groups.push({
                     id: `${etype}__${entity_id}`,
-                    content: `<span style="font-size:0.79rem;color:#37474f;padding-left:14px;">${label}${_ctBadge(count, '#78909c')}</span>`,
+                    content: `<a href="/workspace/#${etype}-${entity_id}" target="_blank" style="color:${meta2.color};text-decoration:none;font-size:0.79rem;padding-left:14px;">${meta2.icon} ${label}</a>${_ctBadge(count, '#78909c')}`,
                     className: `tl-ent-row tl-ent-row-${etype}`,
                 });
             });
@@ -1793,7 +1794,7 @@ function showItemDetail(item) {
     const actions = document.getElementById('idp-actions');
     actions.innerHTML = '';
     actions.innerHTML += `<a href="${item.view_url}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i>Open</a>`;
-    if (item.can_edit) actions.innerHTML += `<a href="${item.edit_url}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>`;
+    if (item.can_edit) actions.innerHTML += `<a href="${item.edit_url}?return_to=${encodeURIComponent(window.location.href)}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>`;
     actions.innerHTML += `<a href="#item-${item.id}" class="btn btn-sm btn-outline-secondary" onclick="closeItemDetail();switchView('table')"><i class="bi bi-table me-1"></i>Table row</a>`;
     document.getElementById('item-detail-panel').style.display = '';
 }

@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.2] - 2026-03-27
+
+### Fixed
+- **Return to same view after editing** -- after saving an action item edit, users return to the exact page/view they came from (with filters, review mode, etc.) instead of the default action register; applies to edit links in table view, timeline detail panel, view page, workspace search, and initiative form
+- **Read-only users excluded from owner dropdown** -- action item create/edit forms no longer show users with `can_contribute=False` as selectable owners
+
+### Added
+- **Entity links in CISK Entity timeline view** -- challenge headers and entity rows in the timeline now link to the workspace tree (`/workspace/#type-id`) opening in a new tab; no-challenge fallback entities also get linked with branding colors
+
 ## [3.9.1] - 2026-03-27
 
 ### Added
