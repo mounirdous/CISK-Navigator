@@ -808,9 +808,11 @@ def api_map_kpis():
                             "region_name": region_name,
                             "country_name": country_name,
                             "value": display_value,
+                            "raw_value": consensus_value if primary_config else None,
+                            "vt_kind": primary_config.value_type.kind if primary_config and primary_config.value_type else "numeric",
                             "period": None,
                             "target": str(target_value) if target_value is not None else None,
-                            "unit": None,
+                            "unit": primary_config.value_type.unit_label if primary_config and primary_config.value_type else None,
                             "comments": comments,
                         },
                     }

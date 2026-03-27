@@ -1832,6 +1832,34 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
 // ===== SIDEBAR FUNCTIONS =====
 
+function formatMapValue(props) {
+    var v = props.raw_value;
+    var kind = props.vt_kind || 'numeric';
+    if (v == null || props.value === 'No data') return '<span style="color:#6c757d;">No data</span>';
+    if (kind === 'risk') {
+        var s = v==1?'!<span style="opacity:0.2">!!</span>':v==2?'!!<span style="opacity:0.2">!</span>':v>=3?'!!!':props.value;
+        return '<strong style="color:#ef4444;">'+s+'</strong>';
+    }
+    if (kind === 'positive_impact') {
+        var s = v==1?'\u2605<span style="opacity:0.2">\u2605\u2605</span>':v==2?'\u2605\u2605<span style="opacity:0.2">\u2605</span>':v>=3?'\u2605\u2605\u2605':props.value;
+        return '<strong style="color:#22c55e;">'+s+'</strong>';
+    }
+    if (kind === 'negative_impact') {
+        var s = v==1?'\u25BC<span style="opacity:0.2">\u25BC\u25BC</span>':v==2?'\u25BC\u25BC<span style="opacity:0.2">\u25BC</span>':v>=3?'\u25BC\u25BC\u25BC':props.value;
+        return '<strong style="color:#f59e0b;">'+s+'</strong>';
+    }
+    if (kind === 'level') {
+        var s = v==1?'\u25CF<span style="opacity:0.2">\u25CF\u25CF</span>':v==2?'\u25CF\u25CF<span style="opacity:0.2">\u25CF</span>':v>=3?'\u25CF\u25CF\u25CF':props.value;
+        return '<strong style="color:#3b82f6;">'+s+'</strong>';
+    }
+    if (kind === 'sentiment') {
+        var s = v==1?'\u2639\uFE0F':v==2?'\uD83D\uDE10':v>=3?'\uD83D\uDE0A':props.value;
+        return '<span style="font-size:1.1rem;">'+s+'</span>';
+    }
+    // Numeric — props.value already includes unit from server
+    return props.value;
+}
+
 function renderKPIList(kpis) {
     const listContainer = document.getElementById('kpiList');
 
@@ -1876,8 +1904,7 @@ function renderKPIList(kpis) {
                     <i class="bi bi-geo-alt"></i> ${locationLabel}
                 </div>
                 <div>
-                    <span class="kpi-item-value">${props.value}</span>
-                    ${props.unit ? `<span class="kpi-item-unit">${props.unit}</span>` : ''}
+                    <span class="kpi-item-value">${formatMapValue(props)}</span>
                 </div>
             </div>
         `;
@@ -2036,8 +2063,8 @@ function openDetailsPanel(kpi, kpiId = null) {
     document.getElementById('detailsKpiBreadcrumb').textContent = crumbs.join(' › ');
 
     // Update value
-    document.getElementById('detailsValue').textContent = props.value;
-    document.getElementById('detailsUnit').textContent = props.unit || '';
+    document.getElementById('detailsValue').innerHTML = formatMapValue(props);
+    document.getElementById('detailsUnit').textContent = '';
 
     // Update progress bar (if target exists)
     if (props.target) {

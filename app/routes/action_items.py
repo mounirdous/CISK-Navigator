@@ -291,14 +291,17 @@ def create():
 
     form = ActionItemCreateForm()
 
-    # Populate owner choices with contributing organization users (exclude read-only)
+    # Populate owner choices: org admins + users who can view action items
     org_users = (
         db.session.query(User)
         .join(UserOrganizationMembership)
         .filter(
             UserOrganizationMembership.organization_id == org_id,
             User.is_active.is_(True),
-            UserOrganizationMembership.can_contribute.is_(True),
+            db.or_(
+                UserOrganizationMembership.is_org_admin.is_(True),
+                UserOrganizationMembership.can_view_action_items.is_(True),
+            ),
         )
         .order_by(User.display_name)
         .all()
@@ -378,7 +381,10 @@ def edit(item_id):
         .filter(
             UserOrganizationMembership.organization_id == item.organization_id,
             User.is_active.is_(True),
-            UserOrganizationMembership.can_contribute.is_(True),
+            db.or_(
+                UserOrganizationMembership.is_org_admin.is_(True),
+                UserOrganizationMembership.can_view_action_items.is_(True),
+            ),
         )
         .order_by(User.display_name)
         .all()
