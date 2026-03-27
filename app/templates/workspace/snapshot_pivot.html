@@ -157,31 +157,9 @@
             <h5 class="mb-0"><i class="bi bi-graph-up"></i> Chart Builder</h5>
         </div>
         <div class="card-body">
-            <!-- Load Saved Chart Section -->
-            <div class="mb-4 p-4" style="background: linear-gradient(135deg, rgba(102, 16, 242, 0.08) 0%, rgba(118, 75, 162, 0.08) 100%); border-radius: 12px; border: 2px dashed rgba(102, 16, 242, 0.3);">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="bi bi-folder-open" style="font-size: 1.75rem; color: #6610f2; margin-right: 12px;"></i>
-                    <div>
-                        <h6 class="mb-0">Load Saved Chart</h6>
-                        <small class="text-muted">Start with a previously saved configuration</small>
-                    </div>
-                </div>
-
-                <div class="position-relative">
-                    <i class="bi bi-search position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); color: #6c757d; font-size: 1.1rem;"></i>
-                    <input type="text" id="chart-search" class="form-control form-control-lg"
-                           placeholder="Click to browse saved charts or type to search..."
-                           style="padding-left: 44px; border-radius: 10px; border: 2px solid #dee2e6; font-size: 0.95rem;">
-                    <div id="chart-search-results" class="mt-3" style="display: none;"></div>
-                </div>
-            </div>
-
-            <!-- Show Load Chart button when section is collapsed -->
-            <div id="load-chart-collapsed" class="text-center mb-4 p-3" style="display: none; background: linear-gradient(135deg, rgba(102, 16, 242, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%); border-radius: 12px;">
-                <button class="btn btn-outline-primary btn-lg" onclick="document.querySelector('.mb-4.p-4[style*=\'dashed\']').style.display='block'; this.parentElement.style.display='none';" style="border-radius: 8px;">
-                    <i class="bi bi-folder-open"></i> Load Different Chart
-                </button>
-            </div>
+            <!-- Chart Presets — unified preset bar -->
+            {% from "_preset_bar.html" import preset_bar %}
+            {{ preset_bar('pivot', chart_presets_list) }}
 
             <div class="text-center mb-4">
                 <span class="badge bg-secondary" style="font-size: 0.9rem; padding: 8px 16px; border-radius: 20px;">OR BUILD NEW</span>
@@ -518,6 +496,45 @@
 
     // Show onboarding on first visit
     document.addEventListener('DOMContentLoaded', function() {
+        // Register preset manager for pivot charts
+        if (window.PresetManager) {
+            PresetManager.setCsrf('{{ csrf_token() }}');
+            PresetManager.register('pivot', {
+                applyState: function(config, _isAutoRestore) {
+                    // On auto-restore: only apply if page has no query params (clean visit)
+                    if (_isAutoRestore && window.location.search) {
+                        try {
+                            localStorage.removeItem('preset_active_pivot');
+                            localStorage.removeItem('preset_config_pivot');
+                        } catch(e) {}
+                        var nameEl = document.querySelector('.preset-bar[data-feature="pivot"] .preset-bar-active-name');
+                        if (nameEl) nameEl.textContent = 'My Presets';
+                        return;
+                    }
+                    if (config && config.config_ids_colors) {
+                        var url = new URL(window.location.href);
+                        if (config.year_start) url.searchParams.set('year_start', config.year_start);
+                        if (config.year_end) url.searchParams.set('year_end', config.year_end);
+                        if (config.view_type) url.searchParams.set('view_type', config.view_type);
+                        if (config.space_id) url.searchParams.set('space_id', config.space_id);
+                        if (config.value_type_id) url.searchParams.set('value_type_id', config.value_type_id);
+                        if (url.toString() === window.location.href) return;
+                        window.location.href = url.toString();
+                    }
+                },
+                getState: function() {
+                    // Collect current chart state from form elements
+                    return {
+                        year_start: document.getElementById('year_start')?.value,
+                        year_end: document.getElementById('year_end')?.value,
+                        view_type: document.querySelector('input[name=view_type]:checked')?.value,
+                        chart_type: document.getElementById('chart_type')?.value,
+                    };
+                },
+                onReset: function() { window.location.href = window.location.pathname; }
+            }, true); // Auto-restore enabled — URL-match guard in applyState prevents loop
+        }
+
         const hasSeenOnboarding = localStorage.getItem('hasSeenSnapshotOnboarding');
         if (!hasSeenOnboarding) {
             const onboardingModal = new bootstrap.Modal(document.getElementById('onboardingModal'));

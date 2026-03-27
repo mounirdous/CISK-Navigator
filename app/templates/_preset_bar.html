@@ -1,0 +1,224 @@
+{% macro preset_bar(feature, presets=[], active_preset_name='') %}
+<style>
+.preset-bar { margin-bottom: 0.5rem; }
+.preset-bar-inner {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.35rem 0.75rem; background: #f8f9fa;
+    border-radius: 8px; border: 1px solid #e9ecef;
+    font-size: 0.82rem; flex-wrap: wrap;
+}
+.preset-bar-btn {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.6rem; border-radius: 6px;
+    border: 1px solid #dee2e6; background: white;
+    font-size: 0.8rem; cursor: pointer; color: #495057;
+    transition: all 0.15s;
+}
+.preset-bar-btn:hover { border-color: #0d6efd; color: #0d6efd; }
+.preset-bar-active-name { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.preset-bar-save-form {
+    display: flex; align-items: center; gap: 0.3rem;
+}
+.preset-bar-name-input {
+    padding: 0.2rem 0.5rem; border: 1px solid #dee2e6;
+    border-radius: 6px; font-size: 0.8rem; width: 160px;
+    outline: none;
+}
+.preset-bar-name-input:focus { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.15); }
+.preset-bar-save-confirm {
+    padding: 0.2rem 0.4rem; border: none; background: #198754;
+    color: white; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
+    display: inline-flex; align-items: center;
+}
+.preset-bar-save-confirm:hover { background: #146c43; }
+.preset-bar-save-cancel {
+    padding: 0.2rem 0.4rem; border: none; background: #6c757d;
+    color: white; border-radius: 4px; cursor: pointer; font-size: 0.8rem;
+    display: inline-flex; align-items: center;
+}
+.preset-bar-save-cancel:hover { background: #565e64; }
+.preset-bar-menu { min-width: 200px; }
+.preset-bar-delete { opacity: 0.3; transition: opacity 0.15s; }
+.preset-bar-item:hover .preset-bar-delete { opacity: 1; }
+</style>
+
+<div class="preset-bar" data-feature="{{ feature }}">
+    <div class="preset-bar-inner">
+        <!-- Preset dropdown -->
+        <div class="dropdown">
+            <button class="preset-bar-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-bookmark-star-fill"></i>
+                <span class="preset-bar-active-name">{{ active_preset_name or 'My Presets' }}</span>
+            </button>
+            <ul class="dropdown-menu preset-bar-menu">
+                {% for p in presets %}
+                <li class="preset-bar-item" data-preset-id="{{ p.id }}">
+                    <a class="dropdown-item d-flex justify-content-between align-items-center" href="#"
+                       onclick="PresetManager.load('{{ feature }}', {{ p.id }}); return false;">
+                        <span>{{ p.name }}</span>
+                        <button class="btn btn-sm p-0 text-danger preset-bar-delete"
+                                onclick="event.stopPropagation(); PresetManager.remove('{{ feature }}', {{ p.id }}); return false;"
+                                title="Delete">
+                            <i class="bi bi-x-lg" style="font-size:0.7rem;"></i>
+                        </button>
+                    </a>
+                </li>
+                {% endfor %}
+                {% if not presets %}
+                <li><span class="dropdown-item text-muted small">No saved presets</span></li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <!-- Save button -->
+        <div class="preset-bar-save">
+            <button class="preset-bar-btn" onclick="PresetManager.showSave('{{ feature }}')" title="Save current view">
+                <i class="bi bi-floppy"></i> Save
+            </button>
+        </div>
+
+        <!-- Save inline form (hidden by default) -->
+        <div class="preset-bar-save-form" style="display:none;">
+            <input type="text" class="preset-bar-name-input" placeholder="Preset name..." maxlength="100"
+                   onkeydown="if(event.key==='Enter'){PresetManager.save('{{ feature }}');}">
+            <button class="preset-bar-save-confirm" onclick="PresetManager.save('{{ feature }}')">
+                <i class="bi bi-check-lg"></i>
+            </button>
+            <button class="preset-bar-save-cancel" onclick="PresetManager.cancelSave('{{ feature }}')">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Reset button -->
+        <button class="preset-bar-btn preset-bar-reset" onclick="PresetManager.reset('{{ feature }}')" title="Reset to defaults">
+            <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+    </div>
+</div>
+
+<script>
+// Store preset configs safely in JS (not in onclick attributes)
+if (!window._presetConfigs) window._presetConfigs = {};
+{% for p in presets %}
+window._presetConfigs['{{ feature }}_{{ p.id }}'] = {{ p.config|tojson }};
+{% endfor %}
+
+if (!window.PresetManager) {
+    window.PresetManager = {
+        _callbacks: {},
+        _csrf: '',
+
+        register: function(feature, callbacks, autoRestore) {
+            this._callbacks[feature] = callbacks;
+            if (autoRestore === true && callbacks.applyState) {
+                try {
+                    var savedConfig = localStorage.getItem('preset_config_' + feature);
+                    if (savedConfig) {
+                        // Pass _isAutoRestore flag so applyState can skip
+                        // when URL already has user-set params
+                        callbacks.applyState(JSON.parse(savedConfig), true);
+                    }
+                } catch(e) {}
+            }
+        },
+
+        setCsrf: function(token) { this._csrf = token; },
+
+        load: function(feature, id) {
+            var config = (window._presetConfigs || {})[feature + '_' + id] || {};
+            var cb = this._callbacks[feature];
+            if (cb && cb.applyState) cb.applyState(config);
+            var bar = document.querySelector('.preset-bar[data-feature="' + feature + '"]');
+            if (bar) {
+                var item = bar.querySelector('[data-preset-id="' + id + '"] .dropdown-item span');
+                var name = item ? item.textContent : '';
+                bar.querySelector('.preset-bar-active-name').textContent = name || 'My Presets';
+                // Persist active preset name + config for page reloads
+                try {
+                    localStorage.setItem('preset_active_' + feature, name);
+                    localStorage.setItem('preset_config_' + feature, JSON.stringify(config));
+                } catch(e) {}
+            }
+            var dd = bar && bar.querySelector('.dropdown-toggle');
+            if (dd) { var inst = bootstrap.Dropdown.getInstance(dd); if (inst) inst.hide(); }
+        },
+
+        showSave: function(feature) {
+            var bar = document.querySelector('.preset-bar[data-feature="' + feature + '"]');
+            if (!bar) return;
+            bar.querySelector('.preset-bar-save').style.display = 'none';
+            bar.querySelector('.preset-bar-save-form').style.display = 'flex';
+            var input = bar.querySelector('.preset-bar-name-input');
+            input.value = '';
+            input.focus();
+        },
+
+        cancelSave: function(feature) {
+            var bar = document.querySelector('.preset-bar[data-feature="' + feature + '"]');
+            if (!bar) return;
+            bar.querySelector('.preset-bar-save').style.display = '';
+            bar.querySelector('.preset-bar-save-form').style.display = 'none';
+        },
+
+        save: function(feature, overwrite) {
+            var bar = document.querySelector('.preset-bar[data-feature="' + feature + '"]');
+            if (!bar) return;
+            var name = bar.querySelector('.preset-bar-name-input').value.trim();
+            if (!name) { alert('Please enter a name'); return; }
+            var cb = this._callbacks[feature];
+            var config = cb && cb.getState ? cb.getState() : {};
+            var self = this;
+
+            fetch('/api/user-presets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': this._csrf },
+                body: JSON.stringify({ feature: feature, name: name, config: config, overwrite: !!overwrite })
+            }).then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
+            .then(function(res) {
+                if (res.data.success) {
+                    location.reload();
+                } else if (res.status === 409 && res.data.exists) {
+                    // Preset with same name exists — ask to overwrite
+                    if (confirm("'" + name + "' already exists. Overwrite?")) {
+                        self.save(feature, true);
+                    }
+                } else {
+                    alert(res.data.error || res.data.message || 'Error saving preset');
+                }
+            });
+        },
+
+        remove: function(feature, id) {
+            if (!confirm('Delete this preset?')) return;
+            fetch('/api/user-presets/' + id + '?feature=' + feature, {
+                method: 'DELETE',
+                headers: { 'X-CSRFToken': this._csrf }
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.success) location.reload();
+            });
+        },
+
+        reset: function(feature) {
+            var cb = this._callbacks[feature];
+            if (cb && cb.onReset) cb.onReset();
+            var bar = document.querySelector('.preset-bar[data-feature="' + feature + '"]');
+            if (bar) bar.querySelector('.preset-bar-active-name').textContent = 'My Presets';
+            try {
+                localStorage.removeItem('preset_active_' + feature);
+                localStorage.removeItem('preset_config_' + feature);
+            } catch(e) {}
+        }
+    };
+}
+// Restore active preset name from localStorage on page load
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.preset-bar').forEach(function(bar) {
+        var feature = bar.dataset.feature;
+        try {
+            var saved = localStorage.getItem('preset_active_' + feature);
+            if (saved) bar.querySelector('.preset-bar-active-name').textContent = saved;
+        } catch(e) {}
+    });
+});
+</script>
+{% endmacro %}

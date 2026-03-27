@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "3.9.7"
+__version__ = "4.0.6"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -94,6 +94,7 @@ def create_app(config_name=None):
         logo,
         map_dashboard,
         organization_admin,
+        presets_api,
         stakeholders,
         super_admin,
         workspace,
@@ -113,6 +114,7 @@ def create_app(config_name=None):
     app.register_blueprint(action_items.bp)  # Action items and memos
     app.register_blueprint(stakeholders.bp)  # Stakeholder mapping
     app.register_blueprint(beta.bp)  # Beta feature prototypes
+    app.register_blueprint(presets_api.bp)  # Unified presets API
 
     # Register test error routes (REMOVE IN PRODUCTION)
     if app.config.get("FLASK_ENV") == "development":

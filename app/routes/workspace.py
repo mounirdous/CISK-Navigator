@@ -265,6 +265,9 @@ def index():
     filter_presets = filter_presets_objs
     filter_presets_json = json.dumps([preset.to_dict() for preset in filter_presets_objs])
 
+    # Unified preset bar format (config key instead of filters)
+    ws_presets_list = [{"id": p.id, "name": p.name, "config": p.filters} for p in filter_presets_objs]
+
     # Read user preferences for this org
     membership = UserOrganizationMembership.query.filter_by(
         user_id=current_user.id, organization_id=org_id
@@ -283,6 +286,7 @@ def index():
         entity_defaults=entity_defaults,
         filter_presets=filter_presets,
         filter_presets_json=Markup(filter_presets_json),
+        ws_presets_list=ws_presets_list,
         can_contribute=current_user.can_contribute(org_id),
         can_view_snapshots=current_user.can_view_snapshots_for(org_id),
         can_create_snapshots=current_user.can_create_snapshots_for(org_id),
@@ -897,6 +901,25 @@ def snapshot_pivot():
             "logo": logo_url,
         }
     template_vars["entity_defaults"] = entity_defaults
+
+    # Load saved charts for preset bar
+    from sqlalchemy import or_ as sa_or
+    chart_presets = (
+        SavedChart.query.filter_by(organization_id=org_id)
+        .filter(sa_or(SavedChart.created_by_user_id == current_user.id, SavedChart.is_shared.is_(True)))
+        .order_by(SavedChart.updated_at.desc())
+        .all()
+    )
+    template_vars["chart_presets_list"] = [
+        {"id": c.id, "name": c.name, "config": {
+            "year_start": c.year_start, "year_end": c.year_end,
+            "view_type": c.view_type, "chart_type": c.chart_type,
+            "space_id": c.space_id, "value_type_id": c.value_type_id,
+            "period_filter": c.period_filter,
+            "config_ids_colors": c.config_ids_colors,
+        }}
+        for c in chart_presets
+    ]
 
     return render_template("workspace/snapshot_pivot.html", **template_vars)
 

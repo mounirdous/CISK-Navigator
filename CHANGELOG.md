@@ -5,6 +5,51 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.6] - 2026-03-27
+
+### Added
+- **Preset overwrite support for all features** — saving a preset with an existing name prompts "Overwrite?" for workspace filters, action items, saved searches, and pivot charts; confirming updates the existing preset in-place
+
+## [4.0.4] - 2026-03-27
+
+### Fixed
+- **Preset no longer hijacks manual filter changes** — auto-restore only fires on clean page visits (no query params); if the user changes filters (e.g., CFO instead of HR), the URL params are respected and the preset is cleared
+- Pivot charts apply the same logic — manual filter changes are never overridden by saved presets
+
+## [4.0.3] - 2026-03-27
+
+### Fixed
+- **Timeline fit-all on load** — timeline view now always fits all items when first opened, instead of applying a saved zoom preset that could clip items out of view
+
+## [4.0.2] - 2026-03-27
+
+### Fixed
+- **Preset view not restored on page return** — navigating away and back now auto-restores the active preset (e.g., HR filters in Action Register)
+- URL-navigating features (action items, pivot charts) use URL-match guard to prevent infinite loop while still enabling auto-restore
+- `_applyActionFilters` skips navigation when current URL already matches the preset config
+- Pivot `applyState` skips navigation when URL already matches
+
+## [4.0.1] - 2026-03-27
+
+### Fixed
+- **Preset auto-restore infinite loop** — features that navigate via URL (action items, pivot charts) no longer auto-restore on page load; auto-restore is now opt-in (`autoRestore === true` third parameter)
+- Workspace presets pass `autoRestore=true` (applies state in-place via Alpine)
+- Action Register presets pass `autoRestore=false` (navigates via URL, would cause infinite reload loop)
+- Pivot chart presets already had `autoRestore=false`
+
+## [4.0.0] - 2026-03-27
+
+### Added
+- **Unified Presets System** — new `/api/user-presets` API (`GET`, `POST`, `DELETE`) that provides a single interface for all save/load features across workspace, action items, search, and pivot charts
+- **Reusable preset bar macro** (`_preset_bar.html`) — self-contained Jinja macro with CSS, JS (`PresetManager` global), inline save form, dropdown, and reset button
+- **PresetManager JS module** — global `window.PresetManager` with `register()`, `load()`, `save()`, `remove()`, `reset()` methods and per-feature callback system (`getState`, `applyState`, `onReset`)
+- Applied unified preset bar to **Workspace Tree** page (replaces old dropdown + modal)
+- Applied unified preset bar to **Action Register** page (replaces old saved views dropdown)
+
+### Changed
+- Workspace presets now save/load via `PresetManager` callbacks (Alpine state) instead of URL param navigation
+- Action Register presets use unified API and `PresetManager` instead of per-page fetch calls
+
 ## [3.9.5] - 2026-03-27
 
 ### Fixed

@@ -279,6 +279,7 @@ def index():
         initiative_challenge_map=initiative_challenge_map,
         entity_parents=entity_parents,
         action_presets=[p.to_dict() for p in action_presets],
+        action_presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in action_presets],
         review_initiative_ids=review_initiative_ids,
         csrf_token=generate_csrf,
     )

@@ -1700,6 +1700,7 @@
 </style>
 {% endblock %}
 
+{% from "_preset_bar.html" import preset_bar %}
 {% block content %}
 <div class="workspace-v2" x-data="workspaceV2({{ org_id }}, [])" x-init="init(); loadData()" :data-badges-visible="showBadges">
     <!-- Toolbar - Commands Band -->
@@ -1741,61 +1742,8 @@
             </button>
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <!-- Preset Dropdown -->
-            <div class="btn-group btn-group-sm">
-                <button type="button"
-                        class="btn btn-outline-light dropdown-toggle"
-                        data-bs-toggle="dropdown"
-                        data-bs-auto-close="outside"
-                        aria-expanded="false"
-                        title="Load or save view presets"
-                        style="max-width: 160px;">
-                    <i class="bi bi-bookmark-star-fill"></i>
-                    <span x-show="activePresetName" x-text="activePresetName" style="max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle;"></span>
-                    <span x-show="!activePresetName">Presets</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" style="min-width: 260px;">
-                    {% if filter_presets %}
-                    <li style="padding: 6px 8px;">
-                        <input type="text" id="preset-search-v2"
-                               class="form-control form-control-sm"
-                               placeholder="Search presets…"
-                               autocomplete="off"
-                               onclick="event.stopPropagation();">
-                    </li>
-                    <li><hr class="dropdown-divider my-1"></li>
-                    <div id="presets-dropdown-v2" style="max-height: 220px; overflow-y: auto;">
-                        {% for preset in filter_presets %}
-                        <li>
-                            <div class="preset-dropdown-item-v2 dropdown-item d-flex align-items-center justify-content-between"
-                                 data-preset-id="{{ preset.id }}"
-                                 data-preset-name="{{ preset.name|lower }}"
-                                 data-preset-filters='{{ preset.filters|tojson }}'
-                                 style="cursor: pointer; padding: 6px 12px;">
-                                <span class="preset-item-name" style="font-size: 0.85rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">{{ preset.name }}</span>
-                                <button type="button" class="btn btn-sm btn-outline-danger delete-preset-btn-v2"
-                                        data-delete-preset="{{ preset.id }}"
-                                        style="padding: 1px 5px; font-size: 0.7rem; margin-left: 6px; flex-shrink: 0;"
-                                        onclick="event.stopPropagation();" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </div>
-                    <div id="no-presets-found-v2" style="display: none; padding: 8px 12px; font-size: 0.8rem; color: #6c757d; text-align: center;">
-                        No presets match "<span id="search-term-display-v2"></span>"
-                    </div>
-                    <li><hr class="dropdown-divider my-1"></li>
-                    {% endif %}
-                    <li>
-                        <button class="dropdown-item" style="font-size: 0.85rem;"
-                                @click="showSavePresetModal = true">
-                            <i class="bi bi-plus-circle text-primary"></i> Save current view…
-                        </button>
-                    </li>
-                </ul>
-            </div>
+            <!-- Unified Preset Bar -->
+            {{ preset_bar('workspace', ws_presets_list) }}
 
             <!-- Edit Mode Toggle (only show if user can contribute) -->
             {% if can_contribute %}
@@ -2131,41 +2079,7 @@
         </div>
     </div>
 
-    <!-- Save Preset Modal -->
-    <div x-show="showSavePresetModal"
-         x-cloak
-         @click.self="showSavePresetModal = false"
-         class="modal-overlay">
-        <div class="modal-content" @click.stop>
-            <div class="modal-header">
-                <h5><i class="bi bi-bookmark-plus"></i> Save View Preset</h5>
-                <button @click="showSavePresetModal = false" class="btn-close-modal">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="modal-body">
-                <label class="form-label">Preset Name</label>
-                <input type="text"
-                       x-model="newPresetName"
-                       @keydown.enter="saveCurrentPreset()"
-                       class="form-control"
-                       placeholder="e.g., My Public Spaces"
-                       autofocus>
-                <div class="mt-3" style="font-size: 0.85rem; color: #6c757d;">
-                    <strong>Saves:</strong> active filters, visible columns, and current tree collapse state
-                </div>
-                <div class="mt-2" style="font-size: 0.85rem; color: #6c757d;">
-                    <span x-text="getPresetDescriptionDetailed(getCurrentFilters()) || 'No filters active'"></span>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button @click="showSavePresetModal = false" class="btn btn-sm btn-secondary">Cancel</button>
-                <button @click="saveCurrentPreset()" class="btn btn-sm btn-success">
-                    <i class="bi bi-check-lg"></i> Save Preset
-                </button>
-            </div>
-        </div>
-    </div>
+    <!-- Preset saving is now handled by the unified preset bar -->
 
     <!-- Loading State — centered card with steps -->
     <div x-show="loading" x-cloak class="ws-loading-card">
@@ -4158,6 +4072,46 @@ function workspaceV2(orgId, filterPresets) {
             // Mobile: Setup horizontal scroll detection
             this.setupMobileScrollIndicator();
 
+            // Register unified PresetManager callbacks
+            var self = this;
+            PresetManager.setCsrf('{{ csrf_token() }}');
+            PresetManager.register('workspace', {
+                getState: function() {
+                    return {
+                        showLevels: self.showLevels,
+                        selectedGovernanceBodies: self.selectedGovernanceBodies,
+                        selectedSpaces: self.selectedSpaces,
+                        selectedGroups: self.selectedGroups,
+                        selectedImpactLevels: self.selectedImpactLevels,
+                        visibleValueTypeIds: self.visibleValueTypeIds,
+                        showArchivedKPIs: self.showArchivedKPIs,
+                        spaceTypeFilter: self.spaceTypeFilter,
+                        focusLevelMode: self.focusLevelMode,
+                    };
+                },
+                applyState: function(config) {
+                    if (config.showLevels) self.showLevels = config.showLevels;
+                    if (config.selectedGovernanceBodies) self.selectedGovernanceBodies = config.selectedGovernanceBodies;
+                    if (config.selectedSpaces) self.selectedSpaces = config.selectedSpaces;
+                    if (config.selectedGroups) self.selectedGroups = config.selectedGroups;
+                    if (config.selectedImpactLevels) self.selectedImpactLevels = config.selectedImpactLevels;
+                    if (config.visibleValueTypeIds) self.visibleValueTypeIds = config.visibleValueTypeIds;
+                    if (config.showArchivedKPIs !== undefined) self.showArchivedKPIs = config.showArchivedKPIs;
+                    if (config.spaceTypeFilter) self.spaceTypeFilter = config.spaceTypeFilter;
+                    if (config.focusLevelMode !== undefined) self.focusLevelMode = config.focusLevelMode;
+                },
+                onReset: function() {
+                    self.showLevels = { spaces: true, challenges: true, initiatives: true, systems: true, kpis: true };
+                    self.selectedGovernanceBodies = [];
+                    self.selectedSpaces = [];
+                    self.selectedGroups = [];
+                    self.selectedImpactLevels = [];
+                    self.visibleValueTypeIds = self.valueTypes.map(function(vt) { return vt.id; });
+                    self.showArchivedKPIs = false;
+                    self.spaceTypeFilter = 'all';
+                }
+            }, true); // Auto-restore: workspace applies state in-place (no URL navigation)
+
             // Global bridge for tooltip → showEntityLinks
             var self = this;
             window._wsShowEntityLinks = function(idx) {
@@ -5513,105 +5467,7 @@ function workspaceV2(orgId, filterPresets) {
 }
 </script>
 
-<!-- Preset Search Dropdown (Database Presets) -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('preset-search-v2');
-    const dropdown = document.getElementById('presets-dropdown-v2');
-    const noResultsDiv = document.getElementById('no-presets-found-v2');
-
-    if (!searchInput || !dropdown) return; // No presets available
-
-    // Filter presets on input (Bootstrap handles dropdown show/hide)
-    searchInput.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase().trim();
-        const items = dropdown.querySelectorAll('.preset-dropdown-item-v2');
-        let visibleCount = 0;
-
-        items.forEach(item => {
-            const name = item.dataset.presetName || '';
-            const li = item.closest('li') || item;
-            if (name.includes(searchTerm)) {
-                li.style.display = '';
-                visibleCount++;
-            } else {
-                li.style.display = 'none';
-            }
-        });
-
-        noResultsDiv.style.display = (visibleCount === 0 && searchTerm) ? 'block' : 'none';
-        if (visibleCount === 0 && searchTerm) {
-            document.getElementById('search-term-display-v2').textContent = searchInput.value;
-        }
-    });
-
-    // Load preset on click
-    dropdown.querySelectorAll('.preset-dropdown-item-v2').forEach(item => {
-        item.addEventListener('click', async function() {
-            const presetId = this.dataset.presetId;
-            const presetName = this.querySelector('.preset-item-name').textContent;
-
-            try {
-                // Mark as last used
-                await fetch(`/workspace/api/filter-presets/${presetId}/set-last-used`, {
-                    method: 'POST'
-                });
-
-                // Fetch preset and navigate with filters as URL params
-                const response = await fetch(`/workspace/api/filter-presets`);
-                const presets = await response.json();
-                const preset = presets.find(p => p.id == presetId);
-
-                if (preset && preset.filters) {
-                    const params = new URLSearchParams();
-                    // Add marker to indicate this is from preset load (so filters auto-collapse)
-                    params.append('fromPreset', '1');
-                    for (const [key, value] of Object.entries(preset.filters)) {
-                        if (Array.isArray(value)) {
-                            value.forEach(v => params.append(key, v));
-                        } else {
-                            params.append(key, value);
-                        }
-                    }
-                    window.location.href = '/workspace/?' + params.toString();
-                }
-            } catch (err) {
-                console.error('Error loading preset:', err);
-                alert('Failed to load preset');
-            }
-        });
-    });
-
-    // Delete preset (search entire document since delete buttons are siblings in same container)
-    document.querySelectorAll('.delete-preset-btn-v2').forEach(btn => {
-        btn.addEventListener('click', async function(e) {
-            e.stopPropagation();
-            const presetId = this.dataset.deletePreset;
-
-            if (!confirm('Delete this filter preset? This cannot be undone.')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/workspace/api/filter-presets/${presetId}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    // Reload page to update preset list
-                    window.location.reload();
-                } else {
-                    alert('Failed to delete preset. Please try again.');
-                }
-            } catch (error) {
-                console.error('Error deleting preset:', error);
-                alert('Error deleting preset. Please try again.');
-            }
-        });
-    });
-
-});
-</script>
+<!-- Preset logic now handled by unified PresetManager in _preset_bar.html -->
 
 <!-- Custom multiline description tooltip -->
 <div id="ws-desc-tooltip"></div>

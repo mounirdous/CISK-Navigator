@@ -319,6 +319,7 @@
 </style>
 {% endblock %}
 
+{% from "_preset_bar.html" import preset_bar %}
 {% block content %}
 <div class="container-fluid" style="max-width:1400px; padding: 1.5rem;">
 
@@ -370,51 +371,8 @@
                 <span class="toggle-icon">&#9660;</span>
             </button>
 
-            <!-- Saved Views dropdown -->
-            <div class="dropdown" id="views-dropdown-wrapper">
-                <button class="btn btn-outline-light btn-sm" data-bs-toggle="dropdown" data-bs-auto-close="outside"
-                        id="views-dropdown-btn" title="Saved Views">
-                    <i class="bi bi-bookmark-star me-1"></i> Views
-                    {% if action_presets %}<span class="badge bg-light text-dark ms-1" style="font-size:0.65rem;">{{ action_presets|length }}</span>{% endif %}
-                </button>
-                <div class="dropdown-menu dropdown-menu-end p-2" style="min-width:260px; max-width:320px;" id="views-dropdown-menu">
-                    {% if action_presets %}
-                    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;padding:0 0.25rem 0.4rem;">Saved views</div>
-                    {% for preset in action_presets %}
-                    <div class="d-flex align-items-center gap-1 mb-1">
-                        <button type="button" class="btn btn-sm btn-outline-secondary flex-grow-1 text-start preset-load-btn"
-                                style="font-size:0.82rem;padding:4px 8px;"
-                                data-preset-filters='{{ preset.filters|tojson }}'>
-                            <i class="bi bi-bookmark-fill me-1" style="color:#667eea;font-size:0.75rem;"></i>
-                            {{ preset.name }}
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-danger preset-delete-btn"
-                                style="padding:3px 7px;"
-                                data-preset-id="{{ preset.id }}"
-                                data-preset-name="{{ preset.name|e }}"
-                                title="Delete">
-                            <i class="bi bi-trash" style="font-size:0.72rem;"></i>
-                        </button>
-                    </div>
-                    {% endfor %}
-                    <hr class="my-2">
-                    {% endif %}
-                    <!-- Save current view -->
-                    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;padding:0 0.25rem 0.4rem;">
-                        Save current view
-                    </div>
-                    <div class="d-flex gap-1">
-                        <input type="text" id="preset-name-input" class="form-control form-control-sm"
-                               placeholder="View name…" maxlength="100"
-                               style="font-size:0.82rem;"
-                               onkeydown="if(event.key==='Enter'){saveActionPreset();}">
-                        <button type="button" class="btn btn-sm btn-primary" onclick="saveActionPreset()"
-                                style="white-space:nowrap;font-size:0.82rem;">
-                            <i class="bi bi-floppy"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+            <!-- Unified Preset Bar -->
+            {{ preset_bar('action_items', action_presets_list) }}
 
             <div class="dropdown">
                 <button class="btn btn-outline-light btn-sm" data-bs-toggle="dropdown" title="Import / Export">
@@ -1731,8 +1689,8 @@ function renderTimeline(groupBy) {
             }
         });
     }
-    // Fit all items in view
-    setTimeout(function() { if (tlInstance) tlInstance.fit({ animation: true }); }, 100);
+    // Fit all items in view (200ms to ensure vis.js layout is complete)
+    setTimeout(function() { if (tlInstance) tlInstance.fit({ animation: true }); }, 200);
     renderUndated();
     renderStartDateBanner();
 }
@@ -1902,30 +1860,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (activeView === 'timeline') switchView('timeline');
-    // Apply zoom from URL param (set when loading a saved view)
-    const urlZoom = new URLSearchParams(window.location.search).get('zoom');
-    if (urlZoom && ZOOM_DAYS[urlZoom]) {
-        // Defer until timeline is rendered
-        setTimeout(() => tlZoom(urlZoom), 100);
-    }
+    // Always fit-all on initial timeline load (user requested behaviour)
+    // The zoom preset is only applied when user explicitly picks one via the UI
 });
 
-// ── Saved Views (presets) ─────────────────────────────────────────────────
-
-// Wire up preset load/delete buttons via event delegation (avoids inline onclick + tojson quoting issues)
-document.getElementById('views-dropdown-menu')?.addEventListener('click', function(e) {
-    const loadBtn = e.target.closest('.preset-load-btn');
-    if (loadBtn) {
-        try { loadActionPreset(JSON.parse(loadBtn.dataset.presetFilters)); }
-        catch(err) { alert('Failed to parse preset filters'); }
-        return;
-    }
-    const delBtn = e.target.closest('.preset-delete-btn');
-    if (delBtn) {
-        e.stopPropagation();
-        deleteActionPreset(delBtn.dataset.presetId, delBtn.dataset.presetName);
-    }
-});
+// ── Saved Views (unified PresetManager) ──────────────────────────────────
 
 function _getCurrentActionFilters() {
     const form = document.getElementById('filter-form');
@@ -1939,60 +1878,47 @@ function _getCurrentActionFilters() {
     return { type_filter, visibility_filter, status_filter, gb_filter, group_by, view, zoom };
 }
 
-async function saveActionPreset(overwrite) {
-    const input = document.getElementById('preset-name-input');
-    const name = (input.value || '').trim();
-    if (!name) { input.focus(); return; }
-
-    const filters = _getCurrentActionFilters();
-    try {
-        const resp = await fetch('{{ url_for("action_items.save_preset") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
-            body: JSON.stringify({ name, filters, overwrite: !!overwrite })
-        });
-        const data = await resp.json();
-        if (resp.ok) {
-            input.value = '';
-            bootstrap.Dropdown.getInstance(document.getElementById('views-dropdown-btn'))?.hide();
-            // Navigate with the saved filters so the URL reflects exactly what was saved
-            // (avoids stale URL params like ?zoom=week overriding the newly saved state)
-            loadActionPreset(filters);
-        } else if (resp.status === 409 && data.exists) {
-            if (confirm(`A view named "${name}" already exists. Overwrite it?`)) {
-                saveActionPreset(true);
-            }
-        } else {
-            alert(data.error || 'Failed to save view');
+function _applyActionFilters(config, _isAutoRestore) {
+    var params = new URLSearchParams();
+    params.set('type_filter', config.type_filter || 'all');
+    params.set('visibility_filter', config.visibility_filter || 'all');
+    (config.status_filter || []).forEach(function(v) { params.append('status_filter', v); });
+    (config.gb_filter || []).forEach(function(v) { params.append('gb_filter', v); });
+    if (config.view) params.set('view', config.view);
+    if (config.group_by) params.set('group_by', config.group_by);
+    if (config.zoom) params.set('zoom', config.zoom);
+    var target = '{{ url_for("action_items.index") }}?' + params.toString();
+    // On auto-restore: only navigate if page has NO query params (clean visit).
+    // If URL already has params the user set them via filters — don't override.
+    if (_isAutoRestore && window.location.search) {
+        // URL params differ from preset → user changed filters, clear active preset
+        if (window.location.pathname + window.location.search !== target) {
+            try {
+                localStorage.removeItem('preset_active_action_items');
+                localStorage.removeItem('preset_config_action_items');
+            } catch(e) {}
+            var nameEl = document.querySelector('.preset-bar[data-feature="action_items"] .preset-bar-active-name');
+            if (nameEl) nameEl.textContent = 'My Presets';
         }
-    } catch (e) {
-        alert('Failed to save view');
+        return;
     }
+    // Skip navigation if already on the right URL
+    if (window.location.pathname + window.location.search === target) return;
+    window.location.href = target;
 }
 
-function loadActionPreset(filters) {
-    const params = new URLSearchParams();
-    params.set('type_filter', filters.type_filter || 'all');
-    params.set('visibility_filter', filters.visibility_filter || 'all');
-    (filters.status_filter || []).forEach(v => params.append('status_filter', v));
-    (filters.gb_filter || []).forEach(v => params.append('gb_filter', v));
-    if (filters.view) params.set('view', filters.view);
-    if (filters.group_by) params.set('group_by', filters.group_by);
-    if (filters.zoom) params.set('zoom', filters.zoom);
-    window.location.href = '{{ url_for("action_items.index") }}?' + params.toString();
-}
-
-async function deleteActionPreset(id, name) {
-    if (!confirm(`Delete view "${name}"?`)) return;
-    try {
-        const resp = await fetch(`/toolbox/actions/api/presets/${id}`, {
-            method: 'DELETE',
-            headers: { 'X-CSRFToken': '{{ csrf_token() }}' }
-        });
-        if (resp.ok) window.location.reload();
-        else alert('Failed to delete view');
-    } catch(e) { alert('Failed to delete view'); }
-}
+PresetManager.setCsrf('{{ csrf_token() }}');
+PresetManager.register('action_items', {
+    getState: function() {
+        return _getCurrentActionFilters();
+    },
+    applyState: function(config, _isAutoRestore) {
+        _applyActionFilters(config, _isAutoRestore);
+    },
+    onReset: function() {
+        window.location.href = '{{ url_for("action_items.index") }}';
+    }
+}, true); // Auto-restore enabled — URL-match guard in _applyActionFilters prevents loop
 
 // ── Bulk start-date setter ───────────────────────────────────────────────────
 const PRIORITY_LEAD_DAYS = { urgent: 2, high: 5, medium: 7, low: 14 };

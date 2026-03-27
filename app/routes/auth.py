@@ -2,7 +2,7 @@
 Authentication routes
 """
 
-from flask import Blueprint, flash, make_response, redirect, render_template, request, session, url_for
+from flask import Blueprint, flash, jsonify, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 from flask_wtf.csrf import generate_csrf
 
@@ -236,6 +236,14 @@ def switch_to_global_admin():
     session["_admin_mode"] = True
 
     return redirect(url_for("global_admin.index"))
+
+
+@bp.route("/exit-admin-mode", methods=["POST"])
+@login_required
+def exit_admin_mode():
+    """Exit Instance Admin mode"""
+    session.pop("_admin_mode", None)
+    return jsonify({"success": True})
 
 
 @bp.route("/change-password", methods=["GET", "POST"])
