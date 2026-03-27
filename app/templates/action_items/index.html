@@ -238,6 +238,7 @@
 }
 
 /* ── Entity section headers (flat group approach) ── */
+.vis-label img { width:16px !important; height:16px !important; max-width:16px !important; max-height:16px !important; object-fit:contain; vertical-align:middle; }
 .vis-label.tl-ent-hdr { background:#f0f4f8; font-weight:700; }
 .vis-label.tl-ent-row .vis-inner { padding-left:1.5rem; }
 .vis-label.tl-ent-row { background:white; }
@@ -1363,12 +1364,18 @@ function grpLabel(label, count, color, bg) {
 }
 
 // Entity type metadata (order, icons, colors from branding)
+// Use logo image when available, fallback to text icon
+function _entityIcon(etype, fallback) {
+    var d = ENTITY_DEFAULTS[etype];
+    if (d && d.logo) return '<img src="' + d.logo + '" alt="' + etype + '" width="16" height="16" style="width:16px!important;height:16px!important;max-width:16px;max-height:16px;object-fit:contain;vertical-align:middle;display:inline-block;">';
+    return (d && d.icon) || fallback;
+}
 const ENTITY_TYPE_META = {
-    challenge:  { label: 'Challenge',  icon: ENTITY_DEFAULTS.challenge?.icon  || 'ƒ', color: ENTITY_DEFAULTS.challenge?.color  || '#f59e0b' },
-    initiative: { label: 'Initiative', icon: ENTITY_DEFAULTS.initiative?.icon || 'δ', color: ENTITY_DEFAULTS.initiative?.color || '#8b5cf6' },
-    system:     { label: 'System',     icon: ENTITY_DEFAULTS.system?.icon     || 'Φ', color: ENTITY_DEFAULTS.system?.color     || '#ec4899' },
-    kpi:        { label: 'KPI',        icon: ENTITY_DEFAULTS.kpi?.icon        || 'Ψ', color: ENTITY_DEFAULTS.kpi?.color        || '#06b6d4' },
-    space:      { label: 'Space',      icon: ENTITY_DEFAULTS.space?.icon      || '🏢', color: ENTITY_DEFAULTS.space?.color      || '#10b981' },
+    challenge:  { label: 'Challenge',  icon: _entityIcon('challenge', 'ƒ'),  color: ENTITY_DEFAULTS.challenge?.color  || '#f59e0b' },
+    initiative: { label: 'Initiative', icon: _entityIcon('initiative', 'δ'), color: ENTITY_DEFAULTS.initiative?.color || '#8b5cf6' },
+    system:     { label: 'System',     icon: _entityIcon('system', 'Φ'),     color: ENTITY_DEFAULTS.system?.color     || '#ec4899' },
+    kpi:        { label: 'KPI',        icon: _entityIcon('kpi', 'Ψ'),        color: ENTITY_DEFAULTS.kpi?.color        || '#06b6d4' },
+    space:      { label: 'Space',      icon: _entityIcon('space', '🏢'),     color: ENTITY_DEFAULTS.space?.color      || '#10b981' },
 };
 const ENTITY_TYPE_ORDER = ['challenge', 'initiative', 'system', 'kpi', 'space'];
 

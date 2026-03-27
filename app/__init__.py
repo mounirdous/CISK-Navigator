@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "4.1.1"
+__version__ = "4.1.3"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -237,7 +237,9 @@ def create_app(config_name=None):
     # Context processor - inject entity defaults for branding
     @app.context_processor
     def inject_entity_defaults():
-        """Make entity type defaults available to all templates for branding"""
+        """Make entity type defaults available to all templates for branding (includes logo URLs)"""
+        import base64
+
         from flask import session
 
         from app.models import EntityTypeDefault
@@ -245,8 +247,20 @@ def create_app(config_name=None):
         organization_id = session.get("organization_id")
 
         if organization_id:
-            entity_defaults = EntityTypeDefault.get_all_defaults(organization_id)
-            if not entity_defaults:
+            # Query DB directly to include logo data
+            defaults_raw = EntityTypeDefault.query.filter_by(organization_id=organization_id).all()
+            if defaults_raw:
+                entity_defaults = {}
+                for d in defaults_raw:
+                    logo_url = None
+                    if d.default_logo_data and d.default_logo_mime_type:
+                        logo_url = f"data:{d.default_logo_mime_type};base64,{base64.b64encode(d.default_logo_data).decode('utf-8')}"
+                    entity_defaults[d.entity_type] = {
+                        "color": d.default_color,
+                        "icon": d.default_icon,
+                        "logo": logo_url,
+                    }
+            else:
                 entity_defaults = EntityTypeDefault.get_hardcoded_defaults()
         else:
             entity_defaults = EntityTypeDefault.get_hardcoded_defaults()

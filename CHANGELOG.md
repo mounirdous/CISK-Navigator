@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.3] - 2026-03-27
+
+### Fixed
+- **Branding logo size in timeline labels** — logos now constrained to 16x16px via HTML attributes, inline styles with `!important`, and a CSS rule on `.vis-label img` to prevent vis.js from rendering them at full size
+
+## [4.1.2] - 2026-03-27
+
+### Fixed
+- **Branding logos in Action Register CISK Entity view** — challenges and initiatives now display custom logo images from branding settings instead of generic text icons
+- Context processor now includes `logo` (base64 data URL) alongside `color` and `icon` for all entity types, making branding logos available to all templates globally
+
 ## [4.1.1] - 2026-03-27
 
 ### Fixed
