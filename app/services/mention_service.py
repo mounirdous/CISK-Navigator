@@ -297,29 +297,29 @@ class MentionService:
 
         url_map = {
             "space": lambda: (
-                url_for("workspace.index", space_id=entity_id, from_comment=comment_id)
+                url_for("workspace.index", from_comment=comment_id, _anchor=f"space-{entity_id}")
                 if comment_id
-                else url_for("workspace.index", space_id=entity_id)
+                else url_for("workspace.index", _anchor=f"space-{entity_id}")
             ),
             "challenge": lambda: (
-                url_for("workspace.index", challenge_id=entity_id, from_comment=comment_id)
+                url_for("workspace.index", from_comment=comment_id, _anchor=f"challenge-{entity_id}")
                 if comment_id
-                else url_for("workspace.index", challenge_id=entity_id)
+                else url_for("workspace.index", _anchor=f"challenge-{entity_id}")
             ),
             "initiative": lambda: (
-                url_for("workspace.index", initiative_id=entity_id, from_comment=comment_id)
+                url_for("workspace.index", from_comment=comment_id, _anchor=f"initiative-{entity_id}")
                 if comment_id
-                else url_for("workspace.index", initiative_id=entity_id)
+                else url_for("workspace.index", _anchor=f"initiative-{entity_id}")
             ),
             "system": lambda: (
-                url_for("workspace.index", system_id=entity_id, from_comment=comment_id)
+                url_for("workspace.index", from_comment=comment_id, _anchor=f"system-{entity_id}")
                 if comment_id
-                else url_for("workspace.index", system_id=entity_id)
+                else url_for("workspace.index", _anchor=f"system-{entity_id}")
             ),
             "kpi": lambda: (
-                url_for("workspace.index", kpi_id=entity_id, from_comment=comment_id)
+                url_for("workspace.index", from_comment=comment_id, _anchor=f"kpi-{entity_id}")
                 if comment_id
-                else url_for("workspace.index", kpi_id=entity_id)
+                else url_for("workspace.index", _anchor=f"kpi-{entity_id}")
             ),
         }
 

@@ -153,11 +153,11 @@ class ActionItemMention(db.Model):
         from flask import url_for
 
         url_map = {
-            "space": lambda: url_for("workspace.index", space_id=self.entity_id),
-            "challenge": lambda: url_for("workspace.index", challenge_id=self.entity_id),
-            "initiative": lambda: url_for("workspace.index", initiative_id=self.entity_id),
-            "system": lambda: url_for("workspace.index", system_id=self.entity_id),
-            "kpi": lambda: url_for("workspace.index", kpi_id=self.entity_id),
+            "space": lambda: url_for("workspace.index", _anchor=f"space-{self.entity_id}"),
+            "challenge": lambda: url_for("workspace.index", _anchor=f"challenge-{self.entity_id}"),
+            "initiative": lambda: url_for("workspace.index", _anchor=f"initiative-{self.entity_id}"),
+            "system": lambda: url_for("workspace.index", _anchor=f"system-{self.entity_id}"),
+            "kpi": lambda: url_for("workspace.index", _anchor=f"kpi-{self.entity_id}"),
         }
 
         return url_map.get(self.entity_type, lambda: "#")()
