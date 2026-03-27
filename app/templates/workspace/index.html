@@ -3543,6 +3543,12 @@ function workspaceV2(orgId, filterPresets) {
                                 this._processData(JSON.parse(cachedData));
                                 this.loading = false;
                                 this._loadDataInProgress = false;
+                                // Scroll/highlight — delay to let Alpine render the full tree from cache
+                                var _self = this;
+                                setTimeout(function() {
+                                    _self.scrollToHashTarget();
+                                    _self.highlightKPIFromURL();
+                                }, 500);
                                 return;
                             }
                         }
@@ -3591,11 +3597,12 @@ function workspaceV2(orgId, filterPresets) {
                 // Trend indicators disabled — API route not yet implemented
                 // setTimeout(() => this.loadTrendIndicators(), 100);
 
-                // Scroll to entity from hash (from global live search)
-                setTimeout(() => this.scrollToHashTarget(), 200);
-
-                // 🎯 Highlight KPI from URL (from map dashboard "View Full KPI Details")
-                setTimeout(() => this.highlightKPIFromURL(), 300);
+                // Scroll to entity from hash or URL param (from search, map dashboard, etc.)
+                // Use $nextTick to ensure Alpine has rendered expanded parents
+                this.$nextTick(() => {
+                    this.scrollToHashTarget();
+                    this.highlightKPIFromURL();
+                });
             }
         },
 
@@ -3701,41 +3708,34 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         scrollToHashTarget() {
-            const hash = window.location.hash;
+            var hash = window.location.hash;
             if (!hash) return;
 
-            const targetId = hash.substring(1); // Remove the #
+            var targetId = hash.substring(1);
+            if (!targetId) return;
 
             // Expand parent entities first
             this.expandParentsForTarget(targetId);
 
-            // Wait longer for Alpine to render the expanded elements
-            setTimeout(() => {
-                const targetElement = document.getElementById(targetId);
-
-                if (targetElement) {
-                    console.log('Scrolling to:', targetId, targetElement);
-
-                    // Smooth scroll to target
-                    targetElement.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'center',
-                        inline: 'nearest'
-                    });
-
-                    // Add modern highlight effect with pulse and glow
-                    setTimeout(() => {
-                        console.log('Adding highlight to:', targetId);
-                        targetElement.classList.add('search-highlight');
-                        // Remove class after animation completes
-                        setTimeout(() => {
-                            targetElement.classList.remove('search-highlight');
-                        }, 2500);
-                    }, 600);
-                } else {
-                    console.warn('Target element not found:', targetId);
-                }
-            }, 500);
+            // Force Alpine to re-render, then wait for DOM update
+            var self = this;
+            this.spaces = [...this.spaces]; // trigger reactivity
+            this.$nextTick(function() {
+                self.$nextTick(function() {
+                    setTimeout(function() {
+                        var targetElement = document.getElementById(targetId);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+                            setTimeout(function() {
+                                targetElement.classList.add('search-highlight');
+                                setTimeout(function() { targetElement.classList.remove('search-highlight'); }, 2500);
+                            }, 400);
+                        }
+                        // Clean up hash
+                        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                    }, 300);
+                });
+            });
         },
 
         expandParentsForTarget(targetId) {

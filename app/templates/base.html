@@ -1284,7 +1284,15 @@
                 const color = result.icon_color_override || typeColors[result.type] || '#6c757d';
                 const label = typeLabels[result.type] || result.type;
 
-                const clickAction = result.is_external ? `window.open('${result.url}', '_blank')` : `window.location.href='${result.url}'`;
+                var clickAction;
+                if (result.is_external) {
+                    clickAction = `window.open('${result.url}', '_blank')`;
+                } else if (result.url.includes('#') && window.location.pathname === '/workspace/') {
+                    // Already on workspace — just update hash and trigger scroll
+                    clickAction = `window.location.hash='${result.url.split('#')[1]}'; var ws=document.querySelector('[x-data]'); if(ws && ws._x_dataStack) { var d=ws._x_dataStack[0]; if(d.scrollToHashTarget) d.scrollToHashTarget(); }`;
+                } else {
+                    clickAction = `window.location.href='${result.url}'`;
+                }
                 html += `<div class="live-search-item" style="display: flex; align-items: start; gap: 8px; padding: 10px 12px; border-radius: 6px; margin: 2px 0; transition: background 0.15s; cursor: pointer;" onclick="${clickAction}">`;
 
                 // Display custom logo if available, otherwise fallback to icon/symbol
