@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.8.6] - 2026-03-27
+
+### Fixed
+- **Snapshot controls floating overlap** — moved export/snapshot buttons outside toolbar div to prevent overlap on narrow screens; responsive sizing on medium screens, hidden on mobile
+- **All workspace entity links use hash anchors** — converted remaining `?kpi_id=`, `?space_id=`, etc. query params to `#kpi-{id}` hash anchors in action_item.py (5), mention_service.py (10), workspace.py (1), and map_dashboard (1)
+- **Timeline row alignment in Action Register** — challenge header groups now use same height as entity rows; removed conflicting min-height overrides
+
+### Changed
+- **Search result click expands tree and highlights** — clicking a search result in navbar or search page expands parent nodes, scrolls to entity, and highlights with blue glow; works with both cached and server-loaded tree; same-page hash navigation handled without full reload
+- **Qualitative icons in drilldown panel** — fixed missing `level` (dots ●●●) and `sentiment` (emojis ☹️😐😊) kinds; both flat KPI view and tree rollup view show proper icons for all 5 qualitative types
+- **Workspace tree starts fully collapsed** on first load
+- **sessionStorage cache for workspace data** — cached loads are near-instant (no loading card); 10-minute TTL; dirty flag shows pulsing yellow refresh button; user decides when to refresh
+- **Entity link delete sets dirty flag** instead of forcing reload
+- **Filter section x-cloak** prevents flash of expanded filters on page return
+
 ## [3.8.1] - 2026-03-26
 
 ### Performance
