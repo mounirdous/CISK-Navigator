@@ -1482,8 +1482,8 @@ fetch('{{ url_for("geography.api_countries_json") }}')
             console.log('Bounds set for all countries in system:', markerBounds);
         }
 
-        // Wait for map to load
-        map.on('load', () => {
+        // Wait for map to load (or proceed immediately if already loaded)
+        function _onMapReady() {
             console.log('Map loaded, adding country source...');
 
             // Add country boundaries source with explicit ID
@@ -1811,7 +1811,13 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                         </div>
                     `;
                 });
-        });
+        }
+        // If map already loaded (fast cache), call immediately; otherwise wait
+        if (map.loaded()) {
+            _onMapReady();
+        } else {
+            map.on('load', _onMapReady);
+        }
     })
     .catch(error => {
         console.error('===== COUNTRY DATA ERROR =====', error);
