@@ -176,6 +176,11 @@ if (!window.PresetManager) {
             }).then(function(r) { return r.json().then(function(d) { return { status: r.status, data: d }; }); })
             .then(function(res) {
                 if (res.data.success) {
+                    // Persist name + config so auto-restore applies after reload
+                    try {
+                        localStorage.setItem('preset_active_' + feature, name);
+                        localStorage.setItem('preset_config_' + feature, JSON.stringify(config));
+                    } catch(e) {}
                     location.reload();
                 } else if (res.status === 409 && res.data.exists) {
                     // Preset with same name exists — ask to overwrite
