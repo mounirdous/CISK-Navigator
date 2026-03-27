@@ -3982,8 +3982,6 @@ function workspaceV2(orgId, filterPresets) {
                 const href = link.getAttribute('href') || '';
                 if (href.includes('/org-admin/') && this.spaces.length > 0) {
                     this.saveTreeState();
-                    // Mark data as dirty — when returning, loadData will refetch from server
-                    try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}
                 }
             }, { capture: true });
 

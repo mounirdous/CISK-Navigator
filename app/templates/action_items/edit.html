@@ -96,9 +96,16 @@
                             <label class="form-label">Current Mentions</label>
                             <div>
                                 {% for mention in item.mentions %}
+                                    {% if mention.entity_type == 'entity_link' %}
+                                    {% set lti = mention.get_link_type_info() %}
+                                    <a href="{{ mention.get_entity_url() }}" class="badge text-decoration-none me-1 mb-1" style="background:#e8f0fe; color:{{ lti.color if lti else '#1a73e8' }};" title="Open link" target="_blank">
+                                        <i class="bi {{ lti.bs_icon if lti else 'bi-link-45deg' }}"></i> {{ mention.mention_text }} <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;"></i>
+                                    </a>
+                                    {% else %}
                                     <a href="{{ mention.get_entity_url() }}" class="badge bg-secondary text-decoration-none me-1 mb-1" title="View {{ mention.entity_type }}">
                                         {{ mention.mention_text }} <i class="bi bi-box-arrow-up-right"></i>
                                     </a>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                             <small class="form-text text-muted">Click a mention to view the entity. Mentions will be updated when you save changes.</small>
@@ -269,6 +276,35 @@ function updateGbLabel(id, color, checked) {
     }
 }
 
+// Append missing mentions to description so they're not lost on save
+document.addEventListener('DOMContentLoaded', function() {
+    var desc = document.getElementById('description-field');
+    if (desc) {
+        var text = desc.value;
+        var missing = [];
+        {% for mention in item.mentions %}
+        (function() {
+            var name = {{ mention.mention_text|tojson }};
+            // Check if @"name" or @name exists in description
+            var quoted = '@"' + name + '"';
+            var unquoted = '@' + name;
+            if (text.indexOf(quoted) < 0 && text.indexOf(unquoted) < 0) {
+                // Also check without @ prefix
+                var bare = '@' + name.replace(/^@/, '');
+                var bareQuoted = '@"' + name.replace(/^@/, '') + '"';
+                if (text.indexOf(bare) < 0 && text.indexOf(bareQuoted) < 0) {
+                    missing.push(name.replace(/^@/, ''));
+                }
+            }
+        })();
+        {% endfor %}
+        if (missing.length > 0) {
+            var append = '\n\n' + missing.map(function(m) { return m.indexOf(' ') >= 0 ? '@"' + m + '"' : '@' + m; }).join('  ');
+            desc.value = text + append;
+        }
+    }
+});
+
 // @mention autocomplete
 document.addEventListener('DOMContentLoaded', function() {
     const descriptionField = document.getElementById('description-field');
@@ -341,7 +377,10 @@ document.addEventListener('DOMContentLoaded', function() {
         results.forEach(result => {
             const item = document.createElement('div');
             item.className = 'autocomplete-item';
-            item.innerHTML = `<strong>${result.name}</strong> <small>[${result.type}]</small>`;
+            var typeLabel = {space:'space',challenge:'challenge',initiative:'initiative',system:'system',kpi:'kpi',entity_link:'url'}[result.type] || result.type;
+            var iconHtml = result.bs_icon ? `<i class="bi ${result.bs_icon}" style="color:${result.icon_color || '#666'};margin-right:4px;"></i>` : '';
+            var hintHtml = result.url_hint ? `<div style="font-size:0.75rem;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${result.url_hint}</div>` : '';
+            item.innerHTML = `${iconHtml}<strong>${result.name}</strong> <small>[${typeLabel}]</small>${hintHtml}`;
             item.addEventListener('click', function() {
                 insertMention(result.name);
             });

@@ -146,6 +146,7 @@
                                         {% elif mention.entity_type == 'initiative' %}δ
                                         {% elif mention.entity_type == 'system' %}Φ
                                         {% elif mention.entity_type == 'kpi' %}Ψ
+                                        {% elif mention.entity_type == 'entity_link' %}{% set lti = mention.get_link_type_info() %}<i class="bi {{ lti.bs_icon if lti else 'bi-link-45deg' }}" style="color:{{ lti.color if lti else '#0ea5e9' }};"></i>
                                         {% else %}🏢{% endif %}
                                         {{ mention.mention_text | replace('@', '') }}
                                         <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;"></i>

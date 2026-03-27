@@ -1521,6 +1521,15 @@
 
     {% block extra_js %}{% endblock %}
 
+    <!-- Mark workspace cache dirty when org-admin forms are submitted -->
+    {% if '/org-admin/' in request.path or '/global-admin/' in request.path %}
+    <script>
+    document.addEventListener('submit', function() {
+        try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}
+    }, true);
+    </script>
+    {% endif %}
+
     <!-- Advanced Search Filters Panel -->
     {% if session.organization_id %}
     <div class="offcanvas offcanvas-end" tabindex="-1" id="searchFilters" aria-labelledby="searchFiltersLabel">

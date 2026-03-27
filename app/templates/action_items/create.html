@@ -318,7 +318,10 @@ document.addEventListener('DOMContentLoaded', function() {
         results.forEach(result => {
             const item = document.createElement('div');
             item.className = 'autocomplete-item';
-            item.innerHTML = `<strong>${result.name}</strong> <small>[${result.type}]</small>`;
+            var typeLabel = {space:'space',challenge:'challenge',initiative:'initiative',system:'system',kpi:'kpi',entity_link:'url'}[result.type] || result.type;
+            var iconHtml = result.bs_icon ? `<i class="bi ${result.bs_icon}" style="color:${result.icon_color || '#666'};margin-right:4px;"></i>` : '';
+            var hintHtml = result.url_hint ? `<div style="font-size:0.75rem;color:#999;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${result.url_hint}</div>` : '';
+            item.innerHTML = `${iconHtml}<strong>${result.name}</strong> <small>[${typeLabel}]</small>${hintHtml}`;
             item.addEventListener('click', function() {
                 insertMention(result.name);
             });

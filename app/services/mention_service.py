@@ -158,6 +158,18 @@ class MentionService:
                 results.append(("kpi", kpi.id, name))
                 continue
 
+            # Try entity links by title, scoped to organization
+            from app.models import EntityLink
+            org_filter = MentionService._entity_link_org_filter(organization_id)
+            link = EntityLink.query.filter(
+                db.func.lower(EntityLink.title) == name_lower,
+                EntityLink.is_public == True,
+                org_filter,
+            ).first()
+            if link:
+                results.append(("entity_link", link.id, link.title or link.url))
+                continue
+
         return results
 
     @staticmethod
@@ -224,6 +236,32 @@ class MentionService:
         )
         for kpi in kpis:
             results.append({"type": "kpi", "id": kpi.id, "name": kpi.name, "label": f"{kpi.name} [KPI]"})
+
+        # Search entity links (by title or URL), scoped to organization
+        from app.models import EntityLink
+        org_filter = MentionService._entity_link_org_filter(organization_id)
+        link_results = EntityLink.query.filter(
+            db.or_(
+                EntityLink.title.ilike(f"%{query}%"),
+                EntityLink.url.ilike(f"%{query}%"),
+            ),
+            EntityLink.is_public == True,
+            org_filter,
+        ).limit(limit).all()
+        for link in link_results:
+            display_name = link.title or link.url
+            type_info = link.get_type_info()
+            url_hint = link.url[:60] + "..." if len(link.url) > 60 else link.url
+            label = f"{link.title} ({url_hint})" if link.title else url_hint
+            results.append({
+                "type": "entity_link",
+                "id": link.id,
+                "name": display_name,
+                "label": label,
+                "bs_icon": type_info.get("bs_icon", "bi-link-45deg"),
+                "icon_color": type_info.get("color", "#0ea5e9"),
+                "url_hint": url_hint,
+            })
 
         return results[:limit]
 
@@ -321,6 +359,39 @@ class MentionService:
                 if comment_id
                 else url_for("workspace.index", _anchor=f"kpi-{entity_id}")
             ),
+            "entity_link": lambda: MentionService._get_entity_link_url(entity_id),
         }
 
         return url_map.get(entity_type, lambda: "#")()
+
+    @staticmethod
+    def _entity_link_org_filter(organization_id):
+        """Build a SQLAlchemy filter to scope EntityLink rows to an organization."""
+        from app.models import EntityLink
+        space_ids = db.session.query(Space.id).filter_by(organization_id=organization_id).subquery()
+        challenge_ids = db.session.query(Challenge.id).filter_by(organization_id=organization_id).subquery()
+        initiative_ids = db.session.query(Initiative.id).filter_by(organization_id=organization_id).subquery()
+        system_ids = db.session.query(System.id).filter_by(organization_id=organization_id).subquery()
+        kpi_ids = (
+            db.session.query(KPI.id)
+            .join(KPI.initiative_system_link)
+            .join(Initiative)
+            .filter(Initiative.organization_id == organization_id)
+            .subquery()
+        )
+        return db.or_(
+            db.and_(EntityLink.entity_type == "space", EntityLink.entity_id.in_(space_ids)),
+            db.and_(EntityLink.entity_type == "challenge", EntityLink.entity_id.in_(challenge_ids)),
+            db.and_(EntityLink.entity_type == "initiative", EntityLink.entity_id.in_(initiative_ids)),
+            db.and_(EntityLink.entity_type == "system", EntityLink.entity_id.in_(system_ids)),
+            db.and_(EntityLink.entity_type == "kpi", EntityLink.entity_id.in_(kpi_ids)),
+            # action_item entity links belong to the action item, not a CISK entity
+            EntityLink.entity_type == "action_item",
+        )
+
+    @staticmethod
+    def _get_entity_link_url(entity_id):
+        """Get the direct URL for an entity link"""
+        from app.models import EntityLink
+        link = EntityLink.query.get(entity_id)
+        return link.url if link else "#"

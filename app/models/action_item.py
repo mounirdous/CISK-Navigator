@@ -123,7 +123,8 @@ class ActionItemMention(db.Model):
 
     # Entity reference
     entity_type = db.Column(
-        Enum("space", "challenge", "initiative", "system", "kpi", name="action_item_mention_entity_type"),
+        Enum("space", "challenge", "initiative", "system", "kpi", "entity_link",
+             name="action_item_mention_entity_type"),
         nullable=False,
     )
     entity_id = db.Column(db.Integer, nullable=False)
@@ -158,6 +159,23 @@ class ActionItemMention(db.Model):
             "initiative": lambda: url_for("workspace.index", _anchor=f"initiative-{self.entity_id}"),
             "system": lambda: url_for("workspace.index", _anchor=f"system-{self.entity_id}"),
             "kpi": lambda: url_for("workspace.index", _anchor=f"kpi-{self.entity_id}"),
+            "entity_link": lambda: self._get_entity_link_url(),
         }
 
         return url_map.get(self.entity_type, lambda: "#")()
+
+    def get_link_type_info(self):
+        """Get icon info for entity_link mentions (bs_icon, color)"""
+        if self.entity_type != "entity_link":
+            return None
+        from app.models import EntityLink
+        link = EntityLink.query.get(self.entity_id)
+        if link:
+            return link.get_type_info()
+        return {"bs_icon": "bi-link-45deg", "color": "#0ea5e9"}
+
+    def _get_entity_link_url(self):
+        """Get the direct URL for an entity link mention"""
+        from app.models import EntityLink
+        link = EntityLink.query.get(self.entity_id)
+        return link.url if link else "#"
