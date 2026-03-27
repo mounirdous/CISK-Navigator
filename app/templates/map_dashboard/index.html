@@ -1108,7 +1108,7 @@
         </h2>
         <div class="d-flex gap-2">
             <button id="toggle3D" class="btn btn-outline-info" title="Toggle 2D/3D View">
-                <i class="bi bi-globe"></i> <span id="viewModeText">3D View</span>
+                <i class="bi bi-globe"></i> <span id="viewModeText">Switch to 3D</span>
             </button>
             <a href="{{ url_for('geography.index') }}" class="btn btn-outline-primary">
                 <i class="bi bi-globe-americas"></i> Manage Geography
@@ -1368,7 +1368,7 @@ let is3DMode = false;
 document.getElementById('toggle3D').addEventListener('click', function() {
     is3DMode = !is3DMode;
     const projection = is3DMode ? 'globe' : 'mercator';
-    const buttonText = is3DMode ? '2D View' : '3D View';
+    const buttonText = is3DMode ? 'Switch to 2D' : 'Switch to 3D';
 
     console.log(`Switching to ${is3DMode ? '3D' : '2D'} mode (projection: ${projection})`);
 
