@@ -218,7 +218,7 @@ def switch_organization(org_id):
     db.session.commit()
 
     flash(f"Switched to {organization.name}", "success")
-    return redirect(url_for("workspace.dashboard"))
+    return redirect(url_for("workspace.index"))
 
 
 @bp.route("/switch-to-global-admin", methods=["POST", "GET"])

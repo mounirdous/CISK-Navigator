@@ -215,6 +215,20 @@ class User(UserMixin, db.Model):
         membership = self.get_membership(organization_id)
         return bool(membership and (membership.is_org_admin or membership.can_edit_porters))
 
+    def can_view_snapshots_for(self, organization_id):
+        """Check if user can view snapshots in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_view_snapshots))
+
+    def can_create_snapshots_for(self, organization_id):
+        """Check if user can create snapshots in an organization"""
+        if self.is_super_admin or self.is_global_admin:
+            return True
+        membership = self.get_membership(organization_id)
+        return bool(membership and (membership.is_org_admin or membership.can_create_snapshots))
+
     def has_permission(self, organization_id, permission_name):
         """Generic permission checker - delegates to specific permission methods"""
         if self.is_super_admin or self.is_global_admin:

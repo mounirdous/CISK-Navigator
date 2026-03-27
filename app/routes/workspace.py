@@ -284,6 +284,8 @@ def index():
         filter_presets=filter_presets,
         filter_presets_json=Markup(filter_presets_json),
         can_contribute=current_user.can_contribute(org_id),
+        can_view_snapshots=current_user.can_view_snapshots_for(org_id),
+        can_create_snapshots=current_user.can_create_snapshots_for(org_id),
         csrf_token=generate_csrf,
         ws_focus_mode=ws_focus_mode,
         ws_show_badges=ws_show_badges,
@@ -1280,6 +1282,11 @@ def create_snapshot():
     Accepts optional period tag overrides (year, quarter, month).
     """
     org_id = session.get("organization_id")
+
+    if not current_user.can_create_snapshots_for(org_id):
+        flash("You don't have permission to create snapshots.", "danger")
+        return redirect(url_for("workspace.index"))
+
     snapshot_date_str = request.form.get("snapshot_date")
     label = request.form.get("label", "").strip()
     is_public = request.form.get("is_public") == "true"
@@ -1345,6 +1352,10 @@ def list_snapshots():
     """List all available snapshots for the organization"""
     org_id = session.get("organization_id")
 
+    if not current_user.can_view_snapshots_for(org_id):
+        flash("You don't have permission to view snapshots.", "danger")
+        return redirect(url_for("workspace.index"))
+
     # Get filter parameters
     show_private = request.args.get("show_private", "1") == "1"
     show_public = request.args.get("show_public", "1") == "1"
@@ -1383,6 +1394,7 @@ def list_snapshots():
             show_public=show_public,
             current_user_id=current_user.id,
             csrf_token=generate_csrf,
+            can_create_snapshots=current_user.can_create_snapshots_for(org_id),
         )
 
     except Exception as e:

@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.4] - 2026-03-27
+
+### Added
+- **Snapshot permissions** -- new `can_view_snapshots` and `can_create_snapshots` per-user per-organization permissions with admin UI checkboxes, workspace enforcement, and backup/restore support
+
 ## [3.9.2] - 2026-03-27
 
 ### Fixed

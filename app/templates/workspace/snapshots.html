@@ -57,9 +57,11 @@
         <h2 class="mb-2">📸 Workspace Snapshots</h2>
         <p class="mb-0 opacity-75">Historical snapshots of KPI values for time-series tracking</p>
         <div class="mt-3">
+            {% if can_create_snapshots %}
             <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#createSnapshotModal">
                 <i class="bi bi-camera"></i> Create Snapshot
             </button>
+            {% endif %}
             <a href="{{ url_for('workspace.snapshot_pivot') }}" class="btn btn-light btn-lg">
                 <i class="bi bi-graph-up"></i> Pivot Analysis
             </a>
@@ -193,9 +195,11 @@
             <i class="bi bi-camera" style="font-size: 4rem; opacity: 0.3;"></i>
             <h3 class="mt-3">No Snapshots Yet</h3>
             <p class="text-muted">Create your first snapshot to start tracking changes over time.</p>
+            {% if can_create_snapshots %}
             <button class="btn btn-primary btn-lg mt-3" data-bs-toggle="modal" data-bs-target="#createSnapshotModal">
                 <i class="bi bi-camera"></i> Create First Snapshot
             </button>
+            {% endif %}
         </div>
     {% endif %}
 
@@ -212,6 +216,7 @@
 </div>
 
 <!-- Create Snapshot Modal -->
+{% if can_create_snapshots %}
 <div class="modal fade" id="createSnapshotModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -307,11 +312,20 @@
                         </small>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div id="snapshotListProgress" style="display:none; text-align:center; padding:1.5rem 0;">
+                    <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+                    <div style="font-weight:600; font-size:1.05rem;">Creating snapshot...</div>
+                    <div class="text-muted mt-1" style="font-size:0.85rem;">This may take a moment for large organizations</div>
+                </div>
+                <div id="snapshotListDone" style="display:none; text-align:center; padding:1.5rem 0;">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>
+                    <div style="font-weight:600; font-size:1.05rem; margin-top:0.75rem;">Snapshot created!</div>
+                </div>
+                <div class="modal-footer" id="snapshotListFooter">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-circle"></i> Cancel
                     </button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="snapshotListCreateBtn">
                         <i class="bi bi-camera-fill"></i> Create Snapshot
                     </button>
                 </div>
@@ -319,6 +333,8 @@
         </div>
     </div>
 </div>
+
+{% endif %}
 
 <!-- Compare Snapshots Modal -->
 <div class="modal fade" id="compareModal" tabindex="-1">
@@ -682,5 +698,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+
+// Snapshot creation progress
+var snapshotForm = document.querySelector('#createSnapshotModal form');
+if (snapshotForm) {
+    snapshotForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        var btn = document.getElementById('snapshotListCreateBtn');
+        var footer = document.getElementById('snapshotListFooter');
+        var progress = document.getElementById('snapshotListProgress');
+        var done = document.getElementById('snapshotListDone');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Creating...';
+        progress.style.display = '';
+        fetch(snapshotForm.action, {
+            method: 'POST',
+            body: new FormData(snapshotForm),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            redirect: 'manual'
+        }).then(function() {
+            progress.style.display = 'none';
+            done.style.display = '';
+            btn.style.display = 'none';
+            setTimeout(function() { location.reload(); }, 1500);
+        }).catch(function() {
+            progress.style.display = 'none';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-camera-fill"></i> Create Snapshot';
+            alert('Error creating snapshot');
+        });
+    });
+}
 </script>
 {% endblock %}

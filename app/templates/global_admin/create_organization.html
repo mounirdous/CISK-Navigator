@@ -341,6 +341,28 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="row g-2 mt-2">
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_view_snapshots_{{ user.id }}" id="perm_view_snapshots_{{ user.id }}"
+                                                               onchange="toggleCreateSnapshots({{ user.id }})"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('view_snapshots', True) %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_view_snapshots_{{ user.id }}">
+                                                            <i class="bi bi-camera"></i> View Snapshots
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="perm_create_snapshots_{{ user.id }}" id="perm_create_snapshots_{{ user.id }}"
+                                                               onchange="autoCheckViewSnapshots({{ user.id }})"
+                                                               {% if not preserved_permissions or preserved_permissions.get(user.id, {}).get('create_snapshots', True) %}checked{% endif %}>
+                                                        <label class="form-check-label" for="perm_create_snapshots_{{ user.id }}">
+                                                            <i class="bi bi-camera-fill"></i> Create Snapshots
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -427,6 +449,27 @@ function toggleManageStakeholders(userId) {
         manageCheckbox.disabled = true;
     } else {
         manageCheckbox.disabled = false;
+    }
+}
+
+function toggleCreateSnapshots(userId) {
+    const viewCheckbox = document.getElementById('perm_view_snapshots_' + userId);
+    const createCheckbox = document.getElementById('perm_create_snapshots_' + userId);
+
+    if (!viewCheckbox.checked) {
+        createCheckbox.checked = false;
+        createCheckbox.disabled = true;
+    } else {
+        createCheckbox.disabled = false;
+    }
+}
+
+function autoCheckViewSnapshots(userId) {
+    const viewCheckbox = document.getElementById('perm_view_snapshots_' + userId);
+    const createCheckbox = document.getElementById('perm_create_snapshots_' + userId);
+
+    if (createCheckbox.checked) {
+        viewCheckbox.checked = true;
     }
 }
 

@@ -385,6 +385,8 @@ def create_user():
                 can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{org_id}") == "on",
                 can_view_map=request.form.get(f"perm_view_map_{org_id}") == "on",
                 can_edit_porters=request.form.get(f"perm_edit_porters_{org_id}") == "on",
+                can_view_snapshots=request.form.get(f"perm_view_snapshots_{org_id}") == "on",
+                can_create_snapshots=request.form.get(f"perm_create_snapshots_{org_id}") == "on",
             )
             db.session.add(membership)
 
@@ -480,6 +482,8 @@ def edit_user(user_id):
                 can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{org_id}") == "on",
                 can_view_map=request.form.get(f"perm_view_map_{org_id}") == "on",
                 can_edit_porters=request.form.get(f"perm_edit_porters_{org_id}") == "on",
+                can_view_snapshots=request.form.get(f"perm_view_snapshots_{org_id}") == "on",
+                can_create_snapshots=request.form.get(f"perm_create_snapshots_{org_id}") == "on",
             )
             db.session.add(membership)
 
@@ -643,6 +647,8 @@ def create_organization():
                 can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{user_id}") == "on",
                 can_view_map=request.form.get(f"perm_view_map_{user_id}") == "on",
                 can_edit_porters=request.form.get(f"perm_edit_porters_{user_id}") == "on",
+                can_view_snapshots=request.form.get(f"perm_view_snapshots_{user_id}") == "on",
+                can_create_snapshots=request.form.get(f"perm_create_snapshots_{user_id}") == "on",
             )
             db.session.add(membership)
 
@@ -752,6 +758,8 @@ def edit_organization(org_id):
                 can_manage_stakeholders=request.form.get(f"perm_manage_stakeholders_{user_id}") == "on",
                 can_view_map=request.form.get(f"perm_view_map_{user_id}") == "on",
                 can_edit_porters=request.form.get(f"perm_edit_porters_{user_id}") == "on",
+                can_view_snapshots=request.form.get(f"perm_view_snapshots_{user_id}") == "on",
+                can_create_snapshots=request.form.get(f"perm_create_snapshots_{user_id}") == "on",
             )
             db.session.add(membership)
 

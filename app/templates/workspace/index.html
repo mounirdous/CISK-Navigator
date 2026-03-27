@@ -1856,17 +1856,21 @@
            title="Export to Excel">
             <i class="bi bi-file-earmark-spreadsheet"></i>
         </a>
+        {% if can_view_snapshots %}
         <a href="{{ url_for('workspace.list_snapshots') }}"
            class="btn btn-info"
            title="View Snapshots">
             <i class="bi bi-camera"></i>
         </a>
+        {% endif %}
+        {% if can_create_snapshots %}
         <button class="btn btn-outline-info"
                 data-bs-toggle="modal"
                 data-bs-target="#quickSnapshotModal"
                 title="Quick Snapshot">
             <i class="bi bi-camera-fill"></i>
         </button>
+        {% endif %}
     </div>
 
     <!-- Filters Panel -->
@@ -3120,6 +3124,7 @@
 </div>
 
 <!-- Quick Snapshot Modal -->
+{% if can_create_snapshots %}
 <div class="modal fade" id="quickSnapshotModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -3127,30 +3132,98 @@
                 <h5 class="modal-title">Create Quick Snapshot</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <form method="POST" action="{{ url_for('workspace.create_snapshot') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <div class="modal-body">
+            <div class="modal-body">
+                <div id="snapshotForm">
                     <div class="mb-3">
                         <label for="snapshot_date_quick" class="form-label">Date</label>
-                        <input type="date" class="form-control" id="snapshot_date_quick" name="snapshot_date" required>
+                        <input type="date" class="form-control" id="snapshot_date_quick" required>
                     </div>
                     <div class="mb-3">
                         <label for="label_quick" class="form-label">Label (Optional)</label>
-                        <input type="text" class="form-control" id="label_quick" name="label"
+                        <input type="text" class="form-control" id="label_quick"
                                placeholder="e.g., Q1 2026, End of Sprint 5" maxlength="100">
                     </div>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> Captures current KPI values for time-series tracking
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Create Snapshot</button>
+                <div id="snapshotProgress" style="display:none; text-align:center; padding:1.5rem 0;">
+                    <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem;"></div>
+                    <div style="font-weight:600; font-size:1.05rem;" id="snapshotProgressText">Creating snapshot...</div>
+                    <div class="text-muted mt-1" style="font-size:0.85rem;">This may take a moment for large organizations</div>
                 </div>
-            </form>
+                <div id="snapshotDone" style="display:none; text-align:center; padding:1.5rem 0;">
+                    <i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>
+                    <div style="font-weight:600; font-size:1.05rem; margin-top:0.75rem;" id="snapshotDoneText">Snapshot created!</div>
+                </div>
+                <div id="snapshotError" style="display:none; text-align:center; padding:1.5rem 0;">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size:3rem;"></i>
+                    <div style="font-weight:600; font-size:1.05rem; margin-top:0.75rem;" id="snapshotErrorText">Error</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="snapshotCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="snapshotCreateBtn" onclick="submitSnapshot()">
+                    <i class="bi bi-camera-fill"></i> Create Snapshot
+                </button>
+            </div>
         </div>
     </div>
 </div>
+<script>
+function submitSnapshot() {
+    var dateVal = document.getElementById('snapshot_date_quick').value;
+    if (!dateVal) { alert('Please select a date'); return; }
+    var labelVal = document.getElementById('label_quick').value;
+    document.getElementById('snapshotForm').style.display = 'none';
+    document.getElementById('snapshotProgress').style.display = '';
+    document.getElementById('snapshotDone').style.display = 'none';
+    document.getElementById('snapshotError').style.display = 'none';
+    document.getElementById('snapshotCreateBtn').style.display = 'none';
+    document.getElementById('snapshotCancelBtn').textContent = 'Please wait...';
+    document.getElementById('snapshotCancelBtn').disabled = true;
+    var formData = new FormData();
+    formData.append('csrf_token', '{{ csrf_token() }}');
+    formData.append('snapshot_date', dateVal);
+    formData.append('label', labelVal);
+    fetch('{{ url_for("workspace.create_snapshot") }}', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+        redirect: 'manual'
+    }).then(function(r) {
+        document.getElementById('snapshotProgress').style.display = 'none';
+        if (r.ok || r.type === 'opaqueredirect' || r.status === 302) {
+            document.getElementById('snapshotDone').style.display = '';
+            document.getElementById('snapshotDoneText').textContent = 'Snapshot created for ' + dateVal + (labelVal ? ' (' + labelVal + ')' : '') + '!';
+            document.getElementById('snapshotCancelBtn').textContent = 'Close';
+            document.getElementById('snapshotCancelBtn').disabled = false;
+        } else {
+            document.getElementById('snapshotError').style.display = '';
+            document.getElementById('snapshotErrorText').textContent = 'Failed to create snapshot (status ' + r.status + ')';
+            document.getElementById('snapshotCancelBtn').textContent = 'Close';
+            document.getElementById('snapshotCancelBtn').disabled = false;
+        }
+    }).catch(function(err) {
+        document.getElementById('snapshotProgress').style.display = 'none';
+        document.getElementById('snapshotError').style.display = '';
+        document.getElementById('snapshotErrorText').textContent = 'Network error: ' + err;
+        document.getElementById('snapshotCancelBtn').textContent = 'Close';
+        document.getElementById('snapshotCancelBtn').disabled = false;
+    });
+}
+// Reset modal when reopened
+document.getElementById('quickSnapshotModal').addEventListener('show.bs.modal', function() {
+    document.getElementById('snapshotForm').style.display = '';
+    document.getElementById('snapshotProgress').style.display = 'none';
+    document.getElementById('snapshotDone').style.display = 'none';
+    document.getElementById('snapshotError').style.display = 'none';
+    document.getElementById('snapshotCreateBtn').style.display = '';
+    document.getElementById('snapshotCancelBtn').textContent = 'Cancel';
+    document.getElementById('snapshotCancelBtn').disabled = false;
+});
+</script>
+{% endif %}
 
 <!-- Comment Modal -->
 <div class="modal fade" id="commentModal" tabindex="-1">

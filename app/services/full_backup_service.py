@@ -211,6 +211,8 @@ class FullBackupService:
                     "can_manage_kpis": membership.can_manage_kpis,
                     "can_view_comments": membership.can_view_comments,
                     "can_add_comments": membership.can_add_comments,
+                    "can_view_snapshots": membership.can_view_snapshots,
+                    "can_create_snapshots": membership.can_create_snapshots,
                 },
             }
             result.append(user_data)
