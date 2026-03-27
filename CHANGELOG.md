@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.5] - 2026-03-27
+
+### Changed
+- **Map uses Natural Earth projection** — switched 2D default from Mercator to `naturalEarth` for more realistic country size proportions (3D globe mode unchanged)
+
+## [4.1.4] - 2026-03-27
+
+### Fixed
+- **Map: all countries now colored correctly** — replaced `map.once('idle')` with continuous `render` event handler that colors countries as their tiles become visible; previously countries outside the initial viewport (e.g., Singapore, USA, China) were missed because `queryRenderedFeatures` only sees loaded tiles
+
 ## [4.1.3] - 2026-03-27
 
 ### Fixed

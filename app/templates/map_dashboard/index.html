@@ -1358,7 +1358,7 @@ const map = new mapboxgl.Map({
     style: 'mapbox://styles/mapbox/light-v11', // Light background
     center: [10, 45], // Europe
     zoom: 3,
-    projection: 'mercator' // 2D map (mercator)
+    projection: 'mercator' // Standard flat 2D map
 });
 
 // 2D/3D Toggle State
@@ -1533,52 +1533,40 @@ fetch('{{ url_for("geography.api_countries_json") }}')
             console.log('Country layers added, waiting for tiles to load...');
 
             // Set feature states - use idle event to ensure tiles are loaded
-            map.once('idle', () => {
-                console.log('Map idle, setting country colors...');
-
-                const features = map.queryRenderedFeatures({
-                    layers: ['country-fills']
-                });
-
-                if (features.length === 0) {
-                    console.log('⚠️ No country features rendered yet');
-                    return;
-                }
-
-                console.log(`Found ${features.length} rendered countries, setting colors...`);
-                let matchedWithKPIs = 0;
-                let matchedInSystem = 0;
-
-                const processedIds = new Set();
+            // Color countries as their tiles become visible.
+            // queryRenderedFeatures only sees tiles in the viewport,
+            // so we re-run on every render to catch newly loaded tiles.
+            const _coloredFeatureIds = new Set();
+            function _applyCountryColors() {
+                if (!map.getLayer('country-fills')) return;
+                const features = map.queryRenderedFeatures({ layers: ['country-fills'] });
+                let newMatches = 0;
                 features.forEach(feature => {
-                    // Avoid duplicates (same country rendered in multiple tiles)
-                    if (processedIds.has(feature.id)) return;
-                    processedIds.add(feature.id);
-
+                    if (_coloredFeatureIds.has(feature.id)) return;
                     const iso2 = feature.properties.iso_3166_1;
                     const iso3 = feature.properties.iso_3166_1_alpha_3;
-                    const name = feature.properties.name_en;
-
                     const kpiCount = countryKPIs[iso2] || countryKPIs[iso3] || 0;
                     const inSystem = countriesInSystem[iso2] || countriesInSystem[iso3] || false;
-
                     if (inSystem) {
                         map.setFeatureState(
                             { source: 'country-boundaries', sourceLayer: 'country_boundaries', id: feature.id },
                             { kpi_count: kpiCount, in_system: true }
                         );
-                        if (kpiCount > 0) {
-                            console.log(`🔵 BLUE: ${name} (${iso2}/${iso3}) = ${kpiCount} KPIs`);
-                            matchedWithKPIs++;
-                        } else {
-                            console.log(`⚫ GREY: ${name} (${iso2}/${iso3}) = 0 KPIs (in system)`);
-                            matchedInSystem++;
-                        }
+                        _coloredFeatureIds.add(feature.id);
+                        newMatches++;
                     }
                 });
-
-                console.log(`🎨 ${matchedWithKPIs} countries colored BLUE (with KPIs), ${matchedInSystem} countries in GREY (no KPIs)`);
-            });
+                if (newMatches > 0) {
+                    const totalBlue = [..._coloredFeatureIds].filter(id => {
+                        const st = map.getFeatureState({ source: 'country-boundaries', sourceLayer: 'country_boundaries', id });
+                        return st && st.kpi_count > 0;
+                    }).length;
+                    console.log(`Countries colored: ${totalBlue} BLUE (with KPIs), ${_coloredFeatureIds.size - totalBlue} GREY (${newMatches} new)`);
+                }
+            }
+            // Run on first idle, then on every render/move to catch new tiles
+            map.once('idle', _applyCountryColors);
+            map.on('render', _applyCountryColors);
 
             // Add hover effect with single popup instance
             let countryPopup = null;
