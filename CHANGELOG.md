@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.1] - 2026-03-27
+
+### Fixed
+- **Snapshot/export FABs always bottom-right** — added `left: auto !important` and `right: 1rem !important` to prevent any parent layout from pushing them left
+- **FABs visible on small screens** — removed `display: none` on mobile, instead shrink to 36px compact row
+
+## [4.1.0] - 2026-03-27
+
+### Fixed
+- **Snapshot/export buttons now fixed bottom-right on all screen sizes** — moved controls outside `.workspace-v2` container so `position: fixed` works correctly relative to the viewport (parent transforms were creating a new containing block)
+
 ## [4.0.9] - 2026-03-27
 
 ### Fixed

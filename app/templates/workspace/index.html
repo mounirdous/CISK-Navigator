@@ -1570,42 +1570,39 @@
             padding: 0.5rem;
         }
 
-        /* Snapshot buttons: Prevent overlap */
+        /* Snapshot buttons: fixed bottom-right FABs */
         .snapshot-controls {
             position: fixed !important;
-            bottom: 1rem;
-            right: 1rem;
-            z-index: 1000;
-            display: flex;
+            bottom: 1rem !important;
+            right: 1rem !important;
+            left: auto !important;
+            z-index: 1050;
+            display: flex !important;
             flex-direction: column;
             gap: 0.5rem;
         }
-        @media (max-width: 1200px) {
-            .snapshot-controls {
-                bottom: 0.5rem;
-                right: 0.5rem;
-                flex-direction: row;
-                gap: 0.3rem;
-            }
-            .snapshot-controls .btn {
-                width: 40px !important;
-                height: 40px !important;
-                font-size: 0.85rem !important;
-            }
-        }
-        @media (max-width: 768px) {
-            .snapshot-controls { display: none !important; }
-        }
-
         .snapshot-controls .btn {
-            width: 56px;
-            height: 56px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 1.3rem;
+        }
+        @media (max-width: 768px) {
+            .snapshot-controls {
+                bottom: 0.5rem !important;
+                right: 0.5rem !important;
+                flex-direction: row;
+                gap: 0.3rem;
+            }
+            .snapshot-controls .btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
         }
 
         /* Mobile scrollbar styling */
@@ -1795,30 +1792,6 @@
             </div>
 
         </div>
-    </div>
-
-    <!-- Data Actions — fixed bottom-right, outside toolbar flow -->
-    <div class="snapshot-controls">
-        <a href="{{ url_for('workspace.export_excel') }}"
-           class="btn btn-success"
-           title="Export to Excel">
-            <i class="bi bi-file-earmark-spreadsheet"></i>
-        </a>
-        {% if can_view_snapshots %}
-        <a href="{{ url_for('workspace.list_snapshots') }}"
-           class="btn btn-info"
-           title="View Snapshots">
-            <i class="bi bi-camera"></i>
-        </a>
-        {% endif %}
-        {% if can_create_snapshots %}
-        <button class="btn btn-outline-info"
-                data-bs-toggle="modal"
-                data-bs-target="#quickSnapshotModal"
-                title="Quick Snapshot">
-            <i class="bi bi-camera-fill"></i>
-        </button>
-        {% endif %}
     </div>
 
     <!-- Filters Panel -->
@@ -5731,6 +5704,30 @@ function workspaceV2(orgId, filterPresets) {
         </button>
     </div>
     <div class="ws-dd-body"></div>
+</div>
+
+<!-- Data Actions — outside workspace-v2 so position:fixed works relative to viewport -->
+<div class="snapshot-controls">
+    <a href="{{ url_for('workspace.export_excel') }}"
+       class="btn btn-success"
+       title="Export to Excel">
+        <i class="bi bi-file-earmark-spreadsheet"></i>
+    </a>
+    {% if can_view_snapshots %}
+    <a href="{{ url_for('workspace.list_snapshots') }}"
+       class="btn btn-info"
+       title="View Snapshots">
+        <i class="bi bi-camera"></i>
+    </a>
+    {% endif %}
+    {% if can_create_snapshots %}
+    <button class="btn btn-outline-info"
+            data-bs-toggle="modal"
+            data-bs-target="#quickSnapshotModal"
+            title="Quick Snapshot">
+        <i class="bi bi-camera-fill"></i>
+    </button>
+    {% endif %}
 </div>
 
 {% endblock %}
