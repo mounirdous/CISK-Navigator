@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.1] - 2026-03-27
+
+### Fixed
+- **Map cluster click shows KPI list when at same location** — clicking a cluster where all KPIs share the same coordinates now shows a scrollable popup list instead of zooming to a lone dot; clicking a KPI in the list opens its detail panel
+
+## [4.2.0] - 2026-03-27
+
+### Added
+- **Map KPI marker clustering** — overlapping KPI markers now group into animated cluster circles with count badges; click a cluster to zoom in and expand; uses Mapbox native GPU-accelerated clustering instead of DOM markers for better performance
+- Cluster colors scale by count: indigo (<10), purple (10-30), pink (30+)
+- Individual markers remain color-coded by location type (region/country/site)
+
 ## [4.1.7] - 2026-03-27
 
 ### Changed

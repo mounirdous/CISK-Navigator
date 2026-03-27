@@ -1639,88 +1639,147 @@ fetch('{{ url_for("geography.api_countries_json") }}')
                             renderKPIList(allKPIs); // Populate sidebar
                         } catch (renderError) {
                             console.error('Error rendering KPI list:', renderError);
-                            throw renderError; // Re-throw to outer catch
+                            throw renderError;
                         }
 
-                        // Collect coordinates for auto-zoom
-                        const bounds = new mapboxgl.LngLatBounds();
-
-                        data.features.forEach((feature, markerIndex) => {
-                const coords = feature.geometry.coordinates;
-                const props = feature.properties;
-
-                // Different colors for different location types
-                let color, icon;
-
-                if (props.location_type === 'region') {
-                    color = '#8b5cf6';  // Purple for region markers
-                    icon = '🌍';
-                } else if (props.location_type === 'country') {
-                    color = '#10b981';  // Green for country markers
-                    icon = '🏳️';
-                } else {
-                    color = '#f59e0b';  // Orange for site markers
-                    icon = '📍';
-                }
-
-                // Extend bounds
-                bounds.extend(coords);
-
-                // Create marker element - minimal glowing dot with stagger animation
-                const el = document.createElement('div');
-                el.className = 'mapbox-kpi-marker';
-                const delay = markerIndex * 0.05; // 50ms stagger
-                el.innerHTML = `
-                    <div class="kpi-marker-dot" style="background: ${color}; color: ${color}; animation-delay: ${delay}s;"></div>
-                `;
-
-                // Store feature reference on element for click handler
-                el.kpiFeature = feature;
-
-                // Add click handler to open details panel
-                el.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    openDetailsPanel(feature, feature.properties.kpi_id);
-                });
-
-                // Add hover effect to close country popup
-                el.addEventListener('mouseenter', () => {
-                    // Close country popup if open
-                    if (countryPopup) {
-                        countryPopup.remove();
-                        countryPopup = null;
-                    }
-                    isMarkerPopupOpen = true;
-                });
-
-                el.addEventListener('mouseleave', () => {
-                    isMarkerPopupOpen = false;
-                });
-
-                // Add marker to map and store reference (no popup)
-                const marker = new mapboxgl.Marker(el)
-                    .setLngLat(coords)
-                    .addTo(map);
-
-                kpiMarkers.push(marker);
+                        // ── Clustered GeoJSON source ──
+                        // Add color property to each feature for layer styling
+                        data.features.forEach(f => {
+                            const lt = f.properties.location_type;
+                            f.properties._color = lt === 'region' ? '#8b5cf6' : lt === 'country' ? '#10b981' : '#f59e0b';
                         });
 
-                        // Zoom to show ALL countries (not just KPIs) on initial load
-                        // Responsive padding for mobile vs desktop
+                        map.addSource('kpi-markers', {
+                            type: 'geojson',
+                            data: data,
+                            cluster: true,
+                            clusterMaxZoom: 12,
+                            clusterRadius: 50
+                        });
+
+                        // Cluster circles
+                        map.addLayer({
+                            id: 'kpi-clusters',
+                            type: 'circle',
+                            source: 'kpi-markers',
+                            filter: ['has', 'point_count'],
+                            paint: {
+                                'circle-color': [
+                                    'step', ['get', 'point_count'],
+                                    '#667eea',   // < 10: indigo
+                                    10, '#764ba2', // 10-30: purple
+                                    30, '#f093fb'  // 30+: pink
+                                ],
+                                'circle-radius': [
+                                    'step', ['get', 'point_count'],
+                                    18,    // < 10
+                                    10, 24, // 10-30
+                                    30, 32  // 30+
+                                ],
+                                'circle-stroke-width': 3,
+                                'circle-stroke-color': 'rgba(255,255,255,0.7)',
+                                'circle-opacity': 0.9
+                            }
+                        });
+
+                        // Cluster count labels
+                        map.addLayer({
+                            id: 'kpi-cluster-count',
+                            type: 'symbol',
+                            source: 'kpi-markers',
+                            filter: ['has', 'point_count'],
+                            layout: {
+                                'text-field': '{point_count_abbreviated}',
+                                'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+                                'text-size': 13,
+                                'text-allow-overlap': true
+                            },
+                            paint: {
+                                'text-color': '#ffffff'
+                            }
+                        });
+
+                        // Individual (unclustered) KPI dots
+                        map.addLayer({
+                            id: 'kpi-unclustered',
+                            type: 'circle',
+                            source: 'kpi-markers',
+                            filter: ['!', ['has', 'point_count']],
+                            paint: {
+                                'circle-color': ['get', '_color'],
+                                'circle-radius': 8,
+                                'circle-stroke-width': 2,
+                                'circle-stroke-color': '#ffffff',
+                                'circle-opacity': 0.9
+                            }
+                        });
+
+                        // Click cluster → zoom to expand, or show list if same-location
+                        map.on('click', 'kpi-clusters', (e) => {
+                            const features = map.queryRenderedFeatures(e.point, { layers: ['kpi-clusters'] });
+                            const clusterId = features[0].properties.cluster_id;
+                            const clusterCoords = features[0].geometry.coordinates;
+                            const src = map.getSource('kpi-markers');
+
+                            src.getClusterExpansionZoom(clusterId, (err, zoom) => {
+                                if (err) return;
+                                // If already at or near max zoom, points share same coords — show popup list
+                                if (zoom >= 12 || map.getZoom() >= 11) {
+                                    src.getClusterLeaves(clusterId, 100, 0, (err2, leaves) => {
+                                        if (err2 || !leaves) return;
+                                        let html = '<div style="max-height:250px;overflow-y:auto;font-size:0.82rem;">';
+                                        html += '<div style="font-weight:700;margin-bottom:6px;color:#667eea;">' + leaves.length + ' KPIs at this location</div>';
+                                        leaves.forEach(leaf => {
+                                            const p = leaf.properties;
+                                            const name = p.kpi_name || p.name || 'KPI';
+                                            const loc = p.location_name || '';
+                                            html += '<div style="padding:3px 0;border-bottom:1px solid #f0f0f0;cursor:pointer;" '
+                                                + 'onclick="(function(){var f=window._clusterLeaves&&window._clusterLeaves[' + p.kpi_id + '];if(f)openDetailsPanel(f,' + p.kpi_id + ');})()">'
+                                                + '<span style="color:#1565c0;">' + name + '</span>'
+                                                + (loc ? ' <span style="color:#90a4ae;font-size:0.72rem;">(' + loc + ')</span>' : '')
+                                                + '</div>';
+                                        });
+                                        html += '</div>';
+                                        // Store leaves for click handler
+                                        window._clusterLeaves = {};
+                                        leaves.forEach(leaf => {
+                                            const orig = allKPIs.find(f => f.properties.kpi_id === leaf.properties.kpi_id);
+                                            if (orig) window._clusterLeaves[leaf.properties.kpi_id] = orig;
+                                        });
+                                        new mapboxgl.Popup({ maxWidth: '300px' })
+                                            .setLngLat(clusterCoords)
+                                            .setHTML(html)
+                                            .addTo(map);
+                                    });
+                                } else {
+                                    map.easeTo({ center: clusterCoords, zoom: zoom + 1, duration: 500 });
+                                }
+                            });
+                        });
+
+                        // Click unclustered marker → open details panel
+                        map.on('click', 'kpi-unclustered', (e) => {
+                            const feature = e.features[0];
+                            const kpiId = feature.properties.kpi_id;
+                            // Find the original feature (with full properties)
+                            const original = allKPIs.find(f => f.properties.kpi_id === kpiId);
+                            if (original) openDetailsPanel(original, kpiId);
+                        });
+
+                        // Cursor changes
+                        map.on('mouseenter', 'kpi-clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
+                        map.on('mouseleave', 'kpi-clusters', () => { map.getCanvas().style.cursor = ''; });
+                        map.on('mouseenter', 'kpi-unclustered', () => { map.getCanvas().style.cursor = 'pointer'; isMarkerPopupOpen = true; });
+                        map.on('mouseleave', 'kpi-unclustered', () => { map.getCanvas().style.cursor = ''; isMarkerPopupOpen = false; });
+
+                        // Zoom to show ALL countries on initial load
                         const isMobile = window.innerWidth <= 768;
                         const fitBoundsPadding = isMobile
                             ? { top: 60, bottom: 60, left: 40, right: 40 }
-                            : { top: 80, bottom: 80, left: 450, right: 80 }; // Account for sidebar on desktop
+                            : { top: 80, bottom: 80, left: 450, right: 80 };
 
                         if (markerBounds && !markerBounds.isEmpty()) {
                             map.fitBounds(markerBounds, {
-                                padding: fitBoundsPadding,
-                                maxZoom: 6,
-                                duration: 1500
-                            });
-                        } else if (!bounds.isEmpty()) {
-                            // Fallback to KPI markers if no geography bounds
-                            map.fitBounds(bounds, {
                                 padding: fitBoundsPadding,
                                 maxZoom: 6,
                                 duration: 1500
@@ -1741,15 +1800,12 @@ fetch('{{ url_for("geography.api_countries_json") }}')
 
                     console.log(`===== MAPBOX MAP COMPLETE (${kpiMarkers.length} KPI markers) =====`);
 
-                    // Add toggle button functionality
+                    // Add toggle button functionality (layer visibility)
                     document.getElementById('toggleKPIs').addEventListener('click', function() {
                         markersVisible = !markersVisible;
-                        kpiMarkers.forEach(marker => {
-                            if (markersVisible) {
-                                marker.getElement().style.display = '';
-                            } else {
-                                marker.getElement().style.display = 'none';
-                            }
+                        const vis = markersVisible ? 'visible' : 'none';
+                        ['kpi-clusters', 'kpi-cluster-count', 'kpi-unclustered'].forEach(id => {
+                            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis);
                         });
                         this.innerHTML = markersVisible
                             ? '<i class="bi bi-eye-slash"></i> Hide Markers'
@@ -1989,32 +2045,26 @@ function setupSidebarInteractions() {
     });
 }
 
+let _highlightedKpiId = null;
+
 function highlightMarkersForKPI(kpiId) {
-    const indices = kpiIndexMap[kpiId] || [];
-    indices.forEach(index => {
-        if (kpiMarkers[index]) {
-            const el = kpiMarkers[index].getElement().querySelector('div');
-            if (el) {
-                el.style.transform = 'scale(1.3)';
-                el.style.boxShadow = '0 4px 20px rgba(102, 126, 234, 0.6)';
-                el.style.zIndex = '1000';
-            }
-        }
-    });
+    _highlightedKpiId = kpiId;
+    if (map.getLayer('kpi-unclustered')) {
+        map.setPaintProperty('kpi-unclustered', 'circle-radius', [
+            'case', ['==', ['get', 'kpi_id'], kpiId], 14, 8
+        ]);
+        map.setPaintProperty('kpi-unclustered', 'circle-stroke-width', [
+            'case', ['==', ['get', 'kpi_id'], kpiId], 3, 2
+        ]);
+    }
 }
 
 function unhighlightMarkersForKPI(kpiId) {
-    const indices = kpiIndexMap[kpiId] || [];
-    indices.forEach(index => {
-        if (kpiMarkers[index]) {
-            const el = kpiMarkers[index].getElement().querySelector('div');
-            if (el) {
-                el.style.transform = 'scale(1)';
-                el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-                el.style.zIndex = '';
-            }
-        }
-    });
+    _highlightedKpiId = null;
+    if (map.getLayer('kpi-unclustered')) {
+        map.setPaintProperty('kpi-unclustered', 'circle-radius', 8);
+        map.setPaintProperty('kpi-unclustered', 'circle-stroke-width', 2);
+    }
 }
 
 function zoomToKPI(kpi) {
