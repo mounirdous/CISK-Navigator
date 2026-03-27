@@ -208,8 +208,8 @@
 .vis-timeline { border:none; font-family: inherit; }
 .vis-panel.vis-left { background:#f8f9fa; border-right:1px solid #e9ecef; min-width:110px; }
 .vis-panel.vis-top, .vis-panel.vis-bottom { border-color:#e9ecef; }
-.vis-label { padding:0.4rem 0.75rem; font-size:0.82rem; border-bottom:1px solid #f0f0f0; }
-.vis-label .vis-inner { display:flex; align-items:center; width:100%; }
+.vis-label { padding:0.4rem 0.75rem; font-size:0.82rem; border-bottom:1px solid #f0f0f0; overflow:hidden; }
+.vis-label .vis-inner { display:flex; align-items:center; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* Hide ALL checkboxes inside the group label panel — vis-timeline adds these for nested group toggling */
 .vis-panel.vis-left input[type="checkbox"],
 .vis-label input[type="checkbox"],
@@ -1459,7 +1459,7 @@ function buildEntityGroups(itemGroupMap) {
                 id: `__chal_hdr__${chId}`,
                 content: `<b style="color:${chMeta.color};font-size:0.82rem;">${chMeta.icon} ${name}</b>${_ctBadge(total, chMeta.color)}`,
                 className: `tl-ent-hdr tl-ent-hdr-challenge`,
-                style: `background:${chMeta.color}0d; min-height:32px;`,
+                style: `background:${chMeta.color}0d;`,
             });
 
             // Sort by entity type order, then name
@@ -1700,7 +1700,7 @@ function renderTimeline(groupBy) {
     groups.forEach(g => {
         const isHeader = String(g.id).startsWith('__hdr_') || String(g.id).startsWith('__chal_hdr__');
         const count = itemsPerGroup[g.id] || 0;
-        totalH += isHeader ? 32 : 44 + Math.max(1, count) * 38;
+        totalH += isHeader ? 44 : 44 + Math.max(1, count) * 38;
     });
     container.style.height = Math.max(380, totalH) + 'px';
 
@@ -1721,6 +1721,7 @@ function renderTimeline(groupBy) {
             zoomMax: 86400000 * 730,
             tooltip: { followMouse: true, overflowMethod: 'cap' },
             margin: { item: { horizontal: 6, vertical: 4 }, axis: 10 },
+            verticalScroll: true,
         });
         tlInstance.on('click', function(props) {
             if (props.item && typeof props.item === 'number') {
