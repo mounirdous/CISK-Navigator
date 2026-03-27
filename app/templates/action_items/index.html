@@ -1731,6 +1731,8 @@ function renderTimeline(groupBy) {
             }
         });
     }
+    // Fit all items in view
+    setTimeout(function() { if (tlInstance) tlInstance.fit({ animation: true }); }, 100);
     renderUndated();
     renderStartDateBanner();
 }

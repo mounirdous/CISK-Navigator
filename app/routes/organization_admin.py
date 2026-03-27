@@ -3714,9 +3714,13 @@ def initiative_form(initiative_id):
         db.session.commit()
         flash(f"Initiative form for '{initiative.name}' updated successfully", "success")
 
-        if request.args.get("return_to") == "action_items":
+        # Return to origin (review position, action items, workspace, or self)
+        return_to = request.args.get("return_to") or request.form.get("return_to")
+        if return_to and return_to not in ("action_items", "workspace"):
+            return redirect(return_to)
+        if return_to == "action_items":
             return redirect(url_for("action_items"))
-        if request.form.get("redirect_after_save") == "workspace":
+        if return_to == "workspace" or request.form.get("redirect_after_save") == "workspace":
             return redirect(url_for("workspace.index"))
 
         return redirect(url_for("organization_admin.initiative_form", initiative_id=initiative.id))

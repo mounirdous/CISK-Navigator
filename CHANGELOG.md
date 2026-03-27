@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.5] - 2026-03-27
+
+### Fixed
+- **Initiative review edit returns to same position** — editing an initiative during review now returns to the exact same review position (initiative + tab + nav context)
+- **Timeline auto-fit** — Action Register timeline view auto-fits all items on open and group-by change
+
+### Changed
+- Edit Initiative Form button passes full current URL as `return_to` (preserves nav/tab/review state)
+- Initiative form route handles `return_to` URL redirect after save
+
 ## [3.9.4] - 2026-03-27
 
 ### Added
