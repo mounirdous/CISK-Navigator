@@ -2483,7 +2483,7 @@ def advanced_search():
 
     # Add URLs and icons to results
     for kpi_result in results.get("kpis", []):
-        kpi_result["url"] = url_for("workspace.index", kpi_id=kpi_result["id"])
+        kpi_result["url"] = url_for("workspace.index", _anchor=f"kpi-{kpi_result['id']}")
         kpi_result["edit_url"] = url_for("organization_admin.edit_kpi", kpi_id=kpi_result["id"])
         kpi_result["icon"] = entity_defaults.get("kpi", {}).get("icon", "Ψ")
         kpi_result["logo"] = entity_defaults.get("kpi", {}).get("logo")

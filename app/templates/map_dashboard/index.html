@@ -2098,7 +2098,7 @@ function openDetailsPanel(kpi, kpiId = null) {
 
     // Update action button
     document.getElementById('detailsViewBtn').href =
-        '{{ url_for("workspace.index") }}?kpi_id=' + props.kpi_id;
+        '{{ url_for("workspace.index") }}#kpi-' + props.kpi_id;
 
     // Show panel
     document.getElementById('detailsPanel').classList.add('open');
