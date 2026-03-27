@@ -3575,10 +3575,12 @@ function workspaceV2(orgId, filterPresets) {
                 this.loadingPct = 50;
                 var data = await response.json();
 
-                // Save to localStorage cache
+                // Save to localStorage cache + clear dirty flag (fresh data from server)
                 try {
                     localStorage.setItem(cacheKey, JSON.stringify(data));
                     localStorage.setItem(cacheMetaKey, JSON.stringify({ timestamp: Date.now() }));
+                    localStorage.removeItem('ws_dirty');
+                    this._stale = false;
                 } catch(e) { /* quota exceeded — ignore */ }
 
                 // Count items for status
