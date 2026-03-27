@@ -48,14 +48,8 @@ def global_admin_required(f):
         if not current_user.is_authenticated or not current_user.is_global_admin:
             flash("Access denied: Instance Admin permission required", "danger")
             return redirect(url_for("auth.login"))
-        if session.get("organization_id") is not None:
-            # Remember previous org so Workspace pill can return to it
-            session["_previous_org_id"] = session.get("organization_id")
-            session["_previous_org_name"] = session.get("organization_name")
-            # Auto-switch to Instance Admin mode (clear org context)
-            session["organization_id"] = None
-            session["organization_name"] = "Instance Admin"
-            session["organization_logo"] = None
+        # Set admin mode flag — org context is preserved for navbar menus
+        session["_admin_mode"] = True
         return f(*args, **kwargs)
 
     return decorated_function

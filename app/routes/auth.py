@@ -213,6 +213,9 @@ def switch_organization(org_id):
         url_for("logo.organization_logo", entity_id=organization.id) if organization.logo_data else None
     )
 
+    # Clear admin mode flag
+    session.pop("_admin_mode", None)
+
     # Remember last selected organization for next login
     current_user.last_organization_id = organization.id
     db.session.commit()
@@ -229,16 +232,9 @@ def switch_to_global_admin():
         flash("Access denied: Instance Administrator permission required", "danger")
         return redirect(url_for("workspace.dashboard"))
 
-    # Remember previous org so Workspace pill can return to it
-    session["_previous_org_id"] = session.get("organization_id")
-    session["_previous_org_name"] = session.get("organization_name")
+    # Set admin mode flag — org context preserved
+    session["_admin_mode"] = True
 
-    # Clear organization context
-    session["organization_id"] = None
-    session["organization_name"] = "Instance Admin"
-    session["organization_logo"] = None
-
-    # No flash — the Instance Admin sub-nav makes the mode obvious
     return redirect(url_for("global_admin.index"))
 
 

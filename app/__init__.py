@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "3.9.6"
+__version__ = "3.9.7"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -221,13 +221,15 @@ def create_app(config_name=None):
     # Context processor - inject maintenance_mode into all templates
     @app.context_processor
     def inject_maintenance_mode():
-        """Make maintenance_mode, beta_enabled and app_version available to all templates"""
+        """Make maintenance_mode, beta_enabled, app_version and csrf_token available to all templates"""
         from app.models import SystemSetting
+        from flask_wtf.csrf import generate_csrf
 
         return {
             "maintenance_mode": SystemSetting.is_maintenance_mode(),
             "beta_enabled": SystemSetting.is_beta_enabled(),
             "app_version": __version__,
+            "csrf_token": generate_csrf,
         }
 
     # Context processor - inject entity defaults for branding

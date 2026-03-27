@@ -23,8 +23,16 @@ def organization_required(f):
         if not current_user.is_authenticated:
             return redirect(url_for("auth.login"))
         if session.get("organization_id") is None:
+            prev_org = session.get("_previous_org_id")
+            if prev_org:
+                from app.models import Organization
+                org = Organization.query.get(prev_org)
+                if org and org.is_active:
+                    session["organization_id"] = org.id
+                    session["organization_name"] = org.name
+                    return f(*args, **kwargs)
             flash("Please select an organization first.", "warning")
-            return redirect(url_for("auth.select_organization"))
+            return redirect(url_for("workspace.dashboard"))
         return f(*args, **kwargs)
 
     return decorated_function

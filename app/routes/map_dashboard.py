@@ -19,8 +19,17 @@ def index():
     org_id = session.get("organization_id")
 
     if not org_id:
-        # Redirect to org selection if no context
-        return redirect(url_for("auth.select_organization"))
+        # Auto-switch to previous org if available
+        prev_org = session.get("_previous_org_id")
+        if prev_org:
+            org = Organization.query.get(prev_org)
+            if org and org.is_active:
+                session["organization_id"] = org.id
+                session["organization_name"] = org.name
+                org_id = org.id
+        if not org_id:
+            flash("Please select an organization first.", "warning")
+            return redirect(url_for("workspace.dashboard"))
 
     organization = Organization.query.get_or_404(org_id)
 

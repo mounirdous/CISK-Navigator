@@ -367,23 +367,12 @@
             <a class="navbar-brand flex-shrink-0 me-2" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
                 <span style="font-weight: 700;">CISK</span><span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.theory') }}';" style="font-size: 0.75rem; opacity: 0.5; margin-left: 0.25rem; cursor: pointer;" title="CISK Theory" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">v{{ app_version }}</span>
             </a>
-            {% if session.organization_id %}
-            <!-- Workspace pill — hidden below md to avoid crowding the navbar -->
+            {% if current_user.is_authenticated and session.organization_id %}
+            <!-- Workspace pill -->
             <a href="{{ url_for('workspace.index') }}" class="navbar-text d-none d-md-flex align-items-center" style="font-size: 0.85rem; text-decoration: none; color: #fff; background: rgba(13, 110, 253, 0.2); padding: 0.25rem 0.75rem; border-radius: 12px; border: 1px solid rgba(13, 110, 253, 0.4); transition: all 0.2s; gap: 0.5rem; flex-shrink: 0;" onmouseover="this.style.background='rgba(13, 110, 253, 0.3)'; this.style.borderColor='rgba(13, 110, 253, 0.6)';" onmouseout="this.style.background='rgba(13, 110, 253, 0.2)'; this.style.borderColor='rgba(13, 110, 253, 0.4)';" title="Go to Workspace">
                 <i class="bi bi-grid-3x3-gap-fill" style="font-size: 1rem;"></i>
                 Workspace
             </a>
-            {% elif current_user.is_authenticated and current_user.is_global_admin %}
-            <!-- Workspace pill — returns to previous org or first available -->
-            {% set _back_org_id = session.get('_previous_org_id') %}
-            {% if _back_org_id %}
-            <form method="POST" action="{{ url_for('auth.switch_organization', org_id=_back_org_id) }}" style="margin:0;" class="d-none d-md-block">
-                <button type="submit" class="navbar-text d-flex align-items-center" style="font-size: 0.85rem; text-decoration: none; color: #fff; background: rgba(13, 110, 253, 0.2); padding: 0.25rem 0.75rem; border-radius: 12px; border: 1px solid rgba(13, 110, 253, 0.4); transition: all 0.2s; gap: 0.5rem; flex-shrink: 0; cursor: pointer;" onmouseover="this.style.background='rgba(13, 110, 253, 0.3)'; this.style.borderColor='rgba(13, 110, 253, 0.6)';" onmouseout="this.style.background='rgba(13, 110, 253, 0.2)'; this.style.borderColor='rgba(13, 110, 253, 0.4)';" title="Back to Workspace">
-                    <i class="bi bi-grid-3x3-gap-fill" style="font-size: 1rem;"></i>
-                    Workspace
-                </button>
-            </form>
-            {% endif %}
             {% endif %}
             {% if current_user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -683,7 +672,7 @@
     </nav>
 
     <!-- Global Admin Sub-Nav -->
-    {% if current_user.is_authenticated and current_user.is_global_admin and not session.organization_id %}
+    {% if current_user.is_authenticated and current_user.is_global_admin and session.get('_admin_mode') %}
     <style>
     .ga-subnav {
         background: linear-gradient(135deg, #1a1f36 0%, #0d1117 100%);
