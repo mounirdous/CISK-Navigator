@@ -8,9 +8,12 @@ import re
 
 from Levenshtein import ratio
 
+from flask_login import current_user
+
 from app.extensions import db
 from app.models import KPI, Challenge, Initiative, InitiativeSystemLink, Space, System
 from app.models import EntityLink
+from app.models import ActionItem
 
 
 class SearchService:
@@ -83,7 +86,7 @@ class SearchService:
         else:
             # Determine which entity types to search
             entity_types = filters.get(
-                "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments"]
+                "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments", "action_items"]
             )
 
         results = {
@@ -94,6 +97,7 @@ class SearchService:
             "spaces": [],
             "value_types": [],
             "comments": [],
+            "action_items": [],
             "entity_links": [],
             "query_info": {
                 "original_query": query,
@@ -124,6 +128,9 @@ class SearchService:
 
         if "comments" in entity_types:
             results["comments"] = SearchService.search_comments(parsed, filters, organization_id)
+
+        if "action_items" in entity_types:
+            results["action_items"] = SearchService.search_action_items(parsed, filters, organization_id)
 
         results["entity_links"] = SearchService.search_entity_links(parsed, organization_id)
 
@@ -802,6 +809,64 @@ class SearchService:
         return results[:20]
 
     @staticmethod
+    def search_action_items(parsed, filters, organization_id):
+        """
+        Search Action Items by title and description.
+
+        Args:
+            parsed (dict): Parsed query
+            filters (dict): Additional filters
+            organization_id (int): Organization ID
+
+        Returns:
+            list: Matching ActionItem records
+        """
+        query = parsed["clean_query"]
+        exact = parsed.get("exact_mode", False)
+
+        # Base query - only shared items or items created by current user
+        base_query = db.session.query(ActionItem).filter(
+            ActionItem.organization_id == organization_id,
+            db.or_(
+                ActionItem.visibility == "shared",
+                ActionItem.created_by_user_id == current_user.id,
+            ),
+        )
+
+        all_items = base_query.all()
+
+        # Filter by fuzzy match
+        results = []
+        for item in all_items:
+            match_score = 0
+            if query:
+                if SearchService.fuzzy_match(item.title, query, exact=exact):
+                    match_score += 2
+                if item.description and SearchService.fuzzy_match(item.description, query, exact=exact):
+                    match_score += 1
+                if match_score == 0:
+                    continue
+            else:
+                match_score = 1
+
+            results.append(
+                {
+                    "id": item.id,
+                    "name": item.title,
+                    "description": item.description,
+                    "action_type": item.type,
+                    "status": item.status,
+                    "priority": item.priority,
+                    "due_date": item.due_date.isoformat() if item.due_date else None,
+                    "owner_name": item.owner_user.display_name or item.owner_user.login if item.owner_user else None,
+                    "match_score": match_score,
+                }
+            )
+
+        results.sort(key=lambda x: x["match_score"], reverse=True)
+        return results[:20]
+
+    @staticmethod
     def _empty_results():
         """Return empty search results structure."""
         return {
@@ -812,6 +877,7 @@ class SearchService:
             "spaces": [],
             "value_types": [],
             "comments": [],
+            "action_items": [],
             "entity_links": [],
             "query_info": {"original_query": "", "parsed_query": "", "modifiers": [], "operators": {}},
         }

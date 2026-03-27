@@ -2187,8 +2187,8 @@ def search_page():
 
     if entity_types_param:
         entity_types_list = entity_types_param.split(",")
-        # Only add entity_types filter if it's not "all types" (less than 5 means actual filtering)
-        if len(entity_types_list) < 5:
+        # Only add entity_types filter if it's not "all types" (less than 6 means actual filtering)
+        if len(entity_types_list) < 6:
             filters["entity_types"] = entity_types_list
     if date_range:
         filters["date_range"] = date_range
@@ -2227,6 +2227,7 @@ def search_page():
         "kpis": search_results.get("kpis", []),
         "value_types": search_results.get("value_types", []),
         "comments": search_results.get("comments", []),
+        "action_items": search_results.get("action_items", []),
         "entity_links": search_results.get("entity_links", []),
     }
 
@@ -2514,6 +2515,12 @@ def advanced_search():
         space_result["icon"] = entity_defaults.get("space", {}).get("icon", "🏢")
         space_result["logo"] = entity_defaults.get("space", {}).get("logo")
 
+    for ai_result in results.get("action_items", []):
+        ai_result["url"] = url_for("action_items.view", item_id=ai_result["id"])
+        ai_result["edit_url"] = url_for("action_items.edit", item_id=ai_result["id"])
+        ai_result["icon"] = "bi-check2-square"
+        ai_result["logo"] = None
+
     # Calculate totals
     total_results = (
         len(results.get("kpis", []))
@@ -2522,6 +2529,7 @@ def advanced_search():
         + len(results.get("challenges", []))
         + len(results.get("spaces", []))
         + len(results.get("entity_links", []))
+        + len(results.get("action_items", []))
     )
 
     results["total_results"] = total_results

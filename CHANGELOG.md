@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.9.1] - 2026-03-27
+
+### Added
+- **Action items in search** — action items (shared or own) now appear in both navbar live search and the dedicated search page with purple styling, status/priority badges, owner, and due date
+- **Auto-apply search filters** — entity type, date range, and status filter changes apply immediately without needing to click an Apply button
+- **Smart entity type click** — clicking an entity type checkbox isolates that type; Ctrl+Click toggles individual types; clicking the sole active type re-selects all
+
 ## [3.9.0] - 2026-03-27
 
 ### Added

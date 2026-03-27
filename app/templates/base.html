@@ -1085,7 +1085,8 @@
             'initiative': 'unicode-δ',
             'system': 'unicode-Φ',
             'kpi': 'unicode-Ψ',
-            'entity_link': 'bi-link-45deg'
+            'entity_link': 'bi-link-45deg',
+            'action_item': 'bi-check2-square'
         };
 
         const typeColors = {
@@ -1094,7 +1095,8 @@
             'initiative': '#198754',
             'system': '#0dcaf0',
             'kpi': '#ffc107',
-            'entity_link': '#0ea5e9'
+            'entity_link': '#0ea5e9',
+            'action_item': '#6f42c1'
         };
 
         const typeLabels = {
@@ -1103,7 +1105,8 @@
             'initiative': 'Initiative',
             'system': 'System',
             'kpi': 'KPI',
-            'entity_link': 'URL Link'
+            'entity_link': 'URL Link',
+            'action_item': 'Action'
         };
 
         function performLiveSearch(query) {
@@ -1116,7 +1119,7 @@
 
             // Get filters from global state or use defaults
             const filters = window.searchFilters || {
-                entity_types: ['kpis', 'systems', 'initiatives', 'challenges', 'spaces']
+                entity_types: ['kpis', 'systems', 'initiatives', 'challenges', 'spaces', 'action_items']
             };
 
             // Call new advanced search API with fuzzy matching
@@ -1238,6 +1241,25 @@
                         icon: item.icon,
                         logo: item.logo,
                         match_score: item.match_score
+                    });
+                });
+            }
+
+            // Add action items
+            if (data.action_items) {
+                data.action_items.forEach(item => {
+                    results.push({
+                        type: 'action_item',
+                        id: item.id,
+                        name: item.name,
+                        description: item.description,
+                        url: item.url,
+                        edit_url: item.edit_url,
+                        icon: item.icon || 'bi-check2-square',
+                        logo: null,
+                        match_score: item.match_score,
+                        status: item.status,
+                        priority: item.priority
                     });
                 });
             }
@@ -1544,38 +1566,45 @@
                 <!-- Entity Types -->
                 <div class="mb-4">
                     <h6 class="fw-bold mb-3">Entity Types</h6>
+                    <small class="text-muted d-block mb-1">Click to isolate · Ctrl+Click to toggle</small>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_kpis" checked>
+                        <input class="form-check-input" type="checkbox" id="filter_kpis" checked onclick="handleEntityTypeClick(event, this.id)">
                         <label class="form-check-label" for="filter_kpis">
                             <i class="bi bi-graph-up text-warning"></i> KPIs
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_systems" checked>
+                        <input class="form-check-input" type="checkbox" id="filter_systems" checked onclick="handleEntityTypeClick(event, this.id)">
                         <label class="form-check-label" for="filter_systems">
                             <i class="bi bi-pc-display text-info"></i> Systems
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_initiatives" checked>
+                        <input class="form-check-input" type="checkbox" id="filter_initiatives" checked onclick="handleEntityTypeClick(event, this.id)">
                         <label class="form-check-label" for="filter_initiatives">
                             <i class="bi bi-lightning text-success"></i> Initiatives
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_challenges" checked>
+                        <input class="form-check-input" type="checkbox" id="filter_challenges" checked onclick="handleEntityTypeClick(event, this.id)">
                         <label class="form-check-label" for="filter_challenges">
                             <i class="bi bi-flag text-danger"></i> Challenges
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_spaces" checked>
+                        <input class="form-check-input" type="checkbox" id="filter_spaces" checked onclick="handleEntityTypeClick(event, this.id)">
                         <label class="form-check-label" for="filter_spaces">
                             <i class="bi bi-grid-3x3-gap text-primary"></i> Spaces
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_entity_links" checked>
+                        <input class="form-check-input" type="checkbox" id="filter_action_items" checked onclick="handleEntityTypeClick(event, this.id)">
+                        <label class="form-check-label" for="filter_action_items">
+                            <i class="bi bi-check2-square" style="color: #6f42c1;"></i> Action Items
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="filter_entity_links" checked onclick="handleEntityTypeClick(event, this.id)">
                         <label class="form-check-label" for="filter_entity_links">
                             <i class="bi bi-link-45deg" style="color: #0ea5e9;"></i> URL Links
                         </label>
@@ -1587,7 +1616,7 @@
                 <!-- Date Modified -->
                 <div class="mb-4">
                     <h6 class="fw-bold mb-3">Date Modified</h6>
-                    <select class="form-select" id="filter_date">
+                    <select class="form-select" id="filter_date" onchange="applySearchFilters()">
                         <option value="">Any time</option>
                         <option value="today">Today</option>
                         <option value="last_week">Last 7 days</option>
@@ -1602,25 +1631,25 @@
                 <div class="mb-4">
                     <h6 class="fw-bold mb-3">Status</h6>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_at_risk">
+                        <input class="form-check-input" type="checkbox" id="filter_at_risk" onchange="applySearchFilters()">
                         <label class="form-check-label" for="filter_at_risk">
                             <span class="badge bg-danger">At Risk</span>
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_incomplete">
+                        <input class="form-check-input" type="checkbox" id="filter_incomplete" onchange="applySearchFilters()">
                         <label class="form-check-label" for="filter_incomplete">
                             <span class="badge bg-warning text-dark">Incomplete</span>
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_no_consensus">
+                        <input class="form-check-input" type="checkbox" id="filter_no_consensus" onchange="applySearchFilters()">
                         <label class="form-check-label" for="filter_no_consensus">
                             <span class="badge bg-secondary">No Consensus</span>
                         </label>
                     </div>
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_archived">
+                        <input class="form-check-input" type="checkbox" id="filter_archived" onchange="applySearchFilters()">
                         <label class="form-check-label" for="filter_archived">
                             <span class="badge bg-dark">Archived</span>
                         </label>
@@ -1631,9 +1660,6 @@
 
                 <!-- Action Buttons -->
                 <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-primary" onclick="applySearchFilters()">
-                        <i class="bi bi-check-lg"></i> Apply Filters
-                    </button>
                     <button type="button" class="btn btn-outline-secondary" onclick="clearSearchFilters()">
                         <i class="bi bi-x-lg"></i> Clear All
                     </button>
@@ -1695,6 +1721,43 @@
 
     <script>
     // Search Filters Management
+    function handleEntityTypeClick(event, clickedId) {
+        var entityCheckboxIds = [
+            'filter_kpis', 'filter_systems', 'filter_initiatives',
+            'filter_challenges', 'filter_spaces', 'filter_action_items'
+        ];
+        if (document.getElementById('filter_entity_links')) entityCheckboxIds.push('filter_entity_links');
+
+        if (event.ctrlKey || event.metaKey || event.shiftKey) {
+            // Multi-select: just apply (checkbox already toggled by browser)
+            applySearchFilters();
+            return;
+        }
+
+        var currentlyChecked = entityCheckboxIds.filter(function(id) {
+            return document.getElementById(id) && document.getElementById(id).checked;
+        });
+
+        // Prevent default checkbox toggle - we'll manage it ourselves
+        event.preventDefault();
+
+        if (currentlyChecked.length === 1 && currentlyChecked[0] === clickedId) {
+            // Only one was selected and user clicks it again -> select ALL
+            entityCheckboxIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.checked = true;
+            });
+        } else {
+            // Select ONLY this one
+            entityCheckboxIds.forEach(function(id) {
+                var el = document.getElementById(id);
+                if (el) el.checked = (id === clickedId);
+            });
+        }
+
+        applySearchFilters();
+    }
+
     function applySearchFilters() {
         // Get entity types
         const entityTypes = [];
@@ -1703,6 +1766,7 @@
         if (document.getElementById('filter_initiatives').checked) entityTypes.push('initiatives');
         if (document.getElementById('filter_challenges').checked) entityTypes.push('challenges');
         if (document.getElementById('filter_spaces').checked) entityTypes.push('spaces');
+        if (document.getElementById('filter_action_items').checked) entityTypes.push('action_items');
 
         // Get date filter
         const dateFilter = document.getElementById('filter_date').value;
@@ -1722,11 +1786,7 @@
             include_entity_links: document.getElementById('filter_entity_links').checked
         };
 
-        // Close the offcanvas
-        const offcanvas = bootstrap.Offcanvas.getInstance(document.getElementById('searchFilters'));
-        if (offcanvas) offcanvas.hide();
-
-        // Trigger search with current query
+        // Trigger search with current query (panel stays open for more changes)
         const searchInput = document.getElementById('liveSearchInput');
         if (searchInput && searchInput.value.trim().length >= 2) {
             searchInput.dispatchEvent(new Event('input'));
@@ -1743,6 +1803,7 @@
         document.getElementById('filter_initiatives').checked = true;
         document.getElementById('filter_challenges').checked = true;
         document.getElementById('filter_spaces').checked = true;
+        document.getElementById('filter_action_items').checked = true;
         document.getElementById('filter_entity_links').checked = true;
 
         document.getElementById('filter_date').value = '';
@@ -1770,7 +1831,7 @@
         if (!filterBtn) return;
 
         const hasFilters = window.searchFilters && (
-            window.searchFilters.entity_types.length < 5 ||
+            window.searchFilters.entity_types.length < 6 ||
             window.searchFilters.include_entity_links === false ||
             window.searchFilters.date_range ||
             window.searchFilters.status.length > 0
@@ -1897,6 +1958,7 @@
                             document.getElementById('filter_initiatives').checked = search.filters.entity_types.includes('initiatives');
                             document.getElementById('filter_challenges').checked = search.filters.entity_types.includes('challenges');
                             document.getElementById('filter_spaces').checked = search.filters.entity_types.includes('spaces');
+                            document.getElementById('filter_action_items').checked = search.filters.entity_types.includes('action_items');
                         }
 
                         if (search.filters.date_range) {
@@ -2105,6 +2167,7 @@
                                     document.getElementById('filter_initiatives').checked = defaultSearch.filters.entity_types.includes('initiatives');
                                     document.getElementById('filter_challenges').checked = defaultSearch.filters.entity_types.includes('challenges');
                                     document.getElementById('filter_spaces').checked = defaultSearch.filters.entity_types.includes('spaces');
+                                    document.getElementById('filter_action_items').checked = defaultSearch.filters.entity_types.includes('action_items');
                                 }
 
                                 if (defaultSearch.filters.date_range) {

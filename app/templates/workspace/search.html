@@ -29,7 +29,7 @@
                 </button>
             </div>
             <div class="d-flex align-items-center gap-3 mt-2">
-                <small class="text-muted">Search in spaces, challenges, initiatives, systems, KPIs, value types, comments, and links</small>
+                <small class="text-muted">Search in spaces, challenges, initiatives, systems, KPIs, action items, value types, comments, and links</small>
                 <label class="d-flex align-items-center gap-1 mb-0 ms-auto" style="cursor:pointer; font-size:0.85rem; user-select:none;">
                     <input type="checkbox" name="exact" value="1" {% if exact_match %}checked{% endif %}
                            style="width:15px; height:15px; cursor:pointer;">
@@ -364,6 +364,52 @@
 </div>
 {% endif %}
 
+<!-- Action Items -->
+{% if results.action_items %}
+<div class="card mb-3 hover-lift fade-in">
+    <div class="card-header text-white" style="background-color: #6f42c1;">
+        <h5 class="mb-0"><i class="bi bi-check2-square"></i> Action Items ({{ results.action_items|length }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            {% for item in results.action_items %}
+            <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start hover-lift" style="transition: all 0.2s;">
+                <a href="{{ url_for('action_items.view', item_id=item.id) }}" class="flex-grow-1 text-decoration-none" style="color: var(--text-primary);">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check2-square" style="color: #6f42c1;"></i>
+                            <h6 class="mb-0" style="color: #6f42c1;">{{ item.name }}</h6>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if item.status %}
+                            <span class="badge {% if item.status == 'active' %}bg-success{% elif item.status == 'completed' %}bg-secondary{% elif item.status == 'draft' %}bg-warning text-dark{% else %}bg-dark{% endif %}">{{ item.status }}</span>
+                            {% endif %}
+                            {% if item.priority %}
+                            <span class="badge {% if item.priority == 'urgent' %}bg-danger{% elif item.priority == 'high' %}bg-warning text-dark{% elif item.priority == 'medium' %}bg-info{% else %}bg-light text-dark{% endif %}">{{ item.priority }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if item.description %}
+                    <p class="mb-1 text-muted">{{ item.description[:150] }}{% if item.description|length > 150 %}...{% endif %}</p>
+                    {% endif %}
+                    <small class="text-muted">
+                        {% if item.owner_name %}<i class="bi bi-person"></i> {{ item.owner_name }}{% endif %}
+                        {% if item.due_date %} &middot; <i class="bi bi-calendar"></i> Due: {{ item.due_date }}{% endif %}
+                    </small>
+                </a>
+                <a href="{{ url_for('action_items.edit', item_id=item.id) }}"
+                   class="btn btn-sm btn-outline-primary ms-2"
+                   title="Edit Action Item"
+                   onclick="event.stopPropagation();">
+                    <i class="bi bi-pencil"></i>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Comments -->
 {% if current_user.can_view_comments(session.organization_id) and results.comments %}
 <div class="card mb-3 hover-lift fade-in">
@@ -470,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Restore checkboxes in filter panel
     // Entity type checkboxes - uncheck all first, then check only filtered ones
-    const allEntityCheckboxes = ['filter_kpis', 'filter_systems', 'filter_initiatives', 'filter_challenges', 'filter_spaces'];
+    const allEntityCheckboxes = ['filter_kpis', 'filter_systems', 'filter_initiatives', 'filter_challenges', 'filter_spaces', 'filter_action_items'];
     if (window.searchFilters.entity_types && window.searchFilters.entity_types.length > 0) {
         // Uncheck all
         allEntityCheckboxes.forEach(function(id) {
