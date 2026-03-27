@@ -199,7 +199,19 @@ if (!window.PresetManager) {
                 method: 'DELETE',
                 headers: { 'X-CSRFToken': this._csrf }
             }).then(function(r) { return r.json(); }).then(function(data) {
-                if (data.success) location.reload();
+                if (data.success) {
+                    // Clear localStorage if this was the active preset
+                    try {
+                        localStorage.removeItem('preset_active_' + feature);
+                        localStorage.removeItem('preset_config_' + feature);
+                    } catch(e) {}
+                    // Remove from DOM immediately, then reload to sync server state
+                    var li = document.querySelector('.preset-bar[data-feature="' + feature + '"] [data-preset-id="' + id + '"]');
+                    if (li) li.remove();
+                    var nameEl = document.querySelector('.preset-bar[data-feature="' + feature + '"] .preset-bar-active-name');
+                    if (nameEl) nameEl.textContent = 'My Presets';
+                    location.reload();
+                }
             });
         },
 
