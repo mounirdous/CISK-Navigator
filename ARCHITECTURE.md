@@ -1,7 +1,7 @@
 # CISK Navigator - Technical Architecture
 
-**Last Updated**: March 21, 2026
-**Version**: 2.17.7
+**Last Updated**: March 27, 2026
+**Version**: 4.2.1
 
 This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
@@ -38,7 +38,17 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
-### v2.20.1 Recent Changes (March 2026)
+### v4.2.1 Recent Changes (March 27, 2026)
+
+1. **Unified Presets System** — Single `PresetManager` JS module + `_preset_bar.html` macro for save/load across workspace, action items, search, and pivot charts; `/api/user-presets` API (GET/POST/DELETE); auto-restore with URL-match guard to prevent infinite loops; overwrite prompt on duplicate names
+2. **Map KPI Marker Clustering** — Replaced 156+ DOM markers with Mapbox native GPU-accelerated GeoJSON clustering; cluster circles with count badges (indigo/purple/pink by count); click-to-expand or popup KPI list for same-location clusters; continuous `render` event coloring for all countries; `map.loaded()` check to prevent race condition in production
+3. **Branding Logos Globally Available** — Context processor now includes `logo` (base64 data URL) alongside `color` and `icon` for all entity types; Action Register CISK Entity view shows custom branding logos (16px constrained) instead of generic text icons
+4. **Dashboards Menu Restructured** — Removed Overview and CISK Theory; Executive, Analytics, Snapshot Analysis are beta-only (with BETA badge); removed standalone Beta nav item; Map View available to all
+5. **Workspace FABs Fixed** — Snapshot/export floating action buttons moved outside `workspace-v2` container for correct `position: fixed` behavior; visible on all screen sizes (36px on mobile)
+6. **Workspace Dirty Flag** — Cleared on fresh server fetch (was persisting across sessions)
+7. **Timeline Fit-All** — Always fits all items on initial timeline load; zoom presets only apply on explicit user selection
+
+### v2.20.1 Previous Changes (March 2026)
 
 1. **Action Register — Duplicate Detection** — "Find Duplicates" button scans all visible items using Jaccard title similarity, exact match, prefix match, and combined title+description similarity; groups results with a differences table (status, priority, owner, due date, governance bodies, links — only differing fields shown), smart pre-selection for deletion, and a Show/Hide differences toggle
 2. **Global Search — Exact Match** — Checkbox toggle on the search page disables Levenshtein fuzzy matching and restricts results to substring matches only; badge shown in results when active
