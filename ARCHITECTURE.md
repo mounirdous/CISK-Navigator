@@ -1,7 +1,7 @@
 # CISK Navigator - Technical Architecture
 
-**Last Updated**: March 27, 2026
-**Version**: 4.2.1
+**Last Updated**: March 28, 2026
+**Version**: 5.3.1
 
 This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
@@ -38,7 +38,20 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
-### v4.2.1 Recent Changes (March 27, 2026)
+### v5.3.1 Recent Changes (March 28, 2026)
+
+1. **Impact Level System** — 3-level configurable impact scale per org (symbol, weight, color); `impact_level` on all entities; true importance computed via Simple Product, Geometric Mean, or Toyota QFD method; editable QFD matrix
+2. **Decision Log** — structured decisions in progress updates [{what, who, tag, mentions}]; Decision Register page (`/workspace/decisions`) with search, entity filtering, xmas tree detail levels
+3. **Entity Mentions in Decisions** — searchable entity picker; bi-directional links (entity→decisions, decision→entities)
+4. **3-Level Xmas Tree** — progressive detail disclosure on Workspace, Action Register, Initiative Review, Map Dashboard, Decision Register (minimal/standard/full)
+5. **Strategic Pillars** — editable strategy with icon picker, view page, backup/restore
+6. **Value Dimensions** — card view of value types with descriptions
+7. **Impact Documentation** — standalone page explaining all 3 compounding methods with formulas, examples, comparison table
+8. **Sequential Entity Navigation** — prev/next arrows on all 7 entity edit pages, scoped to siblings
+9. **Initiative Review Focus Mode** — sort by impact level with visual separators
+10. **Mobile-Friendly Info Windows** — click-based multi-window system replacing hover tooltips; draggable
+
+### v4.2.1 Previous Changes (March 27, 2026)
 
 1. **Unified Presets System** — Single `PresetManager` JS module + `_preset_bar.html` macro for save/load across workspace, action items, search, and pivot charts; `/api/user-presets` API (GET/POST/DELETE); auto-restore with URL-match guard to prevent infinite loops; overwrite prompt on duplicate names
 2. **Map KPI Marker Clustering** — Replaced 156+ DOM markers with Mapbox native GPU-accelerated GeoJSON clustering; cluster circles with count badges (indigo/purple/pink by count); click-to-expand or popup KPI list for same-location clusters; continuous `render` event coloring for all countries; `map.loaded()` check to prevent race condition in production

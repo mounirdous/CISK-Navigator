@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.1] - 2026-03-28
+
+### Fixed
+- Backup/restore now includes `impact_calc_method` and `impact_qfd_matrix` on Organization
+- Impact popup shows "chain incomplete or filtered out" when assessed exists but true importance is null
+- Entity search in decisions uses event delegation (works for dynamic inputs)
+- RAG status validation on progress update save (shows alert)
+- Decision JSON double-encoding handled (string fallback parsing)
+
 ## [5.3.0] - 2026-03-28
 
 ### Added

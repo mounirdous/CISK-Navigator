@@ -147,6 +147,8 @@ class FullBackupService:
             "porters_buyers": org.porters_buyers,
             "porters_substitutes": org.porters_substitutes,
             "porters_rivalry": org.porters_rivalry,
+            "impact_calc_method": org.impact_calc_method,
+            "impact_qfd_matrix": org.impact_qfd_matrix,
         }
 
         # Export logo if present
