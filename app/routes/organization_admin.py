@@ -304,6 +304,8 @@ def impact_levels():
     ImpactLevel.ensure_defaults(org_id)
     db.session.commit()
 
+    org = Organization.query.get(org_id)
+
     if request.method == "POST":
         for lvl in [1, 2, 3]:
             il = ImpactLevel.query.filter_by(organization_id=org_id, level=lvl).first()
@@ -312,12 +314,28 @@ def impact_levels():
                 il.icon = request.form.get(f"icon_{lvl}", il.icon).strip()
                 il.weight = int(request.form.get(f"weight_{lvl}", il.weight))
                 il.color = request.form.get(f"color_{lvl}", il.color).strip()
+        # Save calculation method
+        org.impact_calc_method = request.form.get("calc_method", "geometric_mean")
+        # Save custom QFD matrix if provided
+        import json as _json
+        matrix_json = request.form.get("qfd_matrix_json", "")
+        if matrix_json:
+            try:
+                org.impact_qfd_matrix = _json.loads(matrix_json)
+            except (ValueError, TypeError):
+                pass
         db.session.commit()
         flash("Impact levels updated successfully", "success")
         return redirect(url_for("organization_admin.impact_levels"))
 
     levels = ImpactLevel.query.filter_by(organization_id=org_id).order_by(ImpactLevel.level).all()
-    return render_template("organization_admin/impact_levels.html", levels=levels, csrf_token=generate_csrf)
+    return render_template(
+        "organization_admin/impact_levels.html",
+        levels=levels,
+        csrf_token=generate_csrf,
+        calc_method=org.impact_calc_method or "geometric_mean",
+        qfd_matrix=org.impact_qfd_matrix,
+    )
 
 
 @bp.route("/porters/edit", methods=["GET", "POST"])
@@ -4161,28 +4179,21 @@ def initiative_form(initiative_id):
 
     # Compute true importance for this initiative
     from app.models import ImpactLevel, ChallengeInitiativeLink as _CIL
+    from app.services.impact_service import compute_true_importance
 
     impact_scale = ImpactLevel.get_org_levels(org_id)
+    _org = Organization.query.get(org_id)
     true_importance_level = None
     if impact_scale and initiative.impact_level:
         _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
-        _max_w = max(_weights.values()) if _weights else 1
-        # Walk up: initiative → challenge → space
+        _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
         _link = _CIL.query.filter_by(initiative_id=initiative.id).first()
-        chain = [initiative.impact_level]
-        if _link and _link.challenge:
-            if _link.challenge.impact_level:
-                chain.append(_link.challenge.impact_level)
-            if _link.challenge.space and _link.challenge.space.impact_level:
-                chain.append(_link.challenge.space.impact_level)
-        # Only compute if full chain is set
-        if all(chain) and len(chain) == 3:
-            score = 1
-            for lvl in chain:
-                score *= _weights.get(lvl, 0)
-            depth = len(chain)
-            pct = score / (_max_w ** depth) if _max_w ** depth > 0 else 0
-            true_importance_level = 1 if pct <= 0.33 else (2 if pct <= 0.66 else 3)
+        chain = []
+        if _link and _link.challenge and _link.challenge.space:
+            chain = [_link.challenge.space.impact_level, _link.challenge.impact_level, initiative.impact_level]
+        _custom_matrix = _org.impact_qfd_matrix if _org else None
+        if chain and all(chain):
+            true_importance_level = compute_true_importance(chain, _method, _weights, _custom_matrix)
 
     return render_template(
         "organization_admin/initiative_form.html",

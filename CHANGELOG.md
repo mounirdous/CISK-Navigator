@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.9.0] - 2026-03-28
+
+### Added
+- **3 impact compounding methods** — configurable per organization:
+  - **Simple Product** — multiply weights, normalize by max (basic)
+  - **Geometric Mean** — √(parent × child) at each step (recommended, balanced)
+  - **Toyota QFD** — fuzzy lookup table (strongest contrast, no numeric weights needed)
+- **Impact calculation service** (`app/services/impact_service.py`) with method registry
+- **Method selector** in Impact Scale admin page with visual radio cards
+- **Documentation page** (`/workspace/impact-docs`) — beautiful standalone page explaining each method with formulas, examples, comparison table, and the QFD lookup matrix
+- `impact_calc_method` column on Organization (migration: f607688b62d6)
+
 ## [4.8.0] - 2026-03-28
 
 ### Added

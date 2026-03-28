@@ -64,28 +64,27 @@
 }
 </style>
 
-<!-- Organization Settings Section -->
-<div class="row g-4 mb-5">
-    <div class="col-lg-6">
+<div class="row g-4 mb-4">
+    <div class="col-lg-4 col-md-6">
         <div class="admin-card">
             <div class="admin-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <i class="bi bi-palette-fill" style="color: white;"></i>
             </div>
             <div class="admin-card-title">
-                <i class="bi bi-palette"></i> Branding & Appearance
+                <i class="bi bi-palette"></i> Branding
             </div>
             <div class="admin-card-desc">
-                Customize colors, icons, and logos for all entity types in your organization. Create a unique visual identity.
+                Customize colors, icons, and logos for all entity types.
             </div>
             <div class="admin-card-actions">
                 <a href="{{ url_for('organization_admin.branding_manager') }}" class="btn btn-primary">
-                    <i class="bi bi-palette"></i> Open Branding Manager
+                    <i class="bi bi-palette"></i> Branding Manager
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-4 col-md-6">
         <div class="admin-card">
             <div class="admin-card-icon" style="background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);">
                 <i class="bi bi-speedometer2" style="color: white;"></i>
@@ -94,91 +93,62 @@
                 <i class="bi bi-speedometer2"></i> Impact Scale
             </div>
             <div class="admin-card-desc">
-                Configure the 3-level impact scale (labels, icons, weights, colors) used across all entities.
+                Configure the 3-level impact scale, weights, compounding method.
             </div>
             <div class="admin-card-actions">
                 <a href="{{ url_for('organization_admin.impact_levels') }}" class="btn btn-warning">
-                    <i class="bi bi-speedometer2"></i> Configure Impact Scale
+                    <i class="bi bi-speedometer2"></i> Configure
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-6">
-        <div class="admin-card">
-            <div class="admin-card-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                <i class="bi bi-file-earmark-code-fill" style="color: white;"></i>
-            </div>
-            <div class="admin-card-title">
-                <i class="bi bi-file-earmark-code"></i> YAML Backup & Restore
-            </div>
-            <div class="admin-card-desc">
-                Export your organization structure as YAML for backup, or import a YAML file to restore/replace data.
-            </div>
-            <div class="admin-card-actions">
-                <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-success">
-                    <i class="bi bi-download"></i> Export YAML
-                </a>
-                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-outline-danger">
-                    <i class="bi bi-upload"></i> Import YAML (Danger)
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Geography Management Section -->
-<div class="row g-4 mb-5">
-    <div class="col-lg-6">
+    <div class="col-lg-4 col-md-6">
         <div class="admin-card">
             <div class="admin-card-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                 <i class="bi bi-globe-americas" style="color: white;"></i>
             </div>
             <div class="admin-card-title">
-                <i class="bi bi-globe-americas"></i> Geography Management
+                <i class="bi bi-globe-americas"></i> Geography
             </div>
             <div class="admin-card-desc">
-                Organize KPIs by geographic location with regions, countries, and sites. View distribution on interactive maps.
+                Regions, countries, sites for geographic KPI distribution.
                 {% if stats.geography_regions > 0 or stats.geography_countries > 0 or stats.geography_sites > 0 %}
                 <div class="mt-2">
                     <span class="badge bg-primary">{{ stats.geography_regions }} Regions</span>
                     <span class="badge bg-success">{{ stats.geography_countries }} Countries</span>
                     <span class="badge bg-danger">{{ stats.geography_sites }} Sites</span>
                 </div>
-                {% else %}
-                <div class="mt-2 text-muted small">
-                    <i class="bi bi-info-circle"></i> No geography data yet - click to set up
-                </div>
                 {% endif %}
             </div>
             <div class="admin-card-actions">
                 <a href="{{ url_for('geography.index') }}" class="btn btn-primary">
-                    <i class="bi bi-map-fill"></i> Manage Geographies
+                    <i class="bi bi-map-fill"></i> Manage
                 </a>
                 <a href="{{ url_for('map_dashboard.index') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-pin-map-fill"></i> View Map
+                    <i class="bi bi-pin-map-fill"></i> Map
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-6">
+    <div class="col-lg-4 col-md-6">
         <div class="admin-card">
             <div class="admin-card-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">
                 <i class="bi bi-link-45deg" style="color: white;"></i>
             </div>
             <div class="admin-card-title">
-                <i class="bi bi-link-45deg"></i> Organization Links
+                <i class="bi bi-link-45deg"></i> Links & Value Types
             </div>
             <div class="admin-card-desc">
-                Manage links at the organization level. These appear as chips at the top of the workspace tree and are visible to all members.
+                Organization-level links, link health monitoring, and value type management.
             </div>
             <div class="admin-card-actions">
                 <a href="{{ url_for('organization_admin.organization_links') }}" class="btn btn-primary">
-                    <i class="bi bi-link-45deg"></i> Manage Links
+                    <i class="bi bi-link-45deg"></i> Links
                 </a>
                 <a href="{{ url_for('organization_admin.link_health') }}" class="btn btn-outline-info">
-                    <i class="bi bi-heart-pulse-fill"></i> Link Health
+                    <i class="bi bi-heart-pulse-fill"></i> Health
                 </a>
                 <a href="{{ url_for('organization_admin.value_types') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-tags"></i> Value Types
@@ -186,11 +156,27 @@
             </div>
         </div>
     </div>
-</div>
 
-<div class="mt-4">
-    <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-secondary">
-        <i class="bi bi-speedometer2"></i> Back to Dashboard
-    </a>
+    <div class="col-lg-4 col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <i class="bi bi-file-earmark-code-fill" style="color: white;"></i>
+            </div>
+            <div class="admin-card-title">
+                <i class="bi bi-file-earmark-code"></i> Backup & Restore
+            </div>
+            <div class="admin-card-desc">
+                Export/import your organization structure as YAML.
+            </div>
+            <div class="admin-card-actions">
+                <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Export
+                </a>
+                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-outline-danger">
+                    <i class="bi bi-upload"></i> Import
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

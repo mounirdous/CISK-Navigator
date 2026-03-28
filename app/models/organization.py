@@ -34,6 +34,17 @@ class Organization(db.Model):
         db.String(7), nullable=True, default="#9ca3af", comment="Hex color for countries in system without KPIs"
     )
 
+    # Impact calculation method
+    impact_calc_method = db.Column(
+        db.String(30), nullable=True, default="geometric_mean",
+        comment="Impact compounding method: simple_product, geometric_mean, toyota_qfd"
+    )
+    # Custom QFD matrix (JSON) — overrides default Toyota table when set
+    impact_qfd_matrix = db.Column(
+        db.JSON, nullable=True,
+        comment="Custom QFD lookup: {'3_3': 3, '3_2': 3, '3_1': 2, ...}"
+    )
+
     # Soft delete fields
     is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)
     deleted_at = db.Column(db.DateTime, nullable=True)

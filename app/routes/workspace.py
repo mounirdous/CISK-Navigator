@@ -120,6 +120,13 @@ def theory():
     return render_template("workspace/theory.html", csrf_token=generate_csrf)
 
 
+@bp.route("/impact-docs")
+@login_required
+def impact_docs():
+    """Documentation page for impact compounding methods"""
+    return render_template("workspace/impact_docs.html")
+
+
 @bp.route("/strategy")
 @login_required
 @organization_required
@@ -4450,58 +4457,36 @@ def get_data():
     org_inherited_links = list(_org_inh_map.values())
 
     # ── Compute true importance (product of weights through the chain) ──
+    # ── Compute true importance using configured method ──
     if impact_scale:
+        from app.services.impact_service import compute_true_importance
+
+        _org = Organization.query.get(org_id)
+        _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
         _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
-        _max_w = max(_weights.values()) if _weights else 1
+        _custom_matrix = _org.impact_qfd_matrix if _org else None
 
-        def _get_weight(entity):
-            il = entity.get("impact_level")
-            return _weights.get(il, 0) if il else 0
-
-        def _chain_importance(parent_score, parent_depth, parent_complete, entity):
-            """Compute true importance: product of weights through the chain.
-            Chain is only valid if ALL ancestors + this entity have impact_level set.
-            Returns (score, depth, complete, level)."""
-            w = _get_weight(entity)
-            if not w:
-                # Entity has no impact set — chain is broken
-                return 0, parent_depth + 1, False, None
-            if not parent_complete and parent_depth > 0:
-                # A parent was missing — chain is broken
-                return 0, parent_depth + 1, False, None
-            score = (parent_score * w) if parent_score > 0 else w
-            depth = parent_depth + 1
-            # Normalize: score / max_possible at this chain depth
-            max_possible = _max_w ** depth
-            pct = score / max_possible if max_possible > 0 else 0
-            if pct <= 0.33:
-                level = 1
-            elif pct <= 0.66:
-                level = 2
-            else:
-                level = 3
-            return score, depth, True, level
+        def _ti(chain):
+            """Compute true importance for a chain of impact levels."""
+            if not chain or not all(chain):
+                return None
+            return compute_true_importance(chain, _method, _weights, _custom_matrix)
 
         for space in spaces_data:
-            s_score, s_depth, s_ok, s_level = _chain_importance(0, 0, True, space)
-            space["true_importance"] = s_score
-            space["true_importance_level"] = s_level
+            s_il = space.get("impact_level")
+            space["true_importance_level"] = _ti([s_il]) if s_il else None
             for challenge in space.get("challenges", []):
-                c_score, c_depth, c_ok, c_level = _chain_importance(s_score, s_depth, s_ok, challenge)
-                challenge["true_importance"] = c_score
-                challenge["true_importance_level"] = c_level
+                c_il = challenge.get("impact_level")
+                challenge["true_importance_level"] = _ti([s_il, c_il])
                 for initiative in challenge.get("initiatives", []):
-                    i_score, i_depth, i_ok, i_level = _chain_importance(c_score, c_depth, c_ok, initiative)
-                    initiative["true_importance"] = i_score
-                    initiative["true_importance_level"] = i_level
+                    i_il = initiative.get("impact_level")
+                    initiative["true_importance_level"] = _ti([s_il, c_il, i_il])
                     for system in initiative.get("systems", []):
-                        sy_score, sy_depth, sy_ok, sy_level = _chain_importance(i_score, i_depth, i_ok, system)
-                        system["true_importance"] = sy_score
-                        system["true_importance_level"] = sy_level
+                        sy_il = system.get("impact_level")
+                        system["true_importance_level"] = _ti([s_il, c_il, i_il, sy_il])
                         for kpi in system.get("kpis", []):
-                            k_score, k_depth, k_ok, k_level = _chain_importance(sy_score, sy_depth, sy_ok, kpi)
-                            kpi["true_importance"] = k_score
-                            kpi["true_importance_level"] = k_level
+                            k_il = kpi.get("impact_level")
+                            kpi["true_importance_level"] = _ti([s_il, c_il, i_il, sy_il, k_il])
 
     return jsonify(
         {

@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Impact Compounding Methods{% endblock %}
+
+{% block extra_css %}
+<style>
+    .idoc { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+    .idoc h1 { font-size: 2rem; font-weight: 800; color: #1e293b; margin-bottom: 0.5rem; }
+    .idoc .subtitle { color: #64748b; font-size: 1.05rem; margin-bottom: 2.5rem; }
+
+    .method-card {
+        background: white; border-radius: 16px; padding: 2rem;
+        border: 1px solid #e2e8f0; margin-bottom: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .method-card h2 {
+        font-size: 1.3rem; font-weight: 700; color: #1e293b;
+        display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;
+    }
+    .method-card .tag {
+        font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.5rem;
+        border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .method-card p { color: #475569; line-height: 1.7; margin-bottom: 1rem; }
+    .method-card .formula {
+        background: #f1f5f9; border-radius: 10px; padding: 1rem 1.25rem;
+        font-family: 'Courier New', monospace; font-size: 0.95rem;
+        color: #334155; margin-bottom: 1rem; border-left: 4px solid;
+    }
+    .method-card .example {
+        background: #fefce8; border-radius: 10px; padding: 1rem 1.25rem;
+        font-size: 0.88rem; color: #713f12; margin-bottom: 0.5rem;
+    }
+    .method-card .example strong { color: #a16207; }
+
+    .qfd-table {
+        width: 100%; border-collapse: collapse; margin: 1rem 0;
+        font-size: 0.85rem; text-align: center;
+    }
+    .qfd-table th, .qfd-table td {
+        border: 1px solid #e2e8f0; padding: 0.5rem;
+    }
+    .qfd-table th {
+        background: #f8fafc; font-weight: 700; color: #475569;
+    }
+    .qfd-table .r3 { background: #fef2f2; color: #dc2626; font-weight: 700; }
+    .qfd-table .r2 { background: #fffbeb; color: #d97706; font-weight: 700; }
+    .qfd-table .r1 { background: #f0fdf4; color: #16a34a; font-weight: 700; }
+    .qfd-table .r0 { background: #f8fafc; color: #94a3b8; }
+
+    .chain-viz {
+        display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+        margin: 0.75rem 0;
+    }
+    .chain-node {
+        background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px;
+        padding: 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 600; color: #1e40af;
+    }
+    .chain-arrow { color: #94a3b8; font-size: 0.8rem; }
+    .chain-result {
+        background: #1e293b; color: white; border-radius: 8px;
+        padding: 0.3rem 0.7rem; font-size: 0.82rem; font-weight: 700;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="idoc">
+    <h1><i class="bi bi-book" style="color:#3b82f6;"></i> Impact Compounding Methods</h1>
+    <p class="subtitle">How CISK computes the true importance of each entity in your hierarchy</p>
+
+    <!-- Concept -->
+    <div class="method-card">
+        <h2><i class="bi bi-diagram-3" style="color:#6366f1;"></i> The Concept</h2>
+        <p>
+            Each entity in the CISK tree (Space, Challenge, Initiative, System, KPI) has an <strong>assessed impact level</strong>
+            that represents its importance to its parent. The <strong>true importance</strong> is computed by
+            <strong>compounding</strong> these levels through the chain from root to leaf.
+        </p>
+        <div class="chain-viz">
+            <span class="chain-node">Space ★★</span>
+            <span class="chain-arrow">&times;</span>
+            <span class="chain-node">Challenge ★★★</span>
+            <span class="chain-arrow">&times;</span>
+            <span class="chain-node">Initiative ★</span>
+            <span class="chain-arrow">=</span>
+            <span class="chain-result">True Importance ?</span>
+        </div>
+        <p>
+            The answer depends on the <strong>compounding method</strong> chosen. Each method offers a different
+            balance between sensitivity and contrast.
+        </p>
+    </div>
+
+    <!-- Method 1: Simple Product -->
+    <div class="method-card" id="simple_product">
+        <h2>
+            <i class="bi bi-calculator" style="color:#f59e0b;"></i> Simple Product
+            <span class="tag" style="background:#fef3c7; color:#92400e;">Basic</span>
+        </h2>
+        <p>
+            Multiply the numeric weights of each level through the entire chain, then normalize
+            against the maximum possible score at that depth.
+        </p>
+        <div class="formula" style="border-color:#f59e0b;">
+            score = w<sub>space</sub> &times; w<sub>challenge</sub> &times; w<sub>initiative</sub> &times; ...<br>
+            percentage = score / max_weight<sup>depth</sup><br>
+            &le; 33% &rarr; Level 1 &nbsp;|&nbsp; &le; 66% &rarr; Level 2 &nbsp;|&nbsp; &gt; 66% &rarr; Level 3
+        </div>
+        <div class="example">
+            <strong>Example:</strong> Weights: ★=1, ★★=3, ★★★=5<br>
+            Space(★★=3) &times; Challenge(★★★=5) &times; Initiative(★=1) = <strong>15</strong><br>
+            Max at depth 3 = 5&sup3; = 125 &rarr; 15/125 = <strong>12%</strong> &rarr; Level 1 (★)
+        </div>
+        <p style="color:#94a3b8; font-size:0.82rem; margin-bottom:0;">
+            <i class="bi bi-info-circle"></i> Simple but can be overly punishing — a single weak link
+            drives the result very low due to multiplicative effect.
+        </p>
+    </div>
+
+    <!-- Method 2: Geometric Mean -->
+    <div class="method-card" id="geometric_mean">
+        <h2>
+            <i class="bi bi-graph-up" style="color:#10b981;"></i> Geometric Mean
+            <span class="tag" style="background:#d1fae5; color:#065f46;">Recommended</span>
+        </h2>
+        <p>
+            At each step in the chain, compute the <strong>geometric mean</strong> of the parent's compounded value
+            and the child's weight. The result naturally stays within the original weight scale.
+        </p>
+        <div class="formula" style="border-color:#10b981;">
+            step<sub>1</sub> = w<sub>space</sub><br>
+            step<sub>2</sub> = &radic;(step<sub>1</sub> &times; w<sub>challenge</sub>)<br>
+            step<sub>3</sub> = &radic;(step<sub>2</sub> &times; w<sub>initiative</sub>)<br>
+            Result mapped to nearest level by weight proximity
+        </div>
+        <div class="example">
+            <strong>Example:</strong> Weights: ★=1, ★★=3, ★★★=9 (Toyota scale)<br>
+            step<sub>1</sub> = 3 (Space ★★)<br>
+            step<sub>2</sub> = &radic;(3 &times; 9) = &radic;27 = <strong>5.2</strong> &rarr; nearest to ★★ (w=3) or ★★★ (w=9) &rarr; <strong>★★</strong><br>
+            step<sub>3</sub> = &radic;(5.2 &times; 1) = <strong>2.3</strong> &rarr; nearest to ★★ (w=3) &rarr; <strong>★★</strong>
+        </div>
+        <p style="color:#94a3b8; font-size:0.82rem; margin-bottom:0;">
+            <i class="bi bi-info-circle"></i> Balanced — a weak link reduces importance but doesn't
+            obliterate it. Based on the CISK simplified compounding algorithm.
+        </p>
+    </div>
+
+    <!-- Method 3: Toyota QFD -->
+    <div class="method-card" id="toyota_qfd">
+        <h2>
+            <i class="bi bi-lightning-fill" style="color:#ef4444;"></i> Toyota QFD
+            <span class="tag" style="background:#fee2e2; color:#991b1b;">Strongest Contrast</span>
+        </h2>
+        <p>
+            Uses a <strong>fuzzy lookup table</strong> inspired by Toyota's Quality Function Deployment (QFD).
+            At each step, the parent and child levels are looked up in a predefined matrix.
+            This method produces the <strong>sharpest differentiation</strong> — a weak link in the chain
+            has a dramatic effect.
+        </p>
+
+        <table class="qfd-table">
+            <thead>
+                <tr>
+                    <th>Parent \ Child</th>
+                    <th>★★★</th>
+                    <th>★★</th>
+                    <th>★</th>
+                    <th>Not set</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th>★★★</th>
+                    <td class="r3">★★★</td>
+                    <td class="r3">★★★</td>
+                    <td class="r2">★★</td>
+                    <td class="r0">—</td>
+                </tr>
+                <tr>
+                    <th>★★</th>
+                    <td class="r3">★★★</td>
+                    <td class="r2">★★</td>
+                    <td class="r1">★</td>
+                    <td class="r0">—</td>
+                </tr>
+                <tr>
+                    <th>★</th>
+                    <td class="r2">★★</td>
+                    <td class="r1">★</td>
+                    <td class="r0">—</td>
+                    <td class="r0">—</td>
+                </tr>
+                <tr>
+                    <th>Not set</th>
+                    <td class="r0">—</td>
+                    <td class="r0">—</td>
+                    <td class="r0">—</td>
+                    <td class="r0">—</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="example">
+            <strong>Example:</strong> Space(★★) &times; Challenge(★★★) &rarr; lookup(★★, ★★★) = <strong>★★★</strong><br>
+            Then ★★★ &times; Initiative(★) &rarr; lookup(★★★, ★) = <strong>★★</strong><br>
+            Final true importance: <strong>★★</strong>
+        </div>
+        <p style="color:#94a3b8; font-size:0.82rem; margin-bottom:0;">
+            <i class="bi bi-info-circle"></i> No numeric weights needed. Maximum contrast enforces clear
+            prioritization — avoids "everything is medium" syndrome. Ideal for executive decision-making.
+        </p>
+        <div style="margin-top:1rem; padding:0.75rem 1rem; background:#fef2f2; border-radius:8px; border:1px solid #fecdd3;">
+            <p style="font-size:0.82rem; color:#9f1239; margin:0;">
+                <i class="bi bi-pencil-square"></i> <strong>Customizable:</strong> The lookup matrix can be edited
+                in the Impact Scale admin page. You can adjust how parent and child levels combine to match
+                your organization's decision-making style.
+            </p>
+        </div>
+    </div>
+
+    <!-- Comparison -->
+    <div class="method-card">
+        <h2><i class="bi bi-arrow-left-right" style="color:#8b5cf6;"></i> Comparison</h2>
+        <table class="qfd-table">
+            <thead>
+                <tr>
+                    <th>Chain</th>
+                    <th>Simple Product</th>
+                    <th>Geometric Mean</th>
+                    <th>Toyota QFD</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>★★★ &rarr; ★★★ &rarr; ★★★</td>
+                    <td class="r3">★★★</td><td class="r3">★★★</td><td class="r3">★★★</td>
+                </tr>
+                <tr>
+                    <td>★★★ &rarr; ★★ &rarr; ★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td>
+                </tr>
+                <tr>
+                    <td>★ &rarr; ★★★ &rarr; ★★★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td>
+                </tr>
+                <tr>
+                    <td>★★ &rarr; ★★ &rarr; ★★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td>
+                </tr>
+                <tr>
+                    <td>★ &rarr; ★ &rarr; ★</td>
+                    <td class="r1">★</td><td class="r1">★</td><td class="r0">—</td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="color:#64748b; font-size:0.85rem;">
+            Notice how Simple Product tends to push everything to ★ (Level 1) due to normalization,
+            while Geometric Mean and Toyota QFD preserve more nuance. Toyota QFD is the most aggressive
+            at eliminating low-impact chains.
+        </p>
+    </div>
+</div>
+{% endblock %}
