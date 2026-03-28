@@ -2287,7 +2287,7 @@
                             <div class="ws-cell value-cell text-center"
                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                  :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'"
-                                 @mouseenter="showRollupTip(space, 'space', vt.id, $event)" @mouseleave="hideRollupTip()">
+                                 @click.stop="showRollupTip(space, 'space', vt.id, $event)">
                                 <template x-if="!vt.collapsed">
                                     <template x-if="space.rollup_values && space.rollup_values[String(vt.id)]">
                                         <div @click.stop="openDrillDown(space, 'space', vt.id, $event)" style="cursor: pointer;">
@@ -2427,7 +2427,7 @@
                                     <div class="ws-cell value-cell text-center"
                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                          :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'"
-                                         @mouseenter="showRollupTip(challenge, 'challenge', vt.id, $event)" @mouseleave="hideRollupTip()">
+                                         @click.stop="showRollupTip(challenge, 'challenge', vt.id, $event)">
                                         <template x-if="!vt.collapsed">
                                             <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
                                                 <div @click.stop="openDrillDown(challenge, 'challenge', vt.id, $event)" style="cursor: pointer;">
@@ -2529,7 +2529,7 @@
                                             <div class="ws-cell value-cell text-center"
                                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                  :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'"
-                                                 @mouseenter="showRollupTip(initiative, 'initiative', vt.id, $event)" @mouseleave="hideRollupTip()">
+                                                 @click.stop="showRollupTip(initiative, 'initiative', vt.id, $event)">
                                                 <template x-if="!vt.collapsed">
                                                     <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
                                                         <div @click.stop="openDrillDown(initiative, 'initiative', vt.id, $event)" style="cursor: pointer;">
@@ -2658,7 +2658,7 @@
                                                     <div class="ws-cell value-cell text-center"
                                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                          :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'"
-                                                         @mouseenter="showRollupTip(system, 'system', vt.id, $event)" @mouseleave="hideRollupTip()">
+                                                         @click.stop="showRollupTip(system, 'system', vt.id, $event)">
                                                         <template x-if="!vt.collapsed">
                                                             <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
                                                                 <div @click.stop="openDrillDown(system, 'system', vt.id, $event)" style="cursor: pointer;">
@@ -4093,7 +4093,9 @@ function workspaceV2(orgId, filterPresets) {
                 try {
                     var d = window._wsLinkData && window._wsLinkData[idx];
                     if (d) {
-                        document.getElementById('ws-desc-tooltip').style.display = 'none';
+                        // Close the info window that triggered this (find closest parent)
+                        var iw = event && event.target ? event.target.closest('.ws-info-window') : null;
+                        if (iw) iw.remove();
                         self.showEntityLinks(d.entity, d.entityType);
                     } else {
                         console.log('[LINKS] No data for idx:', idx, window._wsLinkData);
@@ -4103,27 +4105,9 @@ function workspaceV2(orgId, filterPresets) {
             window._wsLinkData = {};
 
             // Wire up rollup tooltip events (pure DOM)
-            var _tipEl = document.getElementById('ws-rollup-tip');
-            if (_tipEl) {
-                var self = this;
-                _tipEl.addEventListener('mouseenter', function() { clearTimeout(self._rollupTipTimer); });
-                _tipEl.addEventListener('mouseleave', function() { self.hideRollupTip(); });
-                _tipEl.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    _tipEl.style.display = 'none';
-                    self.openDrillDown(self.rollupTip.entity, self.rollupTip.entityType, self.rollupTip.vtId, e);
-                });
-            }
+            // Rollup tips are now click-based multi-window (no single element setup needed)
 
-            // Wire up drilldown panel
-            var _ddPanel = document.getElementById('ws-drilldown-panel');
-            if (_ddPanel) {
-                var self = this;
-                _ddPanel.querySelector('.ws-dd-close-btn').addEventListener('click', function() { self.closeDrillDown(); });
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape' && _ddPanel.style.display !== 'none') self.closeDrillDown();
-                });
-            }
+            // Drill-down panels are now created dynamically (multi-window)
         },
 
         saveTreeState() {
@@ -5129,143 +5113,99 @@ function workspaceV2(orgId, filterPresets) {
             }
         },
 
-        // --- Rollup hover tooltip ---
+        // --- Cell click → open drill-down directly ---
         showRollupTip(entity, entityType, vtId, event) {
-            clearTimeout(this._rollupTipTimer);
-            // Don't replace tooltip if mouse is over the tooltip itself
-            var tipEl = document.getElementById('ws-rollup-tip');
-            if (tipEl && tipEl.matches(':hover')) return;
             var rv = entity.rollup_values && entity.rollup_values[String(vtId)];
             if (!rv || rv.value == null) return;
-            var fmap = { sum: ['\u03A3','Sum'], avg: ['\u2248','Average'], max: ['\u2191','Maximum'], min: ['\u2193','Minimum'], median: ['m','Median'], count: ['#','Count'], mode: ['\u25C9','Mode'] };
-            var pair = fmap[rv.formula] || ['\u2014', rv.formula || '\u2014'];
-            var symbol = pair[0], formulaName = pair[1];
-            var cwords = { space: 'challenge', challenge: 'initiative', initiative: 'system', system: 'KPI' };
-            var pct = rv.count_total > 0 ? Math.round(rv.count_included / rv.count_total * 100) : 0;
-            var childWord = cwords[entityType] || 'item';
-            var barColor = rv.is_complete ? '#22c55e' : '#f59e0b';
-
-            this.rollupTip.entity = entity;
-            this.rollupTip.entityType = entityType;
-            this.rollupTip.vtId = String(vtId);
-
-            var el = document.getElementById('ws-rollup-tip');
-            if (!el) return;
-            el.querySelector('.ws-rt-symbol').textContent = symbol;
-            el.querySelector('.ws-rt-fname').textContent = formulaName;
-            el.querySelector('.ws-rt-bar-fill').style.cssText = 'width:' + pct + '%; background:' + barColor + ';';
-            var countTotal = rv.count_total || 0;
-            el.querySelector('.ws-rt-counts').textContent = (rv.count_included || 0) + ' / ' + countTotal + ' ' + childWord + (countTotal !== 1 ? 's' : '');
-            el.style.left = (event.clientX + 14) + 'px';
-            el.style.top = (event.clientY + 14) + 'px';
-            el.style.display = 'block';
-        },
-        hideRollupTip() {
-            this._rollupTipTimer = setTimeout(function() {
-                var el = document.getElementById('ws-rollup-tip');
-                if (el) el.style.display = 'none';
-            }, 200);
-        },
-        moveRollupTip(event) {
-            var el = document.getElementById('ws-rollup-tip');
-            if (el && el.style.display === 'block') {
-                el.style.left = (event.clientX + 14) + 'px';
-                el.style.top = (event.clientY + 14) + 'px';
-            }
+            this.openDrillDown(entity, entityType, String(vtId), event);
         },
 
-        // --- Drill-down panel ---
+        // --- Drill-down panel (multi-window, draggable) ---
         openDrillDown(entity, entityType, vtId, event) {
-            var tip = document.getElementById('ws-rollup-tip');
-            if (tip) tip.style.display = 'none';
-            clearTimeout(this._rollupTipTimer);
-
             this._ddExpanded = {};
             var vt = this.valueTypes.find(function(v) { return v.id === vtId; });
-            this.drillDown.visible = true;
-            this.drillDown.entityType = entityType;
-            this.drillDown.entity = entity;
-            this.drillDown.vtId = String(vtId);
-            this.drillDown.vtName = vt ? vt.name : '';
-
-            if (this._drillDownCloseHandler) {
-                document.removeEventListener('click', this._drillDownCloseHandler, true);
-            }
-
             var self = this;
-            setTimeout(function() {
-                var panel = document.getElementById('ws-drilldown-panel');
-                if (!panel) return;
-                panel.querySelector('.ws-dd-type-badge').textContent = entityType ? entityType.charAt(0).toUpperCase() + entityType.slice(1) : '';
-                panel.querySelector('.ws-dd-vt-name').textContent = vt ? vt.name : '';
-                panel.querySelector('.ws-dd-entity-name').textContent = entity ? entity.name : '';
-                var _ddKpiOnly = true;
-                panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDownFlat(entity, entityType, String(vtId), vt);
-                // Wire KPI-only toggle
-                var kpiBtn = panel.querySelector('.ws-dd-kpi-btn');
-                if (kpiBtn) {
-                    kpiBtn.classList.add('active');
-                    kpiBtn.title = 'Show full tree';
-                    kpiBtn.onclick = function(e) {
-                        e.stopPropagation();
-                        _ddKpiOnly = !_ddKpiOnly;
-                        kpiBtn.classList.toggle('active', _ddKpiOnly);
-                        kpiBtn.title = _ddKpiOnly ? 'Show full tree' : 'Show KPIs only';
-                        panel.querySelector('.ws-dd-body').innerHTML = _ddKpiOnly
-                            ? self.renderDrillDownFlat(entity, entityType, String(vtId), vt)
-                            : self.renderDrillDown(entity, entityType, String(vtId), vt);
-                        // Re-wire toggle clicks for tree mode
-                        if (!_ddKpiOnly) {
-                            panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
-                                row.addEventListener('click', function(ev) {
-                                    ev.stopPropagation();
-                                    var children = row.parentElement.querySelector('.ws-dd-children');
-                                    var chevron = row.querySelector('.ws-dd-chevron');
-                                    if (children) children.style.display = children.style.display === 'none' ? '' : 'none';
-                                    if (chevron) { chevron.classList.toggle('bi-chevron-down'); chevron.classList.toggle('bi-chevron-right'); }
-                                });
-                            });
-                        }
-                    };
-                }
-                // Wire toggle clicks
-                panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
-                    row.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        var children = row.parentElement.querySelector('.ws-dd-children');
-                        var chevron = row.querySelector('.ws-dd-chevron');
-                        if (children) children.style.display = children.style.display === 'none' ? '' : 'none';
-                        if (chevron) { chevron.classList.toggle('bi-chevron-down'); chevron.classList.toggle('bi-chevron-right'); }
-                    });
-                });
-                panel.style.display = 'block';
-                panel.style.left = (event.clientX + 12) + 'px';
-                panel.style.top = (event.clientY - 20) + 'px';
+            var _ddKpiOnly = true;
+
+            // Create a new panel element
+            var panel = document.createElement('div');
+            panel.className = 'ws-dd-panel';
+            panel.innerHTML =
+                '<div class="ws-dd-header">' +
+                    '<div style="flex:1;min-width:0;">' +
+                        '<div style="display:flex;align-items:center;gap:0.45rem;margin-bottom:3px;">' +
+                            '<span class="ws-dd-type-badge">' + (entityType ? entityType.charAt(0).toUpperCase() + entityType.slice(1) : '') + '<\/span>' +
+                            '<span class="ws-dd-vt-name">' + (vt ? vt.name : '') + '<\/span>' +
+                        '<\/div>' +
+                        '<div class="ws-dd-entity-name">' + (entity ? entity.name : '') + '<\/div>' +
+                    '<\/div>' +
+                    '<button class="ws-dd-kpi-btn active" title="Show full tree"><i class="bi bi-graph-up"><\/i><\/button>' +
+                    '<button class="ws-dd-close-btn" title="Close"><i class="bi bi-x-lg"><\/i><\/button>' +
+                '<\/div>' +
+                '<div class="ws-dd-body"><\/div>';
+
+            // Render content
+            panel.querySelector('.ws-dd-body').innerHTML = self.renderDrillDownFlat(entity, entityType, String(vtId), vt);
+
+            // Position
+            var x = event.clientX + 12, y = event.clientY - 20;
+            panel.style.left = x + 'px';
+            panel.style.top = y + 'px';
+            document.body.appendChild(panel);
+
+            // Reposition if off-screen
+            requestAnimationFrame(function() {
                 var w = panel.offsetWidth, h = panel.offsetHeight;
-                var x = event.clientX + 12, y = event.clientY - 20;
                 if (x + w > window.innerWidth - 8) x = event.clientX - w - 12;
                 if (y + h > window.innerHeight - 8) y = window.innerHeight - h - 8;
                 if (y < 8) y = 8;
                 if (x < 8) x = 8;
                 panel.style.left = x + 'px';
                 panel.style.top = y + 'px';
-                var handler = function(e) {
-                    if (panel && !panel.contains(e.target)) {
-                        self.closeDrillDown();
-                    }
-                };
-                setTimeout(function() { document.addEventListener('click', handler, true); }, 0);
-                self._drillDownCloseHandler = handler;
-            }, 0);
-        },
-        closeDrillDown() {
-            this.drillDown.visible = false;
-            var panel = document.getElementById('ws-drilldown-panel');
-            if (panel) panel.style.display = 'none';
-            if (this._drillDownCloseHandler) {
-                document.removeEventListener('click', this._drillDownCloseHandler, true);
-                this._drillDownCloseHandler = null;
+            });
+
+            function _wireToggleClicks() {
+                panel.querySelectorAll('[data-dd-toggle]').forEach(function(row) {
+                    row.addEventListener('click', function(ev) {
+                        ev.stopPropagation();
+                        var children = row.parentElement.querySelector('.ws-dd-children');
+                        var chevron = row.querySelector('.ws-dd-chevron');
+                        if (children) children.style.display = children.style.display === 'none' ? '' : 'none';
+                        if (chevron) { chevron.classList.toggle('bi-chevron-down'); chevron.classList.toggle('bi-chevron-right'); }
+                    });
+                });
             }
+            _wireToggleClicks();
+
+            // KPI-only toggle
+            var kpiBtn = panel.querySelector('.ws-dd-kpi-btn');
+            if (kpiBtn) {
+                kpiBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    _ddKpiOnly = !_ddKpiOnly;
+                    kpiBtn.classList.toggle('active', _ddKpiOnly);
+                    kpiBtn.title = _ddKpiOnly ? 'Show full tree' : 'Show KPIs only';
+                    panel.querySelector('.ws-dd-body').innerHTML = _ddKpiOnly
+                        ? self.renderDrillDownFlat(entity, entityType, String(vtId), vt)
+                        : self.renderDrillDown(entity, entityType, String(vtId), vt);
+                    if (!_ddKpiOnly) _wireToggleClicks();
+                };
+            }
+
+            // Close button
+            panel.querySelector('.ws-dd-close-btn').addEventListener('click', function(e) {
+                e.stopPropagation();
+                panel.remove();
+            });
+
+            // Escape key closes most recent panel
+            var escHandler = function(e) {
+                if (e.key === 'Escape') { panel.remove(); document.removeEventListener('keydown', escHandler); }
+            };
+            document.addEventListener('keydown', escHandler);
+
+            // Make draggable
+            _makeIWDraggable(panel, '.ws-dd-header');
         },
         renderDrillDown(entity, entityType, vtId, vt) {
             var rv = entity.rollup_values && entity.rollup_values[vtId];
@@ -5445,40 +5385,56 @@ function workspaceV2(orgId, filterPresets) {
 <!-- Preset logic now handled by unified PresetManager in _preset_bar.html -->
 
 <!-- Custom multiline description tooltip -->
-<div id="ws-desc-tooltip"></div>
+<!-- Multi-window info system styles -->
 <style>
-    #ws-desc-tooltip {
+    /* Shared info window styles (description + rollup) */
+    .ws-info-window {
         position: fixed;
-        display: none;
         background: #1e2533;
         color: #e8eaf0;
-        padding: 0.5rem 0.75rem;
         border-radius: 8px;
         font-size: 0.82rem;
         line-height: 1.55;
         max-width: 380px;
+        min-width: 160px;
         word-break: break-word;
         z-index: 9999;
         box-shadow: 0 4px 16px rgba(0,0,0,0.35);
         border: 1px solid rgba(255,255,255,0.08);
     }
-    #ws-desc-tooltip .tt-desc { white-space: pre-wrap; margin-bottom: 0.4rem; }
-    #ws-desc-tooltip .tt-actions {
+    .ws-iw-header {
+        display: flex; align-items: center; gap: 0.4rem;
+        padding: 0.35rem 0.55rem 0.25rem;
+        cursor: move; user-select: none;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ws-iw-header-title {
+        flex: 1; font-weight: 600; font-size: 0.78rem; color: #94a3b8;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .ws-iw-close {
+        background: none; border: none; color: #94a3b8; cursor: pointer;
+        font-size: 1.1rem; line-height: 1; padding: 0 0.2rem; margin-left: auto;
+    }
+    .ws-iw-close:hover { color: #f1f5f9; }
+    .ws-iw-body { padding: 0.5rem 0.75rem; }
+    .ws-iw-body .tt-desc { white-space: pre-wrap; margin-bottom: 0.4rem; }
+    .ws-iw-body .tt-actions {
         display: flex; flex-wrap: wrap; gap: 0.35rem; padding-top: 0.4rem;
         border-top: 1px solid rgba(255,255,255,0.1);
     }
-    #ws-desc-tooltip .tt-actions:empty { display: none; }
-    #ws-desc-tooltip .tt-chip {
+    .ws-iw-body .tt-actions:empty { display: none; }
+    .ws-info-window .tt-chip {
         display: inline-flex; align-items: center; gap: 0.3rem;
         font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 6px;
         background: rgba(255,255,255,0.08); color: #94a3b8;
         text-decoration: none; transition: all 0.15s; cursor: pointer;
     }
-    #ws-desc-tooltip .tt-chip:hover { background: rgba(255,255,255,0.15); color: #f1f5f9; }
-    #ws-desc-tooltip .tt-chip i { font-size: 0.7rem; }
-    #ws-desc-tooltip .tt-badge-empty { color: #f59e0b; }
-    #ws-desc-tooltip .tt-badge-partial { color: #60a5fa; }
-    #ws-desc-tooltip .tt-badge-complete { color: #4ade80; }
+    .ws-info-window .tt-chip:hover { background: rgba(255,255,255,0.15); color: #f1f5f9; }
+    .ws-info-window .tt-chip i { font-size: 0.7rem; }
+    .ws-info-window .tt-badge-empty { color: #f59e0b; }
+    .ws-info-window .tt-badge-partial { color: #60a5fa; }
+    .ws-info-window .tt-badge-complete { color: #4ade80; }
 
     /* Entity links modal edit items */
     .el-item { margin-bottom: 0.6rem; }
@@ -5487,105 +5443,119 @@ function workspaceV2(orgId, filterPresets) {
     .el-edit-btn, .el-del-btn { opacity: 0.3; transition: opacity 0.15s; padding: 0.15rem 0.35rem; }
 </style>
 <script>
-(function() {
-    var tip = document.getElementById('ws-desc-tooltip');
-    var showTimer = null;
-    var hideTimer = null;
-    var overTip = false;
-    var overEl = false;
-    var activeEl = null;
-    var lastX = 0, lastY = 0;
-
-    function render(el) {
-        var desc = el.dataset.tooltip || '';
-        var actions = el.dataset.tooltipActions || '';
-        var html = '';
-        if (desc) html += '<div class="tt-desc">' + desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '<\/div>';
-        if (actions) html += '<div class="tt-actions">' + actions + '<\/div>';
-        return html;
-    }
-
-    function position() {
-        var x = Math.min(lastX + 14, window.innerWidth - tip.offsetWidth - 8);
-        var y = Math.min(lastY + 14, window.innerHeight - tip.offsetHeight - 8);
-        tip.style.left = x + 'px';
-        tip.style.top = y + 'px';
-    }
-
-    function checkHide() {
-        clearTimeout(hideTimer);
-        if (!overTip && !overEl) {
-            hideTimer = setTimeout(function() {
-                if (!overTip && !overEl) {
-                    tip.style.display = 'none';
-                    activeEl = null;
-                }
-            }, 400);
+// Draggable info window helper (optional headerSelector for custom drag handle)
+function _makeIWDraggable(win, headerSelector) {
+    var header = win.querySelector(headerSelector || '.ws-iw-header');
+    if (!header) return;
+    header.style.cursor = 'move';
+    var ox, oy, sx, sy;
+    header.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.ws-iw-close')) return;
+        e.preventDefault();
+        ox = e.clientX; oy = e.clientY;
+        sx = parseInt(win.style.left) || 0;
+        sy = parseInt(win.style.top) || 0;
+        function onMove(ev) {
+            win.style.left = (sx + ev.clientX - ox) + 'px';
+            win.style.top = (sy + ev.clientY - oy) + 'px';
         }
-    }
+        function onUp() {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+        }
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+    });
+    // Touch support
+    header.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.ws-iw-close')) return;
+        var t = e.touches[0];
+        ox = t.clientX; oy = t.clientY;
+        sx = parseInt(win.style.left) || 0;
+        sy = parseInt(win.style.top) || 0;
+        function onMove(ev) {
+            ev.preventDefault();
+            var t2 = ev.touches[0];
+            win.style.left = (sx + t2.clientX - ox) + 'px';
+            win.style.top = (sy + t2.clientY - oy) + 'px';
+        }
+        function onEnd() {
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend', onEnd);
+        }
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend', onEnd);
+    }, { passive: false });
+}
 
-    // Track mouse position for tooltip placement
-    document.addEventListener('mousemove', function(e) { lastX = e.clientX; lastY = e.clientY; });
-
-    // Entity name mouseenter — via event delegation
-    document.addEventListener('mouseenter', function(e) {
+// Entity description click → open info window
+(function() {
+    document.addEventListener('click', function(e) {
         var el = e.target.closest ? e.target.closest('[data-tooltip],[data-tooltip-actions]') : null;
         if (!el || (!el.dataset.tooltip && !el.dataset.tooltipActions)) return;
-        overEl = true;
-        clearTimeout(hideTimer);
-        clearTimeout(showTimer);
-        activeEl = el;
-        showTimer = setTimeout(function() {
-            if (!overEl || activeEl !== el) return;
-            var html = render(el);
-            if (!html) return;
-            tip.innerHTML = html;
-            tip.style.display = 'block';
-            position();
-        }, 300);
-    }, true);
 
-    document.addEventListener('mouseleave', function(e) {
-        var el = e.target.closest ? e.target.closest('[data-tooltip],[data-tooltip-actions]') : null;
-        if (!el || el !== activeEl) return;
-        overEl = false;
-        clearTimeout(showTimer);
-        checkHide();
-    }, true);
+        // Don't open if clicking inside an existing info window
+        if (e.target.closest('.ws-info-window')) return;
 
-    // Tooltip itself
-    tip.addEventListener('mouseenter', function() { overTip = true; clearTimeout(hideTimer); });
-    tip.addEventListener('mouseleave', function() { overTip = false; checkHide(); });
+        var desc = el.dataset.tooltip || '';
+        var actions = el.dataset.tooltipActions || '';
+        var bodyHtml = '';
+        if (desc) bodyHtml += '<div class="tt-desc">' + desc.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '<\/div>';
+        if (actions) bodyHtml += '<div class="tt-actions">' + actions + '<\/div>';
+        if (!bodyHtml) return;
+
+        // Get entity name from the clicked element text
+        var nameEl = el.querySelector('.ws-entity-name, .ws-entity-link, span');
+        var title = (nameEl ? nameEl.textContent : el.textContent || '').trim().substring(0, 40);
+
+        var win = document.createElement('div');
+        win.className = 'ws-info-window';
+        win.innerHTML =
+            '<div class="ws-iw-header">' +
+                '<span class="ws-iw-header-title">' + title + '<\/span>' +
+                '<button class="ws-iw-close" title="Close">&times;<\/button>' +
+            '<\/div>' +
+            '<div class="ws-iw-body">' + bodyHtml + '<\/div>';
+
+        var x = Math.min(e.clientX + 14, window.innerWidth - 300);
+        var y = Math.min(e.clientY + 14, window.innerHeight - 200);
+        win.style.left = x + 'px';
+        win.style.top = y + 'px';
+        document.body.appendChild(win);
+
+        // Reposition if off-screen after rendering
+        requestAnimationFrame(function() {
+            var rect = win.getBoundingClientRect();
+            if (rect.right > window.innerWidth) win.style.left = Math.max(8, window.innerWidth - rect.width - 8) + 'px';
+            if (rect.bottom > window.innerHeight) win.style.top = Math.max(8, window.innerHeight - rect.height - 8) + 'px';
+        });
+
+        win.querySelector('.ws-iw-close').addEventListener('click', function(ev) { ev.stopPropagation(); win.remove(); });
+        _makeIWDraggable(win);
+    }, true);
 })();
 </script>
 
 <!-- Rollup tooltip & drilldown styles -->
 <style>
-    .ws-rollup-tip {
-        position: fixed;
-        z-index: 9997;
-        cursor: pointer;
-        background: #1e2533;
-        color: #e8eaf0;
-        border-radius: 9px;
-        padding: 0.6rem 0.75rem 0.5rem;
-        min-width: 150px;
-        box-shadow: 0 6px 20px rgba(0,0,0,0.28);
-        border: 1px solid rgba(255,255,255,0.07);
-        transition: opacity 0.12s ease;
-    }
+    /* Rollup tip elements (used inside .ws-info-window) */
     .ws-rt-top {
         display: flex; align-items: baseline; gap: 0.45rem; margin-bottom: 0.45rem;
     }
     .ws-rt-symbol { font-size: 1.25rem; font-weight: 800; line-height: 1; color: #7dd3fc; }
     .ws-rt-fname { font-size: 0.82rem; font-weight: 600; color: #fff; }
-    .ws-rt-bar-track {
-        height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; margin-bottom: 0.4rem; overflow: hidden;
+    .ws-info-window .ws-rt-bar-track {
+        height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px;
+        margin: 0.3rem 0.55rem 0.4rem; overflow: hidden;
     }
-    .ws-rt-bar-fill { height: 4px; border-radius: 2px; }
-    .ws-rt-bottom { display: flex; justify-content: space-between; align-items: center; }
+    .ws-info-window .ws-rt-bar-fill { height: 4px; border-radius: 2px; }
+    .ws-info-window .ws-rt-bottom {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 0 0.55rem 0.4rem;
+    }
     .ws-rt-counts { font-size: 0.73rem; color: #94a3b8; }
-    .ws-rt-expand { font-size: 0.68rem; color: #60a5fa; opacity: 0.7; }
+    .ws-rt-expand { font-size: 0.68rem; color: #60a5fa; cursor: pointer; }
+    .ws-rt-expand:hover { color: #93c5fd; }
 
     .ws-dd-panel {
         position: fixed; z-index: 9998; background: #1e2533; color: #e8eaf0;
@@ -5597,6 +5567,7 @@ function workspaceV2(orgId, filterPresets) {
         display: flex; align-items: flex-start; gap: 0.75rem;
         padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08);
         position: sticky; top: 0; background: #1e2533; z-index: 1;
+        cursor: move; user-select: none;
     }
     .ws-dd-type-badge {
         font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
@@ -5671,40 +5642,7 @@ function workspaceV2(orgId, filterPresets) {
     .ws-dd-footer-unit { font-size: 0.75rem; color: #64748b; }
 </style>
 
-<!-- Rollup hover tooltip — outside workspace-v2 to avoid overflow clipping -->
-<div id="ws-rollup-tip" class="ws-rollup-tip" style="display:none;">
-    <div class="ws-rt-top">
-        <span class="ws-rt-symbol"></span>
-        <span class="ws-rt-fname"></span>
-    </div>
-    <div class="ws-rt-bar-track">
-        <div class="ws-rt-bar-fill"></div>
-    </div>
-    <div class="ws-rt-bottom">
-        <span class="ws-rt-counts"></span>
-        <i class="bi bi-arrows-angle-expand ws-rt-expand"></i>
-    </div>
-</div>
-
-<!-- Drilldown panel — outside workspace-v2 -->
-<div id="ws-drilldown-panel" class="ws-dd-panel" style="display:none;">
-    <div class="ws-dd-header">
-        <div style="flex:1; min-width:0;">
-            <div style="display:flex; align-items:center; gap:0.45rem; margin-bottom:3px;">
-                <span class="ws-dd-type-badge"></span>
-                <span class="ws-dd-vt-name"></span>
-            </div>
-            <div class="ws-dd-entity-name"></div>
-        </div>
-        <button class="ws-dd-kpi-btn active" title="Toggle: KPIs only / full hierarchy tree">
-            <i class="bi bi-graph-up"></i>
-        </button>
-        <button class="ws-dd-close-btn" title="Close">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    </div>
-    <div class="ws-dd-body"></div>
-</div>
+<!-- Drill-down panels are created dynamically by openDrillDown() -->
 
 <!-- Data Actions — outside workspace-v2 so position:fixed works relative to viewport -->
 <div class="snapshot-controls">

@@ -5,6 +5,35 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.3] - 2026-03-28
+
+### Changed
+- **Multiple drill-down panels** — clicking different cells opens separate drill-down panels simultaneously; each is draggable, closable with X or Escape, with its own KPI-only toggle
+- Static `#ws-drilldown-panel` replaced with dynamically created panels
+
+## [4.3.2] - 2026-03-28
+
+### Changed
+- **Cell click opens drill-down directly** — removed the small intermediate rollup info window; clicking a value cell now opens the full drill-down panel immediately
+- **Drill-down panel is draggable** — drag by header bar to reposition (mouse + touch)
+
+## [4.3.1] - 2026-03-28
+
+### Fixed
+- **Entity links click error** — `_wsShowEntityLinks` no longer references removed `#ws-desc-tooltip` element; closes parent info window instead
+
+### Changed
+- **Search filter: toggle pills replace ctrl+click** — entity type checkboxes replaced with modern toggle pill buttons (tap-friendly, no keyboard modifier needed); "Select All / Deselect All" toggle link
+
+## [4.3.0] - 2026-03-28
+
+### Changed
+- **Workspace info windows: click instead of hover** — all entity description tooltips and cell rollup tooltips now open on click instead of mouseover; fully mobile-friendly
+- **Multiple info windows** — can open several info windows simultaneously; each has its own X close button
+- **Draggable info windows** — drag by header bar to reposition (mouse + touch support)
+- Entity name click opens description + action chips window
+- Cell click opens rollup formula/coverage window with drill-down expand icon
+
 ## [4.2.1] - 2026-03-27
 
 ### Fixed

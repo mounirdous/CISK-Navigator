@@ -1395,6 +1395,22 @@
             #liveSearchResults::-webkit-scrollbar-thumb:hover {
                 background: #555;
             }
+            /* Search filter toggle pills */
+            .sf-pill {
+                display: inline-flex; align-items: center; gap: 0.3rem;
+                padding: 0.3rem 0.65rem; border-radius: 20px;
+                border: 1.5px solid #dee2e6; background: white;
+                font-size: 0.78rem; font-weight: 600; cursor: pointer;
+                color: #6c757d; transition: all 0.15s; white-space: nowrap;
+            }
+            .sf-pill:hover { border-color: #0d6efd; color: #0d6efd; }
+            .sf-pill.active {
+                background: #0d6efd; color: white; border-color: #0d6efd;
+            }
+            .sf-pill.active:hover {
+                background: #0b5ed7; border-color: #0b5ed7;
+            }
+            .sf-pill i { font-size: 0.72rem; }
         `;
         document.head.appendChild(style);
     })();
@@ -1485,51 +1501,43 @@
         </div>
         <div class="offcanvas-body">
             <div id="searchFiltersPanel">
-                <!-- Entity Types -->
+                <!-- Entity Types — toggle pills -->
                 <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Entity Types</h6>
-                    <small class="text-muted d-block mb-1">Click to isolate · Ctrl+Click to toggle</small>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_kpis" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_kpis">
-                            <i class="bi bi-graph-up text-warning"></i> KPIs
-                        </label>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0">Entity Types</h6>
+                        <button type="button" class="btn btn-sm btn-link text-muted p-0" style="font-size:0.72rem;text-decoration:none;" onclick="toggleAllEntityFilters()">
+                            <span id="toggleAllLabel">Deselect All</span>
+                        </button>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_systems" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_systems">
-                            <i class="bi bi-pc-display text-info"></i> Systems
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_initiatives" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_initiatives">
-                            <i class="bi bi-lightning text-success"></i> Initiatives
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_challenges" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_challenges">
-                            <i class="bi bi-flag text-danger"></i> Challenges
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_spaces" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_spaces">
-                            <i class="bi bi-grid-3x3-gap text-primary"></i> Spaces
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_action_items" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_action_items">
-                            <i class="bi bi-check2-square" style="color: #6f42c1;"></i> Action Items
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_entity_links" checked onclick="handleEntityTypeClick(event, this.id)">
-                        <label class="form-check-label" for="filter_entity_links">
-                            <i class="bi bi-link-45deg" style="color: #0ea5e9;"></i> URL Links
-                        </label>
+                    <div class="d-flex flex-wrap gap-1" id="entityFilterPills">
+                        <input type="checkbox" id="filter_kpis" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_kpis" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-graph-up"></i> KPIs
+                        </button>
+                        <input type="checkbox" id="filter_systems" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_systems" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-pc-display"></i> Systems
+                        </button>
+                        <input type="checkbox" id="filter_initiatives" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_initiatives" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-lightning"></i> Initiatives
+                        </button>
+                        <input type="checkbox" id="filter_challenges" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_challenges" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-flag"></i> Challenges
+                        </button>
+                        <input type="checkbox" id="filter_spaces" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_spaces" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-grid-3x3-gap"></i> Spaces
+                        </button>
+                        <input type="checkbox" id="filter_action_items" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_action_items" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-check2-square"></i> Actions
+                        </button>
+                        <input type="checkbox" id="filter_entity_links" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_entity_links" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-link-45deg"></i> Links
+                        </button>
                     </div>
                 </div>
 
@@ -1642,42 +1650,34 @@
     </div>
 
     <script>
-    // Search Filters Management
-    function handleEntityTypeClick(event, clickedId) {
-        var entityCheckboxIds = [
-            'filter_kpis', 'filter_systems', 'filter_initiatives',
-            'filter_challenges', 'filter_spaces', 'filter_action_items'
-        ];
-        if (document.getElementById('filter_entity_links')) entityCheckboxIds.push('filter_entity_links');
-
-        if (event.ctrlKey || event.metaKey || event.shiftKey) {
-            // Multi-select: just apply (checkbox already toggled by browser)
-            applySearchFilters();
-            return;
-        }
-
-        var currentlyChecked = entityCheckboxIds.filter(function(id) {
-            return document.getElementById(id) && document.getElementById(id).checked;
-        });
-
-        // Prevent default checkbox toggle - we'll manage it ourselves
-        event.preventDefault();
-
-        if (currentlyChecked.length === 1 && currentlyChecked[0] === clickedId) {
-            // Only one was selected and user clicks it again -> select ALL
-            entityCheckboxIds.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.checked = true;
-            });
-        } else {
-            // Select ONLY this one
-            entityCheckboxIds.forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.checked = (id === clickedId);
-            });
-        }
-
+    // Search Filters Management — toggle pill UI
+    function toggleEntityPill(btn) {
+        var cbId = btn.dataset.for;
+        var cb = document.getElementById(cbId);
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        btn.classList.toggle('active', cb.checked);
+        updateToggleAllLabel();
         applySearchFilters();
+    }
+
+    function toggleAllEntityFilters() {
+        var pills = document.querySelectorAll('#entityFilterPills .sf-pill');
+        var allActive = Array.from(pills).every(function(p) { return p.classList.contains('active'); });
+        pills.forEach(function(btn) {
+            var cb = document.getElementById(btn.dataset.for);
+            if (cb) cb.checked = !allActive;
+            btn.classList.toggle('active', !allActive);
+        });
+        updateToggleAllLabel();
+        applySearchFilters();
+    }
+
+    function updateToggleAllLabel() {
+        var pills = document.querySelectorAll('#entityFilterPills .sf-pill');
+        var allActive = Array.from(pills).every(function(p) { return p.classList.contains('active'); });
+        var el = document.getElementById('toggleAllLabel');
+        if (el) el.textContent = allActive ? 'Deselect All' : 'Select All';
     }
 
     function applySearchFilters() {
