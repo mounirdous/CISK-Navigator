@@ -1795,10 +1795,9 @@
 
             <!-- Edit Mode Toggle (only show if user can contribute) -->
             {% if can_contribute %}
-            <button @click="editMode = !editMode" class="ws-d1"
-                    class="btn btn-sm"
-                    :class="editMode ? 'btn-warning' : 'btn-outline-light'"
-                    style="color: inherit;">
+            <button @click="editMode = !editMode"
+                    class="btn btn-sm ws-d1"
+                    :class="editMode ? 'btn-warning text-dark' : 'btn-outline-light'">
                 <i class="bi bi-pencil-square"></i>
                 <span x-text="editMode ? 'Exit Edit Mode' : 'Edit Mode'"></span>
             </button>

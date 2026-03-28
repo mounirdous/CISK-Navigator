@@ -1627,7 +1627,7 @@ def edit_challenge(challenge_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=challenge.impact_level,
-        parent_context={"space": {"name": challenge.space.name, "impact_level": challenge.space.impact_level}} if challenge.space else {},
+        parent_context={"space": {"name": challenge.space.name, "impact_level": challenge.space.impact_level, "true_importance_level": challenge.space.impact_level}} if challenge.space else {},
         **nav,
     )
 
@@ -2012,17 +2012,27 @@ def edit_system(system_id):
     # Get entity links for this system
     entity_links = EntityLink.get_links_for_entity("system", system.id, current_user.id, include_private=True)
 
-    # Parent context for impact
+    # Parent context for impact (with true importance)
+    from app.models import ImpactLevel as _IL2, ChallengeInitiativeLink as _CIL2
+    from app.services.impact_service import compute_true_importance as _cti2
     _sys_parent_ctx = {}
+    _il2 = _IL2.get_org_levels(org_id)
+    _org2 = Organization.query.get(org_id)
+    _w2 = {lvl: _il2[lvl]["weight"] for lvl in _il2} if _il2 else {}
+    _m2 = _org2.impact_calc_method or "geometric_mean" if _org2 else "geometric_mean"
+    _cm2 = _org2.impact_qfd_matrix if _org2 else None
     if _is_links:
         _ini = _is_links.initiative
-        _sys_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level}
-        from app.models import ChallengeInitiativeLink as _CIL2
         _ci = _CIL2.query.filter_by(initiative_id=_ini.id).first()
-        if _ci and _ci.challenge:
-            _sys_parent_ctx["challenge"] = {"name": _ci.challenge.name, "impact_level": _ci.challenge.impact_level}
-            if _ci.challenge.space:
-                _sys_parent_ctx["space"] = {"name": _ci.challenge.space.name, "impact_level": _ci.challenge.space.impact_level}
+        _sp = _ci.challenge.space if _ci and _ci.challenge else None
+        _ch = _ci.challenge if _ci else None
+        if _sp:
+            _sys_parent_ctx["space"] = {"name": _sp.name, "impact_level": _sp.impact_level, "true_importance_level": _sp.impact_level}
+        if _ch:
+            _ch_ti = _cti2([_sp.impact_level, _ch.impact_level], _m2, _w2, _cm2) if _sp and _sp.impact_level and _ch.impact_level else None
+            _sys_parent_ctx["challenge"] = {"name": _ch.name, "impact_level": _ch.impact_level, "true_importance_level": _ch_ti}
+        _ini_ti = _cti2([_sp.impact_level, _ch.impact_level, _ini.impact_level], _m2, _w2, _cm2) if _sp and _sp.impact_level and _ch and _ch.impact_level and _ini.impact_level else None
+        _sys_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level, "true_importance_level": _ini_ti}
 
     return render_template(
         "organization_admin/edit_system.html",
@@ -2632,20 +2642,31 @@ def edit_kpi(kpi_id):
     # Get entity links for this KPI
     entity_links = EntityLink.get_links_for_entity("kpi", kpi.id, current_user.id, include_private=True)
 
-    # Parent context for impact
+    # Parent context for impact (with true importance)
+    from app.models import ImpactLevel as _IL3, ChallengeInitiativeLink as _CIL3
+    from app.services.impact_service import compute_true_importance as _cti3
     _kpi_parent_ctx = {}
+    _il3 = _IL3.get_org_levels(org_id)
+    _org3 = Organization.query.get(org_id)
+    _w3 = {lvl: _il3[lvl]["weight"] for lvl in _il3} if _il3 else {}
+    _m3 = _org3.impact_calc_method or "geometric_mean" if _org3 else "geometric_mean"
+    _cm3 = _org3.impact_qfd_matrix if _org3 else None
     _kpi_link = kpi.initiative_system_link
     if _kpi_link:
         _sys = _kpi_link.system
         _ini = _kpi_link.initiative
-        _kpi_parent_ctx["system"] = {"name": _sys.name, "impact_level": _sys.impact_level}
-        _kpi_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level}
-        from app.models import ChallengeInitiativeLink as _CIL3
         _ci = _CIL3.query.filter_by(initiative_id=_ini.id).first()
-        if _ci and _ci.challenge:
-            _kpi_parent_ctx["challenge"] = {"name": _ci.challenge.name, "impact_level": _ci.challenge.impact_level}
-            if _ci.challenge.space:
-                _kpi_parent_ctx["space"] = {"name": _ci.challenge.space.name, "impact_level": _ci.challenge.space.impact_level}
+        _ch = _ci.challenge if _ci else None
+        _sp = _ch.space if _ch else None
+        if _sp:
+            _kpi_parent_ctx["space"] = {"name": _sp.name, "impact_level": _sp.impact_level, "true_importance_level": _sp.impact_level}
+        if _ch:
+            _ch_ti = _cti3([_sp.impact_level, _ch.impact_level], _m3, _w3, _cm3) if _sp and _sp.impact_level and _ch.impact_level else None
+            _kpi_parent_ctx["challenge"] = {"name": _ch.name, "impact_level": _ch.impact_level, "true_importance_level": _ch_ti}
+        _ini_ti = _cti3([_sp.impact_level, _ch.impact_level, _ini.impact_level], _m3, _w3, _cm3) if _sp and _sp.impact_level and _ch and _ch.impact_level and _ini.impact_level else None
+        _kpi_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level, "true_importance_level": _ini_ti}
+        _sys_ti = _cti3([_sp.impact_level, _ch.impact_level, _ini.impact_level, _sys.impact_level], _m3, _w3, _cm3) if _sp and _sp.impact_level and _ch and _ch.impact_level and _ini.impact_level and _sys.impact_level else None
+        _kpi_parent_ctx["system"] = {"name": _sys.name, "impact_level": _sys.impact_level, "true_importance_level": _sys_ti}
 
     return render_template(
         "organization_admin/edit_kpi.html",
@@ -4232,19 +4253,24 @@ def initiative_form(initiative_id):
     true_importance_level = None
     parent_context = {}
     _link = _CIL.query.filter_by(initiative_id=initiative.id).first()
+    _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale} if impact_scale else {}
+    _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
+    _custom_matrix = _org.impact_qfd_matrix if _org else None
+
     if _link and _link.challenge:
         ch = _link.challenge
-        parent_context["challenge"] = {"name": ch.name, "impact_level": ch.impact_level}
-        if ch.space:
-            parent_context["space"] = {"name": ch.space.name, "impact_level": ch.space.impact_level}
-    if impact_scale and initiative.impact_level:
-        _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
-        _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
-        chain = []
-        if _link and _link.challenge and _link.challenge.space:
-            chain = [_link.challenge.space.impact_level, _link.challenge.impact_level, initiative.impact_level]
-        _custom_matrix = _org.impact_qfd_matrix if _org else None
-        if chain and all(chain):
+        sp = ch.space
+        # Space true importance = just its own level
+        sp_ti = compute_true_importance([sp.impact_level], _method, _weights, _custom_matrix) if sp and sp.impact_level else None
+        # Challenge true importance
+        ch_ti = compute_true_importance([sp.impact_level, ch.impact_level], _method, _weights, _custom_matrix) if sp and sp.impact_level and ch.impact_level else None
+        parent_context["challenge"] = {"name": ch.name, "impact_level": ch.impact_level, "true_importance_level": ch_ti}
+        if sp:
+            parent_context["space"] = {"name": sp.name, "impact_level": sp.impact_level, "true_importance_level": sp_ti}
+
+    if impact_scale and initiative.impact_level and _link and _link.challenge and _link.challenge.space:
+        chain = [_link.challenge.space.impact_level, _link.challenge.impact_level, initiative.impact_level]
+        if all(chain):
             true_importance_level = compute_true_importance(chain, _method, _weights, _custom_matrix)
 
     return render_template(
