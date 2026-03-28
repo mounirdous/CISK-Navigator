@@ -5608,9 +5608,11 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
         assessedHtml = '<span style="color:' + scale[assessedLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[assessedLevel].icon + '</span>';
     }
 
-    var trueHtml = '<span style="color:#94a3b8;">—</span>';
+    var trueHtml = '<span style="color:#94a3b8;" title="Chain incomplete or method yields no result">—</span>';
     if (trueLevel && scale[trueLevel]) {
         trueHtml = '<span style="color:' + scale[trueLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[trueLevel].icon + '</span>';
+    } else if (assessedLevel) {
+        trueHtml = '<span style="color:#64748b; font-size:0.7rem;">chain incomplete or filtered out</span>';
     }
 
     var optionsHtml = '<option value="">Not set</option>';
