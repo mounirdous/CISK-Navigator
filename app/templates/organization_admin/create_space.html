@@ -100,6 +100,8 @@
                         </small>
                     </div>
 
+                    {% include 'organization_admin/_impact_field.html' %}
+
                     <div class="d-flex gap-2 pt-3 border-top">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
                         <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary btn-lg">

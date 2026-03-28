@@ -23,6 +23,7 @@ class System(db.Model):
     description = db.Column(db.Text, nullable=True)
     logo_data = db.Column(db.LargeBinary, nullable=True, comment="Logo image binary data")
     logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type")
+    impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

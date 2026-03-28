@@ -25,6 +25,7 @@ class Space(db.Model):
     logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type")
     space_label = db.Column(db.String(100), nullable=True, comment="e.g., Season, Site, Customer, Supplier")
     display_order = db.Column(db.Integer, default=0, nullable=False)
+    impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
     is_private = db.Column(
         db.Boolean,
         default=False,

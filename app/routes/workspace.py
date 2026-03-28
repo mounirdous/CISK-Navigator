@@ -35,6 +35,7 @@ from app.models import (
     RollupSnapshot,
     SavedChart,
     SavedSearch,
+    ImpactLevel,
     Space,
     StrategicPillar,
     System,
@@ -307,6 +308,7 @@ def index():
     prefs = membership.preferences or {} if membership else {}
     ws_focus_mode = bool(prefs.get("ws_focus_mode", True))
     ws_show_badges = bool(prefs.get("ws_show_badges", True))
+    ws_badge_mode = int(prefs.get("ws_badge_mode", 1))
 
     return render_template(
         "workspace/index.html",
@@ -325,6 +327,7 @@ def index():
         csrf_token=generate_csrf,
         ws_focus_mode=ws_focus_mode,
         ws_show_badges=ws_show_badges,
+        ws_badge_mode=ws_badge_mode,
         strategy_count=StrategicPillar.query.filter_by(organization_id=org_id).count(),
     )
 
@@ -4251,6 +4254,7 @@ def get_data():
                                 "target_direction": target_direction,
                                 "has_linked_sources": has_linked_sources,
                                 "entity_links": kpi_entity_links,
+                                "impact_level": kpi.impact_level,
                             }
                         )
 
@@ -4278,6 +4282,7 @@ def get_data():
                             "entity_links": system_entity_links,
                             "inherited_links": system_inherited,
                             "kpis": kpis_data,
+                            "impact_level": system.impact_level,
                         }
                     )
 
@@ -4314,6 +4319,7 @@ def get_data():
                         "inherited_links": initiative_inherited,
                         "systems": systems_data,
                         "execution_rag": initiative.execution_rag,
+                        "impact_level": initiative.impact_level,
                     }
                 )
 
@@ -4346,6 +4352,7 @@ def get_data():
                     "entity_links": challenge_entity_links,
                     "inherited_links": challenge_inherited,
                     "initiatives": initiatives_data,
+                    "impact_level": challenge.impact_level,
                 }
             )
 
@@ -4381,6 +4388,7 @@ def get_data():
                 "entity_links": space_entity_links,
                 "inherited_links": space_inherited,
                 "challenges": challenges_data,
+                "impact_level": space.impact_level,
             }
         )
 
@@ -4411,7 +4419,7 @@ def get_data():
     )
     groups_data = [g[0] for g in groups]
 
-    # Impact levels
+    # Impact levels (legacy + new configurable system)
     impact_levels_data = [
         {"value": "not_assessed", "label": "Not Assessed"},
         {"value": "low", "label": "Low"},
@@ -4419,6 +4427,8 @@ def get_data():
         {"value": "high", "label": "High"},
         {"value": "no_consensus", "label": "No Consensus"},
     ]
+    # New configurable impact scale
+    impact_scale = ImpactLevel.get_org_levels(org_id)
 
     # Org-level entity links (direct)
     org_entity_links = get_entity_links("organization", org_id)
@@ -4439,6 +4449,60 @@ def get_data():
                 _org_inh_map[lnk["url"]] = {**lnk}
     org_inherited_links = list(_org_inh_map.values())
 
+    # ── Compute true importance (product of weights through the chain) ──
+    if impact_scale:
+        _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
+        _max_w = max(_weights.values()) if _weights else 1
+
+        def _get_weight(entity):
+            il = entity.get("impact_level")
+            return _weights.get(il, 0) if il else 0
+
+        def _chain_importance(parent_score, parent_depth, parent_complete, entity):
+            """Compute true importance: product of weights through the chain.
+            Chain is only valid if ALL ancestors + this entity have impact_level set.
+            Returns (score, depth, complete, level)."""
+            w = _get_weight(entity)
+            if not w:
+                # Entity has no impact set — chain is broken
+                return 0, parent_depth + 1, False, None
+            if not parent_complete and parent_depth > 0:
+                # A parent was missing — chain is broken
+                return 0, parent_depth + 1, False, None
+            score = (parent_score * w) if parent_score > 0 else w
+            depth = parent_depth + 1
+            # Normalize: score / max_possible at this chain depth
+            max_possible = _max_w ** depth
+            pct = score / max_possible if max_possible > 0 else 0
+            if pct <= 0.33:
+                level = 1
+            elif pct <= 0.66:
+                level = 2
+            else:
+                level = 3
+            return score, depth, True, level
+
+        for space in spaces_data:
+            s_score, s_depth, s_ok, s_level = _chain_importance(0, 0, True, space)
+            space["true_importance"] = s_score
+            space["true_importance_level"] = s_level
+            for challenge in space.get("challenges", []):
+                c_score, c_depth, c_ok, c_level = _chain_importance(s_score, s_depth, s_ok, challenge)
+                challenge["true_importance"] = c_score
+                challenge["true_importance_level"] = c_level
+                for initiative in challenge.get("initiatives", []):
+                    i_score, i_depth, i_ok, i_level = _chain_importance(c_score, c_depth, c_ok, initiative)
+                    initiative["true_importance"] = i_score
+                    initiative["true_importance_level"] = i_level
+                    for system in initiative.get("systems", []):
+                        sy_score, sy_depth, sy_ok, sy_level = _chain_importance(i_score, i_depth, i_ok, system)
+                        system["true_importance"] = sy_score
+                        system["true_importance_level"] = sy_level
+                        for kpi in system.get("kpis", []):
+                            k_score, k_depth, k_ok, k_level = _chain_importance(sy_score, sy_depth, sy_ok, kpi)
+                            kpi["true_importance"] = k_score
+                            kpi["true_importance_level"] = k_level
+
     return jsonify(
         {
             "spaces": spaces_data,
@@ -4446,6 +4510,7 @@ def get_data():
             "governanceBodies": governance_bodies_data,
             "groups": groups_data,
             "impactLevels": impact_levels_data,
+            "impactScale": impact_scale,
             "orgEntityLinks": org_entity_links,
             "orgInheritedLinks": org_inherited_links,
         }

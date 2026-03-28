@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "4.5.2"
+__version__ = "4.7.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -266,6 +266,20 @@ def create_app(config_name=None):
             entity_defaults = EntityTypeDefault.get_hardcoded_defaults()
 
         return {"entity_defaults": entity_defaults}
+
+    @app.context_processor
+    def inject_impact_levels():
+        """Make impact levels available to all templates"""
+        from flask import session
+
+        from app.models import ImpactLevel
+
+        org_id = session.get("organization_id")
+        if org_id:
+            levels = ImpactLevel.get_org_levels(org_id)
+            if levels:
+                return {"impact_levels_config": levels}
+        return {"impact_levels_config": {}}
 
     # Register error handlers
     @app.errorhandler(404)

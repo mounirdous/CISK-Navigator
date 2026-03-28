@@ -30,6 +30,7 @@ class KPI(db.Model):
     logo_data = db.Column(db.LargeBinary, nullable=True, comment="Logo image binary data")
     logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type")
     display_order = db.Column(db.Integer, default=0, nullable=False)
+    impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
     is_archived = db.Column(db.Boolean, default=False, nullable=False)
     archived_at = db.Column(db.DateTime, nullable=True)
     archived_by_user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

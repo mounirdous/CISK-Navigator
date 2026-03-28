@@ -417,6 +417,10 @@ class FullRestoreService:
             pillar_count = FullRestoreService._restore_strategic_pillars(backup, organization_id)
             stats["strategic_pillars_restored"] = pillar_count
 
+            # Step 9: Restore Impact Levels config
+            il_count = FullRestoreService._restore_impact_levels(backup, organization_id)
+            stats["impact_levels_restored"] = il_count
+
             db.session.commit()
             stats["success"] = True
 
@@ -569,6 +573,36 @@ class FullRestoreService:
         return count
 
     @staticmethod
+    def _restore_impact_levels(backup, organization_id):
+        """Restore impact level configuration. Returns count."""
+        from app.models import ImpactLevel
+
+        count = 0
+        for il_data in backup.get("impact_levels", []):
+            level = il_data.get("level")
+            if level not in (1, 2, 3):
+                continue
+            existing = ImpactLevel.query.filter_by(organization_id=organization_id, level=level).first()
+            if existing:
+                existing.label = il_data.get("label", existing.label)
+                existing.icon = il_data.get("icon", existing.icon)
+                existing.weight = il_data.get("weight", existing.weight)
+                existing.color = il_data.get("color", existing.color)
+            else:
+                db.session.add(ImpactLevel(
+                    organization_id=organization_id,
+                    level=level,
+                    label=il_data.get("label", f"Level {level}"),
+                    icon=il_data.get("icon", "bi-circle"),
+                    weight=il_data.get("weight", level),
+                    color=il_data.get("color", "#3b82f6"),
+                ))
+            count += 1
+        if count:
+            db.session.flush()
+        return count
+
+    @staticmethod
     def _restore_geography(backup, organization_id):
         """
         Restore full geography hierarchy (Regions → Countries → Sites) for the org.
@@ -684,6 +718,7 @@ class FullRestoreService:
             description=space_data.get("description"),
             space_label=space_data.get("space_label"),
             is_private=space_data.get("is_private", False),
+            impact_level=space_data.get("impact_level"),
             display_order=space_data.get("display_order", 0),
             swot_strengths=space_data.get("swot_strengths"),
             swot_weaknesses=space_data.get("swot_weaknesses"),
@@ -716,6 +751,7 @@ class FullRestoreService:
                     name=challenge_data["name"],
                     description=challenge_data.get("description"),
                     display_order=challenge_data.get("display_order", 0),
+                    impact_level=challenge_data.get("impact_level"),
                 )
 
                 # Restore challenge logo if present
@@ -757,6 +793,7 @@ class FullRestoreService:
                             success_criteria=initiative_data.get("success_criteria"),
                             impact_on_challenge=initiative_data.get("impact_on_challenge"),
                             impact_rationale=initiative_data.get("impact_rationale"),
+                            impact_level=initiative_data.get("impact_level"),
                         )
 
                         # Restore initiative logo if present
@@ -807,6 +844,7 @@ class FullRestoreService:
                                 organization_id=organization_id,
                                 name=sys_name,
                                 description=system_data.get("description"),
+                                impact_level=system_data.get("impact_level"),
                             )
 
                             # Restore system logo if present
@@ -885,6 +923,7 @@ class FullRestoreService:
             description=kpi_data.get("description"),
             is_archived=kpi_data.get("is_archived", False),
             display_order=kpi_data.get("display_order", 0),
+            impact_level=kpi_data.get("impact_level"),
         )
 
         # Restore KPI logo if present

@@ -179,6 +179,28 @@ def any_org_admin_permission_required(f):
     return decorated_function
 
 
+def _build_entity_nav(all_ids, current_id):
+    """Build prev/next navigation context for sequential entity editing."""
+    if current_id not in all_ids:
+        return {"nav_pos": 0, "nav_total": len(all_ids), "prev_id": None, "next_id": None}
+    pos = all_ids.index(current_id)
+    return {
+        "nav_pos": pos,
+        "nav_total": len(all_ids),
+        "prev_id": all_ids[pos - 1] if pos > 0 else None,
+        "next_id": all_ids[pos + 1] if pos < len(all_ids) - 1 else None,
+    }
+
+
+def _handle_nav_redirect(nav_action, prev_id, next_id, url_func, id_param, fallback_url):
+    """Handle save+navigate redirect. Returns redirect or None."""
+    if nav_action == "prev" and prev_id:
+        return redirect(url_for(url_func, **{id_param: prev_id}))
+    elif nav_action == "next" and next_id:
+        return redirect(url_for(url_func, **{id_param: next_id}))
+    return None
+
+
 # Porter's Five Forces Analysis (Organization Level)
 
 
@@ -263,6 +285,39 @@ def strategy():
         .all()
     )
     return render_template("organization_admin/strategy.html", pillars=pillars, csrf_token=generate_csrf)
+
+
+# Impact Levels Configuration
+
+
+@bp.route("/impact-levels", methods=["GET", "POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def impact_levels():
+    """Configure the 3-level impact scale for this organization"""
+    from app.models import ImpactLevel
+
+    org_id = session.get("organization_id")
+
+    # Ensure defaults exist
+    ImpactLevel.ensure_defaults(org_id)
+    db.session.commit()
+
+    if request.method == "POST":
+        for lvl in [1, 2, 3]:
+            il = ImpactLevel.query.filter_by(organization_id=org_id, level=lvl).first()
+            if il:
+                il.label = request.form.get(f"label_{lvl}", il.label).strip()
+                il.icon = request.form.get(f"icon_{lvl}", il.icon).strip()
+                il.weight = int(request.form.get(f"weight_{lvl}", il.weight))
+                il.color = request.form.get(f"color_{lvl}", il.color).strip()
+        db.session.commit()
+        flash("Impact levels updated successfully", "success")
+        return redirect(url_for("organization_admin.impact_levels"))
+
+    levels = ImpactLevel.query.filter_by(organization_id=org_id).order_by(ImpactLevel.level).all()
+    return render_template("organization_admin/impact_levels.html", levels=levels, csrf_token=generate_csrf)
 
 
 @bp.route("/porters/edit", methods=["GET", "POST"])
@@ -1204,6 +1259,7 @@ def create_space():
             display_order=form.display_order.data,
             is_private=form.is_private.data,
             created_by=current_user.id,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
         )
         db.session.add(space)
         db.session.flush()
@@ -1237,6 +1293,10 @@ def edit_space(space_id):
     org_id = session.get("organization_id")
     space = Space.query.filter_by(id=space_id, organization_id=org_id).first_or_404()
 
+    # Sequential nav
+    all_ids = [s.id for s in Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()]
+    nav = _build_entity_nav(all_ids, space_id)
+
     form = SpaceEditForm(obj=space)
 
     if form.validate_on_submit():
@@ -1253,6 +1313,7 @@ def edit_space(space_id):
         space.space_label = form.space_label.data
         space.display_order = form.display_order.data
         space.is_private = form.is_private.data
+        space.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
 
         # Audit log
         new_values = {
@@ -1264,6 +1325,11 @@ def edit_space(space_id):
         AuditService.log_update("Space", space.id, space.name, old_values, new_values)
 
         db.session.commit()
+
+        nav_redir = _handle_nav_redirect(request.form.get("nav_action"), nav["prev_id"], nav["next_id"],
+                                          "organization_admin.edit_space", "space_id", None)
+        if nav_redir:
+            return nav_redir
         flash(f"Space {space.name} updated successfully", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
@@ -1290,6 +1356,8 @@ def edit_space(space_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         csrf_token=generate_csrf,
+        current_impact=space.impact_level,
+        **nav,
     )
 
 
@@ -1445,6 +1513,7 @@ def create_challenge(space_id):
             name=form.name.data,
             description=form.description.data,
             display_order=max_order + 1,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
         )
         db.session.add(challenge)
         db.session.flush()
@@ -1473,6 +1542,9 @@ def edit_challenge(challenge_id):
     org_id = session.get("organization_id")
     challenge = Challenge.query.filter_by(id=challenge_id, organization_id=org_id).first_or_404()
 
+    all_ids = [c.id for c in Challenge.query.join(Space).filter(Space.organization_id == org_id).order_by(Challenge.name).all()]
+    nav = _build_entity_nav(all_ids, challenge_id)
+
     form = ChallengeEditForm(obj=challenge)
 
     # Load all spaces for the dropdown
@@ -1490,6 +1562,7 @@ def edit_challenge(challenge_id):
         challenge.name = form.name.data
         challenge.description = form.description.data
         challenge.space_id = form.space_id.data
+        challenge.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
 
         # Audit log
         new_values = {
@@ -1500,6 +1573,10 @@ def edit_challenge(challenge_id):
         AuditService.log_update("Challenge", challenge.id, challenge.name, old_values, new_values)
 
         db.session.commit()
+        nav_redir = _handle_nav_redirect(request.form.get("nav_action"), nav["prev_id"], nav["next_id"],
+                                          "organization_admin.edit_challenge", "challenge_id", None)
+        if nav_redir:
+            return nav_redir
         flash(f"Challenge {challenge.name} updated successfully", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
@@ -1530,6 +1607,8 @@ def edit_challenge(challenge_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         csrf_token=generate_csrf,
+        current_impact=challenge.impact_level,
+        **nav,
     )
 
 
@@ -1591,6 +1670,7 @@ def create_initiative(challenge_id):
             name=form.name.data,
             description=form.description.data,
             group_label=form.group_label.data if form.group_label.data else None,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
         )
         db.session.add(initiative)
         db.session.flush()  # Get the ID
@@ -1651,6 +1731,9 @@ def edit_initiative(initiative_id):
     org_id = session.get("organization_id")
     initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
 
+    all_ids = [i.id for i in Initiative.query.filter_by(organization_id=org_id).order_by(Initiative.name).all()]
+    nav = _build_entity_nav(all_ids, initiative_id)
+
     form = InitiativeEditForm(obj=initiative)
 
     # Load all challenges for the dropdown
@@ -1674,6 +1757,7 @@ def edit_initiative(initiative_id):
         initiative.name = form.name.data
         initiative.description = form.description.data
         initiative.group_label = form.group_label.data if form.group_label.data else None
+        initiative.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
 
         # Update challenge links
         new_challenge_ids = form.challenge_ids.data
@@ -1705,6 +1789,10 @@ def edit_initiative(initiative_id):
         AuditService.log_update("Initiative", initiative.id, initiative.name, old_values, new_values)
 
         db.session.commit()
+        nav_redir = _handle_nav_redirect(request.form.get("nav_action"), nav["prev_id"], nav["next_id"],
+                                          "organization_admin.edit_initiative", "initiative_id", None)
+        if nav_redir:
+            return nav_redir
         flash(f"Initiative {initiative.name} updated successfully", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
@@ -1737,6 +1825,8 @@ def edit_initiative(initiative_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         csrf_token=generate_csrf,
+        current_impact=initiative.impact_level,
+        **nav,
     )
 
 
@@ -1800,7 +1890,10 @@ def create_system(initiative_id):
 
     if form.validate_on_submit():
         # Create the system
-        system = System(organization_id=org_id, name=form.name.data, description=form.description.data)
+        system = System(
+            organization_id=org_id, name=form.name.data, description=form.description.data,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+        )
         db.session.add(system)
         db.session.flush()  # Get the ID
 
@@ -1838,6 +1931,9 @@ def edit_system(system_id):
     org_id = session.get("organization_id")
     system = System.query.filter_by(id=system_id, organization_id=org_id).first_or_404()
 
+    all_ids = [s.id for s in System.query.filter_by(organization_id=org_id).order_by(System.name).all()]
+    nav = _build_entity_nav(all_ids, system_id)
+
     form = SystemEditForm(obj=system)
 
     if form.validate_on_submit():
@@ -1846,18 +1942,21 @@ def edit_system(system_id):
 
         system.name = form.name.data
         system.description = form.description.data
+        system.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
 
         # Audit log
         new_values = {"name": system.name, "description": system.description}
         AuditService.log_update("System", system.id, system.name, old_values, new_values)
 
         db.session.commit()
+        nav_redir = _handle_nav_redirect(request.form.get("nav_action"), nav["prev_id"], nav["next_id"],
+                                          "organization_admin.edit_system", "system_id", None)
+        if nav_redir:
+            return nav_redir
         flash(f"System {system.name} updated successfully", "success")
 
-        # Check if we should return to action items page
         if request.args.get("return_to") == "action_items":
             return redirect(url_for("action_items"))
-
         return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
@@ -1887,6 +1986,8 @@ def edit_system(system_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         csrf_token=generate_csrf,
+        current_impact=system.impact_level,
+        **nav,
     )
 
 
@@ -2047,6 +2148,7 @@ def create_kpi(link_id):
             name=form.name.data,
             description=form.description.data,
             display_order=form.display_order.data,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
         )
         db.session.add(kpi)
         db.session.flush()  # Get the ID
@@ -2277,6 +2379,10 @@ def edit_kpi(kpi_id):
         flash("Access denied", "danger")
         return redirect(url_for("workspace.index"))
 
+    all_ids = [k.id for k in db.session.query(KPI.id).join(InitiativeSystemLink).join(Initiative)
+               .filter(Initiative.organization_id == org_id).order_by(KPI.name).all()]
+    nav = _build_entity_nav(all_ids, kpi_id)
+
     # Get active governance bodies for selection
     governance_bodies = (
         GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
@@ -2314,6 +2420,7 @@ def edit_kpi(kpi_id):
         kpi.name = form.name.data
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data
+        kpi.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
 
         # Update colors and targets for each value type config
         for config in kpi.value_type_configs:
@@ -2451,12 +2558,14 @@ def edit_kpi(kpi_id):
         AuditService.log_update("KPI", kpi.id, kpi.name, old_values, new_values)
 
         db.session.commit()
+        nav_redir = _handle_nav_redirect(request.form.get("nav_action"), nav["prev_id"], nav["next_id"],
+                                          "organization_admin.edit_kpi", "kpi_id", None)
+        if nav_redir:
+            return nav_redir
         flash(f"KPI {kpi.name} updated successfully", "success")
 
-        # Check if we should return to action items page
         if request.args.get("return_to") == "action_items":
             return redirect(url_for("action_items"))
-
         return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get entity type defaults with logos
@@ -2488,6 +2597,8 @@ def edit_kpi(kpi_id):
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         csrf_token=generate_csrf,
+        current_impact=kpi.impact_level,
+        **nav,
     )
 
 
@@ -3813,6 +3924,7 @@ def initiative_form(initiative_id):
         initiative.deliverables = request.form.get("deliverables")
         initiative.impact_on_challenge = request.form.get("impact_on_challenge")
         initiative.impact_rationale = request.form.get("impact_rationale")
+        initiative.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
 
         # Audit log
         new_values = {

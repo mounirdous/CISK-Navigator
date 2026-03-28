@@ -18,6 +18,7 @@ from .entity_link import EntityLink
 from .entity_type_default import EntityTypeDefault
 from .geography import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, KPISiteAssignment
 from .governance_body import GovernanceBody, KPIGovernanceBodyLink
+from .impact_level import ImpactLevel
 from .initiative import ChallengeInitiativeLink, Initiative, InitiativeProgressUpdate
 from .kpi import KPI
 from .kpi_snapshot import KPISnapshot, RollupSnapshot

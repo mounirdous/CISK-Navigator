@@ -5,6 +5,31 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.0] - 2026-03-28
+
+### Added
+- **True Importance computation** — product of impact weights through the entity chain (Space x Challenge x Initiative x System x KPI), normalized to Level 1/2/3 using 33%/66% thresholds against max possible depth score
+- **Impact badges in workspace tree** — show true importance symbol next to entity names (only in Full/Max badge mode)
+- **3-mode badge cycle** replaces boolean showBadges toggle:
+  - Minimal (seed icon) — space + KPI values only, intermediate rollups hidden
+  - Standard (tree icon) — all values and badges (consensus borders, governance badges)
+  - Full (decorated tree) — everything + true importance badges
+- **Impact admin: symbol picker** — pick from 24+ presets (stars, circles, arrows, diamonds, letters, numbers, currency, emoji) or type custom 1-3 char symbol; no label text in admin — just symbol + weight + color
+- **Initiative form uses new impact system** — replaced legacy hardcoded dropdown (Not Assessed/Low/Medium/High/No Consensus) with configurable impact levels; both edit and display views
+- **Initiative form completion** — uses new `impact_level` field instead of legacy `impact_on_challenge`
+
+## [4.6.0] - 2026-03-28
+
+### Added
+- **Impact Level system** — `ImpactLevel` model with 3 configurable levels per org (label, icon, weight, color); `impact_level` column on Space, Challenge, Initiative, System, KPI
+- **Impact admin page** (`/org-admin/impact-levels`) — configure labels, icons, weights, colors for each level
+- **Impact dropdown** on all 10 entity create/edit forms (Space, Challenge, Initiative, System, KPI)
+- **Workspace tree badges** — color-coded impact icons next to entity names
+- **Impact scale in workspace API** — `impactScale` dict returned alongside entity data
+- **Backup/restore** — impact levels config + entity impact_level values included
+- **Context processor** — `impact_levels_config` available to all templates
+- Migration: `1f7bd9f9e317`
+
 ## [4.5.2] - 2026-03-28
 
 ### Changed

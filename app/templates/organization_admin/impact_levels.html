@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Impact Scale - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+    color: white; padding: 2rem; border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem; text-align: center;
+}
+.page-header-icon {
+    width: 60px; height: 60px; background: rgba(255,255,255,0.2);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem; margin: 0 auto 1rem; backdrop-filter: blur(10px);
+}
+.il-card {
+    border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem;
+    border: 2px solid; transition: all 0.2s;
+}
+.il-preview {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; color: white; flex-shrink: 0;
+    font-weight: 700;
+}
+.il-color-input {
+    width: 40px; height: 40px; border: 2px solid #e2e8f0;
+    border-radius: 8px; cursor: pointer; padding: 0;
+}
+.il-color-input::-webkit-color-swatch { border: none; border-radius: 6px; }
+
+/* Icon/symbol picker */
+.il-symbol-grid {
+    display: flex; flex-wrap: wrap; gap: 4px; margin-top: 0.4rem;
+}
+.il-sym-opt {
+    width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;
+    border: 2px solid #e2e8f0; border-radius: 8px; cursor: pointer;
+    font-size: 0.9rem; background: white; transition: all 0.12s;
+    font-weight: 700; color: #475569;
+}
+.il-sym-opt:hover { border-color: #3b82f6; color: #3b82f6; }
+.il-sym-opt.active { border-color: #3b82f6; background: #eff6ff; color: #3b82f6; }
+.il-custom-input {
+    width: 60px; height: 34px; text-align: center; font-weight: 700;
+    font-size: 0.9rem; border-radius: 8px; border: 2px solid #e2e8f0;
+}
+.il-custom-input:focus { border-color: #3b82f6; outline: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-7">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <h2 class="mb-1">Impact Scale</h2>
+                <p class="mb-0 opacity-75">Configure the 3 impact levels for your organization</p>
+            </div>
+
+            <div class="card-body" style="padding: 2rem;">
+                <form method="POST" id="impactForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    {% for lv in levels %}
+                    <div class="il-card" style="border-color: {{ lv.color }}20; background: {{ lv.color }}08;" data-level="{{ lv.level }}">
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="il-preview" id="preview_{{ lv.level }}" style="background: {{ lv.color }};">
+                                {{ lv.icon or '' }}
+                            </div>
+                            <div style="flex:1;">
+                                <div class="fw-bold" style="font-size: 0.82rem; color: #1e293b;">Level {{ lv.level }}</div>
+                                <input type="hidden" name="label_{{ lv.level }}" value="{{ lv.label }}">
+                            </div>
+                            <div>
+                                <label class="form-label fw-semibold mb-1" style="font-size: 0.72rem;">Weight</label>
+                                <input type="number" name="weight_{{ lv.level }}" value="{{ lv.weight }}" class="form-control form-control-sm" style="width:70px;" min="1" max="100" required>
+                            </div>
+                            <div>
+                                <label class="form-label fw-semibold mb-1" style="font-size: 0.72rem;">Color</label>
+                                <input type="color" name="color_{{ lv.level }}" value="{{ lv.color }}" class="il-color-input"
+                                       onchange="updatePreview({{ lv.level }})">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-semibold" style="font-size: 0.78rem;">Symbol <small class="fw-normal text-muted">(pick one or type custom)</small></label>
+                            <input type="hidden" name="icon_{{ lv.level }}" id="icon_{{ lv.level }}" value="{{ lv.icon or '' }}">
+                            <div class="il-symbol-grid" id="symbols_{{ lv.level }}">
+                                <!-- Stars -->
+                                <button type="button" class="il-sym-opt" data-val="★" title="Star">★</button>
+                                <button type="button" class="il-sym-opt" data-val="★★" title="2 Stars">★★</button>
+                                <button type="button" class="il-sym-opt" data-val="★★★" title="3 Stars">★★★</button>
+                                <!-- Circles -->
+                                <button type="button" class="il-sym-opt" data-val="●" title="Circle">●</button>
+                                <button type="button" class="il-sym-opt" data-val="●●" title="2 Circles">●●</button>
+                                <button type="button" class="il-sym-opt" data-val="●●●" title="3 Circles">●●●</button>
+                                <!-- Arrows -->
+                                <button type="button" class="il-sym-opt" data-val="▲" title="Up arrow">▲</button>
+                                <button type="button" class="il-sym-opt" data-val="▼" title="Down arrow">▼</button>
+                                <button type="button" class="il-sym-opt" data-val="►" title="Right arrow">►</button>
+                                <!-- Diamonds / squares -->
+                                <button type="button" class="il-sym-opt" data-val="◆" title="Diamond">◆</button>
+                                <button type="button" class="il-sym-opt" data-val="■" title="Square">■</button>
+                                <button type="button" class="il-sym-opt" data-val="!" title="Exclamation">!</button>
+                                <button type="button" class="il-sym-opt" data-val="!!" title="Double excl">!!</button>
+                                <button type="button" class="il-sym-opt" data-val="!!!" title="Triple excl">!!!</button>
+                                <!-- Letters/numbers -->
+                                <button type="button" class="il-sym-opt" data-val="A" title="A">A</button>
+                                <button type="button" class="il-sym-opt" data-val="B" title="B">B</button>
+                                <button type="button" class="il-sym-opt" data-val="C" title="C">C</button>
+                                <button type="button" class="il-sym-opt" data-val="1" title="1">1</button>
+                                <button type="button" class="il-sym-opt" data-val="2" title="2">2</button>
+                                <button type="button" class="il-sym-opt" data-val="3" title="3">3</button>
+                                <!-- Currency / misc -->
+                                <button type="button" class="il-sym-opt" data-val="$" title="Dollar">$</button>
+                                <button type="button" class="il-sym-opt" data-val="€" title="Euro">€</button>
+                                <button type="button" class="il-sym-opt" data-val="♦" title="Diamond suit">♦</button>
+                                <button type="button" class="il-sym-opt" data-val="♥" title="Heart">♥</button>
+                                <button type="button" class="il-sym-opt" data-val="⚡" title="Lightning">⚡</button>
+                                <button type="button" class="il-sym-opt" data-val="🔥" title="Fire">🔥</button>
+                                <!-- Custom input -->
+                                <input type="text" class="il-custom-input" maxlength="3" placeholder="..."
+                                       id="custom_{{ lv.level }}" title="Type a custom symbol (1-3 chars)"
+                                       oninput="selectCustom({{ lv.level }}, this.value)">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Save Impact Scale
+                        </button>
+                        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updatePreview(level) {
+    var icon = document.getElementById('icon_' + level).value;
+    var color = document.querySelector('[name=color_' + level + ']').value;
+    var preview = document.getElementById('preview_' + level);
+    preview.style.background = color;
+    preview.textContent = icon;
+}
+
+function selectSymbol(level, val) {
+    document.getElementById('icon_' + level).value = val;
+    // Clear active state in this level's grid
+    document.querySelectorAll('#symbols_' + level + ' .il-sym-opt').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.val === val);
+    });
+    // Clear custom input if a preset was selected
+    document.getElementById('custom_' + level).value = '';
+    updatePreview(level);
+}
+
+function selectCustom(level, val) {
+    if (!val) return;
+    document.getElementById('icon_' + level).value = val;
+    document.querySelectorAll('#symbols_' + level + ' .il-sym-opt').forEach(function(b) {
+        b.classList.remove('active');
+    });
+    updatePreview(level);
+}
+
+// Wire up all symbol buttons
+document.querySelectorAll('.il-sym-opt').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var level = this.closest('.il-card').dataset.level;
+        selectSymbol(level, this.dataset.val);
+    });
+});
+
+// Set initial active state from current values
+{% for lv in levels %}
+(function() {
+    var val = {{ (lv.icon or '') | tojson }};
+    if (!val) return;
+    var found = false;
+    document.querySelectorAll('#symbols_{{ lv.level }} .il-sym-opt').forEach(function(b) {
+        if (b.dataset.val === val) { b.classList.add('active'); found = true; }
+    });
+    if (!found) document.getElementById('custom_{{ lv.level }}').value = val;
+})();
+{% endfor %}
+</script>
+{% endblock %}

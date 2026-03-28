@@ -128,6 +128,7 @@ class FullBackupService:
             "action_items": FullBackupService._export_action_items(organization_id),
             "filter_presets": FullBackupService._export_filter_presets(organization_id),
             "strategic_pillars": FullBackupService._export_strategic_pillars(organization_id),
+            "impact_levels": FullBackupService._export_impact_levels(organization_id),
         }
 
         return backup
@@ -315,6 +316,14 @@ class FullBackupService:
         return result
 
     @staticmethod
+    def _export_impact_levels(organization_id):
+        """Export impact level configuration"""
+        from app.models import ImpactLevel
+
+        levels = ImpactLevel.query.filter_by(organization_id=organization_id).order_by(ImpactLevel.level).all()
+        return [{"level": lv.level, "label": lv.label, "icon": lv.icon, "weight": lv.weight, "color": lv.color} for lv in levels]
+
+    @staticmethod
     def _export_strategic_pillars(organization_id):
         """Export strategic pillars"""
         import base64
@@ -353,6 +362,7 @@ class FullBackupService:
                 "space_label": space.space_label,
                 "is_private": space.is_private,
                 "display_order": space.display_order,
+                "impact_level": space.impact_level,
                 "swot_strengths": space.swot_strengths,
                 "swot_weaknesses": space.swot_weaknesses,
                 "swot_opportunities": space.swot_opportunities,
@@ -376,6 +386,7 @@ class FullBackupService:
                     "name": challenge.name,
                     "description": challenge.description,
                     "display_order": challenge.display_order,
+                    "impact_level": challenge.impact_level,
                     "links": FullBackupService._export_entity_links("challenge", challenge.id),
                     "initiatives": [],
                 }
@@ -410,6 +421,7 @@ class FullBackupService:
                         "success_criteria": initiative.success_criteria,
                         "impact_on_challenge": initiative.impact_on_challenge,
                         "impact_rationale": initiative.impact_rationale,
+                        "impact_level": initiative.impact_level,
                         "links": FullBackupService._export_entity_links("initiative", initiative.id),
                         "progress_updates": [
                             {
@@ -445,6 +457,7 @@ class FullBackupService:
                             "json_id": system.id,
                             "name": system.name,
                             "description": system.description,
+                            "impact_level": system.impact_level,
                             "links": FullBackupService._export_entity_links("system", system.id),
                             "kpis": [],
                         }
@@ -487,6 +500,7 @@ class FullBackupService:
             "description": kpi.description,
             "is_archived": kpi.is_archived,
             "display_order": kpi.display_order,
+            "impact_level": kpi.impact_level,
             "links": FullBackupService._export_entity_links("kpi", kpi.id),
             "governance_bodies": [],
             "geography_assignments": [],

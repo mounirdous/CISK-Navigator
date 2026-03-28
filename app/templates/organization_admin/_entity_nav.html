@@ -1,0 +1,17 @@
+{# Reusable sequential nav arrows for entity edit pages #}
+{# Requires: nav_total, nav_pos, prev_id, next_id #}
+{% if nav_total is defined and nav_total > 1 %}
+<div style="margin-top:0.75rem; display:flex; align-items:center; justify-content:center; gap:0.75rem;">
+    <button type="button" class="btn btn-sm btn-outline-light" {% if not prev_id %}disabled{% endif %}
+            onclick="document.getElementById('navAction').value='prev'; HTMLFormElement.prototype.submit.call(this.closest('.card').querySelector('form'));"
+            title="Save &amp; Previous">
+        <i class="bi bi-chevron-left"></i>
+    </button>
+    <span style="font-size:0.82rem; opacity:0.8; font-weight:600;">{{ nav_pos + 1 }} / {{ nav_total }}</span>
+    <button type="button" class="btn btn-sm btn-outline-light" {% if not next_id %}disabled{% endif %}
+            onclick="document.getElementById('navAction').value='next'; HTMLFormElement.prototype.submit.call(this.closest('.card').querySelector('form'));"
+            title="Save &amp; Next">
+        <i class="bi bi-chevron-right"></i>
+    </button>
+</div>
+{% endif %}

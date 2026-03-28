@@ -34,16 +34,19 @@ class Initiative(db.Model):
     deliverables = db.Column(db.Text, nullable=True, comment="Deliverables and milestones (JSON format)")
     group_label = db.Column(db.String(1), nullable=True, comment="Group label for filtering (A, B, C, or D)")
 
-    # Impact Assessment (v1.32.0)
+    # Impact Assessment (v1.32.0 — legacy)
     impact_on_challenge = db.Column(
         db.String(20),
         nullable=True,
         default="not_assessed",
-        comment="Impact level on challenge: not_assessed, low, medium, high, no_consensus",
+        comment="Legacy: not_assessed, low, medium, high, no_consensus",
     )
     impact_rationale = db.Column(
         db.Text, nullable=True, comment="Rationale and opinions about the impact assessment"
     )
+
+    # Impact Level (v4.6.0 — new configurable system)
+    impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -134,11 +137,13 @@ class Initiative(db.Model):
             self.team_members,
             self.handover_organization,
             self.deliverables,
-            self.impact_on_challenge,
             self.impact_rationale,
         ]
         filled = sum(1 for field in form_fields if field and field.strip())
-        total = len(form_fields)
+        # Impact level counts as a separate field (integer, not string)
+        if self.impact_level is not None:
+            filled += 1
+        total = len(form_fields) + 1
 
         if filled == 0:
             status = "empty"

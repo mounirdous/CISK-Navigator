@@ -80,11 +80,13 @@
                 </div>
                 <h2 class="mb-1">Edit KPI</h2>
                 <p class="mb-0 opacity-75">{{ kpi.name }}</p>
+                {% include 'organization_admin/_entity_nav.html' %}
             </div>
 
             <div class="card-body" style="padding: 2.5rem;">
                 <form method="POST">
                     {{ form.hidden_tag() }}
+                    <input type="hidden" name="nav_action" id="navAction" value="">
 
                     <div class="form-section">
                         <div class="form-section-title">
@@ -523,6 +525,8 @@
                         {% endif %}
                     </div>
                     {% endif %}
+
+                    {% include 'organization_admin/_impact_field.html' %}
 
                     <div class="d-flex gap-2 pt-3 border-top">
                         {{ form.submit(class="btn btn-primary btn-lg") }}

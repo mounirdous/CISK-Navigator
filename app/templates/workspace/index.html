@@ -337,6 +337,35 @@
         background: #f8f9fa;
     }
 
+    .ws-impact-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.6rem; padding: 0.1rem 0.3rem; border-radius: 4px;
+        margin-left: 0.25rem; vertical-align: middle; flex-shrink: 0;
+        font-weight: 700;
+    }
+
+    /* Governance badges only in Full mode (level 3) */
+    .workspace-v2:not([data-badge-mode="2"]) .gb-badge { display: none !important; }
+    /* Hide execution RAG borders in minimal mode */
+    .workspace-v2[data-badge-mode="0"] .rag-border-red > .ws-cell:first-child,
+    .workspace-v2[data-badge-mode="0"] .rag-border-amber > .ws-cell:first-child,
+    .workspace-v2[data-badge-mode="0"] .rag-border-green > .ws-cell:first-child {
+        border-left: none !important;
+    }
+    /* Hide consensus borders in minimal mode */
+    .workspace-v2[data-badge-mode="0"] .ws-cell.consensus-strong,
+    .workspace-v2[data-badge-mode="0"] .ws-cell.consensus-weak,
+    .workspace-v2[data-badge-mode="0"] .ws-cell.consensus-single,
+    .workspace-v2[data-badge-mode="0"] .ws-cell.consensus-none {
+        border-left: none !important;
+    }
+    /* Hide rollup indicators in minimal mode */
+    .workspace-v2[data-badge-mode="0"] .rollup-indicator { display: none !important; }
+    /* Hide trend indicators in minimal mode */
+    .workspace-v2[data-badge-mode="0"] .trend-indicator { display: none !important; }
+    /* Hide comment icons in minimal mode */
+    .workspace-v2[data-badge-mode="0"] .comment-icon { display: none !important; }
+
     .filter-active-badge {
         background: #3182ce;
         color: white;
@@ -791,7 +820,7 @@
         transform: rotate(-90deg);
     }
 
-    /* ── Execution RAG heat trace (visible when showBadges / Christmas tree ON) ── */
+    /* ── Execution RAG heat trace (visible when badgeMode >= 1 / Christmas tree ON) ── */
     /* border-left on display:table-row is ignored — target first cell child instead */
     .rag-border-red   > .ws-cell:first-child { border-left: 4px solid #ef5350 !important; }
     .rag-border-amber > .ws-cell:first-child { border-left: 4px solid #ffa726 !important; }
@@ -1699,7 +1728,7 @@
 
 {% from "_preset_bar.html" import preset_bar %}
 {% block content %}
-<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, [])" x-init="init(); loadData()" :data-badges-visible="showBadges">
+<div class="workspace-v2" x-data="workspaceV2({{ org_id }}, [])" x-init="init(); loadData()" x-bind:data-badges-visible="badgeMode >= 1" x-bind:data-badge-mode="badgeMode">
     <!-- Toolbar - Commands Band -->
     <div class="ws-header" :class="{'edit-mode': editMode}">
         <div style="display: flex; align-items: center; gap: 1.5rem;">
@@ -1728,14 +1757,15 @@
                 <i class="bi bi-compass"></i> No strategy
             </a>
             {% endif %}
-            <!-- Toggle Badges/Decorations -->
-            <button @click="showBadges = !showBadges; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_show_badges: showBadges})})"
+            <!-- Badge Mode: cycle 0=minimal, 1=medium, 2=max -->
+            <button @click="badgeMode = (badgeMode + 1) % 3; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_badge_mode: badgeMode})})"
                     class="btn btn-sm btn-outline-light"
-                    :class="{'active': showBadges}"
+                    :class="{'active': badgeMode > 0}"
                     style="opacity: 0.9;"
-                    title="Toggle badges and decorations">
-                <span x-show="showBadges" style="font-size: 1.2rem;">🎄</span>
-                <span x-show="!showBadges" style="font-size: 1.2rem; filter: grayscale(100%);">🎄</span>
+                    :title="['Minimal: space + KPI values only', 'Standard: all values and badges', 'Full: values, badges + impact importance'][badgeMode]">
+                <span x-show="badgeMode === 0" style="font-size: 0.9rem; filter: grayscale(100%); opacity: 0.5;">🎄</span>
+                <span x-show="badgeMode === 1" style="font-size: 1.2rem;">🎄</span>
+                <span x-show="badgeMode === 2" style="font-size: 1.5rem;">🎄</span>
             </button>
             <!-- Refresh data (force reload from server) -->
             <button @click="_stale=false; loadData(true)"
@@ -1868,22 +1898,7 @@
                         </div>
                     </div>
 
-                    <!-- Initiative Groups -->
-                    <div x-show="groups.length > 0">
-                        <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
-                            <i class="bi bi-tag-fill"></i> Initiative Groups
-                        </div>
-                        <div class="filter-pills-group">
-                            <template x-for="group in groups" :key="group">
-                                <button @click="toggleGroup(group)"
-                                        class="filter-pill"
-                                        :class="{'active': selectedGroups.includes(group)}">
-                                    <span x-text="group"></span>
-                                    <span x-text="`(${countByGroup(group)})`"></span>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
+                    <!-- Initiative Groups removed — replaced by Impact filter -->
                 </div>
 
                 <!-- Row 2: Spaces & Space Type -->
@@ -1924,19 +1939,26 @@
                     </div>
                 </div>
 
-                <!-- Row 3: Impact Assessment -->
-                <div style="margin-bottom: 0;">
+                <!-- Row 3: Impact Level Filter -->
+                <div x-show="Object.keys(impactScale).length > 0" style="margin-bottom: 0;">
                     <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
-                        <i class="bi bi-lightning-fill"></i> Impact Assessment
+                        <i class="bi bi-lightning-fill"></i> Impact Level
                     </div>
                     <div class="filter-pills-group">
-                        <template x-for="level in impactLevels" :key="level.value">
-                            <button @click="toggleImpactLevel(level.value)"
-                                    class="filter-pill"
-                                    :class="{'active': selectedImpactLevels.includes(level.value)}">
-                                <span x-text="level.label"></span>
-                                <span x-text="`(${countByImpactLevel(level.value)})`"></span>
-                            </button>
+                        <button @click="toggleImpactLevel(0)"
+                                class="filter-pill"
+                                :class="{'active': selectedImpactLevels.includes(0)}">
+                            <span>Not set</span>
+                        </button>
+                        <template x-for="lvl in [1, 2, 3]" :key="lvl">
+                            <template x-if="impactScale[lvl]">
+                                <button @click="toggleImpactLevel(lvl)"
+                                        class="filter-pill"
+                                        :class="{'active': selectedImpactLevels.includes(lvl)}"
+                                        :style="selectedImpactLevels.includes(lvl) ? 'background:' + impactScale[lvl].color + '; color: white; border-color:' + impactScale[lvl].color : ''">
+                                    <span x-text="impactScale[lvl].icon"></span>
+                                </button>
+                            </template>
                         </template>
                     </div>
                 </div>
@@ -2231,8 +2253,8 @@
                          :id="'space-' + space.id"
                          :class="{
                              'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 0,
-                             'rag-parent-red':   showBadges && space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'red')),
-                             'rag-parent-amber': showBadges && !space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'red')) && space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'amber'))
+                             'rag-parent-red':   badgeMode >= 1 && space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'red')),
+                             'rag-parent-amber': badgeMode >= 1 && !space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'red')) && space.challenges.some(c => c.initiatives.some(i => i.execution_rag === 'amber'))
                          }"
                          x-show="showLevels.spaces"
                          :draggable="editMode"
@@ -2249,18 +2271,18 @@
                                    @click="space.collapsed = !space.collapsed; focusedLevel = null"
                                    x-show="space.challenges.length > 0"></i>
                                 <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
-                                <span x-show="!space.logo_url && space.icon && !editMode && showBadges" class="entity-icon-text" x-text="space.icon"></span>
-                                <i x-show="!space.logo_url && !space.icon && (editMode || !showBadges)" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
+                                <span x-show="!space.logo_url && space.icon && !editMode && badgeMode >= 1" class="entity-icon-text" x-text="space.icon"></span>
+                                <i x-show="!space.logo_url && !space.icon && (editMode || badgeMode === 0)" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
 
                                 <span x-text="space.name" :data-tooltip="!editMode && space.description ? space.description : null" :data-tooltip-actions="!editMode ? tooltipActions(space, 'space') : null"></span>
-
-                                <!-- Space label badge -->
-                                <template x-if="showBadges && space.space_label">
-                                    <span class="entity-badge" x-text="space.space_label"></span>
+                                <template x-if="badgeMode >= 1 && space.true_importance_level && impactScale[space.true_importance_level]">
+                                    <span class="ws-impact-badge" :style="'background:' + impactScale[space.true_importance_level].color + '22; color:' + impactScale[space.true_importance_level].color" :title="'Importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon"></span>
                                 </template>
 
+                                <!-- Space label badge (removed — always hidden) -->
+
                                 <!-- Private badge -->
-                                <template x-if="showBadges && space.is_private">
+                                <template x-if="badgeMode >= 1 && space.is_private">
                                     <span class="private-badge" title="Private space">
                                         <i class="bi bi-lock-fill"></i> Private
                                     </span>
@@ -2309,7 +2331,7 @@
                                                 </a>
                                             </template>
                                             <!-- Formula indicator -->
-                                            <span class="rollup-indicator" x-show="showBadges && space.rollup_values[String(vt.id)].formula"
+                                            <span class="rollup-indicator" x-show="badgeMode >= 1 && space.rollup_values[String(vt.id)].formula"
                                                   :title="space.rollup_values[String(vt.id)].formula">
                                                 <span x-show="space.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                 <span x-show="space.rollup_values[String(vt.id)].formula === 'max'">↑</span>
@@ -2365,7 +2387,7 @@
                                                       x-text="space.rollup_values[String(vt.id)].list_label || space.rollup_values[String(vt.id)].value"></span>
                                             </template>
                                             <!-- Completeness indicator -->
-                                            <small class="ms-1" x-show="showBadges"
+                                            <small class="ms-1" x-show="badgeMode >= 1"
                                                    :title="space.rollup_values[String(vt.id)].is_complete ? 'All ' + space.rollup_values[String(vt.id)].count_total + ' challenge(s) contributed data' : space.rollup_values[String(vt.id)].count_included + ' of ' + space.rollup_values[String(vt.id)].count_total + ' challenge(s) have data — roll-up is partial'"
                                                    x-text="space.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                         </div>
@@ -2383,8 +2405,8 @@
                                  :id="'challenge-' + challenge.id"
                                  :class="{
                                      'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 1,
-                                     'rag-parent-red':   showBadges && challenge.initiatives.some(i => i.execution_rag === 'red'),
-                                     'rag-parent-amber': showBadges && !challenge.initiatives.some(i => i.execution_rag === 'red') && challenge.initiatives.some(i => i.execution_rag === 'amber')
+                                     'rag-parent-red':   badgeMode >= 1 && challenge.initiatives.some(i => i.execution_rag === 'red'),
+                                     'rag-parent-amber': badgeMode >= 1 && !challenge.initiatives.some(i => i.execution_rag === 'red') && challenge.initiatives.some(i => i.execution_rag === 'amber')
                                  }"
                                  x-show="showLevels.challenges"
                                  :draggable="editMode"
@@ -2401,10 +2423,13 @@
                                            @click="challenge.collapsed = !challenge.collapsed; focusedLevel = null"
                                            x-show="challenge.initiatives.length > 0"></i>
                                         <img x-show="challenge.logo_url" :src="challenge.logo_url" class="entity-logo" />
-                                        <span x-show="!challenge.logo_url && challenge.icon && !editMode && showBadges" class="entity-icon-text" x-text="challenge.icon"></span>
-                                        <i x-show="!challenge.logo_url && !challenge.icon && (editMode || !showBadges)" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
+                                        <span x-show="!challenge.logo_url && challenge.icon && !editMode && badgeMode >= 1" class="entity-icon-text" x-text="challenge.icon"></span>
+                                        <i x-show="!challenge.logo_url && !challenge.icon && (editMode || badgeMode === 0)" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
                                         <span x-text="challenge.name" :data-tooltip="!editMode && challenge.description ? challenge.description : null" :data-tooltip-actions="!editMode ? tooltipActions(challenge, 'challenge') : null"></span>
+                                        <template x-if="badgeMode >= 1 && challenge.true_importance_level && impactScale[challenge.true_importance_level]">
+                                            <span class="ws-impact-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '22; color:' + impactScale[challenge.true_importance_level].color" :title="'Importance: ' + impactScale[challenge.true_importance_level].icon" x-text="impactScale[challenge.true_importance_level].icon"></span>
+                                        </template>
 
                                         <!-- Action icons (edit mode only) -->
                                         <template x-if="editMode">
@@ -2438,7 +2463,7 @@
                                          @click.stop="showRollupTip(challenge, 'challenge', vt.id, $event)">
                                         <template x-if="!vt.collapsed">
                                             <template x-if="challenge.rollup_values && challenge.rollup_values[String(vt.id)]">
-                                                <div @click.stop="openDrillDown(challenge, 'challenge', vt.id, $event)" style="cursor: pointer;">
+                                                <div x-show="badgeMode > 0" @click.stop="openDrillDown(challenge, 'challenge', vt.id, $event)" style="cursor: pointer;">
                                                     <template x-if="editMode && vt.kind === 'numeric'">
                                                         <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=challenge&return_to=workspace`"
                                                            class="formula-config-icon"
@@ -2446,7 +2471,7 @@
                                                             <i class="bi bi-calculator"></i>
                                                         </a>
                                                     </template>
-                                                    <span class="rollup-indicator" x-show="showBadges && challenge.rollup_values[String(vt.id)].formula">
+                                                    <span class="rollup-indicator" x-show="badgeMode >= 1 && challenge.rollup_values[String(vt.id)].formula">
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'max'">↑</span>
                                                         <span x-show="challenge.rollup_values[String(vt.id)].formula === 'min'">↓</span>
@@ -2467,7 +2492,7 @@
                                                     <template x-if="vt.kind === 'level'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">●●●</span></span></template>
                                                     <template x-if="vt.kind === 'sentiment'"><span><span x-show="challenge.rollup_values[String(vt.id)].value == 1">☹️</span><span x-show="challenge.rollup_values[String(vt.id)].value == 2">😐</span><span x-show="challenge.rollup_values[String(vt.id)].value == 3">😊</span></span></template>
                                                     <template x-if="vt.kind === 'list'"><span :style="'background: ' + (challenge.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="challenge.rollup_values[String(vt.id)].list_label || challenge.rollup_values[String(vt.id)].value"></span></template>
-                                                    <small class="ms-1" x-show="showBadges"
+                                                    <small class="ms-1" x-show="badgeMode >= 1"
                                                            :title="challenge.rollup_values[String(vt.id)].is_complete ? 'All ' + challenge.rollup_values[String(vt.id)].count_total + ' initiative(s) contributed data' : challenge.rollup_values[String(vt.id)].count_included + ' of ' + challenge.rollup_values[String(vt.id)].count_total + ' initiative(s) have data — roll-up is partial'"
                                                            x-text="challenge.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                 </div>
@@ -2485,8 +2510,8 @@
                                          :id="'initiative-' + initiative.id"
                                          :class="{
                                              'tree-dimmed': focusLevelMode && focusedLevel !== null && focusedLevel > 2,
-                                             'rag-border-red':   showBadges && initiative.execution_rag === 'red',
-                                             'rag-border-amber': showBadges && initiative.execution_rag === 'amber'
+                                             'rag-border-red':   badgeMode >= 1 && initiative.execution_rag === 'red',
+                                             'rag-border-amber': badgeMode >= 1 && initiative.execution_rag === 'amber'
                                          }"
                                          x-show="showLevels.initiatives"
                                          :draggable="editMode"
@@ -2503,10 +2528,13 @@
                                                    @click="initiative.collapsed = !initiative.collapsed; focusedLevel = null"
                                                    x-show="initiative.systems.length > 0"></i>
                                                 <img x-show="initiative.logo_url" :src="initiative.logo_url" class="entity-logo" />
-                                                <span x-show="!initiative.logo_url && initiative.icon && !editMode && showBadges" class="entity-icon-text" x-text="initiative.icon"></span>
-                                                <i x-show="!initiative.logo_url && !initiative.icon && (editMode || !showBadges)" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
+                                                <span x-show="!initiative.logo_url && initiative.icon && !editMode && badgeMode >= 1" class="entity-icon-text" x-text="initiative.icon"></span>
+                                                <i x-show="!initiative.logo_url && !initiative.icon && (editMode || badgeMode === 0)" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
 
                                                 <span x-text="initiative.name" :data-tooltip="!editMode && initiative.description ? initiative.description : null" :data-tooltip-actions="!editMode ? tooltipActions(initiative, 'initiative') : null"></span>
+                                                <template x-if="badgeMode >= 1 && initiative.true_importance_level && impactScale[initiative.true_importance_level]">
+                                                    <span class="ws-impact-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '22; color:' + impactScale[initiative.true_importance_level].color" :title="'Importance: ' + impactScale[initiative.true_importance_level].icon" x-text="impactScale[initiative.true_importance_level].icon"></span>
+                                                </template>
 
                                                 <!-- Action icons (edit mode only) -->
                                                 <template x-if="editMode">
@@ -2540,7 +2568,7 @@
                                                  @click.stop="showRollupTip(initiative, 'initiative', vt.id, $event)">
                                                 <template x-if="!vt.collapsed">
                                                     <template x-if="initiative.rollup_values && initiative.rollup_values[String(vt.id)]">
-                                                        <div @click.stop="openDrillDown(initiative, 'initiative', vt.id, $event)" style="cursor: pointer;">
+                                                        <div x-show="badgeMode > 0" @click.stop="openDrillDown(initiative, 'initiative', vt.id, $event)" style="cursor: pointer;">
                                                             <template x-if="editMode && vt.kind === 'numeric'">
                                                                 <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=initiative&return_to=workspace`"
                                                                    class="formula-config-icon"
@@ -2548,7 +2576,7 @@
                                                                     <i class="bi bi-calculator"></i>
                                                                 </a>
                                                             </template>
-                                                            <span class="rollup-indicator" x-show="showBadges && initiative.rollup_values[String(vt.id)].formula">
+                                                            <span class="rollup-indicator" x-show="badgeMode >= 1 && initiative.rollup_values[String(vt.id)].formula">
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'max'">↑</span>
                                                                 <span x-show="initiative.rollup_values[String(vt.id)].formula === 'min'">↓</span>
@@ -2600,7 +2628,7 @@
                                                             <template x-if="vt.kind === 'list'">
                                                                 <span :style="'background: ' + (initiative.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="initiative.rollup_values[String(vt.id)].list_label || initiative.rollup_values[String(vt.id)].value"></span>
                                                             </template>
-                                                            <small class="ms-1" x-show="showBadges"
+                                                            <small class="ms-1" x-show="badgeMode >= 1"
                                                                    :title="initiative.rollup_values[String(vt.id)].is_complete ? 'All ' + initiative.rollup_values[String(vt.id)].count_total + ' system(s) contributed data' : initiative.rollup_values[String(vt.id)].count_included + ' of ' + initiative.rollup_values[String(vt.id)].count_total + ' system(s) have data — roll-up is partial'"
                                                                    x-text="initiative.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                         </div>
@@ -2632,10 +2660,13 @@
                                                            @click="system.collapsed = !system.collapsed; focusedLevel = null"
                                                            x-show="system.kpis.length > 0"></i>
                                                         <img x-show="system.logo_url" :src="system.logo_url" class="entity-logo" />
-                                                        <span x-show="!system.logo_url && system.icon && !editMode && showBadges" class="entity-icon-text" x-text="system.icon"></span>
-                                                        <i x-show="!system.logo_url && !system.icon && (editMode || !showBadges)" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
+                                                        <span x-show="!system.logo_url && system.icon && !editMode && badgeMode >= 1" class="entity-icon-text" x-text="system.icon"></span>
+                                                        <i x-show="!system.logo_url && !system.icon && (editMode || badgeMode === 0)" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
 
                                                         <span x-text="system.name" :data-tooltip="!editMode && system.description ? system.description : null" :data-tooltip-actions="!editMode ? tooltipActions(system, 'system') : null"></span>
+                                                        <template x-if="badgeMode >= 1 && system.true_importance_level && impactScale[system.true_importance_level]">
+                                                            <span class="ws-impact-badge" :style="'background:' + impactScale[system.true_importance_level].color + '22; color:' + impactScale[system.true_importance_level].color" :title="'Importance: ' + impactScale[system.true_importance_level].icon" x-text="impactScale[system.true_importance_level].icon"></span>
+                                                        </template>
 
                                                         <!-- Action icons (edit mode only) -->
                                                         <template x-if="editMode">
@@ -2669,7 +2700,7 @@
                                                          @click.stop="showRollupTip(system, 'system', vt.id, $event)">
                                                         <template x-if="!vt.collapsed">
                                                             <template x-if="system.rollup_values && system.rollup_values[String(vt.id)]">
-                                                                <div @click.stop="openDrillDown(system, 'system', vt.id, $event)" style="cursor: pointer;">
+                                                                <div x-show="badgeMode > 0" @click.stop="openDrillDown(system, 'system', vt.id, $event)" style="cursor: pointer;">
                                                                     <template x-if="editMode && vt.kind === 'numeric'">
                                                                         <a :href="`/org-admin/value-types/${vt.id}/rollup-config?level=system&return_to=workspace`"
                                                                            class="formula-config-icon"
@@ -2677,7 +2708,7 @@
                                                                             <i class="bi bi-calculator"></i>
                                                                         </a>
                                                                     </template>
-                                                                    <span class="rollup-indicator" x-show="showBadges && system.rollup_values[String(vt.id)].formula">
+                                                                    <span class="rollup-indicator" x-show="badgeMode >= 1 && system.rollup_values[String(vt.id)].formula">
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'sum'">Σ</span>
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'max'">↑</span>
                                                                         <span x-show="system.rollup_values[String(vt.id)].formula === 'min'">↓</span>
@@ -2729,7 +2760,7 @@
                                                                     <template x-if="vt.kind === 'list'">
                                                                         <span :style="'background: ' + (system.rollup_values[String(vt.id)].list_color || '#6c757d') + '; color: white; padding: 1px 8px; border-radius: 4px; font-size: 0.8rem;'" x-text="system.rollup_values[String(vt.id)].list_label || system.rollup_values[String(vt.id)].value"></span>
                                                                     </template>
-                                                                    <small class="ms-1" x-show="showBadges"
+                                                                    <small class="ms-1" x-show="badgeMode >= 1"
                                                                            :title="system.rollup_values[String(vt.id)].is_complete ? 'All ' + system.rollup_values[String(vt.id)].count_total + ' KPI(s) contributed data' : system.rollup_values[String(vt.id)].count_included + ' of ' + system.rollup_values[String(vt.id)].count_total + ' KPI(s) have data — roll-up is partial'"
                                                                            x-text="system.rollup_values[String(vt.id)].is_complete ? '✓' : '⚠'"></small>
                                                                 </div>
@@ -2755,11 +2786,11 @@
                                                         <div class="entity-name level-4">
                                                             <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                                             <img x-show="kpi.logo_url" :src="kpi.logo_url" class="entity-logo" />
-                                                            <span x-show="!kpi.logo_url && kpi.icon && !editMode && showBadges" class="entity-icon-text" x-text="kpi.icon"></span>
-                                                            <i x-show="!kpi.logo_url && !kpi.icon && (editMode || !showBadges)" class="bi bi-graph-up entity-icon" style="color: #2ecc71;"></i>
+                                                            <span x-show="!kpi.logo_url && kpi.icon && !editMode && badgeMode >= 1" class="entity-icon-text" x-text="kpi.icon"></span>
+                                                            <i x-show="!kpi.logo_url && !kpi.icon && (editMode || badgeMode === 0)" class="bi bi-graph-up entity-icon" style="color: #2ecc71;"></i>
 
                                                             <!-- Target direction arrow -->
-                                                            <template x-if="showBadges && kpi.target_direction">
+                                                            <template x-if="badgeMode >= 1 && kpi.target_direction">
                                                                 <span class="target-arrow" :title="'Target: ' + kpi.target_direction">
                                                                     <span x-show="kpi.target_direction === 'minimize'">⬇️</span>
                                                                     <span x-show="kpi.target_direction === 'exact'">🎯</span>
@@ -2768,14 +2799,17 @@
                                                             </template>
 
                                                             <span x-text="kpi.name" :data-tooltip="!editMode && kpi.description ? kpi.description : null" :data-tooltip-actions="!editMode ? tooltipActions(kpi, 'kpi') : null"></span>
+                                                            <template x-if="badgeMode >= 1 && kpi.true_importance_level && impactScale[kpi.true_importance_level]">
+                                                                <span class="ws-impact-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '22; color:' + impactScale[kpi.true_importance_level].color" :title="'Importance: ' + impactScale[kpi.true_importance_level].icon" x-text="impactScale[kpi.true_importance_level].icon"></span>
+                                                            </template>
 
                                                             <!-- Linked KPI indicator -->
-                                                            <template x-if="showBadges && kpi.has_linked_sources">
+                                                            <template x-if="badgeMode >= 1 && kpi.has_linked_sources">
                                                                 <i class="bi bi-link-45deg linked-kpi-indicator" title="This KPI has linked values"></i>
                                                             </template>
 
                                                             <!-- Governance body badges -->
-                                                            <template x-if="showBadges">
+                                                            <template x-if="badgeMode >= 1">
                                                                 <template x-for="gb in kpi.governance_bodies" :key="gb.id">
                                                                     <span class="gb-badge"
                                                                           :style="'background-color: ' + gb.color"
@@ -2873,7 +2907,7 @@
                                                                                                 <span x-show="vt.unit_label" x-text="' ' + vt.unit_label"></span>
                                                                                             </strong>
                                                                                             <!-- Target indicator -->
-                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="badgeMode >= 1 && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2891,7 +2925,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">!<span style="opacity:0.2">!!</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">!!<span style="opacity:0.2">!</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">!!!</span>
-                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="badgeMode >= 1 && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2908,7 +2942,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">★<span style="opacity:0.2">★★</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">★★<span style="opacity:0.2">★</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">★★★</span>
-                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="badgeMode >= 1 && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2925,7 +2959,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">▼<span style="opacity:0.2">▼▼</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">▼▼<span style="opacity:0.2">▼</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">▼▼▼</span>
-                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="badgeMode >= 1 && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2942,7 +2976,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">●<span style="opacity:0.2">●●</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">●●<span style="opacity:0.2">●</span></span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">●●●</span>
-                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="badgeMode >= 1 && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -2959,7 +2993,7 @@
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 1">☹️</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 2">😐</span>
                                                                                             <span x-show="kpi.values[String(vt.id)].value == 3">😊</span>
-                                                                                            <template x-if="showBadges && kpi.values[String(vt.id)].has_target">
+                                                                                            <template x-if="badgeMode >= 1 && kpi.values[String(vt.id)].has_target">
                                                                                                 <a :href="`{{ url_for('organization_admin.edit_kpi', kpi_id=0, return_to='workspace') }}#target_${kpi.values[String(vt.id)].config_id}`.replace('/kpis/0/', `/kpis/${kpi.id}/`)"
                                                                                                    @click.stop
                                                                                                    style="text-decoration: none; cursor: pointer; transition: opacity 0.2s;"
@@ -3207,7 +3241,6 @@ function workspaceV2(orgId, filterPresets) {
         spaceTypeFilter: 'all',
         selectedGovernanceBodies: [],
         selectedSpaces: [],
-        selectedGroups: [],
         selectedImpactLevels: [],
 
         // Display Controls
@@ -3225,7 +3258,8 @@ function workspaceV2(orgId, filterPresets) {
             systems: true
         },
         showArchivedKPIs: false,
-        showBadges: {{ ws_show_badges | tojson }},  // Toggle for all badges/decorations (governance badges, icons, etc.)
+        badgeMode: {{ ws_badge_mode | default(1) }},  // 0=minimal, 1=medium, 2=max (with impact badges)
+        // badgeMode replaces showBadges — no legacy field needed
 
         // Column Visibility
         visibleValueTypeIds: [],  // IDs of visible value type columns (empty = all visible)
@@ -3288,20 +3322,13 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         filterInitiative(initiative) {
-            // Initiative Groups Filter
-            if (this.selectedGroups.length > 0) {
-                if (!initiative.group_label || !this.selectedGroups.includes(initiative.group_label)) {
-                    return false;
-                }
-            }
-
-            // Impact Assessment Filter
+            // Impact Level Filter (new configurable system)
             if (this.selectedImpactLevels.length > 0) {
-                if (!this.selectedImpactLevels.includes(initiative.impact_on_challenge)) {
+                var il = initiative.impact_level || 0;
+                if (!this.selectedImpactLevels.includes(il)) {
                     return false;
                 }
             }
-
             return true;
         },
 
@@ -3360,7 +3387,6 @@ function workspaceV2(orgId, filterPresets) {
             return this.spaceTypeFilter !== 'all' ||
                    this.selectedGovernanceBodies.length > 0 ||
                    this.selectedSpaces.length > 0 ||
-                   this.selectedGroups.length > 0 ||
                    this.selectedImpactLevels.length > 0 ||
                    hasColumnFilter;
         },
@@ -3370,7 +3396,6 @@ function workspaceV2(orgId, filterPresets) {
             if (this.spaceTypeFilter !== 'all') count++;
             if (this.selectedGovernanceBodies.length > 0) count++;
             if (this.selectedSpaces.length > 0) count++;
-            if (this.selectedGroups.length > 0) count++;
             if (this.selectedImpactLevels.length > 0) count++;
             if (this.visibleValueTypeIds.length > 0 && this.visibleValueTypeIds.length < this.valueTypes.length) count++;
             return count;
@@ -3402,7 +3427,6 @@ function workspaceV2(orgId, filterPresets) {
 
                 if (!arraysMatch(currentFilters.selectedGovernanceBodies, presetFilters.selectedGovernanceBodies)) return false;
                 if (!arraysMatch(currentFilters.selectedSpaces, presetFilters.selectedSpaces)) return false;
-                if (!arraysMatch(currentFilters.selectedGroups, presetFilters.selectedGroups)) return false;
                 if (!arraysMatch(currentFilters.selectedImpactLevels, presetFilters.selectedImpactLevels)) return false;
 
                 return true;
@@ -3496,6 +3520,7 @@ function workspaceV2(orgId, filterPresets) {
             this.governanceBodies = data.governanceBodies;
             this.groups = data.groups;
             this.impactLevels = data.impactLevels;
+            this.impactScale = data.impactScale || {};
             this.orgData = {
                 name:            this.orgName,
                 entity_links:    (data.orgEntityLinks   || []).filter(function(l) { return !l.is_private; }),
@@ -3827,7 +3852,6 @@ function workspaceV2(orgId, filterPresets) {
             this.spaceTypeFilter = 'all';
             this.selectedGovernanceBodies = [];
             this.selectedSpaces = [];
-            this.selectedGroups = [];
             this.selectedImpactLevels = [];
             this.visibleValueTypeIds = this.valueTypes.map(vt => vt.id);  // Reset to all visible
             // Reset display options to defaults
@@ -3855,15 +3879,6 @@ function workspaceV2(orgId, filterPresets) {
                 this.selectedSpaces.splice(index, 1);
             } else {
                 this.selectedSpaces.push(spaceId);
-            }
-        },
-
-        toggleGroup(group) {
-            const index = this.selectedGroups.indexOf(group);
-            if (index > -1) {
-                this.selectedGroups.splice(index, 1);
-            } else {
-                this.selectedGroups.push(group);
             }
         },
 
@@ -4000,10 +4015,6 @@ function workspaceV2(orgId, filterPresets) {
                 }
             }
 
-            const groupParams = urlParams.getAll('selectedGroups');
-            if (groupParams.length > 0) {
-                this.selectedGroups = groupParams;
-            }
 
             const impactParams = urlParams.getAll('selectedImpactLevels');
             if (impactParams.length > 0) {
@@ -4065,7 +4076,6 @@ function workspaceV2(orgId, filterPresets) {
                         showLevels: self.showLevels,
                         selectedGovernanceBodies: self.selectedGovernanceBodies,
                         selectedSpaces: self.selectedSpaces,
-                        selectedGroups: self.selectedGroups,
                         selectedImpactLevels: self.selectedImpactLevels,
                         visibleValueTypeIds: self.visibleValueTypeIds,
                         showArchivedKPIs: self.showArchivedKPIs,
@@ -4077,7 +4087,6 @@ function workspaceV2(orgId, filterPresets) {
                     if (config.showLevels) self.showLevels = config.showLevels;
                     if (config.selectedGovernanceBodies) self.selectedGovernanceBodies = config.selectedGovernanceBodies;
                     if (config.selectedSpaces) self.selectedSpaces = config.selectedSpaces;
-                    if (config.selectedGroups) self.selectedGroups = config.selectedGroups;
                     if (config.selectedImpactLevels) self.selectedImpactLevels = config.selectedImpactLevels;
                     if (config.visibleValueTypeIds) self.visibleValueTypeIds = config.visibleValueTypeIds;
                     if (config.showArchivedKPIs !== undefined) self.showArchivedKPIs = config.showArchivedKPIs;
@@ -4088,7 +4097,6 @@ function workspaceV2(orgId, filterPresets) {
                     self.showLevels = { spaces: true, challenges: true, initiatives: true, systems: true, kpis: true };
                     self.selectedGovernanceBodies = [];
                     self.selectedSpaces = [];
-                    self.selectedGroups = [];
                     self.selectedImpactLevels = [];
                     self.visibleValueTypeIds = self.valueTypes.map(function(vt) { return vt.id; });
                     self.showArchivedKPIs = false;
@@ -4163,7 +4171,6 @@ function workspaceV2(orgId, filterPresets) {
                 spaceTypeFilter: this.spaceTypeFilter,
                 selectedGovernanceBodies: [...this.selectedGovernanceBodies],
                 selectedSpaces: [...this.selectedSpaces],
-                selectedGroups: [...this.selectedGroups],
                 selectedImpactLevels: [...this.selectedImpactLevels],
                 visibleValueTypeIds: [...this.visibleValueTypeIds]
             };
@@ -4197,9 +4204,6 @@ function workspaceV2(orgId, filterPresets) {
             }
             if (filters.selectedSpaces && filters.selectedSpaces.length > 0) {
                 parts.push(`Spaces: ${filters.selectedSpaces.length} selected`);
-            }
-            if (filters.selectedGroups && filters.selectedGroups.length > 0) {
-                parts.push(`Groups: ${filters.selectedGroups.length} selected`);
             }
             if (filters.selectedImpactLevels && filters.selectedImpactLevels.length > 0) {
                 parts.push(`Impact: ${filters.selectedImpactLevels.length} selected`);

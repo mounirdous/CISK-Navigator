@@ -1041,16 +1041,19 @@
                                 Impact Level
                             </td>
                             <td style="padding: 0.5rem;">
-                                <select class="form-select" name="impact_on_challenge">
-                                    <option value="not_assessed" {% if not initiative.impact_on_challenge or initiative.impact_on_challenge == 'not_assessed' %}selected{% endif %}>⚪ Not Assessed</option>
-                                    <option value="low" {% if initiative.impact_on_challenge == 'low' %}selected{% endif %}>🔵 Low Impact</option>
-                                    <option value="medium" {% if initiative.impact_on_challenge == 'medium' %}selected{% endif %}>🟡 Medium Impact</option>
-                                    <option value="high" {% if initiative.impact_on_challenge == 'high' %}selected{% endif %}>🟢 High Impact</option>
-                                    <option value="no_consensus" {% if initiative.impact_on_challenge == 'no_consensus' %}selected{% endif %}>⚠️ No Consensus</option>
+                                <select class="form-select" name="impact_level">
+                                    <option value="" {% if not initiative.impact_level %}selected{% endif %}>Not set</option>
+                                    {% if impact_levels_config %}
+                                    {% for lvl in [1, 2, 3] %}
+                                    {% if lvl in impact_levels_config %}
+                                    {% set il = impact_levels_config[lvl] %}
+                                    <option value="{{ lvl }}" {% if initiative.impact_level == lvl %}selected{% endif %}>
+                                        {{ il.icon }}
+                                    </option>
+                                    {% endif %}
+                                    {% endfor %}
+                                    {% endif %}
                                 </select>
-                                <div style="font-size: 0.8rem; color: #6c757d; margin-top: 0.25rem; font-style: italic;">
-                                    How much does this initiative impact the challenge?
-                                </div>
                             </td>
                         </tr>
                         <tr>
@@ -1237,20 +1240,11 @@
                             Level
                         </td>
                         <td class="content-cell">
-                            {% if initiative.impact_on_challenge %}
-                                {% if initiative.impact_on_challenge == 'not_assessed' %}
-                                    <span style="color: #90a4ae; font-style: italic;">⚪ Not Assessed</span>
-                                {% elif initiative.impact_on_challenge == 'low' %}
-                                    <span style="color: #2196f3; font-weight: 700; font-size: 1.1rem;">🔵 Low Impact</span>
-                                {% elif initiative.impact_on_challenge == 'medium' %}
-                                    <span style="color: #ff9800; font-weight: 700; font-size: 1.1rem;">🟡 Medium Impact</span>
-                                {% elif initiative.impact_on_challenge == 'high' %}
-                                    <span style="color: #4caf50; font-weight: 700; font-size: 1.1rem;">🟢 High Impact</span>
-                                {% elif initiative.impact_on_challenge == 'no_consensus' %}
-                                    <span style="color: #e91e63; font-weight: 700; font-size: 1.1rem;">⚠️ No Consensus</span>
-                                {% endif %}
+                            {% if initiative.impact_level and impact_levels_config and initiative.impact_level in impact_levels_config %}
+                                {% set il = impact_levels_config[initiative.impact_level] %}
+                                <span style="color: {{ il.color }}; font-weight: 700; font-size: 1.3rem;">{{ il.icon }}</span>
                             {% else %}
-                                <span style="color: #90a4ae; font-style: italic; font-size: 0.9rem;">Not assessed yet</span>
+                                <span style="color: #90a4ae; font-style: italic; font-size: 0.9rem;">Not set</span>
                             {% endif %}
                         </td>
                     </tr>

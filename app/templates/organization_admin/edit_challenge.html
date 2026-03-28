@@ -51,11 +51,13 @@
                     Edit Challenge
                 </h2>
                 <p>Modify challenge: {{ challenge.name }}</p>
+                {% include 'organization_admin/_entity_nav.html' %}
             </div>
 
             <div class="card-body" style="padding: 2.5rem;">
                 <form method="POST" novalidate>
                     {{ form.hidden_tag() }}
+                    <input type="hidden" name="nav_action" id="navAction" value="">
 
                     <div class="mb-3">
                         {{ form.name.label(class="form-label fw-semibold") }}
@@ -92,6 +94,8 @@
                         </small>
                     </div>
 
+
+                    {% include 'organization_admin/_impact_field.html' %}
 
                     <div class="d-grid gap-2">
                         {{ form.submit(class="btn btn-primary btn-lg") }}

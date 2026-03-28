@@ -45,11 +45,13 @@
                 </div>
                 <h2 class="mb-1">Edit Space</h2>
                 <p class="mb-0 opacity-75">{{ space.name }}</p>
+                {% include 'organization_admin/_entity_nav.html' %}
             </div>
 
             <div class="card-body" style="padding: 2.5rem;">
                 <form method="POST">
                     {{ form.hidden_tag() }}
+                    <input type="hidden" name="nav_action" id="navAction" value="">
 
                     <div class="mb-4">
                         {{ form.name.label(class="form-label fw-semibold") }}
@@ -114,6 +116,8 @@
                             <i class="bi bi-shield-lock"></i> Private spaces are only visible to authorized users. Public spaces are visible to all organization members.
                         </small>
                     </div>
+
+                    {% include 'organization_admin/_impact_field.html' %}
 
                     <div class="d-flex gap-2 pt-3 border-top">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
