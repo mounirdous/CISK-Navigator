@@ -120,6 +120,62 @@ def theory():
     return render_template("workspace/theory.html", csrf_token=generate_csrf)
 
 
+@bp.route("/decisions")
+@login_required
+@organization_required
+def decisions():
+    """Decision Register — aggregated view of all decisions from progress updates"""
+    org_id = session.get("organization_id")
+    from app.models import ChallengeInitiativeLink, InitiativeProgressUpdate
+
+    updates = (
+        db.session.query(InitiativeProgressUpdate)
+        .join(Initiative, InitiativeProgressUpdate.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None))
+        .order_by(InitiativeProgressUpdate.created_at.desc())
+        .all()
+    )
+
+    # Build decision entries — flatten structured decisions into individual cards
+    decision_entries = []
+    for upd in updates:
+        ini = upd.initiative
+        ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
+        challenge_name = ci.challenge.name if ci and ci.challenge else None
+        space_name = ci.challenge.space.name if ci and ci.challenge and ci.challenge.space else None
+        author = upd.author.display_name or upd.author.login if upd.author else None
+
+        if isinstance(upd.decisions, list):
+            for dec in upd.decisions:
+                decision_entries.append({
+                    "date": upd.created_at,
+                    "initiative_id": ini.id,
+                    "initiative_name": ini.name,
+                    "challenge_name": challenge_name,
+                    "space_name": space_name,
+                    "rag": upd.rag_status,
+                    "what": dec.get("what", ""),
+                    "who": dec.get("who", ""),
+                    "tag": dec.get("tag", ""),
+                    "author": author,
+                })
+        elif isinstance(upd.decisions, str) and upd.decisions.strip():
+            decision_entries.append({
+                "date": upd.created_at,
+                "initiative_id": ini.id,
+                "initiative_name": ini.name,
+                "challenge_name": challenge_name,
+                "space_name": space_name,
+                "rag": upd.rag_status,
+                "what": upd.decisions,
+                "who": "",
+                "tag": "",
+                "author": author,
+            })
+
+    return render_template("workspace/decisions.html", entries=decision_entries)
+
+
 @bp.route("/impact-docs")
 @login_required
 def impact_docs():

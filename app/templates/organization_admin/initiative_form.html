@@ -802,6 +802,12 @@
     [data-detail-mode="0"] .review-nav-dot.rag-amber { background: rgba(255,255,255,0.4); }
     [data-detail-mode="0"] .review-nav-dot.rag-red { background: rgba(255,255,255,0.4); }
 
+    .dec-row {
+        padding: 0.4rem 0.5rem; margin-bottom: 0.4rem;
+        background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px;
+        border-left: 3px solid #8b5cf6;
+    }
+
     .review-nav-separator {
         font-size: 0.85rem; font-weight: 800;
         padding: 0 0.35rem; color: rgba(255,255,255,0.8);
@@ -1872,11 +1878,28 @@
                                 <div class="progress-section-text">{{ upd.blockers }}</div>
                             </div>
                             {% endif %}
+                            {% if upd.decisions and upd.decisions is iterable and upd.decisions is not string %}
+                            <div class="progress-section">
+                                <span class="progress-section-label" style="color:#8b5cf6;"><i class="bi bi-journal-bookmark-fill"></i> Decisions ({{ upd.decisions | length }})</span>
+                                {% for dec in upd.decisions %}
+                                <div style="border-left:3px solid #8b5cf6; padding:0.3rem 0.5rem; margin-bottom:0.3rem; background:#faf5ff; border-radius:0 6px 6px 0;">
+                                    <div style="font-weight:600; font-size:0.85rem;">{{ dec.what }}</div>
+                                    {% if dec.who %}<div style="font-size:0.75rem; color:#64748b;"><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ dec.who }}</div>{% endif %}
+                                    {% if dec.tag %}<span style="font-size:0.65rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:{{ {'scope':'#dbeafe','budget':'#d1fae5','timeline':'#fef3c7','resource':'#fce7f3','technical':'#e0e7ff','governance':'#ede9fe','other':'#f1f5f9'}.get(dec.tag,'#f1f5f9') }}; color:{{ {'scope':'#1e40af','budget':'#065f46','timeline':'#92400e','resource':'#9d174d','technical':'#3730a3','governance':'#5b21b6','other':'#475569'}.get(dec.tag,'#475569') }};">{{ dec.tag | capitalize }}</span>{% endif %}
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% elif upd.decisions and upd.decisions is string %}
+                            <div class="progress-section">
+                                <span class="progress-section-label" style="color:#8b5cf6;"><i class="bi bi-journal-bookmark-fill"></i> Decisions</span>
+                                <div class="progress-section-text" style="border-left:3px solid #8b5cf6; padding-left:0.5rem;">{{ upd.decisions }}</div>
+                            </div>
+                            {% endif %}
                         </div>
                         {% if can_edit %}
                         <div class="progress-entry-actions">
                             <button class="btn btn-sm btn-outline-secondary" title="Edit"
-                                onclick="openProgressModal('edit', {{ upd.id }}, '{{ upd.rag_status }}', {{ upd.accomplishments | tojson }}, {{ upd.next_steps | tojson }}, {{ upd.blockers | tojson }})">
+                                onclick="openProgressModal('edit', {{ upd.id }}, '{{ upd.rag_status }}', {{ upd.accomplishments | tojson }}, {{ upd.next_steps | tojson }}, {{ upd.blockers | tojson }}, {{ upd.decisions | tojson }})">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form method="POST" action="{{ url_for('organization_admin.initiative_progress_update_delete', initiative_id=initiative.id, update_id=upd.id) }}" style="display:inline;" onsubmit="return confirm('Delete this progress update?')">
@@ -1956,7 +1979,7 @@
                         <label class="form-label fw-bold mb-2">Execution Status <span class="text-danger">*</span></label>
                         <div class="d-flex gap-2">
                             <label class="rag-select-btn rag-select-green flex-fill">
-                                <input type="radio" name="rag_status" value="green" required>
+                                <input type="radio" name="rag_status" value="green">
                                 <span class="rag-select-circle green-circle"></span>
                                 <span>On Track</span>
                             </label>
@@ -1980,9 +2003,19 @@
                         <label class="form-label fw-semibold"><i class="bi bi-arrow-right-circle text-primary"></i> Next Steps</label>
                         <textarea class="form-control" name="next_steps" id="modalNextSteps" rows="3" placeholder="What needs to happen next?"></textarea>
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label class="form-label fw-semibold"><i class="bi bi-exclamation-triangle text-warning"></i> Blockers</label>
                         <textarea class="form-control" name="blockers" id="modalBlockers" rows="2" placeholder="Any obstacles or risks requiring attention?"></textarea>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold d-flex align-items-center justify-content-between">
+                            <span><i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decisions Taken</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" style="font-size:0.72rem; padding:0.15rem 0.5rem;" onclick="addDecisionRow()">
+                                <i class="bi bi-plus"></i> Add
+                            </button>
+                        </label>
+                        <input type="hidden" name="decisions_json" id="decisionsJson">
+                        <div id="decisionsContainer"></div>
                     </div>
                 </div>
                 <div class="modal-footer" style="background:#f8f9fa;">
@@ -2016,7 +2049,7 @@ function switchTab(tab) {
     window.history.replaceState({}, '', url.toString());
 }
 
-function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps, blockers) {
+function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps, blockers, decisions) {
     const form = document.getElementById('progressUpdateForm');
     const title = document.getElementById('progressModalTitle');
     // Sync nav params from current URL (may differ from server-rendered values if navigator moved)
@@ -2030,6 +2063,8 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
     document.getElementById('modalAccomplishments').value = '';
     document.getElementById('modalNextSteps').value = '';
     document.getElementById('modalBlockers').value = '';
+    document.getElementById('decisionsContainer').innerHTML = '';
+    _decisionRows = [];
 
     if (mode === 'edit' && updateId) {
         title.innerHTML = '<i class="bi bi-pencil"></i> Edit Progress Update';
@@ -2041,12 +2076,72 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
         document.getElementById('modalAccomplishments').value = accomplishments || '';
         document.getElementById('modalNextSteps').value = nextSteps || '';
         document.getElementById('modalBlockers').value = blockers || '';
+        // Load existing decisions
+        if (decisions && Array.isArray(decisions)) {
+            decisions.forEach(function(d) { addDecisionRow(d.what, d.who, d.tag); });
+        }
     } else {
         title.innerHTML = '<i class="bi bi-plus-circle"></i> Add Progress Update';
         form.action = PROGRESS_CREATE_URL;
     }
     new bootstrap.Modal(document.getElementById('progressUpdateModal')).show();
 }
+
+// ── Structured Decisions ──
+var _decisionRows = [];
+var _decTags = ['scope', 'budget', 'timeline', 'resource', 'technical', 'governance', 'other'];
+var _decTagColors = { scope:'#3b82f6', budget:'#10b981', timeline:'#f59e0b', resource:'#ec4899', technical:'#6366f1', governance:'#8b5cf6', other:'#94a3b8' };
+
+function addDecisionRow(what, who, tag) {
+    var idx = _decisionRows.length;
+    _decisionRows.push({ what: what || '', who: who || '', tag: tag || '' });
+    var container = document.getElementById('decisionsContainer');
+    var row = document.createElement('div');
+    row.className = 'dec-row';
+    row.dataset.idx = idx;
+    row.innerHTML =
+        '<div style="display:flex; gap:0.4rem; align-items:start;">' +
+            '<div style="flex:1;">' +
+                '<input type="text" class="form-control form-control-sm dec-what" placeholder="Decision..." value="' + (what || '').replace(/"/g, '&quot;') + '" style="font-weight:600; margin-bottom:0.3rem;">' +
+                '<div style="display:flex; gap:0.3rem;">' +
+                    '<input type="text" class="form-control form-control-sm dec-who" placeholder="Who (participants)" value="' + (who || '').replace(/"/g, '&quot;') + '" style="flex:1; font-size:0.78rem;">' +
+                    '<select class="form-select form-select-sm dec-tag" style="width:auto; font-size:0.78rem; max-width:120px;">' +
+                        '<option value="">Tag</option>' +
+                        _decTags.map(function(t) { return '<option value="' + t + '"' + (tag === t ? ' selected' : '') + '>' + t.charAt(0).toUpperCase() + t.slice(1) + '</option>'; }).join('') +
+                    '</select>' +
+                '</div>' +
+            '</div>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger" style="padding:0.15rem 0.3rem; font-size:0.7rem;" onclick="removeDecisionRow(' + idx + ')" title="Remove">' +
+                '<i class="bi bi-x"></i>' +
+            '</button>' +
+        '</div>';
+    container.appendChild(row);
+}
+
+function removeDecisionRow(idx) {
+    _decisionRows[idx] = null;
+    var row = document.querySelector('.dec-row[data-idx="' + idx + '"]');
+    if (row) row.remove();
+}
+
+function serializeDecisions() {
+    var decisions = [];
+    document.querySelectorAll('.dec-row').forEach(function(row) {
+        var what = row.querySelector('.dec-what').value.trim();
+        if (!what) return;
+        decisions.push({
+            what: what,
+            who: row.querySelector('.dec-who').value.trim(),
+            tag: row.querySelector('.dec-tag').value,
+        });
+    });
+    document.getElementById('decisionsJson').value = JSON.stringify(decisions);
+}
+
+// Hook form submit to serialize decisions
+document.getElementById('progressUpdateForm').addEventListener('submit', function() {
+    serializeDecisions();
+});
 
 function setReviewTab(tab) {
     // Switch the visible tab

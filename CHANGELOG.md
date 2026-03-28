@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.2.0] - 2026-03-28
+
+### Added
+- **Decision Log** — new `decisions` field on progress updates; capture decisions during initiative reviews
+- **Decision Register page** (`/workspace/decisions`) — aggregated searchable view of all decisions with xmas tree detail levels
+- **Global search** — decisions searchable via "Decisions" filter pill
+- **People & Actions menu** — Decision Register link
+- Purple gavel icon + left border accent for decisions in progress timeline
+- Migration: `46e8f568eb5e`
+
+### Fixed
+- Alpine `cursor: pointer` expression error on impact badges (was outside JS string)
+
 ## [5.1.0] - 2026-03-28
 
 ### Added

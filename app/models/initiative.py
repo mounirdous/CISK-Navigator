@@ -193,6 +193,7 @@ class InitiativeProgressUpdate(db.Model):
     accomplishments = db.Column(db.Text, nullable=True)
     next_steps = db.Column(db.Text, nullable=True)
     blockers = db.Column(db.Text, nullable=True)
+    decisions = db.Column(db.JSON, nullable=True, comment="Structured decisions: [{what, who, tag}, ...]")
     created_by = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

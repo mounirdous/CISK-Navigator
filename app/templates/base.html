@@ -442,6 +442,14 @@
                                     </a>
                                 </li>
                                 {% endif %}
+                                {% if can_access_action_items %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.decisions') }}">
+                                        <i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decision Register
+                                    </a>
+                                </li>
+                                {% endif %}
                             </ul>
                         </li>
                         {% endif %}
@@ -1560,6 +1568,10 @@
                         <button type="button" class="sf-pill active" data-for="filter_entity_links" onclick="toggleEntityPill(this)">
                             <i class="bi bi-link-45deg"></i> Links
                         </button>
+                        <input type="checkbox" id="filter_decisions" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_decisions" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-gavel" style="color:#8b5cf6;"></i> Decisions
+                        </button>
                     </div>
                 </div>
 
@@ -1711,6 +1723,7 @@
         if (document.getElementById('filter_challenges').checked) entityTypes.push('challenges');
         if (document.getElementById('filter_spaces').checked) entityTypes.push('spaces');
         if (document.getElementById('filter_action_items').checked) entityTypes.push('action_items');
+        if (document.getElementById('filter_decisions') && document.getElementById('filter_decisions').checked) entityTypes.push('decisions');
 
         // Get date filter
         const dateFilter = document.getElementById('filter_date').value;

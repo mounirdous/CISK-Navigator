@@ -4319,6 +4319,13 @@ def initiative_progress_update_create(initiative_id):
         blockers=request.form.get("blockers", "").strip() or None,
         created_by=current_user.id,
     )
+    import json as _dec_json
+    _dec_raw = request.form.get("decisions_json", "")
+    if _dec_raw:
+        try:
+            upd.decisions = _dec_json.loads(_dec_raw)
+        except (ValueError, TypeError):
+            pass
     db.session.add(upd)
     AuditService.log_create("InitiativeProgressUpdate", initiative.id, initiative.name, {"rag_status": rag_status})
     db.session.commit()
@@ -4361,6 +4368,15 @@ def initiative_progress_update_edit(initiative_id, update_id):
     upd.accomplishments = request.form.get("accomplishments", "").strip() or None
     upd.next_steps = request.form.get("next_steps", "").strip() or None
     upd.blockers = request.form.get("blockers", "").strip() or None
+    import json as _dec_json2
+    _dec_raw2 = request.form.get("decisions_json", "")
+    if _dec_raw2:
+        try:
+            upd.decisions = _dec_json2.loads(_dec_raw2)
+        except (ValueError, TypeError):
+            pass
+    else:
+        upd.decisions = None
     AuditService.log_update(
         "InitiativeProgressUpdate", upd.id, initiative.name,
         {"rag_status": old_rag}, {"rag_status": rag_status}

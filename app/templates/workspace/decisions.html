@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}Decision Register{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dec-page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+    .dec-header {
+        background: linear-gradient(135deg, #7c3aed, #4f46e5);
+        color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+        display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+    }
+    .dec-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+    .dec-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.88rem; }
+    .dec-search {
+        background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 8px; padding: 0.4rem 0.75rem; color: white; font-size: 0.85rem; width: 250px;
+    }
+    .dec-search::placeholder { color: rgba(255,255,255,0.6); }
+    .dec-search:focus { outline: none; background: rgba(255,255,255,0.25); }
+
+    .dec-card {
+        background: white; border-radius: 10px; border: 1px solid #e2e8f0;
+        padding: 1rem 1.25rem; margin-bottom: 0.6rem;
+        transition: all 0.15s; border-left: 4px solid #8b5cf6;
+        display: flex; gap: 1rem; align-items: flex-start;
+    }
+    .dec-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+    .dec-icon {
+        width: 36px; height: 36px; border-radius: 10px;
+        background: #ede9fe; color: #7c3aed;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1rem; flex-shrink: 0;
+    }
+
+    .dec-body { flex: 1; min-width: 0; }
+
+    .dec-what { font-weight: 700; font-size: 0.92rem; color: #1e293b; margin-bottom: 0.25rem; }
+
+    .dec-meta {
+        display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+        font-size: 0.75rem; color: #94a3b8;
+    }
+    .dec-meta-item { display: flex; align-items: center; gap: 0.2rem; }
+
+    .dec-tag {
+        font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.45rem;
+        border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+
+    .dec-rag { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .dec-rag.green { background: #43a047; }
+    .dec-rag.amber { background: #fb8c00; }
+    .dec-rag.red { background: #e53935; }
+
+    .dec-initiative { text-decoration: none; color: #4f46e5; font-weight: 600; font-size: 0.78rem; }
+    .dec-initiative:hover { text-decoration: underline; }
+
+    .dec-empty { text-align: center; padding: 3rem; color: #94a3b8; }
+    .dec-empty i { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3; }
+    .dec-count { font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.75rem; }
+
+    .dec-context { font-size: 0.75rem; color: #64748b; margin-top: 0.3rem; }
+
+    /* Detail modes */
+    [data-detail-mode="0"] .dec-d1, [data-detail-mode="0"] .dec-d2 { display: none !important; }
+    [data-detail-mode="1"] .dec-d2 { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set tag_bg = {'scope':'#dbeafe','budget':'#d1fae5','timeline':'#fef3c7','resource':'#fce7f3','technical':'#e0e7ff','governance':'#ede9fe','other':'#f1f5f9'} %}
+{% set tag_fg = {'scope':'#1e40af','budget':'#065f46','timeline':'#92400e','resource':'#9d174d','technical':'#3730a3','governance':'#5b21b6','other':'#475569'} %}
+
+<div class="dec-page" id="decContainer" data-detail-mode="1">
+    <div class="dec-header">
+        <div>
+            <h1>
+                <i class="bi bi-journal-bookmark-fill"></i> Decision Register
+                <button type="button" class="btn btn-sm" id="decDetailBtn"
+                        onclick="cycleDecDetailMode()" title="Detail level"
+                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
+                    <span id="decDetailIcon">🎄</span>
+                </button>
+            </h1>
+            <p>{{ entries | length }} decision{{ 's' if entries | length != 1 else '' }} captured across all initiatives</p>
+        </div>
+        <input type="text" class="dec-search" placeholder="Search decisions..." id="decSearch" oninput="filterDecisions()">
+    </div>
+
+    {% if entries %}
+    <div id="decList">
+        {% for e in entries %}
+        <div class="dec-card" data-search="{{ e.what | lower }} {{ e.initiative_name | lower }} {{ (e.who or '') | lower }} {{ (e.tag or '') | lower }} {{ (e.challenge_name or '') | lower }}">
+            <div class="dec-icon">
+                <i class="bi bi-journal-bookmark-fill"></i>
+            </div>
+            <div class="dec-body">
+                <div class="dec-what">{{ e.what }}</div>
+                <div class="dec-meta">
+                    <span class="dec-meta-item"><i class="bi bi-calendar3"></i> {{ e.date.strftime('%d %b %Y') }}</span>
+                    <span class="dec-rag {{ e.rag }} dec-d1"></span>
+                    <a class="dec-initiative" href="{{ url_for('organization_admin.initiative_form', initiative_id=e.initiative_id) }}">
+                        {{ entity_defaults.get('initiative', {}).get('icon', '') }} {{ e.initiative_name }}
+                    </a>
+                    {% if e.who %}
+                    <span class="dec-meta-item dec-d1"><i class="bi bi-people"></i> {{ e.who }}</span>
+                    {% endif %}
+                    {% if e.tag %}
+                    <span class="dec-tag" style="background:{{ tag_bg.get(e.tag, '#f1f5f9') }}; color:{{ tag_fg.get(e.tag, '#475569') }};">{{ e.tag }}</span>
+                    {% endif %}
+                    {% if e.author %}
+                    <span class="dec-meta-item dec-d2"><i class="bi bi-person"></i> {{ e.author }}</span>
+                    {% endif %}
+                </div>
+                {% if e.space_name or e.challenge_name %}
+                <div class="dec-context dec-d2">
+                    {% if e.space_name %}{{ e.space_name }}{% endif %}
+                    {% if e.challenge_name %} › {{ e.challenge_name }}{% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="dec-empty">
+        <i class="bi bi-journal-bookmark-fill"></i>
+        <h5>No decisions captured yet</h5>
+        <p>Decisions are recorded during initiative progress updates.<br>Add a progress update with decisions to see them here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function filterDecisions() {
+    var q = document.getElementById('decSearch').value.toLowerCase();
+    document.querySelectorAll('.dec-card').forEach(function(card) {
+        card.style.display = card.dataset.search.includes(q) ? '' : 'none';
+    });
+}
+
+var _decMode = parseInt(localStorage.getItem('dec_detail_mode') || '1');
+var _decIcons = [
+    { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>' },
+    { html: '<span style="font-size:1.25rem;">🎄</span>' },
+];
+function applyDecDetailMode(m) {
+    _decMode = m;
+    var c = document.getElementById('decContainer');
+    if (c) c.dataset.detailMode = String(m);
+    var i = document.getElementById('decDetailIcon');
+    if (i) i.innerHTML = _decIcons[m].html;
+}
+function cycleDecDetailMode() {
+    var n = (_decMode + 1) % 3;
+    localStorage.setItem('dec_detail_mode', String(n));
+    applyDecDetailMode(n);
+}
+applyDecDetailMode(_decMode);
+</script>
+{% endblock %}
