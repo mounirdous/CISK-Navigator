@@ -4751,6 +4751,7 @@ function workspaceV2(orgId, filterPresets) {
                 var badge = pc ? (pc.status === 'complete' ? '<span class="tt-badge-complete">\u2713<\/span>' : pc.status === 'partial' ? '<span class="tt-badge-partial">' + pc.filled + '/' + pc.total + '<\/span>' : '<span class="tt-badge-empty">!<\/span>') : '';
                 h += '<a class="tt-chip" href="' + this.portersUrl + '" onclick="event.stopPropagation()"><i class="bi bi-diagram-3"><\/i> Porter\'s ' + badge + '<\/a>';
             }
+            h += '<a class="tt-chip" href="{{ url_for("workspace.dimensions") }}" onclick="event.stopPropagation()"><i class="bi bi-columns-gap"><\/i> Dimensions<\/a>';
             if (this.orgData) {
                 var links = (this.orgData.entity_links||[]).length + (this.orgData.inherited_links||[]).length;
                 if (links > 0) {

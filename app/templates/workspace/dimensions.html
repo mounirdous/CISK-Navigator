@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Value Dimensions - {{ session.get('organization_name', '') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dim-page {
+        min-height: calc(100vh - 60px);
+        background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+        padding: 2.5rem 1.5rem;
+    }
+
+    .dim-header {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+
+    .dim-header h1 {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1e293b;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.4rem;
+    }
+
+    .dim-header p {
+        font-size: 1rem;
+        color: #64748b;
+        max-width: 500px;
+        margin: 0 auto;
+    }
+
+    .dim-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.25rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .dim-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.75rem 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+        border: 1px solid rgba(0,0,0,0.04);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .dim-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--dim-accent, #3b82f6);
+        border-radius: 16px 16px 0 0;
+    }
+
+    .dim-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.06);
+        border-color: rgba(0,0,0,0.08);
+    }
+
+    .dim-card-order {
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        margin-bottom: 0.75rem;
+    }
+
+    .dim-card-name {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1.3;
+        margin-bottom: 0.75rem;
+    }
+
+    .dim-card-desc {
+        font-size: 0.92rem;
+        color: #475569;
+        line-height: 1.6;
+        flex: 1;
+    }
+
+    .dim-card-kind {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        margin-top: 1rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: rgba(0,0,0,0.04);
+        color: #64748b;
+    }
+
+    .dim-empty {
+        text-align: center;
+        padding: 4rem 2rem;
+        color: #94a3b8;
+    }
+
+    .dim-empty i {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 1rem;
+        opacity: 0.4;
+    }
+
+    /* Stagger entrance animation */
+    .dim-card {
+        animation: dimFadeIn 0.4s ease both;
+    }
+
+    @keyframes dimFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(16px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dim-page { padding: 1.5rem 1rem; }
+        .dim-header h1 { font-size: 1.5rem; }
+        .dim-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dim-page">
+    <div class="dim-header">
+        <h1><i class="bi bi-columns-gap" style="color:#3b82f6;"></i> Value Dimensions</h1>
+        <p>The lenses through which your organization measures strategic progress</p>
+    </div>
+
+    {% if value_types %}
+    <div class="dim-grid">
+        {% for vt in value_types %}
+        {% set accent_colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#14b8a6', '#f97316'] %}
+        {% set kind_labels = {
+            'numeric': 'Numeric',
+            'risk': 'Risk',
+            'positive_impact': 'Impact',
+            'negative_impact': 'Negative Impact',
+            'level': 'Level',
+            'sentiment': 'Sentiment',
+            'list': 'List'
+        } %}
+        {% set kind_icons = {
+            'numeric': 'bi-123',
+            'risk': 'bi-exclamation-triangle',
+            'positive_impact': 'bi-star-fill',
+            'negative_impact': 'bi-arrow-down-circle',
+            'level': 'bi-three-dots',
+            'sentiment': 'bi-emoji-smile',
+            'list': 'bi-list-check'
+        } %}
+        <div class="dim-card" style="--dim-accent: {{ accent_colors[loop.index0 % accent_colors|length] }}; animation-delay: {{ loop.index0 * 0.06 }}s;">
+            <div class="dim-card-order">Dimension {{ loop.index }}</div>
+            <div class="dim-card-name">{{ vt.name }}</div>
+            <div class="dim-card-desc">{{ vt.description or 'No description yet' }}</div>
+            <div>
+                <span class="dim-card-kind">
+                    <i class="bi {{ kind_icons.get(vt.kind, 'bi-tag') }}"></i>
+                    {{ kind_labels.get(vt.kind, vt.kind) }}
+                    {% if vt.unit_label %} &middot; {{ vt.unit_label }}{% endif %}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="dim-empty">
+        <i class="bi bi-columns-gap"></i>
+        <h5>No value dimensions defined yet</h5>
+        <p>Value dimensions are the columns in your workspace tree.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

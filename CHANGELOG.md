@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.2] - 2026-03-28
+
+### Added
+- **Dimensions chip in org info window** — "Dimensions" action chip with `bi-columns-gap` icon added after Porter's Diamond in the organization tooltip; links to `/workspace/dimensions`
+
+## [4.4.1] - 2026-03-28
+
+### Added
+- **Value Dimensions page** (`/workspace/dimensions`) — beautiful card view displaying all active value types with name, description, kind badge, and accent color strip; staggered entrance animation; responsive grid layout
+
 ## [4.4.0] - 2026-03-28
 
 ### Added

@@ -118,6 +118,18 @@ def theory():
     return render_template("workspace/theory.html", csrf_token=generate_csrf)
 
 
+@bp.route("/dimensions")
+@login_required
+@organization_required
+def dimensions():
+    """Value Dimensions — card view of all value types"""
+    org_id = session.get("organization_id")
+    value_types = ValueType.query.filter_by(
+        organization_id=org_id, is_active=True
+    ).order_by(ValueType.display_order).all()
+    return render_template("workspace/dimensions.html", value_types=value_types)
+
+
 @bp.route("/dashboard")
 @login_required
 @organization_required
