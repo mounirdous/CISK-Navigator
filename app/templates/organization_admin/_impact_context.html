@@ -1,0 +1,36 @@
+{# Parent impact context — shows parent chain with their impact levels #}
+{# Requires: parent_context (dict), impact_levels_config, entity_defaults (from context processor) #}
+{% if parent_context and impact_levels_config %}
+{% set _icons = {
+    'space': entity_defaults.get('space', {}).get('icon', ''),
+    'challenge': entity_defaults.get('challenge', {}).get('icon', ''),
+    'initiative': entity_defaults.get('initiative', {}).get('icon', ''),
+    'system': entity_defaults.get('system', {}).get('icon', '')
+} %}
+{% set _colors = {
+    'space': entity_defaults.get('space', {}).get('color', '#10b981'),
+    'challenge': entity_defaults.get('challenge', {}).get('color', '#f59e0b'),
+    'initiative': entity_defaults.get('initiative', {}).get('color', '#8b5cf6'),
+    'system': entity_defaults.get('system', {}).get('color', '#ec4899')
+} %}
+<div style="font-size:0.75rem; margin-bottom:0.5rem; padding:0.4rem 0.6rem; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+    {% for key in ['space', 'challenge', 'initiative', 'system'] %}
+    {% if parent_context.get(key) %}
+    {% set p = parent_context[key] %}
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:0.5rem;{% if not loop.last %} margin-bottom:0.25rem;{% endif %}">
+        <span style="color:{{ _colors[key] }}; display:flex; align-items:center; gap:0.3rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+            <span style="font-weight:700;">{{ _icons[key] }}</span>
+            <span style="color:#475569;">{{ p.name }}</span>
+        </span>
+        <span style="font-weight:700; flex-shrink:0;">
+            {% if p.impact_level and p.impact_level in impact_levels_config %}
+            <span style="color:{{ impact_levels_config[p.impact_level].color }};">{{ impact_levels_config[p.impact_level].icon }}</span>
+            {% else %}
+            <span style="color:#cbd5e1;">—</span>
+            {% endif %}
+        </span>
+    </div>
+    {% endif %}
+    {% endfor %}
+</div>
+{% endif %}

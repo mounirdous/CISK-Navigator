@@ -1627,6 +1627,7 @@ def edit_challenge(challenge_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=challenge.impact_level,
+        parent_context={"space": {"name": challenge.space.name, "impact_level": challenge.space.impact_level}} if challenge.space else {},
         **nav,
     )
 
@@ -2011,6 +2012,18 @@ def edit_system(system_id):
     # Get entity links for this system
     entity_links = EntityLink.get_links_for_entity("system", system.id, current_user.id, include_private=True)
 
+    # Parent context for impact
+    _sys_parent_ctx = {}
+    if _is_links:
+        _ini = _is_links.initiative
+        _sys_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level}
+        from app.models import ChallengeInitiativeLink as _CIL2
+        _ci = _CIL2.query.filter_by(initiative_id=_ini.id).first()
+        if _ci and _ci.challenge:
+            _sys_parent_ctx["challenge"] = {"name": _ci.challenge.name, "impact_level": _ci.challenge.impact_level}
+            if _ci.challenge.space:
+                _sys_parent_ctx["space"] = {"name": _ci.challenge.space.name, "impact_level": _ci.challenge.space.impact_level}
+
     return render_template(
         "organization_admin/edit_system.html",
         form=form,
@@ -2020,6 +2033,7 @@ def edit_system(system_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=system.impact_level,
+        parent_context=_sys_parent_ctx,
         **nav,
     )
 
@@ -2618,6 +2632,21 @@ def edit_kpi(kpi_id):
     # Get entity links for this KPI
     entity_links = EntityLink.get_links_for_entity("kpi", kpi.id, current_user.id, include_private=True)
 
+    # Parent context for impact
+    _kpi_parent_ctx = {}
+    _kpi_link = kpi.initiative_system_link
+    if _kpi_link:
+        _sys = _kpi_link.system
+        _ini = _kpi_link.initiative
+        _kpi_parent_ctx["system"] = {"name": _sys.name, "impact_level": _sys.impact_level}
+        _kpi_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level}
+        from app.models import ChallengeInitiativeLink as _CIL3
+        _ci = _CIL3.query.filter_by(initiative_id=_ini.id).first()
+        if _ci and _ci.challenge:
+            _kpi_parent_ctx["challenge"] = {"name": _ci.challenge.name, "impact_level": _ci.challenge.impact_level}
+            if _ci.challenge.space:
+                _kpi_parent_ctx["space"] = {"name": _ci.challenge.space.name, "impact_level": _ci.challenge.space.impact_level}
+
     return render_template(
         "organization_admin/edit_kpi.html",
         form=form,
@@ -2632,6 +2661,7 @@ def edit_kpi(kpi_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=kpi.impact_level,
+        parent_context=_kpi_parent_ctx,
         **nav,
     )
 
@@ -4193,17 +4223,23 @@ def initiative_form(initiative_id):
                 ],
             }
 
-    # Compute true importance for this initiative
+    # Compute true importance + parent context
     from app.models import ImpactLevel, ChallengeInitiativeLink as _CIL
     from app.services.impact_service import compute_true_importance
 
     impact_scale = ImpactLevel.get_org_levels(org_id)
     _org = Organization.query.get(org_id)
     true_importance_level = None
+    parent_context = {}
+    _link = _CIL.query.filter_by(initiative_id=initiative.id).first()
+    if _link and _link.challenge:
+        ch = _link.challenge
+        parent_context["challenge"] = {"name": ch.name, "impact_level": ch.impact_level}
+        if ch.space:
+            parent_context["space"] = {"name": ch.space.name, "impact_level": ch.space.impact_level}
     if impact_scale and initiative.impact_level:
         _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
         _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
-        _link = _CIL.query.filter_by(initiative_id=initiative.id).first()
         chain = []
         if _link and _link.challenge and _link.challenge.space:
             chain = [_link.challenge.space.impact_level, _link.challenge.impact_level, initiative.impact_level]
@@ -4229,6 +4265,7 @@ def initiative_form(initiative_id):
         today=today,
         nav_context=nav_context,
         true_importance_level=true_importance_level,
+        parent_context=parent_context,
     )
 
 

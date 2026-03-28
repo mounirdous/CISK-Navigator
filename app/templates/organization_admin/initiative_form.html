@@ -1263,6 +1263,22 @@
                                 Impact Level
                             </td>
                             <td style="padding: 0.5rem;">
+                                {% if parent_context %}
+                                <div style="font-size:0.75rem; margin-bottom:0.5rem; padding:0.4rem 0.6rem; background:#f8fafc; border-radius:6px; border:1px solid #e2e8f0;">
+                                    {% if parent_context.space %}
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.2rem;">
+                                        <span style="color:#64748b;"><i class="bi bi-folder" style="font-size:0.65rem;"></i> {{ parent_context.space.name }}</span>
+                                        <span style="font-weight:700;">{% if parent_context.space.impact_level and impact_levels_config and parent_context.space.impact_level in impact_levels_config %}<span style="color:{{ impact_levels_config[parent_context.space.impact_level].color }};">{{ impact_levels_config[parent_context.space.impact_level].icon }}</span>{% else %}<span style="color:#cbd5e1;">—</span>{% endif %}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if parent_context.challenge %}
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span style="color:#64748b;"><i class="bi bi-flag" style="font-size:0.65rem;"></i> {{ parent_context.challenge.name }}</span>
+                                        <span style="font-weight:700;">{% if parent_context.challenge.impact_level and impact_levels_config and parent_context.challenge.impact_level in impact_levels_config %}<span style="color:{{ impact_levels_config[parent_context.challenge.impact_level].color }};">{{ impact_levels_config[parent_context.challenge.impact_level].icon }}</span>{% else %}<span style="color:#cbd5e1;">—</span>{% endif %}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
                                 <select class="form-select" name="impact_level">
                                     <option value="" {% if not initiative.impact_level %}selected{% endif %}>Not set</option>
                                     {% if impact_levels_config %}

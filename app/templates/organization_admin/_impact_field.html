@@ -1,9 +1,10 @@
-{# Reusable impact level dropdown — include in create/edit forms #}
-{# Requires: impact_levels_config (from context processor), current_impact (optional) #}
+{# Reusable impact level dropdown with parent context #}
+{# Requires: impact_levels_config (from context processor), current_impact (optional), parent_context (optional) #}
 
 {% if impact_levels_config %}
 <div class="mb-4">
     <label class="form-label fw-semibold">Impact Level</label>
+    {% include 'organization_admin/_impact_context.html' %}
     <select name="impact_level" class="form-select">
         <option value="" {% if not current_impact %}selected{% endif %}>Not set</option>
         {% for lvl in [1, 2, 3] %}
