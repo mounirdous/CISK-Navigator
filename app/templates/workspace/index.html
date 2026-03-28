@@ -3551,10 +3551,11 @@ function workspaceV2(orgId, filterPresets) {
             if (!Object.keys(spaceCollapsed).length) {
                 try {
                     var saved = JSON.parse(sessionStorage.getItem('ws_tree_state') || '{}');
-                    if (saved.spaces) spaceCollapsed = saved.spaces;
-                    if (saved.challenges) challengeCollapsed = saved.challenges;
-                    if (saved.initiatives) initiativeCollapsed = saved.initiatives;
-                    if (saved.systems) systemCollapsed = saved.systems;
+                    // Convert string keys back to int keys for lookup
+                    if (saved.spaces) Object.keys(saved.spaces).forEach(function(k) { spaceCollapsed[parseInt(k)] = saved.spaces[k]; });
+                    if (saved.challenges) Object.keys(saved.challenges).forEach(function(k) { challengeCollapsed[parseInt(k)] = saved.challenges[k]; });
+                    if (saved.initiatives) Object.keys(saved.initiatives).forEach(function(k) { initiativeCollapsed[parseInt(k)] = saved.initiatives[k]; });
+                    if (saved.systems) Object.keys(saved.systems).forEach(function(k) { systemCollapsed[parseInt(k)] = saved.systems[k]; });
                 } catch(e) {}
             }
 
