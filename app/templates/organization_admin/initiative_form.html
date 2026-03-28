@@ -842,15 +842,11 @@
 
         {% if nav_context %}
         <div class="review-nav-bar">
-            {% if nav_context.prev_id %}
-            <a class="review-nav-prev"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
-               title="{{ nav_context.prev_name }}">
-                <i class="bi bi-chevron-left"></i> {{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name and nav_context.prev_name|length > 22 %}…{% endif %}
+            <a class="review-nav-prev {% if not nav_context.prev_id %}disabled{% endif %}" id="navPrevLink"
+               href="{% if nav_context.prev_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
+               title="{{ nav_context.prev_name or 'Start' }}">
+                <i class="bi bi-chevron-left"></i> <span id="navPrevText">{% if nav_context.prev_name %}{{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name|length > 22 %}…{% endif %}{% else %}Start{% endif %}</span>
             </a>
-            {% else %}
-            <span class="review-nav-prev disabled"><i class="bi bi-chevron-left"></i> Start</span>
-            {% endif %}
 
             <div class="review-nav-center">
                 {% if nav_context.space_name %}
@@ -866,15 +862,11 @@
                 <div class="review-nav-position">{{ nav_context.pos + 1 }} / {{ nav_context.total }}</div>
             </div>
 
-            {% if nav_context.next_id %}
-            <a class="review-nav-next"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
-               title="{{ nav_context.next_name }}">
-                {{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name and nav_context.next_name|length > 22 %}…{% endif %} <i class="bi bi-chevron-right"></i>
+            <a class="review-nav-next {% if not nav_context.next_id %}disabled{% endif %}" id="navNextLink"
+               href="{% if nav_context.next_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
+               title="{{ nav_context.next_name or 'End' }}">
+                <span id="navNextText">{% if nav_context.next_name %}{{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name|length > 22 %}…{% endif %}{% else %}End{% endif %}</span> <i class="bi bi-chevron-right"></i>
             </a>
-            {% else %}
-            <span class="review-nav-next disabled">End <i class="bi bi-chevron-right"></i></span>
-            {% endif %}
 
             <div class="review-nav-tab-toggle" id="nav-tab-toggle" data-tab="{{ nav_context.nav_tab }}">
                 <button onclick="setReviewTab('form')" id="nav-tab-btn-form" class="{{ 'active' if nav_context.nav_tab == 'form' else '' }}">
@@ -972,15 +964,14 @@
             var nt = document.getElementById('nav-tab-toggle')?.dataset.tab || 'execution';
             var html = '';
             var prevImpact = -1;
+            var curIdx = -1;
 
             dots.forEach(function(dot, idx) {
                 var impact = dot.impact_level || 0;
-                // Find original position for nav_pos
                 var origPos = NAV_DOTS.findIndex(function(d) { return d.id === dot.id; });
 
                 if (showSeparators && impact !== prevImpact) {
-                    var sym = '';
-                    var col = 'rgba(255,255,255,0.6)';
+                    var sym = '', col = 'rgba(255,255,255,0.6)';
                     if (IMPACT_SCALE[String(impact)]) {
                         sym = IMPACT_SCALE[String(impact)].icon || '';
                         col = IMPACT_SCALE[String(impact)].color || col;
@@ -992,6 +983,7 @@
                 }
 
                 var isCurrent = dot.id === CURRENT_INITIATIVE_ID;
+                if (isCurrent) curIdx = idx;
                 var ragClass = 'rag-' + (dot.rag || 'None');
                 var ringStyle = '';
                 if (dot.impact_level && IMPACT_SCALE[String(dot.impact_level)]) {
@@ -1002,11 +994,43 @@
             });
 
             dotsEl.innerHTML = html;
-            // Update position counter
+
+            // Update prev/next links to match sorted order
+            var prevLink = document.getElementById('navPrevLink');
+            var nextLink = document.getElementById('navNextLink');
+            var prevText = document.getElementById('navPrevText');
+            var nextText = document.getElementById('navNextText');
             var posEl = document.querySelector('.review-nav-position');
-            if (posEl && showSeparators) {
-                var sortedIdx = dots.findIndex(function(d) { return d.id === CURRENT_INITIATIVE_ID; });
-                posEl.textContent = (sortedIdx + 1) + ' / ' + dots.length;
+
+            if (curIdx >= 0) {
+                var prevDot = curIdx > 0 ? dots[curIdx - 1] : null;
+                var nextDot = curIdx < dots.length - 1 ? dots[curIdx + 1] : null;
+
+                if (prevLink) {
+                    if (prevDot) {
+                        var pp = NAV_DOTS.findIndex(function(d) { return d.id === prevDot.id; });
+                        prevLink.href = NAV_TEMPLATE.replace('0', prevDot.id) + '?tab=' + nt + '&nav=' + NAV_PARAM + '&nav_pos=' + pp + '&nav_tab=' + nt + NAV_BACK_QS;
+                        prevLink.classList.remove('disabled');
+                        if (prevText) prevText.textContent = prevDot.name.substring(0, 22) + (prevDot.name.length > 22 ? '…' : '');
+                    } else {
+                        prevLink.href = '#';
+                        prevLink.classList.add('disabled');
+                        if (prevText) prevText.textContent = 'Start';
+                    }
+                }
+                if (nextLink) {
+                    if (nextDot) {
+                        var np = NAV_DOTS.findIndex(function(d) { return d.id === nextDot.id; });
+                        nextLink.href = NAV_TEMPLATE.replace('0', nextDot.id) + '?tab=' + nt + '&nav=' + NAV_PARAM + '&nav_pos=' + np + '&nav_tab=' + nt + NAV_BACK_QS;
+                        nextLink.classList.remove('disabled');
+                        if (nextText) nextText.textContent = nextDot.name.substring(0, 22) + (nextDot.name.length > 22 ? '…' : '');
+                    } else {
+                        nextLink.href = '#';
+                        nextLink.classList.add('disabled');
+                        if (nextText) nextText.textContent = 'End';
+                    }
+                }
+                if (posEl) posEl.textContent = (curIdx + 1) + ' / ' + dots.length;
             }
         }
 
