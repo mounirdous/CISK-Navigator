@@ -2248,8 +2248,14 @@ function serializeDecisions() {
     document.getElementById('decisionsJson').value = JSON.stringify(decisions);
 }
 
-// Hook form submit to serialize decisions
-document.getElementById('progressUpdateForm').addEventListener('submit', function() {
+// Hook form submit to validate + serialize decisions
+document.getElementById('progressUpdateForm').addEventListener('submit', function(e) {
+    var rag = document.querySelector('input[name="rag_status"]:checked');
+    if (!rag) {
+        e.preventDefault();
+        alert('Please select an execution status (On Track, At Risk, or Off Track)');
+        return false;
+    }
     serializeDecisions();
 });
 
