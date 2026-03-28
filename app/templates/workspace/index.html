@@ -354,6 +354,8 @@
         font-weight: 700;
     }
 
+    /* Badge mode 0 (minimal): hide toolbar extras */
+    .workspace-v2[data-badge-mode="0"] .ws-d1 { display: none !important; }
     /* Governance badges only in Full mode (level 3) */
     .workspace-v2:not([data-badge-mode="2"]) .gb-badge { display: none !important; }
     /* Hide execution RAG borders in minimal mode */
@@ -1788,11 +1790,11 @@
         </div>
         <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
             <!-- Unified Preset Bar -->
-            {{ preset_bar('workspace', ws_presets_list) }}
+            <span class="ws-d1">{{ preset_bar('workspace', ws_presets_list) }}</span>
 
             <!-- Edit Mode Toggle (only show if user can contribute) -->
             {% if can_contribute %}
-            <button @click="editMode = !editMode"
+            <button @click="editMode = !editMode" class="ws-d1"
                     class="btn btn-sm"
                     :class="editMode ? 'btn-warning' : 'btn-outline-light'"
                     style="color: inherit;">
@@ -1843,7 +1845,7 @@
     </div>
 
     <!-- Filters Panel -->
-    <div class="ws-filters-container">
+    <div class="ws-filters-container ws-d1">
         <!-- Filter Toggle Bar -->
         <div class="ws-filters-toggle" @click="filtersExpanded = !filtersExpanded">
             <div style="display: flex; align-items: center; gap: 0.75rem;">
