@@ -7,6 +7,8 @@ from wtforms.validators import DataRequired, Length, Optional
 
 class ValueTypeCreateForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=200)])
+    description = TextAreaField("Description", validators=[DataRequired(), Length(max=500)],
+                                render_kw={"placeholder": "What does this value type measure? e.g., 'Are we doing it?'", "rows": 2})
     kind = SelectField(
         "Kind",
         choices=[
@@ -56,6 +58,8 @@ class ValueTypeCreateForm(FlaskForm):
 
 class ValueTypeEditForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=200)])
+    description = TextAreaField("Description", validators=[DataRequired(), Length(max=500)],
+                                render_kw={"placeholder": "What does this value type measure?", "rows": 2})
     decimal_places = IntegerField("Decimal Places", validators=[Optional()])
     unit_label = StringField("Unit Label (e.g., €, tCO2e)", validators=[Optional(), Length(max=50)])
     default_aggregation_formula = SelectField(

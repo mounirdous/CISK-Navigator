@@ -62,6 +62,7 @@ class ValueType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
     name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True, comment="Short description of what this value type measures")
     kind = db.Column(db.String(50), nullable=False, comment="numeric, risk, positive_impact, negative_impact")
     numeric_format = db.Column(db.String(20), nullable=True, comment="integer or decimal for numeric types")
     decimal_places = db.Column(db.Integer, nullable=True, default=2)

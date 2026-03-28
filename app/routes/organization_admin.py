@@ -2776,6 +2776,7 @@ def create_value_type():
         value_type = ValueType(
             organization_id=session.get("organization_id"),
             name=form.name.data,
+            description=form.description.data,
             kind=form.kind.data,
             numeric_format=form.numeric_format.data if form.kind.data == "numeric" else None,
             decimal_places=form.decimal_places.data if form.kind.data == "numeric" else None,
@@ -2900,6 +2901,7 @@ def edit_value_type(vt_id):
         }
 
         value_type.name = form.name.data
+        value_type.description = form.description.data
         if value_type.kind == "numeric" and form.decimal_places.data is not None:
             value_type.decimal_places = form.decimal_places.data
         if form.unit_label.data is not None:

@@ -228,6 +228,7 @@ class FullBackupService:
         for vt in value_types:
             vt_data = {
                 "name": vt.name,
+                "description": vt.description,
                 "kind": vt.kind,
                 "default_aggregation_formula": vt.default_aggregation_formula,
                 "is_active": vt.is_active,

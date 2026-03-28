@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-03-28
+
+### Added
+- **Value Type description field** — new `description` column (nullable in DB for backward compatibility, mandatory in create/edit forms); included in backup/restore
+- DB migration: `41612386c9e6_add_description_to_value_types`
+
 ## [4.3.3] - 2026-03-28
 
 ### Changed

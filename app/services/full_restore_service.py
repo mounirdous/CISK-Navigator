@@ -294,6 +294,7 @@ class FullRestoreService:
                     vt = ValueType(
                         organization_id=organization_id,
                         name=vt_data["name"],
+                        description=vt_data.get("description"),
                         kind=vt_data["kind"],
                         numeric_format=vt_data.get("numeric_format"),
                         decimal_places=vt_data.get("decimal_places", 2),

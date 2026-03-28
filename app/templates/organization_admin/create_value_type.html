@@ -82,6 +82,14 @@
                         </div>
 
                         <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-semibold") }}
+                            {{ form.description(class="form-control") }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">{% for error in form.description.errors %}{{ error }}{% endfor %}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
                             {{ form.kind.label(class="form-label fw-semibold") }}
                             {{ form.kind(class="form-select") }}
                             <small class="form-text text-muted">
