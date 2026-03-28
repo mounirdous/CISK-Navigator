@@ -43,6 +43,42 @@
         font-size: 1.1rem;
         opacity: 0.95;
         margin-top: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .init-impact-badges {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .init-impact-tag {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        font-weight: 800;
+        padding: 0.15rem 0.45rem;
+        border-radius: 6px;
+        line-height: 1;
+    }
+
+    .init-impact-tag.assessed {
+        border: 1.5px solid;
+        backdrop-filter: blur(4px);
+    }
+
+    .init-impact-tag.computed {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .init-impact-tag.not-set {
+        background: rgba(255,255,255,0.15);
+        color: rgba(255,255,255,0.5);
+        font-size: 0.7rem;
     }
 
     .form-header-actions {
@@ -813,7 +849,25 @@
                     {% endif %}
                     Initiative {% if edit_mode %}Form{% else %}Overview{% endif %}
                 </h1>
-                <div class="initiative-name">{{ initiative.name }}</div>
+                <div class="initiative-name">
+                    {{ initiative.name }}
+                    {% if impact_levels_config %}
+                    <span class="init-impact-badges">
+                        {% if initiative.impact_level and initiative.impact_level in impact_levels_config %}
+                        <span class="init-impact-tag assessed" style="background: {{ impact_levels_config[initiative.impact_level].color }}20; color: {{ impact_levels_config[initiative.impact_level].color }}; border-color: {{ impact_levels_config[initiative.impact_level].color }}40;" title="Assessed impact">
+                            {{ impact_levels_config[initiative.impact_level].icon }}
+                        </span>
+                        {% else %}
+                        <span class="init-impact-tag not-set" title="Impact not set">—</span>
+                        {% endif %}
+                        {% if true_importance_level and true_importance_level in impact_levels_config %}
+                        <span class="init-impact-tag computed" style="background: {{ impact_levels_config[true_importance_level].color }}; color: white;" title="True importance (computed from chain)">
+                            {{ impact_levels_config[true_importance_level].icon }}
+                        </span>
+                        {% endif %}
+                    </span>
+                    {% endif %}
+                </div>
             </div>
             <div class="form-header-actions">
                 {% if can_edit and not edit_mode %}

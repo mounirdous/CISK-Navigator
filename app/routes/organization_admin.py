@@ -4159,6 +4159,31 @@ def initiative_form(initiative_id):
                 ],
             }
 
+    # Compute true importance for this initiative
+    from app.models import ImpactLevel, ChallengeInitiativeLink as _CIL
+
+    impact_scale = ImpactLevel.get_org_levels(org_id)
+    true_importance_level = None
+    if impact_scale and initiative.impact_level:
+        _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
+        _max_w = max(_weights.values()) if _weights else 1
+        # Walk up: initiative → challenge → space
+        _link = _CIL.query.filter_by(initiative_id=initiative.id).first()
+        chain = [initiative.impact_level]
+        if _link and _link.challenge:
+            if _link.challenge.impact_level:
+                chain.append(_link.challenge.impact_level)
+            if _link.challenge.space and _link.challenge.space.impact_level:
+                chain.append(_link.challenge.space.impact_level)
+        # Only compute if full chain is set
+        if all(chain) and len(chain) == 3:
+            score = 1
+            for lvl in chain:
+                score *= _weights.get(lvl, 0)
+            depth = len(chain)
+            pct = score / (_max_w ** depth) if _max_w ** depth > 0 else 0
+            true_importance_level = 1 if pct <= 0.33 else (2 if pct <= 0.66 else 3)
+
     return render_template(
         "organization_admin/initiative_form.html",
         initiative=initiative,
@@ -4176,6 +4201,7 @@ def initiative_form(initiative_id):
         active_tab=active_tab,
         today=today,
         nav_context=nav_context,
+        true_importance_level=true_importance_level,
     )
 
 
