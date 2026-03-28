@@ -845,7 +845,7 @@
             <a class="review-nav-prev {% if not nav_context.prev_id %}disabled{% endif %}" id="navPrevLink"
                href="{% if nav_context.prev_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
                title="{{ nav_context.prev_name or 'Start' }}">
-                <i class="bi bi-chevron-left"></i> <span id="navPrevText">{% if nav_context.prev_name %}{{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name|length > 22 %}…{% endif %}{% else %}Start{% endif %}</span>
+                <i class="bi bi-skip-backward-fill"></i>
             </a>
 
             <div class="review-nav-center">
@@ -865,7 +865,7 @@
             <a class="review-nav-next {% if not nav_context.next_id %}disabled{% endif %}" id="navNextLink"
                href="{% if nav_context.next_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
                title="{{ nav_context.next_name or 'End' }}">
-                <span id="navNextText">{% if nav_context.next_name %}{{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name|length > 22 %}…{% endif %}{% else %}End{% endif %}</span> <i class="bi bi-chevron-right"></i>
+                <i class="bi bi-skip-forward-fill"></i>
             </a>
 
             <div class="review-nav-tab-toggle" id="nav-tab-toggle" data-tab="{{ nav_context.nav_tab }}">
@@ -998,8 +998,6 @@
             // Update prev/next links to match sorted order
             var prevLink = document.getElementById('navPrevLink');
             var nextLink = document.getElementById('navNextLink');
-            var prevText = document.getElementById('navPrevText');
-            var nextText = document.getElementById('navNextText');
             var posEl = document.querySelector('.review-nav-position');
 
             if (curIdx >= 0) {
@@ -1011,11 +1009,11 @@
                         var pp = NAV_DOTS.findIndex(function(d) { return d.id === prevDot.id; });
                         prevLink.href = NAV_TEMPLATE.replace('0', prevDot.id) + '?tab=' + nt + '&nav=' + NAV_PARAM + '&nav_pos=' + pp + '&nav_tab=' + nt + NAV_BACK_QS;
                         prevLink.classList.remove('disabled');
-                        if (prevText) prevText.textContent = prevDot.name.substring(0, 22) + (prevDot.name.length > 22 ? '…' : '');
+                        prevLink.title = prevDot.name;
                     } else {
                         prevLink.href = '#';
                         prevLink.classList.add('disabled');
-                        if (prevText) prevText.textContent = 'Start';
+                        prevLink.title = 'Start';
                     }
                 }
                 if (nextLink) {
@@ -1023,11 +1021,11 @@
                         var np = NAV_DOTS.findIndex(function(d) { return d.id === nextDot.id; });
                         nextLink.href = NAV_TEMPLATE.replace('0', nextDot.id) + '?tab=' + nt + '&nav=' + NAV_PARAM + '&nav_pos=' + np + '&nav_tab=' + nt + NAV_BACK_QS;
                         nextLink.classList.remove('disabled');
-                        if (nextText) nextText.textContent = nextDot.name.substring(0, 22) + (nextDot.name.length > 22 ? '…' : '');
+                        nextLink.title = nextDot.name;
                     } else {
                         nextLink.href = '#';
                         nextLink.classList.add('disabled');
-                        if (nextText) nextText.textContent = 'End';
+                        nextLink.title = 'End';
                     }
                 }
                 if (posEl) posEl.textContent = (curIdx + 1) + ' / ' + dots.length;
