@@ -337,6 +337,16 @@
         background: #f8f9fa;
     }
 
+    .ws-form-link {
+        font-size: 0.7rem; color: #94a3b8; text-decoration: none;
+        margin-left: 0.2rem; opacity: 0.5; transition: all 0.15s;
+        display: none;
+    }
+    .workspace-v2[data-badge-mode="2"] .ws-form-link { display: inline; }
+    .ws-form-link:hover { opacity: 1; color: #3b82f6; }
+    .ws-form-link.complete { color: #22c55e; opacity: 0.7; }
+    .ws-form-link.partial { color: #f59e0b; opacity: 0.7; }
+
     .ws-impact-badge {
         display: inline-flex; align-items: center; justify-content: center;
         font-size: 0.6rem; padding: 0.1rem 0.3rem; border-radius: 4px;
@@ -2274,7 +2284,7 @@
                                 <span x-show="!space.logo_url && space.icon && !editMode" class="entity-icon-text" x-text="space.icon"></span>
                                 <i x-show="!space.logo_url && !space.icon && editMode" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
 
-                                <span x-text="space.name" :data-tooltip="!editMode && space.description ? space.description : null" :data-tooltip-actions="!editMode ? tooltipActions(space, 'space') : null"></span>
+                                <span x-text="space.name" :data-tooltip="space.description || null" :data-tooltip-actions="tooltipActions(space, 'space') || null"></span>
                                 <template x-if="badgeMode >= 1 && space.true_importance_level && impactScale[space.true_importance_level]">
                                     <span class="ws-impact-badge" :style="'background:' + impactScale[space.true_importance_level].color + '22; color:' + impactScale[space.true_importance_level].color" :title="'Importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon"></span>
                                 </template>
@@ -2426,7 +2436,7 @@
                                         <span x-show="!challenge.logo_url && challenge.icon && !editMode" class="entity-icon-text" x-text="challenge.icon"></span>
                                         <i x-show="!challenge.logo_url && !challenge.icon && editMode" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
-                                        <span x-text="challenge.name" :data-tooltip="!editMode && challenge.description ? challenge.description : null" :data-tooltip-actions="!editMode ? tooltipActions(challenge, 'challenge') : null"></span>
+                                        <span x-text="challenge.name" :data-tooltip="challenge.description || null" :data-tooltip-actions="tooltipActions(challenge, 'challenge') || null"></span>
                                         <template x-if="badgeMode >= 1 && challenge.true_importance_level && impactScale[challenge.true_importance_level]">
                                             <span class="ws-impact-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '22; color:' + impactScale[challenge.true_importance_level].color" :title="'Importance: ' + impactScale[challenge.true_importance_level].icon" x-text="impactScale[challenge.true_importance_level].icon"></span>
                                         </template>
@@ -2531,10 +2541,19 @@
                                                 <span x-show="!initiative.logo_url && initiative.icon && !editMode" class="entity-icon-text" x-text="initiative.icon"></span>
                                                 <i x-show="!initiative.logo_url && !initiative.icon && editMode" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
 
-                                                <span x-text="initiative.name" :data-tooltip="!editMode && initiative.description ? initiative.description : null" :data-tooltip-actions="!editMode ? tooltipActions(initiative, 'initiative') : null"></span>
+                                                <span x-text="initiative.name" :data-tooltip="initiative.description || null" :data-tooltip-actions="tooltipActions(initiative, 'initiative') || null"></span>
                                                 <template x-if="badgeMode >= 1 && initiative.true_importance_level && impactScale[initiative.true_importance_level]">
                                                     <span class="ws-impact-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '22; color:' + impactScale[initiative.true_importance_level].color" :title="'Importance: ' + impactScale[initiative.true_importance_level].icon" x-text="impactScale[initiative.true_importance_level].icon"></span>
                                                 </template>
+
+                                                <!-- Initiative form link (always visible) -->
+                                                <a :href="`/org-admin/initiatives/${initiative.id}/form`"
+                                                   class="ws-form-link"
+                                                   :class="{'complete': initiative.form_completion && initiative.form_completion.status === 'complete', 'partial': initiative.form_completion && initiative.form_completion.status === 'partial'}"
+                                                   :title="initiative.form_completion ? initiative.form_completion.filled + '/' + initiative.form_completion.total + ' fields' : 'Open form'"
+                                                   @click.stop>
+                                                    <i class="bi bi-journal-text"></i>
+                                                </a>
 
                                                 <!-- Action icons (edit mode only) -->
                                                 <template x-if="editMode">
@@ -2663,7 +2682,7 @@
                                                         <span x-show="!system.logo_url && system.icon && !editMode" class="entity-icon-text" x-text="system.icon"></span>
                                                         <i x-show="!system.logo_url && !system.icon && editMode" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
 
-                                                        <span x-text="system.name" :data-tooltip="!editMode && system.description ? system.description : null" :data-tooltip-actions="!editMode ? tooltipActions(system, 'system') : null"></span>
+                                                        <span x-text="system.name" :data-tooltip="system.description || null" :data-tooltip-actions="tooltipActions(system, 'system') || null"></span>
                                                         <template x-if="badgeMode >= 1 && system.true_importance_level && impactScale[system.true_importance_level]">
                                                             <span class="ws-impact-badge" :style="'background:' + impactScale[system.true_importance_level].color + '22; color:' + impactScale[system.true_importance_level].color" :title="'Importance: ' + impactScale[system.true_importance_level].icon" x-text="impactScale[system.true_importance_level].icon"></span>
                                                         </template>
@@ -2798,7 +2817,7 @@
                                                                 </span>
                                                             </template>
 
-                                                            <span x-text="kpi.name" :data-tooltip="!editMode && kpi.description ? kpi.description : null" :data-tooltip-actions="!editMode ? tooltipActions(kpi, 'kpi') : null"></span>
+                                                            <span x-text="kpi.name" :data-tooltip="kpi.description || null" :data-tooltip-actions="tooltipActions(kpi, 'kpi') || null"></span>
                                                             <template x-if="badgeMode >= 1 && kpi.true_importance_level && impactScale[kpi.true_importance_level]">
                                                                 <span class="ws-impact-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '22; color:' + impactScale[kpi.true_importance_level].color" :title="'Importance: ' + impactScale[kpi.true_importance_level].icon" x-text="impactScale[kpi.true_importance_level].icon"></span>
                                                             </template>
