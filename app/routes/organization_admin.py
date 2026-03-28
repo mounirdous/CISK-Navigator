@@ -1842,6 +1842,25 @@ def edit_initiative(initiative_id):
     # Get entity links for this initiative
     entity_links = EntityLink.get_links_for_entity("initiative", initiative.id, current_user.id, include_private=True)
 
+    # Parent context for impact
+    from app.models import ImpactLevel as _ILi, ChallengeInitiativeLink as _CILi
+    from app.services.impact_service import compute_true_importance as _ctii
+    _ili = _ILi.get_org_levels(org_id)
+    _orgi = Organization.query.get(org_id)
+    _wi = {lvl: _ili[lvl]["weight"] for lvl in _ili} if _ili else {}
+    _mi = _orgi.impact_calc_method or "geometric_mean" if _orgi else "geometric_mean"
+    _cmi = _orgi.impact_qfd_matrix if _orgi else None
+    _init_parent_ctx = {}
+    _ci_link = _CILi.query.filter_by(initiative_id=initiative_id).first()
+    if _ci_link and _ci_link.challenge:
+        _ch = _ci_link.challenge
+        _sp = _ch.space
+        if _sp:
+            _init_parent_ctx["space"] = {"name": _sp.name, "impact_level": _sp.impact_level, "true_importance_level": _sp.impact_level}
+        if _ch:
+            _ch_ti = _ctii([_sp.impact_level, _ch.impact_level], _mi, _wi, _cmi) if _sp and _sp.impact_level and _ch.impact_level else None
+            _init_parent_ctx["challenge"] = {"name": _ch.name, "impact_level": _ch.impact_level, "true_importance_level": _ch_ti}
+
     from flask_wtf.csrf import generate_csrf
 
     return render_template(
@@ -1853,6 +1872,7 @@ def edit_initiative(initiative_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=initiative.impact_level,
+        parent_context=_init_parent_ctx,
         **nav,
     )
 
