@@ -759,8 +759,21 @@
     .review-nav-dot.rag-None   { background: rgba(255,255,255,0.25); }
     .review-nav-separator {
         font-size: 0.85rem; font-weight: 800;
-        padding: 0 0.3rem; color: rgba(255,255,255,0.7);
+        padding: 0 0.35rem; color: rgba(255,255,255,0.8);
         display: inline-flex; align-items: center;
+        border-left: 1px solid rgba(255,255,255,0.2);
+        margin-left: 0.2rem; padding-left: 0.5rem;
+    }
+    .review-nav-separator:first-child { border-left: none; margin-left: 0; padding-left: 0.3rem; }
+    .review-nav-focus-btn {
+        background: rgba(255,255,255,0.15); border: 1.5px solid rgba(255,255,255,0.3);
+        color: rgba(255,255,255,0.7); border-radius: 8px; cursor: pointer;
+        padding: 0.25rem 0.5rem; font-size: 0.85rem; transition: all 0.15s;
+        display: flex; align-items: center; gap: 0.3rem;
+    }
+    .review-nav-focus-btn:hover { background: rgba(255,255,255,0.25); color: white; }
+    .review-nav-focus-btn.active {
+        background: #fbbf24; color: #1e293b; border-color: #fbbf24; font-weight: 700;
     }
     .review-nav-position {
         font-size: 0.78rem;
@@ -831,7 +844,7 @@
         <div class="review-nav-bar">
             {% if nav_context.prev_id %}
             <a class="review-nav-prev"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('focus') == '1' %}&focus=1{% endif %}"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
                title="{{ nav_context.prev_name }}">
                 <i class="bi bi-chevron-left"></i> {{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name and nav_context.prev_name|length > 22 %}…{% endif %}
             </a>
@@ -844,20 +857,10 @@
                 <div class="review-nav-breadcrumb">{{ nav_context.space_name }} › {{ nav_context.challenge_name }}</div>
                 {% endif %}
                 <div class="review-nav-dots">
-                    {% set focus_mode = request.args.get('focus') == '1' %}
-                    {% set prev_impact = namespace(val=-1) %}
                     {% for dot in nav_context.dots %}
-                    {% set dot_impact = dot.impact_level if dot.impact_level else 0 %}
-                    {% if focus_mode and dot_impact != prev_impact.val %}
-                    <span class="review-nav-separator" {% if impact_levels_config and dot_impact in impact_levels_config %}style="color: {{ impact_levels_config[dot_impact].color }};" title="{{ impact_levels_config[dot_impact].icon }}"{% elif dot_impact == 0 %}title="Not set"{% endif %}>
-                        {% if impact_levels_config and dot_impact in impact_levels_config %}{{ impact_levels_config[dot_impact].icon }}{% elif dot_impact == 0 %}<i class="bi bi-dash"></i>{% endif %}
-                    </span>
-                    {% set prev_impact.val = dot_impact %}
-                    {% endif %}
                     <a class="review-nav-dot rag-{{ dot.rag }} {% if loop.index0 == nav_context.pos %}current{% endif %}"
-                       {% if dot.impact_level and impact_levels_config and dot.impact_level in impact_levels_config %}style="box-shadow: 0 0 0 2px {{ impact_levels_config[dot.impact_level].color }}40;"{% endif %}
-                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if focus_mode %}&focus=1{% endif %}"
-                       title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}{% if dot.impact_level and impact_levels_config and dot.impact_level in impact_levels_config %} — Impact: {{ impact_levels_config[dot.impact_level].icon }}{% endif %}"></a>
+                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
+                       title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}"></a>
                     {% endfor %}
                 </div>
                 <div class="review-nav-position">{{ nav_context.pos + 1 }} / {{ nav_context.total }}</div>
@@ -865,7 +868,7 @@
 
             {% if nav_context.next_id %}
             <a class="review-nav-next"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('focus') == '1' %}&focus=1{% endif %}"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
                title="{{ nav_context.next_name }}">
                 {{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name and nav_context.next_name|length > 22 %}…{% endif %} <i class="bi bi-chevron-right"></i>
             </a>
@@ -881,6 +884,10 @@
                     <i class="bi bi-activity"></i> Execution
                 </button>
             </div>
+
+            <button class="review-nav-focus-btn" id="focusModeBtn" onclick="toggleFocusMode()" title="Focus mode: group by impact level">
+                <i class="bi bi-bullseye"></i>
+            </button>
 
             <a href="{{ nav_context.nav_back if nav_context.nav_back else url_for('workspace.index') }}" class="review-nav-exit">
                 <i class="bi bi-x-lg"></i> Exit
@@ -929,6 +936,84 @@
                 }
             }
         });
+
+        // ── Focus Mode: group dots by impact level ──
+        const IMPACT_SCALE = {{ impact_levels_config | tojson }};
+        const CURRENT_INITIATIVE_ID = {{ initiative.id }};
+
+        function toggleFocusMode() {
+            var isOn = localStorage.getItem('review_focus') === '1';
+            localStorage.setItem('review_focus', isOn ? '0' : '1');
+            applyFocusMode(!isOn);
+        }
+
+        function applyFocusMode(on) {
+            var btn = document.getElementById('focusModeBtn');
+            if (btn) btn.classList.toggle('active', on);
+            var dotsEl = document.querySelector('.review-nav-dots');
+            if (!dotsEl) return;
+
+            if (!on) {
+                // Restore original order — rebuild from NAV_DOTS
+                rebuildDots(NAV_DOTS, false);
+                return;
+            }
+
+            // Sort: L3 first, L2, L1, then 0 (not set)
+            var sorted = NAV_DOTS.slice().sort(function(a, b) {
+                return (b.impact_level || 0) - (a.impact_level || 0);
+            });
+            rebuildDots(sorted, true);
+        }
+
+        function rebuildDots(dots, showSeparators) {
+            var dotsEl = document.querySelector('.review-nav-dots');
+            if (!dotsEl) return;
+            var nt = document.getElementById('nav-tab-toggle')?.dataset.tab || 'execution';
+            var html = '';
+            var prevImpact = -1;
+
+            dots.forEach(function(dot, idx) {
+                var impact = dot.impact_level || 0;
+                // Find original position for nav_pos
+                var origPos = NAV_DOTS.findIndex(function(d) { return d.id === dot.id; });
+
+                if (showSeparators && impact !== prevImpact) {
+                    var sym = '';
+                    var col = 'rgba(255,255,255,0.6)';
+                    if (IMPACT_SCALE[String(impact)]) {
+                        sym = IMPACT_SCALE[String(impact)].icon || '';
+                        col = IMPACT_SCALE[String(impact)].color || col;
+                    } else {
+                        sym = '—';
+                    }
+                    html += '<span class="review-nav-separator" style="color:' + col + ';">' + sym + '</span>';
+                    prevImpact = impact;
+                }
+
+                var isCurrent = dot.id === CURRENT_INITIATIVE_ID;
+                var ragClass = 'rag-' + (dot.rag || 'None');
+                var ringStyle = '';
+                if (dot.impact_level && IMPACT_SCALE[String(dot.impact_level)]) {
+                    ringStyle = 'box-shadow: 0 0 0 2px ' + IMPACT_SCALE[String(dot.impact_level)].color + '40;';
+                }
+                var url = NAV_TEMPLATE.replace('0', dot.id) + '?tab=' + nt + '&nav=' + NAV_PARAM + '&nav_pos=' + origPos + '&nav_tab=' + nt + NAV_BACK_QS;
+                html += '<a class="review-nav-dot ' + ragClass + (isCurrent ? ' current' : '') + '" style="' + ringStyle + '" href="' + url + '" title="' + dot.name + '"></a>';
+            });
+
+            dotsEl.innerHTML = html;
+            // Update position counter
+            var posEl = document.querySelector('.review-nav-position');
+            if (posEl && showSeparators) {
+                var sortedIdx = dots.findIndex(function(d) { return d.id === CURRENT_INITIATIVE_ID; });
+                posEl.textContent = (sortedIdx + 1) + ' / ' + dots.length;
+            }
+        }
+
+        // Apply on load
+        if (localStorage.getItem('review_focus') === '1') {
+            applyFocusMode(true);
+        }
         </script>
         {% endif %}
 
