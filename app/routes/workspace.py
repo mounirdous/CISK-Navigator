@@ -9,7 +9,7 @@ import json
 from datetime import date
 from functools import wraps
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 from markupsafe import Markup
@@ -123,8 +123,11 @@ def theory():
 @login_required
 @organization_required
 def strategy_view():
-    """Strategy view — card display of strategic pillars"""
+    """Strategy view — card display of strategic pillars (beta)"""
     from app.models import StrategicPillar
+
+    if not (current_app.config.get("BETA_ENABLED") and current_user.beta_tester):
+        abort(404)
 
     org_id = session.get("organization_id")
     pillars = (
