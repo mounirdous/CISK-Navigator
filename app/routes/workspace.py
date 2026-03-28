@@ -3178,6 +3178,40 @@ def save_preferences():
     return jsonify({"ok": True})
 
 
+@bp.route("/api/impact", methods=["POST"])
+@login_required
+@organization_required
+def update_impact():
+    """Update impact_level for an entity (AJAX)."""
+    from app.models import Challenge, KPI, Space, System
+
+    data = request.get_json() or {}
+    entity_type = data.get("entity_type")
+    entity_id = data.get("entity_id")
+    impact_level = data.get("impact_level")  # 1, 2, 3, or None
+
+    org_id = session.get("organization_id")
+    if not entity_type or not entity_id:
+        return jsonify({"error": "Missing entity_type or entity_id"}), 400
+
+    model_map = {"space": Space, "challenge": Challenge, "initiative": Initiative, "system": System, "kpi": KPI}
+    model = model_map.get(entity_type)
+    if not model:
+        return jsonify({"error": "Invalid entity_type"}), 400
+
+    entity = model.query.get(entity_id)
+    if not entity:
+        return jsonify({"error": "Entity not found"}), 404
+
+    entity.impact_level = int(impact_level) if impact_level else None
+    db.session.commit()
+    try:
+        localStorage_key = "ws_dirty"
+    except Exception:
+        pass
+    return jsonify({"ok": True, "impact_level": entity.impact_level})
+
+
 @bp.route("/api/filter-presets")
 @login_required
 @organization_required

@@ -351,8 +351,9 @@
         display: inline-flex; align-items: center; justify-content: center;
         font-size: 0.6rem; padding: 0.1rem 0.3rem; border-radius: 4px;
         margin-left: 0.25rem; vertical-align: middle; flex-shrink: 0;
-        font-weight: 700;
+        font-weight: 700; cursor: pointer; transition: transform 0.1s;
     }
+    .ws-impact-badge:hover { transform: scale(1.3); }
 
     /* Badge mode 0 (minimal): hide toolbar extras */
     .workspace-v2[data-badge-mode="0"] .ws-d1 { display: none !important; }
@@ -2288,7 +2289,7 @@
 
                                 <span x-text="space.name" :data-tooltip="space.description || null" :data-tooltip-actions="tooltipActions(space, 'space') || null"></span>
                                 <template x-if="badgeMode >= 1 && space.true_importance_level && impactScale[space.true_importance_level]">
-                                    <span class="ws-impact-badge" :style="'background:' + impactScale[space.true_importance_level].color + '22; color:' + impactScale[space.true_importance_level].color" :title="'Importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon"></span>
+                                    <span class="ws-impact-badge" :style="'background:' + impactScale[space.true_importance_level].color + '22; color:' + impactScale[space.true_importance_level].color; cursor: pointer;" :title="'Impact: ' + (space.impact_level && impactScale[space.impact_level] ? impactScale[space.impact_level].icon : '—') + ' → True: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
                                 </template>
 
                                 <!-- Space label badge (removed — always hidden) -->
@@ -2440,7 +2441,7 @@
 
                                         <span x-text="challenge.name" :data-tooltip="challenge.description || null" :data-tooltip-actions="tooltipActions(challenge, 'challenge') || null"></span>
                                         <template x-if="badgeMode >= 1 && challenge.true_importance_level && impactScale[challenge.true_importance_level]">
-                                            <span class="ws-impact-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '22; color:' + impactScale[challenge.true_importance_level].color" :title="'Importance: ' + impactScale[challenge.true_importance_level].icon" x-text="impactScale[challenge.true_importance_level].icon"></span>
+                                            <span class="ws-impact-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '22; color:' + impactScale[challenge.true_importance_level].color; cursor: pointer;" :title="'Impact: ' + (challenge.impact_level && impactScale[challenge.impact_level] ? impactScale[challenge.impact_level].icon : '—') + ' → True: ' + impactScale[challenge.true_importance_level].icon" x-text="impactScale[challenge.true_importance_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
                                         </template>
 
                                         <!-- Action icons (edit mode only) -->
@@ -2545,7 +2546,7 @@
 
                                                 <span x-text="initiative.name" :data-tooltip="initiative.description || null" :data-tooltip-actions="tooltipActions(initiative, 'initiative') || null"></span>
                                                 <template x-if="badgeMode >= 1 && initiative.true_importance_level && impactScale[initiative.true_importance_level]">
-                                                    <span class="ws-impact-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '22; color:' + impactScale[initiative.true_importance_level].color" :title="'Importance: ' + impactScale[initiative.true_importance_level].icon" x-text="impactScale[initiative.true_importance_level].icon"></span>
+                                                    <span class="ws-impact-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '22; color:' + impactScale[initiative.true_importance_level].color; cursor: pointer;" :title="'Impact: ' + (initiative.impact_level && impactScale[initiative.impact_level] ? impactScale[initiative.impact_level].icon : '—') + ' → True: ' + impactScale[initiative.true_importance_level].icon" x-text="impactScale[initiative.true_importance_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
                                                 </template>
 
                                                 <!-- Initiative form link (always visible) -->
@@ -2686,7 +2687,7 @@
 
                                                         <span x-text="system.name" :data-tooltip="system.description || null" :data-tooltip-actions="tooltipActions(system, 'system') || null"></span>
                                                         <template x-if="badgeMode >= 1 && system.true_importance_level && impactScale[system.true_importance_level]">
-                                                            <span class="ws-impact-badge" :style="'background:' + impactScale[system.true_importance_level].color + '22; color:' + impactScale[system.true_importance_level].color" :title="'Importance: ' + impactScale[system.true_importance_level].icon" x-text="impactScale[system.true_importance_level].icon"></span>
+                                                            <span class="ws-impact-badge" :style="'background:' + impactScale[system.true_importance_level].color + '22; color:' + impactScale[system.true_importance_level].color; cursor: pointer;" :title="'Impact: ' + (system.impact_level && impactScale[system.impact_level] ? impactScale[system.impact_level].icon : '—') + ' → True: ' + impactScale[system.true_importance_level].icon" x-text="impactScale[system.true_importance_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
                                                         </template>
 
                                                         <!-- Action icons (edit mode only) -->
@@ -2821,7 +2822,7 @@
 
                                                             <span x-text="kpi.name" :data-tooltip="kpi.description || null" :data-tooltip-actions="tooltipActions(kpi, 'kpi') || null"></span>
                                                             <template x-if="badgeMode >= 1 && kpi.true_importance_level && impactScale[kpi.true_importance_level]">
-                                                                <span class="ws-impact-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '22; color:' + impactScale[kpi.true_importance_level].color" :title="'Importance: ' + impactScale[kpi.true_importance_level].icon" x-text="impactScale[kpi.true_importance_level].icon"></span>
+                                                                <span class="ws-impact-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '22; color:' + impactScale[kpi.true_importance_level].color; cursor: pointer;" :title="'Impact: ' + (kpi.impact_level && impactScale[kpi.impact_level] ? impactScale[kpi.impact_level].icon : '—') + ' → True: ' + impactScale[kpi.true_importance_level].icon" x-text="impactScale[kpi.true_importance_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
                                                             </template>
 
                                                             <!-- Linked KPI indicator -->
@@ -3542,6 +3543,7 @@ function workspaceV2(orgId, filterPresets) {
             this.groups = data.groups;
             this.impactLevels = data.impactLevels;
             this.impactScale = data.impactScale || {};
+            window._wsImpactScale = this.impactScale;
             this.orgData = {
                 name:            this.orgName,
                 entity_links:    (data.orgEntityLinks   || []).filter(function(l) { return !l.is_private; }),
@@ -5572,6 +5574,85 @@ function _makeIWDraggable(win, headerSelector) {
         _makeIWDraggable(win);
     }, true);
 })();
+
+// ── Impact badge click → info window with edit ──
+function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueLevel, event) {
+    event.stopPropagation();
+    var scale = window._wsImpactScale || {};
+    var method = '{{ (organization.impact_calc_method or "geometric_mean") if organization else "geometric_mean" }}';
+    var methodNames = { simple_product: 'Simple Product', geometric_mean: 'Geometric Mean', toyota_qfd: 'Toyota QFD' };
+
+    var assessedHtml = '<span style="color:#94a3b8;">Not set</span>';
+    if (assessedLevel && scale[assessedLevel]) {
+        assessedHtml = '<span style="color:' + scale[assessedLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[assessedLevel].icon + '</span>';
+    }
+
+    var trueHtml = '<span style="color:#94a3b8;">—</span>';
+    if (trueLevel && scale[trueLevel]) {
+        trueHtml = '<span style="color:' + scale[trueLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[trueLevel].icon + '</span>';
+    }
+
+    var optionsHtml = '<option value="">Not set</option>';
+    [1, 2, 3].forEach(function(lvl) {
+        if (scale[lvl]) {
+            var sel = assessedLevel === lvl ? ' selected' : '';
+            optionsHtml += '<option value="' + lvl + '"' + sel + '>' + scale[lvl].icon + '</option>';
+        }
+    });
+
+    var win = document.createElement('div');
+    win.className = 'ws-info-window';
+    win.style.minWidth = '220px';
+    win.innerHTML =
+        '<div class="ws-iw-header">' +
+            '<span class="ws-iw-header-title">' + entityName.substring(0, 30) + '<\/span>' +
+            '<button class="ws-iw-close" title="Close">&times;<\/button>' +
+        '<\/div>' +
+        '<div class="ws-iw-body" style="font-size:0.82rem;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">' +
+                '<span style="color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">Assessed</span>' +
+                assessedHtml +
+            '<\/div>' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">' +
+                '<span style="color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">True Importance</span>' +
+                trueHtml +
+            '<\/div>' +
+            '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem; padding-bottom:0.5rem; border-bottom:1px solid rgba(255,255,255,0.08);">' +
+                '<span style="color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">Method</span>' +
+                '<a href="/workspace/impact-docs#' + method + '" target="_blank" style="color:#60a5fa; font-size:0.75rem; text-decoration:none;">' + (methodNames[method] || method) + ' <i class="bi bi-box-arrow-up-right" style="font-size:0.6rem;"><\/i><\/a>' +
+            '<\/div>' +
+            '<div>' +
+                '<label style="color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:0.3rem;">Change Impact</label>' +
+                '<select class="form-select form-select-sm" id="_impactSelect" style="background:#2d3748; color:#e2e8f0; border-color:rgba(255,255,255,0.15); font-size:0.85rem;">' +
+                    optionsHtml +
+                '<\/select>' +
+            '<\/div>' +
+        '<\/div>';
+
+    var x = Math.min(event.clientX + 10, window.innerWidth - 260);
+    var y = Math.min(event.clientY + 10, window.innerHeight - 250);
+    win.style.left = x + 'px';
+    win.style.top = y + 'px';
+    document.body.appendChild(win);
+
+    win.querySelector('.ws-iw-close').addEventListener('click', function(ev) { ev.stopPropagation(); win.remove(); });
+    _makeIWDraggable(win);
+
+    // AJAX save on change
+    win.querySelector('#_impactSelect').addEventListener('change', function() {
+        var val = this.value || null;
+        fetch('/workspace/api/impact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+            body: JSON.stringify({ entity_type: entityType, entity_id: entityId, impact_level: val })
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.ok) {
+                try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}
+                win.remove();
+            }
+        });
+    });
+}
 </script>
 
 <!-- Rollup tooltip & drilldown styles -->
