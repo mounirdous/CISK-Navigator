@@ -231,17 +231,25 @@ def strategy():
                 bs_icon=p.get("bs_icon", ""),
                 display_order=i,
             )
-            # Handle icon image from base64 data URL
+            # Handle icon image from base64 data URL — resize to max 200x200
             icon_b64 = p.get("icon_b64") or ""
             if icon_b64.startswith("data:"):
-                # Parse data URL: data:image/png;base64,AAAA...
                 try:
+                    from io import BytesIO
+
+                    from PIL import Image
+
                     header, data = icon_b64.split(",", 1)
-                    mime = header.split(":")[1].split(";")[0]
-                    pillar.icon_data = _b64.b64decode(data)
-                    pillar.icon_mime_type = mime
-                    pillar.bs_icon = ""  # Clear icon when image is uploaded
-                except (ValueError, IndexError):
+                    raw = _b64.b64decode(data)
+                    img = Image.open(BytesIO(raw))
+                    img.thumbnail((200, 200), Image.LANCZOS)
+                    buf = BytesIO()
+                    fmt = "PNG" if img.mode == "RGBA" else "JPEG"
+                    img.save(buf, format=fmt, quality=85, optimize=True)
+                    pillar.icon_data = buf.getvalue()
+                    pillar.icon_mime_type = f"image/{fmt.lower()}"
+                    pillar.bs_icon = ""
+                except (ValueError, IndexError, Exception):
                     pass
             db.session.add(pillar)
 
