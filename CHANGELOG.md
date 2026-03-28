@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-03-28
+
+### Added
+- **3-level xmas tree on Initiative Review** — minimal (execution status only), standard (+ RAG, actions, KPIs), full (+ links, progress log, KPI details). Progressive form disclosure: L0 shows Project+What+Impact, L1 adds Who+How, L2 adds KPI tables
+- **3-level xmas tree on Action Register** — minimal (title, status, priority), standard (+ due date, owner, filters), full (+ type, governance, links, timeline). Persistent via localStorage
+- **Auto-exit admin mode** — clicking any first-row navbar link (Workspace, Organizations, etc.) while in Instance Admin mode automatically exits admin mode before navigating
+- Softer form section colors in initiative review (less distracting pastel backgrounds)
+
 ## [4.9.0] - 2026-03-28
 
 ### Added

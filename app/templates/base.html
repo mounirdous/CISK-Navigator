@@ -739,6 +739,28 @@
     </nav>
     {% endif %}
 
+    {% if current_user.is_authenticated and session.get('_admin_mode') %}
+    <script>
+    // Auto-exit admin mode when clicking any first-row nav link
+    document.addEventListener('click', function(e) {
+        var link = e.target.closest('.navbar-nav a.nav-link, .navbar-brand, a[href*="/workspace/"]');
+        if (!link) return;
+        // Skip if it's the admin sub-nav or dropdown toggles
+        if (link.closest('.ga-subnav')) return;
+        if (link.getAttribute('role') === 'button') return; // dropdown toggles
+        var href = link.getAttribute('href');
+        if (!href || href === '#') return;
+        e.preventDefault();
+        fetch('/auth/exit-admin-mode', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        }).then(function() {
+            window.location.href = href;
+        });
+    }, true);
+    </script>
+    {% endif %}
+
     <!-- Maintenance Mode Banner -->
     {% if maintenance_mode %}
     <div class="alert alert-warning mb-0" style="border-radius: 0; border: none; border-bottom: 3px solid #ffc107; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">

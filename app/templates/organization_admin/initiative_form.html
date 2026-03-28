@@ -793,6 +793,15 @@
     .review-nav-dot.rag-amber  { background: #fb8c00; }
     .review-nav-dot.rag-red    { background: #e53935; }
     .review-nav-dot.rag-None   { background: rgba(255,255,255,0.25); }
+    /* Detail mode: hide elements by level */
+    [data-detail-mode="0"] .detail-1,
+    [data-detail-mode="0"] .detail-2 { display: none !important; }
+    [data-detail-mode="1"] .detail-2 { display: none !important; }
+    /* In minimal mode, also hide RAG dot colors — just plain dots */
+    [data-detail-mode="0"] .review-nav-dot.rag-green { background: rgba(255,255,255,0.4); }
+    [data-detail-mode="0"] .review-nav-dot.rag-amber { background: rgba(255,255,255,0.4); }
+    [data-detail-mode="0"] .review-nav-dot.rag-red { background: rgba(255,255,255,0.4); }
+
     .review-nav-separator {
         font-size: 0.85rem; font-weight: 800;
         padding: 0 0.35rem; color: rgba(255,255,255,0.8);
@@ -837,7 +846,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid" id="initReviewContainer" data-detail-mode="1">
     <div class="form-container">
         <div class="form-header">
             <div class="form-header-title">
@@ -861,7 +870,7 @@
                         <span class="init-impact-tag not-set" title="Impact not set">—</span>
                         {% endif %}
                         {% if true_importance_level and true_importance_level in impact_levels_config %}
-                        <span class="init-impact-tag computed" style="background: {{ impact_levels_config[true_importance_level].color }}; color: white;" title="True importance (computed from chain)">
+                        <span class="init-impact-tag computed detail-1" style="background: {{ impact_levels_config[true_importance_level].color }}; color: white;" title="True importance (computed from chain)">
                             {{ impact_levels_config[true_importance_level].icon }}
                         </span>
                         {% endif %}
@@ -904,7 +913,7 @@
 
             <div class="review-nav-center">
                 {% if nav_context.space_name %}
-                <div class="review-nav-breadcrumb">{{ nav_context.space_name }} › {{ nav_context.challenge_name }}</div>
+                <div class="review-nav-breadcrumb detail-1">{{ nav_context.space_name }} › {{ nav_context.challenge_name }}</div>
                 {% endif %}
                 <div class="review-nav-dots">
                     {% for dot in nav_context.dots %}
@@ -933,6 +942,10 @@
 
             <button class="review-nav-focus-btn" id="focusModeBtn" onclick="toggleFocusMode()" title="Focus mode: group by impact level">
                 <i class="bi bi-bullseye"></i>
+            </button>
+
+            <button class="review-nav-focus-btn" id="detailModeBtn" onclick="cycleDetailMode()" title="Detail level">
+                <span id="detailModeIcon">🎄</span>
             </button>
 
             <a href="{{ nav_context.nav_back if nav_context.nav_back else url_for('workspace.index') }}" class="review-nav-exit">
@@ -1090,6 +1103,35 @@
         if (localStorage.getItem('review_focus') === '1') {
             applyFocusMode(true);
         }
+
+        // ── Detail Mode (xmas tree) ──
+        var _detailMode = parseInt(localStorage.getItem('review_detail_mode') || '1');
+        var _detailIcons = [
+            { html: '<span style="font-size:0.9rem;filter:grayscale(100%);opacity:0.5;">🎄</span>', title: 'Minimal: content only' },
+            { html: '<span style="font-size:1.1rem;">🎄</span>', title: 'Standard: key context' },
+            { html: '<span style="font-size:1.3rem;">🎄</span>', title: 'Full: everything' },
+        ];
+
+        function applyDetailMode(mode) {
+            _detailMode = mode;
+            var container = document.getElementById('initReviewContainer');
+            if (container) container.dataset.detailMode = String(mode);
+            var icon = document.getElementById('detailModeIcon');
+            if (icon) icon.innerHTML = _detailIcons[mode].html;
+            var btn = document.getElementById('detailModeBtn');
+            if (btn) {
+                btn.title = _detailIcons[mode].title;
+                btn.classList.toggle('active', mode > 0);
+            }
+        }
+
+        function cycleDetailMode() {
+            var next = (_detailMode + 1) % 3;
+            localStorage.setItem('review_detail_mode', String(next));
+            applyDetailMode(next);
+        }
+
+        applyDetailMode(_detailMode);
         </script>
         {% endif %}
 
@@ -1128,7 +1170,7 @@
 
                         <!-- Initiative Name (read-only in edit mode) -->
                         <tr>
-                            <td style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #e8f5e9; font-size: 1rem; border-right: 3px solid #4caf50;">
+                            <td style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #f0faf0; font-size: 1rem; border-right: 2px solid #a5d6a7;">
                                 Project
                             </td>
                             <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa;">
@@ -1141,7 +1183,7 @@
 
                         <!-- WHAT Section -->
                         <tr>
-                            <td style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #e3f2fd; font-size: 1rem; border-right: 3px solid #2196f3;">
+                            <td style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #f0f7ff; font-size: 1rem; border-right: 2px solid #90caf9;">
                                 What
                             </td>
                             <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa;">
@@ -1153,8 +1195,9 @@
                         </tr>
 
                         <!-- WHO Section -->
+                        <tbody class="detail-1">
                         <tr>
-                            <td rowspan="3" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #fff3e0; font-size: 1rem; border-right: 3px solid #ff9800;">
+                            <td rowspan="3" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #fef9f0; font-size: 1rem; border-right: 2px solid #ffcc80;">
                                 Who
                             </td>
                             <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa;">
@@ -1181,9 +1224,11 @@
                             </td>
                         </tr>
 
+                        </tbody>
                         <!-- HOW Section -->
+                        <tbody class="detail-1">
                         <tr>
-                            <td rowspan="2" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #f3e5f5; font-size: 1rem; border-right: 3px solid #9c27b0;">
+                            <td rowspan="2" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #faf0fc; font-size: 1rem; border-right: 2px solid #ce93d8;">
                                 How
                             </td>
                             <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa; vertical-align: top;">
@@ -1208,9 +1253,10 @@
                             </td>
                         </tr>
 
+                        </tbody>
                         <!-- IMPACT Section -->
                         <tr>
-                            <td rowspan="2" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #fce4ec; font-size: 1rem; border-right: 3px solid #e91e63;">
+                            <td rowspan="2" style="font-weight: 700; color: #2c3e50; vertical-align: middle; text-align: center; font-style: italic; background-color: #fef0f3; font-size: 1rem; border-right: 2px solid #f48fb1;">
                                 Impact
                             </td>
                             <td style="font-weight: 600; font-style: italic; padding: 0.5rem; background-color: #f8f9fa; vertical-align: top;">
@@ -1271,7 +1317,7 @@
 
                     <!-- Initiative Name -->
                     <tr style="border-bottom: 1px solid #e8e8e8;">
-                        <td style="font-weight: 700; color: white; vertical-align: middle; text-align: center; font-style: italic; background: linear-gradient(135deg, #4caf50, #2e7d32); font-size: 0.95rem; border-right: none; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
+                        <td style="font-weight: 700; color: #2e7d32; vertical-align: middle; text-align: center; font-style: italic; background: #f0faf0; font-size: 0.95rem; border-right: 2px solid #a5d6a7; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
                             Project
                         </td>
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: middle;">
@@ -1284,7 +1330,7 @@
 
                     <!-- WHAT Section -->
                     <tr style="border-bottom: 1px solid #e8e8e8;">
-                        <td style="font-weight: 700; color: white; vertical-align: middle; text-align: center; font-style: italic; background: linear-gradient(135deg, #2196f3, #0d47a1); font-size: 0.95rem; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
+                        <td style="font-weight: 700; color: #1565c0; vertical-align: middle; text-align: center; font-style: italic; background: #f0f7ff; font-size: 0.95rem; border-right: 2px solid #90caf9; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
                             What
                         </td>
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: top;">
@@ -1294,8 +1340,9 @@
                     </tr>
 
                     <!-- WHO Section -->
+                    <tbody class="detail-1">
                     <tr style="border-bottom: 1px solid #e8e8e8;">
-                        <td rowspan="3" style="font-weight: 700; color: white; vertical-align: middle; text-align: center; font-style: italic; background: linear-gradient(135deg, #ff9800, #e65100); font-size: 0.95rem; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
+                        <td rowspan="3" style="font-weight: 700; color: #e65100; vertical-align: middle; text-align: center; font-style: italic; background: #fef9f0; font-size: 0.95rem; border-right: 2px solid #ffcc80; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
                             Who
                         </td>
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: middle;">
@@ -1328,9 +1375,11 @@
                         </td>
                     </tr>
 
+                    </tbody>
                     <!-- HOW Section -->
+                    <tbody class="detail-1">
                     <tr style="border-bottom: 1px solid #e8e8e8;">
-                        <td rowspan="2" style="font-weight: 700; color: white; vertical-align: middle; text-align: center; font-style: italic; background: linear-gradient(135deg, #9c27b0, #4a148c); font-size: 0.95rem; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
+                        <td rowspan="2" style="font-weight: 700; color: #7b1fa2; vertical-align: middle; text-align: center; font-style: italic; background: #faf0fc; font-size: 0.95rem; border-right: 2px solid #ce93d8; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
                             How
                         </td>
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: top;">
@@ -1407,9 +1456,10 @@
                         </td>
                     </tr>
 
+                    </tbody>
                     <!-- IMPACT Section (View Mode) -->
                     <tr style="border-bottom: 1px solid #e8e8e8;">
-                        <td rowspan="2" style="font-weight: 700; color: white; vertical-align: middle; text-align: center; font-style: italic; background: linear-gradient(135deg, #e91e63, #880e4f); font-size: 0.95rem; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
+                        <td rowspan="2" style="font-weight: 700; color: #c2185b; vertical-align: middle; text-align: center; font-style: italic; background: #fef0f3; font-size: 0.95rem; border-right: 2px solid #f48fb1; padding: 0.4rem 0.5rem; letter-spacing: 0.03em;">
                             Impact
                         </td>
                         <td style="font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #78909c; padding: 0.35rem 0.6rem; background: #f5f7fa; border-right: 1px solid #e8e8e8; vertical-align: middle;">
@@ -1435,7 +1485,7 @@
 
             <!-- KPIs Section at Bottom (View Mode Only) -->
             {% if kpi_data %}
-            <div class="kpi-overview">
+            <div class="kpi-overview detail-2">
                 <div class="kpi-overview-title">
                     <i class="bi bi-graph-up-arrow"></i>
                     Connected KPIs
@@ -1525,23 +1575,23 @@
                         {% endif %}
                     </div>
                     {% if initiative.days_since_execution_update is not none %}
-                    <div class="rag-freshness {{ lpu.freshness_class }}">
+                    <div class="rag-freshness {{ lpu.freshness_class }} detail-1">
                         Updated {{ initiative.days_since_execution_update }} day{{ 's' if initiative.days_since_execution_update != 1 else '' }} ago
                         {% if lpu.author %} &mdash; {{ lpu.author.display_name or lpu.author.login }}{% endif %}
                     </div>
                     {% else %}
-                    <div class="rag-freshness stale">No updates yet — start tracking execution below</div>
+                    <div class="rag-freshness stale detail-1">No updates yet — start tracking execution below</div>
                     {% endif %}
                 </div>
                 {% if can_edit %}
-                <button class="btn btn-light btn-sm fw-semibold ms-auto" onclick="openProgressModal('create')">
+                <button class="btn btn-light btn-sm fw-semibold ms-auto detail-1" onclick="openProgressModal('create')">
                     <i class="bi bi-plus-circle"></i> Add Update
                 </button>
                 {% endif %}
             </div>
 
             <!-- Actions + KPI Summary Row -->
-            <div class="row g-3 mb-3">
+            <div class="row g-3 mb-3 detail-1">
                 <!-- Action Summary -->
                 <div class="col-md-5">
                     <div class="exec-card">
@@ -1672,7 +1722,7 @@
             </div>
 
             <!-- Links & Resources -->
-            <div class="exec-card mb-3" id="exec-links-card">
+            <div class="exec-card mb-3 detail-2" id="exec-links-card">
                 <div class="exec-card-title d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-link-45deg"></i> Links &amp; Resources</span>
                     {% if can_edit %}
@@ -1760,7 +1810,7 @@
             </div>
 
             <!-- Progress Update Timeline -->
-            <div class="exec-card">
+            <div class="exec-card detail-2">
                 <div class="exec-card-title d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-clock-history"></i> Progress Log ({{ progress_updates|length }} update{{ 's' if progress_updates|length != 1 else '' }})</span>
                     {% if can_edit %}

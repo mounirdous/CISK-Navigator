@@ -317,18 +317,39 @@
 #filters-toggle-btn { transition: opacity 0.15s; }
 #filters-toggle-btn .toggle-icon { transition: transform 0.2s; display: inline-block; }
 #filters-toggle-btn.collapsed .toggle-icon { transform: rotate(-90deg); }
+
+/* Action Register Detail Modes */
+[data-detail-mode="0"] .act-d1,
+[data-detail-mode="0"] .act-d2 { display: none !important; }
+[data-detail-mode="1"] .act-d2 { display: none !important; }
+/* Hide filters panel + timeline + groupby in minimal */
+[data-detail-mode="0"] #filters-stats-panel { display: none !important; }
+[data-detail-mode="0"] #filters-toggle-btn { display: none !important; }
+[data-detail-mode="0"] #groupby-bar { display: none !important; }
+[data-detail-mode="0"] .view-toggle-header { display: none !important; }
+[data-detail-mode="0"] #timeline-view-wrapper { display: none !important; }
+[data-detail-mode="0"] #dup-panel { display: none !important; }
+/* Hide timeline in standard */
+[data-detail-mode="1"] #timeline-view-wrapper { display: none !important; }
+[data-detail-mode="1"] #groupby-bar { display: none !important; }
+[data-detail-mode="1"] .view-toggle-header { display: none !important; }
 </style>
 {% endblock %}
 
 {% from "_preset_bar.html" import preset_bar %}
 {% block content %}
-<div class="container-fluid" style="max-width:1400px; padding: 1.5rem;">
+<div class="container-fluid" style="max-width:1400px; padding: 1.5rem;" id="actionRegContainer" data-detail-mode="1">
 
     <!-- Header -->
     <div class="page-header d-flex justify-content-between align-items-center">
         <div>
-            <h1 style="font-size:1.6rem; font-weight:700; margin:0;">
-                <i class="bi bi-check2-square me-2"></i> Action Register
+            <h1 style="font-size:1.6rem; font-weight:700; margin:0; display:flex; align-items:center; gap:0.5rem;">
+                <i class="bi bi-check2-square"></i> Action Register
+                <button type="button" class="btn btn-sm" id="actionDetailBtn"
+                        onclick="cycleActionDetailMode()" title="Detail level"
+                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
+                    <span id="actionDetailIcon">🎄</span>
+                </button>
             </h1>
             <p style="margin:0.25rem 0 0; opacity:0.85; font-size:0.9rem;">
                 Track actions and memos for your organization
@@ -750,14 +771,14 @@
                 <thead>
                     <tr>
                         {% if is_admin %}<th style="width:3%"><input type="checkbox" id="select-all-checkbox"></th>{% endif %}
-                        <th style="width:6%">Type</th>
+                        <th style="width:6%" class="col-type act-d2">Type</th>
                         <th>Title</th>
                         <th style="width:9%">Status</th>
                         <th style="width:9%">Priority</th>
-                        <th style="width:9%">Due Date</th>
-                        <th style="width:10%">Owner</th>
-                        <th style="width:15%">Governance</th>
-                        <th style="width:10%">Links</th>
+                        <th style="width:9%" class="act-d1">Due Date</th>
+                        <th style="width:10%" class="act-d1">Owner</th>
+                        <th style="width:15%" class="act-d2">Governance</th>
+                        <th style="width:10%" class="act-d2">Links</th>
                         <th style="width:6%"></th>
                     </tr>
                 </thead>
@@ -783,7 +804,7 @@
                     {% endif %}
 
                     <!-- Type -->
-                    <td>
+                    <td class="act-d2">
                         {% if item.type == 'memo' %}
                         <span class="badge" style="background:#e3f2fd; color:#1565c0; font-size:0.72rem;">
                             <i class="bi bi-sticky"></i> Memo
@@ -837,7 +858,7 @@
                     </td>
 
                     <!-- Due Date -->
-                    <td style="font-size:0.82rem;">
+                    <td class="act-d1" style="font-size:0.82rem;">
                         {% if item.due_date %}
                         <span {% if item.is_overdue %}style="color:#e65100; font-weight:600;"{% endif %}>
                             {{ item.due_date.strftime('%d %b %Y') }}
@@ -849,12 +870,12 @@
                     </td>
 
                     <!-- Owner -->
-                    <td style="font-size:0.82rem; color:#37474f;">
+                    <td class="act-d1" style="font-size:0.82rem; color:#37474f;">
                         {{ item.owner_user.display_name or item.owner_user.login }}
                     </td>
 
                     <!-- Governance Bodies -->
-                    <td>
+                    <td class="act-d2">
                         {% if item.governance_bodies %}
                         <div class="d-flex flex-wrap gap-1">
                             {% for gb in item.governance_bodies %}
@@ -869,7 +890,7 @@
                     </td>
 
                     <!-- Mentions/Links -->
-                    <td>
+                    <td class="act-d2">
                         {% if item.mentions %}
                         <div class="d-flex flex-wrap gap-1">
                             {% for mention in item.mentions %}
@@ -2022,5 +2043,31 @@ function startInitiativesReview() {
     const back = encodeURIComponent(window.location.href);
     window.location.href = `/org-admin/initiatives/${firstId}/form?tab=execution&nav=${navParam}&nav_pos=0&nav_back=${back}`;
 }
+
+// ── Action Register Detail Mode (xmas tree) ──
+var _actDetailMode = parseInt(localStorage.getItem('action_detail_mode') || '1');
+var _actDetailIcons = [
+    { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>', title: 'Minimal: title, status, priority' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + due date, owner, filters' },
+    { html: '<span style="font-size:1.25rem;">🎄</span>', title: 'Full: all columns, timeline, badges' },
+];
+
+function applyActionDetailMode(mode) {
+    _actDetailMode = mode;
+    var c = document.getElementById('actionRegContainer');
+    if (c) c.dataset.detailMode = String(mode);
+    var icon = document.getElementById('actionDetailIcon');
+    if (icon) icon.innerHTML = _actDetailIcons[mode].html;
+    var btn = document.getElementById('actionDetailBtn');
+    if (btn) btn.title = _actDetailIcons[mode].title;
+}
+
+function cycleActionDetailMode() {
+    var next = (_actDetailMode + 1) % 3;
+    localStorage.setItem('action_detail_mode', String(next));
+    applyActionDetailMode(next);
+}
+
+applyActionDetailMode(_actDetailMode);
 </script>
 {% endblock %}
