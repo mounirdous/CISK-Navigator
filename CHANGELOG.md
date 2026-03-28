@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2026-03-28
+
+### Added
+- **3-level xmas tree on Map Dashboard** — minimal (immersive full-width map only), standard (+ KPI sidebar), full (+ controls, legend, stats, header buttons). Map auto-resizes on mode change.
+- Xmas tree icon positioned consistently on the left (title area) across all pages
+
+### Changed
+- Initiative review edit button returns to exact review position after save
+
 ## [5.0.0] - 2026-03-28
 
 ### Added

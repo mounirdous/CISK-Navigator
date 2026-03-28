@@ -1096,15 +1096,34 @@
         max-height: calc(100vh - 380px);
     }
 }
+
+/* Map Detail Modes */
+[data-detail-mode="0"] .map-d1,
+[data-detail-mode="0"] .map-d2 { display: none !important; }
+[data-detail-mode="1"] .map-d2 { display: none !important; }
+
+/* Minimal: map goes full width */
+[data-detail-mode="0"] .dashboard-wrapper { display: block !important; }
+[data-detail-mode="0"] .map-container { width: 100% !important; height: calc(100vh - 140px) !important; }
+[data-detail-mode="0"] .page-title .d-flex { display: none !important; }
+
+/* Standard: hide header buttons except toggle3D */
+[data-detail-mode="1"] .page-title .btn-outline-primary,
+[data-detail-mode="1"] .page-title .btn-outline-secondary { display: none !important; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="fade-in">
+<div class="fade-in" id="mapDashContainer" data-detail-mode="1">
     <div class="page-title">
-        <h2>
+        <h2 style="display:flex; align-items:center; gap:0.5rem;">
             <i class="bi bi-map-fill"></i>
             Geographic KPI Distribution
+            <button type="button" class="btn btn-sm" id="mapDetailBtn"
+                    onclick="cycleMapDetailMode()" title="Detail level"
+                    style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
+                <span id="mapDetailIcon">🎄</span>
+            </button>
         </h2>
         <div class="d-flex gap-2">
             <button id="toggle3D" class="btn btn-outline-info" title="Toggle 2D/3D View">
@@ -1121,7 +1140,7 @@
 
     <div class="dashboard-wrapper">
         <!-- Sidebar -->
-        <div class="kpi-sidebar">
+        <div class="kpi-sidebar map-d1">
             <div class="sidebar-header">
                 <h3><i class="bi bi-list-ul"></i> KPI Locations</h3>
 
@@ -1189,7 +1208,7 @@
         </div>
         {% endif %}
 
-        <div class="map-stats collapsed" id="mapStats">
+        <div class="map-stats collapsed map-d2" id="mapStats">
             <button class="map-stats-toggle" id="toggleMapStats">
                 <i class="bi bi-map"></i>
                 <span>Map Controls</span>
@@ -2275,5 +2294,33 @@ document.addEventListener('keydown', (e) => {
 });
 
 console.log('===== MODERN MAP DASHBOARD COMPLETE: Phase 1-3 with Polish & Animations =====');
+
+// ── Map Detail Mode (xmas tree) ──
+var _mapDetailMode = parseInt(localStorage.getItem('map_detail_mode') || '1');
+var _mapDetailIcons = [
+    { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>', title: 'Immersive: map only' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: map + KPI sidebar' },
+    { html: '<span style="font-size:1.25rem;">🎄</span>', title: 'Full: everything + controls + legend' },
+];
+
+function applyMapDetailMode(mode) {
+    _mapDetailMode = mode;
+    var c = document.getElementById('mapDashContainer');
+    if (c) c.dataset.detailMode = String(mode);
+    var icon = document.getElementById('mapDetailIcon');
+    if (icon) icon.innerHTML = _mapDetailIcons[mode].html;
+    var btn = document.getElementById('mapDetailBtn');
+    if (btn) btn.title = _mapDetailIcons[mode].title;
+    // Resize map after layout change
+    setTimeout(function() { if (typeof map !== 'undefined' && map.resize) map.resize(); }, 100);
+}
+
+function cycleMapDetailMode() {
+    var next = (_mapDetailMode + 1) % 3;
+    localStorage.setItem('map_detail_mode', String(next));
+    applyMapDetailMode(next);
+}
+
+applyMapDetailMode(_mapDetailMode);
 </script>
 {% endblock %}
