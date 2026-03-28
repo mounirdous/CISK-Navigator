@@ -1807,22 +1807,22 @@
 
             <!-- Tree Controls (Rows) -->
             <div class="btn-group btn-group-sm">
-                <button @click="expandAllRows()"
+                <button @click="expandAllRows(); $nextTick(() => _saveTreeState())"
                         class="btn btn-outline-light"
                         title="Expand All Rows">
                     <i class="bi bi-arrows-expand"></i>
                 </button>
-                <button @click="expandOneLevel()"
+                <button @click="expandOneLevel(); $nextTick(() => _saveTreeState())"
                         class="btn btn-outline-light"
                         title="Expand One Level">
                     <i class="bi bi-chevron-bar-down"></i>
                 </button>
-                <button @click="collapseOneLevel()"
+                <button @click="collapseOneLevel(); $nextTick(() => _saveTreeState())"
                         class="btn btn-outline-light"
                         title="Collapse One Level">
                     <i class="bi bi-chevron-bar-up"></i>
                 </button>
-                <button @click="collapseAllRows()"
+                <button @click="collapseAllRows(); $nextTick(() => _saveTreeState())"
                         class="btn btn-outline-light"
                         title="Collapse All Rows">
                     <i class="bi bi-arrows-collapse"></i>
@@ -2282,7 +2282,7 @@
                                 <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                 <i class="bi bi-chevron-down expand-icon"
                                    :class="{'collapsed': space.collapsed, 'empty': space.challenges.length === 0}"
-                                   @click="space.collapsed = !space.collapsed; focusedLevel = null"
+                                   @click="space.collapsed = !space.collapsed; focusedLevel = null; _saveTreeState()"
                                    x-show="space.challenges.length > 0"></i>
                                 <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
                                 <span x-show="!space.logo_url && space.icon && !editMode" class="entity-icon-text" x-text="space.icon"></span>
@@ -2437,7 +2437,7 @@
                                         <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                         <i class="bi bi-chevron-down expand-icon"
                                            :class="{'collapsed': challenge.collapsed, 'empty': challenge.initiatives.length === 0}"
-                                           @click="challenge.collapsed = !challenge.collapsed; focusedLevel = null"
+                                           @click="challenge.collapsed = !challenge.collapsed; focusedLevel = null; _saveTreeState()"
                                            x-show="challenge.initiatives.length > 0"></i>
                                         <img x-show="challenge.logo_url" :src="challenge.logo_url" class="entity-logo" />
                                         <span x-show="!challenge.logo_url && challenge.icon && !editMode" class="entity-icon-text" x-text="challenge.icon"></span>
@@ -2545,7 +2545,7 @@
                                                 <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                                 <i class="bi bi-chevron-down expand-icon"
                                                    :class="{'collapsed': initiative.collapsed, 'empty': initiative.systems.length === 0}"
-                                                   @click="initiative.collapsed = !initiative.collapsed; focusedLevel = null"
+                                                   @click="initiative.collapsed = !initiative.collapsed; focusedLevel = null; _saveTreeState()"
                                                    x-show="initiative.systems.length > 0"></i>
                                                 <img x-show="initiative.logo_url" :src="initiative.logo_url" class="entity-logo" />
                                                 <span x-show="!initiative.logo_url && initiative.icon && !editMode" class="entity-icon-text" x-text="initiative.icon"></span>
@@ -2689,7 +2689,7 @@
                                                         <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                                         <i class="bi bi-chevron-down expand-icon"
                                                            :class="{'collapsed': system.collapsed, 'empty': system.kpis.length === 0}"
-                                                           @click="system.collapsed = !system.collapsed; focusedLevel = null"
+                                                           @click="system.collapsed = !system.collapsed; focusedLevel = null; _saveTreeState()"
                                                            x-show="system.kpis.length > 0"></i>
                                                         <img x-show="system.logo_url" :src="system.logo_url" class="entity-logo" />
                                                         <span x-show="!system.logo_url && system.icon && !editMode" class="entity-icon-text" x-text="system.icon"></span>
@@ -3509,6 +3509,25 @@ function workspaceV2(orgId, filterPresets) {
             }
         },
 
+        _saveTreeState() {
+            try {
+                var state = { spaces: {}, challenges: {}, initiatives: {}, systems: {} };
+                for (var s of (this.spaces || [])) {
+                    state.spaces[s.id] = s.collapsed;
+                    for (var c of (s.challenges || [])) {
+                        state.challenges[c.id] = c.collapsed;
+                        for (var i of (c.initiatives || [])) {
+                            state.initiatives[i.id] = i.collapsed;
+                            for (var sys of (i.systems || [])) {
+                                state.systems[sys.id] = sys.collapsed;
+                            }
+                        }
+                    }
+                }
+                sessionStorage.setItem('ws_tree_state', JSON.stringify(state));
+            } catch(e) {}
+        },
+
         _processData(data) {
             // Build lookup maps of existing collapsed state to preserve across reloads
             var spaceCollapsed = {}, challengeCollapsed = {}, initiativeCollapsed = {}, systemCollapsed = {}, vtCollapsed = {};
@@ -3526,6 +3545,17 @@ function workspaceV2(orgId, filterPresets) {
             }
             for (var vt of (this.valueTypes || [])) {
                 vtCollapsed[vt.id] = vt.collapsed;
+            }
+
+            // On fresh page load, restore from sessionStorage
+            if (!Object.keys(spaceCollapsed).length) {
+                try {
+                    var saved = JSON.parse(sessionStorage.getItem('ws_tree_state') || '{}');
+                    if (saved.spaces) spaceCollapsed = saved.spaces;
+                    if (saved.challenges) challengeCollapsed = saved.challenges;
+                    if (saved.initiatives) initiativeCollapsed = saved.initiatives;
+                    if (saved.systems) systemCollapsed = saved.systems;
+                } catch(e) {}
             }
 
             // Add UI state to all entities, preserving existing collapsed state
@@ -3986,6 +4016,10 @@ function workspaceV2(orgId, filterPresets) {
 
             // Restore Level Focus Mode preference from DB (server-rendered)
             this.focusLevelMode = {{ ws_focus_mode | tojson }};
+
+            // Save tree state before leaving page
+            var self = this;
+            window.addEventListener('beforeunload', function() { self._saveTreeState(); });
 
             // Restore tree expansion state when returning from an entity edit page
             const _savedState = localStorage.getItem('ws_edit_return_state');
