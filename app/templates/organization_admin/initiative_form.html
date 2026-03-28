@@ -2150,7 +2150,7 @@ function addDecisionRow(what, who, tag, mentions) {
                 '<div style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">' +
                     '<div class="dec-mentions-chips" id="decMentions' + idx + '">' + mentionChipsHtml + '</div>' +
                     '<div style="position:relative; flex:1; min-width:120px;">' +
-                        '<input type="text" class="form-control form-control-sm dec-entity-search" placeholder="@ Link entity..." style="font-size:0.72rem; padding:0.15rem 0.4rem;" oninput="searchDecEntity(' + idx + ', this.value)" onfocus="searchDecEntity(' + idx + ', this.value)">' +
+                        '<input type="text" class="form-control form-control-sm dec-entity-search" data-dec-idx="' + idx + '" placeholder="Link entity..." style="font-size:0.72rem; padding:0.15rem 0.4rem;">' +
                         '<div class="dec-entity-results" id="decResults' + idx + '"></div>' +
                     '</div>' +
                 '</div>' +
@@ -2223,6 +2223,20 @@ function removeMention(idx, entityId, entityType) {
         if (chip.dataset.type === entityType && chip.dataset.id === String(entityId)) chip.remove();
     });
 }
+
+// Entity search via event delegation (works for dynamically added inputs)
+document.addEventListener('input', function(e) {
+    if (e.target.classList.contains('dec-entity-search')) {
+        var idx = parseInt(e.target.dataset.decIdx);
+        searchDecEntity(idx, e.target.value.replace(/^@/, ''));
+    }
+});
+document.addEventListener('focus', function(e) {
+    if (e.target.classList.contains('dec-entity-search') && e.target.value.length >= 2) {
+        var idx = parseInt(e.target.dataset.decIdx);
+        searchDecEntity(idx, e.target.value.replace(/^@/, ''));
+    }
+}, true);
 
 // Close search results on outside click
 document.addEventListener('click', function(e) {
