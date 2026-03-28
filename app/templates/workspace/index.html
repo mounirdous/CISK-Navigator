@@ -5612,7 +5612,7 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
     if (trueLevel && scale[trueLevel]) {
         trueHtml = '<span style="color:' + scale[trueLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[trueLevel].icon + '</span>';
     } else if (assessedLevel) {
-        trueHtml = '<span style="color:#64748b; font-size:0.7rem;">chain incomplete or filtered out</span>';
+        trueHtml = '<span style="color:#475569;" title="Parent chain incomplete or filtered by method">—</span>';
     }
 
     var optionsHtml = '<option value="">Not set</option>';
