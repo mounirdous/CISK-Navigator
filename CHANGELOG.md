@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.8.0] - 2026-03-28
+
+### Added
+- **Initiative Review Focus Mode** — bullseye toggle button next to "Start Initiatives Review" sorts initiatives by impact level (L3 first → L2 → L1 → not set); persistent via localStorage
+- Focus mode shows **impact level separators** in the nav dot bar with the impact symbol between groups
+- Nav dots have **impact color ring** showing each initiative's impact level
+- Focus mode propagates through prev/next/dot navigation links
+- **Sequential nav on all entity edit pages** — Space, Challenge, Initiative, System, KPI now have prev/next arrows (reusable `_entity_nav.html` include)
+
 ## [4.7.0] - 2026-03-28
 
 ### Added

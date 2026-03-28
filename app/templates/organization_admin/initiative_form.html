@@ -757,6 +757,11 @@
     .review-nav-dot.rag-amber  { background: #fb8c00; }
     .review-nav-dot.rag-red    { background: #e53935; }
     .review-nav-dot.rag-None   { background: rgba(255,255,255,0.25); }
+    .review-nav-separator {
+        font-size: 0.85rem; font-weight: 800;
+        padding: 0 0.3rem; color: rgba(255,255,255,0.7);
+        display: inline-flex; align-items: center;
+    }
     .review-nav-position {
         font-size: 0.78rem;
         font-weight: 700;
@@ -826,7 +831,7 @@
         <div class="review-nav-bar">
             {% if nav_context.prev_id %}
             <a class="review-nav-prev"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('focus') == '1' %}&focus=1{% endif %}"
                title="{{ nav_context.prev_name }}">
                 <i class="bi bi-chevron-left"></i> {{ (nav_context.prev_name or '')[:22] }}{% if nav_context.prev_name and nav_context.prev_name|length > 22 %}…{% endif %}
             </a>
@@ -839,10 +844,20 @@
                 <div class="review-nav-breadcrumb">{{ nav_context.space_name }} › {{ nav_context.challenge_name }}</div>
                 {% endif %}
                 <div class="review-nav-dots">
+                    {% set focus_mode = request.args.get('focus') == '1' %}
+                    {% set prev_impact = namespace(val=-1) %}
                     {% for dot in nav_context.dots %}
+                    {% set dot_impact = dot.impact_level if dot.impact_level else 0 %}
+                    {% if focus_mode and dot_impact != prev_impact.val %}
+                    <span class="review-nav-separator" {% if impact_levels_config and dot_impact in impact_levels_config %}style="color: {{ impact_levels_config[dot_impact].color }};" title="{{ impact_levels_config[dot_impact].icon }}"{% elif dot_impact == 0 %}title="Not set"{% endif %}>
+                        {% if impact_levels_config and dot_impact in impact_levels_config %}{{ impact_levels_config[dot_impact].icon }}{% elif dot_impact == 0 %}<i class="bi bi-dash"></i>{% endif %}
+                    </span>
+                    {% set prev_impact.val = dot_impact %}
+                    {% endif %}
                     <a class="review-nav-dot rag-{{ dot.rag }} {% if loop.index0 == nav_context.pos %}current{% endif %}"
-                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
-                       title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}"></a>
+                       {% if dot.impact_level and impact_levels_config and dot.impact_level in impact_levels_config %}style="box-shadow: 0 0 0 2px {{ impact_levels_config[dot.impact_level].color }}40;"{% endif %}
+                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if focus_mode %}&focus=1{% endif %}"
+                       title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}{% if dot.impact_level and impact_levels_config and dot.impact_level in impact_levels_config %} — Impact: {{ impact_levels_config[dot.impact_level].icon }}{% endif %}"></a>
                     {% endfor %}
                 </div>
                 <div class="review-nav-position">{{ nav_context.pos + 1 }} / {{ nav_context.total }}</div>
@@ -850,7 +865,7 @@
 
             {% if nav_context.next_id %}
             <a class="review-nav-next"
-               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
+               href="{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('focus') == '1' %}&focus=1{% endif %}"
                title="{{ nav_context.next_name }}">
                 {{ (nav_context.next_name or '')[:22] }}{% if nav_context.next_name and nav_context.next_name|length > 22 %}…{% endif %} <i class="bi bi-chevron-right"></i>
             </a>

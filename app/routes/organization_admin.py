@@ -4149,7 +4149,12 @@ def initiative_form(initiative_id):
                 "space_name": nav_space_name,
                 "challenge_name": nav_challenge_name,
                 "dots": [
-                    {"id": iid, "name": nav_init_map[iid].name if iid in nav_init_map else f"#{iid}", "rag": nav_rag_map.get(iid)}
+                    {
+                        "id": iid,
+                        "name": nav_init_map[iid].name if iid in nav_init_map else f"#{iid}",
+                        "rag": nav_rag_map.get(iid),
+                        "impact_level": nav_init_map[iid].impact_level if iid in nav_init_map else None,
+                    }
                     for iid in nav_ids
                 ],
             }
