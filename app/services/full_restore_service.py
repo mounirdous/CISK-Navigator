@@ -822,6 +822,7 @@ class FullRestoreService:
                                     accomplishments=upd_data.get("accomplishments"),
                                     next_steps=upd_data.get("next_steps"),
                                     blockers=upd_data.get("blockers"),
+                                    decisions=upd_data.get("decisions"),
                                     created_at=datetime.fromisoformat(upd_data["created_at"]),
                                 )
                                 db.session.add(upd)

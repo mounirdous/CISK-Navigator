@@ -83,7 +83,9 @@
                     <span id="decDetailIcon">🎄</span>
                 </button>
             </h1>
-            <p>{{ entries | length }} decision{{ 's' if entries | length != 1 else '' }} captured across all initiatives</p>
+            <p>{{ entries | length }} decision{{ 's' if entries | length != 1 else '' }} captured across all initiatives
+                {% if entity_filter %}<span style="background:rgba(255,255,255,0.2); padding:0.15rem 0.5rem; border-radius:10px; font-size:0.78rem; margin-left:0.5rem;">filtered: {{ entity_filter }} <a href="{{ url_for('workspace.decisions') }}" style="color:white; margin-left:0.3rem;">clear</a></span>{% endif %}
+            </p>
         </div>
         <input type="text" class="dec-search" placeholder="Search decisions..." id="decSearch" oninput="filterDecisions()">
     </div>
@@ -91,7 +93,7 @@
     {% if entries %}
     <div id="decList">
         {% for e in entries %}
-        <div class="dec-card" data-search="{{ e.what | lower }} {{ e.initiative_name | lower }} {{ (e.who or '') | lower }} {{ (e.tag or '') | lower }} {{ (e.challenge_name or '') | lower }}">
+        <div class="dec-card" data-search="{{ e.what | lower }} {{ e.initiative_name | lower }} {{ (e.who or '') | lower }} {{ (e.tag or '') | lower }} {{ (e.challenge_name or '') | lower }} {{ e.mentions | map(attribute='name') | join(' ') | lower if e.mentions else '' }}">
             <div class="dec-icon">
                 <i class="bi bi-journal-bookmark-fill"></i>
             </div>
@@ -113,6 +115,15 @@
                     <span class="dec-meta-item dec-d2"><i class="bi bi-person"></i> {{ e.author }}</span>
                     {% endif %}
                 </div>
+                {% if e.mentions %}
+                <div style="display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem;">
+                    {% for m in e.mentions %}
+                    <a href="/workspace/#{{ m.entity_type }}-{{ m.entity_id }}" style="font-size:0.68rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:#ede9fe; color:#5b21b6; text-decoration:none; display:inline-flex; align-items:center; gap:0.2rem;">
+                        <i class="bi bi-link-45deg" style="font-size:0.6rem;"></i> {{ m.name }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 {% if e.space_name or e.challenge_name %}
                 <div class="dec-context dec-d2">
                     {% if e.space_name %}{{ e.space_name }}{% endif %}

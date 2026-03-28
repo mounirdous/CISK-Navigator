@@ -5,6 +5,20 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.3.0] - 2026-03-28
+
+### Added
+- **Entity mentions in decisions** — searchable entity picker in each decision row; link spaces, challenges, initiatives, systems, KPIs to decisions
+- **Bi-directional decision links** — workspace entity info windows show "X decisions" chip linking to filtered Decision Register; decision cards show entity mention badges linking back to workspace tree
+- **Decision Register entity filter** — `?entity=type_id` URL param filters to decisions mentioning a specific entity
+- **Decision counts in workspace data** — each entity gets `decision_count` from mention analysis
+
+### Fixed
+- Alpine `impactScale not defined` — initialized in Alpine data before data loads
+- `groupParams not defined` — removed leftover reference from deleted groups feature
+- `bi-gavel` → `bi-journal-bookmark-fill` (valid Bootstrap Icons icon)
+- Backup/restore includes decisions (JSON) in progress updates
+
 ## [5.2.0] - 2026-03-28
 
 ### Added

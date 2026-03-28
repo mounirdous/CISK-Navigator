@@ -157,6 +157,7 @@ def decisions():
                     "what": dec.get("what", ""),
                     "who": dec.get("who", ""),
                     "tag": dec.get("tag", ""),
+                    "mentions": dec.get("mentions", []),
                     "author": author,
                 })
         elif isinstance(upd.decisions, str) and upd.decisions.strip():
@@ -173,7 +174,18 @@ def decisions():
                 "author": author,
             })
 
-    return render_template("workspace/decisions.html", entries=decision_entries)
+    # Filter by entity if ?entity=type_id is provided
+    entity_filter = request.args.get("entity", "")
+    entity_filter_name = None
+    if entity_filter and "_" in entity_filter:
+        ef_type, ef_id = entity_filter.split("_", 1)
+        decision_entries = [e for e in decision_entries if any(
+            m.get("entity_type") == ef_type and str(m.get("entity_id")) == ef_id
+            for m in (e.get("mentions") or [])
+        )]
+        entity_filter_name = f"{ef_type} #{ef_id}"
+
+    return render_template("workspace/decisions.html", entries=decision_entries, entity_filter=entity_filter_name)
 
 
 @bp.route("/impact-docs")
@@ -4526,6 +4538,31 @@ def get_data():
     ]
     # New configurable impact scale
     impact_scale = ImpactLevel.get_org_levels(org_id)
+
+    # Build decision mention counts per entity
+    from app.models import InitiativeProgressUpdate
+    _dec_updates = InitiativeProgressUpdate.query.join(Initiative).filter(
+        Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None)
+    ).all()
+    _dec_counts = {}  # "entity_type:entity_id" → count
+    for _du in _dec_updates:
+        if isinstance(_du.decisions, list):
+            for _dd in _du.decisions:
+                for _dm in (_dd.get("mentions") or []):
+                    key = f"{_dm.get('entity_type')}:{_dm.get('entity_id')}"
+                    _dec_counts[key] = _dec_counts.get(key, 0) + 1
+
+    # Inject decision_count into entity dicts
+    for space in spaces_data:
+        space["decision_count"] = _dec_counts.get(f"space:{space['id']}", 0)
+        for challenge in space.get("challenges", []):
+            challenge["decision_count"] = _dec_counts.get(f"challenge:{challenge['id']}", 0)
+            for ini in challenge.get("initiatives", []):
+                ini["decision_count"] = _dec_counts.get(f"initiative:{ini['id']}", 0)
+                for sys in ini.get("systems", []):
+                    sys["decision_count"] = _dec_counts.get(f"system:{sys['id']}", 0)
+                    for kpi in sys.get("kpis", []):
+                        kpi["decision_count"] = _dec_counts.get(f"kpi:{kpi['id']}", 0)
 
     # Org-level entity links (direct)
     org_entity_links = get_entity_links("organization", org_id)

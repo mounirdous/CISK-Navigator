@@ -429,6 +429,7 @@ class FullBackupService:
                                 "accomplishments": upd.accomplishments,
                                 "next_steps": upd.next_steps,
                                 "blockers": upd.blockers,
+                                "decisions": upd.decisions,
                                 "created_at": upd.created_at.isoformat(),
                             }
                             for upd in sorted(initiative.progress_updates, key=lambda u: u.created_at)

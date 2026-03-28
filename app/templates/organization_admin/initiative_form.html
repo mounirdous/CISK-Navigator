@@ -807,6 +807,28 @@
         background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px;
         border-left: 3px solid #8b5cf6;
     }
+    .dec-mention-chip {
+        display: inline-flex; align-items: center; gap: 0.2rem;
+        font-size: 0.68rem; font-weight: 600; padding: 0.1rem 0.4rem;
+        border-radius: 10px; background: #ede9fe; color: #5b21b6;
+        white-space: nowrap;
+    }
+    .dec-entity-results {
+        display: none; position: absolute; top: 100%; left: 0; right: 0;
+        background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100;
+        max-height: 180px; overflow-y: auto; font-size: 0.78rem;
+    }
+    .dec-entity-results.show { display: block; }
+    .dec-entity-opt {
+        padding: 0.35rem 0.6rem; cursor: pointer; display: flex;
+        align-items: center; gap: 0.4rem; border-bottom: 1px solid #f8fafc;
+    }
+    .dec-entity-opt:hover { background: #f0f4ff; }
+    .dec-entity-opt .dec-etype {
+        font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+        color: #94a3b8; min-width: 50px;
+    }
 
     .review-nav-separator {
         font-size: 0.85rem; font-weight: 800;
@@ -1886,6 +1908,13 @@
                                     <div style="font-weight:600; font-size:0.85rem;">{{ dec.what }}</div>
                                     {% if dec.who %}<div style="font-size:0.75rem; color:#64748b;"><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ dec.who }}</div>{% endif %}
                                     {% if dec.tag %}<span style="font-size:0.65rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:{{ {'scope':'#dbeafe','budget':'#d1fae5','timeline':'#fef3c7','resource':'#fce7f3','technical':'#e0e7ff','governance':'#ede9fe','other':'#f1f5f9'}.get(dec.tag,'#f1f5f9') }}; color:{{ {'scope':'#1e40af','budget':'#065f46','timeline':'#92400e','resource':'#9d174d','technical':'#3730a3','governance':'#5b21b6','other':'#475569'}.get(dec.tag,'#475569') }};">{{ dec.tag | capitalize }}</span>{% endif %}
+                                    {% if dec.mentions %}
+                                    <div style="margin-top:0.2rem; display:flex; flex-wrap:wrap; gap:0.2rem;">
+                                        {% for m in dec.mentions %}
+                                        <a href="/workspace/#{{ m.entity_type }}-{{ m.entity_id }}" class="dec-mention-chip" style="text-decoration:none;">{{ m.name }}</a>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 {% endfor %}
                             </div>
@@ -2078,7 +2107,7 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
         document.getElementById('modalBlockers').value = blockers || '';
         // Load existing decisions
         if (decisions && Array.isArray(decisions)) {
-            decisions.forEach(function(d) { addDecisionRow(d.what, d.who, d.tag); });
+            decisions.forEach(function(d) { addDecisionRow(d.what, d.who, d.tag, d.mentions || []); });
         }
     } else {
         title.innerHTML = '<i class="bi bi-plus-circle"></i> Add Progress Update';
@@ -2092,23 +2121,38 @@ var _decisionRows = [];
 var _decTags = ['scope', 'budget', 'timeline', 'resource', 'technical', 'governance', 'other'];
 var _decTagColors = { scope:'#3b82f6', budget:'#10b981', timeline:'#f59e0b', resource:'#ec4899', technical:'#6366f1', governance:'#8b5cf6', other:'#94a3b8' };
 
-function addDecisionRow(what, who, tag) {
+function addDecisionRow(what, who, tag, mentions) {
     var idx = _decisionRows.length;
-    _decisionRows.push({ what: what || '', who: who || '', tag: tag || '' });
+    _decisionRows.push({ what: what || '', who: who || '', tag: tag || '', mentions: mentions || [] });
     var container = document.getElementById('decisionsContainer');
     var row = document.createElement('div');
     row.className = 'dec-row';
     row.dataset.idx = idx;
+
+    var mentionChipsHtml = '';
+    if (mentions && mentions.length) {
+        mentions.forEach(function(m) {
+            mentionChipsHtml += '<span class="dec-mention-chip" data-type="' + m.entity_type + '" data-id="' + m.entity_id + '">' + (m.name || '') + ' <i class="bi bi-x-circle" style="cursor:pointer;font-size:0.6rem;" onclick="removeMention(' + idx + ',' + m.entity_id + ',\'' + m.entity_type + '\')"></i></span>';
+        });
+    }
+
     row.innerHTML =
         '<div style="display:flex; gap:0.4rem; align-items:start;">' +
             '<div style="flex:1;">' +
                 '<input type="text" class="form-control form-control-sm dec-what" placeholder="Decision..." value="' + (what || '').replace(/"/g, '&quot;') + '" style="font-weight:600; margin-bottom:0.3rem;">' +
-                '<div style="display:flex; gap:0.3rem;">' +
+                '<div style="display:flex; gap:0.3rem; margin-bottom:0.3rem;">' +
                     '<input type="text" class="form-control form-control-sm dec-who" placeholder="Who (participants)" value="' + (who || '').replace(/"/g, '&quot;') + '" style="flex:1; font-size:0.78rem;">' +
                     '<select class="form-select form-select-sm dec-tag" style="width:auto; font-size:0.78rem; max-width:120px;">' +
                         '<option value="">Tag</option>' +
                         _decTags.map(function(t) { return '<option value="' + t + '"' + (tag === t ? ' selected' : '') + '>' + t.charAt(0).toUpperCase() + t.slice(1) + '</option>'; }).join('') +
                     '</select>' +
+                '</div>' +
+                '<div style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">' +
+                    '<div class="dec-mentions-chips" id="decMentions' + idx + '">' + mentionChipsHtml + '</div>' +
+                    '<div style="position:relative; flex:1; min-width:120px;">' +
+                        '<input type="text" class="form-control form-control-sm dec-entity-search" placeholder="@ Link entity..." style="font-size:0.72rem; padding:0.15rem 0.4rem;" oninput="searchDecEntity(' + idx + ', this.value)" onfocus="searchDecEntity(' + idx + ', this.value)">' +
+                        '<div class="dec-entity-results" id="decResults' + idx + '"></div>' +
+                    '</div>' +
                 '</div>' +
             '</div>' +
             '<button type="button" class="btn btn-sm btn-outline-danger" style="padding:0.15rem 0.3rem; font-size:0.7rem;" onclick="removeDecisionRow(' + idx + ')" title="Remove">' +
@@ -2124,15 +2168,77 @@ function removeDecisionRow(idx) {
     if (row) row.remove();
 }
 
+var _decSearchTimer = null;
+function searchDecEntity(idx, query) {
+    clearTimeout(_decSearchTimer);
+    var results = document.getElementById('decResults' + idx);
+    if (!query || query.length < 2) { results.classList.remove('show'); return; }
+    _decSearchTimer = setTimeout(function() {
+        fetch('/workspace/api/mentions/search?q=' + encodeURIComponent(query) + '&limit=8')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var entities = data.entities || [];
+                if (!entities.length) { results.classList.remove('show'); return; }
+                var html = '';
+                entities.forEach(function(e) {
+                    html += '<div class="dec-entity-opt" onclick="addDecMention(' + idx + ', \'' + e.type + '\', ' + e.id + ', \'' + e.name.replace(/'/g, "\\'") + '\')">' +
+                        '<span class="dec-etype">' + e.type + '</span>' +
+                        '<span>' + e.name + '</span>' +
+                    '</div>';
+                });
+                results.innerHTML = html;
+                results.classList.add('show');
+            });
+    }, 250);
+}
+
+function addDecMention(idx, entityType, entityId, name) {
+    if (!_decisionRows[idx]) return;
+    var mentions = _decisionRows[idx].mentions || [];
+    // Avoid duplicates
+    if (mentions.some(function(m) { return m.entity_type === entityType && m.entity_id === entityId; })) return;
+    mentions.push({ entity_type: entityType, entity_id: entityId, name: name });
+    _decisionRows[idx].mentions = mentions;
+    // Add chip
+    var container = document.getElementById('decMentions' + idx);
+    container.innerHTML += '<span class="dec-mention-chip" data-type="' + entityType + '" data-id="' + entityId + '">' + name + ' <i class="bi bi-x-circle" style="cursor:pointer;font-size:0.6rem;" onclick="removeMention(' + idx + ',' + entityId + ',\'' + entityType + '\')"></i></span>';
+    // Clear search
+    var row = document.querySelector('.dec-row[data-idx="' + idx + '"]');
+    if (row) row.querySelector('.dec-entity-search').value = '';
+    document.getElementById('decResults' + idx).classList.remove('show');
+}
+
+function removeMention(idx, entityId, entityType) {
+    if (!_decisionRows[idx]) return;
+    _decisionRows[idx].mentions = (_decisionRows[idx].mentions || []).filter(function(m) {
+        return !(m.entity_type === entityType && m.entity_id === entityId);
+    });
+    // Remove chip
+    var container = document.getElementById('decMentions' + idx);
+    container.querySelectorAll('.dec-mention-chip').forEach(function(chip) {
+        if (chip.dataset.type === entityType && chip.dataset.id === String(entityId)) chip.remove();
+    });
+}
+
+// Close search results on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dec-entity-search') && !e.target.closest('.dec-entity-results')) {
+        document.querySelectorAll('.dec-entity-results').forEach(function(r) { r.classList.remove('show'); });
+    }
+});
+
 function serializeDecisions() {
     var decisions = [];
     document.querySelectorAll('.dec-row').forEach(function(row) {
         var what = row.querySelector('.dec-what').value.trim();
         if (!what) return;
+        var idx = parseInt(row.dataset.idx);
+        var mentions = (_decisionRows[idx] && _decisionRows[idx].mentions) || [];
         decisions.push({
             what: what,
             who: row.querySelector('.dec-who').value.trim(),
             tag: row.querySelector('.dec-tag').value,
+            mentions: mentions,
         });
     });
     document.getElementById('decisionsJson').value = JSON.stringify(decisions);

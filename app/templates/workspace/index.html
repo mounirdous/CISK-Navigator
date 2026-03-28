@@ -3260,6 +3260,7 @@ function workspaceV2(orgId, filterPresets) {
         governanceBodies: [],
         groups: [],
         impactLevels: [],
+        impactScale: {},
 
         // UI State
         loading: false,
@@ -4087,7 +4088,6 @@ function workspaceV2(orgId, filterPresets) {
                 const hasFilterParams = urlParams.has('spaceTypeFilter') ||
                                        gbParams.length > 0 ||
                                        spaceParams.length > 0 ||
-                                       groupParams.length > 0 ||
                                        impactParams.length > 0;
 
                 // Check if loaded from preset (should stay collapsed to show data immediately)
@@ -4792,6 +4792,11 @@ function workspaceV2(orgId, filterPresets) {
                 window._wsLinkData = window._wsLinkData || {};
                 window._wsLinkData[idx] = { entity: entity, entityType: entityType };
                 h += '<span class="tt-chip" onclick="event.stopPropagation();window._wsShowEntityLinks(\'' + idx + '\')"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
+            }
+            // Decisions mentioning this entity
+            if (entity.decision_count > 0) {
+                var decUrl = '/workspace/decisions?entity=' + entityType + '_' + entity.id;
+                h += '<a class="tt-chip" href="' + decUrl + '" onclick="event.stopPropagation()" style="color:#8b5cf6;"><i class="bi bi-journal-bookmark-fill"><\/i> ' + entity.decision_count + ' decision' + (entity.decision_count !== 1 ? 's' : '') + '<\/a>';
             }
             return h;
         },
