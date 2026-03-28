@@ -3511,15 +3511,15 @@ function workspaceV2(orgId, filterPresets) {
 
         _saveTreeState() {
             try {
-                var state = { spaces: {}, challenges: {}, initiatives: {}, systems: {} };
+                var state = {};
                 for (var s of (this.spaces || [])) {
-                    state.spaces[s.id] = s.collapsed;
+                    state['s' + s.id] = s.collapsed;
                     for (var c of (s.challenges || [])) {
-                        state.challenges[c.id] = c.collapsed;
+                        state['c' + c.id] = c.collapsed;
                         for (var i of (c.initiatives || [])) {
-                            state.initiatives[i.id] = i.collapsed;
+                            state['i' + i.id] = i.collapsed;
                             for (var sys of (i.systems || [])) {
-                                state.systems[sys.id] = sys.collapsed;
+                                state['y' + sys.id] = sys.collapsed;
                             }
                         }
                     }
@@ -3551,11 +3551,14 @@ function workspaceV2(orgId, filterPresets) {
             if (!Object.keys(spaceCollapsed).length) {
                 try {
                     var saved = JSON.parse(sessionStorage.getItem('ws_tree_state') || '{}');
-                    // Convert string keys back to int keys for lookup
-                    if (saved.spaces) Object.keys(saved.spaces).forEach(function(k) { spaceCollapsed[parseInt(k)] = saved.spaces[k]; });
-                    if (saved.challenges) Object.keys(saved.challenges).forEach(function(k) { challengeCollapsed[parseInt(k)] = saved.challenges[k]; });
-                    if (saved.initiatives) Object.keys(saved.initiatives).forEach(function(k) { initiativeCollapsed[parseInt(k)] = saved.initiatives[k]; });
-                    if (saved.systems) Object.keys(saved.systems).forEach(function(k) { systemCollapsed[parseInt(k)] = saved.systems[k]; });
+                    Object.keys(saved).forEach(function(k) {
+                        var id = parseInt(k.substring(1));
+                        var val = saved[k];
+                        if (k.charAt(0) === 's') spaceCollapsed[id] = val;
+                        else if (k.charAt(0) === 'c') challengeCollapsed[id] = val;
+                        else if (k.charAt(0) === 'i') initiativeCollapsed[id] = val;
+                        else if (k.charAt(0) === 'y') systemCollapsed[id] = val;
+                    });
                 } catch(e) {}
             }
 
@@ -4018,9 +4021,17 @@ function workspaceV2(orgId, filterPresets) {
             // Restore Level Focus Mode preference from DB (server-rendered)
             this.focusLevelMode = {{ ws_focus_mode | tojson }};
 
-            // Save tree state before leaving page
+            // Save tree state before leaving page (multiple events for reliability)
             var self = this;
             window.addEventListener('beforeunload', function() { self._saveTreeState(); });
+            document.addEventListener('visibilitychange', function() { if (document.visibilityState === 'hidden') self._saveTreeState(); });
+            // Also save when any link is clicked (catches edit links)
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('a[href]');
+                if (link && link.href && !link.href.startsWith('javascript') && !link.href.includes('#')) {
+                    self._saveTreeState();
+                }
+            });
 
             // Restore tree expansion state when returning from an entity edit page
             const _savedState = localStorage.getItem('ws_edit_return_state');
