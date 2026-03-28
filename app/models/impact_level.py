@@ -44,9 +44,9 @@ class ImpactLevel(db.Model):
         if existing:
             return
         defaults = [
-            {"level": 1, "label": "Low", "icon": "bi-circle", "weight": 1, "color": "#94a3b8"},
-            {"level": 2, "label": "Medium", "icon": "bi-circle-half", "weight": 3, "color": "#f59e0b"},
-            {"level": 3, "label": "High", "icon": "bi-circle-fill", "weight": 5, "color": "#ef4444"},
+            {"level": 1, "label": "Low", "icon": "★", "weight": 1, "color": "#94a3b8"},
+            {"level": 2, "label": "Medium", "icon": "★★", "weight": 3, "color": "#f59e0b"},
+            {"level": 3, "label": "High", "icon": "★★★", "weight": 5, "color": "#ef4444"},
         ]
         for d in defaults:
             db.session.add(ImpactLevel(organization_id=organization_id, **d))
