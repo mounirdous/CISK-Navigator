@@ -880,7 +880,7 @@
             </div>
             <div class="form-header-actions">
                 {% if can_edit and not edit_mode %}
-                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1, return_to=request.args.get('return_to')) }}" class="btn btn-outline-light">
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=initiative.id, edit=1, return_to=request.url) }}" class="btn btn-outline-light">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
                 {% endif %}
