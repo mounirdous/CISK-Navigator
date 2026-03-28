@@ -816,7 +816,7 @@
     .dec-entity-results {
         display: none; position: absolute; top: 100%; left: 0; right: 0;
         background: white; border: 1px solid #e2e8f0; border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10060;
         max-height: 180px; overflow-y: auto; font-size: 0.78rem;
     }
     .dec-entity-results.show { display: block; }
@@ -2175,8 +2175,12 @@ function searchDecEntity(idx, query) {
     if (!query || query.length < 2) { results.classList.remove('show'); return; }
     _decSearchTimer = setTimeout(function() {
         fetch('/workspace/api/mentions/search?q=' + encodeURIComponent(query) + '&limit=8')
-            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (!r.ok) { console.error('Mention search failed:', r.status); return { entities: [] }; }
+                return r.json();
+            })
             .then(function(data) {
+                if (!data) return;
                 var entities = data.entities || [];
                 if (!entities.length) { results.classList.remove('show'); return; }
                 var html = '';

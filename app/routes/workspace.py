@@ -145,8 +145,16 @@ def decisions():
         space_name = ci.challenge.space.name if ci and ci.challenge and ci.challenge.space else None
         author = upd.author.display_name or upd.author.login if upd.author else None
 
-        if isinstance(upd.decisions, list):
-            for dec in upd.decisions:
+        decs = upd.decisions
+        # Handle string-encoded JSON (legacy or double-encoded)
+        if isinstance(decs, str):
+            try:
+                import json as _dj
+                decs = _dj.loads(decs)
+            except (ValueError, TypeError):
+                pass
+        if isinstance(decs, list):
+            for dec in decs:
                 decision_entries.append({
                     "date": upd.created_at,
                     "initiative_id": ini.id,
@@ -4546,8 +4554,15 @@ def get_data():
     ).all()
     _dec_counts = {}  # "entity_type:entity_id" → count
     for _du in _dec_updates:
-        if isinstance(_du.decisions, list):
-            for _dd in _du.decisions:
+        _decs = _du.decisions
+        if isinstance(_decs, str):
+            try:
+                import json as _djc
+                _decs = _djc.loads(_decs)
+            except (ValueError, TypeError):
+                _decs = None
+        if isinstance(_decs, list):
+            for _dd in _decs:
                 for _dm in (_dd.get("mentions") or []):
                     key = f"{_dm.get('entity_type')}:{_dm.get('entity_id')}"
                     _dec_counts[key] = _dec_counts.get(key, 0) + 1
