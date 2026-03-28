@@ -38,6 +38,7 @@
         gap: 1.5rem;
         max-width: 1200px;
         margin: 0 auto;
+        grid-auto-rows: 1fr;
     }
 
     .stv-card {
@@ -65,6 +66,7 @@
         align-items: center;
         gap: 1rem;
         border-bottom: 1px solid rgba(255,255,255,0.06);
+        min-height: 90px;
     }
 
     .stv-card-icon {
@@ -201,4 +203,14 @@
     </div>
     {% endif %}
 </div>
+<script>
+// Equalize header heights across all cards
+document.addEventListener('DOMContentLoaded', function() {
+    var tops = document.querySelectorAll('.stv-card-top');
+    if (tops.length < 2) return;
+    var maxH = 0;
+    tops.forEach(function(el) { if (el.offsetHeight > maxH) maxH = el.offsetHeight; });
+    tops.forEach(function(el) { el.style.minHeight = maxH + 'px'; });
+});
+</script>
 {% endblock %}
