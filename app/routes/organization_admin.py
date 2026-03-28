@@ -2962,6 +2962,13 @@ def edit_value_type(vt_id):
         flash("Access denied", "danger")
         return redirect(url_for("organization_admin.value_types"))
 
+    # Build sequential nav list (stable sort: order then name)
+    all_vts = ValueType.query.filter_by(organization_id=org_id).order_by(ValueType.display_order, ValueType.name).all()
+    nav_ids = [vt.id for vt in all_vts]
+    nav_pos = nav_ids.index(vt_id) if vt_id in nav_ids else 0
+    prev_id = nav_ids[nav_pos - 1] if nav_pos > 0 else None
+    next_id = nav_ids[nav_pos + 1] if nav_pos < len(nav_ids) - 1 else None
+
     form = ValueTypeEditForm(obj=value_type)
 
     if form.validate_on_submit():
@@ -3003,11 +3010,26 @@ def edit_value_type(vt_id):
         AuditService.log_update("ValueType", value_type.id, value_type.name, old_values, new_values)
 
         db.session.commit()
+
+        # Navigate based on action
+        nav_action = request.form.get("nav_action")
+        if nav_action == "prev" and prev_id:
+            return redirect(url_for("organization_admin.edit_value_type", vt_id=prev_id))
+        elif nav_action == "next" and next_id:
+            return redirect(url_for("organization_admin.edit_value_type", vt_id=next_id))
+
         flash(f"Value Type {value_type.name} updated successfully", "success")
         return redirect(url_for("organization_admin.value_types"))
 
     return render_template(
-        "organization_admin/edit_value_type.html", form=form, value_type=value_type, csrf_token=generate_csrf
+        "organization_admin/edit_value_type.html",
+        form=form,
+        value_type=value_type,
+        csrf_token=generate_csrf,
+        nav_pos=nav_pos,
+        nav_total=len(nav_ids),
+        prev_id=prev_id,
+        next_id=next_id,
     )
 
 
@@ -3426,6 +3448,13 @@ def edit_governance_body(gb_id):
         flash("Access denied", "danger")
         return redirect(url_for("organization_admin.governance_bodies"))
 
+    # Build sequential nav list (stable sort: order then name)
+    all_gbs = GovernanceBody.query.filter_by(organization_id=org_id).order_by(GovernanceBody.display_order, GovernanceBody.name).all()
+    nav_ids = [gb.id for gb in all_gbs]
+    nav_pos = nav_ids.index(gb_id) if gb_id in nav_ids else 0
+    prev_id = nav_ids[nav_pos - 1] if nav_pos > 0 else None
+    next_id = nav_ids[nav_pos + 1] if nav_pos < len(nav_ids) - 1 else None
+
     form = GovernanceBodyEditForm(obj=governance_body)
 
     if form.validate_on_submit():
@@ -3435,6 +3464,14 @@ def edit_governance_body(gb_id):
         governance_body.color = form.color.data
         governance_body.is_active = form.is_active.data
         db.session.commit()
+
+        # Navigate based on action
+        nav_action = request.form.get("nav_action")
+        if nav_action == "prev" and prev_id:
+            return redirect(url_for("organization_admin.edit_governance_body", gb_id=prev_id))
+        elif nav_action == "next" and next_id:
+            return redirect(url_for("organization_admin.edit_governance_body", gb_id=next_id))
+
         flash(f"Governance Body {governance_body.name} updated successfully", "success")
         return redirect(url_for("organization_admin.governance_bodies"))
 
@@ -3443,6 +3480,10 @@ def edit_governance_body(gb_id):
         form=form,
         governance_body=governance_body,
         csrf_token=generate_csrf,
+        nav_pos=nav_pos,
+        nav_total=len(nav_ids),
+        prev_id=prev_id,
+        next_id=next_id,
     )
 
 
