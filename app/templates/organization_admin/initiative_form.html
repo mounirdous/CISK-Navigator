@@ -905,6 +905,10 @@
 
         {% if nav_context %}
         <div class="review-nav-bar">
+            <button class="review-nav-focus-btn" id="detailModeBtn" onclick="cycleDetailMode()" title="Detail level">
+                <span id="detailModeIcon">🎄</span>
+            </button>
+
             <a class="review-nav-prev {% if not nav_context.prev_id %}disabled{% endif %}" id="navPrevLink"
                href="{% if nav_context.prev_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
                title="{{ nav_context.prev_name or 'Start' }}">
@@ -942,10 +946,6 @@
 
             <button class="review-nav-focus-btn" id="focusModeBtn" onclick="toggleFocusMode()" title="Focus mode: group by impact level">
                 <i class="bi bi-bullseye"></i>
-            </button>
-
-            <button class="review-nav-focus-btn" id="detailModeBtn" onclick="cycleDetailMode()" title="Detail level">
-                <span id="detailModeIcon">🎄</span>
             </button>
 
             <a href="{{ nav_context.nav_back if nav_context.nav_back else url_for('workspace.index') }}" class="review-nav-exit">
