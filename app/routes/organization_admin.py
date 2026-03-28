@@ -192,6 +192,71 @@ def organization_porters():
     return render_template("organization_admin/organization_porters.html", organization=org, csrf_token=generate_csrf)
 
 
+# Strategic Pillars (Organization Level)
+
+
+@bp.route("/strategy", methods=["GET", "POST"])
+@login_required
+@organization_required
+def strategy():
+    """Edit strategic pillars"""
+    import json as _json
+
+    from app.models import StrategicPillar
+
+    org_id = session.get("organization_id")
+
+    if request.method == "POST":
+        # Parse pillars JSON from form
+        pillars_json = request.form.get("pillars_json", "[]")
+        try:
+            pillars_data = _json.loads(pillars_json)
+        except (ValueError, TypeError):
+            flash("Invalid data", "danger")
+            return redirect(url_for("organization_admin.strategy"))
+
+        # Delete existing pillars
+        StrategicPillar.query.filter_by(organization_id=org_id).delete()
+        db.session.flush()
+
+        # Create new ones
+        import base64 as _b64
+
+        for i, p in enumerate(pillars_data):
+            pillar = StrategicPillar(
+                organization_id=org_id,
+                name=p.get("name", "").strip(),
+                description=p.get("description", "").strip(),
+                accent_color=p.get("accent_color", "#3b82f6"),
+                bs_icon=p.get("bs_icon", ""),
+                display_order=i,
+            )
+            # Handle icon image from base64 data URL
+            icon_b64 = p.get("icon_b64") or ""
+            if icon_b64.startswith("data:"):
+                # Parse data URL: data:image/png;base64,AAAA...
+                try:
+                    header, data = icon_b64.split(",", 1)
+                    mime = header.split(":")[1].split(";")[0]
+                    pillar.icon_data = _b64.b64decode(data)
+                    pillar.icon_mime_type = mime
+                    pillar.bs_icon = ""  # Clear icon when image is uploaded
+                except (ValueError, IndexError):
+                    pass
+            db.session.add(pillar)
+
+        db.session.commit()
+        flash("Strategy updated successfully", "success")
+        return redirect(url_for("organization_admin.strategy"))
+
+    pillars = (
+        StrategicPillar.query.filter_by(organization_id=org_id)
+        .order_by(StrategicPillar.display_order)
+        .all()
+    )
+    return render_template("organization_admin/strategy.html", pillars=pillars, csrf_token=generate_csrf)
+
+
 @bp.route("/porters/edit", methods=["GET", "POST"])
 @login_required
 @organization_required

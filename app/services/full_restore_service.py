@@ -413,6 +413,10 @@ class FullRestoreService:
             stats["filter_presets_restored"] += preset_count
             stats["warnings"].extend(preset_warnings)
 
+            # Step 8: Restore Strategic Pillars
+            pillar_count = FullRestoreService._restore_strategic_pillars(backup, organization_id)
+            stats["strategic_pillars_restored"] = pillar_count
+
             db.session.commit()
             stats["success"] = True
 
@@ -537,6 +541,32 @@ class FullRestoreService:
         if count:
             db.session.flush()
         return count, warnings
+
+    @staticmethod
+    def _restore_strategic_pillars(backup, organization_id):
+        """Restore strategic pillars from backup. Returns count."""
+        import base64
+
+        from app.models import StrategicPillar
+
+        count = 0
+        for p in backup.get("strategic_pillars", []):
+            pillar = StrategicPillar(
+                organization_id=organization_id,
+                name=p.get("name", ""),
+                description=p.get("description"),
+                accent_color=p.get("accent_color", "#3b82f6"),
+                bs_icon=p.get("bs_icon"),
+                display_order=p.get("display_order", count),
+            )
+            if p.get("icon_b64") and p.get("icon_mime_type"):
+                pillar.icon_data = base64.b64decode(p["icon_b64"])
+                pillar.icon_mime_type = p["icon_mime_type"]
+            db.session.add(pillar)
+            count += 1
+        if count:
+            db.session.flush()
+        return count
 
     @staticmethod
     def _restore_geography(backup, organization_id):

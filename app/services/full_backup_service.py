@@ -127,6 +127,7 @@ class FullBackupService:
             "geography": FullBackupService._export_geography(organization_id),
             "action_items": FullBackupService._export_action_items(organization_id),
             "filter_presets": FullBackupService._export_filter_presets(organization_id),
+            "strategic_pillars": FullBackupService._export_strategic_pillars(organization_id),
         }
 
         return backup
@@ -311,6 +312,29 @@ class FullBackupService:
                 "filters": p.filters,
                 "created_at": p.created_at.isoformat() if p.created_at else None,
             })
+        return result
+
+    @staticmethod
+    def _export_strategic_pillars(organization_id):
+        """Export strategic pillars"""
+        import base64
+
+        from app.models import StrategicPillar
+
+        pillars = StrategicPillar.query.filter_by(organization_id=organization_id).order_by(StrategicPillar.display_order).all()
+        result = []
+        for p in pillars:
+            data = {
+                "name": p.name,
+                "description": p.description,
+                "accent_color": p.accent_color,
+                "bs_icon": p.bs_icon,
+                "display_order": p.display_order,
+            }
+            if p.icon_data and p.icon_mime_type:
+                data["icon_b64"] = base64.b64encode(p.icon_data).decode("utf-8")
+                data["icon_mime_type"] = p.icon_mime_type
+            result.append(data)
         return result
 
     @staticmethod

@@ -29,6 +29,7 @@ from .space import Space
 from .sso_config import SSOConfig
 from .stakeholder import Stakeholder, StakeholderEntityLink, StakeholderRelationship
 from .stakeholder_map import StakeholderMap, StakeholderMapMembership
+from .strategic_pillar import StrategicPillar
 from .system import InitiativeSystemLink, System
 from .system_setting import SystemSetting
 from .test_execution import TestExecution

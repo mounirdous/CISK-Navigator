@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Strategy - Strategic Pillars{% endblock %}
+
+{% block extra_css %}
+<style>
+    .str-page { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+    .str-header { text-align: center; margin-bottom: 2rem; }
+    .str-header h2 { font-weight: 800; color: #1e293b; }
+    .str-header p { color: #64748b; }
+
+    .str-pillar-card {
+        background: white; border-radius: 12px; padding: 1.25rem;
+        border: 1px solid #e2e8f0; margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        position: relative;
+    }
+    .str-pillar-card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0;
+        height: 3px; border-radius: 12px 12px 0 0;
+        background: var(--pillar-color, #3b82f6);
+    }
+    .str-pillar-card .drag-handle {
+        cursor: grab; color: #94a3b8; font-size: 1.1rem; padding: 0.25rem;
+    }
+    .str-pillar-header {
+        display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;
+    }
+    .str-pillar-num {
+        font-size: 0.65rem; font-weight: 700; color: #94a3b8;
+        text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .str-remove-btn {
+        margin-left: auto; background: none; border: none; color: #ef4444;
+        cursor: pointer; font-size: 1rem; opacity: 0.5; transition: opacity 0.15s;
+    }
+    .str-remove-btn:hover { opacity: 1; }
+
+    .str-color-input {
+        width: 32px; height: 32px; border: 2px solid #e2e8f0;
+        border-radius: 8px; cursor: pointer; padding: 0;
+    }
+    .str-color-input::-webkit-color-swatch { border: none; border-radius: 6px; }
+    .str-color-input::-moz-color-swatch { border: none; border-radius: 6px; }
+
+    .str-icon-preview {
+        width: 48px; height: 48px; border-radius: 10px;
+        background: #f1f5f9; display: flex; align-items: center; justify-content: center;
+        font-size: 1.5rem; color: #64748b; border: 2px dashed #d1d5db;
+        cursor: pointer; overflow: hidden; transition: all 0.15s;
+    }
+    .str-icon-preview:hover { border-color: #3b82f6; }
+    .str-icon-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+
+    .str-add-btn {
+        display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        width: 100%; padding: 1rem; border: 2px dashed #d1d5db;
+        border-radius: 12px; background: transparent; color: #64748b;
+        font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .str-add-btn:hover { border-color: #3b82f6; color: #3b82f6; background: rgba(59,130,246,0.04); }
+
+    .str-icon-picker {
+        display: none; position: absolute; z-index: 100; background: white;
+        border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        border: 1px solid #e2e8f0; padding: 0.75rem; width: 280px;
+    }
+    .str-icon-picker.show { display: block; }
+    .str-icon-grid {
+        display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px;
+        max-height: 200px; overflow-y: auto;
+    }
+    .str-icon-opt {
+        width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+        border: none; background: transparent; border-radius: 8px; cursor: pointer;
+        font-size: 1.1rem; color: #475569; transition: all 0.1s;
+    }
+    .str-icon-opt:hover { background: #eff6ff; color: #2563eb; }
+    .str-icon-opt.active { background: #3b82f6; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="str-page">
+    <div class="str-header">
+        <h2><i class="bi bi-compass" style="color:#3b82f6;"></i> Strategic Pillars</h2>
+        <p>Define the core pillars of your organization's strategy</p>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="strategyForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="pillars_json" id="pillarsJson">
+
+        <div id="pillarsContainer">
+            <!-- Pillars rendered by JS -->
+        </div>
+
+        <button type="button" class="str-add-btn" onclick="addPillar()">
+            <i class="bi bi-plus-circle"></i> Add Strategic Pillar
+        </button>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <a href="{{ url_for('workspace.strategy_view') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-eye"></i> Preview
+            </a>
+            <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg"></i> Save Strategy
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+const TEMPLATE_ICONS = [
+    // Leadership & Vision
+    'bi-compass', 'bi-bullseye', 'bi-rocket-takeoff', 'bi-stars', 'bi-trophy', 'bi-flag',
+    'bi-signpost-split', 'bi-binoculars', 'bi-eye', 'bi-lightbulb', 'bi-megaphone', 'bi-award',
+    // People & Culture
+    'bi-people', 'bi-person-check', 'bi-person-hearts', 'bi-hand-thumbs-up', 'bi-chat-dots',
+    'bi-chat-heart', 'bi-heart-pulse', 'bi-emoji-smile', 'bi-mortarboard', 'bi-person-workspace',
+    // Technology & Innovation
+    'bi-cpu', 'bi-gear', 'bi-wrench', 'bi-lightning', 'bi-braces', 'bi-robot',
+    'bi-cloud', 'bi-database', 'bi-hdd-network', 'bi-wifi', 'bi-broadcast',
+    // Growth & Performance
+    'bi-graph-up-arrow', 'bi-bar-chart', 'bi-speedometer2', 'bi-activity', 'bi-clipboard-data',
+    'bi-currency-exchange', 'bi-cash-stack', 'bi-piggy-bank', 'bi-bank',
+    // Security & Governance
+    'bi-shield-check', 'bi-lock', 'bi-key', 'bi-fingerprint', 'bi-patch-check',
+    'bi-file-earmark-check', 'bi-clipboard2-check', 'bi-diagram-3',
+    // Sustainability & Environment
+    'bi-tree', 'bi-flower1', 'bi-water', 'bi-sun', 'bi-globe', 'bi-globe-americas',
+    'bi-recycle', 'bi-ev-front',
+    // Business & Operations
+    'bi-building', 'bi-buildings', 'bi-box-seam', 'bi-truck', 'bi-shop',
+    'bi-layers', 'bi-puzzle', 'bi-bricks', 'bi-kanban', 'bi-calendar-check',
+    // Customer & Market
+    'bi-bag-heart', 'bi-cart-check', 'bi-shop-window', 'bi-geo-alt', 'bi-pin-map',
+    'bi-telephone', 'bi-envelope-heart', 'bi-star-fill',
+];
+
+let pillarData = [];
+{% for p in pillars %}
+pillarData.push({
+    name: {{ p.name | tojson }},
+    description: {{ (p.description or '') | tojson }},
+    accent_color: {{ (p.accent_color or '#3b82f6') | tojson }},
+    bs_icon: {{ (p.bs_icon or '') | tojson }},
+    icon_url: {% if p.get_icon_url() %}{{ p.get_icon_url() | tojson }}{% else %}null{% endif %},
+});
+{% endfor %}
+
+function renderPillars() {
+    const container = document.getElementById('pillarsContainer');
+    container.innerHTML = '';
+    pillarData.forEach((p, i) => {
+        const iconPreview = p.icon_url
+            ? `<img src="${p.icon_url}" alt="">`
+            : (p.bs_icon ? `<i class="bi ${p.bs_icon}"></i>` : '<i class="bi bi-image"></i>');
+
+        container.innerHTML += `
+        <div class="str-pillar-card" style="--pillar-color:${p.accent_color};" data-idx="${i}">
+            <div class="str-pillar-header">
+                <span class="drag-handle"><i class="bi bi-grip-vertical"></i></span>
+                <span class="str-pillar-num">Pillar ${i + 1}</span>
+                <button type="button" class="str-remove-btn" onclick="removePillar(${i})" title="Remove">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <div class="row g-3">
+                <div class="col-auto" style="position:relative;">
+                    <div class="str-icon-preview" onclick="toggleIconPicker(${i})" title="Choose icon or upload image">
+                        ${iconPreview}
+                    </div>
+                    <input type="file" accept="image/*" class="d-none" id="fileInput${i}" name="pillar_icon_${i}"
+                           onchange="handleFileUpload(${i}, this)">
+                    <div class="str-icon-picker" id="iconPicker${i}">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="fw-bold text-muted">Choose icon</small>
+                            <button type="button" class="btn btn-sm btn-outline-primary" style="font-size:0.7rem;padding:2px 8px;"
+                                    onclick="document.getElementById('fileInput${i}').click(); closeAllPickers();">
+                                <i class="bi bi-upload"></i> Upload
+                            </button>
+                        </div>
+                        <div class="str-icon-grid">
+                            ${TEMPLATE_ICONS.map(ic => `<button type="button" class="str-icon-opt ${p.bs_icon === ic ? 'active' : ''}"
+                                onclick="selectIcon(${i}, '${ic}')" title="${ic}"><i class="bi ${ic}"></i></button>`).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="d-flex gap-2 mb-2">
+                        <input type="text" class="form-control form-control-sm fw-bold" value="${p.name}"
+                               placeholder="Pillar name" onchange="pillarData[${i}].name=this.value">
+                        <input type="color" class="str-color-input" value="${p.accent_color}"
+                               onchange="pillarData[${i}].accent_color=this.value; this.closest('.str-pillar-card').style.setProperty('--pillar-color',this.value);"
+                               title="Accent color">
+                    </div>
+                    <textarea class="form-control form-control-sm" rows="3"
+                              placeholder="Key points (one per line)&#10;- First point&#10;- Second point"
+                              onchange="pillarData[${i}].description=this.value">${p.description || ''}</textarea>
+                </div>
+            </div>
+        </div>`;
+    });
+}
+
+function addPillar() {
+    const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1'];
+    pillarData.push({
+        name: '',
+        description: '',
+        accent_color: colors[pillarData.length % colors.length],
+        bs_icon: TEMPLATE_ICONS[pillarData.length % TEMPLATE_ICONS.length],
+        icon_url: null,
+    });
+    renderPillars();
+    // Focus the new name input
+    const inputs = document.querySelectorAll('.str-pillar-card input[type=text]');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removePillar(idx) {
+    if (!confirm('Remove this pillar?')) return;
+    pillarData.splice(idx, 1);
+    renderPillars();
+}
+
+function toggleIconPicker(idx) {
+    closeAllPickers();
+    document.getElementById('iconPicker' + idx).classList.toggle('show');
+}
+
+function closeAllPickers() {
+    document.querySelectorAll('.str-icon-picker').forEach(p => p.classList.remove('show'));
+}
+
+function selectIcon(idx, iconClass) {
+    pillarData[idx].bs_icon = iconClass;
+    pillarData[idx].icon_url = null;
+    closeAllPickers();
+    renderPillars();
+}
+
+function handleFileUpload(idx, input) {
+    if (!input.files[0]) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        pillarData[idx].icon_url = e.target.result;
+        pillarData[idx].bs_icon = '';
+        pillarData[idx]._uploadedB64 = e.target.result; // Store for JSON submission
+        // Update preview without full re-render (preserves file inputs)
+        const card = document.querySelectorAll('.str-pillar-card')[idx];
+        if (card) {
+            const preview = card.querySelector('.str-icon-preview');
+            if (preview) preview.innerHTML = '<img src="' + e.target.result + '" alt="">';
+        }
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+// Close pickers on outside click
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.str-icon-preview') && !e.target.closest('.str-icon-picker')) {
+        closeAllPickers();
+    }
+});
+
+// Form submit — serialize pillars to JSON
+document.getElementById('strategyForm').addEventListener('submit', function() {
+    // Re-read values from DOM (in case user edited without triggering onchange)
+    document.querySelectorAll('.str-pillar-card').forEach((card, i) => {
+        const nameInput = card.querySelector('input[type=text]');
+        const descInput = card.querySelector('textarea');
+        if (nameInput) pillarData[i].name = nameInput.value;
+        if (descInput) pillarData[i].description = descInput.value;
+    });
+    document.getElementById('pillarsJson').value = JSON.stringify(pillarData.map(p => ({
+        name: p.name,
+        description: p.description,
+        accent_color: p.accent_color,
+        bs_icon: p.bs_icon || '',
+        icon_b64: p._uploadedB64 || p.icon_url || null,
+    })));
+});
+
+renderPillars();
+</script>
+{% endblock %}

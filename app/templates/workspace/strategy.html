@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Strategy - {{ session.get('organization_name', '') }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stv-page {
+        min-height: calc(100vh - 60px);
+        background: linear-gradient(160deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+        padding: 3rem 1.5rem;
+        color: #e2e8f0;
+    }
+
+    .stv-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .stv-header h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: white;
+        letter-spacing: -0.03em;
+        margin-bottom: 0.5rem;
+    }
+
+    .stv-header h1 i { color: #fbbf24; }
+
+    .stv-header p {
+        font-size: 1.05rem;
+        color: #94a3b8;
+        max-width: 550px;
+        margin: 0 auto;
+    }
+
+    .stv-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .stv-card {
+        background: rgba(255,255,255,0.04);
+        backdrop-filter: blur(12px);
+        border-radius: 16px;
+        padding: 0;
+        border: 1px solid rgba(255,255,255,0.06);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        animation: stvFadeIn 0.5s ease both;
+    }
+
+    .stv-card:hover {
+        transform: translateY(-6px);
+        border-color: rgba(255,255,255,0.12);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .stv-card-top {
+        padding: 1.5rem 1.5rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .stv-card-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
+        background: var(--stv-accent, #3b82f6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .stv-card-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+
+    .stv-card-name {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #f1f5f9;
+        line-height: 1.3;
+    }
+
+    .stv-card-body {
+        padding: 1rem 1.5rem 1.5rem;
+        flex: 1;
+    }
+
+    .stv-bullet {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.6rem;
+        padding: 0.3rem 0;
+        font-size: 0.88rem;
+        color: #cbd5e1;
+        line-height: 1.5;
+    }
+
+    .stv-bullet::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--stv-accent, #3b82f6);
+        flex-shrink: 0;
+        margin-top: 0.5rem;
+    }
+
+    .stv-empty {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .stv-empty i {
+        font-size: 3.5rem;
+        display: block;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+        color: #fbbf24;
+    }
+
+    .stv-empty h5 { color: #94a3b8; font-weight: 600; }
+    .stv-empty p { color: #64748b; }
+
+    @keyframes stvFadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+        .stv-page { padding: 1.5rem 1rem; }
+        .stv-header h1 { font-size: 1.5rem; }
+        .stv-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stv-page">
+    <div class="stv-header">
+        <h1><i class="bi bi-compass"></i> Strategic Pillars</h1>
+        <p>{{ session.get('organization_name', '') }}</p>
+        {% set org_id = session.get('organization_id') %}
+        {% if current_user.is_global_admin or current_user.is_super_admin or (org_id and current_user.is_org_admin(org_id)) %}
+        <a href="{{ url_for('organization_admin.strategy') }}" class="btn btn-sm btn-outline-light mt-2" style="opacity:0.6;">
+            <i class="bi bi-pencil-square"></i> Edit
+        </a>
+        {% endif %}
+    </div>
+
+    {% if pillars %}
+    <div class="stv-grid">
+        {% for p in pillars %}
+        {% set bullets = p.get_bullets() %}
+        <div class="stv-card" style="--stv-accent: {{ p.accent_color }}; animation-delay: {{ loop.index0 * 0.08 }}s;">
+            <div class="stv-card-top">
+                <div class="stv-card-icon" style="background: {{ p.accent_color }};">
+                    {% if p.get_icon_url() %}
+                        <img src="{{ p.get_icon_url() }}" alt="">
+                    {% elif p.bs_icon %}
+                        <i class="bi {{ p.bs_icon }}"></i>
+                    {% else %}
+                        <i class="bi bi-compass"></i>
+                    {% endif %}
+                </div>
+                <div class="stv-card-name">{{ p.name }}</div>
+            </div>
+            <div class="stv-card-body">
+                {% for bullet in bullets %}
+                <div class="stv-bullet">{{ bullet }}</div>
+                {% endfor %}
+                {% if not bullets %}
+                <div style="color:#64748b; font-style:italic; font-size:0.85rem;">No details yet</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="stv-empty">
+        <i class="bi bi-compass"></i>
+        <h5>No strategic pillars defined yet</h5>
+        <p>Define your organization's strategy to guide decision-making.</p>
+        <a href="{{ url_for('organization_admin.strategy') }}" class="btn btn-outline-warning mt-3">
+            <i class="bi bi-pencil-square"></i> Define Strategy
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

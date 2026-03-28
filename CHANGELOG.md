@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.0] - 2026-03-28
+
+### Added
+- **Strategic Pillars** — new `StrategicPillar` model with name, description (bullet points), icon (upload or pick from 70+ Bootstrap icons), accent color, display order
+- **Strategy edit form** (`/org-admin/strategy`) — add/remove/reorder pillars, inline icon picker with 70+ categorized icons (Leadership, People, Technology, Growth, Security, Sustainability, Business, Customer), upload custom images, color picker per pillar
+- **Strategy view page** (`/workspace/strategy`) — dark glassmorphism card layout with icon badges, colored bullet points, staggered entrance animation
+- **Strategy chip in org info window** — compass icon after Dimensions; shows warning badge if no pillars defined
+- **Missing strategy warnings** — yellow "No strategy" indicator in workspace toolbar; warning banner in Action Register page
+- **Backup/restore** — strategic pillars included with icon images (base64)
+- DB migration: `a79e05c402c8_add_strategic_pillars_table`
+
 ## [4.4.2] - 2026-03-28
 
 ### Added

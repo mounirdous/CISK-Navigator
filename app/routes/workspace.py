@@ -36,6 +36,7 @@ from app.models import (
     SavedChart,
     SavedSearch,
     Space,
+    StrategicPillar,
     System,
     SystemAnnouncement,
     User,
@@ -116,6 +117,22 @@ def theory():
     """CISK Theory — one-page framework overview"""
     from flask_wtf.csrf import generate_csrf
     return render_template("workspace/theory.html", csrf_token=generate_csrf)
+
+
+@bp.route("/strategy")
+@login_required
+@organization_required
+def strategy_view():
+    """Strategy view — card display of strategic pillars"""
+    from app.models import StrategicPillar
+
+    org_id = session.get("organization_id")
+    pillars = (
+        StrategicPillar.query.filter_by(organization_id=org_id)
+        .order_by(StrategicPillar.display_order)
+        .all()
+    )
+    return render_template("workspace/strategy.html", pillars=pillars)
 
 
 @bp.route("/dimensions")
@@ -305,6 +322,7 @@ def index():
         csrf_token=generate_csrf,
         ws_focus_mode=ws_focus_mode,
         ws_show_badges=ws_show_badges,
+        strategy_count=StrategicPillar.query.filter_by(organization_id=org_id).count(),
     )
 
 

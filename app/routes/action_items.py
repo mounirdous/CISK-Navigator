@@ -11,7 +11,7 @@ from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
-from app.models import ActionItem, EntityLink, EntityTypeDefault
+from app.models import ActionItem, EntityLink, EntityTypeDefault, StrategicPillar
 from app.models.user_filter_preset import UserFilterPreset
 from app.services.action_item_service import ActionItemService
 
@@ -282,6 +282,7 @@ def index():
         action_presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in action_presets],
         review_initiative_ids=review_initiative_ids,
         csrf_token=generate_csrf,
+        strategy_count=StrategicPillar.query.filter_by(organization_id=org_id).count(),
     )
 
 

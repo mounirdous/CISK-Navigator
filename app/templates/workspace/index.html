@@ -1720,6 +1720,12 @@
                 <i class="bi bi-exclamation-triangle-fill" style="color: #ffc107;"></i>
                 <span x-text="`${actionItemsCount} ${actionItemsCount === 1 ? 'issue' : 'issues'}`"></span>
             </a>
+            <a x-show="!loading && _strategyCount === 0"
+               href="{{ url_for('workspace.strategy_view') }}"
+               style="font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; text-decoration: none; color: #fbbf24; opacity: 0.85;"
+               title="No strategic pillars defined">
+                <i class="bi bi-compass"></i> No strategy
+            </a>
             <!-- Toggle Badges/Decorations -->
             <button @click="showBadges = !showBadges; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_show_badges: showBadges})})"
                     class="btn btn-sm btn-outline-light"
@@ -3231,6 +3237,7 @@ function workspaceV2(orgId, filterPresets) {
         pendingTreeState: null,  // Tree collapse state to apply after next loadData()
         _loadDataInProgress: false,  // Guard against concurrent loadData() calls
         _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
+        _strategyCount: {{ strategy_count|default(0) }},
 
         // Level Focus Mode
         // Rollup hover tooltip state (used for entity ref only — display handled by DOM)
@@ -4752,6 +4759,7 @@ function workspaceV2(orgId, filterPresets) {
                 h += '<a class="tt-chip" href="' + this.portersUrl + '" onclick="event.stopPropagation()"><i class="bi bi-diagram-3"><\/i> Porter\'s ' + badge + '<\/a>';
             }
             h += '<a class="tt-chip" href="{{ url_for("workspace.dimensions") }}" onclick="event.stopPropagation()"><i class="bi bi-columns-gap"><\/i> Dimensions<\/a>';
+            h += '<a class="tt-chip" href="{{ url_for("workspace.strategy_view") }}" onclick="event.stopPropagation()"><i class="bi bi-compass"><\/i> Strategy' + (this._strategyCount === 0 ? ' <span class="tt-badge-empty">!<\/span>' : '') + '<\/a>';
             if (this.orgData) {
                 var links = (this.orgData.entity_links||[]).length + (this.orgData.inherited_links||[]).length;
                 if (links > 0) {
