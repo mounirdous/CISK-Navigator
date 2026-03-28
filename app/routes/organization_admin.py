@@ -1560,7 +1560,8 @@ def edit_challenge(challenge_id):
     org_id = session.get("organization_id")
     challenge = Challenge.query.filter_by(id=challenge_id, organization_id=org_id).first_or_404()
 
-    all_ids = [c.id for c in Challenge.query.join(Space).filter(Space.organization_id == org_id).order_by(Challenge.name).all()]
+    # Nav within siblings under the same space
+    all_ids = [c.id for c in Challenge.query.filter_by(space_id=challenge.space_id).order_by(Challenge.display_order, Challenge.name).all()]
     nav = _build_entity_nav(all_ids, challenge_id)
 
     form = ChallengeEditForm(obj=challenge)
@@ -1749,8 +1750,15 @@ def edit_initiative(initiative_id):
     org_id = session.get("organization_id")
     initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
 
-    all_ids = [i.id for i in Initiative.query.filter_by(organization_id=org_id).order_by(Initiative.name).all()]
-    nav = _build_entity_nav(all_ids, initiative_id)
+    # Nav within siblings under the same challenge
+    from app.models import ChallengeInitiativeLink
+    _ci_link = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).first()
+    if _ci_link:
+        sibling_ids = [cl.initiative_id for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=_ci_link.challenge_id)
+                       .join(Initiative).order_by(Initiative.name).all()]
+    else:
+        sibling_ids = [initiative_id]
+    nav = _build_entity_nav(sibling_ids, initiative_id)
 
     form = InitiativeEditForm(obj=initiative)
 
@@ -1949,8 +1957,15 @@ def edit_system(system_id):
     org_id = session.get("organization_id")
     system = System.query.filter_by(id=system_id, organization_id=org_id).first_or_404()
 
-    all_ids = [s.id for s in System.query.filter_by(organization_id=org_id).order_by(System.name).all()]
-    nav = _build_entity_nav(all_ids, system_id)
+    # Nav within siblings under the same initiative
+    from app.models import InitiativeSystemLink
+    _is_links = InitiativeSystemLink.query.filter_by(system_id=system_id).first()
+    if _is_links:
+        sibling_ids = [sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=_is_links.initiative_id)
+                       .join(System).order_by(System.name).all()]
+    else:
+        sibling_ids = [system_id]
+    nav = _build_entity_nav(sibling_ids, system_id)
 
     form = SystemEditForm(obj=system)
 
@@ -2397,9 +2412,10 @@ def edit_kpi(kpi_id):
         flash("Access denied", "danger")
         return redirect(url_for("workspace.index"))
 
-    all_ids = [k.id for k in db.session.query(KPI.id).join(InitiativeSystemLink).join(Initiative)
-               .filter(Initiative.organization_id == org_id).order_by(KPI.name).all()]
-    nav = _build_entity_nav(all_ids, kpi_id)
+    # Nav within siblings under the same system (same initiative_system_link)
+    sibling_ids = [k.id for k in KPI.query.filter_by(initiative_system_link_id=kpi.initiative_system_link_id)
+                   .order_by(KPI.display_order, KPI.name).all()]
+    nav = _build_entity_nav(sibling_ids, kpi_id)
 
     # Get active governance bodies for selection
     governance_bodies = (
