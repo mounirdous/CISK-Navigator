@@ -20,51 +20,67 @@
 
     .dec-card {
         background: white; border-radius: 10px; border: 1px solid #e2e8f0;
-        padding: 1rem 1.25rem; margin-bottom: 0.6rem;
+        padding: 0.85rem 1.1rem; margin-bottom: 0.5rem;
         transition: all 0.15s; border-left: 4px solid #8b5cf6;
-        display: flex; gap: 1rem; align-items: flex-start;
     }
     .dec-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 
-    .dec-icon {
-        width: 36px; height: 36px; border-radius: 10px;
-        background: #ede9fe; color: #7c3aed;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 1rem; flex-shrink: 0;
+    /* Level 0: compact single-line */
+    .dec-line0 {
+        display: flex; align-items: center; gap: 0.6rem;
     }
+    .dec-date { font-size: 0.7rem; color: #94a3b8; font-weight: 600; min-width: 70px; flex-shrink: 0; }
+    .dec-what { font-weight: 700; font-size: 0.9rem; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-    .dec-body { flex: 1; min-width: 0; }
-
-    .dec-what { font-weight: 700; font-size: 0.92rem; color: #1e293b; margin-bottom: 0.25rem; }
-
-    .dec-meta {
+    /* Level 1: adds context row */
+    .dec-line1 {
         display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-        font-size: 0.75rem; color: #94a3b8;
+        margin-top: 0.35rem; font-size: 0.75rem; color: #94a3b8;
     }
-    .dec-meta-item { display: flex; align-items: center; gap: 0.2rem; }
-
-    .dec-tag {
-        font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.45rem;
-        border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em;
-    }
-
     .dec-rag { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .dec-rag.green { background: #43a047; }
     .dec-rag.amber { background: #fb8c00; }
     .dec-rag.red { background: #e53935; }
-
-    .dec-initiative { text-decoration: none; color: #4f46e5; font-weight: 600; font-size: 0.78rem; }
+    .dec-initiative { text-decoration: none; color: #4f46e5; font-weight: 600; }
     .dec-initiative:hover { text-decoration: underline; }
+    .dec-tag {
+        font-size: 0.63rem; font-weight: 700; padding: 0.1rem 0.4rem;
+        border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .dec-who { display: flex; align-items: center; gap: 0.2rem; }
+
+    /* Level 2: adds full context */
+    .dec-line2 {
+        margin-top: 0.3rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .dec-breadcrumb { font-size: 0.72rem; color: #94a3b8; }
+    .dec-author { font-size: 0.7rem; color: #94a3b8; }
+    .dec-mentions {
+        display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem;
+    }
+    .dec-mention-badge {
+        font-size: 0.66rem; font-weight: 600; padding: 0.1rem 0.4rem;
+        border-radius: 10px; background: #ede9fe; color: #5b21b6;
+        text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem;
+    }
+    .dec-mention-badge:hover { background: #ddd6fe; }
 
     .dec-empty { text-align: center; padding: 3rem; color: #94a3b8; }
     .dec-empty i { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3; }
-    .dec-count { font-size: 0.78rem; color: #94a3b8; margin-bottom: 0.75rem; }
-
-    .dec-context { font-size: 0.75rem; color: #64748b; margin-top: 0.3rem; }
 
     /* Detail modes */
-    [data-detail-mode="0"] .dec-d1, [data-detail-mode="0"] .dec-d2 { display: none !important; }
+    [data-detail-mode="0"] .dec-d1,
+    [data-detail-mode="0"] .dec-d2 { display: none !important; }
     [data-detail-mode="1"] .dec-d2 { display: none !important; }
+
+    /* Level 0: allow what text to wrap since it's the only content */
+    [data-detail-mode="0"] .dec-what { white-space: normal; }
+    /* Level 0: hide search, make header compact */
+    [data-detail-mode="0"] .dec-search { display: none; }
+    [data-detail-mode="0"] .dec-card { padding: 0.6rem 1rem; }
+    /* Level 2: let what text wrap for full reading */
+    [data-detail-mode="2"] .dec-what { white-space: normal; }
+    [data-detail-mode="2"] .dec-card { padding: 1rem 1.25rem; }
 </style>
 {% endblock %}
 
@@ -83,8 +99,8 @@
                     <span id="decDetailIcon">🎄</span>
                 </button>
             </h1>
-            <p>{{ entries | length }} decision{{ 's' if entries | length != 1 else '' }} captured across all initiatives
-                {% if entity_filter %}<span style="background:rgba(255,255,255,0.2); padding:0.15rem 0.5rem; border-radius:10px; font-size:0.78rem; margin-left:0.5rem;">filtered: {{ entity_filter }} <a href="{{ url_for('workspace.decisions') }}" style="color:white; margin-left:0.3rem;">clear</a></span>{% endif %}
+            <p>{{ entries | length }} decision{{ 's' if entries | length != 1 else '' }} captured
+                {% if entity_filter %}<span style="background:rgba(255,255,255,0.2); padding:0.15rem 0.5rem; border-radius:10px; font-size:0.78rem; margin-left:0.5rem;">filtered: {{ entity_filter }} <a href="{{ url_for('workspace.decisions') }}" style="color:white; margin-left:0.3rem;"><i class="bi bi-x-circle"></i></a></span>{% endif %}
             </p>
         </div>
         <input type="text" class="dec-search" placeholder="Search decisions..." id="decSearch" oninput="filterDecisions()">
@@ -94,43 +110,50 @@
     <div id="decList">
         {% for e in entries %}
         <div class="dec-card" data-search="{{ e.what | lower }} {{ e.initiative_name | lower }} {{ (e.who or '') | lower }} {{ (e.tag or '') | lower }} {{ (e.challenge_name or '') | lower }} {{ e.mentions | map(attribute='name') | join(' ') | lower if e.mentions else '' }}">
-            <div class="dec-icon">
-                <i class="bi bi-journal-bookmark-fill"></i>
-            </div>
-            <div class="dec-body">
-                <div class="dec-what">{{ e.what }}</div>
-                <div class="dec-meta">
-                    <span class="dec-meta-item"><i class="bi bi-calendar3"></i> {{ e.date.strftime('%d %b %Y') }}</span>
-                    <span class="dec-rag {{ e.rag }} dec-d1"></span>
-                    <a class="dec-initiative" href="{{ url_for('organization_admin.initiative_form', initiative_id=e.initiative_id) }}">
-                        {{ entity_defaults.get('initiative', {}).get('icon', '') }} {{ e.initiative_name }}
-                    </a>
-                    {% if e.who %}
-                    <span class="dec-meta-item dec-d1"><i class="bi bi-people"></i> {{ e.who }}</span>
-                    {% endif %}
-                    {% if e.tag %}
-                    <span class="dec-tag" style="background:{{ tag_bg.get(e.tag, '#f1f5f9') }}; color:{{ tag_fg.get(e.tag, '#475569') }};">{{ e.tag }}</span>
-                    {% endif %}
-                    {% if e.author %}
-                    <span class="dec-meta-item dec-d2"><i class="bi bi-person"></i> {{ e.author }}</span>
-                    {% endif %}
-                </div>
-                {% if e.mentions %}
-                <div style="display:flex; flex-wrap:wrap; gap:0.25rem; margin-top:0.3rem;">
-                    {% for m in e.mentions %}
-                    <a href="/workspace/#{{ m.entity_type }}-{{ m.entity_id }}" style="font-size:0.68rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:#ede9fe; color:#5b21b6; text-decoration:none; display:inline-flex; align-items:center; gap:0.2rem;">
-                        <i class="bi bi-link-45deg" style="font-size:0.6rem;"></i> {{ m.name }}
-                    </a>
-                    {% endfor %}
-                </div>
+
+            {# Line 0: always visible — date + decision text #}
+            <div class="dec-line0">
+                <span class="dec-date">{{ e.date.strftime('%d %b') }}</span>
+                {% if e.tag %}
+                <span class="dec-tag" style="background:{{ tag_bg.get(e.tag, '#f1f5f9') }}; color:{{ tag_fg.get(e.tag, '#475569') }};">{{ e.tag }}</span>
                 {% endif %}
+                <span class="dec-what">{{ e.what }}</span>
+            </div>
+
+            {# Line 1: standard — initiative link, RAG, who #}
+            <div class="dec-line1 dec-d1">
+                <span class="dec-rag {{ e.rag }}"></span>
+                <a class="dec-initiative" href="{{ url_for('organization_admin.initiative_form', initiative_id=e.initiative_id) }}">
+                    {{ entity_defaults.get('initiative', {}).get('icon', '') }} {{ e.initiative_name }}
+                </a>
+                {% if e.who %}
+                <span class="dec-who"><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ e.who }}</span>
+                {% endif %}
+            </div>
+
+            {# Line 2: full — breadcrumb, author, entity mentions #}
+            <div class="dec-line2 dec-d2">
                 {% if e.space_name or e.challenge_name %}
-                <div class="dec-context dec-d2">
+                <span class="dec-breadcrumb">
                     {% if e.space_name %}{{ e.space_name }}{% endif %}
                     {% if e.challenge_name %} › {{ e.challenge_name }}{% endif %}
-                </div>
+                </span>
                 {% endif %}
+                {% if e.author %}
+                <span class="dec-author"><i class="bi bi-person"></i> {{ e.author }}</span>
+                {% endif %}
+                <span class="dec-date">{{ e.date.strftime('%d %b %Y %H:%M') }}</span>
             </div>
+            {% if e.mentions %}
+            <div class="dec-mentions dec-d2">
+                {% for m in e.mentions %}
+                <a href="/workspace/#{{ m.entity_type }}-{{ m.entity_id }}" class="dec-mention-badge">
+                    <i class="bi bi-link-45deg" style="font-size:0.55rem;"></i> {{ m.name }}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+
         </div>
         {% endfor %}
     </div>
@@ -138,7 +161,7 @@
     <div class="dec-empty">
         <i class="bi bi-journal-bookmark-fill"></i>
         <h5>No decisions captured yet</h5>
-        <p>Decisions are recorded during initiative progress updates.<br>Add a progress update with decisions to see them here.</p>
+        <p>Decisions are recorded during initiative progress updates.</p>
     </div>
     {% endif %}
 </div>
@@ -153,9 +176,9 @@ function filterDecisions() {
 
 var _decMode = parseInt(localStorage.getItem('dec_detail_mode') || '1');
 var _decIcons = [
-    { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>' },
-    { html: '<span style="font-size:1.05rem;">🎄</span>' },
-    { html: '<span style="font-size:1.25rem;">🎄</span>' },
+    { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>', title: 'Minimal: decision + date only' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + initiative, tag, who' },
+    { html: '<span style="font-size:1.25rem;">🎄</span>', title: 'Full: + breadcrumb, author, mentions, timestamps' },
 ];
 function applyDecDetailMode(m) {
     _decMode = m;
@@ -163,6 +186,8 @@ function applyDecDetailMode(m) {
     if (c) c.dataset.detailMode = String(m);
     var i = document.getElementById('decDetailIcon');
     if (i) i.innerHTML = _decIcons[m].html;
+    var b = document.getElementById('decDetailBtn');
+    if (b) b.title = _decIcons[m].title;
 }
 function cycleDecDetailMode() {
     var n = (_decMode + 1) % 3;
