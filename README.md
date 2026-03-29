@@ -1,8 +1,8 @@
-# 🧭 CISK Navigator v5.3.1
+# 🧭 CISK Navigator v5.5.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-5.3.1-blue)
+![Version](https://img.shields.io/badge/version-5.5.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)

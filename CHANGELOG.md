@@ -5,6 +5,25 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.5.0] - 2026-03-29
+
+### Added
+- **Missing impact indicator** — dashed (+) icon on entities without impact in Level 2, click to assign
+- **Bridge navigation** — skip-forward/backward buttons on Challenge, Initiative, System, KPI edit pages to jump across parent boundaries
+- **Initiative overview links** — name links to workspace tree, pencil icon opens edit with return-to
+- **Decision Register redesign** — L0 scan mode, L1 + search/stats, L2 + filter bar (date/tag/RAG/initiative) + CSV export
+- **Configurable decision tags** — dedicated admin page, tags in use cannot be removed
+- **Fresh load after onboarding** — clears cache + expands all nodes
+
+### Fixed
+- Tree state persistence using localStorage with flat keys
+- Impact popup title no longer cropped
+- Entity branding logos in parent impact context
+- Group label removed from initiative edit
+- Parent impact context on initiative edit page
+- Anonymous user crash in search_action_items
+- Edit mode button text visibility (text-dark)
+
 ## [5.4.0] - 2026-03-29
 
 ### Added
