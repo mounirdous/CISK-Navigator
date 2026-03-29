@@ -6,7 +6,7 @@
     .dec-page { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
     .dec-header {
         background: linear-gradient(135deg, #7c3aed, #4f46e5);
-        color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+        color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1rem;
         display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
     }
     .dec-header h1 { font-size: 1.5rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
@@ -18,67 +18,66 @@
     .dec-search::placeholder { color: rgba(255,255,255,0.6); }
     .dec-search:focus { outline: none; background: rgba(255,255,255,0.25); }
 
+    /* Stats bar */
+    .dec-stats {
+        display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;
+        font-size: 0.78rem; color: #64748b; align-items: center;
+    }
+    .dec-stat-num { font-weight: 800; font-size: 1.1rem; color: #1e293b; }
+    .dec-stat-box {
+        background: white; border: 1px solid #e2e8f0; border-radius: 8px;
+        padding: 0.4rem 0.75rem; display: flex; align-items: center; gap: 0.4rem;
+    }
+
+    /* Filter bar */
+    .dec-filters {
+        background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+        padding: 0.75rem 1rem; margin-bottom: 1rem;
+        display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;
+    }
+    .dec-filter-label { font-size: 0.68rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .dec-filter-pill {
+        padding: 0.2rem 0.5rem; border-radius: 15px; border: 1.5px solid #e2e8f0;
+        font-size: 0.75rem; font-weight: 600; cursor: pointer; background: white;
+        transition: all 0.12s; color: #475569;
+    }
+    .dec-filter-pill:hover { border-color: #7c3aed; color: #7c3aed; }
+    .dec-filter-pill.active { background: #7c3aed; color: white; border-color: #7c3aed; }
+    .dec-filter-select {
+        font-size: 0.78rem; border: 1.5px solid #e2e8f0; border-radius: 8px;
+        padding: 0.2rem 0.4rem; color: #475569; background: white;
+    }
+
     .dec-card {
         background: white; border-radius: 10px; border: 1px solid #e2e8f0;
         padding: 0.85rem 1.1rem; margin-bottom: 0.5rem;
         transition: all 0.15s; border-left: 4px solid #8b5cf6;
     }
     .dec-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-
-    /* Level 0: compact single-line */
-    .dec-line0 {
-        display: flex; align-items: center; gap: 0.6rem;
-    }
-    .dec-date { font-size: 0.7rem; color: #94a3b8; font-weight: 600; min-width: 70px; flex-shrink: 0; }
+    .dec-card.hidden { display: none !important; }
+    .dec-line0 { display: flex; align-items: center; gap: 0.6rem; }
+    .dec-date { font-size: 0.7rem; color: #94a3b8; font-weight: 600; min-width: 55px; flex-shrink: 0; }
     .dec-what { font-weight: 700; font-size: 0.9rem; color: #1e293b; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-    /* Level 1: adds context row */
-    .dec-line1 {
-        display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-        margin-top: 0.35rem; font-size: 0.75rem; color: #94a3b8;
-    }
+    .dec-line1 { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.35rem; font-size: 0.75rem; color: #94a3b8; }
     .dec-rag { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .dec-rag.green { background: #43a047; }
-    .dec-rag.amber { background: #fb8c00; }
-    .dec-rag.red { background: #e53935; }
-    .dec-initiative { text-decoration: none; color: #4f46e5; font-weight: 600; }
-    .dec-initiative:hover { text-decoration: underline; }
-    .dec-tag {
-        font-size: 0.63rem; font-weight: 700; padding: 0.1rem 0.4rem;
-        border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em;
-    }
-    .dec-who { display: flex; align-items: center; gap: 0.2rem; }
-
-    /* Level 2: adds full context */
-    .dec-line2 {
-        margin-top: 0.3rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
-    }
+    .dec-rag.green { background: #43a047; } .dec-rag.amber { background: #fb8c00; } .dec-rag.red { background: #e53935; }
+    .dec-initiative { text-decoration: none; color: #4f46e5; font-weight: 600; } .dec-initiative:hover { text-decoration: underline; }
+    .dec-tag { font-size: 0.63rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .dec-line2 { margin-top: 0.3rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
     .dec-breadcrumb { font-size: 0.72rem; color: #94a3b8; }
-    .dec-author { font-size: 0.7rem; color: #94a3b8; }
-    .dec-mentions {
-        display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem;
-    }
-    .dec-mention-badge {
-        font-size: 0.66rem; font-weight: 600; padding: 0.1rem 0.4rem;
-        border-radius: 10px; background: #ede9fe; color: #5b21b6;
-        text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem;
-    }
+    .dec-mentions { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem; }
+    .dec-mention-badge { font-size: 0.66rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 10px; background: #ede9fe; color: #5b21b6; text-decoration: none; display: inline-flex; align-items: center; gap: 0.2rem; }
     .dec-mention-badge:hover { background: #ddd6fe; }
-
     .dec-empty { text-align: center; padding: 3rem; color: #94a3b8; }
     .dec-empty i { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3; }
 
     /* Detail modes */
-    [data-detail-mode="0"] .dec-d1,
-    [data-detail-mode="0"] .dec-d2 { display: none !important; }
+    [data-detail-mode="0"] .dec-d1, [data-detail-mode="0"] .dec-d2 { display: none !important; }
     [data-detail-mode="1"] .dec-d2 { display: none !important; }
-
-    /* Level 0: allow what text to wrap since it's the only content */
     [data-detail-mode="0"] .dec-what { white-space: normal; }
-    /* Level 0: hide search, make header compact */
     [data-detail-mode="0"] .dec-search { display: none; }
     [data-detail-mode="0"] .dec-card { padding: 0.6rem 1rem; }
-    /* Level 2: let what text wrap for full reading */
+    [data-detail-mode="0"] .dec-stats { display: none !important; }
     [data-detail-mode="2"] .dec-what { white-space: normal; }
     [data-detail-mode="2"] .dec-card { padding: 1rem 1.25rem; }
 </style>
@@ -99,19 +98,85 @@
                     <span id="decDetailIcon">🎄</span>
                 </button>
             </h1>
-            <p>{{ entries | length }} decision{{ 's' if entries | length != 1 else '' }} captured
-                {% if entity_filter %}<span style="background:rgba(255,255,255,0.2); padding:0.15rem 0.5rem; border-radius:10px; font-size:0.78rem; margin-left:0.5rem;">filtered: {{ entity_filter }} <a href="{{ url_for('workspace.decisions') }}" style="color:white; margin-left:0.3rem;"><i class="bi bi-x-circle"></i></a></span>{% endif %}
+            <p>{{ stats.total }} decision{{ 's' if stats.total != 1 else '' }} captured
+                {% if entity_filter %}<span style="background:rgba(255,255,255,0.2); padding:0.15rem 0.5rem; border-radius:10px; font-size:0.78rem; margin-left:0.5rem;">filtered: {{ entity_filter }} <a href="{{ url_for('workspace.decisions') }}" style="color:white;"><i class="bi bi-x-circle"></i></a></span>{% endif %}
             </p>
         </div>
-        <input type="text" class="dec-search" placeholder="Search decisions..." id="decSearch" oninput="filterDecisions()">
+        <div class="d-flex gap-2 align-items-center">
+            <input type="text" class="dec-search dec-d1" placeholder="Search decisions..." id="decSearch" oninput="filterDecisions()">
+            <a href="{{ url_for('workspace.decisions_export') }}" class="btn btn-sm dec-d2" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); white-space:nowrap;" title="Export CSV">
+                <i class="bi bi-download"></i> CSV
+            </a>
+        </div>
+    </div>
+
+    {# Stats bar — L1+ #}
+    <div class="dec-stats dec-d1">
+        <div class="dec-stat-box">
+            <span class="dec-stat-num">{{ stats.total }}</span> total
+        </div>
+        {% for tag, count in stats.by_tag.items() %}
+        <div class="dec-stat-box">
+            <span class="dec-tag" style="background:{{ tag_bg.get(tag, '#f1f5f9') }}; color:{{ tag_fg.get(tag, '#475569') }};">{{ tag }}</span>
+            <span class="dec-stat-num" style="font-size:0.9rem;">{{ count }}</span>
+        </div>
+        {% endfor %}
+        <div class="dec-stat-box" style="gap:0.3rem;">
+            <span class="dec-rag green"></span><span>{{ stats.by_rag.green }}</span>
+            <span class="dec-rag amber"></span><span>{{ stats.by_rag.amber }}</span>
+            <span class="dec-rag red"></span><span>{{ stats.by_rag.red }}</span>
+        </div>
+    </div>
+
+    {# Filter bar — L2 only #}
+    <div class="dec-filters dec-d2">
+        <div>
+            <span class="dec-filter-label">Date</span>
+            <select class="dec-filter-select" id="filterDate" onchange="applyFilters()">
+                <option value="">All time</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">This quarter</option>
+            </select>
+        </div>
+        <div>
+            <span class="dec-filter-label">Tag</span>
+            {% for tag in all_tags %}
+            <button type="button" class="dec-filter-pill" data-filter="tag" data-value="{{ tag }}" onclick="toggleFilter(this)">{{ tag }}</button>
+            {% endfor %}
+        </div>
+        <div>
+            <span class="dec-filter-label">RAG</span>
+            <button type="button" class="dec-filter-pill" data-filter="rag" data-value="green" onclick="toggleFilter(this)" style="color:#43a047;">●</button>
+            <button type="button" class="dec-filter-pill" data-filter="rag" data-value="amber" onclick="toggleFilter(this)" style="color:#fb8c00;">●</button>
+            <button type="button" class="dec-filter-pill" data-filter="rag" data-value="red" onclick="toggleFilter(this)" style="color:#e53935;">●</button>
+        </div>
+        {% if all_initiatives | length > 1 %}
+        <div>
+            <span class="dec-filter-label">Initiative</span>
+            <select class="dec-filter-select" id="filterInitiative" onchange="applyFilters()">
+                <option value="">All</option>
+                {% for id, name in all_initiatives.items() %}
+                <option value="{{ id }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+        <button type="button" class="dec-filter-pill" onclick="clearFilters()" style="color:#dc2626; border-color:#fecaca;">
+            <i class="bi bi-x-circle"></i> Clear
+        </button>
     </div>
 
     {% if entries %}
     <div id="decList">
         {% for e in entries %}
-        <div class="dec-card" data-search="{{ e.what | lower }} {{ e.initiative_name | lower }} {{ (e.who or '') | lower }} {{ (e.tag or '') | lower }} {{ (e.challenge_name or '') | lower }} {{ e.mentions | map(attribute='name') | join(' ') | lower if e.mentions else '' }}">
+        <div class="dec-card"
+             data-search="{{ e.what | lower }} {{ e.initiative_name | lower }} {{ (e.who or '') | lower }} {{ (e.tag or '') | lower }} {{ (e.challenge_name or '') | lower }} {{ e.mentions | map(attribute='name') | join(' ') | lower if e.mentions else '' }}"
+             data-tag="{{ e.tag or '' }}"
+             data-rag="{{ e.rag or '' }}"
+             data-initiative="{{ e.initiative_id }}"
+             data-date="{{ e.date.strftime('%Y-%m-%d') }}">
 
-            {# Line 0: always visible — date + decision text #}
             <div class="dec-line0">
                 <span class="dec-date">{{ e.date.strftime('%d %b') }}</span>
                 {% if e.tag %}
@@ -120,27 +185,22 @@
                 <span class="dec-what">{{ e.what }}</span>
             </div>
 
-            {# Line 1: standard — initiative link, RAG, who #}
             <div class="dec-line1 dec-d1">
                 <span class="dec-rag {{ e.rag }}"></span>
                 <a class="dec-initiative" href="{{ url_for('organization_admin.initiative_form', initiative_id=e.initiative_id) }}">
                     {{ entity_defaults.get('initiative', {}).get('icon', '') }} {{ e.initiative_name }}
                 </a>
                 {% if e.who %}
-                <span class="dec-who"><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ e.who }}</span>
+                <span style="display:flex; align-items:center; gap:0.2rem;"><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ e.who }}</span>
                 {% endif %}
             </div>
 
-            {# Line 2: full — breadcrumb, author, entity mentions #}
             <div class="dec-line2 dec-d2">
                 {% if e.space_name or e.challenge_name %}
-                <span class="dec-breadcrumb">
-                    {% if e.space_name %}{{ e.space_name }}{% endif %}
-                    {% if e.challenge_name %} › {{ e.challenge_name }}{% endif %}
-                </span>
+                <span class="dec-breadcrumb">{% if e.space_name %}{{ e.space_name }}{% endif %}{% if e.challenge_name %} › {{ e.challenge_name }}{% endif %}</span>
                 {% endif %}
                 {% if e.author %}
-                <span class="dec-author"><i class="bi bi-person"></i> {{ e.author }}</span>
+                <span style="font-size:0.7rem; color:#94a3b8;"><i class="bi bi-person"></i> {{ e.author }}</span>
                 {% endif %}
                 <span class="dec-date">{{ e.date.strftime('%d %b %Y %H:%M') }}</span>
             </div>
@@ -153,7 +213,6 @@
                 {% endfor %}
             </div>
             {% endif %}
-
         </div>
         {% endfor %}
     </div>
@@ -167,18 +226,74 @@
 </div>
 
 <script>
+// ── Search ──
 function filterDecisions() {
     var q = document.getElementById('decSearch').value.toLowerCase();
     document.querySelectorAll('.dec-card').forEach(function(card) {
-        card.style.display = card.dataset.search.includes(q) ? '' : 'none';
+        var matchSearch = !q || card.dataset.search.includes(q);
+        card.classList.toggle('hidden', !matchSearch);
     });
 }
 
+// ── Filters (L2) ──
+var _activeFilters = { tags: new Set(), rags: new Set(), initiative: '', dateDays: 0 };
+
+function toggleFilter(btn) {
+    btn.classList.toggle('active');
+    var type = btn.dataset.filter;
+    var val = btn.dataset.value;
+    var set = type === 'tag' ? _activeFilters.tags : _activeFilters.rags;
+    if (set.has(val)) set.delete(val); else set.add(val);
+    applyFilters();
+}
+
+function applyFilters() {
+    _activeFilters.dateDays = parseInt(document.getElementById('filterDate')?.value || '0');
+    _activeFilters.initiative = document.getElementById('filterInitiative')?.value || '';
+    var q = (document.getElementById('decSearch')?.value || '').toLowerCase();
+    var now = new Date();
+
+    document.querySelectorAll('.dec-card').forEach(function(card) {
+        var show = true;
+
+        // Text search
+        if (q && !card.dataset.search.includes(q)) show = false;
+
+        // Tag filter
+        if (show && _activeFilters.tags.size > 0 && !_activeFilters.tags.has(card.dataset.tag)) show = false;
+
+        // RAG filter
+        if (show && _activeFilters.rags.size > 0 && !_activeFilters.rags.has(card.dataset.rag)) show = false;
+
+        // Initiative filter
+        if (show && _activeFilters.initiative && card.dataset.initiative !== _activeFilters.initiative) show = false;
+
+        // Date filter
+        if (show && _activeFilters.dateDays > 0) {
+            var cardDate = new Date(card.dataset.date);
+            var diffDays = (now - cardDate) / (1000 * 60 * 60 * 24);
+            if (diffDays > _activeFilters.dateDays) show = false;
+        }
+
+        card.classList.toggle('hidden', !show);
+    });
+}
+
+function clearFilters() {
+    _activeFilters = { tags: new Set(), rags: new Set(), initiative: '', dateDays: 0 };
+    document.querySelectorAll('.dec-filter-pill.active').forEach(function(p) { p.classList.remove('active'); });
+    var dateEl = document.getElementById('filterDate'); if (dateEl) dateEl.value = '';
+    var initEl = document.getElementById('filterInitiative'); if (initEl) initEl.value = '';
+    var searchEl = document.getElementById('decSearch'); if (searchEl) searchEl.value = '';
+    document.querySelectorAll('.dec-card').forEach(function(c) { c.classList.remove('hidden'); });
+}
+
+// ── Xmas Tree ──
 var _decMode = parseInt(localStorage.getItem('dec_detail_mode') || '1');
 var _decIcons = [
     { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>', title: 'Minimal: decision + date only' },
-    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + initiative, tag, who' },
-    { html: '<span style="font-size:1.25rem;">🎄</span>', title: 'Full: + breadcrumb, author, mentions, timestamps' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + initiative, search, stats' },
+    { html: '<span style="font-size:1.25rem;">🎄</span>', title: 'Full: + filters, export, breadcrumb, mentions' },
 ];
 function applyDecDetailMode(m) {
     _decMode = m;

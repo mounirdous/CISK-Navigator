@@ -193,7 +193,93 @@ def decisions():
         )]
         entity_filter_name = f"{ef_type} #{ef_id}"
 
-    return render_template("workspace/decisions.html", entries=decision_entries, entity_filter=entity_filter_name)
+    # Build stats + unique values for filters
+    all_tags = set()
+    all_initiatives = {}
+    all_who = set()
+    for e in decision_entries:
+        if e.get("tag"):
+            all_tags.add(e["tag"])
+        all_initiatives[e["initiative_id"]] = e["initiative_name"]
+        if e.get("who"):
+            all_who.add(e["who"])
+
+    stats = {
+        "total": len(decision_entries),
+        "by_tag": {},
+        "by_rag": {"green": 0, "amber": 0, "red": 0},
+    }
+    for e in decision_entries:
+        if e.get("tag"):
+            stats["by_tag"][e["tag"]] = stats["by_tag"].get(e["tag"], 0) + 1
+        if e.get("rag") in stats["by_rag"]:
+            stats["by_rag"][e["rag"]] += 1
+
+    return render_template(
+        "workspace/decisions.html",
+        entries=decision_entries,
+        entity_filter=entity_filter_name,
+        stats=stats,
+        all_tags=sorted(all_tags),
+        all_initiatives=all_initiatives,
+        all_who=sorted(all_who),
+    )
+
+
+@bp.route("/decisions/export")
+@login_required
+@organization_required
+def decisions_export():
+    """Export decisions as CSV"""
+    import csv
+    from io import StringIO
+
+    org_id = session.get("organization_id")
+    from app.models import ChallengeInitiativeLink, InitiativeProgressUpdate
+
+    updates = (
+        db.session.query(InitiativeProgressUpdate)
+        .join(Initiative, InitiativeProgressUpdate.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None))
+        .order_by(InitiativeProgressUpdate.created_at.desc())
+        .all()
+    )
+
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Date", "Initiative", "Challenge", "Space", "Decision", "Who", "Tag", "RAG", "Author", "Entities"])
+
+    for upd in updates:
+        ini = upd.initiative
+        ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
+        challenge = ci.challenge.name if ci and ci.challenge else ""
+        space = ci.challenge.space.name if ci and ci.challenge and ci.challenge.space else ""
+        author = upd.author.display_name or upd.author.login if upd.author else ""
+
+        decs = upd.decisions
+        if isinstance(decs, str):
+            try:
+                import json as _dj
+                decs = _dj.loads(decs)
+            except (ValueError, TypeError):
+                decs = []
+        if isinstance(decs, list):
+            for dec in decs:
+                entities = ", ".join(m.get("name", "") for m in (dec.get("mentions") or []))
+                writer.writerow([
+                    upd.created_at.strftime("%Y-%m-%d"),
+                    ini.name, challenge, space,
+                    dec.get("what", ""), dec.get("who", ""), dec.get("tag", ""),
+                    upd.rag_status, author, entities,
+                ])
+
+    output.seek(0)
+    return send_file(
+        __import__("io").BytesIO(output.getvalue().encode("utf-8-sig")),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name=f"decisions_{session.get('organization_name', 'org')}_{__import__('datetime').date.today()}.csv",
+    )
 
 
 @bp.route("/impact-docs")
