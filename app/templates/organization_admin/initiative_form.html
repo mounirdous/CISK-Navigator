@@ -888,6 +888,11 @@
                 </h1>
                 <div class="initiative-name">
                     <a href="/workspace/#initiative-{{ initiative.id }}" style="color:inherit; text-decoration:none;" title="Open in workspace tree">{{ initiative.name }}</a>
+                    {% if not edit_mode and can_edit %}
+                    <a href="{{ url_for('organization_admin.edit_initiative', initiative_id=initiative.id, return_to=request.url) }}" style="color:rgba(255,255,255,0.6); font-size:0.8rem; margin-left:0.3rem;" title="Edit initiative">
+                        <i class="bi bi-pencil-square"></i>
+                    </a>
+                    {% endif %}
                     {% if impact_levels_config %}
                     <span class="init-impact-badges">
                         {% if initiative.impact_level and initiative.impact_level in impact_levels_config %}

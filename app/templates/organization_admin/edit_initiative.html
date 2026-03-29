@@ -58,6 +58,7 @@
                 <form method="POST" novalidate>
                     {{ form.hidden_tag() }}
                     <input type="hidden" name="nav_action" id="navAction" value="">
+                    <input type="hidden" name="return_to" value="{{ request.args.get('return_to', '') }}">
 
                     <div class="mb-3">
                         {{ form.name.label(class="form-label fw-semibold") }}

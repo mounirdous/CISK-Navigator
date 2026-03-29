@@ -1931,6 +1931,9 @@ def edit_initiative(initiative_id):
         if nav_redir:
             return nav_redir
         flash(f"Initiative {initiative.name} updated successfully", "success")
+        return_to = request.args.get("return_to") or request.form.get("return_to")
+        if return_to:
+            return redirect(return_to)
         return redirect(url_for("workspace.index", auto_edit=1))
 
     # Get value types for rollup configuration tab
