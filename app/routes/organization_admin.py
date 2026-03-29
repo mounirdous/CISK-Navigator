@@ -4444,10 +4444,45 @@ def initiative_form(initiative_id):
         if all(chain):
             true_importance_level = compute_true_importance(chain, _method, _weights, _custom_matrix)
 
+    # GB-scoped KPI split (when ?gb= param is present from filtered review)
+    gb_filter_param = request.args.get("gb", "")
+    gb_filter_ids = set()
+    if gb_filter_param:
+        try:
+            gb_filter_ids = {int(x) for x in gb_filter_param.split(",") if x.strip().isdigit()}
+        except (ValueError, TypeError):
+            pass
+
+    kpi_data_scoped = []
+    kpi_data_other = []
+    if gb_filter_ids:
+        for group in kpi_data:
+            scoped_kpis = []
+            other_kpis = []
+            for kpi_info in group["kpis"]:
+                kpi_gb_ids = {gb["id"] for gb in kpi_info.get("governance_bodies", [])}
+                if kpi_gb_ids & gb_filter_ids:
+                    scoped_kpis.append(kpi_info)
+                else:
+                    other_kpis.append(kpi_info)
+            if scoped_kpis:
+                kpi_data_scoped.append({"system_name": group["system_name"], "kpis": scoped_kpis})
+            if other_kpis:
+                kpi_data_other.append({"system_name": group["system_name"], "kpis": other_kpis})
+    else:
+        kpi_data_scoped = kpi_data
+
+    # Get GB names for display
+    gb_filter_names = []
+    if gb_filter_ids:
+        gb_filter_names = [gb.abbreviation or gb.name for gb in GovernanceBody.query.filter(GovernanceBody.id.in_(gb_filter_ids)).all()]
+
     return render_template(
         "organization_admin/initiative_form.html",
         initiative=initiative,
-        kpi_data=kpi_data,
+        kpi_data=kpi_data_scoped,
+        kpi_data_other=kpi_data_other,
+        gb_filter_names=gb_filter_names,
         csrf_token=generate_csrf,
         can_edit=can_edit,
         edit_mode=edit_mode,

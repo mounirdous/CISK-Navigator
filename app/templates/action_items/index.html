@@ -2034,7 +2034,13 @@ function startInitiativesReview() {
     const firstId = ids[0];
     const navParam = ids.join(',');
     const back = encodeURIComponent(window.location.href);
-    window.location.href = `/org-admin/initiatives/${firstId}/form?tab=execution&nav=${navParam}&nav_pos=0&nav_back=${back}`;
+    // Pass active GB filters to scope KPIs in the review
+    var gbParam = '';
+    var gbChecked = document.querySelectorAll('input[name="gb_filter"]:checked');
+    if (gbChecked.length > 0) {
+        gbParam = '&gb=' + Array.from(gbChecked).map(function(el) { return el.value; }).join(',');
+    }
+    window.location.href = `/org-admin/initiatives/${firstId}/form?tab=execution&nav=${navParam}&nav_pos=0&nav_back=${back}${gbParam}`;
 }
 
 // ── Action Register Detail Mode (xmas tree) ──

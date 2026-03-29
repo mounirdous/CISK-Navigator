@@ -5219,7 +5219,8 @@ function workspaceV2(orgId, filterPresets) {
             if (!ids.length) return;
             const base = `{{ url_for('organization_admin.initiative_form', initiative_id=0) }}`.replace('0', ids[0]);
             const back = encodeURIComponent(window.location.href);
-            window.location.href = `${base}?tab=execution&nav=${ids.join(',')}&nav_pos=0&nav_back=${back}`;
+            var gbParam = this.selectedGovernanceBodies.length > 0 ? '&gb=' + this.selectedGovernanceBodies.join(',') : '';
+            window.location.href = `${base}?tab=execution&nav=${ids.join(',')}&nav_pos=0&nav_back=${back}${gbParam}`;
         },
 
         async deleteKPI(kpi) {

@@ -943,7 +943,7 @@
             </button>
 
             <a class="review-nav-prev {% if not nav_context.prev_id %}disabled{% endif %}" id="navPrevLink"
-               href="{% if nav_context.prev_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
+               href="{% if nav_context.prev_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.prev_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos - 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('gb') %}&gb={{ request.args.get('gb') }}{% endif %}{% else %}#{% endif %}"
                title="{{ nav_context.prev_name or 'Start' }}">
                 <i class="bi bi-skip-backward-fill"></i>
             </a>
@@ -955,7 +955,7 @@
                 <div class="review-nav-dots">
                     {% for dot in nav_context.dots %}
                     <a class="review-nav-dot rag-{{ dot.rag }} {% if loop.index0 == nav_context.pos %}current{% endif %}"
-                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}"
+                       href="{{ url_for('organization_admin.initiative_form', initiative_id=dot.id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ loop.index0 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('gb') %}&gb={{ request.args.get('gb') }}{% endif %}"
                        title="{{ dot.name }}{% if dot.rag %} — {{ dot.rag | capitalize }}{% endif %}"></a>
                     {% endfor %}
                 </div>
@@ -963,7 +963,7 @@
             </div>
 
             <a class="review-nav-next {% if not nav_context.next_id %}disabled{% endif %}" id="navNextLink"
-               href="{% if nav_context.next_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% else %}#{% endif %}"
+               href="{% if nav_context.next_id %}{{ url_for('organization_admin.initiative_form', initiative_id=nav_context.next_id) }}?tab={{ nav_context.nav_tab }}&nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos + 1 }}&nav_tab={{ nav_context.nav_tab }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('gb') %}&gb={{ request.args.get('gb') }}{% endif %}{% else %}#{% endif %}"
                title="{{ nav_context.next_name or 'End' }}">
                 <i class="bi bi-skip-forward-fill"></i>
             </a>
@@ -990,7 +990,7 @@
         const NAV_DOTS = {{ nav_context.dots | tojson }};
         const NAV_TEMPLATE = "{{ url_for('organization_admin.initiative_form', initiative_id=0) }}";
         const NAV_PARAM = "{{ nav_context.nav_param }}";
-        const NAV_BACK_QS = {{ (('&nav_back=' ~ nav_context.nav_back_enc) if nav_context.nav_back_enc else '') | tojson }};
+        const NAV_BACK_QS = {{ (('&nav_back=' ~ nav_context.nav_back_enc) if nav_context.nav_back_enc else '') | tojson }} + {{ ('&gb=' ~ request.args.get('gb', '')) if request.args.get('gb') else '' | tojson }};
         const CUR_POS = {{ nav_context.pos }};
 
         function navToPos(pos) {
@@ -1537,7 +1537,7 @@
             <div class="kpi-overview detail-2">
                 <div class="kpi-overview-title">
                     <i class="bi bi-graph-up-arrow"></i>
-                    Connected KPIs
+                    {% if gb_filter_names %}{{ gb_filter_names | join(', ') }} KPIs{% else %}Connected KPIs{% endif %}
                 </div>
 
                 {% for system_group in kpi_data %}
@@ -1592,6 +1592,29 @@
                                     <span style="font-size: 0.85rem; color: #6c757d; font-style: italic;">No values</span>
                                 {% endif %}
                             </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if kpi_data_other %}
+            <div class="kpi-overview detail-2" style="opacity:0.6; margin-top:1rem;">
+                <div class="kpi-overview-title" style="font-size:0.85rem; color:#94a3b8;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Other KPIs (outside {{ gb_filter_names | join(', ') }} scope)
+                </div>
+                {% for system_group in kpi_data_other %}
+                <div class="system-group">
+                    <div class="system-header">
+                        <span style="font-weight: 700;">{{ system_group.system_name }}</span>
+                    </div>
+                    <table class="kpi-table" style="table-layout: fixed;">
+                        {% for kpi in system_group.kpis %}
+                        <tr>
+                            <td style="padding: 0.35rem 0.5rem; font-size: 0.82rem; color: #94a3b8;">{{ kpi.name }}</td>
                         </tr>
                         {% endfor %}
                     </table>
@@ -1711,7 +1734,7 @@
                 <!-- KPI Snapshot -->
                 <div class="col-md-7">
                     <div class="exec-card">
-                        <div class="exec-card-title"><i class="bi bi-graph-up-arrow"></i> KPI Snapshot</div>
+                        <div class="exec-card-title"><i class="bi bi-graph-up-arrow"></i> {% if gb_filter_names %}{{ gb_filter_names | join(', ') }} KPIs{% else %}KPI Snapshot{% endif %}</div>
                         {% if kpi_data %}
                         {% for system_group in kpi_data %}
                         <div class="kpi-exec-group">
@@ -1765,6 +1788,22 @@
                         {% endfor %}
                         {% else %}
                         <div class="text-center text-muted py-3" style="font-size:0.85rem;">No connected KPIs</div>
+                        {% endif %}
+
+                        {% if kpi_data_other %}
+                        <div class="detail-2" style="margin-top:0.75rem; padding-top:0.75rem; border-top:1px dashed #e2e8f0;">
+                            <div style="font-size:0.72rem; font-weight:600; color:#94a3b8; margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.05em;">
+                                Other KPIs (outside {{ gb_filter_names | join(', ') }})
+                            </div>
+                            {% for system_group in kpi_data_other %}
+                            <div style="margin-bottom:0.3rem;">
+                                <span style="font-size:0.75rem; font-weight:600; color:#94a3b8;">{{ system_group.system_name }}</span>
+                                {% for kpi in system_group.kpis %}
+                                <div style="font-size:0.75rem; color:#b0bec5; padding-left:0.75rem;">{{ kpi.name }}</div>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
                         {% endif %}
                     </div>
                 </div>

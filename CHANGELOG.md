@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.6.0] - 2026-03-29
+
+### Added
+- **GB-scoped KPI display in initiative review** — when review is started from workspace or action register with governance body filters active, KPIs are split into "GB-name KPIs" (prominent) and "Other KPIs" (muted, Level 2 only)
+- GB filter propagated through all nav links (prev/next, dots, focus mode)
+- Both workspace and action register pass `&gb=` param when starting review
+
 ## [5.5.0] - 2026-03-29
 
 ### Added
