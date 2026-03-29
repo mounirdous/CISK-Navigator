@@ -828,12 +828,17 @@ class SearchService:
         exact = parsed.get("exact_mode", False)
 
         # Base query - only shared items or items created by current user
-        base_query = db.session.query(ActionItem).filter(
-            ActionItem.organization_id == organization_id,
-            db.or_(
+        from flask_login import current_user
+
+        user_filter = ActionItem.visibility == "shared"
+        if current_user and hasattr(current_user, "id") and not current_user.is_anonymous:
+            user_filter = db.or_(
                 ActionItem.visibility == "shared",
                 ActionItem.created_by_user_id == current_user.id,
-            ),
+            )
+        base_query = db.session.query(ActionItem).filter(
+            ActionItem.organization_id == organization_id,
+            user_filter,
         )
 
         all_items = base_query.all()
