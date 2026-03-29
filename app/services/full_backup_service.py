@@ -149,6 +149,7 @@ class FullBackupService:
             "porters_rivalry": org.porters_rivalry,
             "impact_calc_method": org.impact_calc_method,
             "impact_qfd_matrix": org.impact_qfd_matrix,
+            "decision_tags": org.decision_tags,
         }
 
         # Export logo if present

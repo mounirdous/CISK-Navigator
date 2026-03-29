@@ -2118,7 +2118,7 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
 
 // ── Structured Decisions ──
 var _decisionRows = [];
-var _decTags = ['scope', 'budget', 'timeline', 'resource', 'technical', 'governance', 'other'];
+var _decTags = {{ decision_tags | tojson }};
 var _decTagColors = { scope:'#3b82f6', budget:'#10b981', timeline:'#f59e0b', resource:'#ec4899', technical:'#6366f1', governance:'#8b5cf6', other:'#94a3b8' };
 
 function addDecisionRow(what, who, tag, mentions) {

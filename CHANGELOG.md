@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.4.0] - 2026-03-29
+
+### Added
+- **Configurable decision tags** — org admins can add/remove tag categories in Impact Scale page; default tags (scope, budget, timeline, resource, technical, governance, other) created automatically; tags in use show lock icon and cannot be removed
+- Tags available globally via context processor (`decision_tags`)
+- Backup/restore includes `decision_tags`
+- Migration: `9a119f8ee479`
+
 ## [5.3.1] - 2026-03-28
 
 ### Fixed

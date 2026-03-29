@@ -44,6 +44,11 @@ class Organization(db.Model):
         db.JSON, nullable=True,
         comment="Custom QFD lookup: {'3_3': 3, '3_2': 3, '3_1': 2, ...}"
     )
+    # Decision tags (JSON array of strings) — configurable per org
+    decision_tags = db.Column(
+        db.JSON, nullable=True,
+        comment="Decision tag categories: ['scope', 'budget', ...]"
+    )
 
     # Soft delete fields
     is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)

@@ -278,7 +278,7 @@ class FullRestoreService:
 
             # Restore Porter's Five Forces
             for field in ("porters_new_entrants", "porters_suppliers", "porters_buyers", "porters_substitutes", "porters_rivalry",
-                         "impact_calc_method", "impact_qfd_matrix"):
+                         "impact_calc_method", "impact_qfd_matrix", "decision_tags"):
                 if field in org_data:
                     setattr(org, field, org_data[field])
             db.session.flush()
