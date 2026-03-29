@@ -990,7 +990,7 @@
         const NAV_DOTS = {{ nav_context.dots | tojson }};
         const NAV_TEMPLATE = "{{ url_for('organization_admin.initiative_form', initiative_id=0) }}";
         const NAV_PARAM = "{{ nav_context.nav_param }}";
-        const NAV_BACK_QS = {{ (('&nav_back=' ~ nav_context.nav_back_enc) if nav_context.nav_back_enc else '') | tojson }} + {{ ('&gb=' ~ request.args.get('gb', '')) if request.args.get('gb') else '' | tojson }};
+        const NAV_BACK_QS = {{ (('&nav_back=' ~ nav_context.nav_back_enc) if nav_context.nav_back_enc else '') | tojson }} + "{% if request.args.get('gb') %}&gb={{ request.args.get('gb') }}{% endif %}";
         const CUR_POS = {{ nav_context.pos }};
 
         function navToPos(pos) {
