@@ -1,17 +1,42 @@
 {# Reusable sequential nav arrows for entity edit pages #}
 {# Requires: nav_total, nav_pos, prev_id, next_id #}
-{% if nav_total is defined and nav_total > 1 %}
-<div style="margin-top:0.75rem; display:flex; align-items:center; justify-content:center; gap:0.75rem;">
+{# Optional: bridge_prev, bridge_next (dict with url + label) #}
+{% if nav_total is defined and nav_total > 0 %}
+<div style="margin-top:0.75rem; display:flex; align-items:center; justify-content:center; gap:0.5rem;">
+
+    {# Bridge to previous parent's last entity #}
+    {% if bridge_prev is defined and bridge_prev %}
+    <a href="{{ bridge_prev.url }}"
+       class="btn btn-sm btn-outline-warning" style="font-size:0.7rem; padding:0.15rem 0.4rem; border-radius:10px;"
+       title="Jump to {{ bridge_prev.label }}">
+        <i class="bi bi-skip-backward"></i>
+    </a>
+    {% endif %}
+
+    {# Previous sibling #}
     <button type="button" class="btn btn-sm btn-outline-light" {% if not prev_id %}disabled{% endif %}
             onclick="document.getElementById('navAction').value='prev'; HTMLFormElement.prototype.submit.call(this.closest('.card').querySelector('form'));"
             title="Save &amp; Previous">
         <i class="bi bi-chevron-left"></i>
     </button>
+
     <span style="font-size:0.82rem; opacity:0.8; font-weight:600;">{{ nav_pos + 1 }} / {{ nav_total }}</span>
+
+    {# Next sibling #}
     <button type="button" class="btn btn-sm btn-outline-light" {% if not next_id %}disabled{% endif %}
             onclick="document.getElementById('navAction').value='next'; HTMLFormElement.prototype.submit.call(this.closest('.card').querySelector('form'));"
             title="Save &amp; Next">
         <i class="bi bi-chevron-right"></i>
     </button>
+
+    {# Bridge to next parent's first entity #}
+    {% if bridge_next is defined and bridge_next %}
+    <a href="{{ bridge_next.url }}"
+       class="btn btn-sm btn-outline-warning" style="font-size:0.7rem; padding:0.15rem 0.4rem; border-radius:10px;"
+       title="Jump to {{ bridge_next.label }}">
+        <i class="bi bi-skip-forward"></i>
+    </a>
+    {% endif %}
+
 </div>
 {% endif %}

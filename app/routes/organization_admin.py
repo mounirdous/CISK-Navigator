@@ -1623,9 +1623,24 @@ def edit_challenge(challenge_id):
     org_id = session.get("organization_id")
     challenge = Challenge.query.filter_by(id=challenge_id, organization_id=org_id).first_or_404()
 
-    # Nav within siblings under the same space
+    # Nav within siblings under the same space + bridge between spaces
     all_ids = [c.id for c in Challenge.query.filter_by(space_id=challenge.space_id).order_by(Challenge.display_order, Challenge.name).all()]
     nav = _build_entity_nav(all_ids, challenge_id)
+    nav["bridge_prev"] = None
+    nav["bridge_next"] = None
+    all_spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
+    sp_ids = [s.id for s in all_spaces]
+    sp_pos = sp_ids.index(challenge.space_id) if challenge.space_id in sp_ids else -1
+    if nav["nav_pos"] == 0 and sp_pos > 0:
+        prev_sp = all_spaces[sp_pos - 1]
+        prev_chs = [c.id for c in Challenge.query.filter_by(space_id=prev_sp.id).order_by(Challenge.display_order, Challenge.name).all()]
+        if prev_chs:
+            nav["bridge_prev"] = {"url": url_for("organization_admin.edit_challenge", challenge_id=prev_chs[-1]), "label": f"{prev_sp.name} (previous space)"}
+    if nav["nav_pos"] == nav["nav_total"] - 1 and sp_pos < len(sp_ids) - 1:
+        next_sp = all_spaces[sp_pos + 1]
+        next_chs = [c.id for c in Challenge.query.filter_by(space_id=next_sp.id).order_by(Challenge.display_order, Challenge.name).all()]
+        if next_chs:
+            nav["bridge_next"] = {"url": url_for("organization_admin.edit_challenge", challenge_id=next_chs[0]), "label": f"{next_sp.name} (next space)"}
 
     form = ChallengeEditForm(obj=challenge)
 
@@ -1814,7 +1829,7 @@ def edit_initiative(initiative_id):
     org_id = session.get("organization_id")
     initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
 
-    # Nav within siblings under the same challenge
+    # Nav within siblings under the same challenge + bridge to prev/next challenge
     from app.models import ChallengeInitiativeLink
     _ci_link = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).first()
     if _ci_link:
@@ -1823,6 +1838,38 @@ def edit_initiative(initiative_id):
     else:
         sibling_ids = [initiative_id]
     nav = _build_entity_nav(sibling_ids, initiative_id)
+
+    # Bridge navigation: when at first/last initiative, find prev/next challenge
+    nav["bridge_prev"] = None
+    nav["bridge_next"] = None
+    if _ci_link:
+        _ch = _ci_link.challenge
+        if _ch and _ch.space:
+            all_challenges = Challenge.query.filter_by(space_id=_ch.space_id).order_by(Challenge.display_order, Challenge.name).all()
+            ch_ids = [c.id for c in all_challenges]
+            ch_pos = ch_ids.index(_ch.id) if _ch.id in ch_ids else -1
+
+            # At first initiative → bridge to last initiative of previous challenge
+            if nav["nav_pos"] == 0 and ch_pos > 0:
+                prev_ch = all_challenges[ch_pos - 1]
+                prev_inits = [cl.initiative_id for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=prev_ch.id)
+                              .join(Initiative).order_by(Initiative.name).all()]
+                if prev_inits:
+                    nav["bridge_prev"] = {
+                        "url": url_for("organization_admin.edit_initiative", initiative_id=prev_inits[-1]),
+                        "label": f"{prev_ch.name} (previous challenge)",
+                    }
+
+            # At last initiative → bridge to first initiative of next challenge
+            if nav["nav_pos"] == nav["nav_total"] - 1 and ch_pos < len(ch_ids) - 1:
+                next_ch = all_challenges[ch_pos + 1]
+                next_inits = [cl.initiative_id for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=next_ch.id)
+                              .join(Initiative).order_by(Initiative.name).all()]
+                if next_inits:
+                    nav["bridge_next"] = {
+                        "url": url_for("organization_admin.edit_initiative", initiative_id=next_inits[0]),
+                        "label": f"{next_ch.name} (next challenge)",
+                    }
 
     form = InitiativeEditForm(obj=initiative)
 
@@ -2041,8 +2088,8 @@ def edit_system(system_id):
     org_id = session.get("organization_id")
     system = System.query.filter_by(id=system_id, organization_id=org_id).first_or_404()
 
-    # Nav within siblings under the same initiative
-    from app.models import InitiativeSystemLink
+    # Nav within siblings under the same initiative + bridge between initiatives
+    from app.models import InitiativeSystemLink, ChallengeInitiativeLink as _CILs
     _is_links = InitiativeSystemLink.query.filter_by(system_id=system_id).first()
     if _is_links:
         sibling_ids = [sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=_is_links.initiative_id)
@@ -2050,6 +2097,26 @@ def edit_system(system_id):
     else:
         sibling_ids = [system_id]
     nav = _build_entity_nav(sibling_ids, system_id)
+    nav["bridge_prev"] = None
+    nav["bridge_next"] = None
+    if _is_links:
+        _ci_s = _CILs.query.filter_by(initiative_id=_is_links.initiative_id).first()
+        if _ci_s and _ci_s.challenge:
+            _sibling_inits = [cl.initiative_id for cl in _CILs.query.filter_by(challenge_id=_ci_s.challenge_id)
+                              .join(Initiative).order_by(Initiative.name).all()]
+            _ini_pos = _sibling_inits.index(_is_links.initiative_id) if _is_links.initiative_id in _sibling_inits else -1
+            if nav["nav_pos"] == 0 and _ini_pos > 0:
+                prev_ini_id = _sibling_inits[_ini_pos - 1]
+                prev_sys = [sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=prev_ini_id).join(System).order_by(System.name).all()]
+                if prev_sys:
+                    prev_ini = Initiative.query.get(prev_ini_id)
+                    nav["bridge_prev"] = {"url": url_for("organization_admin.edit_system", system_id=prev_sys[-1]), "label": f"{prev_ini.name} (previous initiative)"}
+            if nav["nav_pos"] == nav["nav_total"] - 1 and _ini_pos < len(_sibling_inits) - 1:
+                next_ini_id = _sibling_inits[_ini_pos + 1]
+                next_sys = [sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=next_ini_id).join(System).order_by(System.name).all()]
+                if next_sys:
+                    next_ini = Initiative.query.get(next_ini_id)
+                    nav["bridge_next"] = {"url": url_for("organization_admin.edit_system", system_id=next_sys[0]), "label": f"{next_ini.name} (next initiative)"}
 
     form = SystemEditForm(obj=system)
 
@@ -2519,10 +2586,28 @@ def edit_kpi(kpi_id):
         flash("Access denied", "danger")
         return redirect(url_for("workspace.index"))
 
-    # Nav within siblings under the same system (same initiative_system_link)
+    # Nav within siblings under the same system + bridge between systems
     sibling_ids = [k.id for k in KPI.query.filter_by(initiative_system_link_id=kpi.initiative_system_link_id)
                    .order_by(KPI.display_order, KPI.name).all()]
     nav = _build_entity_nav(sibling_ids, kpi_id)
+    nav["bridge_prev"] = None
+    nav["bridge_next"] = None
+    _kpi_isl = kpi.initiative_system_link
+    if _kpi_isl:
+        _sys_siblings = [sl for sl in InitiativeSystemLink.query.filter_by(initiative_id=_kpi_isl.initiative_id)
+                         .join(System).order_by(System.name).all()]
+        _sys_link_ids = [sl.id for sl in _sys_siblings]
+        _sl_pos = _sys_link_ids.index(_kpi_isl.id) if _kpi_isl.id in _sys_link_ids else -1
+        if nav["nav_pos"] == 0 and _sl_pos > 0:
+            prev_sl = _sys_siblings[_sl_pos - 1]
+            prev_kpis = [k.id for k in KPI.query.filter_by(initiative_system_link_id=prev_sl.id).order_by(KPI.display_order, KPI.name).all()]
+            if prev_kpis:
+                nav["bridge_prev"] = {"url": url_for("organization_admin.edit_kpi", kpi_id=prev_kpis[-1]), "label": f"{prev_sl.system.name} (previous system)"}
+        if nav["nav_pos"] == nav["nav_total"] - 1 and _sl_pos < len(_sys_link_ids) - 1:
+            next_sl = _sys_siblings[_sl_pos + 1]
+            next_kpis = [k.id for k in KPI.query.filter_by(initiative_system_link_id=next_sl.id).order_by(KPI.display_order, KPI.name).all()]
+            if next_kpis:
+                nav["bridge_next"] = {"url": url_for("organization_admin.edit_kpi", kpi_id=next_kpis[0]), "label": f"{next_sl.system.name} (next system)"}
 
     # Get active governance bodies for selection
     governance_bodies = (
