@@ -3704,6 +3704,12 @@ function workspaceV2(orgId, filterPresets) {
                 await new Promise(function(r) { setTimeout(r, 150); });
                 this.loadingPct = 100;
                 this.loading = false;
+                // Expand all after onboarding fresh load
+                if (this._expandAllAfterLoad) {
+                    this._expandAllAfterLoad = false;
+                    var _s = this;
+                    setTimeout(function() { _s.expandAllRows(); _s._saveTreeState(); }, 200);
+                }
                 // Trend indicators disabled — API route not yet implemented
                 // setTimeout(() => this.loadTrendIndicators(), 100);
 
@@ -4131,6 +4137,17 @@ function workspaceV2(orgId, filterPresets) {
             const focusLevelModeParam = urlParams.get('focusLevelMode');
             if (focusLevelModeParam !== null) {
                 this.focusLevelMode = focusLevelModeParam === 'true';
+            }
+
+            // Fresh mode: clear cache + expand all (after onboarding)
+            if (urlParams.get('fresh') === '1') {
+                try {
+                    localStorage.removeItem('ws_data_' + {{ org_id }});
+                    localStorage.removeItem('ws_data_meta_' + {{ org_id }});
+                    localStorage.removeItem('ws_dirty');
+                    localStorage.removeItem('ws_tree_' + {{ org_id }});
+                } catch(e) {}
+                this._expandAllAfterLoad = true;
             }
 
             // Auto-enable edit mode and collapse filters if returning from entity creation

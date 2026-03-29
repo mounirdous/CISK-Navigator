@@ -544,7 +544,7 @@
         {% endif %}
 
         <div class="text-center mt-5">
-            <a href="{{ url_for('workspace.index') }}" class="btn btn-primary btn-lg px-5 py-3" style="font-size: 1.25rem;">
+            <a href="{{ url_for('workspace.index', fresh=1) }}" class="btn btn-primary btn-lg px-5 py-3" style="font-size: 1.25rem;">
                 <i class="bi bi-grid-3x3-gap me-2"></i> Go to Workspace
             </a>
             <p class="text-muted mt-3">View your structure, add KPIs, and start tracking progress</p>
