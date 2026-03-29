@@ -287,6 +287,61 @@ def strategy():
     return render_template("organization_admin/strategy.html", pillars=pillars, csrf_token=generate_csrf)
 
 
+# Decision Tags Configuration
+
+
+@bp.route("/decision-tags", methods=["GET", "POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def decision_tags():
+    """Configure decision tag categories"""
+    import json as _json
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    if request.method == "POST":
+        tags_json = request.form.get("decision_tags_json", "")
+        if tags_json:
+            try:
+                org.decision_tags = _json.loads(tags_json)
+            except (ValueError, TypeError):
+                pass
+        db.session.commit()
+        flash("Decision tags updated", "success")
+        return redirect(url_for("organization_admin.decision_tags"))
+
+    default_tags = ["scope", "budget", "timeline", "resource", "technical", "governance", "other"]
+    current_tags = org.decision_tags or default_tags
+
+    # Find used tags
+    from app.models import InitiativeProgressUpdate
+
+    _used_tags = set()
+    _tag_updates = InitiativeProgressUpdate.query.join(Initiative).filter(
+        Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None)
+    ).all()
+    for _tu in _tag_updates:
+        decs = _tu.decisions
+        if isinstance(decs, str):
+            try:
+                decs = _json.loads(decs)
+            except (ValueError, TypeError):
+                decs = []
+        if isinstance(decs, list):
+            for _d in decs:
+                if _d.get("tag"):
+                    _used_tags.add(_d["tag"])
+
+    return render_template(
+        "organization_admin/decision_tags.html",
+        current_tags=current_tags,
+        used_tags=list(_used_tags),
+        csrf_token=generate_csrf,
+    )
+
+
 # Impact Levels Configuration
 
 
@@ -337,35 +392,12 @@ def impact_levels():
 
     levels = ImpactLevel.query.filter_by(organization_id=org_id).order_by(ImpactLevel.level).all()
 
-    # Get decision tags config + find which tags are in use
-    default_tags = ["scope", "budget", "timeline", "resource", "technical", "governance", "other"]
-    current_tags = org.decision_tags or default_tags
-    # Find used tags from progress updates
-    from app.models import InitiativeProgressUpdate
-    _used_tags = set()
-    _tag_updates = InitiativeProgressUpdate.query.join(Initiative).filter(
-        Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None)
-    ).all()
-    for _tu in _tag_updates:
-        decs = _tu.decisions
-        if isinstance(decs, str):
-            try:
-                import json as _tj
-                decs = _tj.loads(decs)
-            except (ValueError, TypeError):
-                decs = []
-        if isinstance(decs, list):
-            for _d in decs:
-                if _d.get("tag"):
-                    _used_tags.add(_d["tag"])
     return render_template(
         "organization_admin/impact_levels.html",
         levels=levels,
         csrf_token=generate_csrf,
         calc_method=org.impact_calc_method or "geometric_mean",
         qfd_matrix=org.impact_qfd_matrix,
-        current_tags=current_tags,
-        used_tags=list(_used_tags),
     )
 
 

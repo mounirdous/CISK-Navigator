@@ -178,5 +178,24 @@
             </div>
         </div>
     </div>
+
+    <div class="col-lg-4 col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);">
+                <i class="bi bi-journal-bookmark-fill" style="color: white;"></i>
+            </div>
+            <div class="admin-card-title">
+                <i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decision Tags
+            </div>
+            <div class="admin-card-desc">
+                Configure tag categories for decision tracking in progress updates.
+            </div>
+            <div class="admin-card-actions">
+                <a href="{{ url_for('organization_admin.decision_tags') }}" class="btn" style="background:#7c3aed; color:white;">
+                    <i class="bi bi-tags"></i> Manage Tags
+                </a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}
