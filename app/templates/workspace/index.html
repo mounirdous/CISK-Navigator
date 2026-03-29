@@ -879,47 +879,138 @@
 
     /* Loading State — top progress bar */
     /* Loading State — centered card with steps */
+    /* ── Cinematic Loading Screen ── */
     .ws-loading-card {
         display: flex; align-items: center; justify-content: center;
-        flex: 1; min-height: 300px;
+        flex: 1; min-height: 400px;
+        background: rgba(255,255,255,0.65);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 12px; margin: 0.5rem 0;
+        position: relative; overflow: hidden;
+    }
+    .ws-loading-card::before {
+        content: ''; position: absolute; inset: 0;
+        background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(59,130,246,0.05) 0%, transparent 70%);
     }
     .ws-loading-inner {
-        background: white; border-radius: 16px; padding: 2rem 2.5rem;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.08); border: 1px solid #e2e8f0;
-        min-width: 320px; max-width: 420px;
+        position: relative; z-index: 1; text-align: center;
+        max-width: 400px; width: 100%; padding: 2rem;
     }
-    .ws-loading-header {
-        display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;
+
+    /* Org logo/name — dramatic reveal */
+    .ws-load-org {
+        margin-bottom: 2.5rem;
     }
-    .ws-loading-spinner {
-        width: 40px; height: 40px; border-radius: 50%;
-        border: 3px solid #e2e8f0; border-top-color: #3182ce;
-        animation: ws-spin 0.8s linear infinite; flex-shrink: 0;
+    .ws-load-org-logo {
+        max-height: 80px; max-width: 200px;
+        margin-bottom: 1rem;
+        animation: wslLogoReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
-    @keyframes ws-spin { to { transform: rotate(360deg); } }
-    .ws-loading-title { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
-    .ws-loading-steps { list-style: none; padding: 0; margin: 0; }
-    .ws-loading-steps li {
-        display: flex; align-items: center; gap: 0.6rem;
-        padding: 0.4rem 0; font-size: 0.85rem; color: #64748b;
-        transition: color 0.3s;
+    .ws-load-org-icon {
+        width: 80px; height: 80px; border-radius: 20px;
+        background: rgba(59,130,246,0.1); display: inline-flex; align-items: center;
+        justify-content: center; font-size: 2.2rem; color: #3b82f6;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+        margin-bottom: 1rem;
+        animation: wslLogoReveal 1s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
-    .ws-loading-steps li.done { color: #16a34a; }
-    .ws-loading-steps li.active { color: #1e293b; font-weight: 600; }
-    .ws-loading-steps li .step-icon {
-        width: 20px; text-align: center; flex-shrink: 0; font-size: 0.85rem;
+    .ws-load-org-name {
+        font-size: 1.6rem; font-weight: 800; color: #1e293b;
+        letter-spacing: -0.02em;
+        opacity: 0;
+        animation: wslNameReveal 0.8s 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
-    .ws-loading-steps li.done .step-icon { color: #16a34a; }
-    .ws-loading-steps li.active .step-icon { color: #3182ce; }
-    .ws-loading-steps li.pending .step-icon { color: #cbd5e1; }
-    .ws-loading-bar-track {
-        height: 4px; background: #e2e8f0; border-radius: 2px;
-        margin-top: 1.25rem; overflow: hidden;
+    @keyframes wslLogoReveal {
+        0% { opacity: 0; transform: scale(0.3) rotate(-10deg); }
+        50% { opacity: 1; transform: scale(1.1) rotate(2deg); }
+        100% { opacity: 1; transform: scale(1) rotate(0deg); }
     }
-    .ws-loading-bar-fill {
-        height: 4px; border-radius: 2px;
-        background: linear-gradient(90deg, #3182ce, #63b3ed);
-        transition: width 0.5s ease;
+    @keyframes wslNameReveal {
+        0% { opacity: 0; transform: translateY(15px); letter-spacing: 0.3em; }
+        100% { opacity: 1; transform: translateY(0); letter-spacing: -0.02em; }
+    }
+
+    /* Entity cycling — dramatic */
+    .ws-load-entities {
+        display: flex; justify-content: center; gap: 1.8rem;
+        margin-bottom: 2rem; position: relative; padding: 1rem 0;
+    }
+    /* Connecting beam line behind icons */
+    .ws-load-entities::before {
+        content: ''; position: absolute; top: 50%; left: 15%; right: 15%;
+        height: 2px; transform: translateY(-4px);
+        background: linear-gradient(90deg, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent);
+        opacity: 0; animation: wslBeamIn 0.6s 1.6s ease forwards;
+    }
+    @keyframes wslBeamIn {
+        0% { opacity: 0; left: 48%; right: 48%; }
+        100% { opacity: 1; left: 15%; right: 15%; }
+    }
+    .ws-load-entity {
+        display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+        opacity: 0; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        width: 64px; position: relative; z-index: 1;
+        animation: wslEntityAppear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    .ws-load-entity[data-idx="0"] { animation-delay: 0.8s; }
+    .ws-load-entity[data-idx="1"] { animation-delay: 1.0s; }
+    .ws-load-entity[data-idx="2"] { animation-delay: 1.2s; }
+    .ws-load-entity[data-idx="3"] { animation-delay: 1.4s; }
+    .ws-load-entity[data-idx="4"] { animation-delay: 1.6s; }
+    .ws-load-entity.visible { opacity: 0.35; }
+    .ws-load-entity.active {
+        opacity: 1; transform: scale(1.2) translateY(-6px);
+    }
+    .ws-load-entity-icon {
+        width: 52px; height: 52px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; font-weight: 700;
+        transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        position: relative; z-index: 1;
+        border: 2px solid transparent;
+    }
+    /* Glow ring on active */
+    .ws-load-entity.active .ws-load-entity-icon {
+        border-color: var(--entity-color, #3b82f6);
+        box-shadow: 0 0 20px var(--entity-glow, rgba(59,130,246,0.35)),
+                    0 8px 25px var(--entity-glow, rgba(59,130,246,0.2));
+    }
+    /* Ripple pulse on active */
+    .ws-load-entity::after {
+        content: ''; position: absolute; top: 0; left: 50%;
+        width: 52px; height: 52px; border-radius: 16px;
+        transform: translateX(-50%) scale(1); opacity: 0;
+        border: 2px solid var(--entity-color, #3b82f6);
+        pointer-events: none; transition: none;
+    }
+    .ws-load-entity.active::after {
+        animation: wslRipple 1s ease-out;
+    }
+    @keyframes wslRipple {
+        0% { transform: translateX(-50%) scale(1); opacity: 0.6; }
+        100% { transform: translateX(-50%) scale(1.8); opacity: 0; }
+    }
+    .ws-load-entity-label {
+        font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; color: #94a3b8; white-space: nowrap;
+        transition: all 0.4s ease;
+    }
+    .ws-load-entity.active .ws-load-entity-label {
+        color: var(--entity-color, #334155);
+        text-shadow: 0 0 12px var(--entity-glow, rgba(59,130,246,0.3));
+    }
+    @keyframes wslEntityAppear {
+        0% { opacity: 0; transform: scale(0.3) translateY(30px) rotate(-8deg); filter: blur(4px); }
+        60% { filter: blur(0); }
+        80% { transform: scale(1.1) translateY(-2px) rotate(1deg); }
+        100% { opacity: 0.35; transform: scale(1) translateY(0) rotate(0); }
+    }
+
+    /* Detail text */
+    .ws-load-detail {
+        font-size: 0.75rem; color: #64748b; margin-top: 1.5rem;
+        animation: wslFadeIn 0.5s 0.3s ease both;
     }
     @keyframes ws-pulse {
         0%, 100% { opacity: 1; }
@@ -2104,42 +2195,98 @@
     <!-- Preset saving is now handled by the unified preset bar -->
 
     <!-- Loading State — centered card with steps -->
-    <div x-show="loading" x-cloak class="ws-loading-card">
+    <div x-show="loading" x-cloak class="ws-loading-card" x-init="$watch('loading', v => { if(v) _startLoadCycle(); else _stopLoadCycle(); })">
         <div class="ws-loading-inner">
-            <div class="ws-loading-header">
-                <div class="ws-loading-spinner"></div>
-                <div class="ws-loading-title">Loading workspace&hellip;</div>
+
+            <!-- Org Identity -->
+            <div class="ws-load-org">
+                {% if org_logo %}
+                <img src="{{ org_logo }}" class="ws-load-org-logo" alt="">
+                {% else %}
+                <div class="ws-load-org-icon"><i class="bi bi-building"></i></div>
+                {% endif %}
+                <div class="ws-load-org-name">{{ org_name }}</div>
             </div>
-            <ul class="ws-loading-steps">
-                <li :class="loadingPct >= 10 ? (loadingPct >= 25 ? 'done' : 'active') : 'pending'">
-                    <span class="step-icon"><i :class="loadingPct >= 25 ? 'bi bi-check-lg' : (loadingPct >= 10 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
-                    Connecting to server
-                </li>
-                <li :class="loadingPct >= 25 ? (loadingPct >= 50 ? 'done' : 'active') : 'pending'">
-                    <span class="step-icon"><i :class="loadingPct >= 50 ? 'bi bi-check-lg' : (loadingPct >= 25 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
-                    Fetching organization data
-                </li>
-                <li :class="loadingPct >= 50 ? (loadingPct >= 70 ? 'done' : 'active') : 'pending'">
-                    <span class="step-icon"><i :class="loadingPct >= 70 ? 'bi bi-check-lg' : (loadingPct >= 50 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
-                    Processing response
-                </li>
-                <li :class="loadingPct >= 70 ? (loadingPct >= 95 ? 'done' : 'active') : 'pending'">
-                    <span class="step-icon"><i :class="loadingPct >= 95 ? 'bi bi-check-lg' : (loadingPct >= 70 ? 'bi bi-arrow-repeat' : 'bi bi-circle')"></i></span>
-                    Building workspace tree
-                </li>
-                <li :class="loadingPct >= 95 ? 'done' : 'pending'">
-                    <span class="step-icon"><i :class="loadingPct >= 95 ? 'bi bi-check-lg' : 'bi bi-circle'"></i></span>
-                    Rendering
-                </li>
-            </ul>
-            <div x-show="loadingDetail" style="margin-top:0.75rem;padding:0.5rem 0.75rem;background:#f1f5f9;border-radius:8px;font-size:0.78rem;color:#475569;">
-                <i class="bi bi-database" style="margin-right:0.3rem;"></i> <span x-text="loadingDetail"></span>
+
+            <!-- Entity Cycling Icons -->
+            <div class="ws-load-entities" id="wsLoadEntities">
+                {% set _ed = entity_defaults %}
+                {% set _sc = _ed.get('space', {}).get('color', '#10b981') %}
+                <div class="ws-load-entity" data-idx="0" style="--entity-color:{{ _sc }}; --entity-glow:{{ _sc }}40;">
+                    <div class="ws-load-entity-icon" style="background:{{ _sc }}15; color:{{ _sc }};">
+                        {% if _ed.get('space', {}).get('logo') %}<img src="{{ _ed['space']['logo'] }}" style="width:22px;height:22px;object-fit:contain;">{% else %}{{ _ed.get('space', {}).get('icon', '🏢') }}{% endif %}
+                    </div>
+                    <span class="ws-load-entity-label">Spaces</span>
+                </div>
+                {% set _cc = _ed.get('challenge', {}).get('color', '#f59e0b') %}
+                <div class="ws-load-entity" data-idx="1" style="--entity-color:{{ _cc }}; --entity-glow:{{ _cc }}40;">
+                    <div class="ws-load-entity-icon" style="background:{{ _cc }}15; color:{{ _cc }};">
+                        {% if _ed.get('challenge', {}).get('logo') %}<img src="{{ _ed['challenge']['logo'] }}" style="width:22px;height:22px;object-fit:contain;">{% else %}{{ _ed.get('challenge', {}).get('icon', 'ƒ') }}{% endif %}
+                    </div>
+                    <span class="ws-load-entity-label">Challenges</span>
+                </div>
+                {% set _ic = _ed.get('initiative', {}).get('color', '#8b5cf6') %}
+                <div class="ws-load-entity" data-idx="2" style="--entity-color:{{ _ic }}; --entity-glow:{{ _ic }}40;">
+                    <div class="ws-load-entity-icon" style="background:{{ _ic }}15; color:{{ _ic }};">
+                        {% if _ed.get('initiative', {}).get('logo') %}<img src="{{ _ed['initiative']['logo'] }}" style="width:22px;height:22px;object-fit:contain;">{% else %}{{ _ed.get('initiative', {}).get('icon', 'δ') }}{% endif %}
+                    </div>
+                    <span class="ws-load-entity-label">Initiatives</span>
+                </div>
+                {% set _yc = _ed.get('system', {}).get('color', '#ec4899') %}
+                <div class="ws-load-entity" data-idx="3" style="--entity-color:{{ _yc }}; --entity-glow:{{ _yc }}40;">
+                    <div class="ws-load-entity-icon" style="background:{{ _yc }}15; color:{{ _yc }};">
+                        {% if _ed.get('system', {}).get('logo') %}<img src="{{ _ed['system']['logo'] }}" style="width:22px;height:22px;object-fit:contain;">{% else %}{{ _ed.get('system', {}).get('icon', 'Φ') }}{% endif %}
+                    </div>
+                    <span class="ws-load-entity-label">Systems</span>
+                </div>
+                {% set _kc = _ed.get('kpi', {}).get('color', '#06b6d4') %}
+                <div class="ws-load-entity" data-idx="4" style="--entity-color:{{ _kc }}; --entity-glow:{{ _kc }}40;">
+                    <div class="ws-load-entity-icon" style="background:{{ _kc }}15; color:{{ _kc }};">
+                        {% if _ed.get('kpi', {}).get('logo') %}<img src="{{ _ed['kpi']['logo'] }}" style="width:22px;height:22px;object-fit:contain;">{% else %}{{ _ed.get('kpi', {}).get('icon', 'Ψ') }}{% endif %}
+                    </div>
+                    <span class="ws-load-entity-label">KPIs</span>
+                </div>
             </div>
-            <div class="ws-loading-bar-track">
-                <div class="ws-loading-bar-fill" :style="'width:' + loadingPct + '%'"></div>
+
+            <!-- Detail (counts after data received) -->
+            <div x-show="loadingDetail" class="ws-load-detail" x-transition>
+                <span x-text="loadingDetail"></span>
             </div>
         </div>
     </div>
+
+    <script>
+    var _loadCycleTimer = null;
+    var _loadCycleIdx = 0;
+    function _startLoadCycle() {
+        _loadCycleIdx = 0;
+        // Start cycling after entity icons have appeared (1.5s)
+        setTimeout(function() {
+            document.querySelectorAll('#wsLoadEntities .ws-load-entity').forEach(function(el) { el.classList.add('visible'); });
+            _cycleEntity();
+            _loadCycleTimer = setInterval(_cycleEntity, 700);
+        }, 1500);
+    }
+    function _stopLoadCycle() {
+        clearInterval(_loadCycleTimer);
+        // Flash all active on completion
+        document.querySelectorAll('#wsLoadEntities .ws-load-entity').forEach(function(el) {
+            el.classList.add('active');
+            el.classList.add('visible');
+        });
+    }
+    function _cycleEntity() {
+        var entities = document.querySelectorAll('#wsLoadEntities .ws-load-entity');
+        entities.forEach(function(el) { el.classList.remove('active'); el.classList.add('visible'); });
+        var cur = entities[_loadCycleIdx];
+        if (cur) {
+            cur.classList.add('active');
+            /* Reset ripple animation by forcing reflow */
+            cur.style.animation = 'none'; cur.offsetHeight; cur.style.animation = '';
+        }
+        _loadCycleIdx = (_loadCycleIdx + 1) % entities.length;
+    }
+    </script>
 
     <!-- Grid -->
     <div class="ws-grid-container">
