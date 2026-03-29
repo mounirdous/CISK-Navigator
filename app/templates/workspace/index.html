@@ -356,6 +356,11 @@
     .ws-impact-badge:hover { transform: scale(1.3); }
     .ws-ib-assessed { background: transparent; border: 1.5px solid; }
     .ws-ib-computed { box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    .ws-ib-missing {
+        color: #cbd5e1; font-size: 0.55rem; opacity: 0.5;
+        border: 1px dashed #cbd5e1; background: transparent;
+    }
+    .ws-ib-missing:hover { opacity: 1; color: #8b5cf6; border-color: #8b5cf6; }
 
     /* Badge mode 0 (minimal): hide toolbar extras */
     .workspace-v2[data-badge-mode="0"] .ws-d1 { display: none !important; }
@@ -2295,6 +2300,9 @@
                                 <template x-if="badgeMode >= 1 && space.true_importance_level && impactScale[space.true_importance_level]">
                                     <span class="ws-impact-badge ws-ib-computed" :style="'background:' + impactScale[space.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
                                 </template>
+                                <template x-if="badgeMode === 2 && !space.impact_level">
+                                    <span class="ws-impact-badge ws-ib-missing" title="No impact assessed — click to set" @click.stop="_openImpactPopup('space', space.id, space.name, null, null, $event)"><i class="bi bi-plus-circle"></i></span>
+                                </template>
 
                                 <!-- Space label badge (removed — always hidden) -->
 
@@ -2450,6 +2458,9 @@
                                         <template x-if="badgeMode >= 1 && challenge.true_importance_level && impactScale[challenge.true_importance_level]">
                                             <span class="ws-impact-badge ws-ib-computed" :style="'background:' + impactScale[challenge.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[challenge.true_importance_level].icon" x-text="impactScale[challenge.true_importance_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
                                         </template>
+                                        <template x-if="badgeMode === 2 && !challenge.impact_level">
+                                            <span class="ws-impact-badge ws-ib-missing" title="No impact assessed — click to set" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, null, null, $event)"><i class="bi bi-plus-circle"></i></span>
+                                        </template>
 
                                         <!-- Action icons (edit mode only) -->
                                         <template x-if="editMode">
@@ -2557,6 +2568,9 @@
                                                 </template>
                                                 <template x-if="badgeMode >= 1 && initiative.true_importance_level && impactScale[initiative.true_importance_level]">
                                                     <span class="ws-impact-badge ws-ib-computed" :style="'background:' + impactScale[initiative.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[initiative.true_importance_level].icon" x-text="impactScale[initiative.true_importance_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
+                                                </template>
+                                                <template x-if="badgeMode === 2 && !initiative.impact_level">
+                                                    <span class="ws-impact-badge ws-ib-missing" title="No impact assessed — click to set" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, null, null, $event)"><i class="bi bi-plus-circle"></i></span>
                                                 </template>
 
                                                 <!-- Initiative form link (always visible) -->
@@ -2702,6 +2716,9 @@
                                                         <template x-if="badgeMode >= 1 && system.true_importance_level && impactScale[system.true_importance_level]">
                                                             <span class="ws-impact-badge ws-ib-computed" :style="'background:' + impactScale[system.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[system.true_importance_level].icon" x-text="impactScale[system.true_importance_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
                                                         </template>
+                                                        <template x-if="badgeMode === 2 && !system.impact_level">
+                                                            <span class="ws-impact-badge ws-ib-missing" title="No impact assessed — click to set" @click.stop="_openImpactPopup('system', system.id, system.name, null, null, $event)"><i class="bi bi-plus-circle"></i></span>
+                                                        </template>
 
                                                         <!-- Action icons (edit mode only) -->
                                                         <template x-if="editMode">
@@ -2839,6 +2856,9 @@
                                                             </template>
                                                             <template x-if="badgeMode >= 1 && kpi.true_importance_level && impactScale[kpi.true_importance_level]">
                                                                 <span class="ws-impact-badge ws-ib-computed" :style="'background:' + impactScale[kpi.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[kpi.true_importance_level].icon" x-text="impactScale[kpi.true_importance_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
+                                                            </template>
+                                                            <template x-if="badgeMode === 2 && !kpi.impact_level">
+                                                                <span class="ws-impact-badge ws-ib-missing" title="No impact assessed — click to set" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, null, null, $event)"><i class="bi bi-plus-circle"></i></span>
                                                             </template>
 
                                                             <!-- Linked KPI indicator -->
@@ -5662,10 +5682,10 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
 
     var win = document.createElement('div');
     win.className = 'ws-info-window';
-    win.style.minWidth = '220px';
+    win.style.minWidth = '260px'; win.style.maxWidth = '350px';
     win.innerHTML =
         '<div class="ws-iw-header">' +
-            '<span class="ws-iw-header-title">' + entityName.substring(0, 30) + '<\/span>' +
+            '<span class="ws-iw-header-title" style="white-space:normal; word-break:break-word;">' + entityName + '<\/span>' +
             '<button class="ws-iw-close" title="Close">&times;<\/button>' +
         '<\/div>' +
         '<div class="ws-iw-body" style="font-size:0.82rem;">' +
