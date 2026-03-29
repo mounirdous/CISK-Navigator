@@ -161,13 +161,13 @@
                             <i class="bi bi-hash"></i>
                             Value Types & Configuration
                         </div>
-                        <p class="text-muted mb-3">Select value types to track for this KPI and configure colors and targets</p>
+                        <p class="text-muted mb-3">Select the value type for this KPI</p>
 
                         {% for choice_value, choice_label in form.value_type_ids.choices %}
                         {% set vt = value_types|selectattr('id', 'equalto', choice_value)|first %}
                         <div class="value-type-card" id="card_{{ choice_value }}">
                             <div class="form-check mb-3">
-                                <input class="form-check-input value-type-checkbox" type="checkbox"
+                                <input class="form-check-input value-type-checkbox" type="radio"
                                        name="value_type_ids" value="{{ choice_value }}" id="vt_{{ choice_value }}"
                                        {% if choice_value in preselect_value_types %}checked{% endif %}>
                                 <label class="form-check-label fw-bold" for="vt_{{ choice_value }}">
