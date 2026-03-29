@@ -887,7 +887,7 @@
                     Initiative {% if edit_mode %}Form{% else %}Overview{% endif %}
                 </h1>
                 <div class="initiative-name">
-                    {{ initiative.name }}
+                    <a href="/workspace/#initiative-{{ initiative.id }}" style="color:inherit; text-decoration:none;" title="Open in workspace tree">{{ initiative.name }}</a>
                     {% if impact_levels_config %}
                     <span class="init-impact-badges">
                         {% if initiative.impact_level and initiative.impact_level in impact_levels_config %}
