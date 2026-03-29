@@ -1007,9 +1007,25 @@
         100% { opacity: 0.35; transform: scale(1) translateY(0) rotate(0); }
     }
 
+    /* LOADING text — breathe */
+    .ws-load-text {
+        font-size: 0.7rem; font-weight: 700; letter-spacing: 0.35em;
+        text-transform: uppercase; color: #94a3b8; margin-top: 2rem;
+        opacity: 0;
+        animation: wslTextAppear 0.6s 2s ease forwards, wslBreathe 2.5s 2.6s ease-in-out infinite;
+    }
+    @keyframes wslTextAppear {
+        0% { opacity: 0; transform: translateY(8px); }
+        100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes wslBreathe {
+        0%, 100% { opacity: 0.3; }
+        50% { opacity: 1; }
+    }
+
     /* Detail text */
     .ws-load-detail {
-        font-size: 0.75rem; color: #64748b; margin-top: 1.5rem;
+        font-size: 0.75rem; color: #64748b; margin-top: 0.75rem;
         animation: wslFadeIn 0.5s 0.3s ease both;
     }
     @keyframes ws-pulse {
@@ -2247,6 +2263,9 @@
                     <span class="ws-load-entity-label">KPIs</span>
                 </div>
             </div>
+
+            <!-- LOADING pulse text -->
+            <div class="ws-load-text">Loading</div>
 
             <!-- Detail (counts after data received) -->
             <div x-show="loadingDetail" class="ws-load-detail" x-transition>
