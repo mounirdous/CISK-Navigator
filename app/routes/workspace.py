@@ -166,6 +166,8 @@ def decisions():
                     "who": dec.get("who", ""),
                     "tag": dec.get("tag", ""),
                     "mentions": dec.get("mentions", []),
+                    "gb_id": dec.get("gb_id"),
+                    "gb_name": dec.get("gb_name"),
                     "author": author,
                 })
         elif isinstance(upd.decisions, str) and upd.decisions.strip():
@@ -279,6 +281,154 @@ def decisions_export():
         mimetype="text/csv",
         as_attachment=True,
         download_name=f"decisions_{session.get('organization_name', 'org')}_{__import__('datetime').date.today()}.csv",
+    )
+
+
+@bp.route("/governance")
+@login_required
+@organization_required
+def gb_dashboard_index():
+    """Redirect to the first governance body dashboard"""
+    from app.models import GovernanceBody
+    org_id = session.get("organization_id")
+    first_gb = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).first()
+    if first_gb:
+        return redirect(url_for("workspace.gb_dashboard", gb_id=first_gb.id))
+    flash("No governance bodies configured.", "warning")
+    return redirect(url_for("workspace.index"))
+
+
+@bp.route("/governance/<int:gb_id>")
+@login_required
+@organization_required
+def gb_dashboard(gb_id):
+    """Governance Body Dashboard — KPIs, actions, decisions for one GB"""
+    from app.models import (
+        ActionItem, ActionItemMention, ChallengeInitiativeLink, GovernanceBody,
+        InitiativeProgressUpdate, InitiativeSystemLink, KPIGovernanceBodyLink,
+    )
+    from app.services import ConsensusService
+
+    org_id = session.get("organization_id")
+    gb = GovernanceBody.query.filter_by(id=gb_id, organization_id=org_id).first_or_404()
+
+    # All GBs for the selector
+    all_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).all()
+
+    # ── My KPIs ──
+    kpi_links = KPIGovernanceBodyLink.query.filter_by(governance_body_id=gb_id).all()
+    my_kpis = []
+    initiative_ids = set()
+    for link in kpi_links:
+        kpi = link.kpi
+        if not kpi or not kpi.initiative_system_link:
+            continue
+        isl = kpi.initiative_system_link
+        initiative_ids.add(isl.initiative_id)
+        # Get all value type configs with formatted values
+        from flask import current_app
+        kpi_values = []
+        for config in kpi.value_type_configs:
+            vt = config.value_type
+            cons = ConsensusService.get_cell_value(config)
+            raw_val = cons.get("value") if cons else None
+            formatted = None
+            if raw_val is not None:
+                try:
+                    formatted = current_app.jinja_env.filters["format_value"](raw_val, vt, config)
+                except Exception:
+                    formatted = str(raw_val)
+            kpi_values.append({
+                "name": vt.name,
+                "kind": vt.kind,
+                "value": raw_val,
+                "formatted": formatted,
+                "unit": vt.unit_label,
+                "color": config.get_value_color(raw_val) if raw_val is not None else None,
+                "status": cons.get("status") if cons else "no_data",
+            })
+
+        primary_status = kpi_values[0]["status"] if kpi_values else "no_data"
+        my_kpis.append({
+            "id": kpi.id,
+            "name": kpi.name,
+            "system_name": isl.system.name,
+            "initiative_name": isl.initiative.name,
+            "vt_values": kpi_values,
+            "status": primary_status,
+            "is_archived": kpi.is_archived,
+        })
+
+    # ── My Actions ──
+    from sqlalchemy import or_ as sql_or
+    action_gb_table = db.Table("action_item_governance_body", db.metadata, autoload_with=db.engine)
+    action_ids = db.session.query(action_gb_table.c.action_item_id).filter(
+        action_gb_table.c.governance_body_id == gb_id
+    ).all()
+    action_id_list = [a[0] for a in action_ids]
+    my_actions = ActionItem.query.filter(
+        ActionItem.id.in_(action_id_list), ActionItem.organization_id == org_id
+    ).order_by(ActionItem.due_date).all() if action_id_list else []
+
+    # ── My Decisions ──
+    all_updates = InitiativeProgressUpdate.query.join(Initiative).filter(
+        Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None)
+    ).order_by(InitiativeProgressUpdate.created_at.desc()).all()
+
+    my_decisions = []
+    for upd in all_updates:
+        decs = upd.decisions
+        if isinstance(decs, str):
+            try:
+                import json as _djgb
+                decs = _djgb.loads(decs)
+            except (ValueError, TypeError):
+                continue
+        if isinstance(decs, list):
+            for dec in decs:
+                if dec.get("gb_id") == gb_id:
+                    my_decisions.append({
+                        "date": upd.created_at,
+                        "what": dec.get("what", ""),
+                        "who": dec.get("who", ""),
+                        "tag": dec.get("tag", ""),
+                        "initiative_name": upd.initiative.name,
+                        "initiative_id": upd.initiative_id,
+                        "rag": upd.rag_status,
+                    })
+
+    # ── My Initiatives (derived from KPIs) ──
+    my_initiatives = []
+    if initiative_ids:
+        inits = Initiative.query.filter(Initiative.id.in_(initiative_ids)).order_by(Initiative.name).all()
+        for ini in inits:
+            my_initiatives.append({
+                "id": ini.id,
+                "name": ini.name,
+                "rag": ini.execution_rag,
+                "impact_level": ini.impact_level,
+            })
+
+    # ── Stats ──
+    stats = {
+        "kpi_count": len(my_kpis),
+        "kpi_archived": sum(1 for k in my_kpis if k["is_archived"]),
+        "action_count": len(my_actions),
+        "action_overdue": sum(1 for a in my_actions if a.is_overdue),
+        "action_active": sum(1 for a in my_actions if a.status == "active"),
+        "decision_count": len(my_decisions),
+        "initiative_count": len(my_initiatives),
+    }
+
+    return render_template(
+        "workspace/gb_dashboard.html",
+        gb=gb,
+        all_gbs=all_gbs,
+        my_kpis=my_kpis,
+        my_actions=my_actions,
+        my_decisions=my_decisions,
+        my_initiatives=my_initiatives,
+        stats=stats,
     )
 
 

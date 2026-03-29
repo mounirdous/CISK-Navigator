@@ -463,6 +463,13 @@
                                         <i class="bi bi-map-fill"></i> Map View
                                     </a>
                                 </li>
+                                {% if session.organization_id %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.gb_dashboard_index') }}">
+                                        <i class="bi bi-shield-check"></i> Governance Dashboard
+                                    </a>
+                                </li>
+                                {% endif %}
                                 {% if beta_enabled and current_user.beta_tester %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>

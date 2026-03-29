@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block title %}{{ gb.name }} — Governance Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .gbd { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+
+    /* Hero Header */
+    .gbd-hero {
+        background: linear-gradient(135deg, {{ gb.color }}ee, {{ gb.color }}88);
+        color: white; padding: 2.5rem 2.5rem 2rem; border-radius: 16px; margin-bottom: 2rem;
+        position: relative; overflow: hidden;
+    }
+    .gbd-hero::before {
+        content: ''; position: absolute; top: -50%; right: -10%; width: 300px; height: 300px;
+        background: rgba(255,255,255,0.06); border-radius: 50%;
+    }
+    .gbd-hero::after {
+        content: ''; position: absolute; bottom: -30%; left: 20%; width: 200px; height: 200px;
+        background: rgba(255,255,255,0.04); border-radius: 50%;
+    }
+    .gbd-hero-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+    .gbd-hero h1 { font-size: 2rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.6rem; }
+    .gbd-hero-sub { opacity: 0.8; font-size: 0.92rem; margin-top: 0.3rem; }
+    .gbd-selector {
+        background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+        border-radius: 10px; padding: 0.4rem 0.6rem; color: white; font-size: 0.85rem;
+        backdrop-filter: blur(8px);
+    }
+    .gbd-selector option { color: #1e293b; }
+
+    /* Stats Grid */
+    .gbd-stats {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+        margin-top: -2.5rem; position: relative; z-index: 2; padding: 0 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .gbd-stat {
+        background: white; border-radius: 14px; padding: 1.25rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08); border: 1px solid rgba(0,0,0,0.04);
+        text-align: center; transition: transform 0.15s;
+    }
+    .gbd-stat:hover { transform: translateY(-3px); }
+    .gbd-stat-num { font-size: 2.2rem; font-weight: 800; color: #1e293b; line-height: 1.1; }
+    .gbd-stat-label { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; margin-top: 0.25rem; }
+    .gbd-stat-alert { font-size: 0.7rem; color: #ef4444; font-weight: 700; margin-top: 0.2rem; }
+
+    /* Section Cards */
+    .gbd-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .gbd-card {
+        background: white; border-radius: 14px; border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04); overflow: hidden;
+        transition: all 0.15s;
+    }
+    .gbd-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .gbd-card-header {
+        padding: 1rem 1.25rem 0.75rem; border-bottom: 1px solid #f1f5f9;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .gbd-card-title { font-size: 0.9rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.4rem; }
+    .gbd-card-count { font-size: 0.68rem; background: #f1f5f9; color: #64748b; padding: 0.15rem 0.5rem; border-radius: 10px; font-weight: 700; }
+    .gbd-card-body { padding: 0.5rem 1.25rem 1rem; max-height: 350px; overflow-y: auto; }
+    .gbd-card-body::-webkit-scrollbar { width: 4px; }
+    .gbd-card-body::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 2px; }
+    .gbd-card.full-width { grid-column: 1 / -1; }
+
+    /* KPI Row */
+    .gbd-kpi {
+        display: flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0;
+        border-bottom: 1px solid #f8fafc; font-size: 0.85rem;
+    }
+    .gbd-kpi:last-child { border-bottom: none; }
+    .gbd-kpi-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .gbd-kpi-dot.strong { background: #22c55e; } .gbd-kpi-dot.weak { background: #f59e0b; }
+    .gbd-kpi-dot.no_consensus { background: #ef4444; } .gbd-kpi-dot.no_data { background: #e2e8f0; }
+    .gbd-kpi-dot.pending { background: #67e8f9; }
+    .gbd-kpi-name { flex: 1; font-weight: 600; color: #1e293b; }
+    .gbd-kpi-name a { color: inherit; text-decoration: none; }
+    .gbd-kpi-name a:hover { color: {{ gb.color }}; }
+    .gbd-kpi-ctx { font-size: 0.7rem; color: #94a3b8; max-width: 200px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .gbd-kpi-val { font-weight: 700; font-size: 0.88rem; min-width: 40px; text-align: right; }
+
+    /* Action Row */
+    .gbd-action {
+        display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0;
+        border-bottom: 1px solid #f8fafc; font-size: 0.85rem;
+    }
+    .gbd-action:last-child { border-bottom: none; }
+    .gbd-action-status {
+        font-size: 0.65rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 6px;
+        flex-shrink: 0; min-width: 55px; text-align: center;
+    }
+    .gbd-action-title { flex: 1; font-weight: 600; color: #1e293b; }
+    .gbd-action-title a { color: inherit; text-decoration: none; }
+    .gbd-action-due { font-size: 0.72rem; color: #94a3b8; }
+    .gbd-action-overdue { color: #ef4444 !important; font-weight: 700; }
+    .gbd-action-priority { font-size: 0.75rem; font-weight: 600; }
+
+    /* Decision Row */
+    .gbd-dec {
+        padding: 0.5rem 0; border-bottom: 1px solid #f8fafc;
+        border-left: 3px solid #8b5cf6; padding-left: 0.75rem; margin-bottom: 0.25rem;
+    }
+    .gbd-dec:last-child { border-bottom: none; }
+    .gbd-dec-what { font-weight: 700; font-size: 0.88rem; color: #1e293b; }
+    .gbd-dec-meta { font-size: 0.72rem; color: #94a3b8; display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.15rem; }
+
+    /* Initiative Row */
+    .gbd-ini {
+        display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0;
+        border-bottom: 1px solid #f8fafc; font-size: 0.85rem;
+    }
+    .gbd-ini:last-child { border-bottom: none; }
+    .gbd-rag { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .gbd-rag.green { background: #43a047; } .gbd-rag.amber { background: #fb8c00; }
+    .gbd-rag.red { background: #e53935; } .gbd-rag.none { background: #e0e0e0; }
+
+    .gbd-empty { color: #94a3b8; font-size: 0.82rem; font-style: italic; padding: 1rem 0; text-align: center; }
+
+    /* Detail modes */
+    [data-detail-mode="0"] .gbd-d1, [data-detail-mode="0"] .gbd-d2 { display: none !important; }
+    [data-detail-mode="1"] .gbd-d2 { display: none !important; }
+    [data-detail-mode="0"] .gbd-grid { grid-template-columns: 1fr; }
+    [data-detail-mode="0"] .gbd-kpi-ctx { display: none; }
+
+    @media (max-width: 768px) {
+        .gbd-stats { grid-template-columns: repeat(2, 1fr); }
+        .gbd-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="gbd" id="gbdContainer" data-detail-mode="1">
+
+    <!-- Hero -->
+    <div class="gbd-hero">
+        <div class="gbd-hero-top">
+            <div>
+                <h1>
+                    <i class="bi bi-shield-check"></i>
+                    {{ gb.name }}
+                    <button type="button" class="btn btn-sm" id="gbdDetailBtn" onclick="cycleGbdMode()" title="Detail level"
+                            style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
+                        <span id="gbdDetailIcon">🎄</span>
+                    </button>
+                </h1>
+                <div class="gbd-hero-sub">{% if gb.abbreviation %}{{ gb.abbreviation }} · {% endif %}Governance Dashboard</div>
+            </div>
+            <select class="gbd-selector" onchange="if(this.value) window.location.href=this.value;">
+                {% for g in all_gbs %}
+                <option value="{{ url_for('workspace.gb_dashboard', gb_id=g.id) }}" {% if g.id == gb.id %}selected{% endif %}>{{ g.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="gbd-stats">
+        <div class="gbd-stat">
+            <div class="gbd-stat-num" style="color:{{ gb.color }};">{{ stats.kpi_count }}</div>
+            <div class="gbd-stat-label">KPIs</div>
+            {% if stats.kpi_archived %}<div class="gbd-stat-alert">{{ stats.kpi_archived }} archived</div>{% endif %}
+        </div>
+        <div class="gbd-stat">
+            <div class="gbd-stat-num">{{ stats.action_count }}</div>
+            <div class="gbd-stat-label">Actions</div>
+            {% if stats.action_overdue %}<div class="gbd-stat-alert">{{ stats.action_overdue }} overdue</div>{% endif %}
+        </div>
+        <div class="gbd-stat">
+            <div class="gbd-stat-num" style="color:#8b5cf6;">{{ stats.decision_count }}</div>
+            <div class="gbd-stat-label">Decisions</div>
+        </div>
+        <div class="gbd-stat">
+            <div class="gbd-stat-num">{{ stats.initiative_count }}</div>
+            <div class="gbd-stat-label">Initiatives</div>
+        </div>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="gbd-grid">
+
+        <!-- KPIs -->
+        <div class="gbd-card">
+            <div class="gbd-card-header">
+                <div class="gbd-card-title"><i class="bi bi-graph-up" style="color:{{ gb.color }};"></i> KPIs</div>
+                <span class="gbd-card-count">{{ my_kpis | length }}</span>
+            </div>
+            <div class="gbd-card-body">
+                {% if my_kpis %}
+                {% for kpi in my_kpis %}
+                <div class="gbd-kpi">
+                    <span class="gbd-kpi-dot {{ kpi.status }}"></span>
+                    <span class="gbd-kpi-name"><a href="/workspace/#kpi-{{ kpi.id }}">{{ kpi.name }}</a>{% if kpi.is_archived %} <span style="font-size:0.6rem; color:#94a3b8; font-style:italic;">archived</span>{% endif %}</span>
+                    <span class="gbd-kpi-ctx gbd-d1">{{ kpi.system_name }}</span>
+                    <span class="gbd-kpi-val" style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap; justify-content:flex-end;">
+                        {% for v in kpi.vt_values %}
+                        {% if v.value is not none %}
+                        <span style="font-size:0.78rem;" title="{{ v.name }}{% if v.unit %} ({{ v.unit }}){% endif %}">
+                            {% if v.kind == 'risk' %}
+                            <strong style="color:{{ v.color or '#dc3545' }};">{% if v.value|int == 1 %}!{% elif v.value|int == 2 %}!!{% elif v.value|int == 3 %}!!!{% endif %}</strong>
+                            {% elif v.kind == 'positive_impact' %}
+                            <strong style="color:{{ v.color or '#198754' }};">{% if v.value|int == 1 %}★{% elif v.value|int == 2 %}★★{% elif v.value|int == 3 %}★★★{% endif %}</strong>
+                            {% elif v.kind == 'negative_impact' %}
+                            <strong style="color:{{ v.color or '#dc3545' }};">{% if v.value|int == 1 %}▼{% elif v.value|int == 2 %}▼▼{% elif v.value|int == 3 %}▼▼▼{% endif %}</strong>
+                            {% elif v.kind == 'level' %}
+                            <strong style="color:{{ v.color or '#0d6efd' }};">{% if v.value|int == 1 %}●{% elif v.value|int == 2 %}●●{% elif v.value|int == 3 %}●●●{% endif %}</strong>
+                            {% elif v.kind == 'sentiment' %}
+                            {% if v.value == 1 %}☹️{% elif v.value == 2 %}😐{% elif v.value == 3 %}😊{% endif %}
+                            {% elif v.kind == 'list' %}
+                            <span style="font-size:0.72rem;">{{ v.formatted or v.value }}</span>
+                            {% else %}
+                            <strong style="color:{{ v.color or '#1e293b' }};">{{ v.formatted or v.value }}{% if v.unit %} <span style="font-size:0.68rem; color:#94a3b8;">{{ v.unit }}</span>{% endif %}</strong>
+                            {% endif %}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                        {% if not kpi.vt_values or not kpi.vt_values|selectattr('value')|list %}
+                        <span style="color:#e2e8f0;">—</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="gbd-empty">No KPIs assigned</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="gbd-card gbd-d1">
+            <div class="gbd-card-header">
+                <div class="gbd-card-title"><i class="bi bi-check2-square" style="color:#06b6d4;"></i> Actions</div>
+                <span class="gbd-card-count">{{ my_actions | length }}{% if stats.action_overdue %} · <span style="color:#ef4444;">{{ stats.action_overdue }} overdue</span>{% endif %}</span>
+            </div>
+            <div class="gbd-card-body">
+                {% if my_actions %}
+                {% for a in my_actions %}
+                <div class="gbd-action">
+                    <span class="gbd-action-status" style="{% if a.status == 'active' %}background:#dcfce7; color:#166534;{% elif a.status == 'completed' %}background:#ede9fe; color:#5b21b6;{% elif a.status == 'cancelled' %}background:#fee2e2; color:#991b1b;{% else %}background:#f1f5f9; color:#475569;{% endif %}">{{ a.status | capitalize }}</span>
+                    <span class="gbd-action-title"><a href="{{ url_for('action_items.view', item_id=a.id) }}">{{ a.title }}</a></span>
+                    <span class="gbd-action-priority" style="color:{% if a.priority == 'urgent' %}#b71c1c{% elif a.priority == 'high' %}#e65100{% elif a.priority == 'medium' %}#1565c0{% else %}#546e7a{% endif %};">
+                        {% if a.priority == 'urgent' %}🔥{% elif a.priority == 'high' %}▲{% elif a.priority == 'medium' %}●{% else %}▼{% endif %}
+                    </span>
+                    <span class="gbd-action-due {% if a.is_overdue %}gbd-action-overdue{% endif %}">
+                        {% if a.due_date %}{{ a.due_date.strftime('%d %b') }}{% if a.is_overdue %} <i class="bi bi-exclamation-circle"></i>{% endif %}{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="gbd-empty">No actions assigned</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Decisions -->
+        <div class="gbd-card gbd-d1">
+            <div class="gbd-card-header">
+                <div class="gbd-card-title"><i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decisions</div>
+                <span class="gbd-card-count">{{ my_decisions | length }}</span>
+            </div>
+            <div class="gbd-card-body">
+                {% if my_decisions %}
+                {% for d in my_decisions %}
+                <div class="gbd-dec">
+                    <div class="gbd-dec-what">{{ d.what }}</div>
+                    <div class="gbd-dec-meta">
+                        <span>{{ d.date.strftime('%d %b %Y') }}</span>
+                        <span class="gbd-rag {{ d.rag }}"></span>
+                        <a href="{{ url_for('organization_admin.initiative_form', initiative_id=d.initiative_id) }}" style="color:#4f46e5; text-decoration:none; font-weight:600;">{{ d.initiative_name }}</a>
+                        {% if d.tag %}<span style="font-size:0.6rem; font-weight:700; padding:0.05rem 0.3rem; border-radius:8px; background:#ede9fe; color:#5b21b6;">{{ d.tag }}</span>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="gbd-empty">No decisions yet</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Initiatives -->
+        <div class="gbd-card gbd-d2">
+            <div class="gbd-card-header">
+                <div class="gbd-card-title"><i class="bi bi-rocket-takeoff" style="color:#f59e0b;"></i> Related Initiatives</div>
+                <span class="gbd-card-count">{{ my_initiatives | length }}</span>
+            </div>
+            <div class="gbd-card-body">
+                {% if my_initiatives %}
+                {% for ini in my_initiatives %}
+                <div class="gbd-ini">
+                    <span class="gbd-rag {{ ini.rag or 'none' }}"></span>
+                    <a href="{{ url_for('organization_admin.initiative_form', initiative_id=ini.id) }}" style="color:#1e293b; text-decoration:none; font-weight:600; flex:1;">{{ ini.name }}</a>
+                    {% if ini.impact_level and impact_levels_config and ini.impact_level in impact_levels_config %}
+                    <span style="font-weight:700; color:{{ impact_levels_config[ini.impact_level].color }}; font-size:0.85rem;">{{ impact_levels_config[ini.impact_level].icon }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="gbd-empty">No initiatives linked via KPIs</div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+var _gbdMode = parseInt(localStorage.getItem('gbd_detail_mode') || '1');
+var _gbdIcons = [
+    { html: '<span style="font-size:0.85rem;filter:grayscale(100%);opacity:0.5;">🎄</span>', title: 'Minimal: stats + KPIs only' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + actions, decisions' },
+    { html: '<span style="font-size:1.25rem;">🎄</span>', title: 'Full: + initiatives, full context' },
+];
+function applyGbdMode(m) {
+    _gbdMode = m;
+    var c = document.getElementById('gbdContainer');
+    if (c) c.dataset.detailMode = String(m);
+    var i = document.getElementById('gbdDetailIcon');
+    if (i) i.innerHTML = _gbdIcons[m].html;
+    var b = document.getElementById('gbdDetailBtn');
+    if (b) b.title = _gbdIcons[m].title;
+}
+function cycleGbdMode() {
+    var n = (_gbdMode + 1) % 3;
+    localStorage.setItem('gbd_detail_mode', String(n));
+    applyGbdMode(n);
+}
+applyGbdMode(_gbdMode);
+</script>
+{% endblock %}

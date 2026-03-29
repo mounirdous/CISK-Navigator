@@ -803,10 +803,18 @@
     [data-detail-mode="0"] .review-nav-dot.rag-red { background: rgba(255,255,255,0.4); }
 
     .dec-row {
-        padding: 0.4rem 0.5rem; margin-bottom: 0.4rem;
-        background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 8px;
+        padding: 0.5rem 0.6rem; margin-bottom: 0.5rem;
+        background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 10px;
         border-left: 3px solid #8b5cf6;
     }
+    .dec-tag-chip {
+        display: inline-flex; align-items: center; padding: 0.12rem 0.4rem;
+        border-radius: 10px; font-size: 0.65rem; font-weight: 600;
+        border: 1.5px solid #d8b4fe; background: white; color: #7c3aed;
+        cursor: pointer; transition: all 0.12s; user-select: none;
+    }
+    .dec-tag-chip:hover { border-color: #8b5cf6; }
+    .dec-tag-chip.active { background: #8b5cf6; color: white; border-color: #8b5cf6; }
     .dec-mention-chip {
         display: inline-flex; align-items: center; gap: 0.2rem;
         font-size: 0.68rem; font-weight: 600; padding: 0.1rem 0.4rem;
@@ -2007,7 +2015,10 @@
                                 {% for dec in upd.decisions %}
                                 <div style="border-left:3px solid #8b5cf6; padding:0.3rem 0.5rem; margin-bottom:0.3rem; background:#faf5ff; border-radius:0 6px 6px 0;">
                                     <div style="font-weight:600; font-size:0.85rem;">{{ dec.what }}</div>
-                                    {% if dec.who %}<div style="font-size:0.75rem; color:#64748b;"><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ dec.who }}</div>{% endif %}
+                                    <div style="font-size:0.75rem; color:#64748b; display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+                                        {% if dec.gb_name %}<a href="{{ url_for('workspace.gb_dashboard', gb_id=dec.gb_id) }}" style="font-size:0.6rem; font-weight:700; padding:0.1rem 0.35rem; border-radius:6px; background:#ede9fe; color:#5b21b6; text-decoration:none;">{{ dec.gb_name }}</a>{% endif %}
+                                        {% if dec.who %}<span><i class="bi bi-people" style="font-size:0.65rem;"></i> {{ dec.who }}</span>{% endif %}
+                                    </div>
                                     {% if dec.tag %}<span style="font-size:0.65rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:{{ {'scope':'#dbeafe','budget':'#d1fae5','timeline':'#fef3c7','resource':'#fce7f3','technical':'#e0e7ff','governance':'#ede9fe','other':'#f1f5f9'}.get(dec.tag,'#f1f5f9') }}; color:{{ {'scope':'#1e40af','budget':'#065f46','timeline':'#92400e','resource':'#9d174d','technical':'#3730a3','governance':'#5b21b6','other':'#475569'}.get(dec.tag,'#475569') }};">{{ dec.tag | capitalize }}</span>{% endif %}
                                     {% if dec.mentions %}
                                     <div style="margin-top:0.2rem; display:flex; flex-wrap:wrap; gap:0.2rem;">
@@ -2208,7 +2219,7 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
         document.getElementById('modalBlockers').value = blockers || '';
         // Load existing decisions
         if (decisions && Array.isArray(decisions)) {
-            decisions.forEach(function(d) { addDecisionRow(d.what, d.who, d.tag, d.mentions || []); });
+            decisions.forEach(function(d) { addDecisionRow(d.what, d.who, d.tag, d.mentions || [], d.gb_id); });
         }
     } else {
         title.innerHTML = '<i class="bi bi-plus-circle"></i> Add Progress Update';
@@ -2220,11 +2231,12 @@ function openProgressModal(mode, updateId, ragStatus, accomplishments, nextSteps
 // ── Structured Decisions ──
 var _decisionRows = [];
 var _decTags = {{ decision_tags | tojson }};
+var _decGBs = [{% for gb in org_governance_bodies %}{"id":{{ gb.id }},"name":{{ gb.name | tojson }},"abbr":{{ (gb.abbreviation or gb.name) | tojson }},"color":{{ gb.color | tojson }}}{% if not loop.last %},{% endif %}{% endfor %}];
 var _decTagColors = { scope:'#3b82f6', budget:'#10b981', timeline:'#f59e0b', resource:'#ec4899', technical:'#6366f1', governance:'#8b5cf6', other:'#94a3b8' };
 
-function addDecisionRow(what, who, tag, mentions) {
+function addDecisionRow(what, who, tag, mentions, gb_id) {
     var idx = _decisionRows.length;
-    _decisionRows.push({ what: what || '', who: who || '', tag: tag || '', mentions: mentions || [] });
+    _decisionRows.push({ what: what || '', who: who || '', tag: tag || '', mentions: mentions || [], gb_id: gb_id || null });
     var container = document.getElementById('decisionsContainer');
     var row = document.createElement('div');
     row.className = 'dec-row';
@@ -2237,16 +2249,30 @@ function addDecisionRow(what, who, tag, mentions) {
         });
     }
 
+    // Build tag chips HTML (multi-select)
+    var activeTags = (tag && typeof tag === 'string') ? tag.split(',').filter(Boolean) : (Array.isArray(tag) ? tag : []);
+    _decisionRows[idx].tags = activeTags;
+    var tagChipsHtml = _decTags.map(function(t) {
+        var isActive = activeTags.indexOf(t) >= 0;
+        return '<span class="dec-tag-chip' + (isActive ? ' active' : '') + '" data-tag="' + t + '" onclick="toggleDecTag(' + idx + ', \'' + t + '\', this)">' + t.charAt(0).toUpperCase() + t.slice(1) + '</span>';
+    }).join(' ');
+
+    // Build GB chips HTML
+    var gbChipsHtml = _decGBs.map(function(g) {
+        var isActive = gb_id == g.id;
+        return '<span class="dec-tag-chip' + (isActive ? ' active' : '') + '" data-gb="' + g.id + '" style="' + (isActive ? 'background:' + g.color + ';border-color:' + g.color + ';' : 'border-color:' + g.color + '40;color:' + g.color + ';') + '" onclick="toggleDecGB(' + idx + ', ' + g.id + ', this)">' + g.abbr + '</span>';
+    }).join(' ');
+
     row.innerHTML =
         '<div style="display:flex; gap:0.4rem; align-items:start;">' +
             '<div style="flex:1;">' +
-                '<input type="text" class="form-control form-control-sm dec-what" placeholder="Decision..." value="' + (what || '').replace(/"/g, '&quot;') + '" style="font-weight:600; margin-bottom:0.3rem;">' +
-                '<div style="display:flex; gap:0.3rem; margin-bottom:0.3rem;">' +
-                    '<input type="text" class="form-control form-control-sm dec-who" placeholder="Who (participants)" value="' + (who || '').replace(/"/g, '&quot;') + '" style="flex:1; font-size:0.78rem;">' +
-                    '<select class="form-select form-select-sm dec-tag" style="width:auto; font-size:0.78rem; max-width:120px;">' +
-                        '<option value="">Tag</option>' +
-                        _decTags.map(function(t) { return '<option value="' + t + '"' + (tag === t ? ' selected' : '') + '>' + t.charAt(0).toUpperCase() + t.slice(1) + '</option>'; }).join('') +
-                    '</select>' +
+                '<input type="text" class="form-control form-control-sm dec-what" placeholder="Decision..." value="' + (what || '').replace(/"/g, '&quot;') + '" style="font-weight:600; margin-bottom:0.4rem;">' +
+                '<div style="display:flex; gap:0.4rem; margin-bottom:0.4rem; flex-wrap:wrap; align-items:center;">' +
+                    '<input type="text" class="form-control form-control-sm dec-who" placeholder="Who" value="' + (who || '').replace(/"/g, '&quot;') + '" style="font-size:0.78rem; width:110px; flex-shrink:0;">' +
+                    '<span style="font-size:0.62rem; color:#94a3b8; font-weight:600;">GB:</span> ' + gbChipsHtml +
+                '</div>' +
+                '<div style="display:flex; gap:0.3rem; margin-bottom:0.4rem; flex-wrap:wrap; align-items:center;">' +
+                    '<span style="font-size:0.62rem; color:#94a3b8; font-weight:600;">Tags:</span> ' + tagChipsHtml +
                 '</div>' +
                 '<div style="display:flex; align-items:center; gap:0.3rem; flex-wrap:wrap;">' +
                     '<div class="dec-mentions-chips" id="decMentions' + idx + '">' + mentionChipsHtml + '</div>' +
@@ -2256,8 +2282,8 @@ function addDecisionRow(what, who, tag, mentions) {
                     '</div>' +
                 '</div>' +
             '</div>' +
-            '<button type="button" class="btn btn-sm btn-outline-danger" style="padding:0.15rem 0.3rem; font-size:0.7rem;" onclick="removeDecisionRow(' + idx + ')" title="Remove">' +
-                '<i class="bi bi-x"></i>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger" style="padding:0.2rem 0.35rem; font-size:0.7rem; border-radius:8px;" onclick="removeDecisionRow(' + idx + ')" title="Remove">' +
+                '<i class="bi bi-x-lg"></i>' +
             '</button>' +
         '</div>';
     container.appendChild(row);
@@ -2267,6 +2293,30 @@ function removeDecisionRow(idx) {
     _decisionRows[idx] = null;
     var row = document.querySelector('.dec-row[data-idx="' + idx + '"]');
     if (row) row.remove();
+}
+
+function toggleDecTag(idx, tag, el) {
+    if (!_decisionRows[idx]) return;
+    var tags = _decisionRows[idx].tags || [];
+    var pos = tags.indexOf(tag);
+    if (pos >= 0) { tags.splice(pos, 1); el.classList.remove('active'); }
+    else { tags.push(tag); el.classList.add('active'); }
+    _decisionRows[idx].tags = tags;
+}
+
+function toggleDecGB(idx, gbId, el) {
+    if (!_decisionRows[idx]) return;
+    var row = el.closest('.dec-row');
+    // Single select — deactivate others
+    row.querySelectorAll('[data-gb]').forEach(function(chip) { chip.classList.remove('active'); chip.style.background = ''; chip.style.color = ''; });
+    if (_decisionRows[idx].gb_id === gbId) {
+        _decisionRows[idx].gb_id = null; // toggle off
+    } else {
+        _decisionRows[idx].gb_id = gbId;
+        el.classList.add('active');
+        var g = _decGBs.find(function(g) { return g.id === gbId; });
+        if (g) { el.style.background = g.color; el.style.color = 'white'; el.style.borderColor = g.color; }
+    }
 }
 
 var _decSearchTimer = null;
@@ -2353,11 +2403,18 @@ function serializeDecisions() {
         if (!what) return;
         var idx = parseInt(row.dataset.idx);
         var mentions = (_decisionRows[idx] && _decisionRows[idx].mentions) || [];
+        var rowData = _decisionRows[idx] || {};
+        var gbId = rowData.gb_id || null;
+        var gbObj = gbId ? _decGBs.find(function(g) { return g.id === gbId; }) : null;
+        var tags = rowData.tags || [];
         decisions.push({
             what: what,
             who: row.querySelector('.dec-who').value.trim(),
-            tag: row.querySelector('.dec-tag').value,
+            tag: tags.join(','),
+            tags: tags,
             mentions: mentions,
+            gb_id: gbId,
+            gb_name: gbObj ? gbObj.name : null,
         });
     });
     document.getElementById('decisionsJson').value = JSON.stringify(decisions);
