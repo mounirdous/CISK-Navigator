@@ -272,7 +272,7 @@ def create_app(config_name=None):
         """Make impact levels available to all templates"""
         from flask import session
 
-        from app.models import ImpactLevel
+        from app.models import ImpactLevel, Organization
 
         org_id = session.get("organization_id")
         if org_id:
