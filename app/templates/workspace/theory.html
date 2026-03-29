@@ -434,10 +434,176 @@
 
     <hr class="theory-divider">
 
+    <!-- ═══════════════════════════ ECOSYSTEM ═══════════════════════════ -->
+    <section class="theory-section" style="padding-top:4rem;">
+        <div class="theory-section-label">The CISK Ecosystem</div>
+        <div class="theory-section-title">Structure, Measurement &amp; Accountability</div>
+
+        <div class="pillars-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="pillar-card" style="border-top: 3px solid #10b981;">
+                <div class="pillar-card-icon">🏗️</div>
+                <div class="pillar-card-title">The Hierarchy</div>
+                <div class="pillar-card-body">
+                    <b>Spaces</b> group strategic themes (seasons, sites, customers). Each space contains <b>Challenges</b> — high-level business problems.
+                    Challenges decompose into <b>Initiatives</b> (projects), which are executed through <b>Systems</b> (functional capabilities), each measured by <b>KPIs</b>.
+                    <div style="margin-top:0.75rem; display:flex; align-items:center; gap:0.3rem; font-size:0.75rem; color:rgba(255,255,255,0.5);">
+                        Space → Challenge → Initiative → System → KPI
+                    </div>
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #3b82f6;">
+                <div class="pillar-card-icon">📊</div>
+                <div class="pillar-card-title">Value Dimensions</div>
+                <div class="pillar-card-body">
+                    The columns of the workspace tree — each dimension represents a <b>lens</b> through which you measure strategic progress:
+                    Coverage, Engagement, Trust, Clarity, Risk, Decision Effectiveness, Impact.
+                    <div style="margin-top:0.5rem; font-size:0.78rem; color:rgba(255,255,255,0.4);">
+                        Numeric, qualitative, or list-based. Each with configurable aggregation (sum, avg, max, mode).
+                    </div>
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #f59e0b;">
+                <div class="pillar-card-icon">🏛️</div>
+                <div class="pillar-card-title">Governance Bodies</div>
+                <div class="pillar-card-body">
+                    GBs are the <b>accountability lens</b> — committees, steering groups, boards that oversee KPIs and track actions.
+                    They create <b>review cadences</b>, take <b>decisions</b>, and ensure strategic alignment.
+                    <div style="margin-top:0.5rem; font-size:0.78rem; color:rgba(255,255,255,0.4);">
+                        Filter any view by GB to see "my KPIs", "my actions", "my decisions".
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="theory-divider">
+
+    <!-- ═══════════════════════════ EXECUTION ENGINE ═══════════════════════════ -->
+    <section class="theory-section" style="padding-top:4rem;">
+        <div class="theory-section-label">The Execution Engine</div>
+        <div class="theory-section-title">Actions, Decisions &amp; Progress</div>
+
+        <div class="pillars-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="pillar-card" style="border-top: 3px solid #06b6d4;">
+                <div class="pillar-card-icon">✅</div>
+                <div class="pillar-card-title">Action Register</div>
+                <div class="pillar-card-body">
+                    Track commitments as <b>actions</b> and capture notes as <b>memos</b>. Each action has an owner, priority, due date, and is linked to governance bodies.
+                    Actions are <b>mentioned</b> against entities — connecting operational work to strategic intent.
+                    <div style="margin-top:0.5rem; font-size:0.78rem; color:rgba(255,255,255,0.4);">
+                        Table + Timeline views. Filterable by GB, status, priority, entity.
+                    </div>
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #8b5cf6;">
+                <div class="pillar-card-icon">📜</div>
+                <div class="pillar-card-title">Decision Log</div>
+                <div class="pillar-card-body">
+                    Decisions are captured during <b>initiative progress updates</b> — structured with <em>what</em>, <em>who</em>, and <em>tag</em> (scope, budget, timeline...).
+                    Each decision can <b>mention entities</b>, creating bi-directional traceability from decision to KPI and back.
+                    <div style="margin-top:0.5rem; font-size:0.78rem; color:rgba(255,255,255,0.4);">
+                        Searchable Decision Register with filters, CSV export, and governance body scoping.
+                    </div>
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #ef4444;">
+                <div class="pillar-card-icon">🚦</div>
+                <div class="pillar-card-title">Progress Tracking</div>
+                <div class="pillar-card-body">
+                    Each initiative has a <b>RAG status</b> (Red/Amber/Green) updated through periodic progress updates.
+                    Updates capture accomplishments, next steps, blockers, and decisions — building a <b>chronological execution log</b>.
+                    <div style="margin-top:0.5rem; font-size:0.78rem; color:rgba(255,255,255,0.4);">
+                        Initiative Review Navigator with focus mode, GB-scoped KPI display, and sequential navigation.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="theory-divider">
+
+    <!-- ═══════════════════════════ INTELLIGENCE ═══════════════════════════ -->
+    <section class="theory-section" style="padding-top:4rem;">
+        <div class="theory-section-label">The Intelligence Layer</div>
+        <div class="theory-section-title">Prioritization, Consensus &amp; Aggregation</div>
+
+        <div class="pillars-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="pillar-card" style="border-top: 3px solid #ec4899;">
+                <div class="pillar-card-icon">⚖️</div>
+                <div class="pillar-card-title">Impact Assessment</div>
+                <div class="pillar-card-body">
+                    Every entity is assessed with a <b>3-level impact scale</b> (configurable symbols, weights, colors).
+                    The <b>true importance</b> is computed by compounding impacts through the hierarchy chain using one of three methods:
+                    <div style="margin-top:0.5rem; font-size:0.78rem;">
+                        <span style="color:#f59e0b;">Simple Product</span> · <span style="color:#10b981;">Geometric Mean</span> · <span style="color:#ef4444;">Toyota QFD</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #14b8a6;">
+                <div class="pillar-card-icon">🤝</div>
+                <div class="pillar-card-title">Consensus Model</div>
+                <div class="pillar-card-body">
+                    Multiple contributors can provide <b>independent values</b> for each KPI cell. The system computes consensus automatically:
+                    <div style="margin-top:0.5rem; font-size:0.78rem;">
+                        <span style="color:#4ade80;">Strong</span> (all agree) · <span style="color:#fbbf24;">Weak</span> (majority) · <span style="color:#f87171;">None</span> (no agreement) · <span style="color:#67e8f9;">Single</span> (one voice)
+                    </div>
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #a78bfa;">
+                <div class="pillar-card-icon">📈</div>
+                <div class="pillar-card-title">Rollup Aggregation</div>
+                <div class="pillar-card-body">
+                    Values propagate <b>bottom-up</b> from KPIs through systems, initiatives, challenges, to spaces.
+                    Each value type has a configurable aggregation formula — <b>sum, average, max, min, median, count, or mode</b>.
+                    <div style="margin-top:0.5rem; font-size:0.78rem; color:rgba(255,255,255,0.4);">
+                        Coverage and completion percentages emerge naturally from the hierarchy.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="theory-divider">
+
+    <!-- ═══════════════════════════ STRATEGIC CONTEXT ═══════════════════════════ -->
+    <section class="theory-section" style="padding-top:4rem;">
+        <div class="theory-section-label">Strategic Context</div>
+        <div class="theory-section-title">North Star, Competitive Forces &amp; SWOT</div>
+
+        <div class="pillars-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+            <div class="pillar-card" style="border-top: 3px solid #6366f1;">
+                <div class="pillar-card-icon">🧭</div>
+                <div class="pillar-card-title">Strategic Pillars</div>
+                <div class="pillar-card-body">
+                    Define your organization's <b>strategic direction</b> through named pillars — each with key points, custom icons, and accent colors.
+                    The strategy view provides a visual reference for aligning initiatives to organizational goals.
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #f97316;">
+                <div class="pillar-card-icon">🏭</div>
+                <div class="pillar-card-title">Porter's Five Forces</div>
+                <div class="pillar-card-body">
+                    Analyze your competitive environment: <b>New Entrants, Suppliers, Buyers, Substitutes, Rivalry</b>.
+                    Captured at the organization level and accessible from the workspace to inform challenge prioritization.
+                </div>
+            </div>
+            <div class="pillar-card" style="border-top: 3px solid #22c55e;">
+                <div class="pillar-card-icon">🔍</div>
+                <div class="pillar-card-title">SWOT per Space</div>
+                <div class="pillar-card-body">
+                    Each space has its own <b>Strengths, Weaknesses, Opportunities, Threats</b> analysis.
+                    SWOT informs which challenges to prioritize within each strategic grouping, grounding decisions in situational awareness.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="theory-divider">
+
     <!-- ═══════════════════════════ PILLARS ═══════════════════════════ -->
     <section class="theory-section" style="padding-top:4rem;">
-        <div class="theory-section-label">Supporting Dimensions</div>
-        <div class="theory-section-title">The Foundations of CISK</div>
+        <div class="theory-section-label">Theoretical Foundations</div>
+        <div class="theory-section-title">The Intellectual Roots of CISK</div>
 
         <div class="pillars-grid">
             <div class="pillar-card">

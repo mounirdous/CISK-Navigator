@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.7.0] - 2026-03-29
+
+### Added
+- **Enriched CISK Theory page** with 4 new sections:
+  - **The CISK Ecosystem** — hierarchy (Space→KPI), value dimensions, governance bodies
+  - **The Execution Engine** — action register, decision log, progress tracking
+  - **The Intelligence Layer** — impact assessment, consensus model, rollup aggregation
+  - **Strategic Context** — strategic pillars, Porter's Five Forces, SWOT per space
+- "Other KPIs" section now shows full values + GB badges (same detail as scoped KPIs)
+- GB badges displayed on all KPIs in initiative review (scoped and other)
+
+### Fixed
+- Broken Jinja expression in NAV_BACK_QS that killed all JS on initiative form
+- KPI data in initiative form now includes governance_bodies for GB scoping
+
 ## [5.6.0] - 2026-03-29
 
 ### Added

@@ -4243,6 +4243,9 @@ def initiative_form(initiative_id):
                         }
                     )
 
+            kpi_gbs = [{"id": gbl.governance_body_id, "name": gbl.governance_body.name,
+                        "abbreviation": gbl.governance_body.abbreviation, "color": gbl.governance_body.color}
+                       for gbl in kpi.governance_body_links if gbl.governance_body]
             system_kpis.append(
                 {
                     "id": kpi.id,
@@ -4251,6 +4254,7 @@ def initiative_form(initiative_id):
                     "status_reason": status["reason"],
                     "value_types": value_types_data,
                     "first_vt_id": kpi.value_type_configs[0].value_type_id if kpi.value_type_configs else None,
+                    "governance_bodies": kpi_gbs,
                 }
             )
 
