@@ -1953,11 +1953,9 @@
                     :class="{'active': selectedImpactLevels.length > 0}"
                     style="opacity: 0.9; min-width: 36px;"
                     :title="_impactFilterTitle()">
-                <span x-show="selectedImpactLevels.length === 0" style="font-size: 0.85rem; opacity: 0.5;">☆</span>
-                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 0" style="font-size: 0.85rem;">○</span>
-                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 1" style="font-size: 0.85rem;" :style="impactScale[1] ? 'color:' + impactScale[1].color : ''">★</span>
-                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 2" style="font-size: 0.85rem;" :style="impactScale[2] ? 'color:' + impactScale[2].color : ''">★★</span>
-                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 3" style="font-size: 0.85rem;" :style="impactScale[3] ? 'color:' + impactScale[3].color : ''">★★★</span>
+                <span style="font-size: 0.85rem;"
+                      :style="_impactFilterColor()"
+                      x-text="_impactFilterIcon()"></span>
             </button>
             <!-- Refresh data (force reload from server) -->
             <button @click="_stale=false; loadData(true)"
@@ -4261,6 +4259,21 @@ function workspaceV2(orgId, filterPresets) {
             } else {
                 this.selectedImpactLevels = [];
             }
+        },
+
+        _impactFilterIcon() {
+            if (this.selectedImpactLevels.length === 0) return '☆';
+            var lvl = this.selectedImpactLevels[0];
+            if (lvl === 0) return '○';
+            return '★'.repeat(lvl);
+        },
+
+        _impactFilterColor() {
+            if (this.selectedImpactLevels.length === 0) return 'opacity:0.5;';
+            var lvl = this.selectedImpactLevels[0];
+            if (lvl === 0) return '';
+            var s = this.impactScale[lvl];
+            return s ? 'color:' + s.color + ';' : '';
         },
 
         _impactFilterTitle() {
