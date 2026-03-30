@@ -4166,6 +4166,24 @@ def _delete_all_organization_data(org_id):
 
     UserFilterPreset.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
 
+    # 23. Delete Strategic Pillars
+    from app.models import StrategicPillar
+
+    StrategicPillar.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
+    # 24. Delete Impact Levels
+    from app.models import ImpactLevel
+
+    ImpactLevel.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
+    # 25. Delete Entity Type Defaults (branding)
+    from app.models import EntityTypeDefault
+
+    EntityTypeDefault.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
+    # 26. Delete org-level entity links
+    EntityLink.query.filter_by(entity_type="organization", entity_id=org_id).delete(synchronize_session=False)
+
     db.session.flush()
 
 

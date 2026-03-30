@@ -74,7 +74,7 @@ class FullRestoreService:
     """Service for restoring full organization backup with data"""
 
     @staticmethod
-    def restore_from_json(json_string, organization_id, governance_body_mapping=None, user_mapping=None):
+    def restore_from_json(json_string, organization_id, governance_body_mapping=None, user_mapping=None, portal_org_mapping=None):
         """
         Restore organization from JSON backup.
 
@@ -365,6 +365,7 @@ class FullRestoreService:
                         initiative_map,
                         system_map,
                         geo_map,
+                        portal_org_mapping=portal_org_mapping,
                     )
                     for key in [
                         "spaces",
@@ -555,6 +556,10 @@ class FullRestoreService:
 
         from app.models import StrategicPillar
 
+        # Clear existing pillars first
+        StrategicPillar.query.filter_by(organization_id=organization_id).delete(synchronize_session=False)
+        db.session.flush()
+
         count = 0
         for p in backup.get("strategic_pillars", []):
             pillar = StrategicPillar(
@@ -578,6 +583,10 @@ class FullRestoreService:
     def _restore_impact_levels(backup, organization_id):
         """Restore impact level configuration. Returns count."""
         from app.models import ImpactLevel
+
+        # Clear existing impact levels first
+        ImpactLevel.query.filter_by(organization_id=organization_id).delete(synchronize_session=False)
+        db.session.flush()
 
         count = 0
         for il_data in backup.get("impact_levels", []):
@@ -689,7 +698,7 @@ class FullRestoreService:
 
     @staticmethod
     def _restore_space_hierarchy(
-        space_data, organization_id, value_type_map, governance_body_map, initiative_map, system_map, geo_map=None
+        space_data, organization_id, value_type_map, governance_body_map, initiative_map, system_map, geo_map=None, portal_org_mapping=None
     ):
         """Restore space with full hierarchy"""
         stats = {
@@ -843,15 +852,19 @@ class FullRestoreService:
                         if sys_name in system_map:
                             system = system_map[sys_name]
                         else:
-                            # Resolve linked org by name (portal)
+                            # Resolve linked org (portal system)
                             _linked_org_id = None
                             _linked_org_name = system_data.get("linked_organization_name")
                             if _linked_org_name:
-                                _lo = Organization.query.filter_by(name=_linked_org_name, is_deleted=False).first()
-                                if _lo:
-                                    _linked_org_id = _lo.id
+                                if portal_org_mapping and _linked_org_name in portal_org_mapping:
+                                    _linked_org_id = portal_org_mapping[_linked_org_name]
                                 else:
-                                    stats["warnings"].append(f"System '{sys_name}' links to org '{_linked_org_name}' which was not found")
+                                    # Fallback: auto-resolve by name
+                                    _lo = Organization.query.filter_by(name=_linked_org_name, is_deleted=False).first()
+                                    if _lo:
+                                        _linked_org_id = _lo.id
+                                    else:
+                                        stats["warnings"].append(f"System '{sys_name}' links to org '{_linked_org_name}' which was not found")
 
                             system = System(
                                 organization_id=organization_id,

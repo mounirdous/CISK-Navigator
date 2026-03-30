@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.10.1] - 2026-03-30
+
+### Fixed
+- **Duplicate strategy pillars on repeated imports** — `_delete_all_organization_data` now also clears StrategicPillar, ImpactLevel, EntityTypeDefault, and org-level EntityLinks
+- **Full restore duplicates** — `_restore_strategic_pillars` and `_restore_impact_levels` clear existing records before inserting
+
+### Added
+- **Portal org mapping during restore** — backup parse detects linked CISK orgs; mapping page shows portal section with org dropdown; auto-selects exact name matches
+
 ## [5.10.0] - 2026-03-30
 
 ### Added

@@ -84,6 +84,52 @@
                             </table>
                         </div>
 
+                        {% if portal_org_names %}
+                        <h5 class="mt-4 mb-3"><i class="bi bi-compass"></i> Portal Systems (CISK Links)</h5>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Some systems in the backup link to other CISK organizations. Map each to an existing organization or skip to leave unlinked.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 40%;">Linked Organization in Backup</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for po_name in portal_org_names %}
+                                    <tr>
+                                        <td class="align-middle">
+                                            <strong class="text-info">🧭 {{ po_name }}</strong>
+                                        </td>
+                                        <td>
+                                            <select name="portal_action_{{ po_name }}" class="form-select">
+                                                <option value="">⏭ Skip (no link)</option>
+                                                {% for o in all_orgs %}
+                                                <option value="map_{{ o.id }}"
+                                                    {% if o.name == po_name %}selected{% endif %}>
+                                                    📌 {{ o.name }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                            <small class="form-text text-muted">
+                                                {% set exact = all_orgs|selectattr('name', 'equalto', po_name)|list|first %}
+                                                {% if exact %}
+                                                    <i class="bi bi-check-circle text-success"></i> Exact match found — auto-selected
+                                                {% else %}
+                                                    No exact match — select manually or skip
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+
                         <div class="alert alert-danger mt-4">
                             <i class="bi bi-exclamation-triangle"></i>
                             <strong>Warning:</strong> Proceeding will <strong>REPLACE ALL DATA</strong> in <strong>{{ org.name }}</strong> with the backup contents (structure + all KPI values + contributions).

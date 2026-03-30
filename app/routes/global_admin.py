@@ -1093,14 +1093,25 @@ def restore_backup():
                 backup_data = json.loads(backup_content)
                 governance_bodies = backup_data.get("governance_bodies", [])
                 backup_users = backup_data.get("users", [])
+                # Detect portal systems (linked to other CISK orgs)
+                portal_org_names = set()
+                for sp in backup_data.get("spaces", []):
+                    for ch in sp.get("challenges", []):
+                        for ini in ch.get("initiatives", []):
+                            for sys_d in ini.get("systems", []):
+                                lon = sys_d.get("linked_organization_name")
+                                if lon:
+                                    portal_org_names.add(lon)
+                portal_org_names = sorted(portal_org_names)
             except Exception:
                 governance_bodies = []
                 backup_users = []
+                portal_org_names = []
 
             # Detect users not auto-resolvable by login
             unmapped_users = [u for u in backup_users if not User.query.filter_by(login=u["login"]).first()]
 
-            needs_step = unmapped_users or governance_bodies
+            needs_step = unmapped_users or governance_bodies or portal_org_names
             if needs_step:
                 import tempfile
 
@@ -1118,6 +1129,7 @@ def restore_backup():
                 session["pending_full_backup_path"] = tmp.name
                 session["full_backup_org_id"] = org_id
                 session["full_backup_governance_bodies"] = [gb["name"] for gb in governance_bodies]
+                session["full_backup_portal_orgs"] = portal_org_names
                 session.pop("full_backup_user_mapping", None)
                 session.pop("pending_full_backup", None)
 
@@ -1315,8 +1327,9 @@ def full_backup_governance_mapping():
     backup_path = session.get("pending_full_backup_path")
     org_id = session.get("full_backup_org_id")
     gb_names = session.get("full_backup_governance_bodies", [])
+    portal_org_names = session.get("full_backup_portal_orgs", [])
 
-    if not backup_path or not os.path.exists(backup_path) or not org_id or not gb_names:
+    if not backup_path or not os.path.exists(backup_path) or not org_id or not (gb_names or portal_org_names):
         flash("No pending backup restore found", "warning")
         return redirect(url_for("global_admin.backup_restore"))
 
@@ -1348,6 +1361,14 @@ def full_backup_governance_mapping():
                     gb_id = int(action.split("_")[1])
                     governance_body_mapping[gb_name] = gb_id
 
+            # Build portal org mapping from form
+            portal_org_mapping = {}
+            for po_name in portal_org_names:
+                po_action = request.form.get(f"portal_action_{po_name}")
+                if po_action and po_action.startswith("map_"):
+                    portal_org_mapping[po_name] = int(po_action.split("_")[1])
+                # else: skip (no link)
+
             # Pick up user mapping from previous step (if user mapping was done)
             import json as _json
 
@@ -1360,14 +1381,16 @@ def full_backup_governance_mapping():
             session.pop("full_backup_org_id", None)
             session.pop("full_backup_governance_bodies", None)
             session.pop("full_backup_unmapped_users", None)
+            session.pop("full_backup_portal_orgs", None)
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
-            # Restore with governance body mapping and optional user mapping
+            # Restore with governance body mapping, user mapping, and portal mapping
             result = FullRestoreService.restore_from_json(
                 backup_content, org_id,
                 governance_body_mapping=governance_body_mapping,
                 user_mapping=user_mapping,
+                portal_org_mapping=portal_org_mapping if portal_org_mapping else None,
             )
 
             if result.get("success"):
@@ -1421,11 +1444,16 @@ def full_backup_governance_mapping():
 
             traceback.print_exc()
 
+    # Get all orgs for portal mapping (excluding target org)
+    all_orgs = Organization.query.filter(Organization.id != org_id, Organization.is_deleted.is_(False)).order_by(Organization.name).all()
+
     return render_template(
         "global_admin/full_backup_governance_mapping.html",
         governance_bodies=gb_names,
         existing_gbs=existing_gbs,
         org=org,
+        portal_org_names=portal_org_names,
+        all_orgs=all_orgs,
     )
 
 
