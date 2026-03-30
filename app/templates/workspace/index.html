@@ -2506,7 +2506,7 @@
                                 <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                 <i class="bi bi-chevron-down expand-icon"
                                    :class="{'collapsed': space.collapsed, 'empty': space.challenges.length === 0}"
-                                   @click="space.collapsed = !space.collapsed; focusedLevel = null; _saveTreeState()"
+                                   @click="_toggleCollapse('space', space.id)"
                                    x-show="space.challenges.length > 0"></i>
                                 <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
                                 <span x-show="!space.logo_url && space.icon && !editMode" class="entity-icon-text" x-text="space.icon"></span>
@@ -2667,7 +2667,7 @@
                                         <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                         <i class="bi bi-chevron-down expand-icon"
                                            :class="{'collapsed': challenge.collapsed, 'empty': challenge.initiatives.length === 0}"
-                                           @click="challenge.collapsed = !challenge.collapsed; focusedLevel = null; _saveTreeState()"
+                                           @click="_toggleCollapse('challenge', challenge.id)"
                                            x-show="challenge.initiatives.length > 0"></i>
                                         <img x-show="challenge.logo_url" :src="challenge.logo_url" class="entity-logo" />
                                         <span x-show="!challenge.logo_url && challenge.icon && !editMode" class="entity-icon-text" x-text="challenge.icon"></span>
@@ -2781,7 +2781,7 @@
                                                 <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                                 <i class="bi bi-chevron-down expand-icon"
                                                    :class="{'collapsed': initiative.collapsed, 'empty': initiative.systems.length === 0}"
-                                                   @click="initiative.collapsed = !initiative.collapsed; focusedLevel = null; _saveTreeState()"
+                                                   @click="_toggleCollapse('initiative', initiative.id)"
                                                    x-show="initiative.systems.length > 0"></i>
                                                 <img x-show="initiative.logo_url" :src="initiative.logo_url" class="entity-logo" />
                                                 <span x-show="!initiative.logo_url && initiative.icon && !editMode" class="entity-icon-text" x-text="initiative.icon"></span>
@@ -2931,7 +2931,7 @@
                                                         <i x-show="editMode" class="drag-handle bi bi-grip-vertical"></i>
                                                         <i class="bi bi-chevron-down expand-icon"
                                                            :class="{'collapsed': system.collapsed, 'empty': system.kpis.length === 0}"
-                                                           @click="system.collapsed = !system.collapsed; focusedLevel = null; _saveTreeState()"
+                                                           @click="_toggleCollapse('system', system.id)"
                                                            x-show="system.kpis.length > 0"></i>
                                                         <img x-show="system.logo_url" :src="system.logo_url" class="entity-logo" />
                                                         <span x-show="!system.logo_url && system.icon && !editMode" class="entity-icon-text" x-text="system.icon"></span>
@@ -3784,17 +3784,41 @@ function workspaceV2(orgId, filterPresets) {
             }
         },
 
+        _toggleCollapse(entityType, entityId) {
+            // Toggle directly on this.spaces (the source of truth)
+            // filteredSpaces will re-compute from this.spaces automatically
+            var found = false;
+            for (var s of (this.spaces || [])) {
+                if (entityType === 'space' && s.id === entityId) { s.collapsed = !s.collapsed; found = true; break; }
+                for (var c of (s.challenges || [])) {
+                    if (entityType === 'challenge' && c.id === entityId) { c.collapsed = !c.collapsed; found = true; break; }
+                    for (var i of (c.initiatives || [])) {
+                        if (entityType === 'initiative' && i.id === entityId) { i.collapsed = !i.collapsed; found = true; break; }
+                        for (var sys of (i.systems || [])) {
+                            if (entityType === 'system' && sys.id === entityId) { sys.collapsed = !sys.collapsed; found = true; break; }
+                        }
+                        if (found) break;
+                    }
+                    if (found) break;
+                }
+                if (found) break;
+            }
+            this.focusedLevel = null;
+            this._saveTreeState();
+        },
+
         _saveTreeState() {
             try {
                 var state = {};
+                var count = 0;
                 for (var s of (this.spaces || [])) {
-                    if (!s.collapsed) state['s' + s.id] = 1;
+                    if (!s.collapsed) { state['s' + s.id] = 1; count++; }
                     for (var c of (s.challenges || [])) {
-                        if (!c.collapsed) state['c' + c.id] = 1;
+                        if (!c.collapsed) { state['c' + c.id] = 1; count++; }
                         for (var i of (c.initiatives || [])) {
-                            if (!i.collapsed) state['i' + i.id] = 1;
+                            if (!i.collapsed) { state['i' + i.id] = 1; count++; }
                             for (var sys of (i.systems || [])) {
-                                if (!sys.collapsed) state['y' + sys.id] = 1;
+                                if (!sys.collapsed) { state['y' + sys.id] = 1; count++; }
                             }
                         }
                     }
@@ -3804,38 +3828,25 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         _processData(data) {
-            // Build lookup maps of existing collapsed state to preserve across reloads
+            // Restore tree collapsed state from localStorage (saved on every toggle click)
+            // localStorage is the single source of truth for tree state across page loads
             var spaceCollapsed = {}, challengeCollapsed = {}, initiativeCollapsed = {}, systemCollapsed = {}, vtCollapsed = {};
-            for (var s of (this.spaces || [])) {
-                spaceCollapsed[s.id] = s.collapsed;
-                for (var c of (s.challenges || [])) {
-                    challengeCollapsed[c.id] = c.collapsed;
-                    for (var i of (c.initiatives || [])) {
-                        initiativeCollapsed[i.id] = i.collapsed;
-                        for (var sys of (i.systems || [])) {
-                            systemCollapsed[sys.id] = sys.collapsed;
-                        }
-                    }
-                }
-            }
+            try {
+                var rawSaved = localStorage.getItem('ws_tree_' + {{ org_id }});
+                var saved = JSON.parse(rawSaved || '{}');
+                var restoredCount = 0;
+                Object.keys(saved).forEach(function(k) {
+                    var id = parseInt(k.substring(1));
+                    if (k.charAt(0) === 's') { spaceCollapsed[id] = false; restoredCount++; }
+                    else if (k.charAt(0) === 'c') { challengeCollapsed[id] = false; restoredCount++; }
+                    else if (k.charAt(0) === 'i') { initiativeCollapsed[id] = false; restoredCount++; }
+                    else if (k.charAt(0) === 'y') { systemCollapsed[id] = false; restoredCount++; }
+                });
+            } catch(e) {}
+
+            // Preserve column collapsed state from current render
             for (var vt of (this.valueTypes || [])) {
                 vtCollapsed[vt.id] = vt.collapsed;
-            }
-
-            // On fresh page load, restore expanded nodes from localStorage
-            if (!Object.keys(spaceCollapsed).length) {
-                try {
-                    var saved = JSON.parse(localStorage.getItem('ws_tree_' + {{ org_id }}) || '{}');
-                    // Saved state only contains expanded nodes (value=1)
-                    // Everything else defaults to collapsed (true)
-                    Object.keys(saved).forEach(function(k) {
-                        var id = parseInt(k.substring(1));
-                        if (k.charAt(0) === 's') spaceCollapsed[id] = false;
-                        else if (k.charAt(0) === 'c') challengeCollapsed[id] = false;
-                        else if (k.charAt(0) === 'i') initiativeCollapsed[id] = false;
-                        else if (k.charAt(0) === 'y') systemCollapsed[id] = false;
-                    });
-                } catch(e) {}
             }
 
             // Add UI state to all entities, preserving existing collapsed state

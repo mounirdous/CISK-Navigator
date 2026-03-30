@@ -1,8 +1,8 @@
-# 🧭 CISK Navigator v5.10.0
+# 🧭 CISK Navigator v5.18.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-5.10.0-blue)
+![Version](https://img.shields.io/badge/version-5.18.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
@@ -60,7 +60,12 @@
 
 ### ✨ **Workspace UX**
 - **Cinematic loading screen** — glassmorphism backdrop, dramatic org logo reveal, entity icons with colored glow rings, ripple pulses, connecting beam animation
-- **3-level xmas tree remapped** — Level 0 = tree only (no columns), Level 1 = tree + values, Level 2 = full decorations
+- **3-level xmas tree** (🌲/🎄/🎄✨) — Level 0 = tree only, Level 1 = tree + values, Level 2 = full decorations + Impact column
+- **Impact filter** (☆/○/★/★★/★★★) — cycling icon filters all entity levels by true importance; available on workspace, action register, and decision register
+- **Tree state persistence** — expanded/collapsed nodes survive navigation and page reloads via localStorage
+- **5 impact compounding methods** — Simple Product, Geometric Mean, Toyota QFD, Toyota Weighted (DS), Toyota Weighted (Full); configurable reinforcement weights
+- **Decision Register** — standalone decision creation with tags, entity mentions, GB selector, presets, filters
+- **Decisions Dashboard** — aggregated view of all decisions (standalone + initiative-based)
 - **Click-based info windows** replacing hover tooltips — draggable with touch support
 - **Tree state persistence** via localStorage — survives navigation and page reload
 - **KPI single value type** — radio button at creation (was incorrectly multi-select)
