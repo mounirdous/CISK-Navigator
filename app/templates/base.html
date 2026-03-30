@@ -365,8 +365,19 @@
             </a>
             {% endif %}
             <a class="navbar-brand flex-shrink-0 me-2" href="{% if session.organization_id %}{{ url_for('workspace.index') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}" style="display: flex; align-items: center; gap: 0.4rem; text-decoration: none; transition: opacity 0.2s;" title="{% if session.organization_id %}Go to {{ session.get('organization_name', 'CISK') }} CISK{% else %}Dashboard{% endif %}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-                <span style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">CISK</span>
-                <span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.theory') }}';" style="font-size: 0.75rem; opacity: 0.5; cursor: pointer;" title="CISK Theory" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">v{{ app_version }}</span>
+                <span style="display:flex; flex-direction:column; align-items:center; line-height:1;">
+                    <span style="display:flex; align-items:center; gap:0.25rem;">
+                        <i class="bi bi-grid-3x3-gap-fill" style="font-size:0.85rem; color:#60a5fa;"></i>
+                        <span style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">CISK</span>
+                    </span>
+                    {% if session.organization_name %}<span style="font-size: 0.55rem; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.03em; margin-top: -2px; white-space: nowrap; max-width: 100px; overflow: hidden; text-overflow: ellipsis;">{{ session.organization_name }}</span>{% endif %}
+                </span>
+                <span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.theory') }}';"
+                      style="display:flex; align-items:center; gap:0.2rem; opacity:0.4; margin-top:2px; cursor:pointer;"
+                      title="CISK Theory" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='0.4'">
+                    <span style="font-size:0.5rem; color:rgba(255,255,255,0.6);">v{{ app_version }}</span>
+                    <i class="bi bi-info-circle" style="font-size:0.55rem; color:rgba(255,255,255,0.6);"></i>
+                </span>
             </a>
             {% if current_user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
