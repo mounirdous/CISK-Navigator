@@ -3855,6 +3855,15 @@ function workspaceV2(orgId, filterPresets) {
                 this.loadingPct = 50;
                 var data = await response.json();
 
+                // Check for server error
+                if (data.error) {
+                    console.error('Server error:', data.error);
+                    alert('Server error loading workspace data: ' + data.error);
+                    this.loading = false;
+                    this._loadDataInProgress = false;
+                    return;
+                }
+
                 // Save to localStorage cache + clear dirty flag (fresh data from server)
                 try {
                     localStorage.setItem(cacheKey, JSON.stringify(data));

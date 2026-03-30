@@ -4025,6 +4025,16 @@ def get_data():
     """
     org_id = session.get("organization_id")
 
+    try:
+        return _build_workspace_data(org_id)
+    except Exception as e:
+        import traceback
+        current_app.logger.error(f"Workspace get_data error: {traceback.format_exc()}")
+        return jsonify({"error": str(e), "spaces": [], "valueTypes": [], "governanceBodies": [], "groups": [], "impactLevels": [], "impactScale": {}}), 500
+
+
+def _build_workspace_data(org_id):
+    """Build and return workspace data JSON. Extracted for error handling."""
     # Get spaces with privacy filtering
     spaces_query = Space.query.filter_by(organization_id=org_id)
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
@@ -4272,8 +4282,6 @@ def get_data():
                 color_config = space.get_color_config(vt.id)
 
                 # Format the value using the Jinja filter
-                from flask import current_app
-
                 formatted_value = current_app.jinja_env.filters["format_value"](
                     rollup_data.get("value"), vt, color_config
                 )
@@ -4325,8 +4333,6 @@ def get_data():
                 rollup_data = challenge.get_rollup_value(vt.id)
                 if rollup_data and rollup_data.get("value") is not None:
                     color_config = challenge.get_color_config(vt.id)
-                    from flask import current_app
-
                     formatted_value = current_app.jinja_env.filters["format_value"](
                         rollup_data.get("value"), vt, color_config
                     )
@@ -4370,8 +4376,6 @@ def get_data():
                     rollup_data = initiative.get_rollup_value(vt.id)
                     if rollup_data and rollup_data.get("value") is not None:
                         color_config = initiative.get_color_config(vt.id)
-                        from flask import current_app
-
                         formatted_value = current_app.jinja_env.filters["format_value"](
                             rollup_data.get("value"), vt, color_config
                         )
@@ -4423,8 +4427,6 @@ def get_data():
                         rollup_data = sys_link.get_rollup_value(vt.id)
                         if rollup_data and rollup_data.get("value") is not None:
                             color_config = sys_link.get_color_config(vt.id)
-                            from flask import current_app
-
                             formatted_value = current_app.jinja_env.filters["format_value"](
                                 rollup_data.get("value"), vt, color_config
                             )
@@ -4529,8 +4531,6 @@ def get_data():
                                 # Format the value using config settings
                                 formatted_value = None
                                 if consensus and consensus.get("value") is not None:
-                                    from flask import current_app
-
                                     formatted_value = current_app.jinja_env.filters["format_value"](
                                         consensus.get("value"), vt, config
                                     )
