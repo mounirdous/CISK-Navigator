@@ -85,6 +85,20 @@
 
                     {% include 'organization_admin/_impact_field.html' %}
 
+                    <!-- CISK Portal Link -->
+                    {% if all_orgs %}
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold"><i class="bi bi-compass"></i> Link to CISK Workspace</label>
+                        <p class="text-muted" style="font-size:0.85rem; margin-bottom:0.5rem;">If this system is itself a CISK workspace, link it here for direct access from the tree.</p>
+                        <select name="linked_organization_id" class="form-select">
+                            <option value="">— None (regular system)</option>
+                            {% for o in all_orgs %}
+                            <option value="{{ o.id }}" {% if system.linked_organization_id == o.id %}selected{% endif %}>{{ o.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
                     <div class="d-grid gap-2">
                         {{ form.submit(class="btn btn-primary btn-lg") }}
                         <a href="{{ url_for('organization_admin.spaces') }}" class="btn btn-outline-secondary">

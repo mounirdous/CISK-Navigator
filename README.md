@@ -1,8 +1,8 @@
-# 🧭 CISK Navigator v5.9.1
+# 🧭 CISK Navigator v5.10.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-5.9.1-blue)
+![Version](https://img.shields.io/badge/version-5.10.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
@@ -48,6 +48,11 @@
 - **Strategic Pillars** — editable strategy with icon picker, glassmorphism view page
 - **Value Dimensions page** — card view of all value types with descriptions
 - **Enriched CISK Theory page** — Ecosystem, Execution Engine, Intelligence Layer, Strategic Context sections
+
+### 🔗 **Portal Systems (System as CISK)**
+- **Link a system to another CISK organization** — when a system IS itself a CISK workspace, link it for recursive navigation
+- **Portal chip in workspace tree** — sleek gradient pill with linked org logo, name, and arrow; click opens the linked workspace in a new tab
+- Configurable from system create/edit forms; included in backup/restore
 
 ### ⚙️ **Org Admin**
 - **Strategy toggle per organization** — enable/disable strategic pillars feature from org admin dashboard

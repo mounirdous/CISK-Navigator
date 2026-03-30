@@ -78,7 +78,7 @@ class Organization(db.Model):
     spaces = db.relationship("Space", back_populates="organization", cascade="all, delete-orphan")
     challenges = db.relationship("Challenge", back_populates="organization", cascade="all, delete-orphan")
     initiatives = db.relationship("Initiative", back_populates="organization", cascade="all, delete-orphan")
-    systems = db.relationship("System", back_populates="organization", cascade="all, delete-orphan")
+    systems = db.relationship("System", back_populates="organization", cascade="all, delete-orphan", foreign_keys="System.organization_id")
     value_types = db.relationship("ValueType", back_populates="organization", cascade="all, delete-orphan")
     governance_bodies = db.relationship("GovernanceBody", back_populates="organization", cascade="all, delete-orphan")
     action_items = db.relationship("ActionItem", back_populates="organization", cascade="all, delete-orphan")

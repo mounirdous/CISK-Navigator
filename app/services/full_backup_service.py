@@ -458,11 +458,17 @@ class FullBackupService:
                     systems = sorted(systems_dict.values(), key=lambda s: s.name)
 
                     for system in systems:
+                        # Resolve linked org name for portal systems
+                        _linked_org_name = None
+                        if system.linked_organization_id and system.linked_organization:
+                            _linked_org_name = system.linked_organization.name
+
                         system_data = {
                             "json_id": system.id,
                             "name": system.name,
                             "description": system.description,
                             "impact_level": system.impact_level,
+                            "linked_organization_name": _linked_org_name,
                             "links": FullBackupService._export_entity_links("system", system.id),
                             "kpis": [],
                         }

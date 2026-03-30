@@ -48,6 +48,7 @@ from app.models import (
     ActionItemMention,
     Challenge,
     ChallengeInitiativeLink,
+    Organization,
     Contribution,
     EntityLink,
     GeographySite,
@@ -842,11 +843,22 @@ class FullRestoreService:
                         if sys_name in system_map:
                             system = system_map[sys_name]
                         else:
+                            # Resolve linked org by name (portal)
+                            _linked_org_id = None
+                            _linked_org_name = system_data.get("linked_organization_name")
+                            if _linked_org_name:
+                                _lo = Organization.query.filter_by(name=_linked_org_name, is_deleted=False).first()
+                                if _lo:
+                                    _linked_org_id = _lo.id
+                                else:
+                                    stats["warnings"].append(f"System '{sys_name}' links to org '{_linked_org_name}' which was not found")
+
                             system = System(
                                 organization_id=organization_id,
                                 name=sys_name,
                                 description=system_data.get("description"),
                                 impact_level=system_data.get("impact_level"),
+                                linked_organization_id=_linked_org_id,
                             )
 
                             # Restore system logo if present

@@ -2071,9 +2071,11 @@ def create_system(initiative_id):
 
     if form.validate_on_submit():
         # Create the system
+        _linked_org = request.form.get("linked_organization_id")
         system = System(
             organization_id=org_id, name=form.name.data, description=form.description.data,
             impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+            linked_organization_id=int(_linked_org) if _linked_org else None,
         )
         db.session.add(system)
         db.session.flush()  # Get the ID
@@ -2098,8 +2100,10 @@ def create_system(initiative_id):
         flash(f"System {system.name} created and linked to {initiative.name}", "success")
         return redirect(url_for("workspace.index", auto_edit=1))
 
+    all_orgs = Organization.query.filter(Organization.id != org_id, Organization.is_deleted.is_(False)).order_by(Organization.name).all()
     return render_template(
-        "organization_admin/create_system.html", form=form, initiative=initiative, csrf_token=generate_csrf
+        "organization_admin/create_system.html", form=form, initiative=initiative, csrf_token=generate_csrf,
+        all_orgs=all_orgs,
     )
 
 
@@ -2151,6 +2155,8 @@ def edit_system(system_id):
         system.name = form.name.data
         system.description = form.description.data
         system.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
+        _linked_org = request.form.get("linked_organization_id")
+        system.linked_organization_id = int(_linked_org) if _linked_org else None
 
         # Audit log
         new_values = {"name": system.name, "description": system.description}
@@ -2208,6 +2214,7 @@ def edit_system(system_id):
         _ini_ti = _cti2([_sp.impact_level, _ch.impact_level, _ini.impact_level], _m2, _w2, _cm2) if _sp and _sp.impact_level and _ch and _ch.impact_level and _ini.impact_level else None
         _sys_parent_ctx["initiative"] = {"name": _ini.name, "impact_level": _ini.impact_level, "true_importance_level": _ini_ti}
 
+    all_orgs = Organization.query.filter(Organization.id != org_id, Organization.is_deleted.is_(False)).order_by(Organization.name).all()
     return render_template(
         "organization_admin/edit_system.html",
         form=form,
@@ -2218,6 +2225,7 @@ def edit_system(system_id):
         csrf_token=generate_csrf,
         current_impact=system.impact_level,
         parent_context=_sys_parent_ctx,
+        all_orgs=all_orgs,
         **nav,
     )
 

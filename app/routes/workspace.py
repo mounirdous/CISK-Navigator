@@ -4624,6 +4624,20 @@ def _build_workspace_data(org_id):
                                 _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
                     system_inherited = list(_url_map.values())
 
+                    # Portal: linked CISK org info
+                    _portal = None
+                    if system.linked_organization_id:
+                        _lo = system.linked_organization
+                        if _lo:
+                            _lo_logo = None
+                            if _lo.logo_data and _lo.logo_mime_type:
+                                _lo_logo = f"data:{_lo.logo_mime_type};base64,{base64.b64encode(_lo.logo_data).decode('utf-8')}"
+                            _portal = {
+                                "id": _lo.id,
+                                "name": _lo.name,
+                                "logo_url": _lo_logo,
+                            }
+
                     systems_data.append(
                         {
                             "id": system.id,
@@ -4638,6 +4652,7 @@ def _build_workspace_data(org_id):
                             "inherited_links": system_inherited,
                             "kpis": kpis_data,
                             "impact_level": system.impact_level,
+                            "portal": _portal,
                         }
                     )
 
