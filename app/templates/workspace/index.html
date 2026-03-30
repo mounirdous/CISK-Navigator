@@ -3912,7 +3912,7 @@ function workspaceV2(orgId, filterPresets) {
                     if (cachedMeta) {
                         var meta = JSON.parse(cachedMeta);
                         var ageMs = Date.now() - meta.timestamp;
-                        if (ageMs < 600000) {
+                        if (ageMs < 1200000) {
                             var cachedData = localStorage.getItem(cacheKey);
                             if (cachedData) {
                                 this._processData(JSON.parse(cachedData));
