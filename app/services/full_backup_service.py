@@ -129,6 +129,7 @@ class FullBackupService:
             "filter_presets": FullBackupService._export_filter_presets(organization_id),
             "strategic_pillars": FullBackupService._export_strategic_pillars(organization_id),
             "impact_levels": FullBackupService._export_impact_levels(organization_id),
+            "standalone_decisions": FullBackupService._export_standalone_decisions(organization_id),
         }
 
         return backup
@@ -349,6 +350,25 @@ class FullBackupService:
                 data["icon_b64"] = base64.b64encode(p.icon_data).decode("utf-8")
                 data["icon_mime_type"] = p.icon_mime_type
             result.append(data)
+        return result
+
+    @staticmethod
+    def _export_standalone_decisions(organization_id):
+        """Export standalone decisions"""
+        from app.models import Decision
+
+        decisions = Decision.query.filter_by(organization_id=organization_id).order_by(Decision.created_at).all()
+        result = []
+        for d in decisions:
+            result.append({
+                "what": d.what,
+                "who": d.who,
+                "tags": d.tags,
+                "entity_mentions": d.entity_mentions,
+                "governance_body_name": d.governance_body.name if d.governance_body else None,
+                "created_by_login": d.created_by.login if d.created_by else None,
+                "created_at": d.created_at.isoformat() if d.created_at else None,
+            })
         return result
 
     @staticmethod

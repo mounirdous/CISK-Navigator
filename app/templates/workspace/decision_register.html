@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block title %}Decision Register{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dr-page { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+
+    /* Hero create card */
+    .dr-create-card {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+        border-radius: 16px; padding: 2rem; color: white;
+        margin-bottom: 2rem; position: relative; overflow: hidden;
+    }
+    .dr-create-card::before {
+        content: ''; position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse 50% 60% at 80% 20%, rgba(139,92,246,0.15) 0%, transparent 70%);
+    }
+    .dr-create-card form { position: relative; z-index: 1; }
+    .dr-create-card h2 {
+        font-size: 1.3rem; font-weight: 800; margin-bottom: 1.25rem;
+        display: flex; align-items: center; gap: 0.5rem; position: relative; z-index: 1;
+    }
+    .dr-create-card h2 i { color: #a78bfa; }
+
+    .dr-field { margin-bottom: 1rem; position: relative; }
+    .dr-field label {
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; color: #a5b4fc; margin-bottom: 0.3rem; display: block;
+    }
+    .dr-field input, .dr-field textarea, .dr-field select {
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+        color: white; border-radius: 8px; padding: 0.5rem 0.75rem; width: 100%;
+        font-size: 0.9rem; transition: border-color 0.2s;
+    }
+    .dr-field input:focus, .dr-field textarea:focus, .dr-field select:focus {
+        outline: none; border-color: #818cf8; background: rgba(255,255,255,0.12);
+    }
+    .dr-field input::placeholder, .dr-field textarea::placeholder { color: rgba(255,255,255,0.35); }
+    .dr-field select option { background: #1e1b4b; color: white; }
+
+    /* Tag chips */
+    .dr-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .dr-tag {
+        padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+        cursor: pointer; transition: all 0.15s; border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.06); color: #c7d2fe;
+    }
+    .dr-tag:hover { background: rgba(255,255,255,0.12); }
+    .dr-tag.active { background: #6366f1; color: white; border-color: #6366f1; }
+
+    /* Entity mention search */
+    .dr-mention-search { position: relative; }
+    .dr-mention-results {
+        position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+        background: #1e1b4b; border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 8px; max-height: 200px; overflow-y: auto; display: none;
+    }
+    .dr-mention-results.show { display: block; }
+    .dr-mention-item {
+        padding: 0.4rem 0.75rem; cursor: pointer; font-size: 0.82rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .dr-mention-item:hover { background: rgba(255,255,255,0.08); }
+    .dr-mention-chip {
+        display: inline-flex; align-items: center; gap: 0.3rem;
+        background: rgba(99,102,241,0.3); border: 1px solid rgba(99,102,241,0.5);
+        border-radius: 12px; padding: 0.15rem 0.5rem; font-size: 0.75rem; color: #c7d2fe;
+        margin-right: 0.3rem; margin-bottom: 0.3rem;
+    }
+    .dr-mention-chip .remove { cursor: pointer; opacity: 0.6; margin-left: 0.2rem; }
+    .dr-mention-chip .remove:hover { opacity: 1; }
+
+    .dr-submit {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
+        border: none; border-radius: 10px; padding: 0.6rem 2rem; font-weight: 700;
+        font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
+    }
+    .dr-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.4); }
+
+    /* Decision list */
+    .dr-list-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 1rem;
+    }
+    .dr-list-header h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0; }
+    .dr-count { font-size: 0.8rem; color: #64748b; background: #f1f5f9; padding: 0.2rem 0.6rem; border-radius: 12px; }
+
+    .dr-card {
+        background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+        padding: 1.25rem; margin-bottom: 0.75rem; transition: all 0.2s;
+        position: relative;
+    }
+    .dr-card:hover { border-color: #c7d2fe; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+    .dr-card-what { font-size: 0.95rem; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.5; }
+    .dr-card-meta {
+        display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: #64748b;
+    }
+    .dr-card-tag {
+        background: #ede9fe; color: #6d28d9; padding: 0.1rem 0.5rem;
+        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
+    }
+    .dr-card-gb {
+        background: #dbeafe; color: #1d4ed8; padding: 0.1rem 0.5rem;
+        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
+    }
+    .dr-card-mention {
+        background: #f0fdf4; color: #166534; padding: 0.1rem 0.5rem;
+        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
+    }
+    .dr-card-initiative {
+        background: #fef3c7; color: #92400e; padding: 0.1rem 0.5rem;
+        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
+    }
+    .dr-card-delete {
+        position: absolute; top: 0.75rem; right: 0.75rem; opacity: 0;
+        transition: opacity 0.15s; color: #94a3b8; cursor: pointer;
+    }
+    .dr-card:hover .dr-card-delete { opacity: 0.6; }
+    .dr-card-delete:hover { opacity: 1 !important; color: #ef4444; }
+
+    .dr-empty {
+        text-align: center; padding: 3rem 2rem; color: #94a3b8;
+    }
+    .dr-empty i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
+
+    @media (max-width: 768px) {
+        .dr-page { padding: 1rem; }
+        .dr-create-card { padding: 1.25rem; }
+        .dr-row { flex-direction: column; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dr-page">
+
+    <!-- Create Decision Card -->
+    <div class="dr-create-card">
+        <h2><i class="bi bi-journal-plus"></i> Record a Decision</h2>
+        <form method="POST" action="{{ url_for('workspace.decision_register') }}" id="drForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="entity_mentions_json" id="drMentionsJson" value="[]">
+
+            <div class="dr-field">
+                <label>Decision</label>
+                <textarea name="what" rows="2" placeholder="What was decided?" required></textarea>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div class="dr-field">
+                    <label>Decision Maker</label>
+                    <input type="text" name="who" placeholder="Who made this decision?">
+                </div>
+                <div class="dr-field">
+                    <label>Governance Body</label>
+                    <select name="governance_body_id">
+                        <option value="">-- None --</option>
+                        {% for gb in governance_bodies %}
+                        <option value="{{ gb.id }}">{{ gb.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="dr-field">
+                <label>Tags</label>
+                <div class="dr-tags" id="drTags">
+                    {% for tag in decision_tags %}
+                    <span class="dr-tag" data-tag="{{ tag }}" onclick="toggleDrTag(this)">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Entity Mentions -->
+            <div class="dr-field">
+                <label>Entity Mentions</label>
+                <div id="drMentionChips" style="margin-bottom:0.3rem;"></div>
+                <div class="dr-mention-search">
+                    <input type="text" id="drMentionInput" placeholder="Type to search entities (spaces, challenges, initiatives, systems, KPIs)..."
+                           autocomplete="off" oninput="searchDrEntities(this.value)" onfocus="searchDrEntities(this.value)">
+                    <div class="dr-mention-results" id="drMentionResults"></div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
+                <button type="submit" class="dr-submit">
+                    <i class="bi bi-check-lg"></i> Record Decision
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Decision List -->
+    <div class="dr-list-header">
+        <h3><i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decisions</h3>
+        <span class="dr-count">{{ decisions|length }} decision{{ 's' if decisions|length != 1 else '' }}</span>
+    </div>
+
+    {% if decisions %}
+    {% for d in decisions %}
+    <div class="dr-card">
+        <div class="dr-card-what">{{ d.what }}</div>
+        <div class="dr-card-meta">
+            <span><i class="bi bi-calendar3"></i> {{ d.created_at.strftime('%b %d, %Y') }}</span>
+            {% if d.who %}
+            <span><i class="bi bi-person"></i> {{ d.who }}</span>
+            {% endif %}
+            {% if d.created_by %}
+            <span><i class="bi bi-pencil"></i> {{ d.created_by.display_name or d.created_by.login }}</span>
+            {% endif %}
+            {% if d.tags %}
+                {% for tag in d.tags %}
+                <span class="dr-card-tag">{{ tag }}</span>
+                {% endfor %}
+            {% endif %}
+            {% if d.governance_body %}
+            <span class="dr-card-gb"><i class="bi bi-shield-check"></i> {{ d.governance_body.name }}</span>
+            {% endif %}
+            {% if d.entity_mentions %}
+                {% for m in d.entity_mentions %}
+                <span class="dr-card-mention">@{{ m.entity_name }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <form method="POST" action="{{ url_for('workspace.delete_decision', decision_id=d.id) }}" class="dr-card-delete"
+              onsubmit="return confirm('Delete this decision?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" style="border:none; background:none; color:inherit; cursor:pointer;" title="Delete">
+                <i class="bi bi-trash"></i>
+            </button>
+        </form>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="dr-empty">
+        <i class="bi bi-journal-plus"></i>
+        <p>No standalone decisions yet.<br>Use the form above to record your first decision.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// Sync tags before form submission
+document.getElementById('drForm').addEventListener('submit', function() {
+    syncDrTags();
+});
+
+// Tag toggle
+function toggleDrTag(el) {
+    el.classList.toggle('active');
+    syncDrTags();
+}
+function syncDrTags() {
+    // Create hidden inputs for active tags
+    document.querySelectorAll('#drForm input[name="tags"]').forEach(function(e) { e.remove(); });
+    document.querySelectorAll('#drTags .dr-tag.active').forEach(function(el) {
+        var inp = document.createElement('input');
+        inp.type = 'hidden'; inp.name = 'tags'; inp.value = el.dataset.tag;
+        document.getElementById('drForm').appendChild(inp);
+    });
+}
+
+// Entity mention search — uses event delegation for reliability
+var _drMentions = [];
+var _drSearchTimer = null;
+var _drSearchCache = [];
+
+function searchDrEntities(q) {
+    clearTimeout(_drSearchTimer);
+    var res = document.getElementById('drMentionResults');
+    // Strip @ prefix if user types it
+    q = (q || '').replace(/^@/, '').trim();
+    if (!q || q.length < 1) { res.classList.remove('show'); return; }
+    _drSearchTimer = setTimeout(function() {
+        fetch('{{ url_for("workspace.live_search") }}?q=' + encodeURIComponent(q))
+            .then(function(r) {
+                if (!r.ok) { console.error('Search failed:', r.status, r.statusText); return { results: [] }; }
+                return r.json();
+            })
+            .then(function(data) {
+                // live_search returns {results: [{type, id, name, ...}]}
+                var items = (data.results || []).filter(function(it) {
+                    // Only entity types (not action items, users, etc.)
+                    return ['space','challenge','initiative','system','kpi'].indexOf(it.type) >= 0;
+                });
+                _drSearchCache = items;
+                if (!items.length) { res.innerHTML = '<div style="padding:0.5rem 0.75rem;color:#94a3b8;font-size:0.8rem;">No results</div>'; res.classList.add('show'); return; }
+                var html = '';
+                items.forEach(function(it, idx) {
+                    var etype = it.type || '';
+                    var eid = it.id || 0;
+                    var ename = it.name || '';
+                    var already = _drMentions.some(function(m) { return m.entity_type === etype && String(m.entity_id) === String(eid); });
+                    if (already) return;
+                    var icon = etype === 'space' ? 'folder' : etype === 'challenge' ? 'bullseye' : etype === 'initiative' ? 'flag' : etype === 'system' ? 'cpu' : 'graph-up';
+                    html += '<div class="dr-mention-item" data-idx="' + idx + '">' +
+                        '<i class="bi bi-' + icon + '"></i> ' +
+                        '<span>' + ename.replace(/</g, '&lt;') + '</span> <small style="color:#94a3b8;">' + etype + '</small></div>';
+                });
+                res.innerHTML = html || '<div style="padding:0.5rem 0.75rem;color:#94a3b8;font-size:0.8rem;">All already mentioned</div>';
+                res.classList.add('show');
+            })
+            .catch(function(err) { console.error('Search error:', err); });
+    }, 250);
+}
+
+// Event delegation for mention item clicks
+document.addEventListener('click', function(e) {
+    var item = e.target.closest('.dr-mention-item');
+    if (item) {
+        var idx = parseInt(item.dataset.idx);
+        var it = _drSearchCache[idx];
+        if (it) {
+            _drMentions.push({ entity_type: it.type, entity_id: it.id, entity_name: it.name });
+            renderDrMentions();
+            document.getElementById('drMentionInput').value = '';
+            document.getElementById('drMentionResults').classList.remove('show');
+        }
+        return;
+    }
+    // Close results on click outside
+    if (!e.target.closest('.dr-mention-search')) {
+        document.getElementById('drMentionResults').classList.remove('show');
+    }
+});
+
+function removeDrMention(idx) {
+    _drMentions.splice(idx, 1);
+    renderDrMentions();
+}
+function renderDrMentions() {
+    var html = _drMentions.map(function(m, i) {
+        var icon = m.entity_type === 'space' ? 'folder' : m.entity_type === 'challenge' ? 'bullseye' : m.entity_type === 'initiative' ? 'flag' : m.entity_type === 'system' ? 'cpu' : 'graph-up';
+        return '<span class="dr-mention-chip"><i class="bi bi-' + icon + '"></i> ' + (m.entity_name || '').replace(/</g, '&lt;') + '<span class="remove" onclick="removeDrMention(' + i + ')">&times;</span></span>';
+    }).join('');
+    document.getElementById('drMentionChips').innerHTML = html;
+    document.getElementById('drMentionsJson').value = JSON.stringify(_drMentions);
+}
+</script>
+{% endblock %}

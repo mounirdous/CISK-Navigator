@@ -422,8 +422,14 @@
                                         <i class="bi bi-card-checklist"></i> Action Register
                                     </a>
                                 </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.decision_register') }}">
+                                        <i class="bi bi-journal-plus" style="color:#8b5cf6;"></i> Decision Register
+                                    </a>
+                                </li>
                                 {% endif %}
                                 {% if can_access_stakeholders %}
+                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('stakeholders.index', organization_id=session.get('organization_id')) }}">
                                         <i class="bi bi-people-fill"></i> Stakeholders

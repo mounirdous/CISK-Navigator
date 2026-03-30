@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.15.0] - 2026-03-30
+
+### Added
+- **Decision Register page** (`/workspace/decision-register`) — standalone decision creation with tags, entity mentions, governance body selector. Clean `Decision` model with entity_mentions JSON (no initiative FK — initiatives linked via mentions like any entity)
+- Decision Register in Collaborate menu
+- Standalone decisions appear in Decisions Dashboard alongside initiative-based decisions
+- Backup/restore + delete/empty org includes standalone decisions
+- Migration: `9a167e899970`
+
 ## [5.14.0] - 2026-03-30
 
 ### Added

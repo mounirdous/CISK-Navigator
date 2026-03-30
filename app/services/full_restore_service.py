@@ -424,6 +424,10 @@ class FullRestoreService:
             il_count = FullRestoreService._restore_impact_levels(backup, organization_id)
             stats["impact_levels_restored"] = il_count
 
+            # Step 10: Restore Standalone Decisions
+            dec_count = FullRestoreService._restore_standalone_decisions(backup, organization_id, user_map)
+            stats["standalone_decisions_restored"] = dec_count
+
             db.session.commit()
             stats["success"] = True
 
@@ -608,6 +612,51 @@ class FullRestoreService:
                     weight=il_data.get("weight", level),
                     color=il_data.get("color", "#3b82f6"),
                 ))
+            count += 1
+        if count:
+            db.session.flush()
+        return count
+
+    @staticmethod
+    def _restore_standalone_decisions(backup, organization_id, user_map):
+        """Restore standalone decisions. Returns count."""
+        from app.models import Decision, GovernanceBody, User
+
+        # Clear existing
+        Decision.query.filter_by(organization_id=organization_id).delete(synchronize_session=False)
+        db.session.flush()
+
+        count = 0
+        for d in backup.get("standalone_decisions", []):
+            # Resolve user
+            creator_login = d.get("created_by_login")
+            creator = None
+            if creator_login:
+                if user_map and creator_login in user_map:
+                    creator = user_map[creator_login]
+                else:
+                    creator = User.query.filter_by(login=creator_login).first()
+            if not creator:
+                continue  # Skip if creator not found
+
+            # Resolve optional governance body
+            gb_id = None
+            gb_name = d.get("governance_body_name")
+            if gb_name:
+                gb = GovernanceBody.query.filter_by(organization_id=organization_id, name=gb_name).first()
+                if gb:
+                    gb_id = gb.id
+
+            decision = Decision(
+                organization_id=organization_id,
+                created_by_id=creator.id,
+                what=d.get("what", ""),
+                who=d.get("who"),
+                tags=d.get("tags"),
+                entity_mentions=d.get("entity_mentions"),
+                governance_body_id=gb_id,
+            )
+            db.session.add(decision)
             count += 1
         if count:
             db.session.flush()

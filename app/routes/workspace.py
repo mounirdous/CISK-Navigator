@@ -120,6 +120,85 @@ def theory():
     return render_template("workspace/theory.html", csrf_token=generate_csrf)
 
 
+@bp.route("/decision-register", methods=["GET", "POST"])
+@login_required
+@organization_required
+def decision_register():
+    """Standalone Decision Register — create and manage decisions outside initiative reviews"""
+    from app.models import Decision, GovernanceBody
+
+    org_id = session.get("organization_id")
+
+    if request.method == "POST":
+        what = request.form.get("what", "").strip()
+        if not what:
+            flash("Decision description is required.", "danger")
+            return redirect(url_for("workspace.decision_register"))
+
+        who = request.form.get("who", "").strip() or None
+        tags_raw = request.form.getlist("tags")
+        gb_id = request.form.get("governance_body_id") or None
+
+        # Parse entity mentions from JSON
+        import json as _dj
+        mentions_json = request.form.get("entity_mentions_json", "[]")
+        try:
+            entity_mentions = _dj.loads(mentions_json)
+        except (ValueError, TypeError):
+            entity_mentions = []
+
+        decision = Decision(
+            organization_id=org_id,
+            created_by_id=current_user.id,
+            what=what,
+            who=who,
+            tags=tags_raw if tags_raw else None,
+            entity_mentions=entity_mentions if entity_mentions else None,
+            governance_body_id=int(gb_id) if gb_id else None,
+        )
+        db.session.add(decision)
+        db.session.commit()
+        flash("Decision recorded.", "success")
+        return redirect(url_for("workspace.decision_register"))
+
+    # GET — load existing standalone decisions
+    standalone_decisions = (
+        Decision.query.filter_by(organization_id=org_id)
+        .order_by(Decision.created_at.desc())
+        .all()
+    )
+
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.name).all()
+
+    # Decision tags from org config
+    org = Organization.query.get(org_id)
+    decision_tags = (org.decision_tags if org and org.decision_tags else
+                     ["scope", "budget", "timeline", "resource", "technical", "governance", "other"])
+
+    return render_template(
+        "workspace/decision_register.html",
+        decisions=standalone_decisions,
+        governance_bodies=governance_bodies,
+        decision_tags=decision_tags,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/decision-register/<int:decision_id>/delete", methods=["POST"])
+@login_required
+@organization_required
+def delete_decision(decision_id):
+    """Delete a standalone decision"""
+    from app.models import Decision
+
+    org_id = session.get("organization_id")
+    decision = Decision.query.filter_by(id=decision_id, organization_id=org_id).first_or_404()
+    db.session.delete(decision)
+    db.session.commit()
+    flash("Decision deleted.", "success")
+    return redirect(url_for("workspace.decision_register"))
+
+
 @bp.route("/decisions")
 @login_required
 @organization_required
@@ -183,6 +262,41 @@ def decisions():
                 "tag": "",
                 "author": author,
             })
+
+    # Add standalone decisions from Decision model
+    from app.models import Decision
+    standalone = Decision.query.filter_by(organization_id=org_id).order_by(Decision.created_at.desc()).all()
+    for sd in standalone:
+        gb_name = sd.governance_body.name if sd.governance_body else None
+        author = sd.created_by.display_name or sd.created_by.login if sd.created_by else None
+        tag_str = ", ".join(sd.tags) if sd.tags else ""
+        # Find initiative mention if any
+        ini_name = None
+        ini_id = None
+        for m in (sd.entity_mentions or []):
+            if m.get("entity_type") == "initiative":
+                ini_name = m.get("entity_name")
+                ini_id = m.get("entity_id")
+                break
+        decision_entries.append({
+            "date": sd.created_at,
+            "initiative_id": ini_id,
+            "initiative_name": ini_name,
+            "challenge_name": None,
+            "space_name": None,
+            "rag": None,
+            "what": sd.what,
+            "who": sd.who or "",
+            "tag": tag_str,
+            "mentions": sd.entity_mentions or [],
+            "gb_id": sd.governance_body_id,
+            "gb_name": gb_name,
+            "author": author,
+            "standalone": True,
+        })
+
+    # Sort all entries by date descending
+    decision_entries.sort(key=lambda e: e["date"], reverse=True)
 
     # Filter by entity if ?entity=type_id is provided
     entity_filter = request.args.get("entity", "")

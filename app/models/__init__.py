@@ -14,6 +14,7 @@ from .benchmark import BenchmarkResult, BenchmarkRun
 from .cell_comment import CellComment, CommentEntityMention, CommentUserMention, MentionNotification
 from .challenge import Challenge
 from .contribution import Contribution
+from .decision import Decision
 from .entity_link import EntityLink
 from .entity_type_default import EntityTypeDefault
 from .geography import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, KPISiteAssignment
