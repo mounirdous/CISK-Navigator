@@ -2030,18 +2030,7 @@
                 <span style="font-weight: 600; font-size: 0.95rem;">Filters & Display</span>
                 <span x-show="hasActiveFilters" class="filter-active-badge" x-text="`${activeFilterCount} active`"></span>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <button x-show="!loading && reviewCount > 0"
-                        @click.stop="startReview()"
-                        class="btn btn-sm"
-                        style="background: linear-gradient(135deg, #1565C0, #0d47a1); color: white; font-weight: 600; border: none; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem;"
-                        :title="`Start execution review of ${reviewCount} initiatives`">
-                    <i class="bi bi-play-circle-fill"></i>
-                    <span>Review</span>
-                    <span x-text="`(${reviewCount})`" style="opacity:0.85;"></span>
-                </button>
-                <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
-            </div>
+            <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
         </div>
 
         <!-- Expandable Filter Content -->
