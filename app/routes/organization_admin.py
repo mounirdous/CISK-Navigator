@@ -4208,6 +4208,7 @@ def _delete_all_organization_data(org_id):
 @organization_required
 def initiative_form(initiative_id):
     """View and edit detailed initiative form"""
+    from app.models import Decision
     org_id = session.get("organization_id")
     initiative = Initiative.query.filter_by(id=initiative_id, organization_id=org_id).first_or_404()
 
@@ -4563,6 +4564,8 @@ def initiative_form(initiative_id):
         nav_context=nav_context,
         true_importance_level=true_importance_level,
         parent_context=parent_context,
+        initiative_decisions=[d for d in Decision.query.filter_by(organization_id=org_id).order_by(Decision.created_at.desc()).all()
+                              if d.mentions_entity("initiative", initiative.id)],
     )
 
 
@@ -4590,14 +4593,37 @@ def initiative_progress_update_create(initiative_id):
         blockers=request.form.get("blockers", "").strip() or None,
         created_by=current_user.id,
     )
+    db.session.add(upd)
+    db.session.flush()
+    # Create Decision objects from the decisions JSON
     import json as _dec_json
+    from app.models import Decision
     _dec_raw = request.form.get("decisions_json", "")
     if _dec_raw:
         try:
-            upd.decisions = _dec_json.loads(_dec_raw)
+            _dec_list = _dec_json.loads(_dec_raw)
+            for _d in (_dec_list if isinstance(_dec_list, list) else []):
+                if not _d.get("what", "").strip():
+                    continue
+                # Build entity mentions — always include this initiative
+                _mentions = [{"entity_type": "initiative", "entity_id": initiative.id, "entity_name": initiative.name}]
+                for _m in (_d.get("mentions") or []):
+                    if _m.get("entity_type") and _m.get("entity_id"):
+                        _mentions.append(_m)
+                _tags = _d.get("tag", "")
+                _tags_list = [t.strip() for t in _tags.split(",") if t.strip()] if isinstance(_tags, str) else ([_tags] if _tags else [])
+                _gb_id = _d.get("gb_id")
+                db.session.add(Decision(
+                    organization_id=org_id,
+                    created_by_id=current_user.id,
+                    what=_d["what"].strip(),
+                    who=_d.get("who", "").strip() or None,
+                    tags=_tags_list if _tags_list else None,
+                    entity_mentions=_mentions,
+                    governance_body_id=int(_gb_id) if _gb_id else None,
+                ))
         except (ValueError, TypeError):
             pass
-    db.session.add(upd)
     AuditService.log_create("InitiativeProgressUpdate", initiative.id, initiative.name, {"rag_status": rag_status})
     db.session.commit()
     flash("Progress update saved.", "success")
@@ -4639,15 +4665,34 @@ def initiative_progress_update_edit(initiative_id, update_id):
     upd.accomplishments = request.form.get("accomplishments", "").strip() or None
     upd.next_steps = request.form.get("next_steps", "").strip() or None
     upd.blockers = request.form.get("blockers", "").strip() or None
+    # Create Decision objects from decisions JSON (edit: only new ones)
     import json as _dec_json2
+    from app.models import Decision
     _dec_raw2 = request.form.get("decisions_json", "")
     if _dec_raw2:
         try:
-            upd.decisions = _dec_json2.loads(_dec_raw2)
+            _dec_list2 = _dec_json2.loads(_dec_raw2)
+            for _d2 in (_dec_list2 if isinstance(_dec_list2, list) else []):
+                if not _d2.get("what", "").strip():
+                    continue
+                _mentions2 = [{"entity_type": "initiative", "entity_id": initiative.id, "entity_name": initiative.name}]
+                for _m2 in (_d2.get("mentions") or []):
+                    if _m2.get("entity_type") and _m2.get("entity_id"):
+                        _mentions2.append(_m2)
+                _tags2 = _d2.get("tag", "")
+                _tags_list2 = [t.strip() for t in _tags2.split(",") if t.strip()] if isinstance(_tags2, str) else ([_tags2] if _tags2 else [])
+                _gb_id2 = _d2.get("gb_id")
+                db.session.add(Decision(
+                    organization_id=org_id,
+                    created_by_id=current_user.id,
+                    what=_d2["what"].strip(),
+                    who=_d2.get("who", "").strip() or None,
+                    tags=_tags_list2 if _tags_list2 else None,
+                    entity_mentions=_mentions2,
+                    governance_body_id=int(_gb_id2) if _gb_id2 else None,
+                ))
         except (ValueError, TypeError):
             pass
-    else:
-        upd.decisions = None
     AuditService.log_update(
         "InitiativeProgressUpdate", upd.id, initiative.name,
         {"rag_status": old_rag}, {"rag_status": rag_status}

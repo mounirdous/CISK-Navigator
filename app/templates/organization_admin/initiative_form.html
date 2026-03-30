@@ -1874,6 +1874,28 @@
                 </div>
             </div>
 
+            <!-- Decisions for this Initiative -->
+            {% if initiative_decisions %}
+            <div class="exec-card mb-3 detail-1">
+                <div class="exec-card-title d-flex align-items-center justify-content-between">
+                    <span><i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decisions</span>
+                    <span class="text-muted fw-normal" style="font-size:0.75rem;text-transform:none;letter-spacing:0;">{{ initiative_decisions|length }} total</span>
+                </div>
+                {% for dec in initiative_decisions %}
+                <div style="border-left:3px solid #8b5cf6; padding:0.4rem 0.6rem; margin-bottom:0.4rem; background:#faf5ff; border-radius:0 6px 6px 0;">
+                    <div style="font-weight:600; font-size:0.85rem;">{{ dec.what }}</div>
+                    <div style="font-size:0.75rem; color:#64748b; display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap; margin-top:0.2rem;">
+                        <span style="font-size:0.7rem; color:#94a3b8;">{{ dec.created_at.strftime('%b %d') }}</span>
+                        {% if dec.who %}<span><i class="bi bi-person" style="font-size:0.65rem;"></i> {{ dec.who }}</span>{% endif %}
+                        {% if dec.governance_body %}<span style="font-size:0.65rem; font-weight:700; padding:0.1rem 0.35rem; border-radius:6px; background:#ede9fe; color:#5b21b6;">{{ dec.governance_body.name }}</span>{% endif %}
+                        {% if dec.tags %}{% for t in dec.tags %}<span style="font-size:0.65rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:#f1f5f9; color:#475569;">{{ t }}</span>{% endfor %}{% endif %}
+                        {% if dec.entity_mentions %}{% for m in dec.entity_mentions %}{% if m.entity_type != 'initiative' or m.entity_id != initiative.id %}<span style="font-size:0.65rem; font-weight:600; padding:0.1rem 0.4rem; border-radius:10px; background:#f0fdf4; color:#166534;">@{{ m.entity_name }}</span>{% endif %}{% endfor %}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <!-- Links & Resources -->
             <div class="exec-card mb-3 detail-2" id="exec-links-card">
                 <div class="exec-card-title d-flex align-items-center justify-content-between">

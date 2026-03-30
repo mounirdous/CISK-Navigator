@@ -248,143 +248,8 @@ def delete_decision(decision_id):
 @login_required
 @organization_required
 def decisions():
-    """Decision Register — aggregated view of all decisions from progress updates"""
-    org_id = session.get("organization_id")
-    from app.models import ChallengeInitiativeLink, InitiativeProgressUpdate
-
-    updates = (
-        db.session.query(InitiativeProgressUpdate)
-        .join(Initiative, InitiativeProgressUpdate.initiative_id == Initiative.id)
-        .filter(Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None))
-        .order_by(InitiativeProgressUpdate.created_at.desc())
-        .all()
-    )
-
-    # Build decision entries — flatten structured decisions into individual cards
-    decision_entries = []
-    for upd in updates:
-        ini = upd.initiative
-        ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
-        challenge_name = ci.challenge.name if ci and ci.challenge else None
-        space_name = ci.challenge.space.name if ci and ci.challenge and ci.challenge.space else None
-        author = upd.author.display_name or upd.author.login if upd.author else None
-
-        decs = upd.decisions
-        # Handle string-encoded JSON (legacy or double-encoded)
-        if isinstance(decs, str):
-            try:
-                import json as _dj
-                decs = _dj.loads(decs)
-            except (ValueError, TypeError):
-                pass
-        if isinstance(decs, list):
-            for dec in decs:
-                decision_entries.append({
-                    "date": upd.created_at,
-                    "initiative_id": ini.id,
-                    "initiative_name": ini.name,
-                    "challenge_name": challenge_name,
-                    "space_name": space_name,
-                    "rag": upd.rag_status,
-                    "what": dec.get("what", ""),
-                    "who": dec.get("who", ""),
-                    "tag": dec.get("tag", ""),
-                    "mentions": dec.get("mentions", []),
-                    "gb_id": dec.get("gb_id"),
-                    "gb_name": dec.get("gb_name"),
-                    "author": author,
-                })
-        elif isinstance(upd.decisions, str) and upd.decisions.strip():
-            decision_entries.append({
-                "date": upd.created_at,
-                "initiative_id": ini.id,
-                "initiative_name": ini.name,
-                "challenge_name": challenge_name,
-                "space_name": space_name,
-                "rag": upd.rag_status,
-                "what": upd.decisions,
-                "who": "",
-                "tag": "",
-                "author": author,
-            })
-
-    # Add standalone decisions from Decision model
-    from app.models import Decision
-    standalone = Decision.query.filter_by(organization_id=org_id).order_by(Decision.created_at.desc()).all()
-    for sd in standalone:
-        gb_name = sd.governance_body.name if sd.governance_body else None
-        author = sd.created_by.display_name or sd.created_by.login if sd.created_by else None
-        tag_str = ", ".join(sd.tags) if sd.tags else ""
-        # Find initiative mention if any
-        ini_name = None
-        ini_id = None
-        for m in (sd.entity_mentions or []):
-            if m.get("entity_type") == "initiative":
-                ini_name = m.get("entity_name")
-                ini_id = m.get("entity_id")
-                break
-        decision_entries.append({
-            "date": sd.created_at,
-            "initiative_id": ini_id,
-            "initiative_name": ini_name,
-            "challenge_name": None,
-            "space_name": None,
-            "rag": None,
-            "what": sd.what,
-            "who": sd.who or "",
-            "tag": tag_str,
-            "mentions": sd.entity_mentions or [],
-            "gb_id": sd.governance_body_id,
-            "gb_name": gb_name,
-            "author": author,
-            "standalone": True,
-        })
-
-    # Sort all entries by date descending
-    decision_entries.sort(key=lambda e: e["date"], reverse=True)
-
-    # Filter by entity if ?entity=type_id is provided
-    entity_filter = request.args.get("entity", "")
-    entity_filter_name = None
-    if entity_filter and "_" in entity_filter:
-        ef_type, ef_id = entity_filter.split("_", 1)
-        decision_entries = [e for e in decision_entries if any(
-            m.get("entity_type") == ef_type and str(m.get("entity_id")) == ef_id
-            for m in (e.get("mentions") or [])
-        )]
-        entity_filter_name = f"{ef_type} #{ef_id}"
-
-    # Build stats + unique values for filters
-    all_tags = set()
-    all_initiatives = {}
-    all_who = set()
-    for e in decision_entries:
-        if e.get("tag"):
-            all_tags.add(e["tag"])
-        all_initiatives[e["initiative_id"]] = e["initiative_name"]
-        if e.get("who"):
-            all_who.add(e["who"])
-
-    stats = {
-        "total": len(decision_entries),
-        "by_tag": {},
-        "by_rag": {"green": 0, "amber": 0, "red": 0},
-    }
-    for e in decision_entries:
-        if e.get("tag"):
-            stats["by_tag"][e["tag"]] = stats["by_tag"].get(e["tag"], 0) + 1
-        if e.get("rag") in stats["by_rag"]:
-            stats["by_rag"][e["rag"]] += 1
-
-    return render_template(
-        "workspace/decisions.html",
-        entries=decision_entries,
-        entity_filter=entity_filter_name,
-        stats=stats,
-        all_tags=sorted(all_tags),
-        all_initiatives=all_initiatives,
-        all_who=sorted(all_who),
-    )
+    """Legacy route — redirect to Decision Register"""
+    return redirect(url_for("workspace.decision_register"))
 
 
 @bp.route("/decisions/export")
@@ -395,44 +260,24 @@ def decisions_export():
     import csv
     from io import StringIO
 
-    org_id = session.get("organization_id")
-    from app.models import ChallengeInitiativeLink, InitiativeProgressUpdate
+    from app.models import Decision
 
-    updates = (
-        db.session.query(InitiativeProgressUpdate)
-        .join(Initiative, InitiativeProgressUpdate.initiative_id == Initiative.id)
-        .filter(Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None))
-        .order_by(InitiativeProgressUpdate.created_at.desc())
-        .all()
-    )
+    org_id = session.get("organization_id")
+    all_decisions = Decision.query.filter_by(organization_id=org_id).order_by(Decision.created_at.desc()).all()
 
     output = StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Date", "Initiative", "Challenge", "Space", "Decision", "Who", "Tag", "RAG", "Author", "Entities"])
+    writer.writerow(["Date", "Decision", "Who", "Tags", "Governance Body", "Author", "Entities"])
 
-    for upd in updates:
-        ini = upd.initiative
-        ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
-        challenge = ci.challenge.name if ci and ci.challenge else ""
-        space = ci.challenge.space.name if ci and ci.challenge and ci.challenge.space else ""
-        author = upd.author.display_name or upd.author.login if upd.author else ""
-
-        decs = upd.decisions
-        if isinstance(decs, str):
-            try:
-                import json as _dj
-                decs = _dj.loads(decs)
-            except (ValueError, TypeError):
-                decs = []
-        if isinstance(decs, list):
-            for dec in decs:
-                entities = ", ".join(m.get("name", "") for m in (dec.get("mentions") or []))
-                writer.writerow([
-                    upd.created_at.strftime("%Y-%m-%d"),
-                    ini.name, challenge, space,
-                    dec.get("what", ""), dec.get("who", ""), dec.get("tag", ""),
-                    upd.rag_status, author, entities,
-                ])
+    for d in all_decisions:
+        author = d.created_by.display_name or d.created_by.login if d.created_by else ""
+        gb = d.governance_body.name if d.governance_body else ""
+        tags = ", ".join(d.tags) if d.tags else ""
+        entities = ", ".join(m.get("entity_name", "") for m in (d.entity_mentions or []))
+        writer.writerow([
+            d.created_at.strftime("%Y-%m-%d"),
+            d.what, d.who or "", tags, gb, author, entities,
+        ])
 
     output.seek(0)
     return send_file(
@@ -564,27 +409,25 @@ def gb_dashboard(gb_id):
         Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None)
     ).order_by(InitiativeProgressUpdate.created_at.desc()).all()
 
+    from app.models import Decision
+    _gb_decisions = Decision.query.filter_by(organization_id=org_id, governance_body_id=gb_id).order_by(Decision.created_at.desc()).all()
     my_decisions = []
-    for upd in all_updates:
-        decs = upd.decisions
-        if isinstance(decs, str):
-            try:
-                import json as _djgb
-                decs = _djgb.loads(decs)
-            except (ValueError, TypeError):
-                continue
-        if isinstance(decs, list):
-            for dec in decs:
-                if dec.get("gb_id") == gb_id:
-                    my_decisions.append({
-                        "date": upd.created_at,
-                        "what": dec.get("what", ""),
-                        "who": dec.get("who", ""),
-                        "tag": dec.get("tag", ""),
-                        "initiative_name": upd.initiative.name,
-                        "initiative_id": upd.initiative_id,
-                        "rag": upd.rag_status,
-                    })
+    for dd in _gb_decisions:
+        ini_name = None
+        ini_id = None
+        for m in (dd.entity_mentions or []):
+            if m.get("entity_type") == "initiative":
+                ini_name = m.get("entity_name")
+                ini_id = m.get("entity_id")
+                break
+        my_decisions.append({
+            "date": dd.created_at,
+            "what": dd.what,
+            "who": dd.who or "",
+            "tag": ", ".join(dd.tags) if dd.tags else "",
+            "initiative_name": ini_name,
+            "initiative_id": ini_id,
+        })
 
     # ── My Initiatives (derived from KPIs) ──
     my_initiatives = []
@@ -4989,25 +4832,14 @@ def _build_workspace_data(org_id):
     # New configurable impact scale
     impact_scale = ImpactLevel.get_org_levels(org_id)
 
-    # Build decision mention counts per entity
-    from app.models import InitiativeProgressUpdate
-    _dec_updates = InitiativeProgressUpdate.query.join(Initiative).filter(
-        Initiative.organization_id == org_id, InitiativeProgressUpdate.decisions.isnot(None)
-    ).all()
+    # Build decision mention counts per entity (from Decision model)
+    from app.models import Decision
+    _all_decisions = Decision.query.filter_by(organization_id=org_id).all()
     _dec_counts = {}  # "entity_type:entity_id" → count
-    for _du in _dec_updates:
-        _decs = _du.decisions
-        if isinstance(_decs, str):
-            try:
-                import json as _djc
-                _decs = _djc.loads(_decs)
-            except (ValueError, TypeError):
-                _decs = None
-        if isinstance(_decs, list):
-            for _dd in _decs:
-                for _dm in (_dd.get("mentions") or []):
-                    key = f"{_dm.get('entity_type')}:{_dm.get('entity_id')}"
-                    _dec_counts[key] = _dec_counts.get(key, 0) + 1
+    for _dd in _all_decisions:
+        for _dm in (_dd.entity_mentions or []):
+            key = f"{_dm.get('entity_type')}:{_dm.get('entity_id')}"
+            _dec_counts[key] = _dec_counts.get(key, 0) + 1
 
     # Inject decision_count into entity dicts
     for space in spaces_data:

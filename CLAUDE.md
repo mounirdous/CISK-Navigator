@@ -10,6 +10,7 @@ The UI uses different terms than the database models:
 | **CISK** | Workspace entry point | Top-left brand link → `workspace.index` |
 | **Collaborate** | Actions, Decisions, Stakeholders | Menu grouping |
 | **Portal System** | `System.linked_organization_id` | System linked to another CISK org |
+| **Decision Register** | `Decision` model | All decisions (standalone + from initiative review). Entity mentions link to any entity. Legacy `InitiativeProgressUpdate.decisions` JSON is deprecated |
 
 **Rule:** Use "Workspace" in UI text, "Organization" only in code/models/DB.
 

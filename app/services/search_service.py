@@ -893,53 +893,35 @@ class SearchService:
 
     @staticmethod
     def search_decisions(parsed, organization_id):
-        """Search decisions from initiative progress updates."""
-        from app.models import ChallengeInitiativeLink, InitiativeProgressUpdate
+        """Search decisions from Decision model."""
+        from app.models import Decision
 
         clean_query = parsed.get("clean_query", "").strip().lower()
         if not clean_query:
             return []
 
-        updates = (
-            db.session.query(InitiativeProgressUpdate)
-            .join(Initiative, InitiativeProgressUpdate.initiative_id == Initiative.id)
-            .filter(Initiative.organization_id == organization_id, InitiativeProgressUpdate.decisions.isnot(None))
-            .all()
-        )
+        all_decisions = Decision.query.filter_by(organization_id=organization_id).all()
 
         results = []
-        for upd in updates:
-            ini_name = upd.initiative.name.lower()
-            ci = ChallengeInitiativeLink.query.filter_by(initiative_id=upd.initiative_id).first()
-            context = (ci.challenge.space.name + " > " + ci.challenge.name) if ci and ci.challenge and ci.challenge.space else ""
-
-            if isinstance(upd.decisions, list):
-                for dec in upd.decisions:
-                    text = (dec.get("what", "") + " " + dec.get("who", "")).lower()
-                    if clean_query in text or clean_query in ini_name:
-                        results.append({
-                            "type": "decision",
-                            "id": upd.id,
-                            "title": dec.get("what", "")[:80],
-                            "subtitle": upd.initiative.name,
-                            "context": context,
-                            "date": upd.created_at.strftime("%d %b %Y"),
-                            "url": f"/org-admin/initiatives/{upd.initiative_id}/form?tab=execution",
-                            "icon": "bi-journal-bookmark-fill",
-                            "icon_color": "#8b5cf6",
-                        })
-            elif isinstance(upd.decisions, str):
-                if clean_query in upd.decisions.lower() or clean_query in ini_name:
-                    results.append({
-                        "type": "decision",
-                        "id": upd.id,
-                        "title": upd.decisions[:80],
-                        "subtitle": upd.initiative.name,
-                        "context": context,
-                        "date": upd.created_at.strftime("%d %b %Y"),
-                        "url": f"/org-admin/initiatives/{upd.initiative_id}/form?tab=execution",
-                        "icon": "bi-journal-bookmark-fill",
-                        "icon_color": "#8b5cf6",
-                    })
+        for d in all_decisions:
+            text = (d.what + " " + (d.who or "")).lower()
+            entities = " ".join(m.get("entity_name", "") for m in (d.entity_mentions or [])).lower()
+            if clean_query in text or clean_query in entities:
+                subtitle = ""
+                for m in (d.entity_mentions or []):
+                    if m.get("entity_type") == "initiative":
+                        subtitle = m.get("entity_name", "")
+                        break
+                results.append({
+                    "type": "decision",
+                    "id": d.id,
+                    "title": d.what[:80],
+                    "subtitle": subtitle,
+                    "context": "",
+                    "date": d.created_at.strftime("%d %b %Y"),
+                    "url": "/workspace/decision-register",
+                    "icon": "bi-journal-bookmark-fill",
+                    "icon_color": "#8b5cf6",
+                })
 
         return results[:20]

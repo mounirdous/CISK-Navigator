@@ -460,11 +460,6 @@
                                         <i class="bi bi-shield-check"></i> Governance Dashboard
                                     </a>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('workspace.decisions') }}">
-                                        <i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decisions Dashboard
-                                    </a>
-                                </li>
                                 {% endif %}
                                 {% if beta_enabled and current_user.beta_tester %}
                                 <li><hr class="dropdown-divider"></li>

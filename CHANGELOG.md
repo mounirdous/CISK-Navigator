@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] - 2026-03-30
+
+### Changed (BREAKING)
+- **Decisions unified under Decision model** — initiative review now creates `Decision` objects (with initiative as entity mention) instead of JSON blobs in progress updates. Single source of truth for all decisions
+- **Decisions Dashboard removed** — `/workspace/decisions` redirects to Decision Register. All decision views now use the Decision model
+- Initiative form execution tab shows a "Decisions" section with all decisions mentioning that initiative
+- CSV export, global search, workspace decision counts, GB dashboard all use Decision model
+- Legacy `InitiativeProgressUpdate.decisions` JSON column no longer written to
+
 ## [5.18.0] - 2026-03-30
 
 ### Fixed
