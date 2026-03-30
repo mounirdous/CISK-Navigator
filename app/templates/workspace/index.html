@@ -1978,8 +1978,8 @@
                 </button>
             </div>
 
-            <!-- Column Controls (New Feature) -->
-            <div class="btn-group btn-group-sm">
+            <!-- Column Controls — hidden in tree-only mode (no columns) -->
+            <div class="btn-group btn-group-sm" x-show="badgeMode > 0">
                 <button @click="expandAllColumns()"
                         class="btn btn-outline-light"
                         title="Expand All Columns">
@@ -2004,16 +2004,18 @@
                 <span style="font-weight: 600; font-size: 0.95rem;">Filters & Display</span>
                 <span x-show="hasActiveFilters" class="filter-active-badge" x-text="`${activeFilterCount} active`"></span>
             </div>
-            <button x-show="!loading && reviewCount > 0"
-                    @click.stop="startReview()"
-                    class="btn btn-sm"
-                    style="background: linear-gradient(135deg, #1565C0, #0d47a1); color: white; font-weight: 600; border: none; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem;"
-                    :title="`Start execution review of ${reviewCount} initiatives`">
-                <i class="bi bi-play-circle-fill"></i>
-                <span>Start Initiatives Review</span>
-                <span x-text="`(${reviewCount})`" style="opacity:0.85;"></span>
-            </button>
-            <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button x-show="!loading && reviewCount > 0"
+                        @click.stop="startReview()"
+                        class="btn btn-sm"
+                        style="background: linear-gradient(135deg, #1565C0, #0d47a1); color: white; font-weight: 600; border: none; padding: 0.3rem 0.85rem; border-radius: 20px; font-size: 0.82rem; display: flex; align-items: center; gap: 0.4rem;"
+                        :title="`Start execution review of ${reviewCount} initiatives`">
+                    <i class="bi bi-play-circle-fill"></i>
+                    <span>Review</span>
+                    <span x-text="`(${reviewCount})`" style="opacity:0.85;"></span>
+                </button>
+                <i class="bi" :class="filtersExpanded ? 'bi-chevron-up' : 'bi-chevron-down'" style="font-size: 1.2rem; color: #3182ce;"></i>
+            </div>
         </div>
 
         <!-- Expandable Filter Content -->
@@ -3835,6 +3837,7 @@ function workspaceV2(orgId, filterPresets) {
                 inherited_links: data.orgInheritedLinks || [],
             };
             this._initialized = true;
+            this.$nextTick(() => this._updateNavReviewLink());
         },
 
         async loadData(forceRefresh) {
@@ -4284,6 +4287,9 @@ function workspaceV2(orgId, filterPresets) {
                 } catch(e) {}
                 localStorage.removeItem('ws_edit_return_state');
             }
+
+            // Update nav review link when filters change
+            this.$watch('filteredSpaces', () => this._updateNavReviewLink());
 
             // Intercept edit-link clicks (capture phase fires before Alpine's @click.stop)
             // to snapshot tree state before navigating away to an entity edit page
@@ -5434,6 +5440,21 @@ function workspaceV2(orgId, filterPresets) {
 
         get reviewCount() {
             return this.getNavInitiativeIds().length;
+        },
+
+        _updateNavReviewLink() {
+            var el = document.getElementById('navReviewLink');
+            if (!el) return;
+            var ids = this.getNavInitiativeIds();
+            var count = ids.length;
+            var base = '{{ url_for("workspace.start_review") }}';
+            if (count > 0) {
+                el.href = base + '?ids=' + ids.join(',') + '&back=' + encodeURIComponent(window.location.href);
+                el.innerHTML = '<i class="bi bi-play-circle-fill"></i> Initiatives Review <span class="badge bg-primary" style="font-size:0.65rem;">' + count + '</span>';
+            } else {
+                el.href = base;
+                el.innerHTML = '<i class="bi bi-play-circle-fill"></i> Initiatives Review';
+            }
         },
 
         startReview() {

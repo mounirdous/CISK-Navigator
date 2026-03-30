@@ -298,6 +298,36 @@ def gb_dashboard_index():
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/review")
+@login_required
+@organization_required
+def start_review():
+    """Start initiatives execution review — redirects to first initiative form.
+    Accepts ?ids=1,2,3 for filtered initiatives, otherwise uses all."""
+    org_id = session.get("organization_id")
+
+    ids_param = request.args.get("ids", "")
+    if ids_param:
+        ids = [int(x) for x in ids_param.split(",") if x.strip().isdigit()]
+    else:
+        initiatives = (
+            Initiative.query.filter_by(organization_id=org_id)
+            .order_by(Initiative.name)
+            .all()
+        )
+        ids = [i.id for i in initiatives]
+
+    if not ids:
+        flash("No initiatives to review.", "warning")
+        return redirect(url_for("workspace.index"))
+
+    back = request.args.get("back", url_for("workspace.index"))
+    return redirect(
+        url_for("organization_admin.initiative_form", initiative_id=ids[0])
+        + f"?tab=execution&nav={','.join(str(i) for i in ids)}&nav_pos=0&nav_back={back}"
+    )
+
+
 @bp.route("/governance/<int:gb_id>")
 @login_required
 @organization_required

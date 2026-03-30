@@ -364,16 +364,10 @@
                 <i class="bi bi-house-fill" style="font-size: 1.25rem;"></i>
             </a>
             {% endif %}
-            <a class="navbar-brand flex-shrink-0 me-2" href="{% if session.organization_id %}{{ url_for('workspace.dashboard') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}">
-                <span style="font-weight: 700;">CISK</span><span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.theory') }}';" style="font-size: 0.75rem; opacity: 0.5; margin-left: 0.25rem; cursor: pointer;" title="CISK Theory" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">v{{ app_version }}</span>
+            <a class="navbar-brand flex-shrink-0 me-2" href="{% if session.organization_id %}{{ url_for('workspace.index') }}{% else %}{{ url_for('global_admin.index') }}{% endif %}" style="display: flex; align-items: center; gap: 0.4rem; text-decoration: none; transition: opacity 0.2s;" title="{% if session.organization_id %}Go to {{ session.get('organization_name', 'CISK') }} CISK{% else %}Dashboard{% endif %}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+                <span style="font-weight: 800; font-size: 1.3rem; letter-spacing: -0.02em; background: linear-gradient(135deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">CISK</span>
+                <span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.theory') }}';" style="font-size: 0.75rem; opacity: 0.5; cursor: pointer;" title="CISK Theory" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">v{{ app_version }}</span>
             </a>
-            {% if current_user.is_authenticated and session.organization_id %}
-            <!-- Workspace pill -->
-            <a href="{{ url_for('workspace.index') }}" class="navbar-text d-none d-md-flex align-items-center" style="font-size: 0.85rem; text-decoration: none; color: #fff; background: rgba(13, 110, 253, 0.2); padding: 0.25rem 0.75rem; border-radius: 12px; border: 1px solid rgba(13, 110, 253, 0.4); transition: all 0.2s; gap: 0.5rem; flex-shrink: 0;" onmouseover="this.style.background='rgba(13, 110, 253, 0.3)'; this.style.borderColor='rgba(13, 110, 253, 0.6)';" onmouseout="this.style.background='rgba(13, 110, 253, 0.2)'; this.style.borderColor='rgba(13, 110, 253, 0.4)';" title="Go to Workspace">
-                <i class="bi bi-grid-3x3-gap-fill" style="font-size: 1rem;"></i>
-                Workspace
-            </a>
-            {% endif %}
             {% if current_user.is_authenticated %}
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -383,20 +377,14 @@
                     {% if current_user.is_authenticated %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="organizationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-building"></i> Organizations
+                                <i class="bi bi-building"></i> Workspaces
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="organizationDropdown">
                                 <li class="px-3 py-2 border-bottom" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, transparent 100%);">
                                     <div class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7;">
-                                        Switch Organization
+                                        Switch Workspace
                                     </div>
                                 </li>
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('workspace.index') }}">
-                                        <i class="bi bi-grid-3x3-gap"></i> Workspace
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
                                 {% for membership in current_user.organization_memberships %}
                                     {% if membership.organization.is_active %}
                                         {% if membership.organization_id == session.organization_id %}
@@ -425,7 +413,7 @@
                         {% if can_access_action_items or can_access_stakeholders %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="strategyDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-people"></i> People & Actions
+                                <i class="bi bi-people"></i> Collaborate
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="strategyDropdown">
                                 {% if can_access_action_items %}
@@ -434,19 +422,17 @@
                                         <i class="bi bi-card-checklist"></i> Action Register
                                     </a>
                                 </li>
-                                {% endif %}
-                                {% if can_access_stakeholders %}
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('stakeholders.index', organization_id=session.get('organization_id')) }}">
-                                        <i class="bi bi-people-fill"></i> Stakeholders
-                                    </a>
-                                </li>
-                                {% endif %}
-                                {% if can_access_action_items %}
-                                <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('workspace.decisions') }}">
                                         <i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decision Register
+                                    </a>
+                                </li>
+                                {% endif %}
+                                {% if can_access_stakeholders %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('stakeholders.index', organization_id=session.get('organization_id')) }}">
+                                        <i class="bi bi-people-fill"></i> Stakeholders
                                     </a>
                                 </li>
                                 {% endif %}
@@ -464,6 +450,11 @@
                                     </a>
                                 </li>
                                 {% if session.organization_id %}
+                                <li>
+                                    <a class="dropdown-item" id="navReviewLink" href="{{ url_for('workspace.start_review') }}">
+                                        <i class="bi bi-play-circle-fill"></i> Initiatives Review
+                                    </a>
+                                </li>
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('workspace.gb_dashboard_index') }}">
                                         <i class="bi bi-shield-check"></i> Governance Dashboard
@@ -503,7 +494,7 @@
                                 {% if org_id and (current_user.is_global_admin or current_user.is_super_admin or current_user.can_manage_spaces(org_id) or current_user.can_manage_value_types(org_id) or current_user.can_manage_governance_bodies(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id)) %}
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('organization_admin.index') }}">
-                                        <i class="bi bi-building-gear"></i> {{ session.get('organization_name', 'Organization') }} Administration
+                                        <i class="bi bi-building-gear"></i> {{ session.get('organization_name', 'Workspace') }} Administration
                                     </a>
                                 </li>
                                 {% endif %}
@@ -730,7 +721,7 @@
                 </a>
                 <a href="{{ url_for('global_admin.organizations') }}"
                    class="ga-tab {% if 'organization' in ep and 'backup' not in ep %}active{% endif %}">
-                    <i class="bi bi-buildings"></i> Organizations
+                    <i class="bi bi-buildings"></i> Workspaces
                 </a>
                 <a href="{{ url_for('global_admin.users') }}"
                    class="ga-tab {% if 'user' in ep %}active{% endif %}">

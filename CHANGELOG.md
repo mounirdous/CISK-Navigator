@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.11.0] - 2026-03-30
+
+### Changed
+- **UI terminology**: "Organizations" → "Workspaces", "Workspace" → "CISK" (clickable gradient brand), "People & Actions" → "Collaborate", "Organization Administration" → "Workspace Administration"
+- **CISK brand** top-left is now the workspace entry point with gradient text; hover shows "Go to {name} CISK"
+- **Collaborate menu** reordered: Action Register, Decision Register, then Stakeholders
+- **Initiatives Review** moved from workspace/action register buttons to Dashboards menu with filtered count badge; new `/workspace/review` route
+- **Column controls** hidden at xmas tree level 0 (no columns to expand/collapse)
+- **CLAUDE.md** updated with UI ↔ Model terminology mapping table
+
 ## [5.10.1] - 2026-03-30
 
 ### Fixed

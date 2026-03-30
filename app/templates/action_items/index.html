@@ -355,16 +355,6 @@
             </a>
             {% endif %}
 
-            <!-- Start Initiatives Review -->
-            {% if review_initiative_ids %}
-            <button type="button" class="btn btn-light btn-sm fw-semibold act-d1"
-                    onclick="startInitiativesReview()"
-                    title="Open Execution Review Navigator for all {{ review_initiative_ids|length }} initiative(s) in the current view">
-                <i class="bi bi-play-circle me-1"></i>
-                Start Initiatives Review
-                <span class="badge bg-primary ms-1" style="font-size:0.65rem;">{{ review_initiative_ids|length }}</span>
-            </button>
-            {% endif %}
 
             <!-- View toggle -->
             <div class="view-toggle-header">
@@ -2034,7 +2024,6 @@ function startInitiativesReview() {
     const firstId = ids[0];
     const navParam = ids.join(',');
     const back = encodeURIComponent(window.location.href);
-    // Pass active GB filters to scope KPIs in the review
     var gbParam = '';
     var gbChecked = document.querySelectorAll('input[name="gb_filter"]:checked');
     if (gbChecked.length > 0) {
@@ -2042,6 +2031,14 @@ function startInitiativesReview() {
     }
     window.location.href = `/org-admin/initiatives/${firstId}/form?tab=execution&nav=${navParam}&nav_pos=0&nav_back=${back}${gbParam}`;
 }
+// Update Dashboards → Initiatives Review menu link with filtered IDs + count
+(function() {
+    var el = document.getElementById('navReviewLink');
+    if (!el || !REVIEW_INITIATIVES.length) return;
+    var ids = REVIEW_INITIATIVES.map(function(i) { return i.id; });
+    el.href = '{{ url_for("workspace.start_review") }}?ids=' + ids.join(',') + '&back=' + encodeURIComponent(window.location.href);
+    el.innerHTML = '<i class="bi bi-play-circle-fill"></i> Initiatives Review <span class="badge bg-primary" style="font-size:0.65rem;">' + ids.length + '</span>';
+})();
 
 // ── Action Register Detail Mode (xmas tree) ──
 var _actDetailMode = parseInt(localStorage.getItem('action_detail_mode') || '1');

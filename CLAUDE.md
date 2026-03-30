@@ -1,5 +1,18 @@
 # CISK Navigator - Development Guidelines
 
+## UI ↔ Model Terminology (IMPORTANT)
+
+The UI uses different terms than the database models:
+
+| UI Text | DB Model | Notes |
+|---|---|---|
+| **Workspace** | `Organization` | "Workspaces" menu, "Switch Workspace", "Workspace Administration" |
+| **CISK** | Workspace entry point | Top-left brand link → `workspace.index` |
+| **Collaborate** | Actions, Decisions, Stakeholders | Menu grouping |
+| **Portal System** | `System.linked_organization_id` | System linked to another CISK org |
+
+**Rule:** Use "Workspace" in UI text, "Organization" only in code/models/DB.
+
 ## Semantic Versioning
 
 This project follows [Semantic Versioning](https://semver.org/) with the format: **x.y.z**
