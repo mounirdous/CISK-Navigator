@@ -159,28 +159,6 @@
 
     <div class="col-lg-4 col-md-6">
         <div class="admin-card">
-            <div class="admin-card-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                <i class="bi bi-file-earmark-code-fill" style="color: white;"></i>
-            </div>
-            <div class="admin-card-title">
-                <i class="bi bi-file-earmark-code"></i> Backup & Restore
-            </div>
-            <div class="admin-card-desc">
-                Export/import your organization structure as YAML.
-            </div>
-            <div class="admin-card-actions">
-                <a href="{{ url_for('organization_admin.yaml_export') }}" class="btn btn-success">
-                    <i class="bi bi-download"></i> Export
-                </a>
-                <a href="{{ url_for('organization_admin.yaml_upload') }}" class="btn btn-outline-danger">
-                    <i class="bi bi-upload"></i> Import
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4 col-md-6">
-        <div class="admin-card">
             <div class="admin-card-icon" style="background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);">
                 <i class="bi bi-journal-bookmark-fill" style="color: white;"></i>
             </div>
@@ -195,6 +173,40 @@
                     <i class="bi bi-tags"></i> Manage Tags
                 </a>
             </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 col-md-6">
+        <div class="admin-card">
+            <div class="admin-card-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="bi bi-compass" style="color: white;"></i>
+            </div>
+            <div class="admin-card-title">
+                <i class="bi bi-compass" style="color:#f59e0b;"></i> Strategy
+            </div>
+            <div class="admin-card-desc">
+                Define strategic pillars for your organization.
+                <div class="mt-2">
+                    <form method="POST" action="{{ url_for('organization_admin.toggle_strategy') }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="strategyToggle"
+                                   {% if org.strategy_enabled %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <label class="form-check-label fw-semibold" for="strategyToggle">
+                                {{ 'Enabled' if org.strategy_enabled else 'Disabled' }}
+                            </label>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% if org.strategy_enabled %}
+            <div class="admin-card-actions">
+                <a href="{{ url_for('organization_admin.strategy') }}" class="btn" style="background:#f59e0b; color:white;">
+                    <i class="bi bi-compass"></i> Edit Pillars
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

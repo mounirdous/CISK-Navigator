@@ -44,6 +44,12 @@ class Organization(db.Model):
         db.JSON, nullable=True,
         comment="Custom QFD lookup: {'3_3': 3, '3_2': 3, '3_1': 2, ...}"
     )
+    # Feature toggles
+    strategy_enabled = db.Column(
+        db.Boolean, nullable=False, default=False,
+        comment="Enable strategic pillars feature for this organization"
+    )
+
     # Decision tags (JSON array of strings) — configurable per org
     decision_tags = db.Column(
         db.JSON, nullable=True,

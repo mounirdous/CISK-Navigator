@@ -224,7 +224,13 @@ def strategy():
     """Edit strategic pillars"""
     import json as _json
 
-    from app.models import StrategicPillar
+    from app.models import Organization, StrategicPillar
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id) if org_id else None
+    if not (org and org.strategy_enabled):
+        flash("Strategy is not enabled for this organization.", "warning")
+        return redirect(url_for("organization_admin.index"))
 
     org_id = session.get("organization_id")
 
@@ -490,9 +496,10 @@ def index():
 
     # Create empty form for CSRF token
     form = FlaskForm()
+    org = Organization.query.get(org_id)
 
     return render_template(
-        "organization_admin/index.html", org_name=org_name, stats=stats, form=form, csrf_token=generate_csrf
+        "organization_admin/index.html", org_name=org_name, stats=stats, form=form, csrf_token=generate_csrf, org=org
     )
 
 
@@ -914,6 +921,20 @@ def _get_all_org_links_enriched(org_id):
             "entity_label": type_labels.get(link.entity_type, link.entity_type.title()),
         })
     return result
+
+
+@bp.route("/settings/toggle-strategy", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def toggle_strategy():
+    """Toggle strategy feature on/off for this organization"""
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+    org.strategy_enabled = not org.strategy_enabled
+    db.session.commit()
+    flash(f"Strategy {'enabled' if org.strategy_enabled else 'disabled'}.", "success")
+    return redirect(url_for("organization_admin.index"))
 
 
 @bp.route("/settings/upload-logo", methods=["POST"])

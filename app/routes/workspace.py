@@ -443,10 +443,12 @@ def impact_docs():
 @login_required
 @organization_required
 def strategy_view():
-    """Strategy view — card display of strategic pillars (beta)"""
-    from app.models import StrategicPillar
+    """Strategy view — card display of strategic pillars"""
+    from app.models import Organization, StrategicPillar
 
-    if not (current_app.config.get("BETA_ENABLED") and current_user.beta_tester):
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id) if org_id else None
+    if not (org and org.strategy_enabled):
         abort(404)
 
     org_id = session.get("organization_id")

@@ -150,6 +150,7 @@ class FullBackupService:
             "impact_calc_method": org.impact_calc_method,
             "impact_qfd_matrix": org.impact_qfd_matrix,
             "decision_tags": org.decision_tags,
+            "strategy_enabled": org.strategy_enabled,
         }
 
         # Export logo if present

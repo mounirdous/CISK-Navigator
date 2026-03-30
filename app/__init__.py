@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "5.8.1"
+__version__ = "5.9.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -280,10 +280,11 @@ def create_app(config_name=None):
             org = Organization.query.get(org_id) if org_id else None
             decision_tags = (org.decision_tags if org and org.decision_tags else
                              ["scope", "budget", "timeline", "resource", "technical", "governance", "other"])
+            strategy_enabled = org.strategy_enabled if org else False
             if levels:
-                return {"impact_levels_config": levels, "decision_tags": decision_tags}
-            return {"impact_levels_config": {}, "decision_tags": decision_tags}
-        return {"impact_levels_config": {}, "decision_tags": []}
+                return {"impact_levels_config": levels, "decision_tags": decision_tags, "strategy_enabled": strategy_enabled}
+            return {"impact_levels_config": {}, "decision_tags": decision_tags, "strategy_enabled": strategy_enabled}
+        return {"impact_levels_config": {}, "decision_tags": [], "strategy_enabled": False}
 
     # Register error handlers
     @app.errorhandler(404)

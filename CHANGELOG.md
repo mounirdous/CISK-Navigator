@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.9.0] - 2026-03-30
+
+### Added
+- **Strategy toggle per organization** — enable/disable strategic pillars from org admin; toggle switch on Strategy card; gates all strategy UI (workspace warning, info chip, action register alert, strategy view/edit pages)
+- **Xmas tree level 0 = tree only** — hides all value columns, entity names expand full width
+
+### Changed
+- **Xmas tree levels remapped**: Level 0 = tree only, Level 1 = tree + values (no decorations), Level 2 = full (all badges, consensus, rollup, impact)
+- **Strategy out of beta** — no longer requires beta flag, controlled by per-org toggle
+- **YAML Backup/Restore hidden** from org admin dashboard
+
 ## [5.8.1] - 2026-03-29
 
 ### Changed

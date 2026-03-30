@@ -419,7 +419,7 @@
         </div>
     </div>
 
-    {% if beta_enabled and current_user.beta_tester and strategy_count is defined and strategy_count == 0 %}
+    {% if strategy_enabled and strategy_count is defined and strategy_count == 0 %}
     <div class="alert alert-warning d-flex align-items-center gap-2 mb-0 py-2 px-3" style="border-radius:0; font-size:0.85rem;">
         <i class="bi bi-compass"></i>
         <span>No strategic pillars defined.</span>
