@@ -2518,6 +2518,9 @@
                                 <i x-show="!space.logo_url && !space.icon && editMode" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
 
                                 <span x-text="space.name" :data-tooltip="space.description || null" :data-tooltip-actions="tooltipActions(space, 'space') || null"></span>
+                                <template x-if="badgeMode >= 2 && space.impact_level && impactScale[space.impact_level]">
+                                    <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[space.impact_level].color + '80; color:' + impactScale[space.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[space.impact_level].icon" x-text="impactScale[space.impact_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
+                                </template>
 
                                 <!-- Space label badge (removed — always hidden) -->
 
@@ -2676,6 +2679,9 @@
                                         <i x-show="!challenge.logo_url && !challenge.icon && editMode" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
                                         <span x-text="challenge.name" :data-tooltip="challenge.description || null" :data-tooltip-actions="tooltipActions(challenge, 'challenge') || null"></span>
+                                        <template x-if="badgeMode >= 2 && challenge.impact_level && impactScale[challenge.impact_level]">
+                                            <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[challenge.impact_level].color + '80; color:' + impactScale[challenge.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[challenge.impact_level].icon" x-text="impactScale[challenge.impact_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
+                                        </template>
 
                                         <!-- Action icons (edit mode only) -->
                                         <template x-if="editMode">
@@ -2787,6 +2793,9 @@
                                                 <i x-show="!initiative.logo_url && !initiative.icon && editMode" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
 
                                                 <span x-text="initiative.name" :data-tooltip="initiative.description || null" :data-tooltip-actions="tooltipActions(initiative, 'initiative') || null"></span>
+                                                <template x-if="badgeMode >= 2 && initiative.impact_level && impactScale[initiative.impact_level]">
+                                                    <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[initiative.impact_level].color + '80; color:' + impactScale[initiative.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[initiative.impact_level].icon" x-text="impactScale[initiative.impact_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
+                                                </template>
 
                                                 <!-- Initiative form link (always visible) -->
                                                 <a :href="`/org-admin/initiatives/${initiative.id}/form`"
@@ -2944,6 +2953,9 @@
                                                                 <i class="bi bi-arrow-right" style="font-size:0.6rem; opacity:0.6;"></i>
                                                             </a>
                                                         </template>
+                                                        <template x-if="badgeMode >= 2 && system.impact_level && impactScale[system.impact_level]">
+                                                            <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[system.impact_level].color + '80; color:' + impactScale[system.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[system.impact_level].icon" x-text="impactScale[system.impact_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
+                                                        </template>
 
                                                         <!-- Action icons (edit mode only) -->
                                                         <template x-if="editMode">
@@ -3085,8 +3097,8 @@
                                                             </template>
 
                                                             <span x-text="kpi.name" :data-tooltip="kpi.description || null" :data-tooltip-actions="tooltipActions(kpi, 'kpi') || null"></span>
-                                                            <!-- KPI assessed impact: level 0 only (column handles level 2) -->
-                                                            <template x-if="badgeMode === 0 && kpi.impact_level && impactScale[kpi.impact_level]">
+                                                            <!-- KPI assessed impact: level 0 + level 2 -->
+                                                            <template x-if="badgeMode !== 1 && kpi.impact_level && impactScale[kpi.impact_level]">
                                                                 <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[kpi.impact_level].color + '80; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[kpi.impact_level].icon" x-text="impactScale[kpi.impact_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
                                                             </template>
 
