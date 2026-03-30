@@ -175,12 +175,57 @@ def decision_register():
     decision_tags = (org.decision_tags if org and org.decision_tags else
                      ["scope", "budget", "timeline", "resource", "technical", "governance", "other"])
 
+    # Presets
+    from app.models import UserFilterPreset
+    dr_presets = (
+        UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="decisions")
+        .order_by(UserFilterPreset.name).all()
+    )
+
+    # Unique values for filters
+    all_who = sorted(set(d.who for d in standalone_decisions if d.who))
+    all_tags_used = set()
+    for d in standalone_decisions:
+        if d.tags:
+            for t in d.tags:
+                all_tags_used.add(t)
+
+    # Compute max importance per decision from entity mentions
+    from app.models import ImpactLevel, Challenge, ChallengeInitiativeLink
+    from app.services.impact_service import compute_true_importance
+    _impact_scale = ImpactLevel.get_org_levels(org_id)
+    _iw = {lvl: _impact_scale[lvl]["weight"] for lvl in _impact_scale} if _impact_scale else {}
+    _im = org.impact_calc_method or "geometric_mean" if org else "geometric_mean"
+    _icm = org.impact_qfd_matrix if org else None
+    _icr = org.impact_reinforce_weights if org else None
+    decision_importance = {}
+    for d in standalone_decisions:
+        max_ti = 0
+        for m in (d.entity_mentions or []):
+            if m.get("entity_type") == "initiative":
+                ini = Initiative.query.get(m.get("entity_id"))
+                if ini and ini.impact_level:
+                    ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
+                    if ci and ci.challenge and ci.challenge.space:
+                        sp = ci.challenge.space
+                        ch = ci.challenge
+                        if sp.impact_level and ch.impact_level:
+                            ti = compute_true_importance([sp.impact_level, ch.impact_level, ini.impact_level], _im, _iw, _icm, _icr)
+                            if ti and ti > max_ti:
+                                max_ti = ti
+        decision_importance[d.id] = max_ti
+
     return render_template(
         "workspace/decision_register.html",
         decisions=standalone_decisions,
         governance_bodies=governance_bodies,
         decision_tags=decision_tags,
         csrf_token=generate_csrf,
+        dr_presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in dr_presets],
+        all_who=sorted(all_who),
+        all_tags_used=sorted(all_tags_used),
+        decision_importance=decision_importance,
+        impact_scale=_impact_scale,
     )
 
 

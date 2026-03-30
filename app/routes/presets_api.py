@@ -1,6 +1,18 @@
 """
 Unified Presets API — one interface for all save/load features.
 Delegates to existing models: UserFilterPreset, SavedSearch, SavedChart.
+
+Feature → Model mapping:
+  - workspace     → UserFilterPreset
+  - action_items  → UserFilterPreset
+  - decisions     → UserFilterPreset
+  - search        → SavedSearch
+  - pivot         → SavedChart
+
+To add a new feature:
+  1. Add the feature name to VALID_FEATURES set below
+  2. Add the feature to the appropriate `if feature in (...)` branch in save_preset() and load_presets()
+  3. Pass presets_list to the template and use {{ preset_bar('feature_name', presets_list) }}
 """
 
 import json
@@ -14,7 +26,7 @@ from app.models import SavedChart, SavedSearch, UserFilterPreset
 
 bp = Blueprint("presets_api", __name__, url_prefix="/api")
 
-VALID_FEATURES = {"workspace", "action_items", "search", "pivot"}
+VALID_FEATURES = {"workspace", "action_items", "search", "pivot", "decisions"}
 
 
 def organization_required(f):
@@ -40,7 +52,7 @@ def get_presets():
 
     org_id = session.get("organization_id")
 
-    if feature in ("workspace", "action_items"):
+    if feature in ("workspace", "action_items", "decisions"):
         presets = (
             UserFilterPreset.query.filter_by(
                 user_id=current_user.id, organization_id=org_id, feature=feature
@@ -124,7 +136,7 @@ def create_preset():
 
     org_id = session.get("organization_id")
 
-    if feature in ("workspace", "action_items"):
+    if feature in ("workspace", "action_items", "decisions"):
         existing = UserFilterPreset.query.filter_by(
             user_id=current_user.id, organization_id=org_id, feature=feature, name=name
         ).first()
@@ -221,7 +233,7 @@ def delete_preset(preset_id):
 
     org_id = session.get("organization_id")
 
-    if feature in ("workspace", "action_items"):
+    if feature in ("workspace", "action_items", "decisions"):
         preset = UserFilterPreset.query.get(preset_id)
         if not preset:
             return jsonify({"error": "Preset not found"}), 404

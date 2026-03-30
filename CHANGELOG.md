@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.17.0] - 2026-03-30
+
+### Changed
+- **Decision Register rewrite** — matches Action Register layout: blue gradient header, xmas tree (🌲/🎄/🎄✨), impact star filter, inline new decision row, expandable filter panel (tags/who/GB), preset save/load/reset, table with detail-level columns
+- Fixed form-in-table HTML issue (form outside table with `form=` attribute)
+- Fixed duplicate entity mentions in search results
+- Fixed preset save ("Unhandled feature" / empty config) — added `decisions` to preset API feature branches + `PresetManager.register()` with getState/applyState/onReset callbacks
+- Documented preset system in CLAUDE.md and presets_api.py
+
 ## [5.16.0] - 2026-03-30
 
 ### Added

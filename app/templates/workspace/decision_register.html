@@ -1,341 +1,456 @@
 {% extends "base.html" %}
 {% block title %}Decision Register{% endblock %}
 
+{% from "_preset_bar.html" import preset_bar %}
+
 {% block extra_css %}
 <style>
-    .dr-page { max-width: 1000px; margin: 0 auto; padding: 1.5rem; }
+.page-header {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+}
+/* Detail mode */
+[data-detail-mode="0"] .dr-d1 { display: none !important; }
+[data-detail-mode="0"] .dr-d2 { display: none !important; }
+[data-detail-mode="1"] .dr-d2 { display: none !important; }
 
-    /* Hero create card */
-    .dr-create-card {
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
-        border-radius: 16px; padding: 2rem; color: white;
-        margin-bottom: 2rem; position: relative; overflow: hidden;
-    }
-    .dr-create-card::before {
-        content: ''; position: absolute; inset: 0; pointer-events: none;
-        background: radial-gradient(ellipse 50% 60% at 80% 20%, rgba(139,92,246,0.15) 0%, transparent 70%);
-    }
-    .dr-create-card form { position: relative; z-index: 1; }
-    .dr-create-card h2 {
-        font-size: 1.3rem; font-weight: 800; margin-bottom: 1.25rem;
-        display: flex; align-items: center; gap: 0.5rem; position: relative; z-index: 1;
-    }
-    .dr-create-card h2 i { color: #a78bfa; }
+/* Filters panel */
+.dr-filters { display: none; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.dr-filters.show { display: block; }
+.dr-filter-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.dr-filter-pill {
+    padding: 0.2rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; border: 1px solid #dee2e6; background: white; color: #495057; transition: all 0.15s;
+}
+.dr-filter-pill:hover { background: #e9ecef; }
+.dr-filter-pill.active { background: #1565c0; color: white; border-color: #1565c0; }
 
-    .dr-field { margin-bottom: 1rem; position: relative; }
-    .dr-field label {
-        font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.08em; color: #a5b4fc; margin-bottom: 0.3rem; display: block;
-    }
-    .dr-field input, .dr-field textarea, .dr-field select {
-        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-        color: white; border-radius: 8px; padding: 0.5rem 0.75rem; width: 100%;
-        font-size: 0.9rem; transition: border-color 0.2s;
-    }
-    .dr-field input:focus, .dr-field textarea:focus, .dr-field select:focus {
-        outline: none; border-color: #818cf8; background: rgba(255,255,255,0.12);
-    }
-    .dr-field input::placeholder, .dr-field textarea::placeholder { color: rgba(255,255,255,0.35); }
-    .dr-field select option { background: #1e1b4b; color: white; }
+/* Table */
+.dr-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.85rem; }
+.dr-table thead th {
+    background: #f1f5f9; padding: 0.6rem 0.75rem; font-weight: 600; color: #475569;
+    border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 5; font-size: 0.75rem;
+    text-transform: uppercase; letter-spacing: 0.03em;
+}
+.dr-table tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+.dr-table tbody tr:hover { background: #f8fafc; }
+.dr-what { font-weight: 500; color: #1e293b; }
+.dr-tag-badge { background: #ede9fe; color: #6d28d9; padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+.dr-gb-badge { background: #dbeafe; color: #1d4ed8; padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
+.dr-mention-badge { background: #f0fdf4; color: #166534; padding: 0.1rem 0.4rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; }
 
-    /* Tag chips */
-    .dr-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .dr-tag {
-        padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
-        cursor: pointer; transition: all 0.15s; border: 1px solid rgba(255,255,255,0.2);
-        background: rgba(255,255,255,0.06); color: #c7d2fe;
-    }
-    .dr-tag:hover { background: rgba(255,255,255,0.12); }
-    .dr-tag.active { background: #6366f1; color: white; border-color: #6366f1; }
+/* New decision row */
+.dr-new-row td { background: #f0f9ff; }
+.dr-new-row input, .dr-new-row textarea, .dr-new-row select {
+    border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.35rem 0.5rem; font-size: 0.85rem; width: 100%;
+}
+.dr-new-row input:focus, .dr-new-row textarea:focus, .dr-new-row select:focus {
+    outline: none; border-color: #1565c0; box-shadow: 0 0 0 0.1rem rgba(21,101,192,0.15);
+}
 
-    /* Entity mention search */
-    .dr-mention-search { position: relative; }
-    .dr-mention-results {
-        position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
-        background: #1e1b4b; border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 8px; max-height: 200px; overflow-y: auto; display: none;
-    }
-    .dr-mention-results.show { display: block; }
-    .dr-mention-item {
-        padding: 0.4rem 0.75rem; cursor: pointer; font-size: 0.82rem;
-        display: flex; align-items: center; gap: 0.5rem;
-    }
-    .dr-mention-item:hover { background: rgba(255,255,255,0.08); }
-    .dr-mention-chip {
-        display: inline-flex; align-items: center; gap: 0.3rem;
-        background: rgba(99,102,241,0.3); border: 1px solid rgba(99,102,241,0.5);
-        border-radius: 12px; padding: 0.15rem 0.5rem; font-size: 0.75rem; color: #c7d2fe;
-        margin-right: 0.3rem; margin-bottom: 0.3rem;
-    }
-    .dr-mention-chip .remove { cursor: pointer; opacity: 0.6; margin-left: 0.2rem; }
-    .dr-mention-chip .remove:hover { opacity: 1; }
+/* Tag chips in new row */
+.dr-new-tags { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.3rem; }
+.dr-new-tag {
+    padding: 0.15rem 0.45rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600;
+    cursor: pointer; border: 1px solid #dee2e6; background: white; color: #64748b;
+}
+.dr-new-tag:hover { background: #f1f5f9; }
+.dr-new-tag.active { background: #1565c0; color: white; border-color: #1565c0; }
 
-    .dr-submit {
-        background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
-        border: none; border-radius: 10px; padding: 0.6rem 2rem; font-weight: 700;
-        font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
-    }
-    .dr-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(99,102,241,0.4); }
+/* Mention search */
+.dr-mention-search { position: relative; }
+.dr-mention-results {
+    position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+    background: white; border: 1px solid #dee2e6; border-radius: 8px;
+    max-height: 180px; overflow-y: auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.dr-mention-results.show { display: block; }
+.dr-mention-item { padding: 0.35rem 0.6rem; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+.dr-mention-item:hover { background: #f1f5f9; }
+.dr-mention-chip {
+    display: inline-flex; align-items: center; gap: 0.2rem;
+    background: #ede9fe; border-radius: 10px; padding: 0.1rem 0.4rem; font-size: 0.7rem; color: #5b21b6;
+    margin-right: 0.2rem; margin-bottom: 0.2rem;
+}
+.dr-mention-chip .remove { cursor: pointer; opacity: 0.5; font-size: 0.8rem; }
+.dr-mention-chip .remove:hover { opacity: 1; color: #ef4444; }
 
-    /* Decision list */
-    .dr-list-header {
-        display: flex; justify-content: space-between; align-items: center;
-        margin-bottom: 1rem;
-    }
-    .dr-list-header h3 { font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 0; }
-    .dr-count { font-size: 0.8rem; color: #64748b; background: #f1f5f9; padding: 0.2rem 0.6rem; border-radius: 12px; }
+.dr-empty { text-align: center; padding: 3rem; color: #94a3b8; }
 
-    .dr-card {
-        background: white; border: 1px solid #e2e8f0; border-radius: 12px;
-        padding: 1.25rem; margin-bottom: 0.75rem; transition: all 0.2s;
-        position: relative;
-    }
-    .dr-card:hover { border-color: #c7d2fe; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
-    .dr-card-what { font-size: 0.95rem; color: #1e293b; margin-bottom: 0.5rem; line-height: 1.5; }
-    .dr-card-meta {
-        display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.75rem; color: #64748b;
-    }
-    .dr-card-tag {
-        background: #ede9fe; color: #6d28d9; padding: 0.1rem 0.5rem;
-        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
-    }
-    .dr-card-gb {
-        background: #dbeafe; color: #1d4ed8; padding: 0.1rem 0.5rem;
-        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
-    }
-    .dr-card-mention {
-        background: #f0fdf4; color: #166534; padding: 0.1rem 0.5rem;
-        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
-    }
-    .dr-card-initiative {
-        background: #fef3c7; color: #92400e; padding: 0.1rem 0.5rem;
-        border-radius: 8px; font-weight: 600; font-size: 0.7rem;
-    }
-    .dr-card-delete {
-        position: absolute; top: 0.75rem; right: 0.75rem; opacity: 0;
-        transition: opacity 0.15s; color: #94a3b8; cursor: pointer;
-    }
-    .dr-card:hover .dr-card-delete { opacity: 0.6; }
-    .dr-card-delete:hover { opacity: 1 !important; color: #ef4444; }
-
-    .dr-empty {
-        text-align: center; padding: 3rem 2rem; color: #94a3b8;
-    }
-    .dr-empty i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
-
-    @media (max-width: 768px) {
-        .dr-page { padding: 1rem; }
-        .dr-create-card { padding: 1.25rem; }
-        .dr-row { flex-direction: column; }
-    }
+@media (max-width: 768px) {
+    .page-header { padding: 1rem; }
+    .dr-table { font-size: 0.8rem; }
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="dr-page">
+<div class="container-fluid" style="max-width:1400px; padding:1.5rem;" id="drContainer" data-detail-mode="1">
 
-    <!-- Create Decision Card -->
-    <div class="dr-create-card">
-        <h2><i class="bi bi-journal-plus"></i> Record a Decision</h2>
-        <form method="POST" action="{{ url_for('workspace.decision_register') }}" id="drForm">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="hidden" name="entity_mentions_json" id="drMentionsJson" value="[]">
+    <!-- Header -->
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 style="font-size:1.6rem; font-weight:700; margin:0; display:flex; align-items:center; gap:0.5rem;">
+                <i class="bi bi-journal-bookmark-fill"></i> Decision Register
+                <button type="button" class="btn btn-sm" id="drDetailBtn"
+                        onclick="cycleDrDetailMode()" title="Detail level"
+                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
+                    <span id="drDetailIcon">🎄</span>
+                </button>
+                <button type="button" class="btn btn-sm" id="drImpactBtn"
+                        onclick="cycleDrImpactFilter()" title="Impact filter: showing all"
+                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.5rem; line-height:1; font-size:0.85rem; min-width:32px;">
+                    <span id="drImpactIcon" style="opacity:0.5;">☆</span>
+                </button>
+            </h1>
+            <p style="margin:0.25rem 0 0; opacity:0.85; font-size:0.9rem;">
+                Record and track decisions across the organization
+            </p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-light btn-sm fw-semibold" onclick="document.getElementById('drNewRow').style.display = document.getElementById('drNewRow').style.display === 'none' ? '' : 'none';">
+                <i class="bi bi-plus-lg me-1"></i> New Decision
+            </button>
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="toggleDrFilters()" title="Filters">
+                <i class="bi bi-funnel me-1"></i><span class="toggle-icon">&#9660;</span>
+            </button>
+            {{ preset_bar('decisions', dr_presets_list) }}
+        </div>
+    </div>
 
-            <div class="dr-field">
-                <label>Decision</label>
-                <textarea name="what" rows="2" placeholder="What was decided?" required></textarea>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div class="dr-field">
-                    <label>Decision Maker</label>
-                    <input type="text" name="who" placeholder="Who made this decision?">
-                </div>
-                <div class="dr-field">
-                    <label>Governance Body</label>
-                    <select name="governance_body_id">
-                        <option value="">-- None --</option>
-                        {% for gb in governance_bodies %}
-                        <option value="{{ gb.id }}">{{ gb.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="dr-field">
-                <label>Tags</label>
-                <div class="dr-tags" id="drTags">
+    <!-- Filters Panel -->
+    <div class="dr-filters" id="drFilters">
+        <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Tags</label>
+                <div class="dr-filter-pills" id="drFilterTags">
                     {% for tag in decision_tags %}
-                    <span class="dr-tag" data-tag="{{ tag }}" onclick="toggleDrTag(this)">{{ tag }}</span>
+                    <span class="dr-filter-pill" data-filter="tag" data-value="{{ tag }}" onclick="toggleDrFilter(this)">{{ tag }}</span>
                     {% endfor %}
                 </div>
             </div>
-
-            <!-- Entity Mentions -->
-            <div class="dr-field">
-                <label>Entity Mentions</label>
-                <div id="drMentionChips" style="margin-bottom:0.3rem;"></div>
-                <div class="dr-mention-search">
-                    <input type="text" id="drMentionInput" placeholder="Type to search entities (spaces, challenges, initiatives, systems, KPIs)..."
-                           autocomplete="off" oninput="searchDrEntities(this.value)" onfocus="searchDrEntities(this.value)">
-                    <div class="dr-mention-results" id="drMentionResults"></div>
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Decision Maker</label>
+                <div class="dr-filter-pills" id="drFilterWho">
+                    {% for who in all_who %}
+                    <span class="dr-filter-pill" data-filter="who" data-value="{{ who }}" onclick="toggleDrFilter(this)">{{ who }}</span>
+                    {% endfor %}
                 </div>
             </div>
-
-            <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
-                <button type="submit" class="dr-submit">
-                    <i class="bi bi-check-lg"></i> Record Decision
-                </button>
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Governance Body</label>
+                <div class="dr-filter-pills" id="drFilterGB">
+                    {% for gb in governance_bodies %}
+                    <span class="dr-filter-pill" data-filter="gb" data-value="{{ gb.id }}" onclick="toggleDrFilter(this)">{{ gb.name }}</span>
+                    {% endfor %}
+                </div>
             </div>
-        </form>
-    </div>
-
-    <!-- Decision List -->
-    <div class="dr-list-header">
-        <h3><i class="bi bi-journal-bookmark-fill" style="color:#8b5cf6;"></i> Decisions</h3>
-        <span class="dr-count">{{ decisions|length }} decision{{ 's' if decisions|length != 1 else '' }}</span>
-    </div>
-
-    {% if decisions %}
-    {% for d in decisions %}
-    <div class="dr-card">
-        <div class="dr-card-what">{{ d.what }}</div>
-        <div class="dr-card-meta">
-            <span><i class="bi bi-calendar3"></i> {{ d.created_at.strftime('%b %d, %Y') }}</span>
-            {% if d.who %}
-            <span><i class="bi bi-person"></i> {{ d.who }}</span>
-            {% endif %}
-            {% if d.created_by %}
-            <span><i class="bi bi-pencil"></i> {{ d.created_by.display_name or d.created_by.login }}</span>
-            {% endif %}
-            {% if d.tags %}
-                {% for tag in d.tags %}
-                <span class="dr-card-tag">{{ tag }}</span>
-                {% endfor %}
-            {% endif %}
-            {% if d.governance_body %}
-            <span class="dr-card-gb"><i class="bi bi-shield-check"></i> {{ d.governance_body.name }}</span>
-            {% endif %}
-            {% if d.entity_mentions %}
-                {% for m in d.entity_mentions %}
-                <span class="dr-card-mention">@{{ m.entity_name }}</span>
-                {% endfor %}
-            {% endif %}
         </div>
-        <form method="POST" action="{{ url_for('workspace.delete_decision', decision_id=d.id) }}" class="dr-card-delete"
-              onsubmit="return confirm('Delete this decision?');">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <button type="submit" style="border:none; background:none; color:inherit; cursor:pointer;" title="Delete">
-                <i class="bi bi-trash"></i>
+        <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearDrFilters()" style="font-size:0.75rem;">
+                <i class="bi bi-x-circle"></i> Clear Filters
             </button>
-        </form>
+            <span id="drFilterCount" style="font-size:0.8rem; color:#64748b;"></span>
+        </div>
     </div>
-    {% endfor %}
-    {% else %}
-    <div class="dr-empty">
-        <i class="bi bi-journal-plus"></i>
-        <p>No standalone decisions yet.<br>Use the form above to record your first decision.</p>
+
+    <!-- Decisions Table -->
+    <!-- Hidden form (outside table for valid HTML) -->
+    <form method="POST" action="{{ url_for('workspace.decision_register') }}" id="drForm" style="display:none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="entity_mentions_json" id="drMentionsJson" value="[]">
+    </form>
+
+    <div style="background:white; border-radius:10px; border:1px solid #e2e8f0; overflow:hidden;">
+        <table class="dr-table">
+            <thead>
+                <tr>
+                    <th style="min-width:300px;">Decision</th>
+                    <th class="dr-d1" style="width:120px;">Who</th>
+                    <th class="dr-d1" style="width:120px;">Tags</th>
+                    <th class="dr-d2" style="width:120px;">GB</th>
+                    <th class="dr-d2" style="width:150px;">Mentions</th>
+                    <th style="width:90px;">Date</th>
+                    <th class="dr-d2" style="width:90px;">Author</th>
+                    <th class="dr-d2" style="width:40px;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- New Decision Row (hidden by default) -->
+                <tr class="dr-new-row" id="drNewRow" style="display:none;">
+                    <td>
+                        <textarea form="drForm" name="what" rows="2" placeholder="What was decided?" required style="min-height:60px;"></textarea>
+                    </td>
+                    <td><input form="drForm" type="text" name="who" placeholder="Who?"></td>
+                    <td>
+                        <div class="dr-new-tags" id="drTags">
+                            {% for tag in decision_tags %}
+                            <span class="dr-new-tag" data-tag="{{ tag }}" onclick="toggleDrTag(this)">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>
+                        <select form="drForm" name="governance_body_id" style="font-size:0.8rem;">
+                            <option value="">--</option>
+                            {% for gb in governance_bodies %}
+                            <option value="{{ gb.id }}">{{ gb.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td>
+                        <div id="drMentionChips"></div>
+                        <div class="dr-mention-search">
+                            <input type="text" id="drMentionInput" placeholder="@entity..." autocomplete="off"
+                                   oninput="searchDrEntities(this.value)" onfocus="searchDrEntities(this.value)" style="font-size:0.8rem;">
+                            <div class="dr-mention-results" id="drMentionResults"></div>
+                        </div>
+                    </td>
+                    <td colspan="3" style="vertical-align:bottom;">
+                        <button type="button" class="btn btn-primary btn-sm w-100" onclick="submitDrForm();">
+                            <i class="bi bi-check-lg"></i> Save
+                        </button>
+                    </td>
+                </tr>
+
+                {% for d in decisions %}
+                <tr data-tags="{{ d.tags | join(',') if d.tags else '' }}"
+                    data-who="{{ d.who or '' }}"
+                    data-gb="{{ d.governance_body_id or '' }}"
+                    data-max-importance="{{ decision_importance.get(d.id, 0) }}"
+                    data-search="{{ d.what | lower }} {{ (d.who or '') | lower }}">
+                    <td class="dr-what">{{ d.what }}</td>
+                    <td class="dr-d1">{{ d.who or '' }}</td>
+                    <td class="dr-d1">
+                        {% if d.tags %}{% for t in d.tags %}<span class="dr-tag-badge">{{ t }}</span> {% endfor %}{% endif %}
+                    </td>
+                    <td class="dr-d2">
+                        {% if d.governance_body %}<span class="dr-gb-badge"><i class="bi bi-shield-check"></i> {{ d.governance_body.name }}</span>{% endif %}
+                    </td>
+                    <td class="dr-d2">
+                        {% if d.entity_mentions %}{% for m in d.entity_mentions %}<span class="dr-mention-badge">@{{ m.entity_name }}</span> {% endfor %}{% endif %}
+                    </td>
+                    <td style="white-space:nowrap; color:#64748b; font-size:0.8rem;">{{ d.created_at.strftime('%b %d, %Y') }}</td>
+                    <td class="dr-d2" style="font-size:0.8rem; color:#64748b;">{{ d.created_by.display_name or d.created_by.login if d.created_by else '' }}</td>
+                    <td class="dr-d2">
+                        <form method="POST" action="{{ url_for('workspace.delete_decision', decision_id=d.id) }}" style="display:inline;" onsubmit="return confirm('Delete?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-link btn-sm p-0" style="color:#94a3b8;" title="Delete"><i class="bi bi-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not decisions %}
+        <div class="dr-empty">
+            <i class="bi bi-journal-plus" style="font-size:2.5rem; display:block; margin-bottom:0.5rem; opacity:0.3;"></i>
+            <p>No decisions yet. Click <strong>New Decision</strong> to record one.</p>
+        </div>
+        {% endif %}
+        <div style="padding:0.5rem 1rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#78909c; background:#fafafa;">
+            <span id="drItemCount">{{ decisions|length }}</span> decision(s) shown
+        </div>
     </div>
-    {% endif %}
 
 </div>
 
 <script>
-// Sync tags before form submission
-document.getElementById('drForm').addEventListener('submit', function() {
-    syncDrTags();
-});
-
-// Tag toggle
-function toggleDrTag(el) {
-    el.classList.toggle('active');
-    syncDrTags();
+// ── Detail Mode (xmas tree) ──
+var _drDetailMode = parseInt(localStorage.getItem('dr_detail_mode') || '1');
+var _drDetailIcons = [
+    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Minimal: decision + date' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + who, tags' },
+    { html: '<span style="font-size:1.05rem;">🎄✨</span>', title: 'Full: + GB, mentions, author' },
+];
+function applyDrDetailMode(mode) {
+    _drDetailMode = mode;
+    var c = document.getElementById('drContainer');
+    if (c) c.dataset.detailMode = String(mode);
+    var icon = document.getElementById('drDetailIcon');
+    if (icon) icon.innerHTML = _drDetailIcons[mode].html;
+    var btn = document.getElementById('drDetailBtn');
+    if (btn) btn.title = _drDetailIcons[mode].title;
 }
+function cycleDrDetailMode() {
+    var next = (_drDetailMode + 1) % 3;
+    localStorage.setItem('dr_detail_mode', String(next));
+    applyDrDetailMode(next);
+}
+applyDrDetailMode(_drDetailMode);
+
+// ── Filters ──
+function toggleDrFilters() { document.getElementById('drFilters').classList.toggle('show'); }
+function toggleDrFilter(el) { el.classList.toggle('active'); applyDrFilters(); }
+function clearDrFilters() {
+    document.querySelectorAll('.dr-filter-pill.active').forEach(function(p) { p.classList.remove('active'); });
+    applyDrFilters();
+}
+function applyDrFilters() {
+    var activeTags = []; var activeWho = []; var activeGB = [];
+    document.querySelectorAll('.dr-filter-pill.active').forEach(function(p) {
+        if (p.dataset.filter === 'tag') activeTags.push(p.dataset.value);
+        if (p.dataset.filter === 'who') activeWho.push(p.dataset.value);
+        if (p.dataset.filter === 'gb') activeGB.push(p.dataset.value);
+    });
+    var count = 0;
+    document.querySelectorAll('#drContainer tbody tr:not(.dr-new-row)').forEach(function(row) {
+        var show = true;
+        if (activeTags.length > 0) {
+            var rowTags = (row.dataset.tags || '').split(',');
+            show = activeTags.some(function(t) { return rowTags.indexOf(t) >= 0; });
+        }
+        if (show && activeWho.length > 0) {
+            show = activeWho.indexOf(row.dataset.who) >= 0;
+        }
+        if (show && activeGB.length > 0) {
+            show = activeGB.indexOf(row.dataset.gb) >= 0;
+        }
+        row.style.display = show ? '' : 'none';
+        if (show) count++;
+    });
+    document.getElementById('drItemCount').textContent = count;
+    var fc = document.getElementById('drFilterCount');
+    var total = activeTags.length + activeWho.length + activeGB.length;
+    fc.textContent = total > 0 ? total + ' filter(s) active' : '';
+}
+
+// ── New Decision Form ──
+function submitDrForm() {
+    var form = document.getElementById('drForm');
+    var what = document.querySelector('textarea[name="what"][form="drForm"]');
+    if (!what || !what.value.trim()) { if (what) what.focus(); return; }
+    syncDrTags();
+    HTMLFormElement.prototype.submit.call(form);
+}
+function toggleDrTag(el) { el.classList.toggle('active'); }
 function syncDrTags() {
-    // Create hidden inputs for active tags
     document.querySelectorAll('#drForm input[name="tags"]').forEach(function(e) { e.remove(); });
-    document.querySelectorAll('#drTags .dr-tag.active').forEach(function(el) {
+    document.querySelectorAll('#drTags .dr-new-tag.active').forEach(function(el) {
         var inp = document.createElement('input');
         inp.type = 'hidden'; inp.name = 'tags'; inp.value = el.dataset.tag;
         document.getElementById('drForm').appendChild(inp);
     });
 }
 
-// Entity mention search — uses event delegation for reliability
+// ── Entity Mentions ──
 var _drMentions = [];
-var _drSearchTimer = null;
 var _drSearchCache = [];
-
+var _drSearchTimer = null;
 function searchDrEntities(q) {
     clearTimeout(_drSearchTimer);
     var res = document.getElementById('drMentionResults');
-    // Strip @ prefix if user types it
     q = (q || '').replace(/^@/, '').trim();
     if (!q || q.length < 1) { res.classList.remove('show'); return; }
     _drSearchTimer = setTimeout(function() {
         fetch('{{ url_for("workspace.live_search") }}?q=' + encodeURIComponent(q))
-            .then(function(r) {
-                if (!r.ok) { console.error('Search failed:', r.status, r.statusText); return { results: [] }; }
-                return r.json();
-            })
+            .then(function(r) { return r.ok ? r.json() : { results: [] }; })
             .then(function(data) {
-                // live_search returns {results: [{type, id, name, ...}]}
+                var seen = {};
                 var items = (data.results || []).filter(function(it) {
-                    // Only entity types (not action items, users, etc.)
-                    return ['space','challenge','initiative','system','kpi'].indexOf(it.type) >= 0;
+                    if (['space','challenge','initiative','system','kpi'].indexOf(it.type) < 0) return false;
+                    var key = it.type + '_' + it.id;
+                    if (seen[key]) return false;
+                    seen[key] = true;
+                    return true;
                 });
                 _drSearchCache = items;
-                if (!items.length) { res.innerHTML = '<div style="padding:0.5rem 0.75rem;color:#94a3b8;font-size:0.8rem;">No results</div>'; res.classList.add('show'); return; }
+                if (!items.length) { res.innerHTML = '<div style="padding:0.4rem 0.6rem;color:#94a3b8;font-size:0.8rem;">No results</div>'; res.classList.add('show'); return; }
                 var html = '';
                 items.forEach(function(it, idx) {
-                    var etype = it.type || '';
-                    var eid = it.id || 0;
-                    var ename = it.name || '';
-                    var already = _drMentions.some(function(m) { return m.entity_type === etype && String(m.entity_id) === String(eid); });
+                    var already = _drMentions.some(function(m) { return m.entity_type === it.type && String(m.entity_id) === String(it.id); });
                     if (already) return;
-                    var icon = etype === 'space' ? 'folder' : etype === 'challenge' ? 'bullseye' : etype === 'initiative' ? 'flag' : etype === 'system' ? 'cpu' : 'graph-up';
-                    html += '<div class="dr-mention-item" data-idx="' + idx + '">' +
-                        '<i class="bi bi-' + icon + '"></i> ' +
-                        '<span>' + ename.replace(/</g, '&lt;') + '</span> <small style="color:#94a3b8;">' + etype + '</small></div>';
+                    var icon = it.type === 'space' ? 'folder' : it.type === 'challenge' ? 'bullseye' : it.type === 'initiative' ? 'flag' : it.type === 'system' ? 'cpu' : 'graph-up';
+                    html += '<div class="dr-mention-item" data-idx="' + idx + '"><i class="bi bi-' + icon + '"></i> ' + (it.name || '').replace(/</g, '&lt;') + ' <small style="color:#94a3b8;">' + it.type + '</small></div>';
                 });
-                res.innerHTML = html || '<div style="padding:0.5rem 0.75rem;color:#94a3b8;font-size:0.8rem;">All already mentioned</div>';
+                res.innerHTML = html || '<div style="padding:0.4rem;color:#94a3b8;font-size:0.8rem;">All mentioned</div>';
                 res.classList.add('show');
-            })
-            .catch(function(err) { console.error('Search error:', err); });
-    }, 250);
+            });
+    }, 200);
 }
-
-// Event delegation for mention item clicks
 document.addEventListener('click', function(e) {
     var item = e.target.closest('.dr-mention-item');
     if (item) {
-        var idx = parseInt(item.dataset.idx);
-        var it = _drSearchCache[idx];
-        if (it) {
-            _drMentions.push({ entity_type: it.type, entity_id: it.id, entity_name: it.name });
-            renderDrMentions();
-            document.getElementById('drMentionInput').value = '';
-            document.getElementById('drMentionResults').classList.remove('show');
-        }
+        var it = _drSearchCache[parseInt(item.dataset.idx)];
+        if (it) { _drMentions.push({ entity_type: it.type, entity_id: it.id, entity_name: it.name }); renderDrMentions(); }
+        document.getElementById('drMentionInput').value = '';
+        document.getElementById('drMentionResults').classList.remove('show');
         return;
     }
-    // Close results on click outside
-    if (!e.target.closest('.dr-mention-search')) {
-        document.getElementById('drMentionResults').classList.remove('show');
-    }
+    if (!e.target.closest('.dr-mention-search')) document.getElementById('drMentionResults').classList.remove('show');
 });
-
-function removeDrMention(idx) {
-    _drMentions.splice(idx, 1);
-    renderDrMentions();
-}
+function removeDrMention(idx) { _drMentions.splice(idx, 1); renderDrMentions(); }
 function renderDrMentions() {
     var html = _drMentions.map(function(m, i) {
-        var icon = m.entity_type === 'space' ? 'folder' : m.entity_type === 'challenge' ? 'bullseye' : m.entity_type === 'initiative' ? 'flag' : m.entity_type === 'system' ? 'cpu' : 'graph-up';
-        return '<span class="dr-mention-chip"><i class="bi bi-' + icon + '"></i> ' + (m.entity_name || '').replace(/</g, '&lt;') + '<span class="remove" onclick="removeDrMention(' + i + ')">&times;</span></span>';
+        return '<span class="dr-mention-chip">@' + (m.entity_name || '').replace(/</g, '&lt;') + '<span class="remove" onclick="removeDrMention(' + i + ')">&times;</span></span>';
     }).join('');
     document.getElementById('drMentionChips').innerHTML = html;
     document.getElementById('drMentionsJson').value = JSON.stringify(_drMentions);
+}
+
+// ── Preset Manager Registration ──
+PresetManager.setCsrf('{{ csrf_token() }}');
+PresetManager.register('decisions', {
+    getState: function() {
+        var activeTags = []; var activeWho = []; var activeGB = [];
+        document.querySelectorAll('.dr-filter-pill.active').forEach(function(p) {
+            if (p.dataset.filter === 'tag') activeTags.push(p.dataset.value);
+            if (p.dataset.filter === 'who') activeWho.push(p.dataset.value);
+            if (p.dataset.filter === 'gb') activeGB.push(p.dataset.value);
+        });
+        return { tags: activeTags, who: activeWho, gb: activeGB };
+    },
+    onReset: function() {
+        document.querySelectorAll('.dr-filter-pill.active').forEach(function(p) { p.classList.remove('active'); });
+        applyDrFilters();
+    },
+    applyState: function(config, _isAutoRestore) {
+        // Clear all
+        document.querySelectorAll('.dr-filter-pill.active').forEach(function(p) { p.classList.remove('active'); });
+        // Apply saved state
+        (config.tags || []).forEach(function(v) {
+            var el = document.querySelector('.dr-filter-pill[data-filter="tag"][data-value="' + v + '"]');
+            if (el) el.classList.add('active');
+        });
+        (config.who || []).forEach(function(v) {
+            var el = document.querySelector('.dr-filter-pill[data-filter="who"][data-value="' + v + '"]');
+            if (el) el.classList.add('active');
+        });
+        (config.gb || []).forEach(function(v) {
+            var el = document.querySelector('.dr-filter-pill[data-filter="gb"][data-value="' + v + '"]');
+            if (el) el.classList.add('active');
+        });
+        applyDrFilters();
+        // Show filters panel if any active
+        if ((config.tags || []).length || (config.who || []).length || (config.gb || []).length) {
+            document.getElementById('drFilters').classList.add('show');
+        }
+    }
+}, true);
+
+// ── Impact Filter ──
+var _drImpactScale = {{ impact_scale | tojson if impact_scale else '{}' }};
+var _drImpactStates = [0, -1, 1, 2, 3];
+var _drImpactIdx = 0;
+function cycleDrImpactFilter() {
+    _drImpactIdx = (_drImpactIdx + 1) % _drImpactStates.length;
+    applyDrImpactFilter();
+}
+function applyDrImpactFilter() {
+    var level = _drImpactStates[_drImpactIdx];
+    var btn = document.getElementById('drImpactBtn');
+    var icon = document.getElementById('drImpactIcon');
+    if (!btn || !icon) return;
+    if (level === 0) { icon.textContent = '☆'; icon.style.opacity = '0.5'; icon.style.color = ''; btn.title = 'Impact filter: showing all'; }
+    else if (level === -1) { icon.textContent = '○'; icon.style.opacity = '1'; icon.style.color = ''; btn.title = 'Showing: unlinked decisions'; }
+    else { icon.textContent = '★'.repeat(level); icon.style.opacity = '1'; var s = _drImpactScale[level]; icon.style.color = s ? s.color : ''; btn.title = 'Showing: importance ≥ ' + level; }
+    var count = 0;
+    document.querySelectorAll('#drContainer tbody tr[data-max-importance]').forEach(function(row) {
+        var mi = parseInt(row.dataset.maxImportance);
+        var show = level === 0 || (level === -1 ? mi === 0 : mi >= level);
+        row.style.display = show ? '' : 'none';
+        if (show) count++;
+    });
+    document.getElementById('drItemCount').textContent = count;
 }
 </script>
 {% endblock %}

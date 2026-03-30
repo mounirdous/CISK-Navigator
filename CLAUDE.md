@@ -13,6 +13,30 @@ The UI uses different terms than the database models:
 
 **Rule:** Use "Workspace" in UI text, "Organization" only in code/models/DB.
 
+## Presets System (IMPORTANT)
+
+To add preset save/load to a new page:
+
+1. Add feature name to `VALID_FEATURES` in `app/routes/presets_api.py`
+2. Add it to the `if feature in (...)` branch for the correct model:
+   - `UserFilterPreset`: workspace, action_items, decisions
+   - `SavedSearch`: search
+   - `SavedChart`: pivot
+3. In the route, query presets: `UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="my_feature")`
+4. Pass to template: `presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in presets]`
+5. In template: `{% from "_preset_bar.html" import preset_bar %}` then `{{ preset_bar('my_feature', presets_list) }}`
+6. Register JS callbacks in template:
+   ```js
+   PresetManager.setCsrf('{{ csrf_token() }}');
+   PresetManager.register('my_feature', {
+       getState: function() { return { /* filter state */ }; },
+       applyState: function(config, _isAutoRestore) { /* apply filters */ },
+       onReset: function() { /* clear all filters back to defaults */ }
+   }, true); // true = auto-restore on page load
+   ```
+   - Without `getState`, presets save empty config!
+   - Without `onReset`, the reset button does nothing!
+
 ## Semantic Versioning
 
 This project follows [Semantic Versioning](https://semver.org/) with the format: **x.y.z**
