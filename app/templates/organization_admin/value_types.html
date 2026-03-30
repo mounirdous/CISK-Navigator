@@ -4,237 +4,253 @@
 
 {% block extra_css %}
 <style>
-.page-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 3px solid var(--border-subtle);
+.vt-header {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+}
+.vt-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.vt-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+.vt-stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.vt-stat {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1.25rem;
+    display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 140px;
+}
+.vt-stat-icon { font-size: 1.3rem; width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+.vt-stat-val { font-size: 1.4rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.vt-stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.vt-card {
+    background: white; border: 1px solid #e2e8f0; border-radius: 12px;
+    margin-bottom: 0.6rem; transition: all 0.2s; overflow: hidden;
+}
+.vt-card:hover { border-color: #93c5fd; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.vt-card-inner { display: flex; align-items: center; gap: 0; }
+
+.vt-drag { cursor: grab; padding: 1rem 0.5rem; color: #cbd5e1; font-size: 1.2rem; display: flex; align-items: center; }
+.vt-drag:active { cursor: grabbing; }
+.vt-drag:hover { color: #64748b; }
+
+.vt-kind-bar { width: 4px; min-height: 100%; flex-shrink: 0; }
+
+.vt-body { flex: 1; padding: 0.75rem 1rem; min-width: 0; }
+.vt-title { font-size: 1rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.vt-desc { font-size: 0.78rem; color: #94a3b8; margin-top: 0.15rem; }
+
+.vt-pills { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+.vt-pill {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.7rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 10px;
+    white-space: nowrap;
+}
+.vt-pill-kind { background: #eff6ff; color: #1d4ed8; }
+.vt-pill-unit { background: #f0fdf4; color: #166534; }
+.vt-pill-agg { background: #fef3c7; color: #92400e; }
+.vt-pill-formula { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.vt-pill-formula code { font-size: 0.68rem; background: rgba(0,0,0,0.05); padding: 0.05rem 0.3rem; border-radius: 4px; }
+.vt-pill-inactive { background: #f1f5f9; color: #94a3b8; }
+.vt-pill-decimal { background: #faf5ff; color: #7c3aed; }
+.vt-pill-list { background: #fff1f2; color: #be123c; }
+
+.vt-actions { display: flex; gap: 0.35rem; padding: 0.75rem 1rem; align-items: center; flex-shrink: 0; }
+.vt-actions .btn { font-size: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 8px; }
+
+.vt-kind-colors {
+    --numeric: #3b82f6; --sentiment: #f59e0b; --risk: #ef4444;
+    --positive_impact: #22c55e; --negative_impact: #f97316; --level: #8b5cf6; --list: #ec4899;
 }
 
-.page-title h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 0;
-    color: var(--text-primary);
-    font-weight: 700;
-}
+.sortable-ghost { opacity: 0.4; }
+.vt-empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
+.vt-empty i { font-size: 3rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
 
-.page-title h2 i {
-    color: var(--accent-primary);
-}
-
-.value-type-row {
-    background: var(--bg-primary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
-    transition: all var(--transition-fast);
-    cursor: move;
-}
-
-.value-type-row:hover {
-    border-color: var(--accent-primary);
-    box-shadow: var(--shadow-sm);
-}
-
-.sortable-ghost {
-    opacity: 0.4;
-    background: var(--bg-secondary);
-}
-
-.drag-handle {
-    cursor: grab;
-    font-size: 1.5rem;
-    color: var(--text-secondary);
-    width: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.drag-handle:active {
-    cursor: grabbing;
-}
-
-.vt-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
-}
-
-.vt-meta {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    align-items: center;
-}
-
-.vt-meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+@media (max-width: 768px) {
+    .vt-header { padding: 1rem; }
+    .vt-actions { flex-direction: column; }
+    .vt-stats { flex-direction: column; }
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="fade-in">
-    <div class="page-title">
-        <h2>
-            <i class="bi bi-hash"></i>
-            Value Types
-        </h2>
+<div style="max-width:1200px; margin:0 auto; padding:1.5rem;">
+
+    <!-- Header -->
+    <div class="vt-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1><i class="bi bi-tags"></i> Value Types</h1>
+            <p>Define what gets measured — each value type becomes a column in the workspace</p>
+        </div>
         <div class="d-flex gap-2">
             {% if current_user.can_manage_value_types(session.organization_id) %}
-            <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle-fill"></i> Create Value Type
+            <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-light btn-sm fw-semibold">
+                <i class="bi bi-plus-lg me-1"></i> New Value Type
             </a>
             {% endif %}
-            <a href="{{ url_for('workspace.index') }}" class="btn btn-success">
-                <i class="bi bi-grid-3x3-gap"></i> Go to Workspace
-            </a>
-            <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Back
-            </a>
         </div>
     </div>
 
-    <div class="alert alert-info" style="border-left: 4px solid var(--accent-info); border-radius: 12px;">
-        <i class="bi bi-lightbulb-fill"></i>
-        <strong>💡 Tip:</strong> Drag rows using the ⋮⋮ handle to reorder value types. This controls the column order in the workspace.
+    <!-- Stats -->
+    {% set numeric_count = value_types | selectattr('kind', 'eq', 'numeric') | list | length %}
+    {% set formula_count = value_types | selectattr('calculation_type', 'eq', 'formula') | list | length %}
+    {% set qualitative_count = value_types | rejectattr('kind', 'eq', 'numeric') | list | length %}
+    {% set active_count = value_types | selectattr('is_active') | list | length %}
+    <div class="vt-stats">
+        <div class="vt-stat">
+            <div class="vt-stat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="bi bi-tags"></i></div>
+            <div><div class="vt-stat-val">{{ value_types | length }}</div><div class="vt-stat-label">Total</div></div>
+        </div>
+        <div class="vt-stat">
+            <div class="vt-stat-icon" style="background:#f0fdf4; color:#22c55e;"><i class="bi bi-123"></i></div>
+            <div><div class="vt-stat-val">{{ numeric_count }}</div><div class="vt-stat-label">Numeric</div></div>
+        </div>
+        <div class="vt-stat">
+            <div class="vt-stat-icon" style="background:#fef3c7; color:#f59e0b;"><i class="bi bi-emoji-smile"></i></div>
+            <div><div class="vt-stat-val">{{ qualitative_count }}</div><div class="vt-stat-label">Qualitative</div></div>
+        </div>
+        {% if formula_count > 0 %}
+        <div class="vt-stat">
+            <div class="vt-stat-icon" style="background:#d1fae5; color:#10b981;"><i class="bi bi-table"></i></div>
+            <div><div class="vt-stat-val">{{ formula_count }}</div><div class="vt-stat-label">Formula</div></div>
+        </div>
+        {% endif %}
     </div>
 
+    <!-- Drag hint -->
+    <div style="font-size:0.78rem; color:#94a3b8; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+        <i class="bi bi-grip-vertical"></i> Drag to reorder — this controls column order in the workspace
+    </div>
+
+    <!-- Value Types List -->
     {% if value_types %}
-        <div id="sortable-value-types">
-            {% for vt in value_types %}
-            <div class="value-type-row" data-id="{{ vt.id }}">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="drag-handle">⋮⋮</div>
-
-                    <div class="flex-grow-1">
-                        <div class="vt-name">
-                            {{ vt.name }}
-                            {% if vt.is_active %}
-                            <span class="badge bg-success">
-                                <i class="bi bi-check-circle-fill"></i> Active
-                            </span>
-                            {% else %}
-                            <span class="badge bg-secondary">
-                                <i class="bi bi-x-circle-fill"></i> Inactive
-                            </span>
-                            {% endif %}
-                        </div>
-
-                        <div class="vt-meta">
-                            <div class="vt-meta-item">
-                                <i class="bi bi-tag"></i>
-                                <span class="badge bg-info">{{ vt.kind }}</span>
-                            </div>
-                            {% if vt.unit_label %}
-                            <div class="vt-meta-item">
-                                <i class="bi bi-rulers"></i>
-                                {{ vt.unit_label }}
-                            </div>
-                            {% endif %}
-                            <div class="vt-meta-item">
-                                <i class="bi bi-calculator"></i>
-                                {{ vt.default_aggregation_formula }}
-                            </div>
-                        </div>
+    <div id="sortable-value-types">
+        {% for vt in value_types %}
+        {% set kind_color = {'numeric':'#3b82f6','sentiment':'#f59e0b','risk':'#ef4444','positive_impact':'#22c55e','negative_impact':'#f97316','level':'#8b5cf6','list':'#ec4899'}.get(vt.kind, '#94a3b8') %}
+        <div class="vt-card" data-id="{{ vt.id }}">
+            <div class="vt-card-inner">
+                <div class="vt-drag" title="Drag to reorder"><i class="bi bi-grip-vertical"></i></div>
+                <div class="vt-kind-bar" style="background:{{ kind_color }};"></div>
+                <div class="vt-body">
+                    <div class="vt-title">
+                        {{ vt.name }}
+                        {% if not vt.is_active %}<span class="vt-pill vt-pill-inactive"><i class="bi bi-pause-circle"></i> Inactive</span>{% endif %}
                     </div>
+                    {% if vt.description %}
+                    <div class="vt-desc">{{ vt.description | truncate(120) }}</div>
+                    {% endif %}
+                    <div class="vt-pills">
+                        <!-- Kind -->
+                        <span class="vt-pill vt-pill-kind" title="Value type kind — determines how values are entered and displayed">
+                            {% if vt.kind == 'numeric' %}<i class="bi bi-123"></i>{% elif vt.kind == 'sentiment' %}<i class="bi bi-emoji-smile"></i>{% elif vt.kind == 'risk' %}<i class="bi bi-exclamation-triangle"></i>{% elif vt.kind == 'positive_impact' %}<i class="bi bi-arrow-up-circle"></i>{% elif vt.kind == 'negative_impact' %}<i class="bi bi-arrow-down-circle"></i>{% elif vt.kind == 'level' %}<i class="bi bi-bar-chart-steps"></i>{% elif vt.kind == 'list' %}<i class="bi bi-list-ul"></i>{% endif %}
+                            {{ vt.kind | replace('_', ' ') | title }}
+                        </span>
 
-                    <div class="d-flex gap-2">
-                        {% if current_user.can_manage_value_types(session.organization_id) %}
-                        <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id) }}"
-                           class="btn btn-outline-info btn-sm"
-                           title="Configure rollup rules">
-                            <i class="bi bi-diagram-3"></i> Rollup
-                        </a>
-                        <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}"
-                           class="btn btn-outline-primary btn-sm"
-                           title="Edit value type">
-                            <i class="bi bi-pencil-fill"></i> Edit
-                        </a>
-                        <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}"
-                           class="btn btn-outline-danger btn-sm"
-                           title="Delete value type">
-                            <i class="bi bi-trash-fill"></i> Delete
-                        </a>
+                        <!-- Unit -->
+                        {% if vt.unit_label %}
+                        <span class="vt-pill vt-pill-unit" title="Display unit appended to values">
+                            <i class="bi bi-rulers"></i> {{ vt.unit_label }}
+                        </span>
+                        {% endif %}
+
+                        <!-- Decimals -->
+                        {% if vt.kind == 'numeric' and vt.decimal_places is not none %}
+                        <span class="vt-pill vt-pill-decimal" title="Decimal places for display">
+                            .{{ '0' * (vt.decimal_places or 0) or '0' }}
+                        </span>
+                        {% endif %}
+
+                        <!-- Formula or Aggregation -->
+                        {% if vt.is_formula() %}
+                        <span class="vt-pill vt-pill-formula" title="Calculated automatically from other value types">
+                            <i class="bi bi-table"></i> Formula
+                            {% if vt.calculation_config %}
+                                {% if vt.calculation_config.get('mode') == 'advanced' %}
+                                    — <code>{{ vt.calculation_config.get('expression', '?') }}</code>
+                                {% elif vt.calculation_config.get('mode') == 'simple' %}
+                                    — {{ vt.calculation_config.get('operation', '?') }}({{ vt.get_source_value_types() | map(attribute='name') | join(', ') }})
+                                {% endif %}
+                            {% else %}
+                                — <span style="color:#ef4444;">not configured</span>
+                            {% endif %}
+                        </span>
                         {% else %}
-                        <span class="text-muted small">View only</span>
+                        <span class="vt-pill vt-pill-agg" title="Rollup aggregation formula — how child values combine into parent values">
+                            <i class="bi bi-calculator"></i> {{ vt.default_aggregation_formula }}
+                        </span>
+                        {% endif %}
+
+                        <!-- List options count -->
+                        {% if vt.kind == 'list' and vt.list_options %}
+                        <span class="vt-pill vt-pill-list" title="Number of list options">
+                            <i class="bi bi-list-check"></i> {{ vt.list_options | length }} options
+                        </span>
                         {% endif %}
                     </div>
                 </div>
+
+                <div class="vt-actions">
+                    {% if current_user.can_manage_value_types(session.organization_id) %}
+                    <a href="{{ url_for('organization_admin.configure_rollup', vt_id=vt.id) }}"
+                       class="btn btn-outline-secondary" title="Configure how values roll up from KPIs to Systems to Initiatives...">
+                        <i class="bi bi-diagram-3"></i>
+                    </a>
+                    <a href="{{ url_for('organization_admin.edit_value_type', vt_id=vt.id) }}"
+                       class="btn btn-outline-primary" title="Edit value type settings">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}"
+                       class="btn btn-outline-danger" title="Delete value type">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                    {% endif %}
+                </div>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
+    </div>
     {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-hash" style="font-size: 4rem; opacity: 0.3;"></i>
-            <h3 class="mt-3">No Value Types</h3>
-            <p class="text-muted">Create your first value type to define what can be tracked.</p>
-            {% if current_user.can_manage_value_types(session.organization_id) %}
-            <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary mt-3">
-                <i class="bi bi-plus-circle-fill"></i> Create First Value Type
-            </a>
-            {% endif %}
-        </div>
+    <div class="vt-empty">
+        <i class="bi bi-tags"></i>
+        <h4>No value types yet</h4>
+        <p>Value types define what gets measured. Each one becomes a column in the workspace.<br>
+        Examples: Revenue (numeric), Risk Level (qualitative), Status (list of options).</p>
+        {% if current_user.can_manage_value_types(session.organization_id) %}
+        <a href="{{ url_for('organization_admin.create_value_type') }}" class="btn btn-primary mt-2">
+            <i class="bi bi-plus-lg"></i> Create Your First Value Type
+        </a>
+        {% endif %}
+    </div>
     {% endif %}
 </div>
 
-<!-- SortableJS from CDN -->
+<!-- SortableJS -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('sortable-value-types');
-
-    if (container) {
-        const sortable = Sortable.create(container, {
-            animation: 150,
-            handle: '.drag-handle',
-            ghostClass: 'sortable-ghost',
-            onEnd: function(evt) {
-                // Get new order
-                const rows = container.querySelectorAll('[data-id]');
-                const order = Array.from(rows).map(row => parseInt(row.dataset.id));
-
-                // Save to server
-                fetch('{{ url_for("organization_admin.reorder_value_types") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ order: order })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Show brief success indicator
-                        const msg = document.createElement('div');
-                        msg.className = 'alert alert-success position-fixed top-0 end-0 m-3';
-                        msg.style.zIndex = '9999';
-                        msg.textContent = '✓ Order saved';
-                        document.body.appendChild(msg);
-                        setTimeout(() => msg.remove(), 2000);
-                    } else {
-                        alert('Failed to save order: ' + (data.error || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Failed to save order');
-                });
-            }
-        });
-    }
+    var container = document.getElementById('sortable-value-types');
+    if (!container) return;
+    Sortable.create(container, {
+        animation: 150,
+        handle: '.vt-drag',
+        ghostClass: 'sortable-ghost',
+        onEnd: function() {
+            var order = Array.from(container.querySelectorAll('[data-id]')).map(function(r) { return parseInt(r.dataset.id); });
+            fetch('{{ url_for("organization_admin.reorder_value_types") }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order: order })
+            }).then(function(r) { return r.json(); }).then(function(d) {
+                if (d.success) {
+                    var msg = document.createElement('div');
+                    msg.className = 'alert alert-success position-fixed top-0 end-0 m-3';
+                    msg.style.zIndex = '9999';
+                    msg.textContent = 'Order saved';
+                    document.body.appendChild(msg);
+                    setTimeout(function() { msg.remove(); }, 1500);
+                }
+            });
+        }
+    });
 });
 </script>
 {% endblock %}

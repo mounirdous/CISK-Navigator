@@ -3398,6 +3398,20 @@ def edit_value_type(vt_id):
         if form.default_aggregation_formula.data:
             value_type.default_aggregation_formula = form.default_aggregation_formula.data
 
+        # Handle formula configuration update
+        if value_type.is_formula():
+            formula_mode = request.form.get("formula_mode", "simple")
+            if formula_mode == "advanced":
+                expr = request.form.get("formula_expression", "").strip()
+                if expr:
+                    value_type.calculation_config = {"mode": "advanced", "expression": expr}
+            else:
+                op = request.form.get("formula_operation", "")
+                src_ids = request.form.get("formula_source_ids", "")
+                if op and src_ids:
+                    source_ids = [int(x.strip()) for x in src_ids.split(",") if x.strip()]
+                    value_type.calculation_config = {"mode": "simple", "operation": op, "source_value_type_ids": source_ids}
+
         # Handle list options update
         if value_type.kind == "list" and form.list_options_json.data:
             import json
@@ -3428,6 +3442,14 @@ def edit_value_type(vt_id):
         flash(f"Value Type {value_type.name} updated successfully", "success")
         return redirect(url_for("organization_admin.value_types"))
 
+    # Other numeric value types for formula source selection
+    other_numeric_vts = ValueType.query.filter(
+        ValueType.organization_id == org_id,
+        ValueType.kind == "numeric",
+        ValueType.calculation_type != "formula",
+        ValueType.id != vt_id,
+    ).order_by(ValueType.display_order, ValueType.name).all()
+
     return render_template(
         "organization_admin/edit_value_type.html",
         form=form,
@@ -3437,6 +3459,7 @@ def edit_value_type(vt_id):
         nav_total=len(nav_ids),
         prev_id=prev_id,
         next_id=next_id,
+        other_numeric_vts=other_numeric_vts,
     )
 
 

@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.1.0] - 2026-03-30
+
+### Changed
+- **Value Types page redesigned** — modern card layout with color-coded kind bars, stats summary, rich pills with tooltips (kind, unit, decimals, formula expression, aggregation, list options), drag-to-reorder
+- **Formula value types editable** — removed read-only lock on edit page; simple/advanced formula config can be modified after creation
+- Formula details shown inline on Value Types list (expression or operation with sources)
+
 ## [6.0.0] - 2026-03-30
 
 ### Changed (BREAKING)
