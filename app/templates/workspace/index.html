@@ -1942,9 +1942,9 @@
                     :class="{'active': badgeMode > 0}"
                     style="opacity: 0.9;"
                     :title="['Tree only', 'Tree + values', 'Full: values, badges, impact'][badgeMode]">
-                <span x-show="badgeMode === 0" style="font-size: 0.9rem; filter: grayscale(100%); opacity: 0.5;">🎄</span>
+                <span x-show="badgeMode === 0" style="font-size: 1.1rem;">🌲</span>
                 <span x-show="badgeMode === 1" style="font-size: 1.2rem;">🎄</span>
-                <span x-show="badgeMode === 2" style="font-size: 1.5rem;">🎄</span>
+                <span x-show="badgeMode === 2" style="font-size: 1.2rem;">🎄✨</span>
             </button>
             <!-- Refresh data (force reload from server) -->
             <button @click="_stale=false; loadData(true)"
