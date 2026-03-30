@@ -372,6 +372,21 @@
         transition: transform 0.2s ease;
     }
 
+    /* Impact column (Level 2) */
+    .ws-impact-col-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.75rem; font-weight: 700; padding: 0.2rem 0.45rem;
+        border-radius: 6px; cursor: pointer; transition: transform 0.15s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    .ws-impact-col-badge:hover { transform: scale(1.2); }
+    .ws-impact-col-badge.ws-impact-col-assessed {
+        background: transparent; border: 1.5px solid; box-shadow: none;
+    }
+    /* Hide impact column at level 0 and 1 */
+    .workspace-v2[data-badge-mode="0"] .ws-impact-col { display: none !important; }
+    .workspace-v2[data-badge-mode="1"] .ws-impact-col { display: none !important; }
+
     .ws-impact-badge {
         display: inline-flex; align-items: center; justify-content: center;
         font-size: 0.6rem; padding: 0.1rem 0.3rem; border-radius: 4px;
@@ -2400,6 +2415,10 @@
                     </template>
                     {% endif %}
                 </div>
+                <!-- True Importance column (Level 2 only) -->
+                <div class="ws-header-cell ws-impact-col" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px; text-align:center; font-size:0.7rem;">
+                    <i class="bi bi-speedometer2" style="font-size:0.85rem;"></i><br>Impact
+                </div>
                 <template x-if="filteredSpaces.length > 0">
                 <template x-for="(vt, index) in getVisibleValueTypes()" :key="vt.id">
                     <div class="ws-header-cell"
@@ -2542,6 +2561,15 @@
                                     </span>
                                 </template>
                             </div>
+                        </div>
+                        <!-- Impact column cell (Level 2) -->
+                        <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                            <template x-if="space.true_importance_level && impactScale[space.true_importance_level]">
+                                <span class="ws-impact-col-badge" :style="'background:' + impactScale[space.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
+                            </template>
+                            <template x-if="space.impact_level && !space.true_importance_level && impactScale[space.impact_level]">
+                                <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[space.impact_level].color + '; color:' + impactScale[space.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[space.impact_level].icon" x-text="impactScale[space.impact_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
+                            </template>
                         </div>
                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                             <div class="ws-cell value-cell text-center"
@@ -2692,6 +2720,15 @@
                                         </template>
                                     </div>
                                 </div>
+                                <!-- Impact column cell (Level 2) -->
+                                <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                    <template x-if="challenge.true_importance_level && impactScale[challenge.true_importance_level]">
+                                        <span class="ws-impact-col-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[challenge.true_importance_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
+                                    </template>
+                                    <template x-if="challenge.impact_level && !challenge.true_importance_level && impactScale[challenge.impact_level]">
+                                        <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[challenge.impact_level].color + '; color:' + impactScale[challenge.impact_level].color + '; cursor:pointer;'" x-text="impactScale[challenge.impact_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
+                                    </template>
+                                </div>
                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                     <div class="ws-cell value-cell text-center"
                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
@@ -2811,6 +2848,15 @@
                                                     </span>
                                                 </template>
                                             </div>
+                                        </div>
+                                        <!-- Impact column cell (Level 2) -->
+                                        <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                            <template x-if="initiative.true_importance_level && impactScale[initiative.true_importance_level]">
+                                                <span class="ws-impact-col-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[initiative.true_importance_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
+                                            </template>
+                                            <template x-if="initiative.impact_level && !initiative.true_importance_level && impactScale[initiative.impact_level]">
+                                                <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[initiative.impact_level].color + '; color:' + impactScale[initiative.impact_level].color + '; cursor:pointer;'" x-text="impactScale[initiative.impact_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
+                                            </template>
                                         </div>
                                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                             <div class="ws-cell value-cell text-center"
@@ -2960,6 +3006,15 @@
                                                         </template>
                                                     </div>
                                                 </div>
+                                                <!-- Impact column cell (Level 2) -->
+                                                <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                                    <template x-if="system.true_importance_level && impactScale[system.true_importance_level]">
+                                                        <span class="ws-impact-col-badge" :style="'background:' + impactScale[system.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[system.true_importance_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
+                                                    </template>
+                                                    <template x-if="system.impact_level && !system.true_importance_level && impactScale[system.impact_level]">
+                                                        <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[system.impact_level].color + '; color:' + impactScale[system.impact_level].color + '; cursor:pointer;'" x-text="impactScale[system.impact_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
+                                                    </template>
+                                                </div>
                                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                     <div class="ws-cell value-cell text-center"
                                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
@@ -3066,7 +3121,8 @@
                                                             </template>
 
                                                             <span x-text="kpi.name" :data-tooltip="kpi.description || null" :data-tooltip-actions="tooltipActions(kpi, 'kpi') || null"></span>
-                                                            <template x-if="badgeMode >= 2 && kpi.impact_level && impactScale[kpi.impact_level]">
+                                                            <!-- KPI assessed impact: always visible (even level 0) -->
+                                                            <template x-if="kpi.impact_level && impactScale[kpi.impact_level]">
                                                                 <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[kpi.impact_level].color + '80; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[kpi.impact_level].icon" x-text="impactScale[kpi.impact_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
                                                             </template>
                                                             <template x-if="badgeMode >= 2 && kpi.true_importance_level && impactScale[kpi.true_importance_level]">
@@ -3109,6 +3165,15 @@
                                                                 </span>
                                                             </template>
                                                         </div>
+                                                    </div>
+                                                    <!-- Impact column cell (Level 2) -->
+                                                    <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                                        <template x-if="kpi.true_importance_level && impactScale[kpi.true_importance_level]">
+                                                            <span class="ws-impact-col-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[kpi.true_importance_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
+                                                        </template>
+                                                        <template x-if="kpi.impact_level && !kpi.true_importance_level && impactScale[kpi.impact_level]">
+                                                            <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[kpi.impact_level].color + '; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;'" x-text="impactScale[kpi.impact_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
+                                                        </template>
                                                     </div>
                                                     <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                         <!-- KPI Cell: Show with consensus styling if config exists, otherwise clean N/A -->

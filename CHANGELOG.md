@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.12.0] - 2026-03-30
+
+### Added
+- **Impact column (Level 2)** — dedicated column before value types showing true calculated importance for all entity rows with colored badge; clickable for popup edit
+- **KPI assessed impact at Level 0** — KPI rows show assessed impact badge inline even in tree-only mode, with clickable popup to change
+
 ## [5.11.0] - 2026-03-30
 
 ### Changed
