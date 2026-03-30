@@ -302,6 +302,177 @@ def gb_dashboard_index():
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/kpi-dashboard")
+@login_required
+@organization_required
+def kpi_dashboard():
+    """KPI Dashboard — performance overview across all KPIs"""
+    from app.models import (
+        ChallengeInitiativeLink, Challenge, Decision, GovernanceBody, ImpactLevel,
+        KPI, KPIGovernanceBodyLink, KPIValueTypeConfig, Space, ValueType,
+    )
+    from app.models.system import InitiativeSystemLink, System
+    from app.services.impact_service import compute_true_importance
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    # Impact computation setup
+    impact_scale = ImpactLevel.get_org_levels(org_id)
+    _iw = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale} if impact_scale else {}
+    _im = org.impact_calc_method or "geometric_mean" if org else "geometric_mean"
+    _icm = org.impact_qfd_matrix if org else None
+    _icr = org.impact_reinforce_weights if org else None
+
+    # Get all KPIs with eager loading
+    kpis = (
+        KPI.query
+        .join(InitiativeSystemLink)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id)
+        .options(
+            db.joinedload(KPI.initiative_system_link).joinedload(InitiativeSystemLink.system),
+            db.joinedload(KPI.initiative_system_link).joinedload(InitiativeSystemLink.initiative),
+            db.joinedload(KPI.value_type_configs).joinedload(KPIValueTypeConfig.value_type),
+            db.joinedload(KPI.governance_body_links).joinedload(KPIGovernanceBodyLink.governance_body),
+        )
+        .order_by(KPI.display_order, KPI.name)
+        .all()
+    )
+
+    # Build KPI data
+    kpi_list = []
+    governance_bodies_used = set()
+    for kpi in kpis:
+        link = kpi.initiative_system_link
+        if not link:
+            continue
+        ini = link.initiative
+        sys = link.system
+
+        # Parent chain for impact
+        ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
+        ch = ci.challenge if ci else None
+        sp = ch.space if ch else None
+
+        # Compute true importance
+        chain = []
+        if sp and sp.impact_level:
+            chain.append(sp.impact_level)
+        if ch and ch.impact_level:
+            chain.append(ch.impact_level)
+        if ini.impact_level:
+            chain.append(ini.impact_level)
+        if sys and sys.impact_level:
+            chain.append(sys.impact_level)
+        if kpi.impact_level:
+            chain.append(kpi.impact_level)
+        true_importance = compute_true_importance(chain, _im, _iw, _icm, _icr) if len(chain) == 5 and all(chain) else None
+
+        # Get primary value (first config with consensus)
+        primary_value = None
+        primary_formatted = None
+        primary_color = None
+        target_progress = None
+        target_value = None
+        target_direction = None
+        target_date = None
+        consensus_status = None
+        value_type_name = None
+
+        for config in kpi.value_type_configs:
+            consensus = config.get_consensus_value()
+            if consensus and consensus.get("value") is not None:
+                vt = config.value_type
+                value_type_name = vt.name if vt else None
+                primary_value = consensus.get("value")
+                consensus_status = consensus.get("status", "no_data")
+                try:
+                    primary_formatted = current_app.jinja_env.filters["format_value"](primary_value, vt, config)
+                except Exception:
+                    primary_formatted = str(primary_value)
+                primary_color = config.get_value_color(primary_value) if hasattr(config, 'get_value_color') else None
+
+                if config.target_value is not None:
+                    target_value = config.target_value
+                    target_direction = config.target_direction or "maximize"
+                    target_date = config.target_date
+                    try:
+                        tv = float(config.target_value)
+                        cv = float(primary_value)
+                        if target_direction == "minimize":
+                            target_progress = int((tv / cv) * 100) if cv != 0 else 100
+                        elif target_direction == "exact":
+                            tol = tv * (config.target_tolerance_pct or 10) / 100
+                            diff = abs(cv - tv)
+                            target_progress = 100 if diff <= tol else max(0, int(100 - ((diff - tol) / tv * 100)))
+                        else:
+                            target_progress = int((cv / tv) * 100) if tv != 0 else 0
+                    except (ValueError, TypeError, ZeroDivisionError):
+                        target_progress = None
+                break  # Use first config with data
+
+        # GBs
+        gbs = []
+        for gbl in kpi.governance_body_links:
+            gb = gbl.governance_body
+            gbs.append({"id": gb.id, "name": gb.name, "abbreviation": gb.abbreviation, "color": gb.color})
+            governance_bodies_used.add(gb.id)
+
+        kpi_list.append({
+            "id": kpi.id,
+            "name": kpi.name,
+            "is_archived": kpi.is_archived,
+            "space_name": sp.name if sp else None,
+            "challenge_name": ch.name if ch else None,
+            "initiative_name": ini.name,
+            "system_name": sys.name if sys else None,
+            "value_type_name": value_type_name,
+            "value": primary_value,
+            "formatted_value": primary_formatted,
+            "value_color": primary_color,
+            "consensus_status": consensus_status,
+            "target_value": target_value,
+            "target_progress": target_progress,
+            "target_direction": target_direction,
+            "target_date": target_date.strftime("%Y-%m-%d") if target_date else None,
+            "impact_level": kpi.impact_level,
+            "true_importance": true_importance,
+            "governance_bodies": gbs,
+        })
+
+    # Stats
+    has_target = [k for k in kpi_list if k["target_progress"] is not None]
+    on_track = [k for k in has_target if k["target_progress"] >= 80]
+    at_risk = [k for k in has_target if 50 <= k["target_progress"] < 80]
+    off_track = [k for k in has_target if k["target_progress"] < 50]
+
+    # Governance bodies for filter
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.name).all()
+
+    # Presets
+    from app.models import UserFilterPreset
+    presets = UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="kpi_dashboard").order_by(UserFilterPreset.name).all()
+
+    return render_template(
+        "workspace/kpi_dashboard.html",
+        kpi_list=kpi_list,
+        stats={
+            "total": len(kpi_list),
+            "archived": sum(1 for k in kpi_list if k["is_archived"]),
+            "with_target": len(has_target),
+            "on_track": len(on_track),
+            "at_risk": len(at_risk),
+            "off_track": len(off_track),
+            "no_data": sum(1 for k in kpi_list if k["consensus_status"] in (None, "no_data")),
+        },
+        governance_bodies=governance_bodies,
+        impact_scale=impact_scale,
+        presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in presets],
+        csrf_token=generate_csrf,
+    )
+
+
 @bp.route("/review")
 @login_required
 @organization_required

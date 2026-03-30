@@ -462,6 +462,11 @@
                                 </li>
                                 {% if session.organization_id %}
                                 <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.kpi_dashboard') }}">
+                                        <i class="bi bi-graph-up-arrow"></i> KPI Dashboard
+                                    </a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item" id="navReviewLink" href="{{ url_for('workspace.start_review') }}">
                                         <i class="bi bi-play-circle-fill"></i> Initiatives Review
                                     </a>

@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.2.0] - 2026-03-30
+
+### Added
+- **KPI Dashboard** (`/workspace/kpi-dashboard`) — performance overview of all KPIs with target progress bars, impact badges, consensus status. 3-level xmas tree (🌱/🌲/🎄), impact star filter, governance body + target status filters, preset save/load. Stats bar with On Track / At Risk / Off Track counts
+
 ## [6.1.0] - 2026-03-30
 
 ### Changed

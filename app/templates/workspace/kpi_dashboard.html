@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block title %}KPI Dashboard{% endblock %}
+{% from "_preset_bar.html" import preset_bar %}
+
+{% block extra_css %}
+<style>
+.kd-header {
+    background: linear-gradient(135deg, #1565c0, #0d47a1);
+    color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem;
+}
+.kd-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.kd-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+/* Detail levels */
+[data-detail-mode="0"] .kd-d1 { display: none !important; }
+[data-detail-mode="0"] .kd-d2 { display: none !important; }
+[data-detail-mode="1"] .kd-d2 { display: none !important; }
+
+/* Stats */
+.kd-stats { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.kd-stat {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 1rem;
+    display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 110px;
+}
+.kd-stat-icon { font-size: 1.1rem; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.kd-stat-val { font-size: 1.3rem; font-weight: 800; line-height: 1; }
+.kd-stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Filters */
+.kd-filters { display: none; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.kd-filters.show { display: block; }
+.kd-filter-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.kd-filter-pill {
+    padding: 0.2rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600;
+    cursor: pointer; border: 1px solid #dee2e6; background: white; color: #495057; transition: all 0.15s;
+}
+.kd-filter-pill:hover { background: #e9ecef; }
+.kd-filter-pill.active { background: #1565c0; color: white; border-color: #1565c0; }
+
+/* Table */
+.kd-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; }
+.kd-table thead th {
+    background: #f1f5f9; padding: 0.5rem 0.6rem; font-weight: 600; color: #475569;
+    border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 5; font-size: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+}
+.kd-table tbody td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.kd-table tbody tr:hover { background: #f8fafc; }
+
+.kd-name { font-weight: 600; color: #1e293b; }
+.kd-parent { font-size: 0.7rem; color: #94a3b8; }
+
+/* Target progress bar */
+.kd-target-bar { width: 80px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+.kd-target-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.kd-target-pct { font-size: 0.72rem; font-weight: 700; margin-left: 0.3rem; }
+
+/* Badges */
+.kd-gb { font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 6px; color: white; white-space: nowrap; }
+.kd-impact {
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 6px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.kd-consensus { font-size: 0.65rem; padding: 0.1rem 0.35rem; border-radius: 6px; font-weight: 600; }
+
+.kd-empty { text-align: center; padding: 4rem 2rem; color: #94a3b8; }
+.kd-empty i { font-size: 3rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
+
+@media (max-width: 768px) {
+    .kd-header { padding: 1rem; }
+    .kd-stats { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1400px; padding:1.5rem;" id="kdContainer" data-detail-mode="1">
+
+    <!-- Header -->
+    <div class="kd-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1>
+                <i class="bi bi-graph-up-arrow"></i> KPI Dashboard
+                <button type="button" class="btn btn-sm btn-outline-light" id="kdDetailBtn"
+                        onclick="cycleKdDetailMode()" title="Detail level"
+                        style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;">
+                    <span id="kdDetailIcon">🌲</span>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="kdImpactBtn"
+                        onclick="cycleKdImpactFilter()" title="Impact filter: showing all"
+                        style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;">
+                    <span id="kdImpactIcon" style="opacity:0.5;">☆</span>
+                </button>
+            </h1>
+            <p>Performance overview — {{ stats.total }} KPIs across the organization</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="toggleKdFilters()" title="Filters">
+                <i class="bi bi-funnel me-1"></i><span class="toggle-icon">&#9660;</span>
+            </button>
+            {{ preset_bar('kpi_dashboard', presets_list) }}
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="kd-stats">
+        <div class="kd-stat">
+            <div class="kd-stat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="bi bi-graph-up"></i></div>
+            <div><div class="kd-stat-val">{{ stats.total }}</div><div class="kd-stat-label">Total KPIs</div></div>
+        </div>
+        <div class="kd-stat">
+            <div class="kd-stat-icon" style="background:#d1fae5; color:#22c55e;"><i class="bi bi-check-circle"></i></div>
+            <div><div class="kd-stat-val">{{ stats.on_track }}</div><div class="kd-stat-label">On Track</div></div>
+        </div>
+        <div class="kd-stat">
+            <div class="kd-stat-icon" style="background:#fef3c7; color:#f59e0b;"><i class="bi bi-exclamation-triangle"></i></div>
+            <div><div class="kd-stat-val">{{ stats.at_risk }}</div><div class="kd-stat-label">At Risk</div></div>
+        </div>
+        <div class="kd-stat">
+            <div class="kd-stat-icon" style="background:#fee2e2; color:#ef4444;"><i class="bi bi-x-circle"></i></div>
+            <div><div class="kd-stat-val">{{ stats.off_track }}</div><div class="kd-stat-label">Off Track</div></div>
+        </div>
+        <div class="kd-stat kd-d1">
+            <div class="kd-stat-icon" style="background:#f1f5f9; color:#94a3b8;"><i class="bi bi-dash-circle"></i></div>
+            <div><div class="kd-stat-val">{{ stats.no_data }}</div><div class="kd-stat-label">No Data</div></div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="kd-filters" id="kdFilters">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Governance Body</label>
+                <div class="kd-filter-pills" id="kdFilterGB">
+                    {% for gb in governance_bodies %}
+                    <span class="kd-filter-pill" data-filter="gb" data-value="{{ gb.id }}" onclick="toggleKdFilter(this)">{{ gb.abbreviation or gb.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Target Status</label>
+                <div class="kd-filter-pills" id="kdFilterTarget">
+                    <span class="kd-filter-pill" data-filter="target" data-value="on_track" onclick="toggleKdFilter(this)" style="border-color:#22c55e;">On Track</span>
+                    <span class="kd-filter-pill" data-filter="target" data-value="at_risk" onclick="toggleKdFilter(this)" style="border-color:#f59e0b;">At Risk</span>
+                    <span class="kd-filter-pill" data-filter="target" data-value="off_track" onclick="toggleKdFilter(this)" style="border-color:#ef4444;">Off Track</span>
+                    <span class="kd-filter-pill" data-filter="target" data-value="no_target" onclick="toggleKdFilter(this)">No Target</span>
+                    <span class="kd-filter-pill" data-filter="target" data-value="no_data" onclick="toggleKdFilter(this)">No Data</span>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+            <button class="btn btn-sm btn-outline-secondary" onclick="clearKdFilters()" style="font-size:0.75rem;"><i class="bi bi-x-circle"></i> Clear</button>
+            <span id="kdFilterCount" style="font-size:0.8rem; color:#64748b;"></span>
+        </div>
+    </div>
+
+    <!-- KPI Table -->
+    <div style="background:white; border-radius:10px; border:1px solid #e2e8f0; overflow-x:auto;">
+        <table class="kd-table">
+            <thead>
+                <tr>
+                    <th style="min-width:200px;">KPI</th>
+                    <th class="kd-d1" style="width:140px;">Initiative</th>
+                    <th style="width:100px;">Value</th>
+                    <th style="width:160px;">Target Progress</th>
+                    <th class="kd-d1" style="width:80px;">Impact</th>
+                    <th class="kd-d2" style="width:100px;">Gov. Body</th>
+                    <th class="kd-d2" style="width:80px;">Status</th>
+                    <th class="kd-d2" style="width:90px;">Target Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for k in kpi_list %}
+                {% if not k.is_archived %}
+                <tr data-gb="{{ k.governance_bodies | map(attribute='id') | join(',') }}"
+                    data-target-status="{% if k.target_progress is not none %}{% if k.target_progress >= 80 %}on_track{% elif k.target_progress >= 50 %}at_risk{% else %}off_track{% endif %}{% elif k.consensus_status in (none, 'no_data') %}no_data{% else %}no_target{% endif %}"
+                    data-importance="{{ k.true_importance or 0 }}"
+                    data-search="{{ k.name | lower }} {{ (k.initiative_name or '') | lower }} {{ (k.system_name or '') | lower }}">
+                    <td>
+                        <div class="kd-name">
+                            <a href="{{ url_for('organization_admin.edit_kpi', kpi_id=k.id, return_to='kpi_dashboard') }}" style="color:inherit; text-decoration:none;" title="Edit KPI">
+                                {{ k.name }}
+                            </a>
+                        </div>
+                        <div class="kd-parent kd-d1">
+                            {{ k.space_name or '' }} &rsaquo; {{ k.challenge_name or '' }}
+                        </div>
+                        <div class="kd-parent">
+                            <i class="bi bi-cpu" style="font-size:0.6rem;"></i> {{ k.system_name or '' }}
+                        </div>
+                    </td>
+                    <td class="kd-d1">
+                        <span style="font-size:0.8rem; color:#475569;">{{ k.initiative_name or '-' }}</span>
+                    </td>
+                    <td>
+                        {% if k.formatted_value %}
+                        <span style="font-weight:700; {% if k.value_color %}color:{{ k.value_color }};{% endif %}">
+                            {{ k.formatted_value }}
+                        </span>
+                        {% if k.value_type_name %}
+                        <span style="font-size:0.65rem; color:#94a3b8; display:block;">{{ k.value_type_name }}</span>
+                        {% endif %}
+                        {% else %}
+                        <span style="color:#cbd5e1;">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if k.target_progress is not none %}
+                        {% set tp = k.target_progress %}
+                        {% set tc = '#22c55e' if tp >= 80 else '#f59e0b' if tp >= 50 else '#ef4444' %}
+                        <div style="display:flex; align-items:center; gap:0.3rem;">
+                            <div class="kd-target-bar">
+                                <div class="kd-target-fill" style="width:{{ [tp, 100] | min }}%; background:{{ tc }};"></div>
+                            </div>
+                            <span class="kd-target-pct" style="color:{{ tc }};">{{ tp }}%</span>
+                            {% if k.target_direction == 'minimize' %}<i class="bi bi-arrow-down" style="font-size:0.6rem; color:#94a3b8;" title="Minimize"></i>{% elif k.target_direction == 'exact' %}<i class="bi bi-arrows-collapse" style="font-size:0.6rem; color:#94a3b8;" title="Exact"></i>{% endif %}
+                        </div>
+                        {% elif k.consensus_status in (none, 'no_data') %}
+                        <span style="font-size:0.75rem; color:#cbd5e1;">No data</span>
+                        {% else %}
+                        <span style="font-size:0.75rem; color:#94a3b8;">No target</span>
+                        {% endif %}
+                    </td>
+                    <td class="kd-d1">
+                        {% if k.true_importance and impact_scale and impact_scale[k.true_importance] %}
+                        <span class="kd-impact" style="background:{{ impact_scale[k.true_importance].color }}; color:white;" title="True importance: {{ impact_scale[k.true_importance].label }}">
+                            {{ impact_scale[k.true_importance].icon }}
+                        </span>
+                        {% elif k.impact_level and impact_scale and impact_scale[k.impact_level] %}
+                        <span class="kd-impact" style="border:1.5px solid {{ impact_scale[k.impact_level].color }}; color:{{ impact_scale[k.impact_level].color }}; background:transparent;" title="Assessed: {{ impact_scale[k.impact_level].label }}">
+                            {{ impact_scale[k.impact_level].icon }}
+                        </span>
+                        {% else %}
+                        <span style="color:#cbd5e1; font-size:0.75rem;">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="kd-d2">
+                        {% for gb in k.governance_bodies %}
+                        <span class="kd-gb" style="background:{{ gb.color }};" title="{{ gb.name }}">{{ gb.abbreviation or gb.name }}</span>
+                        {% endfor %}
+                    </td>
+                    <td class="kd-d2">
+                        {% if k.consensus_status == 'strong' %}
+                        <span class="kd-consensus" style="background:#d1fae5; color:#065f46;">Consensus</span>
+                        {% elif k.consensus_status == 'weak' %}
+                        <span class="kd-consensus" style="background:#fef3c7; color:#92400e;">Weak</span>
+                        {% elif k.consensus_status == 'no_consensus' %}
+                        <span class="kd-consensus" style="background:#fee2e2; color:#991b1b;">Conflict</span>
+                        {% elif k.consensus_status in (none, 'no_data') %}
+                        <span class="kd-consensus" style="background:#f1f5f9; color:#94a3b8;">No data</span>
+                        {% endif %}
+                    </td>
+                    <td class="kd-d2">
+                        {% if k.target_date %}
+                        <span style="font-size:0.75rem; color:#64748b;">{{ k.target_date }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not kpi_list %}
+        <div class="kd-empty">
+            <i class="bi bi-graph-up-arrow"></i>
+            <h4>No KPIs found</h4>
+            <p>KPIs are created within the workspace hierarchy (System level).</p>
+        </div>
+        {% endif %}
+        <div style="padding:0.5rem 1rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#78909c; background:#fafafa;">
+            <span id="kdItemCount">{{ kpi_list | rejectattr('is_archived') | list | length }}</span> KPI(s) shown
+        </div>
+    </div>
+</div>
+
+<script>
+// ── Detail Mode ──
+var _kdDetailMode = parseInt(localStorage.getItem('kd_detail_mode') || '1');
+var _kdDetailIcons = [
+    { html: '<span>🌱</span>', title: 'Minimal: KPI, value, target' },
+    { html: '<span>🌲</span>', title: 'Standard: + initiative, impact' },
+    { html: '<span>🎄</span>', title: 'Full: + GB, consensus, target date' },
+];
+function applyKdDetailMode(m) {
+    _kdDetailMode = m;
+    var c = document.getElementById('kdContainer'); if (c) c.dataset.detailMode = String(m);
+    var i = document.getElementById('kdDetailIcon'); if (i) i.innerHTML = _kdDetailIcons[m].html;
+    var b = document.getElementById('kdDetailBtn'); if (b) b.title = _kdDetailIcons[m].title;
+}
+function cycleKdDetailMode() { var n = (_kdDetailMode + 1) % 3; localStorage.setItem('kd_detail_mode', String(n)); applyKdDetailMode(n); }
+applyKdDetailMode(_kdDetailMode);
+
+// ── Impact Filter ──
+var _kdImpactScale = {{ impact_scale | tojson if impact_scale else '{}' }};
+var _kdImpactStates = [0, -1, 1, 2, 3];
+var _kdImpactIdx = 0;
+function cycleKdImpactFilter() { _kdImpactIdx = (_kdImpactIdx + 1) % _kdImpactStates.length; applyKdImpactFilter(); }
+function applyKdImpactFilter() {
+    var level = _kdImpactStates[_kdImpactIdx];
+    var btn = document.getElementById('kdImpactBtn'), icon = document.getElementById('kdImpactIcon');
+    if (!btn || !icon) return;
+    if (level === 0) { icon.textContent = '☆'; icon.style.opacity = '0.5'; icon.style.color = ''; btn.title = 'Impact: all'; }
+    else if (level === -1) { icon.textContent = '○'; icon.style.opacity = '1'; icon.style.color = ''; btn.title = 'Unlinked KPIs'; }
+    else { icon.textContent = '★'.repeat(level); icon.style.opacity = '1'; var s = _kdImpactScale[level]; icon.style.color = s ? s.color : ''; btn.title = 'Importance ≥ ' + level; }
+    applyAllKdFilters();
+}
+
+// ── Filters ──
+function toggleKdFilters() { document.getElementById('kdFilters').classList.toggle('show'); }
+function toggleKdFilter(el) { el.classList.toggle('active'); applyAllKdFilters(); }
+function clearKdFilters() { document.querySelectorAll('.kd-filter-pill.active').forEach(function(p) { p.classList.remove('active'); }); applyAllKdFilters(); }
+
+function applyAllKdFilters() {
+    var activeGB = [], activeTarget = [];
+    document.querySelectorAll('.kd-filter-pill.active').forEach(function(p) {
+        if (p.dataset.filter === 'gb') activeGB.push(p.dataset.value);
+        if (p.dataset.filter === 'target') activeTarget.push(p.dataset.value);
+    });
+    var impactLevel = _kdImpactStates[_kdImpactIdx];
+    var count = 0;
+    document.querySelectorAll('#kdContainer tbody tr').forEach(function(row) {
+        var show = true;
+        if (activeGB.length > 0) {
+            var rowGBs = (row.dataset.gb || '').split(',');
+            show = activeGB.some(function(g) { return rowGBs.indexOf(g) >= 0; });
+        }
+        if (show && activeTarget.length > 0) {
+            show = activeTarget.indexOf(row.dataset.targetStatus) >= 0;
+        }
+        if (show && impactLevel !== 0) {
+            var mi = parseInt(row.dataset.importance || '0');
+            show = impactLevel === -1 ? mi === 0 : mi >= impactLevel;
+        }
+        row.style.display = show ? '' : 'none';
+        if (show) count++;
+    });
+    document.getElementById('kdItemCount').textContent = count;
+    var fc = document.getElementById('kdFilterCount');
+    var total = activeGB.length + activeTarget.length + (impactLevel !== 0 ? 1 : 0);
+    fc.textContent = total > 0 ? total + ' filter(s) active' : '';
+}
+
+// ── Presets ──
+PresetManager.setCsrf('{{ csrf_token() }}');
+PresetManager.register('kpi_dashboard', {
+    getState: function() {
+        var gb = [], target = [];
+        document.querySelectorAll('.kd-filter-pill.active').forEach(function(p) {
+            if (p.dataset.filter === 'gb') gb.push(p.dataset.value);
+            if (p.dataset.filter === 'target') target.push(p.dataset.value);
+        });
+        return { gb: gb, target: target };
+    },
+    applyState: function(config) {
+        document.querySelectorAll('.kd-filter-pill.active').forEach(function(p) { p.classList.remove('active'); });
+        (config.gb || []).forEach(function(v) { var el = document.querySelector('.kd-filter-pill[data-filter="gb"][data-value="' + v + '"]'); if (el) el.classList.add('active'); });
+        (config.target || []).forEach(function(v) { var el = document.querySelector('.kd-filter-pill[data-filter="target"][data-value="' + v + '"]'); if (el) el.classList.add('active'); });
+        applyAllKdFilters();
+        if ((config.gb || []).length || (config.target || []).length) document.getElementById('kdFilters').classList.add('show');
+    },
+    onReset: function() { clearKdFilters(); }
+}, true);
+</script>
+{% endblock %}
