@@ -1,8 +1,8 @@
-# 🧭 CISK Navigator v5.8.1
+# 🧭 CISK Navigator v5.9.1
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-5.8.1-blue)
+![Version](https://img.shields.io/badge/version-5.9.1-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
@@ -49,8 +49,13 @@
 - **Value Dimensions page** — card view of all value types with descriptions
 - **Enriched CISK Theory page** — Ecosystem, Execution Engine, Intelligence Layer, Strategic Context sections
 
+### ⚙️ **Org Admin**
+- **Strategy toggle per organization** — enable/disable strategic pillars feature from org admin dashboard
+- **Comprehensive sample import** (`docs/SAMPLE_IMPORT.json`) — 3 spaces, 8 challenges, 12 initiatives, 12 systems, ~35 KPIs, 8 action items covering a CIO first-year scenario
+
 ### ✨ **Workspace UX**
 - **Cinematic loading screen** — glassmorphism backdrop, dramatic org logo reveal, entity icons with colored glow rings, ripple pulses, connecting beam animation
+- **3-level xmas tree remapped** — Level 0 = tree only (no columns), Level 1 = tree + values, Level 2 = full decorations
 - **Click-based info windows** replacing hover tooltips — draggable with touch support
 - **Tree state persistence** via localStorage — survives navigation and page reload
 - **KPI single value type** — radio button at creation (was incorrectly multi-select)

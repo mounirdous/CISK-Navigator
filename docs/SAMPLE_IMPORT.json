@@ -1,9 +1,22 @@
 {
-  "_comment": "CISK Navigator — Sample Import File (JSON format). Import via: Org Admin → Settings → Import Structure. All IDs (S1, C1, I1, SYS1) are local references only — initiatives or systems sharing the same ID are created once and linked to all referencing challenges/initiatives.",
+  "_comment": "CISK Navigator v5.9 — Sample Import File (JSON). Import via: Org Admin > Backup & Restore > Import. All IDs (S1, C1, I1, SYS1) are local references — entities sharing the same ID are created once and linked everywhere they appear.",
+
+  "_features_not_in_import": {
+    "_note": "These features are configured in-app after import, listed here for illustration:",
+    "impact_levels": "Org Admin > Impact Scale — 3-level impact (e.g. Low/Medium/High) with custom symbols, weights, colors. Compounding methods: Simple Product, Geometric Mean, Toyota QFD.",
+    "strategic_pillars": "Org Admin > Strategy (enable toggle first) — name, description, icon, accent color per pillar.",
+    "governance_bodies": "Org Admin > Governance Bodies — named bodies assigned to initiatives and KPIs.",
+    "porters_five_forces": "Org Admin > Porter's Five Forces — competitive analysis at organization level.",
+    "swot_analysis": "Per-space SWOT analysis configured in space edit form.",
+    "entity_links": "URL links on any entity (space, challenge, initiative, system, KPI, action item).",
+    "entity_branding": "Org Admin > Branding — custom colors, icons, logos per entity type.",
+    "decision_tags": "Org Admin > Decision Tags — configurable tag categories for structured decisions.",
+    "geography": "Org Admin > Geography — regions, countries, sites for KPI geographic distribution."
+  },
 
   "value_types": [
     {
-      "_comment": "Numeric integer — no unit",
+      "_comment": "Numeric integer — generic score",
       "name": "Score",
       "kind": "numeric",
       "numeric_format": "integer",
@@ -11,12 +24,12 @@
       "default_aggregation_formula": "avg"
     },
     {
-      "_comment": "Numeric decimal with unit suffix",
+      "_comment": "Numeric decimal with currency unit",
       "name": "Revenue",
       "kind": "numeric",
       "numeric_format": "decimal",
       "decimal_places": 1,
-      "unit_label": "M€",
+      "unit_label": "M$",
       "default_aggregation_formula": "sum"
     },
     {
@@ -29,13 +42,22 @@
       "default_aggregation_formula": "avg"
     },
     {
-      "_comment": "Numeric duration",
+      "_comment": "Numeric duration in days",
       "name": "Lead Time",
       "kind": "numeric",
       "numeric_format": "integer",
       "decimal_places": 0,
       "unit_label": "days",
       "default_aggregation_formula": "avg"
+    },
+    {
+      "_comment": "Numeric count — headcount tracking",
+      "name": "Headcount",
+      "kind": "numeric",
+      "numeric_format": "integer",
+      "decimal_places": 0,
+      "unit_label": "FTE",
+      "default_aggregation_formula": "sum"
     },
     {
       "_comment": "Sentiment — 3 levels: Negative / Neutral / Positive",
@@ -56,7 +78,19 @@
       "default_aggregation_formula": "max"
     },
     {
-      "_comment": "List — custom options with colors",
+      "_comment": "Negative Impact — 3 levels: Low / Medium / High negative",
+      "name": "Disruption Level",
+      "kind": "negative_impact",
+      "default_aggregation_formula": "max"
+    },
+    {
+      "_comment": "Level — 3 levels: Low / Medium / High (neutral scale)",
+      "name": "Maturity",
+      "kind": "level",
+      "default_aggregation_formula": "avg"
+    },
+    {
+      "_comment": "List — custom status options with colors",
       "name": "Status",
       "kind": "list",
       "default_aggregation_formula": "mode",
@@ -66,6 +100,18 @@
         { "name": "Blocked",  "color": "#dc3545" },
         { "name": "Done",     "color": "#17a2b8" }
       ]
+    },
+    {
+      "_comment": "List — priority categories",
+      "name": "Priority",
+      "kind": "list",
+      "default_aggregation_formula": "mode",
+      "list_options": [
+        { "name": "Critical", "color": "#dc3545" },
+        { "name": "High",     "color": "#fd7e14" },
+        { "name": "Medium",   "color": "#ffc107" },
+        { "name": "Low",      "color": "#6c757d" }
+      ]
     }
   ],
 
@@ -74,7 +120,7 @@
       "id": "S1",
       "name": "Season 1 — Foundation",
       "display_order": 1,
-      "description": "First 90 days priorities",
+      "description": "First 90 days: understand the landscape, build trust, quick wins",
       "space_label": "Q1 2026",
 
       "challenges": [
@@ -82,21 +128,21 @@
           "id": "C1",
           "name": "IT Visibility & Landscape",
           "display_order": 1,
-          "description": "Gain a clear picture of the IT estate",
+          "description": "Gain a clear, comprehensive picture of the IT estate and technical debt",
 
           "initiatives": [
             {
               "id": "I1",
               "name": "IT Landscape Snapshot",
               "display_order": 1,
-              "description": "Document all systems, owners and risks",
+              "description": "Document all systems, owners, risks, and dependencies",
 
               "systems": [
                 {
                   "id": "SYS1",
                   "name": "Excel Tracker",
                   "display_order": 1,
-                  "description": "Lightweight discovery spreadsheet",
+                  "description": "Lightweight discovery spreadsheet for initial inventory",
 
                   "kpis": [
                     {
@@ -106,13 +152,7 @@
                       "value_types": [
                         {
                           "name": "Completion %",
-                          "colors": {
-                            "positive": "#28a745",
-                            "zero":     "#6c757d",
-                            "negative": "#dc3545"
-                          },
-                          "display_scale": "default",
-                          "display_decimals": 0,
+                          "colors": { "positive": "#28a745", "zero": "#6c757d", "negative": "#dc3545" },
                           "target_value": 100,
                           "target_date": "2026-06-30",
                           "target_direction": "maximize",
@@ -129,14 +169,20 @@
                           "target_value": 100,
                           "target_direction": "maximize"
                         },
+                        { "name": "Risk Level" }
+                      ]
+                    },
+                    {
+                      "name": "Technical Debt Score",
+                      "display_order": 3,
+                      "description": "Weighted score of legacy system risks",
+                      "value_types": [
                         {
-                          "name": "Risk Level",
-                          "colors": {
-                            "positive": "#28a745",
-                            "zero":     "#ffc107",
-                            "negative": "#dc3545"
-                          }
-                        }
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        },
+                        { "name": "Maturity" }
                       ]
                     }
                   ]
@@ -145,13 +191,25 @@
                   "id": "SYS2",
                   "name": "Jira",
                   "display_order": 2,
+                  "description": "IT project and ticket management",
                   "kpis": [
                     {
                       "name": "Open Tickets",
                       "value_types": [
                         {
                           "name": "Score",
-                          "target_value": 0,
+                          "target_value": 50,
+                          "target_direction": "minimize"
+                        },
+                        { "name": "Priority" }
+                      ]
+                    },
+                    {
+                      "name": "Avg Resolution Time",
+                      "value_types": [
+                        {
+                          "name": "Lead Time",
+                          "target_value": 5,
                           "target_direction": "minimize"
                         }
                       ]
@@ -167,13 +225,15 @@
           "id": "C2",
           "name": "Stakeholder Alignment",
           "display_order": 2,
+          "description": "Build trust and establish communication channels with all departments",
 
           "initiatives": [
             {
-              "_comment": "SYS1 reused here — system created once, linked to both I1 and I2",
+              "_comment": "SYS1 reused — system created once, linked to both I1 and I2",
               "id": "I2",
               "name": "Listening Tour",
               "display_order": 1,
+              "description": "Meet all department heads and key stakeholders",
 
               "systems": [
                 {
@@ -190,6 +250,13 @@
                           "target_direction": "maximize"
                         }
                       ]
+                    },
+                    {
+                      "name": "Satisfaction Index",
+                      "value_types": [
+                        { "name": "Team Morale" },
+                        { "name": "Score" }
+                      ]
                     }
                   ]
                 }
@@ -199,6 +266,7 @@
               "id": "I3",
               "name": "Weekly CIO Comms",
               "display_order": 2,
+              "description": "Regular communication cadence to build transparency",
 
               "systems": [
                 {
@@ -223,6 +291,92 @@
               ]
             }
           ]
+        },
+
+        {
+          "id": "C3",
+          "name": "Quick Wins & Credibility",
+          "display_order": 3,
+          "description": "Deliver visible improvements in the first 90 days",
+
+          "initiatives": [
+            {
+              "id": "I5",
+              "name": "Wi-Fi & VPN Upgrade",
+              "display_order": 1,
+              "description": "Fix the top user complaint: unreliable office connectivity",
+
+              "systems": [
+                {
+                  "id": "SYS5",
+                  "name": "Network Infrastructure",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Uptime %",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 99.5,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "User Complaints",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Disruption to Operations",
+                      "value_types": [ { "name": "Disruption Level" } ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "I6",
+              "name": "Self-Service Password Reset",
+              "display_order": 2,
+              "description": "Reduce helpdesk load with self-service tooling",
+
+              "systems": [
+                {
+                  "id": "SYS6",
+                  "name": "Azure AD / Entra",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Password Tickets / Month",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 10,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Self-Service Adoption",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 80,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     },
@@ -231,18 +385,22 @@
       "id": "S2",
       "name": "Season 2 — Transformation",
       "display_order": 2,
+      "description": "Months 4-12: strategic initiatives, vendor governance, architecture decisions",
+      "space_label": "Q2-Q4 2026",
 
       "challenges": [
         {
-          "id": "C3",
+          "id": "C4",
           "name": "Vendor Governance",
           "display_order": 1,
+          "description": "Rationalize vendor portfolio and establish governance framework",
 
           "initiatives": [
             {
               "id": "I4",
-              "name": "Vendor Map",
+              "name": "Vendor Map & Rationalization",
               "display_order": 1,
+              "description": "Map all vendors, assess value, consolidate where possible",
 
               "systems": [
                 {
@@ -265,11 +423,10 @@
                       "value_types": [ { "name": "Risk Level" } ]
                     },
                     {
-                      "name": "Contract Value",
+                      "name": "Annual Spend",
                       "value_types": [
                         {
                           "name": "Revenue",
-                          "display_scale": "default",
                           "target_value": 5.0,
                           "target_direction": "minimize"
                         }
@@ -294,6 +451,352 @@
               ]
             }
           ]
+        },
+
+        {
+          "id": "C5",
+          "name": "Cloud & Architecture",
+          "display_order": 2,
+          "description": "Define target architecture and cloud migration strategy",
+
+          "initiatives": [
+            {
+              "id": "I7",
+              "name": "Cloud Migration Assessment",
+              "display_order": 1,
+              "description": "Assess workloads for cloud readiness (6R model)",
+
+              "systems": [
+                {
+                  "id": "SYS7",
+                  "name": "Azure / AWS",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Workloads Assessed",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 50,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Cloud Readiness",
+                      "value_types": [ { "name": "Maturity" } ]
+                    },
+                    {
+                      "name": "Migration Status",
+                      "value_types": [ { "name": "Status" } ]
+                    },
+                    {
+                      "name": "Monthly Cloud Cost",
+                      "value_types": [
+                        {
+                          "name": "Revenue",
+                          "target_value": 0.5,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "I8",
+              "name": "API & Integration Layer",
+              "display_order": 2,
+              "description": "Replace point-to-point integrations with an API gateway",
+
+              "systems": [
+                {
+                  "id": "SYS8",
+                  "name": "API Gateway",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "APIs Published",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 20,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Integration Failures / Week",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "C6",
+          "name": "Security & Compliance",
+          "display_order": 3,
+          "description": "Harden security posture and achieve compliance certifications",
+
+          "initiatives": [
+            {
+              "id": "I9",
+              "name": "SOC 2 / ISO 27001 Readiness",
+              "display_order": 1,
+              "description": "Gap analysis and remediation plan for certification",
+
+              "systems": [
+                {
+                  "id": "SYS9",
+                  "name": "GRC Platform",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Controls Implemented",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 100,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Open Findings",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        },
+                        { "name": "Risk Level" }
+                      ]
+                    },
+                    {
+                      "name": "Audit Readiness",
+                      "value_types": [ { "name": "Maturity" } ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "I10",
+              "name": "Cybersecurity Awareness",
+              "display_order": 2,
+              "description": "Company-wide phishing simulation and security training",
+
+              "systems": [
+                {
+                  "id": "SYS10",
+                  "name": "Security Training Platform",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Training Completion",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 95,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Phishing Click Rate",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 5,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Security Incidents / Month",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      "id": "S3",
+      "name": "Season 3 — Scale & Optimize",
+      "display_order": 3,
+      "description": "Year 2: scale successful initiatives, optimize operations, measure business impact",
+      "space_label": "2027",
+
+      "challenges": [
+        {
+          "id": "C7",
+          "name": "Talent & Team Building",
+          "display_order": 1,
+          "description": "Build a high-performing IT organization",
+
+          "initiatives": [
+            {
+              "id": "I11",
+              "name": "IT Operating Model",
+              "display_order": 1,
+              "description": "Define roles, responsibilities, and career paths",
+
+              "systems": [
+                {
+                  "id": "SYS11",
+                  "name": "HR / Workday",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Team Size",
+                      "value_types": [
+                        {
+                          "name": "Headcount",
+                          "target_value": 45,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Attrition Rate",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 10,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Team Engagement",
+                      "value_types": [ { "name": "Team Morale" } ]
+                    },
+                    {
+                      "name": "Open Positions",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 0,
+                          "target_direction": "minimize"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+
+        {
+          "id": "C8",
+          "name": "Data & Analytics",
+          "display_order": 2,
+          "description": "Establish a trusted data platform for decision-making",
+
+          "initiatives": [
+            {
+              "id": "I12",
+              "name": "Data Lakehouse",
+              "display_order": 1,
+              "description": "Centralized data platform replacing departmental silos",
+
+              "systems": [
+                {
+                  "id": "SYS12",
+                  "name": "Databricks / Snowflake",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Data Sources Connected",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 15,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Data Quality Score",
+                      "value_types": [
+                        {
+                          "name": "Completion %",
+                          "target_value": 95,
+                          "target_direction": "maximize"
+                        },
+                        { "name": "Maturity" }
+                      ]
+                    },
+                    {
+                      "name": "Active Dashboard Users",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 100,
+                          "target_direction": "maximize"
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Report Delivery Status",
+                      "value_types": [ { "name": "Status" } ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "_comment": "I1 reused — initiative created in S1, reappears in S3 for continued tracking",
+              "id": "I1",
+              "name": "IT Landscape Snapshot",
+              "display_order": 2,
+
+              "systems": [
+                {
+                  "_comment": "SYS2 reused from S1",
+                  "id": "SYS2",
+                  "name": "Jira",
+                  "display_order": 1,
+                  "kpis": [
+                    {
+                      "name": "Backlog Health",
+                      "value_types": [
+                        {
+                          "name": "Score",
+                          "target_value": 80,
+                          "target_direction": "maximize"
+                        },
+                        { "name": "Status" }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
         }
       ]
     }
@@ -301,12 +804,12 @@
 
   "action_items": [
     {
-      "_comment": "Action with due date, governance body, and entity mention",
+      "_comment": "Urgent action with entity mention",
       "type": "action",
       "title": "Complete IT landscape inventory",
-      "description": "Document all systems in @Excel Tracker before the end of Q1.",
+      "description": "Document all systems in @Excel Tracker before the end of Q1. Focus on critical business systems first.",
       "status": "active",
-      "priority": "high",
+      "priority": "urgent",
       "due_date": "2026-06-30",
       "completed_at": null,
       "visibility": "shared",
@@ -322,10 +825,10 @@
       ]
     },
     {
-      "_comment": "Completed action with governance body link",
+      "_comment": "Completed action",
       "type": "action",
       "title": "Schedule kick-off with all department heads",
-      "description": "Listening tour kick-off — coordinate with governance.",
+      "description": "Listening tour kick-off — coordinate with governance. All 12 departments confirmed.",
       "status": "completed",
       "priority": "urgent",
       "due_date": "2026-04-15",
@@ -337,10 +840,94 @@
       "mentions": []
     },
     {
-      "_comment": "Memo — no due date, no priority enforcement",
+      "_comment": "Action linked to initiative via mention",
+      "type": "action",
+      "title": "Publish weekly CIO comms template",
+      "description": "Create standard template for @Weekly CIO Comms updates. Include KPI dashboard link.",
+      "status": "active",
+      "priority": "high",
+      "due_date": "2026-05-01",
+      "completed_at": null,
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "initiative",
+          "entity_name": "Weekly CIO Comms",
+          "mention_text": "@Weekly CIO Comms"
+        }
+      ]
+    },
+    {
+      "_comment": "Security-related action",
+      "type": "action",
+      "title": "Procure GRC platform license",
+      "description": "Evaluate and select @GRC Platform vendor. Budget approved for FY26.",
+      "status": "active",
+      "priority": "high",
+      "due_date": "2026-07-15",
+      "completed_at": null,
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "system",
+          "entity_name": "GRC Platform",
+          "mention_text": "@GRC Platform"
+        }
+      ]
+    },
+    {
+      "_comment": "Draft action — not yet activated",
+      "type": "action",
+      "title": "Define cloud migration wave plan",
+      "description": "Group workloads into migration waves based on @Cloud Migration Assessment results.",
+      "status": "draft",
+      "priority": "medium",
+      "due_date": "2026-09-01",
+      "completed_at": null,
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "initiative",
+          "entity_name": "Cloud Migration Assessment",
+          "mention_text": "@Cloud Migration Assessment"
+        }
+      ]
+    },
+    {
+      "_comment": "Low-priority vendor action",
+      "type": "action",
+      "title": "Negotiate vendor contract renewals",
+      "description": "Leverage @Vendor Map & Rationalization findings to renegotiate top 5 contracts.",
+      "status": "active",
+      "priority": "low",
+      "due_date": "2026-10-31",
+      "completed_at": null,
+      "visibility": "shared",
+      "owner_login": "cisk",
+      "created_by_login": "cisk",
+      "governance_bodies": [],
+      "mentions": [
+        {
+          "entity_type": "initiative",
+          "entity_name": "Vendor Map & Rationalization",
+          "mention_text": "@Vendor Map & Rationalization"
+        }
+      ]
+    },
+    {
+      "_comment": "Memo — private notes, no due date enforcement",
       "type": "memo",
       "title": "CIO onboarding notes — Week 1",
-      "description": "Key observations from the listening tour: infrastructure team is understaffed, Jira backlog exceeds 400 tickets.",
+      "description": "Key observations from the listening tour:\n- Infrastructure team is understaffed (3 FTE for 200+ systems)\n- @Jira backlog exceeds 400 tickets, oldest is 18 months\n- No disaster recovery plan exists\n- Finance wants real-time reporting but data is in 4 separate systems",
       "status": "active",
       "priority": "medium",
       "due_date": null,
@@ -358,25 +945,19 @@
       ]
     },
     {
-      "_comment": "Low-priority action linked to an initiative",
-      "type": "action",
-      "title": "Publish weekly CIO comms template",
-      "description": "Create standard template for @Weekly CIO Comms updates.",
-      "status": "draft",
-      "priority": "low",
-      "due_date": "2026-05-01",
+      "_comment": "Shared memo about team",
+      "type": "memo",
+      "title": "Hiring plan — H2 2026",
+      "description": "Need to fill: 2x cloud engineers, 1x security analyst, 1x data engineer. Budget discussion with CFO scheduled for May.",
+      "status": "active",
+      "priority": "high",
+      "due_date": null,
       "completed_at": null,
       "visibility": "shared",
       "owner_login": "cisk",
       "created_by_login": "cisk",
       "governance_bodies": [],
-      "mentions": [
-        {
-          "entity_type": "initiative",
-          "entity_name": "Weekly CIO Comms",
-          "mention_text": "@Weekly CIO Comms"
-        }
-      ]
+      "mentions": []
     }
   ]
 }
