@@ -1,8 +1,8 @@
-# 🧭 CISK Navigator v6.0.0
+# 🧭 CISK Navigator v6.3.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-6.0.0-blue)
+![Version](https://img.shields.io/badge/version-6.3.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
@@ -29,10 +29,15 @@
 - **Multi-tag decisions** with chip UI and configurable tag categories
 - **Entity mentions** in decisions with bi-directional links (workspace ↔ decision register)
 
-### 🏛️ **Governance Body Dashboard**
-- Full dashboard per GB showing KPIs (formatted values), Actions, Decisions, Initiatives
-- GB selector dropdown, GB as decision maker in structured decisions
-- GB-scoped KPI display in initiative review
+### 📊 **Dashboards Suite**
+- **Challenges Dashboard** — RAG dot strips, coverage bars, impact badges, decision counts, space/RAG filters
+- **Systems Dashboard** — reuse badges, KPI health dots, portal chips, shared/orphan filters
+- **KPI Dashboard** — target progress bars, impact badges, consensus status, GB/target-status filters
+- **Impacts Dashboard** — SVG coverage rings, entity heatmap, per-type coverage, gap analysis table
+- **Governance Dashboard** — per-GB view with KPIs, Actions, Decisions, Initiatives
+- **Geographies Dashboard** — world map with country coloring, marker clustering
+- All dashboards: 🌱/🌲/🎄 xmas tree + ★ impact filter + preset save/load
+- Dashboards menu organized: CISK Entities (with branding logos) + Other
 
 ### 🧭 **Entity Navigation**
 - **Sequential prev/next arrows** on all 7 entity edit pages

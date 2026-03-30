@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.3.0] - 2026-03-30
+
+### Added
+- **Challenges Dashboard** — strategic alignment with RAG dot strips, coverage bars, impact badges, decision counts. Filters by space and RAG status
+- **Systems Dashboard** — system health, reuse badges, KPI health dots, portal chips. Filters by shared/portal/orphan/with-KPIs
+- **Impacts Dashboard** — SVG coverage rings, per-entity-type coverage bars with branding, entity heatmap, calculation method card, gap analysis table. 3-level xmas tree
+- All dashboards have 🌱/🌲/🎄 tree + ★ impact filter + presets
+
+### Changed
+- **Dashboards menu reorganized** — CISK Entities section (Challenges, Initiatives, Systems, KPIs with branding logos) + Other section (Geographies, Governance, Impacts)
+
 ## [6.2.0] - 2026-03-30
 
 ### Added

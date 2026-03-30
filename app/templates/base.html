@@ -455,25 +455,55 @@
                                 <i class="bi bi-speedometer2"></i> Dashboards
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="dashboardsDropdown">
-                                <li>
-                                    <a class="dropdown-item" href="{{ url_for('map_dashboard.index') }}">
-                                        <i class="bi bi-map-fill"></i> Geographies Dashboard
-                                    </a>
-                                </li>
                                 {% if session.organization_id %}
+                                <!-- CISK Entity Dashboards -->
+                                <li class="px-3 py-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.05em; color:#94a3b8; font-weight:600;">CISK Entities</li>
                                 <li>
-                                    <a class="dropdown-item" href="{{ url_for('workspace.kpi_dashboard') }}">
-                                        <i class="bi bi-graph-up-arrow"></i> KPI Dashboard
+                                    <a class="dropdown-item" href="{{ url_for('workspace.challenges_dashboard') }}">
+                                        {% if entity_defaults.get('challenge', {}).get('logo') %}<img src="{{ entity_defaults['challenge']['logo'] }}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:4px;">{% else %}<span style="margin-right:4px;">{{ entity_defaults.get('challenge', {}).get('icon', 'f') }}</span>{% endif %}
+                                        Challenges
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" id="navReviewLink" href="{{ url_for('workspace.start_review') }}">
-                                        <i class="bi bi-play-circle-fill"></i> Initiatives Review
+                                        {% if entity_defaults.get('initiative', {}).get('logo') %}<img src="{{ entity_defaults['initiative']['logo'] }}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:4px;">{% else %}<span style="margin-right:4px;">{{ entity_defaults.get('initiative', {}).get('icon', 'd') }}</span>{% endif %}
+                                        Initiatives Review
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.systems_dashboard') }}">
+                                        {% if entity_defaults.get('system', {}).get('logo') %}<img src="{{ entity_defaults['system']['logo'] }}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:4px;">{% else %}<span style="margin-right:4px;">{{ entity_defaults.get('system', {}).get('icon', 'F') }}</span>{% endif %}
+                                        Systems
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.kpi_dashboard') }}">
+                                        {% if entity_defaults.get('kpi', {}).get('logo') %}<img src="{{ entity_defaults['kpi']['logo'] }}" style="width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:4px;">{% else %}<span style="margin-right:4px;">{{ entity_defaults.get('kpi', {}).get('icon', 'Y') }}</span>{% endif %}
+                                        KPIs
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <!-- Other Dashboards -->
+                                <li class="px-3 py-1" style="font-size:0.65rem; text-transform:uppercase; letter-spacing:0.05em; color:#94a3b8; font-weight:600;">Other</li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('map_dashboard.index') }}">
+                                        <i class="bi bi-map-fill"></i> Geographies
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('workspace.gb_dashboard_index') }}">
-                                        <i class="bi bi-shield-check"></i> Governance Dashboard
+                                        <i class="bi bi-shield-check"></i> Governance
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.impacts_dashboard') }}">
+                                        <i class="bi bi-speedometer2" style="color:#8b5cf6;"></i> Impacts
+                                    </a>
+                                </li>
+                                {% else %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('map_dashboard.index') }}">
+                                        <i class="bi bi-map-fill"></i> Geographies
                                     </a>
                                 </li>
                                 {% endif %}

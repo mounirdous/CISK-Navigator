@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Systems Dashboard{% endblock %}
+{% from "_preset_bar.html" import preset_bar %}
+
+{% block extra_css %}
+<style>
+.sd-header { background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; }
+.sd-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.sd-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.9rem; }
+[data-detail-mode="0"] .sd-d1 { display: none !important; }
+[data-detail-mode="0"] .sd-d2 { display: none !important; }
+[data-detail-mode="1"] .sd-d2 { display: none !important; }
+
+.sd-stats { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.sd-stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 110px; }
+.sd-stat-icon { font-size: 1.1rem; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.sd-stat-val { font-size: 1.3rem; font-weight: 800; line-height: 1; }
+.sd-stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.sd-filters { display: none; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.sd-filters.show { display: block; }
+.sd-filter-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.sd-filter-pill { padding: 0.2rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid #dee2e6; background: white; color: #495057; transition: all 0.15s; }
+.sd-filter-pill:hover { background: #e9ecef; }
+.sd-filter-pill.active { background: #1565c0; color: white; border-color: #1565c0; }
+
+.sd-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; }
+.sd-table thead th { background: #f1f5f9; padding: 0.5rem 0.6rem; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 5; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.sd-table tbody td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.sd-table tbody tr:hover { background: #f8fafc; }
+
+.sd-name { font-weight: 600; color: #1e293b; }
+.sd-shared { font-size: 0.6rem; font-weight: 700; padding: 0.1rem 0.35rem; border-radius: 6px; background: #dbeafe; color: #1d4ed8; }
+.sd-portal-chip { font-size: 0.65rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 12px; background: linear-gradient(135deg, rgba(59,130,246,0.08), rgba(139,92,246,0.08)); border: 1px solid rgba(59,130,246,0.25); color: #3b82f6; text-decoration: none; white-space: nowrap; }
+.sd-portal-chip:hover { background: rgba(59,130,246,0.15); }
+.sd-impact { display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.sd-kpi-health { display: flex; gap: 0.3rem; align-items: center; }
+.sd-kpi-dot { width: 6px; height: 6px; border-radius: 50%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1400px; padding:1.5rem;" id="sdContainer" data-detail-mode="1">
+    <div class="sd-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1>
+                <i class="bi bi-cpu"></i> Systems Dashboard
+                <button type="button" class="btn btn-sm btn-outline-light" id="sdDetailBtn" onclick="cycleSdMode()" title="Detail level" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="sdDetailIcon">🌲</span></button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="sdImpactBtn" onclick="cycleSdImpact()" title="Impact: all" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="sdImpactIcon" style="opacity:0.5;">☆</span></button>
+            </h1>
+            <p>System health, reuse, and KPI coverage — {{ stats.total }} systems</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="document.getElementById('sdFilters').classList.toggle('show')" title="Filters"><i class="bi bi-funnel me-1"></i>&#9660;</button>
+            {{ preset_bar('systems_dashboard', presets_list) }}
+        </div>
+    </div>
+
+    <div class="sd-stats">
+        <div class="sd-stat"><div class="sd-stat-icon" style="background:#fce7f3; color:#ec4899;"><i class="bi bi-cpu"></i></div><div><div class="sd-stat-val">{{ stats.total }}</div><div class="sd-stat-label">Systems</div></div></div>
+        <div class="sd-stat"><div class="sd-stat-icon" style="background:#d1fae5; color:#22c55e;"><i class="bi bi-graph-up"></i></div><div><div class="sd-stat-val">{{ stats.with_kpis }}</div><div class="sd-stat-label">With KPIs</div></div></div>
+        <div class="sd-stat sd-d1"><div class="sd-stat-icon" style="background:#dbeafe; color:#3b82f6;"><i class="bi bi-share"></i></div><div><div class="sd-stat-val">{{ stats.shared_count }}</div><div class="sd-stat-label">Shared</div></div></div>
+        {% if stats.portal_count %}<div class="sd-stat sd-d1"><div class="sd-stat-icon" style="background:#ede9fe; color:#7c3aed;"><i class="bi bi-compass"></i></div><div><div class="sd-stat-val">{{ stats.portal_count }}</div><div class="sd-stat-label">Portal (CISK)</div></div></div>{% endif %}
+        {% if stats.orphan_count %}<div class="sd-stat"><div class="sd-stat-icon" style="background:#fef3c7; color:#f59e0b;"><i class="bi bi-exclamation-triangle"></i></div><div><div class="sd-stat-val">{{ stats.orphan_count }}</div><div class="sd-stat-label">No KPIs</div></div></div>{% endif %}
+    </div>
+
+    <div class="sd-filters" id="sdFilters">
+        <div class="sd-filter-pills">
+            <span class="sd-filter-pill" data-filter="type" data-value="shared" onclick="toggleSdFilter(this)"><i class="bi bi-share"></i> Shared</span>
+            <span class="sd-filter-pill" data-filter="type" data-value="portal" onclick="toggleSdFilter(this)"><i class="bi bi-compass"></i> Portal</span>
+            <span class="sd-filter-pill" data-filter="type" data-value="orphan" onclick="toggleSdFilter(this)"><i class="bi bi-exclamation-triangle"></i> No KPIs</span>
+            <span class="sd-filter-pill" data-filter="type" data-value="with_kpis" onclick="toggleSdFilter(this)"><i class="bi bi-graph-up"></i> With KPIs</span>
+        </div>
+        <div style="margin-top:0.5rem;"><button class="btn btn-sm btn-outline-secondary" onclick="clearSdFilters()" style="font-size:0.75rem;"><i class="bi bi-x-circle"></i> Clear</button> <span id="sdFilterCount" style="font-size:0.8rem; color:#64748b; margin-left:0.5rem;"></span></div>
+    </div>
+
+    <div style="background:white; border-radius:10px; border:1px solid #e2e8f0; overflow-x:auto;">
+        <table class="sd-table">
+            <thead><tr>
+                <th style="min-width:200px;">System</th>
+                <th style="width:60px;">Init.</th>
+                <th style="width:60px;">KPIs</th>
+                <th class="sd-d1" style="width:100px;">KPI Health</th>
+                <th class="sd-d1" style="width:70px;">Impact</th>
+                <th class="sd-d2" style="width:200px;">Initiatives</th>
+                <th class="sd-d2" style="width:100px;">Portal</th>
+            </tr></thead>
+            <tbody>
+                {% for s in system_list %}
+                <tr data-type="{% if s.is_portal %}portal{% endif %}{% if s.is_shared %} shared{% endif %}{% if s.kpi_count == 0 %} orphan{% endif %}{% if s.kpi_count > 0 %} with_kpis{% endif %}"
+                    data-importance="{{ s.true_importance or 0 }}">
+                    <td>
+                        <div class="sd-name">
+                            <a href="{{ url_for('organization_admin.edit_system', system_id=s.id) }}" style="color:inherit; text-decoration:none;">{{ s.name }}</a>
+                            {% if s.is_shared %}<span class="sd-shared" title="Used by {{ s.initiative_count }} initiatives">{{ s.initiative_count }}x</span>{% endif %}
+                        </div>
+                        {% if s.description %}<div style="font-size:0.7rem; color:#94a3b8; margin-top:0.1rem;" class="sd-d2">{{ s.description | truncate(80) }}</div>{% endif %}
+                    </td>
+                    <td style="text-align:center; font-weight:600;">{{ s.initiative_count }}</td>
+                    <td style="text-align:center; font-weight:600;">{% if s.kpi_count %}{{ s.kpi_count }}{% else %}<span style="color:#cbd5e1;">0</span>{% endif %}</td>
+                    <td class="sd-d1">
+                        {% if s.kpis_on_track or s.kpis_off_track %}
+                        <div class="sd-kpi-health">
+                            {% for _ in range(s.kpis_on_track) %}<div class="sd-kpi-dot" style="background:#22c55e;" title="On track"></div>{% endfor %}
+                            {% for _ in range(s.kpis_off_track) %}<div class="sd-kpi-dot" style="background:#ef4444;" title="Off track"></div>{% endfor %}
+                        </div>
+                        {% else %}<span style="color:#cbd5e1; font-size:0.75rem;">—</span>{% endif %}
+                    </td>
+                    <td class="sd-d1">
+                        {% if s.true_importance and impact_scale and impact_scale[s.true_importance] %}
+                        <span class="sd-impact" style="background:{{ impact_scale[s.true_importance].color }}; color:white;">{{ impact_scale[s.true_importance].icon }}</span>
+                        {% elif s.impact_level and impact_scale and impact_scale[s.impact_level] %}
+                        <span class="sd-impact" style="border:1.5px solid {{ impact_scale[s.impact_level].color }}; color:{{ impact_scale[s.impact_level].color }}; background:transparent;">{{ impact_scale[s.impact_level].icon }}</span>
+                        {% else %}<span style="color:#cbd5e1;">—</span>{% endif %}
+                    </td>
+                    <td class="sd-d2"><span style="font-size:0.75rem; color:#64748b;">{{ s.initiative_names | join(', ') }}</span></td>
+                    <td class="sd-d2">
+                        {% if s.portal %}<a href="#" class="sd-portal-chip" onclick="event.preventDefault(); _openPortal({{ s.portal.id }});" title="Open {{ s.portal.name }}"><i class="bi bi-compass"></i> {{ s.portal.name }}</a>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not system_list %}<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="bi bi-cpu" style="font-size:2.5rem; opacity:0.3; display:block; margin-bottom:0.5rem;"></i><p>No systems found.</p></div>{% endif %}
+        <div style="padding:0.5rem 1rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#78909c; background:#fafafa;"><span id="sdItemCount">{{ system_list | length }}</span> system(s) shown</div>
+    </div>
+</div>
+
+<script>
+// Portal open (reuse from workspace)
+function _openPortal(orgId) {
+    var form = document.createElement('form');
+    form.method = 'POST'; form.action = '/auth/switch-organization/' + orgId; form.target = '_blank';
+    var csrf = document.createElement('input'); csrf.type = 'hidden'; csrf.name = 'csrf_token'; csrf.value = '{{ csrf_token() }}';
+    form.appendChild(csrf); document.body.appendChild(form); form.submit(); document.body.removeChild(form);
+}
+
+var _sdMode = parseInt(localStorage.getItem('sd_detail_mode') || '1');
+var _sdIcons = ['🌱','🌲','🎄'];
+function applySdMode(m) { _sdMode=m; var c=document.getElementById('sdContainer'); if(c)c.dataset.detailMode=String(m); var i=document.getElementById('sdDetailIcon'); if(i)i.textContent=_sdIcons[m]; }
+function cycleSdMode() { var n=(_sdMode+1)%3; localStorage.setItem('sd_detail_mode',String(n)); applySdMode(n); }
+applySdMode(_sdMode);
+
+var _sdImpactScale = {{ impact_scale | tojson if impact_scale else '{}' }};
+var _sdImpStates=[0,-1,1,2,3], _sdImpIdx=0;
+function cycleSdImpact() { _sdImpIdx=(_sdImpIdx+1)%_sdImpStates.length; applySdFilters(); var l=_sdImpStates[_sdImpIdx], icon=document.getElementById('sdImpactIcon'); if(l===0){icon.textContent='☆';icon.style.opacity='0.5';icon.style.color='';} else if(l===-1){icon.textContent='○';icon.style.opacity='1';icon.style.color='';} else{icon.textContent='★'.repeat(l);icon.style.opacity='1';var s=_sdImpactScale[l];icon.style.color=s?s.color:'';} }
+
+function toggleSdFilter(el) { el.classList.toggle('active'); applySdFilters(); }
+function clearSdFilters() { document.querySelectorAll('.sd-filter-pill.active').forEach(function(p){p.classList.remove('active');}); applySdFilters(); }
+function applySdFilters() {
+    var aType=[];
+    document.querySelectorAll('.sd-filter-pill.active').forEach(function(p){ aType.push(p.dataset.value); });
+    var imp=_sdImpStates[_sdImpIdx], count=0;
+    document.querySelectorAll('#sdContainer tbody tr').forEach(function(r) {
+        var show=true;
+        if(aType.length>0) { var rt=r.dataset.type||''; show=aType.some(function(t){return rt.indexOf(t)>=0;}); }
+        if(show&&imp!==0){ var mi=parseInt(r.dataset.importance||'0'); show=imp===-1?mi===0:mi>=imp; }
+        r.style.display=show?'':'none'; if(show)count++;
+    });
+    document.getElementById('sdItemCount').textContent=count;
+    var fc=document.getElementById('sdFilterCount'); var t=aType.length+(imp!==0?1:0); fc.textContent=t>0?t+' filter(s)':'';
+}
+PresetManager.setCsrf('{{ csrf_token() }}');
+PresetManager.register('systems_dashboard', {
+    getState: function() { var t=[]; document.querySelectorAll('.sd-filter-pill.active').forEach(function(p){t.push(p.dataset.value);}); return {type:t}; },
+    applyState: function(c) { document.querySelectorAll('.sd-filter-pill.active').forEach(function(p){p.classList.remove('active');}); (c.type||[]).forEach(function(v){var e=document.querySelector('.sd-filter-pill[data-value="'+v+'"]');if(e)e.classList.add('active');}); applySdFilters(); if((c.type||[]).length)document.getElementById('sdFilters').classList.add('show'); },
+    onReset: function() { clearSdFilters(); }
+}, true);
+</script>
+{% endblock %}

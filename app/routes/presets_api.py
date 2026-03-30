@@ -26,7 +26,7 @@ from app.models import SavedChart, SavedSearch, UserFilterPreset
 
 bp = Blueprint("presets_api", __name__, url_prefix="/api")
 
-VALID_FEATURES = {"workspace", "action_items", "search", "pivot", "decisions", "kpi_dashboard"}
+VALID_FEATURES = {"workspace", "action_items", "search", "pivot", "decisions", "kpi_dashboard", "challenges_dashboard", "systems_dashboard"}
 
 
 def organization_required(f):
@@ -52,7 +52,7 @@ def get_presets():
 
     org_id = session.get("organization_id")
 
-    if feature in ("workspace", "action_items", "decisions", "kpi_dashboard"):
+    if feature in ("workspace", "action_items", "decisions", "kpi_dashboard", "challenges_dashboard", "systems_dashboard"):
         presets = (
             UserFilterPreset.query.filter_by(
                 user_id=current_user.id, organization_id=org_id, feature=feature
@@ -136,7 +136,7 @@ def create_preset():
 
     org_id = session.get("organization_id")
 
-    if feature in ("workspace", "action_items", "decisions", "kpi_dashboard"):
+    if feature in ("workspace", "action_items", "decisions", "kpi_dashboard", "challenges_dashboard", "systems_dashboard"):
         existing = UserFilterPreset.query.filter_by(
             user_id=current_user.id, organization_id=org_id, feature=feature, name=name
         ).first()
@@ -233,7 +233,7 @@ def delete_preset(preset_id):
 
     org_id = session.get("organization_id")
 
-    if feature in ("workspace", "action_items", "decisions", "kpi_dashboard"):
+    if feature in ("workspace", "action_items", "decisions", "kpi_dashboard", "challenges_dashboard", "systems_dashboard"):
         preset = UserFilterPreset.query.get(preset_id)
         if not preset:
             return jsonify({"error": "Preset not found"}), 404

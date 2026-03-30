@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Impacts Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.id-page { max-width: 1400px; margin: 0 auto; padding: 1.5rem; }
+[data-detail-mode="0"] .id-d1 { display: none !important; }
+[data-detail-mode="0"] .id-d2 { display: none !important; }
+[data-detail-mode="1"] .id-d2 { display: none !important; }
+.id-header { background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; }
+.id-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.id-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.9rem; }
+
+/* Hero ring */
+.id-hero { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.id-ring-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; flex: 1; min-width: 200px; display: flex; align-items: center; gap: 1.25rem; }
+.id-ring { position: relative; width: 80px; height: 80px; flex-shrink: 0; }
+.id-ring svg { transform: rotate(-90deg); }
+.id-ring-bg { fill: none; stroke: #e2e8f0; stroke-width: 6; }
+.id-ring-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+.id-ring-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; }
+.id-ring-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; margin-top: 0.15rem; }
+.id-ring-val { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+
+/* Coverage bars */
+.id-coverage { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.id-cov-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; flex: 1; min-width: 140px; }
+.id-cov-title { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #64748b; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem; }
+.id-cov-bar { width: 100%; height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-bottom: 0.35rem; }
+.id-cov-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+.id-cov-nums { display: flex; justify-content: space-between; font-size: 0.72rem; color: #94a3b8; }
+
+/* Distribution */
+.id-dist { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; }
+.id-dist-title { font-size: 0.85rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.4rem; }
+.id-dist-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.6rem; }
+.id-dist-label { width: 80px; font-size: 0.78rem; font-weight: 600; color: #475569; text-align: right; }
+.id-dist-bar-wrap { flex: 1; height: 24px; background: #f8fafc; border-radius: 6px; overflow: hidden; position: relative; }
+.id-dist-bar-seg { height: 100%; display: inline-block; transition: width 0.8s ease; }
+.id-dist-count { font-size: 0.75rem; font-weight: 700; color: #1e293b; width: 40px; }
+
+/* Method card */
+.id-method { background: linear-gradient(135deg, #f8fafc, #f1f5f9); border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+.id-method-name { font-weight: 700; color: #1e293b; font-size: 0.9rem; }
+.id-method-desc { font-size: 0.78rem; color: #64748b; }
+
+/* Gaps table */
+.id-gaps { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+.id-gaps-header { padding: 0.75rem 1.25rem; background: #fef2f2; border-bottom: 1px solid #fecaca; display: flex; align-items: center; justify-content: space-between; }
+.id-gaps-title { font-weight: 700; color: #991b1b; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+.id-gaps-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.id-gaps-table th { background: #fef2f2; padding: 0.4rem 0.75rem; font-weight: 600; color: #991b1b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.id-gaps-table td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #fef2f2; }
+.id-gaps-table tr:hover { background: #fff5f5; }
+.id-type-badge { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 6px; text-transform: capitalize; }
+
+/* Entity heatmap */
+.id-heatmap { display: flex; flex-wrap: wrap; gap: 3px; }
+.id-heat-cell { width: 10px; height: 10px; border-radius: 2px; transition: transform 0.15s; cursor: default; }
+.id-heat-cell:hover { transform: scale(2); z-index: 10; }
+
+@media (max-width: 768px) {
+    .id-hero { flex-direction: column; }
+    .id-coverage { flex-direction: column; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="id-page" id="idContainer" data-detail-mode="1">
+
+    <!-- Header -->
+    <div class="id-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1>
+                <i class="bi bi-speedometer2"></i> Impacts Dashboard
+                <button type="button" class="btn btn-sm btn-outline-light" id="idDetailBtn" onclick="cycleIdMode()" title="Detail level" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="idDetailIcon">🌲</span></button>
+            </h1>
+            <p>Impact assessment coverage, distribution, and gap analysis — {{ total_entities }} entities</p>
+        </div>
+        <a href="{{ url_for('workspace.impact_docs') }}" class="btn btn-outline-light btn-sm" target="_blank"><i class="bi bi-book me-1"></i> Docs</a>
+    </div>
+
+    <!-- Hero Rings -->
+    <div class="id-hero">
+        <!-- Assessed Coverage Ring -->
+        <div class="id-ring-card">
+            {% set circ = 226 %}
+            {% set offset = circ - (circ * coverage_pct / 100) %}
+            <div class="id-ring">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                    <circle class="id-ring-bg" cx="40" cy="40" r="36"></circle>
+                    <circle class="id-ring-fill" cx="40" cy="40" r="36"
+                            style="stroke:{% if coverage_pct >= 80 %}#22c55e{% elif coverage_pct >= 50 %}#f59e0b{% else %}#ef4444{% endif %}; stroke-dasharray:{{ circ }}; stroke-dashoffset:{{ offset }};"></circle>
+                </svg>
+                <div class="id-ring-text" style="color:{% if coverage_pct >= 80 %}#22c55e{% elif coverage_pct >= 50 %}#f59e0b{% else %}#ef4444{% endif %};">{{ coverage_pct }}%</div>
+            </div>
+            <div>
+                <div class="id-ring-val">{{ total_assessed }} / {{ total_entities }}</div>
+                <div class="id-ring-label">Assessed Coverage</div>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:0.2rem;">{{ total_entities - total_assessed }} gaps remaining</div>
+            </div>
+        </div>
+
+        <!-- True Importance Coverage Ring -->
+        <div class="id-ring-card">
+            {% set offset2 = circ - (circ * ti_coverage_pct / 100) %}
+            <div class="id-ring">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                    <circle class="id-ring-bg" cx="40" cy="40" r="36"></circle>
+                    <circle class="id-ring-fill" cx="40" cy="40" r="36"
+                            style="stroke:#8b5cf6; stroke-dasharray:{{ circ }}; stroke-dashoffset:{{ offset2 }};"></circle>
+                </svg>
+                <div class="id-ring-text" style="color:#8b5cf6;">{{ ti_coverage_pct }}%</div>
+            </div>
+            <div>
+                <div class="id-ring-val">{{ total_with_ti }} / {{ total_entities }}</div>
+                <div class="id-ring-label">True Importance Computed</div>
+                <div style="font-size:0.72rem; color:#94a3b8; margin-top:0.2rem;">Complete chains with all levels set</div>
+            </div>
+        </div>
+
+        <!-- Distribution summary -->
+        <div class="id-ring-card" style="flex-direction:column; align-items:flex-start; gap:0.5rem;">
+            <div class="id-ring-label" style="margin:0;">True Importance Distribution</div>
+            {% set ti_total = ti_dist[1] + ti_dist[2] + ti_dist[3] %}
+            {% for lvl in [3, 2, 1] %}
+            {% if impact_scale and impact_scale[lvl] %}
+            <div style="display:flex; align-items:center; gap:0.5rem; width:100%;">
+                <span style="width:30px; font-size:0.85rem; font-weight:700; color:{{ impact_scale[lvl].color }};">{{ impact_scale[lvl].icon }}</span>
+                <div style="flex:1; height:6px; background:#f1f5f9; border-radius:3px; overflow:hidden;">
+                    <div style="height:100%; width:{{ (ti_dist[lvl] / ti_total * 100) if ti_total else 0 }}%; background:{{ impact_scale[lvl].color }}; border-radius:3px;"></div>
+                </div>
+                <span style="font-size:0.78rem; font-weight:700; width:30px; text-align:right;">{{ ti_dist[lvl] }}</span>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Coverage by Entity Type -->
+    <div class="id-coverage">
+        {% set type_labels = {'space': 'Spaces', 'challenge': 'Challenges', 'initiative': 'Initiatives', 'system': 'Systems', 'kpi': 'KPIs'} %}
+        {% set type_colors = {'space': entity_defaults.get('space',{}).get('color','#10b981'), 'challenge': entity_defaults.get('challenge',{}).get('color','#f59e0b'), 'initiative': entity_defaults.get('initiative',{}).get('color','#8b5cf6'), 'system': entity_defaults.get('system',{}).get('color','#ec4899'), 'kpi': entity_defaults.get('kpi',{}).get('color','#06b6d4')} %}
+        {% for etype in ['space', 'challenge', 'initiative', 'system', 'kpi'] %}
+        {% set ts = type_stats[etype] %}
+        {% set ed = entity_defaults.get(etype, {}) %}
+        <div class="id-cov-card">
+            <div class="id-cov-title" style="color:{{ type_colors[etype] }};">
+                {% if ed.get('logo') %}<img src="{{ ed['logo'] }}" style="width:14px;height:14px;object-fit:contain;">{% else %}{{ ed.get('icon', etype[0]|upper) }}{% endif %}
+                {{ type_labels[etype] }}
+            </div>
+            <div class="id-cov-bar">
+                <div class="id-cov-fill" style="width:{{ ts.pct }}%; background:{{ type_colors[etype] }};"></div>
+            </div>
+            <div class="id-cov-nums">
+                <span>{{ ts.assessed }}/{{ ts.total }} assessed</span>
+                <span style="font-weight:700; color:{{ type_colors[etype] }};">{{ ts.pct }}%</span>
+            </div>
+            <!-- Mini distribution -->
+            {% if ts.assessed > 0 %}
+            <div style="display:flex; gap:2px; margin-top:0.4rem;">
+                {% for lvl in [1, 2, 3] %}
+                {% if impact_scale and impact_scale[lvl] and ts.dist[lvl] > 0 %}
+                <div style="flex:{{ ts.dist[lvl] }}; height:4px; background:{{ impact_scale[lvl].color }}; border-radius:2px;" title="{{ impact_scale[lvl].icon }} x{{ ts.dist[lvl] }}"></div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Calculation Method -->
+    <div class="id-method id-d1">
+        <div>
+            <div class="id-method-name"><i class="bi bi-gear"></i> {{ method_name }}</div>
+            <div class="id-method-desc">Active calculation method for true importance computation</div>
+        </div>
+        <a href="{{ url_for('workspace.impact_docs') }}#{{ method_key }}" class="btn btn-sm btn-outline-primary" target="_blank">How it works <i class="bi bi-arrow-right"></i></a>
+    </div>
+
+    <!-- Entity Heatmap -->
+    {% if all_entities %}
+    <div class="id-d1" style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:1.25rem; margin-bottom:1.5rem;">
+        <div style="font-size:0.85rem; font-weight:700; color:#1e293b; margin-bottom:0.75rem; display:flex; align-items:center; gap:0.4rem;">
+            <i class="bi bi-grid-3x3-gap"></i> Impact Heatmap
+            <span style="font-size:0.7rem; font-weight:400; color:#94a3b8;">— each cell = one entity, colored by true importance</span>
+        </div>
+        <div class="id-heatmap">
+            {% for e in all_entities %}
+            <div class="id-heat-cell"
+                 title="{{ e.type | capitalize }}: {{ e.name }}{% if e.true_importance and impact_scale and impact_scale[e.true_importance] %} — {{ impact_scale[e.true_importance].icon }}{% elif e.impact %} — assessed only{% else %} — not set{% endif %}"
+                 style="background:{% if e.true_importance and impact_scale and impact_scale[e.true_importance] %}{{ impact_scale[e.true_importance].color }}{% elif e.impact %}#94a3b8{% else %}#e2e8f0{% endif %};"></div>
+            {% endfor %}
+        </div>
+        <div style="display:flex; gap:1rem; margin-top:0.75rem; font-size:0.7rem; color:#64748b;">
+            {% for lvl in [1, 2, 3] %}
+            {% if impact_scale and impact_scale[lvl] %}
+            <span><span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:{{ impact_scale[lvl].color }}; vertical-align:middle; margin-right:3px;"></span>{{ impact_scale[lvl].icon }} {{ impact_scale[lvl].label }}</span>
+            {% endif %}
+            {% endfor %}
+            <span><span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:#94a3b8; vertical-align:middle; margin-right:3px;"></span>Assessed (chain incomplete)</span>
+            <span><span style="display:inline-block; width:10px; height:10px; border-radius:2px; background:#e2e8f0; vertical-align:middle; margin-right:3px;"></span>Not set</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Gaps -->
+    {% if gaps %}
+    <div class="id-gaps id-d2">
+        <div class="id-gaps-header">
+            <span class="id-gaps-title"><i class="bi bi-exclamation-triangle"></i> Impact Gaps ({{ total_gaps }})</span>
+            <span style="font-size:0.75rem; color:#991b1b;">Entities missing impact assessment — broken chains prevent true importance computation</span>
+        </div>
+        <table class="id-gaps-table">
+            <thead><tr><th>Entity</th><th>Type</th><th>Parent</th><th>Issue</th></tr></thead>
+            <tbody>
+                {% for g in gaps %}
+                <tr>
+                    <td style="font-weight:600;">{{ g.name }}</td>
+                    <td>
+                        {% set gc = entity_defaults.get(g.type, {}).get('color', '#94a3b8') %}
+                        <span class="id-type-badge" style="background:{{ gc }}20; color:{{ gc }};">
+                            {% set ged = entity_defaults.get(g.type, {}) %}
+                            {% if ged.get('logo') %}<img src="{{ ged['logo'] }}" style="width:12px;height:12px;object-fit:contain;vertical-align:middle;margin-right:2px;">{% endif %}
+                            {{ g.type }}
+                        </span>
+                    </td>
+                    <td style="font-size:0.8rem; color:#64748b;">{{ g.get('parent', '') }}</td>
+                    <td style="font-size:0.8rem; color:#ef4444;">{{ g.reason }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="id-d2" style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:12px; padding:1.5rem; text-align:center; margin-bottom:1.5rem;">
+        <i class="bi bi-check-circle-fill" style="font-size:2rem; color:#22c55e; display:block; margin-bottom:0.5rem;"></i>
+        <div style="font-weight:700; color:#166534;">All entities have impact assessed!</div>
+        <div style="font-size:0.85rem; color:#4ade80;">100% coverage — every chain is complete</div>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+var _idMode = parseInt(localStorage.getItem('id_detail_mode') || '1');
+var _idIcons = ['🌱','🌲','🎄'];
+function applyIdMode(m) { _idMode=m; var c=document.getElementById('idContainer'); if(c)c.dataset.detailMode=String(m); var i=document.getElementById('idDetailIcon'); if(i)i.textContent=_idIcons[m]; }
+function cycleIdMode() { var n=(_idMode+1)%3; localStorage.setItem('id_detail_mode',String(n)); applyIdMode(n); }
+applyIdMode(_idMode);
+</script>
+{% endblock %}

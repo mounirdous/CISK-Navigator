@@ -302,6 +302,344 @@ def gb_dashboard_index():
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/impacts-dashboard")
+@login_required
+@organization_required
+def impacts_dashboard():
+    """Impacts Dashboard — impact assessment coverage, distribution, and gap analysis"""
+    from app.models import (
+        Challenge, ChallengeInitiativeLink, GovernanceBody, ImpactLevel,
+        KPI, Space,
+    )
+    from app.models.system import InitiativeSystemLink, System
+    from app.services.impact_service import METHODS, compute_true_importance
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    impact_scale = ImpactLevel.get_org_levels(org_id)
+    _iw = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale} if impact_scale else {}
+    _im = org.impact_calc_method or "geometric_mean" if org else "geometric_mean"
+    _icm = org.impact_qfd_matrix if org else None
+    _icr = org.impact_reinforce_weights if org else None
+    method_info = METHODS.get(_im, METHODS.get("geometric_mean", {}))
+
+    # Collect all entities with their impact data
+    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order).all()
+    challenges = Challenge.query.filter_by(organization_id=org_id).all()
+    initiatives = Initiative.query.filter_by(organization_id=org_id).all()
+    systems = System.query.filter_by(organization_id=org_id).all()
+    kpis = (KPI.query.join(InitiativeSystemLink).join(Initiative)
+            .filter(Initiative.organization_id == org_id, KPI.is_archived.is_(False)).all())
+
+    # Build entity data with chains
+    entities = []
+    type_stats = {}
+    for etype, elist in [("space", spaces), ("challenge", challenges), ("initiative", initiatives), ("system", systems), ("kpi", kpis)]:
+        assessed = sum(1 for e in elist if e.impact_level)
+        total = len(elist)
+        dist = {1: 0, 2: 0, 3: 0}
+        for e in elist:
+            if e.impact_level in dist:
+                dist[e.impact_level] += 1
+        type_stats[etype] = {"total": total, "assessed": assessed, "pct": int(assessed / total * 100) if total else 0, "dist": dist}
+
+    # Compute true importance for all entities and find gaps
+    all_entities = []
+    ti_dist = {1: 0, 2: 0, 3: 0}
+    gaps = []
+
+    for sp in spaces:
+        sp_ti = compute_true_importance([sp.impact_level], _im, _iw, _icm, _icr) if sp.impact_level else None
+        all_entities.append({"type": "space", "name": sp.name, "id": sp.id, "impact": sp.impact_level, "true_importance": sp_ti, "chain": [sp.impact_level], "parent": None})
+        if sp_ti and sp_ti in ti_dist: ti_dist[sp_ti] += 1
+        if not sp.impact_level: gaps.append({"type": "space", "name": sp.name, "id": sp.id, "reason": "Not assessed"})
+
+        for ch in [c for c in challenges if c.space_id == sp.id]:
+            chain = [sp.impact_level, ch.impact_level]
+            ch_ti = compute_true_importance(chain, _im, _iw, _icm, _icr) if all(chain) else None
+            all_entities.append({"type": "challenge", "name": ch.name, "id": ch.id, "impact": ch.impact_level, "true_importance": ch_ti, "chain": chain, "parent": sp.name})
+            if ch_ti and ch_ti in ti_dist: ti_dist[ch_ti] += 1
+            if not ch.impact_level: gaps.append({"type": "challenge", "name": ch.name, "id": ch.id, "reason": "Not assessed", "parent": sp.name})
+            elif sp.impact_level and ch.impact_level and not ch_ti: gaps.append({"type": "challenge", "name": ch.name, "id": ch.id, "reason": "Chain incomplete", "parent": sp.name})
+
+            for ci in ChallengeInitiativeLink.query.filter_by(challenge_id=ch.id).all():
+                ini = ci.initiative
+                chain_i = [sp.impact_level, ch.impact_level, ini.impact_level]
+                ini_ti = compute_true_importance(chain_i, _im, _iw, _icm, _icr) if all(chain_i) else None
+                all_entities.append({"type": "initiative", "name": ini.name, "id": ini.id, "impact": ini.impact_level, "true_importance": ini_ti, "chain": chain_i, "parent": ch.name})
+                if ini_ti and ini_ti in ti_dist: ti_dist[ini_ti] += 1
+                if not ini.impact_level: gaps.append({"type": "initiative", "name": ini.name, "id": ini.id, "reason": "Not assessed", "parent": ch.name})
+
+                for sl in InitiativeSystemLink.query.filter_by(initiative_id=ini.id).all():
+                    sys = sl.system
+                    chain_s = [sp.impact_level, ch.impact_level, ini.impact_level, sys.impact_level]
+                    sys_ti = compute_true_importance(chain_s, _im, _iw, _icm, _icr) if all(chain_s) else None
+                    all_entities.append({"type": "system", "name": sys.name, "id": sys.id, "impact": sys.impact_level, "true_importance": sys_ti, "chain": chain_s, "parent": ini.name})
+                    if sys_ti and sys_ti in ti_dist: ti_dist[sys_ti] += 1
+                    if not sys.impact_level: gaps.append({"type": "system", "name": sys.name, "id": sys.id, "reason": "Not assessed", "parent": ini.name})
+
+                    for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id, is_archived=False).all():
+                        chain_k = [sp.impact_level, ch.impact_level, ini.impact_level, sys.impact_level, kpi.impact_level]
+                        kpi_ti = compute_true_importance(chain_k, _im, _iw, _icm, _icr) if all(chain_k) else None
+                        all_entities.append({"type": "kpi", "name": kpi.name, "id": kpi.id, "impact": kpi.impact_level, "true_importance": kpi_ti, "chain": chain_k, "parent": sys.name})
+                        if kpi_ti and kpi_ti in ti_dist: ti_dist[kpi_ti] += 1
+                        if not kpi.impact_level: gaps.append({"type": "kpi", "name": kpi.name, "id": kpi.id, "reason": "Not assessed", "parent": sys.name})
+
+    total_entities = len(all_entities)
+    total_assessed = sum(1 for e in all_entities if e["impact"])
+    total_with_ti = sum(1 for e in all_entities if e["true_importance"])
+
+    return render_template(
+        "workspace/impacts_dashboard.html",
+        type_stats=type_stats,
+        ti_dist=ti_dist,
+        gaps=gaps,
+        total_gaps=len(gaps),
+        total_entities=total_entities,
+        total_assessed=total_assessed,
+        total_with_ti=total_with_ti,
+        coverage_pct=int(total_assessed / total_entities * 100) if total_entities else 0,
+        ti_coverage_pct=int(total_with_ti / total_entities * 100) if total_entities else 0,
+        impact_scale=impact_scale,
+        method_name=method_info.get("name", _im),
+        method_key=_im,
+        all_entities=all_entities,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/challenges-dashboard")
+@login_required
+@organization_required
+def challenges_dashboard():
+    """Challenges Dashboard — strategic alignment and execution health per challenge"""
+    from app.models import (
+        Challenge, ChallengeInitiativeLink, Decision, GovernanceBody, ImpactLevel,
+        KPI, Space,
+    )
+    from app.models.system import InitiativeSystemLink
+    from app.services.impact_service import compute_true_importance
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    # Impact setup
+    impact_scale = ImpactLevel.get_org_levels(org_id)
+    _iw = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale} if impact_scale else {}
+    _im = org.impact_calc_method or "geometric_mean" if org else "geometric_mean"
+    _icm = org.impact_qfd_matrix if org else None
+    _icr = org.impact_reinforce_weights if org else None
+
+    spaces = Space.query.filter_by(organization_id=org_id).order_by(Space.display_order, Space.name).all()
+    challenges = Challenge.query.filter_by(organization_id=org_id).order_by(Challenge.display_order, Challenge.name).all()
+
+    challenge_list = []
+    for ch in challenges:
+        sp = ch.space
+        ci_links = ChallengeInitiativeLink.query.filter_by(challenge_id=ch.id).all()
+        initiatives = [cl.initiative for cl in ci_links]
+
+        # RAG summary
+        rags = [i.execution_rag for i in initiatives if i.execution_rag]
+        worst_rag = "red" if "red" in rags else "amber" if "amber" in rags else "green" if "green" in rags else None
+        rag_counts = {"green": rags.count("green"), "amber": rags.count("amber"), "red": rags.count("red")}
+
+        # KPI count
+        kpi_count = 0
+        system_ids = set()
+        for ini in initiatives:
+            for sl in InitiativeSystemLink.query.filter_by(initiative_id=ini.id).all():
+                system_ids.add(sl.system_id)
+                kpi_count += KPI.query.filter_by(initiative_system_link_id=sl.id, is_archived=False).count()
+
+        # Initiatives with progress updates
+        ini_with_updates = sum(1 for i in initiatives if i.latest_progress_update)
+        ini_with_kpis = 0
+        for ini in initiatives:
+            has_kpi = db.session.query(KPI.id).join(InitiativeSystemLink).filter(
+                InitiativeSystemLink.initiative_id == ini.id, KPI.is_archived.is_(False)
+            ).first()
+            if has_kpi:
+                ini_with_kpis += 1
+
+        # Impact
+        chain = []
+        if sp and sp.impact_level:
+            chain.append(sp.impact_level)
+        if ch.impact_level:
+            chain.append(ch.impact_level)
+        true_importance = compute_true_importance(chain, _im, _iw, _icm, _icr) if len(chain) == 2 and all(chain) else None
+
+        # Decision count
+        decision_count = sum(1 for d in Decision.query.filter_by(organization_id=org_id).all()
+                            if d.mentions_entity("challenge", ch.id))
+
+        challenge_list.append({
+            "id": ch.id,
+            "name": ch.name,
+            "space_name": sp.name if sp else None,
+            "space_id": sp.id if sp else None,
+            "initiative_count": len(initiatives),
+            "system_count": len(system_ids),
+            "kpi_count": kpi_count,
+            "worst_rag": worst_rag,
+            "rag_counts": rag_counts,
+            "rag_dots": rags,
+            "ini_with_updates": ini_with_updates,
+            "ini_with_kpis": ini_with_kpis,
+            "coverage_pct": int(ini_with_kpis / len(initiatives) * 100) if initiatives else 0,
+            "decision_count": decision_count,
+            "impact_level": ch.impact_level,
+            "true_importance": true_importance,
+        })
+
+    # Stats
+    fully_covered = sum(1 for c in challenge_list if c["coverage_pct"] == 100 and c["initiative_count"] > 0)
+    partially_covered = sum(1 for c in challenge_list if 0 < c["coverage_pct"] < 100)
+    empty = sum(1 for c in challenge_list if c["initiative_count"] == 0)
+
+    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.name).all()
+    from app.models import UserFilterPreset
+    presets = UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="challenges_dashboard").order_by(UserFilterPreset.name).all()
+
+    return render_template(
+        "workspace/challenges_dashboard.html",
+        challenge_list=challenge_list,
+        spaces=spaces,
+        stats={
+            "total": len(challenge_list),
+            "fully_covered": fully_covered,
+            "partially_covered": partially_covered,
+            "empty": empty,
+            "red_count": sum(1 for c in challenge_list if c["worst_rag"] == "red"),
+            "amber_count": sum(1 for c in challenge_list if c["worst_rag"] == "amber"),
+            "green_count": sum(1 for c in challenge_list if c["worst_rag"] == "green"),
+        },
+        impact_scale=impact_scale,
+        presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in presets],
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/systems-dashboard")
+@login_required
+@organization_required
+def systems_dashboard():
+    """Systems Dashboard — system health, reuse, and KPI coverage"""
+    from app.models import (
+        Challenge, ChallengeInitiativeLink, GovernanceBody, ImpactLevel,
+        KPI, KPIValueTypeConfig, Space,
+    )
+    from app.models.system import InitiativeSystemLink, System
+    from app.services.impact_service import compute_true_importance
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    impact_scale = ImpactLevel.get_org_levels(org_id)
+    _iw = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale} if impact_scale else {}
+    _im = org.impact_calc_method or "geometric_mean" if org else "geometric_mean"
+    _icm = org.impact_qfd_matrix if org else None
+    _icr = org.impact_reinforce_weights if org else None
+
+    systems = System.query.filter_by(organization_id=org_id).order_by(System.name).all()
+
+    system_list = []
+    for sys in systems:
+        # Initiative links
+        isl_links = InitiativeSystemLink.query.filter_by(system_id=sys.id).all()
+        initiative_names = []
+        best_chain = None
+        for isl in isl_links:
+            ini = isl.initiative
+            initiative_names.append(ini.name)
+            # Build chain for impact
+            ci = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).first()
+            ch = ci.challenge if ci else None
+            sp = ch.space if ch else None
+            chain = []
+            if sp and sp.impact_level: chain.append(sp.impact_level)
+            if ch and ch.impact_level: chain.append(ch.impact_level)
+            if ini.impact_level: chain.append(ini.impact_level)
+            if sys.impact_level: chain.append(sys.impact_level)
+            if len(chain) == 4 and all(chain):
+                ti = compute_true_importance(chain, _im, _iw, _icm, _icr)
+                if best_chain is None or (ti and (best_chain is None or ti > best_chain)):
+                    best_chain = ti
+
+        # KPI count and health
+        total_kpis = 0
+        kpis_on_track = 0
+        kpis_off_track = 0
+        for isl in isl_links:
+            kpis = KPI.query.filter_by(initiative_system_link_id=isl.id, is_archived=False).all()
+            for kpi in kpis:
+                total_kpis += 1
+                for config in kpi.value_type_configs:
+                    if config.target_value is not None:
+                        consensus = config.get_consensus_value()
+                        if consensus and consensus.get("value") is not None:
+                            try:
+                                tv = float(config.target_value)
+                                cv = float(consensus["value"])
+                                td = config.target_direction or "maximize"
+                                if td == "minimize":
+                                    pct = int((tv / cv) * 100) if cv != 0 else 100
+                                else:
+                                    pct = int((cv / tv) * 100) if tv != 0 else 0
+                                if pct >= 80: kpis_on_track += 1
+                                else: kpis_off_track += 1
+                            except (ValueError, TypeError, ZeroDivisionError):
+                                pass
+                        break
+
+        # Portal
+        portal = None
+        if sys.linked_organization_id and sys.linked_organization:
+            lo = sys.linked_organization
+            portal = {"id": lo.id, "name": lo.name}
+
+        system_list.append({
+            "id": sys.id,
+            "name": sys.name,
+            "description": sys.description,
+            "initiative_count": len(isl_links),
+            "initiative_names": initiative_names,
+            "kpi_count": total_kpis,
+            "kpis_on_track": kpis_on_track,
+            "kpis_off_track": kpis_off_track,
+            "impact_level": sys.impact_level,
+            "true_importance": best_chain,
+            "is_portal": portal is not None,
+            "portal": portal,
+            "is_shared": len(isl_links) > 1,
+        })
+
+    # Stats
+    portal_count = sum(1 for s in system_list if s["is_portal"])
+    shared_count = sum(1 for s in system_list if s["is_shared"])
+    orphan_count = sum(1 for s in system_list if s["kpi_count"] == 0)
+
+    from app.models import UserFilterPreset
+    presets = UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="systems_dashboard").order_by(UserFilterPreset.name).all()
+
+    return render_template(
+        "workspace/systems_dashboard.html",
+        system_list=system_list,
+        stats={
+            "total": len(system_list),
+            "portal_count": portal_count,
+            "shared_count": shared_count,
+            "with_kpis": sum(1 for s in system_list if s["kpi_count"] > 0),
+            "orphan_count": orphan_count,
+        },
+        impact_scale=impact_scale,
+        presets_list=[{"id": p.id, "name": p.name, "config": p.filters} for p in presets],
+        csrf_token=generate_csrf,
+    )
+
+
 @bp.route("/kpi-dashboard")
 @login_required
 @organization_required

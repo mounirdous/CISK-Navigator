@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% block title %}Challenges Dashboard{% endblock %}
+{% from "_preset_bar.html" import preset_bar %}
+
+{% block extra_css %}
+<style>
+.cd-header { background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; }
+.cd-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.cd-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.9rem; }
+[data-detail-mode="0"] .cd-d1 { display: none !important; }
+[data-detail-mode="0"] .cd-d2 { display: none !important; }
+[data-detail-mode="1"] .cd-d2 { display: none !important; }
+
+.cd-stats { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.cd-stat { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 110px; }
+.cd-stat-icon { font-size: 1.1rem; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.cd-stat-val { font-size: 1.3rem; font-weight: 800; line-height: 1; }
+.cd-stat-label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.cd-filters { display: none; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.cd-filters.show { display: block; }
+.cd-filter-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.cd-filter-pill { padding: 0.2rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid #dee2e6; background: white; color: #495057; transition: all 0.15s; }
+.cd-filter-pill:hover { background: #e9ecef; }
+.cd-filter-pill.active { background: #1565c0; color: white; border-color: #1565c0; }
+
+.cd-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.82rem; }
+.cd-table thead th { background: #f1f5f9; padding: 0.5rem 0.6rem; font-weight: 600; color: #475569; border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 5; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.cd-table tbody td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.cd-table tbody tr:hover { background: #f8fafc; }
+
+.cd-name { font-weight: 600; color: #1e293b; }
+.cd-space { font-size: 0.7rem; color: #94a3b8; }
+.cd-rag-strip { display: flex; gap: 2px; align-items: center; }
+.cd-rag-dot { width: 8px; height: 8px; border-radius: 50%; }
+.cd-coverage-bar { width: 60px; height: 5px; background: #e2e8f0; border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle; }
+.cd-coverage-fill { height: 100%; border-radius: 3px; }
+.cd-impact { display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.4rem; border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1400px; padding:1.5rem;" id="cdContainer" data-detail-mode="1">
+    <div class="cd-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1>
+                <i class="bi bi-bullseye"></i> Challenges Dashboard
+                <button type="button" class="btn btn-sm btn-outline-light" id="cdDetailBtn" onclick="cycleCdMode()" title="Detail level" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="cdDetailIcon">🌲</span></button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="cdImpactBtn" onclick="cycleCdImpact()" title="Impact: all" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="cdImpactIcon" style="opacity:0.5;">☆</span></button>
+            </h1>
+            <p>Strategic alignment and execution health — {{ stats.total }} challenges</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="document.getElementById('cdFilters').classList.toggle('show')" title="Filters"><i class="bi bi-funnel me-1"></i>&#9660;</button>
+            {{ preset_bar('challenges_dashboard', presets_list) }}
+        </div>
+    </div>
+
+    <div class="cd-stats">
+        <div class="cd-stat"><div class="cd-stat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="bi bi-bullseye"></i></div><div><div class="cd-stat-val">{{ stats.total }}</div><div class="cd-stat-label">Challenges</div></div></div>
+        <div class="cd-stat"><div class="cd-stat-icon" style="background:#d1fae5; color:#22c55e;"><i class="bi bi-check-circle"></i></div><div><div class="cd-stat-val">{{ stats.fully_covered }}</div><div class="cd-stat-label">Full Coverage</div></div></div>
+        <div class="cd-stat cd-d1"><div class="cd-stat-icon" style="background:#fef3c7; color:#f59e0b;"><i class="bi bi-exclamation-circle"></i></div><div><div class="cd-stat-val">{{ stats.partially_covered }}</div><div class="cd-stat-label">Partial</div></div></div>
+        <div class="cd-stat cd-d1"><div class="cd-stat-icon" style="background:#fee2e2; color:#ef4444;"><i class="bi bi-x-circle"></i></div><div><div class="cd-stat-val">{{ stats.empty }}</div><div class="cd-stat-label">Empty</div></div></div>
+        {% if stats.red_count %}<div class="cd-stat"><div class="cd-stat-icon" style="background:#fee2e2; color:#e53935;"><i class="bi bi-circle-fill"></i></div><div><div class="cd-stat-val">{{ stats.red_count }}</div><div class="cd-stat-label">Red RAG</div></div></div>{% endif %}
+    </div>
+
+    <div class="cd-filters" id="cdFilters">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Space</label>
+                <div class="cd-filter-pills">
+                    {% for sp in spaces %}<span class="cd-filter-pill" data-filter="space" data-value="{{ sp.id }}" onclick="toggleCdFilter(this)">{{ sp.name }}</span>{% endfor %}
+                </div>
+            </div>
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">RAG Status</label>
+                <div class="cd-filter-pills">
+                    <span class="cd-filter-pill" data-filter="rag" data-value="red" onclick="toggleCdFilter(this)"><span style="color:#e53935;">&#9679;</span> Red</span>
+                    <span class="cd-filter-pill" data-filter="rag" data-value="amber" onclick="toggleCdFilter(this)"><span style="color:#fb8c00;">&#9679;</span> Amber</span>
+                    <span class="cd-filter-pill" data-filter="rag" data-value="green" onclick="toggleCdFilter(this)"><span style="color:#43a047;">&#9679;</span> Green</span>
+                    <span class="cd-filter-pill" data-filter="rag" data-value="none" onclick="toggleCdFilter(this)">No RAG</span>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:0.75rem;"><button class="btn btn-sm btn-outline-secondary" onclick="clearCdFilters()" style="font-size:0.75rem;"><i class="bi bi-x-circle"></i> Clear</button> <span id="cdFilterCount" style="font-size:0.8rem; color:#64748b; margin-left:0.5rem;"></span></div>
+    </div>
+
+    <div style="background:white; border-radius:10px; border:1px solid #e2e8f0; overflow-x:auto;">
+        <table class="cd-table">
+            <thead><tr>
+                <th style="min-width:200px;">Challenge</th>
+                <th class="cd-d1">Space</th>
+                <th style="width:60px;">Init.</th>
+                <th class="cd-d1" style="width:60px;">Sys.</th>
+                <th class="cd-d1" style="width:60px;">KPIs</th>
+                <th style="width:100px;">Execution</th>
+                <th style="width:100px;">Coverage</th>
+                <th class="cd-d1" style="width:70px;">Impact</th>
+                <th class="cd-d2" style="width:60px;">Decisions</th>
+            </tr></thead>
+            <tbody>
+                {% for c in challenge_list %}
+                <tr data-space="{{ c.space_id or '' }}" data-rag="{{ c.worst_rag or 'none' }}" data-importance="{{ c.true_importance or 0 }}">
+                    <td>
+                        <div class="cd-name"><a href="{{ url_for('workspace.index') }}#challenge-{{ c.id }}" style="color:inherit; text-decoration:none;">{{ c.name }}</a></div>
+                        <div class="cd-space cd-d2">{{ c.space_name or '' }}</div>
+                    </td>
+                    <td class="cd-d1"><span style="font-size:0.8rem; color:#64748b;">{{ c.space_name or '-' }}</span></td>
+                    <td style="text-align:center; font-weight:600;">{{ c.initiative_count }}</td>
+                    <td class="cd-d1" style="text-align:center;">{{ c.system_count }}</td>
+                    <td class="cd-d1" style="text-align:center;">{{ c.kpi_count }}</td>
+                    <td>
+                        {% if c.rag_dots %}
+                        <div class="cd-rag-strip" title="{{ c.rag_counts.green }} green, {{ c.rag_counts.amber }} amber, {{ c.rag_counts.red }} red">
+                            {% for r in c.rag_dots %}<div class="cd-rag-dot" style="background:{% if r == 'green' %}#43a047{% elif r == 'amber' %}#fb8c00{% else %}#e53935{% endif %};"></div>{% endfor %}
+                        </div>
+                        {% else %}<span style="color:#cbd5e1; font-size:0.75rem;">—</span>{% endif %}
+                    </td>
+                    <td>
+                        {% if c.initiative_count > 0 %}
+                        <div style="display:flex; align-items:center; gap:0.3rem;">
+                            <div class="cd-coverage-bar"><div class="cd-coverage-fill" style="width:{{ c.coverage_pct }}%; background:{% if c.coverage_pct == 100 %}#22c55e{% elif c.coverage_pct > 0 %}#f59e0b{% else %}#ef4444{% endif %};"></div></div>
+                            <span style="font-size:0.72rem; font-weight:600; color:{% if c.coverage_pct == 100 %}#22c55e{% elif c.coverage_pct > 0 %}#f59e0b{% else %}#ef4444{% endif %};">{{ c.coverage_pct }}%</span>
+                        </div>
+                        {% else %}<span style="color:#cbd5e1; font-size:0.75rem;">—</span>{% endif %}
+                    </td>
+                    <td class="cd-d1">
+                        {% if c.true_importance and impact_scale and impact_scale[c.true_importance] %}
+                        <span class="cd-impact" style="background:{{ impact_scale[c.true_importance].color }}; color:white;">{{ impact_scale[c.true_importance].icon }}</span>
+                        {% elif c.impact_level and impact_scale and impact_scale[c.impact_level] %}
+                        <span class="cd-impact" style="border:1.5px solid {{ impact_scale[c.impact_level].color }}; color:{{ impact_scale[c.impact_level].color }}; background:transparent;">{{ impact_scale[c.impact_level].icon }}</span>
+                        {% else %}<span style="color:#cbd5e1;">—</span>{% endif %}
+                    </td>
+                    <td class="cd-d2" style="text-align:center;">{% if c.decision_count %}<span style="font-weight:600; color:#8b5cf6;">{{ c.decision_count }}</span>{% else %}<span style="color:#cbd5e1;">0</span>{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if not challenge_list %}<div style="text-align:center; padding:3rem; color:#94a3b8;"><i class="bi bi-bullseye" style="font-size:2.5rem; opacity:0.3; display:block; margin-bottom:0.5rem;"></i><p>No challenges found.</p></div>{% endif %}
+        <div style="padding:0.5rem 1rem; border-top:1px solid #f1f5f9; font-size:0.8rem; color:#78909c; background:#fafafa;"><span id="cdItemCount">{{ challenge_list | length }}</span> challenge(s) shown</div>
+    </div>
+</div>
+
+<script>
+var _cdMode = parseInt(localStorage.getItem('cd_detail_mode') || '1');
+var _cdIcons = [{ html:'🌱', t:'Minimal' },{ html:'🌲', t:'Standard' },{ html:'🎄', t:'Full' }];
+function applyCdMode(m) { _cdMode=m; var c=document.getElementById('cdContainer'); if(c)c.dataset.detailMode=String(m); var i=document.getElementById('cdDetailIcon'); if(i)i.textContent=_cdIcons[m].html; }
+function cycleCdMode() { var n=(_cdMode+1)%3; localStorage.setItem('cd_detail_mode',String(n)); applyCdMode(n); }
+applyCdMode(_cdMode);
+
+var _cdImpactScale = {{ impact_scale | tojson if impact_scale else '{}' }};
+var _cdImpStates=[0,-1,1,2,3], _cdImpIdx=0;
+function cycleCdImpact() { _cdImpIdx=(_cdImpIdx+1)%_cdImpStates.length; applyCdFilters(); var l=_cdImpStates[_cdImpIdx], icon=document.getElementById('cdImpactIcon'); if(l===0){icon.textContent='☆';icon.style.opacity='0.5';icon.style.color='';} else if(l===-1){icon.textContent='○';icon.style.opacity='1';icon.style.color='';} else{icon.textContent='★'.repeat(l);icon.style.opacity='1';var s=_cdImpactScale[l];icon.style.color=s?s.color:'';} }
+
+function toggleCdFilter(el) { el.classList.toggle('active'); applyCdFilters(); }
+function clearCdFilters() { document.querySelectorAll('.cd-filter-pill.active').forEach(function(p){p.classList.remove('active');}); applyCdFilters(); }
+function applyCdFilters() {
+    var aSpace=[], aRag=[];
+    document.querySelectorAll('.cd-filter-pill.active').forEach(function(p){ if(p.dataset.filter==='space')aSpace.push(p.dataset.value); if(p.dataset.filter==='rag')aRag.push(p.dataset.value); });
+    var imp=_cdImpStates[_cdImpIdx], count=0;
+    document.querySelectorAll('#cdContainer tbody tr').forEach(function(r) {
+        var show=true;
+        if(aSpace.length>0) show=aSpace.indexOf(r.dataset.space)>=0;
+        if(show&&aRag.length>0) show=aRag.indexOf(r.dataset.rag)>=0;
+        if(show&&imp!==0){ var mi=parseInt(r.dataset.importance||'0'); show=imp===-1?mi===0:mi>=imp; }
+        r.style.display=show?'':'none'; if(show)count++;
+    });
+    document.getElementById('cdItemCount').textContent=count;
+    var fc=document.getElementById('cdFilterCount'); var t=aSpace.length+aRag.length+(imp!==0?1:0); fc.textContent=t>0?t+' filter(s)':'';
+}
+PresetManager.setCsrf('{{ csrf_token() }}');
+PresetManager.register('challenges_dashboard', {
+    getState: function() { var s=[],r=[]; document.querySelectorAll('.cd-filter-pill.active').forEach(function(p){ if(p.dataset.filter==='space')s.push(p.dataset.value); if(p.dataset.filter==='rag')r.push(p.dataset.value); }); return {space:s,rag:r}; },
+    applyState: function(c) { document.querySelectorAll('.cd-filter-pill.active').forEach(function(p){p.classList.remove('active');}); (c.space||[]).forEach(function(v){var e=document.querySelector('.cd-filter-pill[data-filter="space"][data-value="'+v+'"]');if(e)e.classList.add('active');}); (c.rag||[]).forEach(function(v){var e=document.querySelector('.cd-filter-pill[data-filter="rag"][data-value="'+v+'"]');if(e)e.classList.add('active');}); applyCdFilters(); if((c.space||[]).length||(c.rag||[]).length)document.getElementById('cdFilters').classList.add('show'); },
+    onReset: function() { clearCdFilters(); }
+}, true);
+</script>
+{% endblock %}
