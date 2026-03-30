@@ -338,15 +338,15 @@
         <div>
             <h1 style="font-size:1.6rem; font-weight:700; margin:0; display:flex; align-items:center; gap:0.5rem;">
                 <i class="bi bi-check2-square"></i> Action Register
-                <button type="button" class="btn btn-sm" id="actionDetailBtn"
+                <button type="button" class="btn btn-sm btn-outline-light" id="actionDetailBtn"
                         onclick="cycleActionDetailMode()" title="Detail level"
-                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
-                    <span id="actionDetailIcon">🎄</span>
+                        style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;">
+                    <span id="actionDetailIcon">🌲</span>
                 </button>
                 {% if impact_scale %}
-                <button type="button" class="btn btn-sm" id="actImpactBtn"
+                <button type="button" class="btn btn-sm btn-outline-light" id="actImpactBtn"
                         onclick="cycleActImpactFilter()" title="Impact filter: showing all"
-                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.5rem; line-height:1; font-size:0.85rem; min-width:32px;">
+                        style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;">
                     <span id="actImpactIcon" style="opacity:0.5;">☆</span>
                 </button>
                 {% endif %}
@@ -2051,9 +2051,9 @@ function startInitiativesReview() {
 // ── Action Register Detail Mode (xmas tree) ──
 var _actDetailMode = parseInt(localStorage.getItem('action_detail_mode') || '1');
 var _actDetailIcons = [
-    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Minimal: title, status, priority' },
-    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + due date, owner, filters' },
-    { html: '<span style="font-size:1.05rem;">🎄✨</span>', title: 'Full: all columns, timeline, badges' },
+    { html: '<span style="font-size:1.05rem;">🌱</span>', title: 'Minimal: title, status, priority' },
+    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Standard: + due date, owner, filters' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Full: all columns, timeline, badges' },
 ];
 
 function applyActionDetailMode(mode) {

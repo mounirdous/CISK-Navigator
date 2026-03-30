@@ -947,7 +947,7 @@
         {% if nav_context %}
         <div class="review-nav-bar">
             <button class="review-nav-focus-btn" id="detailModeBtn" onclick="cycleDetailMode()" title="Detail level">
-                <span id="detailModeIcon">🎄</span>
+                <span id="detailModeIcon">🌲</span>
             </button>
 
             <a class="review-nav-prev {% if not nav_context.prev_id %}disabled{% endif %}" id="navPrevLink"
@@ -1148,9 +1148,9 @@
         // ── Detail Mode (xmas tree) ──
         var _detailMode = parseInt(localStorage.getItem('review_detail_mode') || '1');
         var _detailIcons = [
-            { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Minimal: content only' },
-            { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: key context' },
-            { html: '<span style="font-size:1.05rem;">🎄✨</span>', title: 'Full: everything' },
+            { html: '<span style="font-size:1.05rem;">🌱</span>', title: 'Minimal: content only' },
+            { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Standard: key context' },
+            { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Full: everything' },
         ];
 
         function applyDetailMode(mode) {

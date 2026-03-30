@@ -92,14 +92,14 @@
         <div>
             <h1 style="font-size:1.6rem; font-weight:700; margin:0; display:flex; align-items:center; gap:0.5rem;">
                 <i class="bi bi-journal-bookmark-fill"></i> Decision Register
-                <button type="button" class="btn btn-sm" id="drDetailBtn"
+                <button type="button" class="btn btn-sm btn-outline-light" id="drDetailBtn"
                         onclick="cycleDrDetailMode()" title="Detail level"
-                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
-                    <span id="drDetailIcon">🎄</span>
+                        style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;">
+                    <span id="drDetailIcon">🌲</span>
                 </button>
-                <button type="button" class="btn btn-sm" id="drImpactBtn"
+                <button type="button" class="btn btn-sm btn-outline-light" id="drImpactBtn"
                         onclick="cycleDrImpactFilter()" title="Impact filter: showing all"
-                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.5rem; line-height:1; font-size:0.85rem; min-width:32px;">
+                        style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;">
                     <span id="drImpactIcon" style="opacity:0.5;">☆</span>
                 </button>
             </h1>
@@ -258,9 +258,9 @@
 // ── Detail Mode (xmas tree) ──
 var _drDetailMode = parseInt(localStorage.getItem('dr_detail_mode') || '1');
 var _drDetailIcons = [
-    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Minimal: decision + date' },
-    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + who, tags' },
-    { html: '<span style="font-size:1.05rem;">🎄✨</span>', title: 'Full: + GB, mentions, author' },
+    { html: '<span style="font-size:1.05rem;">🌱</span>', title: 'Minimal: decision + date' },
+    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Standard: + who, tags' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Full: + GB, mentions, author' },
 ];
 function applyDrDetailMode(mode) {
     _drDetailMode = mode;

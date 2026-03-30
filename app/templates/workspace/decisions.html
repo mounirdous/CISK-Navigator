@@ -92,10 +92,10 @@
         <div>
             <h1>
                 <i class="bi bi-journal-bookmark-fill"></i> Decisions Dashboard
-                <button type="button" class="btn btn-sm" id="decDetailBtn"
+                <button type="button" class="btn btn-sm btn-outline-light" id="decDetailBtn"
                         onclick="cycleDecDetailMode()" title="Detail level"
-                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
-                    <span id="decDetailIcon">🎄</span>
+                        style="opacity:0.9; min-width:36px;">
+                    <span id="decDetailIcon">🌲</span>
                 </button>
             </h1>
             <p>{{ stats.total }} decision{{ 's' if stats.total != 1 else '' }} captured
@@ -294,9 +294,9 @@ function clearFilters() {
 // ── Xmas Tree ──
 var _decMode = parseInt(localStorage.getItem('dec_detail_mode') || '1');
 var _decIcons = [
-    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Minimal: decision + date only' },
-    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + initiative, search, stats' },
-    { html: '<span style="font-size:1.05rem;">🎄✨</span>', title: 'Full: + filters, export, breadcrumb, mentions' },
+    { html: '<span style="font-size:1.05rem;">🌱</span>', title: 'Minimal: decision + date only' },
+    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Standard: + initiative, search, stats' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Full: + filters, export, breadcrumb, mentions' },
 ];
 function applyDecDetailMode(m) {
     _decMode = m;

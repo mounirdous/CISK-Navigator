@@ -140,9 +140,9 @@
                 <h1>
                     <i class="bi bi-shield-check"></i>
                     {{ gb.name }}
-                    <button type="button" class="btn btn-sm" id="gbdDetailBtn" onclick="cycleGbdMode()" title="Detail level"
-                            style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
-                        <span id="gbdDetailIcon">🎄</span>
+                    <button type="button" class="btn btn-sm btn-outline-light" id="gbdDetailBtn" onclick="cycleGbdMode()" title="Detail level"
+                            style="opacity:0.9; min-width:36px;">
+                        <span id="gbdDetailIcon">🌲</span>
                     </button>
                 </h1>
                 <div class="gbd-hero-sub">{% if gb.abbreviation %}{{ gb.abbreviation }} · {% endif %}Governance Dashboard</div>
@@ -307,9 +307,9 @@
 <script>
 var _gbdMode = parseInt(localStorage.getItem('gbd_detail_mode') || '1');
 var _gbdIcons = [
-    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Minimal: stats + KPIs only' },
-    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Standard: + actions, decisions' },
-    { html: '<span style="font-size:1.05rem;">🎄✨</span>', title: 'Full: + initiatives, full context' },
+    { html: '<span style="font-size:1.05rem;">🌱</span>', title: 'Minimal: stats + KPIs only' },
+    { html: '<span style="font-size:1.05rem;">🌲</span>', title: 'Standard: + actions, decisions' },
+    { html: '<span style="font-size:1.05rem;">🎄</span>', title: 'Full: + initiatives, full context' },
 ];
 function applyGbdMode(m) {
     _gbdMode = m;
