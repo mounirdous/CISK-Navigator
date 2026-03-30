@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.13.0] - 2026-03-30
+
+### Added
+- **Impact filter cycling icon** — ☆→○→★→★★→★★★ button next to xmas tree in workspace header; filters ALL entity levels by true importance (not just initiatives)
+- Parents kept visible when descendants match the filter
+
+### Changed
+- Impact filter removed from filter panel (replaced by header icon)
+- Impact filter now uses `true_importance_level` instead of `impact_level`
+
 ## [5.12.0] - 2026-03-30
 
 ### Added

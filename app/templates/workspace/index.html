@@ -1946,6 +1946,19 @@
                 <span x-show="badgeMode === 1" style="font-size: 1.2rem;">🎄</span>
                 <span x-show="badgeMode === 2" style="font-size: 1.2rem;">🎄✨</span>
             </button>
+            <!-- Impact filter: cycle through not-set / ★ / ★★ / ★★★ -->
+            <button x-show="Object.keys(impactScale).length > 0"
+                    @click="_cycleImpactFilter()"
+                    class="btn btn-sm btn-outline-light"
+                    :class="{'active': selectedImpactLevels.length > 0}"
+                    style="opacity: 0.9; min-width: 36px;"
+                    :title="_impactFilterTitle()">
+                <span x-show="selectedImpactLevels.length === 0" style="font-size: 0.85rem; opacity: 0.5;">☆</span>
+                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 0" style="font-size: 0.85rem;">○</span>
+                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 1" style="font-size: 0.85rem;" :style="impactScale[1] ? 'color:' + impactScale[1].color : ''">★</span>
+                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 2" style="font-size: 0.85rem;" :style="impactScale[2] ? 'color:' + impactScale[2].color : ''">★★</span>
+                <span x-show="selectedImpactLevels.length === 1 && selectedImpactLevels[0] === 3" style="font-size: 0.85rem;" :style="impactScale[3] ? 'color:' + impactScale[3].color : ''">★★★</span>
+            </button>
             <!-- Refresh data (force reload from server) -->
             <button @click="_stale=false; loadData(true)"
                     class="btn btn-sm"
@@ -2119,29 +2132,7 @@
                     </div>
                 </div>
 
-                <!-- Row 3: Impact Level Filter -->
-                <div x-show="Object.keys(impactScale).length > 0" style="margin-bottom: 0;">
-                    <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
-                        <i class="bi bi-lightning-fill"></i> Impact Level
-                    </div>
-                    <div class="filter-pills-group">
-                        <button @click="toggleImpactLevel(0)"
-                                class="filter-pill"
-                                :class="{'active': selectedImpactLevels.includes(0)}">
-                            <span>Not set</span>
-                        </button>
-                        <template x-for="lvl in [1, 2, 3]" :key="lvl">
-                            <template x-if="impactScale[lvl]">
-                                <button @click="toggleImpactLevel(lvl)"
-                                        class="filter-pill"
-                                        :class="{'active': selectedImpactLevels.includes(lvl)}"
-                                        :style="selectedImpactLevels.includes(lvl) ? 'background:' + impactScale[lvl].color + '; color: white; border-color:' + impactScale[lvl].color : ''">
-                                    <span x-text="impactScale[lvl].icon"></span>
-                                </button>
-                            </template>
-                        </template>
-                    </div>
-                </div>
+                <!-- Impact filter moved to header bar cycling icon -->
             </div>
 
             <!-- Display Controls -->
@@ -3598,7 +3589,22 @@ function workspaceV2(orgId, filterPresets) {
         focusedLevel: null,      // null = no focus; 0-4 = deepest visible level
 
         // Computed
+        _matchesImpactFilter(entity) {
+            if (this.selectedImpactLevels.length === 0) return true;
+            var ti = entity.true_importance_level || 0;
+            return this.selectedImpactLevels.includes(ti);
+        },
+
+        _entityOrDescendantsMatchImpact(entity, childKey) {
+            if (this.selectedImpactLevels.length === 0) return true;
+            if (this._matchesImpactFilter(entity)) return true;
+            var children = entity[childKey] || [];
+            return children.some(c => this._matchesImpactFilter(c));
+        },
+
         get filteredSpaces() {
+            var self = this;
+            var hasImpact = this.selectedImpactLevels.length > 0;
             return this.spaces.filter(space => {
                 // Space Type Filter
                 if (this.spaceTypeFilter === 'public' && space.is_private) return false;
@@ -3610,34 +3616,28 @@ function workspaceV2(orgId, filterPresets) {
                 }
 
                 return true;
-            }).map(space => ({
-                ...space,
-                // Show ALL challenges, not just those with initiatives
-                challenges: space.challenges.map(challenge => ({
-                    ...challenge,
-                    // Filter initiatives by actual filters (groups, impact)
-                    initiatives: challenge.initiatives.filter(initiative => this.filterInitiative(initiative)).map(initiative => ({
-                        ...initiative,
-                        // Show ALL systems, not just those with KPIs
-                        systems: initiative.systems.map(system => ({
-                            ...system,
-                            // Filter KPIs by actual filters (governance bodies)
-                            kpis: system.kpis.filter(kpi => this.filterKPI(kpi))
-                        }))
-                    }))
-                }))
-            }));
-            // DO NOT filter out empty entities - users need to see them to populate them!
+            }).map(space => {
+                var challenges = space.challenges.map(challenge => {
+                    var initiatives = challenge.initiatives.filter(initiative => self.filterInitiative(initiative)).map(initiative => {
+                        var systems = initiative.systems.map(system => {
+                            var kpis = system.kpis.filter(kpi => self.filterKPI(kpi) && (!hasImpact || self._matchesImpactFilter(kpi)));
+                            return { ...system, kpis: kpis };
+                        });
+                        // Keep system if it matches or has matching KPIs
+                        if (hasImpact) systems = systems.filter(sys => self._matchesImpactFilter(sys) || sys.kpis.length > 0);
+                        return { ...initiative, systems: systems };
+                    });
+                    // Keep initiative if it matches or has matching descendants
+                    if (hasImpact) initiatives = initiatives.filter(ini => self._matchesImpactFilter(ini) || ini.systems.some(s => self._matchesImpactFilter(s) || s.kpis.length > 0));
+                    return { ...challenge, initiatives: initiatives };
+                });
+                // Keep challenge if it matches or has matching descendants
+                if (hasImpact) challenges = challenges.filter(ch => self._matchesImpactFilter(ch) || ch.initiatives.length > 0);
+                return { ...space, challenges: challenges };
+            });
         },
 
         filterInitiative(initiative) {
-            // Impact Level Filter (new configurable system)
-            if (this.selectedImpactLevels.length > 0) {
-                var il = initiative.impact_level || 0;
-                if (!this.selectedImpactLevels.includes(il)) {
-                    return false;
-                }
-            }
             return true;
         },
 
@@ -4250,6 +4250,25 @@ function workspaceV2(orgId, filterPresets) {
             } else {
                 this.selectedImpactLevels.push(level);
             }
+        },
+
+        _cycleImpactFilter() {
+            // Cycle: none → 0 (not set) → 1 → 2 → 3 → none
+            if (this.selectedImpactLevels.length === 0) {
+                this.selectedImpactLevels = [0];
+            } else if (this.selectedImpactLevels.length === 1 && this.selectedImpactLevels[0] < 3) {
+                this.selectedImpactLevels = [this.selectedImpactLevels[0] + 1];
+            } else {
+                this.selectedImpactLevels = [];
+            }
+        },
+
+        _impactFilterTitle() {
+            if (this.selectedImpactLevels.length === 0) return 'Impact filter: showing all';
+            var lvl = this.selectedImpactLevels[0];
+            if (lvl === 0) return 'Showing: not assessed';
+            var s = this.impactScale[lvl];
+            return 'Showing: ' + (s ? s.icon + ' (' + s.label + ')' : 'Level ' + lvl);
         },
 
         // Count methods for filter badges
