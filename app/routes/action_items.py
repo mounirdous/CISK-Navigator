@@ -11,7 +11,7 @@ from flask_wtf.csrf import generate_csrf
 
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
-from app.models import ActionItem, EntityLink, EntityTypeDefault, StrategicPillar
+from app.models import ActionItem, EntityLink, EntityTypeDefault, Organization, StrategicPillar
 from app.models.user_filter_preset import UserFilterPreset
 from app.services.action_item_service import ActionItemService
 
@@ -235,6 +235,56 @@ def index():
         key=lambda x: x["name"].lower()
     )
 
+    # Compute true importance for mentioned entities
+    from app.models import ImpactLevel, Space
+    from app.services.impact_service import compute_true_importance
+
+    _org_obj = Organization.query.get(org_id)
+    _impact_scale = ImpactLevel.get_org_levels(org_id)
+    _impact_weights = {lvl: _impact_scale[lvl]["weight"] for lvl in _impact_scale} if _impact_scale else {}
+    _impact_method = _org_obj.impact_calc_method or "geometric_mean" if _org_obj else "geometric_mean"
+    _impact_custom_matrix = _org_obj.impact_qfd_matrix if _org_obj else None
+    _impact_custom_reinforce = _org_obj.impact_reinforce_weights if _org_obj else None
+
+    # Build entity → true_importance lookup
+    _entity_importance = {}  # "type_id" → int (1/2/3) or None
+    # Initiatives: chain = [space, challenge, initiative]
+    for ini_id in all_initiative_ids:
+        ci = _init_challenge.get(ini_id)
+        if ci:
+            ch = Challenge.query.get(ci["id"]) if ci.get("id") else None
+            sp = ch.space if ch else None
+            if sp and sp.impact_level and ch and ch.impact_level:
+                ini = Initiative.query.get(ini_id)
+                if ini and ini.impact_level:
+                    chain = [sp.impact_level, ch.impact_level, ini.impact_level]
+                    ti = compute_true_importance(chain, _impact_method, _impact_weights, _impact_custom_matrix, _impact_custom_reinforce)
+                    _entity_importance[f"initiative_{ini_id}"] = ti
+    # Systems: chain = [space, challenge, initiative, system]
+    for sys_id, ini_id in _sys_initiative.items():
+        ini_key = f"initiative_{ini_id}"
+        ini_ti_chain = None
+        ci = _init_challenge.get(ini_id)
+        if ci:
+            ch = Challenge.query.get(ci["id"]) if ci.get("id") else None
+            sp = ch.space if ch else None
+            ini = Initiative.query.get(ini_id)
+            sys_obj = System.query.get(sys_id)
+            if sp and sp.impact_level and ch and ch.impact_level and ini and ini.impact_level and sys_obj and sys_obj.impact_level:
+                chain = [sp.impact_level, ch.impact_level, ini.impact_level, sys_obj.impact_level]
+                ti = compute_true_importance(chain, _impact_method, _impact_weights, _impact_custom_matrix, _impact_custom_reinforce)
+                _entity_importance[f"system_{sys_id}"] = ti
+
+    # Compute max importance per action item
+    def _action_max_importance(item):
+        max_ti = 0
+        for m in item.mentions:
+            key = f"{m.entity_type}_{m.entity_id}"
+            ti = _entity_importance.get(key)
+            if ti and ti > max_ti:
+                max_ti = ti
+        return max_ti  # 0 = no importance (unlinked or not assessed)
+
     # Serialize items — include entity_id in mentions so JS can look up the challenge map
     timeline_items = []
     for item in items:
@@ -256,6 +306,7 @@ def index():
             "view_url": url_for("action_items.view", item_id=item.id),
             "edit_url": url_for("action_items.edit", item_id=item.id),
             "delete_url": url_for("action_items.delete", item_id=item.id),
+            "max_importance": _action_max_importance(item),
         })
 
     return render_template(
@@ -283,6 +334,8 @@ def index():
         review_initiative_ids=review_initiative_ids,
         csrf_token=generate_csrf,
         strategy_count=StrategicPillar.query.filter_by(organization_id=org_id).count(),
+        impact_scale=_impact_scale,
+        item_importance={item.id: _action_max_importance(item) for item in items},
     )
 
 

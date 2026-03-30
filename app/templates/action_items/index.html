@@ -343,6 +343,13 @@
                         style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.4rem; line-height:1;">
                     <span id="actionDetailIcon">🎄</span>
                 </button>
+                {% if impact_scale %}
+                <button type="button" class="btn btn-sm" id="actImpactBtn"
+                        onclick="cycleActImpactFilter()" title="Impact filter: showing all"
+                        style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3); border-radius:8px; padding:0.2rem 0.5rem; line-height:1; font-size:0.85rem; min-width:32px;">
+                    <span id="actImpactIcon" style="opacity:0.5;">☆</span>
+                </button>
+                {% endif %}
             </h1>
             <p style="margin:0.25rem 0 0; opacity:0.85; font-size:0.9rem;">
                 Track actions and memos for your organization
@@ -779,7 +786,8 @@
                     data-due="{{ item.due_date.strftime('%d %b %Y') if item.due_date else '' }}"
                     data-gbs="{{ item.governance_bodies | map(attribute='name') | join(', ') }}"
                     data-mentions="{{ item.mentions | map(attribute='mention_text') | join(', ') }}"
-                    data-delete-url="{{ url_for('action_items.delete', item_id=item.id) }}">
+                    data-delete-url="{{ url_for('action_items.delete', item_id=item.id) }}"
+                    data-max-importance="{{ item_importance.get(item.id, 0) }}">
                     {% if is_admin %}
                     <td>
                         <input type="checkbox" class="item-checkbox" name="item_ids" value="{{ item.id }}" form="bulk-delete-form">
@@ -2065,5 +2073,59 @@ function cycleActionDetailMode() {
 }
 
 applyActionDetailMode(_actDetailMode);
+
+// ── Impact Filter for Action Register ──
+var _actImpactScale = {{ impact_scale | tojson if impact_scale else '{}' }};
+var _actImpactLevel = 0; // 0=no filter, then cycles: -1(unlinked), 1, 2, 3
+var _actImpactStates = [0, -1, 1, 2, 3]; // cycle order: none, unlinked, ★, ★★, ★★★
+var _actImpactIdx = 0;
+
+function cycleActImpactFilter() {
+    _actImpactIdx = (_actImpactIdx + 1) % _actImpactStates.length;
+    _actImpactLevel = _actImpactStates[_actImpactIdx];
+    applyActImpactFilter();
+}
+
+function applyActImpactFilter() {
+    var btn = document.getElementById('actImpactBtn');
+    var icon = document.getElementById('actImpactIcon');
+    if (!btn || !icon) return;
+
+    // Update icon
+    if (_actImpactLevel === 0) {
+        icon.textContent = '☆'; icon.style.opacity = '0.5'; icon.style.color = '';
+        btn.title = 'Impact filter: showing all';
+        btn.style.borderColor = 'rgba(255,255,255,0.3)';
+    } else if (_actImpactLevel === -1) {
+        icon.textContent = '○'; icon.style.opacity = '1'; icon.style.color = '';
+        btn.title = 'Showing: unlinked actions (no entity mentions)';
+        btn.style.borderColor = 'rgba(255,255,255,0.6)';
+    } else {
+        icon.textContent = '★'.repeat(_actImpactLevel);
+        icon.style.opacity = '1';
+        var s = _actImpactScale[_actImpactLevel];
+        icon.style.color = s ? s.color : '';
+        btn.title = 'Showing: importance level ' + _actImpactLevel + (s ? ' (' + s.label + ')' : '');
+        btn.style.borderColor = 'rgba(255,255,255,0.6)';
+    }
+
+    // Filter table rows and update count
+    var visibleCount = 0;
+    document.querySelectorAll('tr[data-max-importance]').forEach(function(row) {
+        var mi = parseInt(row.dataset.maxImportance);
+        var show = false;
+        if (_actImpactLevel === 0) {
+            show = true;
+        } else if (_actImpactLevel === -1) {
+            show = (mi === 0);
+        } else {
+            show = (mi >= _actImpactLevel);
+        }
+        row.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    var countEl = document.getElementById('items-count');
+    if (countEl) countEl.textContent = visibleCount;
+}
 </script>
 {% endblock %}
