@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.14.0] - 2026-03-30
+
+### Added
+- **Toyota Weighted (downstream)** — new impact compounding method with exponential reinforcement on child ratings (★=1, ★★=2, ★★★=4); high ratings amplified disproportionately
+- **Toyota Weighted (full)** — exponential reinforcement on ALL ratings (upstream + downstream) for maximum differentiation
+- Both methods added to: Impact Scale admin, Impact Docs page, Theory page, workspace popup method tooltip
+- Comparison table in impact docs updated with all 5 methods
+
 ## [5.13.0] - 2026-03-30
 
 ### Added

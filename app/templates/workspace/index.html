@@ -5988,7 +5988,7 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
     event.stopPropagation();
     var scale = window._wsImpactScale || {};
     var method = '{{ (organization.impact_calc_method or "geometric_mean") if organization else "geometric_mean" }}';
-    var methodNames = { simple_product: 'Simple Product', geometric_mean: 'Geometric Mean', toyota_qfd: 'Toyota QFD' };
+    var methodNames = { simple_product: 'Simple Product', geometric_mean: 'Geometric Mean', toyota_qfd: 'Toyota QFD', toyota_weighted_ds: 'Toyota Weighted (DS)', toyota_weighted_full: 'Toyota Weighted (Full)' };
 
     var assessedHtml = '<span style="color:#94a3b8;">Not set</span>';
     if (assessedLevel && scale[assessedLevel]) {

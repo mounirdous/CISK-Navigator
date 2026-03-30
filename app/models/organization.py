@@ -37,12 +37,17 @@ class Organization(db.Model):
     # Impact calculation method
     impact_calc_method = db.Column(
         db.String(30), nullable=True, default="geometric_mean",
-        comment="Impact compounding method: simple_product, geometric_mean, toyota_qfd"
+        comment="Impact compounding method: simple_product, geometric_mean, toyota_qfd, toyota_weighted_ds, toyota_weighted_full"
     )
     # Custom QFD matrix (JSON) — overrides default Toyota table when set
     impact_qfd_matrix = db.Column(
         db.JSON, nullable=True,
         comment="Custom QFD lookup: {'3_3': 3, '3_2': 3, '3_1': 2, ...}"
+    )
+    # Custom reinforcement weights (JSON) — overrides default {1:1, 2:2, 3:4} for Toyota Weighted methods
+    impact_reinforce_weights = db.Column(
+        db.JSON, nullable=True,
+        comment="Exponential reinforcement: {'1': 1, '2': 2, '3': 4}"
     )
     # Feature toggles
     strategy_enabled = db.Column(

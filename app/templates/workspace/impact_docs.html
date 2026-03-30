@@ -218,9 +218,67 @@
         </div>
     </div>
 
+    <!-- Method 4: Toyota Weighted (downstream) -->
+    <div class="method-card" id="toyota_weighted_ds">
+        <h2>
+            <i class="bi bi-chevron-double-up" style="color:#7c3aed;"></i> Toyota Weighted (downstream)
+        </h2>
+        <p>
+            Uses <strong>exponential reinforcement</strong> on the child (deepest entity) rating.
+            Higher ratings become disproportionately more important:
+        </p>
+        <table class="qfd-table" style="max-width:250px;">
+            <thead><tr><th>Level</th><th>Reinforced Weight</th></tr></thead>
+            <tbody>
+                <tr><td>★</td><td>1</td></tr>
+                <tr><td>★★</td><td>2</td></tr>
+                <tr><td>★★★</td><td><strong>4</strong></td></tr>
+            </tbody>
+        </table>
+        <p>
+            Parent weights use the configured scale as-is. The product is normalized against the maximum
+            possible score and mapped to ★/★★/★★★.
+        </p>
+        <div class="example">
+            <strong>Example:</strong> Space(★★, w=2) &times; Challenge(★★★, w=3) &times; Initiative(★★★, reinforced=4)<br>
+            Score = 2 &times; 3 &times; 4 = <strong>24</strong>, Max = 3 &times; 3 &times; 4 = 36, Ratio = 67% &rarr; <strong>★★★</strong>
+        </div>
+    </div>
+
+    <!-- Method 5: Toyota Weighted (full) -->
+    <div class="method-card" id="toyota_weighted_full">
+        <h2>
+            <i class="bi bi-chevron-double-up" style="color:#dc2626;"></i> Toyota Weighted (full)
+            <span class="tag" style="background:#fee2e2; color:#991b1b;">Max Amplification</span>
+        </h2>
+        <p>
+            Applies exponential reinforcement to <strong>ALL</strong> levels in the chain — both upstream (parents)
+            and downstream (child). This creates <strong>maximum differentiation</strong> between high and low
+            importance chains.
+        </p>
+        <div class="example">
+            <strong>Example:</strong> Space(★★★, r=4) &times; Challenge(★★, r=2) &times; Initiative(★★★, r=4)<br>
+            Score = 4 &times; 2 &times; 4 = <strong>32</strong>, Max = 4 &times; 4 &times; 4 = 64, Ratio = 50% &rarr; <strong>★★</strong><br>
+            <br>
+            Compare with: Space(★★★, r=4) &times; Challenge(★★★, r=4) &times; Initiative(★★★, r=4)<br>
+            Score = 4 &times; 4 &times; 4 = <strong>64</strong>, Max = 64, Ratio = 100% &rarr; <strong>★★★</strong>
+        </div>
+        <p style="color:#94a3b8; font-size:0.82rem;">
+            <i class="bi bi-info-circle"></i> Inspired by Toyota's weighting model where high-priority items
+            receive exponentially more attention. One weak link in the chain significantly reduces the final score.
+        </p>
+        <div style="margin-top:1rem; padding:0.75rem 1rem; background:#f5f3ff; border-radius:8px; border:1px solid #ddd6fe;">
+            <p style="font-size:0.82rem; color:#5b21b6; margin:0;">
+                <i class="bi bi-pencil-square"></i> <strong>Configurable:</strong> The reinforcement weights (default: ★=1, ★★=2, ★★★=4)
+                can be edited in the Impact Scale admin page. Increase the ratio for sharper differentiation (e.g. 1, 3, 9).
+            </p>
+        </div>
+    </div>
+
     <!-- Comparison -->
     <div class="method-card">
         <h2><i class="bi bi-arrow-left-right" style="color:#8b5cf6;"></i> Comparison</h2>
+        <div style="overflow-x:auto;">
         <table class="qfd-table">
             <thead>
                 <tr>
@@ -228,35 +286,42 @@
                     <th>Simple Product</th>
                     <th>Geometric Mean</th>
                     <th>Toyota QFD</th>
+                    <th>Weighted (DS)</th>
+                    <th>Weighted (Full)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>★★★ &rarr; ★★★ &rarr; ★★★</td>
-                    <td class="r3">★★★</td><td class="r3">★★★</td><td class="r3">★★★</td>
+                    <td class="r3">★★★</td><td class="r3">★★★</td><td class="r3">★★★</td><td class="r3">★★★</td><td class="r3">★★★</td>
                 </tr>
                 <tr>
                     <td>★★★ &rarr; ★★ &rarr; ★</td>
-                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td><td class="r1">★</td><td class="r1">★</td>
                 </tr>
                 <tr>
                     <td>★ &rarr; ★★★ &rarr; ★★★</td>
-                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td><td class="r2">★★</td><td class="r1">★</td>
                 </tr>
                 <tr>
                     <td>★★ &rarr; ★★ &rarr; ★★</td>
-                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td><td class="r1">★</td><td class="r1">★</td>
                 </tr>
                 <tr>
                     <td>★ &rarr; ★ &rarr; ★</td>
-                    <td class="r1">★</td><td class="r1">★</td><td class="r0">—</td>
+                    <td class="r1">★</td><td class="r1">★</td><td class="r0">—</td><td class="r1">★</td><td class="r1">★</td>
+                </tr>
+                <tr>
+                    <td>★★★ &rarr; ★★★ &rarr; ★</td>
+                    <td class="r1">★</td><td class="r2">★★</td><td class="r2">★★</td><td class="r1">★</td><td class="r1">★</td>
                 </tr>
             </tbody>
         </table>
+        </div>
         <p style="color:#64748b; font-size:0.85rem;">
-            Notice how Simple Product tends to push everything to ★ (Level 1) due to normalization,
-            while Geometric Mean and Toyota QFD preserve more nuance. Toyota QFD is the most aggressive
-            at eliminating low-impact chains.
+            Simple Product and Toyota Weighted methods push low chains down aggressively.
+            Geometric Mean and Toyota QFD preserve more nuance.
+            Toyota Weighted (full) provides the strongest differentiation — only consistently high chains get ★★★.
         </p>
     </div>
 </div>

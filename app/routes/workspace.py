@@ -4890,12 +4890,13 @@ def _build_workspace_data(org_id):
         _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
         _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
         _custom_matrix = _org.impact_qfd_matrix if _org else None
+        _custom_reinforce = _org.impact_reinforce_weights if _org else None
 
         def _ti(chain):
             """Compute true importance for a chain of impact levels."""
             if not chain or not all(chain):
                 return None
-            return compute_true_importance(chain, _method, _weights, _custom_matrix)
+            return compute_true_importance(chain, _method, _weights, _custom_matrix, _custom_reinforce)
 
         for space in spaces_data:
             s_il = space.get("impact_level")
