@@ -2405,8 +2405,14 @@
                     {% endif %}
                 </div>
                 <!-- True Importance column (Level 2 only) -->
-                <div class="ws-header-cell ws-impact-col" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px; text-align:center; font-size:0.7rem;">
-                    <i class="bi bi-speedometer2" style="font-size:0.85rem;"></i><br>Impact
+                <div class="ws-header-cell ws-impact-col" x-show="badgeMode >= 2"
+                     :class="{'column-collapsed': impactColCollapsed}"
+                     @click="impactColCollapsed = !impactColCollapsed"
+                     style="min-width:60px; max-width:70px; text-align:center; font-size:0.7rem; cursor:pointer;">
+                    <span class="collapse-column-icon" :title="impactColCollapsed ? 'Expand Impact column' : 'Collapse Impact column'">⇄</span>
+                    <div class="column-content">
+                        <i class="bi bi-speedometer2" style="font-size:0.85rem;"></i><br>Impact
+                    </div>
                 </div>
                 <template x-if="filteredSpaces.length > 0">
                 <template x-for="(vt, index) in getVisibleValueTypes()" :key="vt.id">
@@ -2546,7 +2552,7 @@
                             </div>
                         </div>
                         <!-- Impact column cell (Level 2) -->
-                        <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                        <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
                             <template x-if="space.true_importance_level && impactScale[space.true_importance_level]">
                                 <span class="ws-impact-col-badge" :style="'background:' + impactScale[space.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
                             </template>
@@ -2698,7 +2704,7 @@
                                     </div>
                                 </div>
                                 <!-- Impact column cell (Level 2) -->
-                                <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
                                     <template x-if="challenge.true_importance_level && impactScale[challenge.true_importance_level]">
                                         <span class="ws-impact-col-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[challenge.true_importance_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
                                     </template>
@@ -2821,7 +2827,7 @@
                                             </div>
                                         </div>
                                         <!-- Impact column cell (Level 2) -->
-                                        <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                        <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
                                             <template x-if="initiative.true_importance_level && impactScale[initiative.true_importance_level]">
                                                 <span class="ws-impact-col-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[initiative.true_importance_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
                                             </template>
@@ -2972,7 +2978,7 @@
                                                     </div>
                                                 </div>
                                                 <!-- Impact column cell (Level 2) -->
-                                                <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                                <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
                                                     <template x-if="system.true_importance_level && impactScale[system.true_importance_level]">
                                                         <span class="ws-impact-col-badge" :style="'background:' + impactScale[system.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[system.true_importance_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
                                                     </template>
@@ -3126,7 +3132,7 @@
                                                         </div>
                                                     </div>
                                                     <!-- Impact column cell (Level 2) -->
-                                                    <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" style="min-width:60px; max-width:70px;">
+                                                    <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
                                                         <template x-if="kpi.true_importance_level && impactScale[kpi.true_importance_level]">
                                                             <span class="ws-impact-col-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[kpi.true_importance_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
                                                         </template>
@@ -3540,6 +3546,7 @@ function workspaceV2(orgId, filterPresets) {
         selectedGovernanceBodies: [],
         selectedSpaces: [],
         selectedImpactLevels: [],
+        impactColCollapsed: false,
 
         // Display Controls
         showLevels: {
