@@ -383,6 +383,7 @@ class FullRestoreService:
                     ]:
                         stats[key] += space_stats.get(key, 0)
                     stats["errors"].extend(space_stats.get("errors", []))
+                    stats["warnings"].extend(space_stats.get("warnings", []))
                     # Merge json_id_map from this space into the global map
                     for entity_type, id_map in space_stats.get("json_id_map", {}).items():
                         json_id_map.setdefault(entity_type, {}).update(id_map)
@@ -430,6 +431,14 @@ class FullRestoreService:
 
             db.session.commit()
             stats["success"] = True
+
+            # Invalidate rollup cache so workspace recomputes fresh values
+            try:
+                from app.models.system_setting import SystemSetting
+                SystemSetting.mark_rollup_cache_stale(organization_id)
+                db.session.commit()
+            except Exception:
+                pass  # Non-critical; workspace will recompute on next load
 
         except Exception as e:
             db.session.rollback()
@@ -764,6 +773,7 @@ class FullRestoreService:
             "formulas_restored": 0,
             "linked_kpis_restored": 0,
             "errors": [],
+            "warnings": [],
             # json_id → new DB id map, built as entities are created
             # {entity_type: {json_id: new_db_id}}
             "json_id_map": {},

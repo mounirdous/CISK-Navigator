@@ -1155,6 +1155,16 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.4.1",
+            "date": "March 31, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Restore now shows all errors</strong> — when restoring a backup, all error and warning details are now displayed (previously only the first 5 were shown). Errors are also logged to the server for easier troubleshooting.",
+                "<strong>Fixed restore crash on portal systems</strong> — restoring a workspace that contained portal systems could fail silently. The underlying bug (a missing data structure) has been fixed.",
+                "<strong>Values appear immediately after restore</strong> — the rollup cache is now automatically refreshed after a restore, so KPI values show up in the workspace tree right away without needing to manually recompute.",
+            ],
+        },
+        {
             "version": "7.4",
             "date": "March 31, 2026",
             "tags": ["feature"],

@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.4.1] - 2026-03-31
+
+### Fixed
+- Restore now displays all errors and warnings in the UI (removed 5-item limit) and logs them to the server console
+- Fixed restore crash when workspace contains portal systems (missing `warnings` key in space hierarchy stats)
+- Rollup cache is automatically invalidated after restore so KPI values appear immediately in the workspace tree
+
 ## [7.4.0] - 2026-03-31
 
 ### Added

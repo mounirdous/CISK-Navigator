@@ -9,7 +9,7 @@ import sys
 from datetime import datetime, timedelta
 from functools import wraps
 
-from flask import Blueprint, flash, redirect, render_template, request, send_file, session, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from flask_wtf.csrf import generate_csrf
@@ -1175,18 +1175,27 @@ def restore_backup():
 
                     if stats.get("errors"):
                         flash(f'Restore errors: {len(stats["errors"])}', "danger")
-                        for err in stats["errors"][:5]:
+                        for err in stats["errors"]:
                             flash(f"  • {err}", "danger")
+                        current_app.logger.warning("=== RESTORE ERRORS (%d) ===", len(stats["errors"]))
+                        for i, err in enumerate(stats["errors"], 1):
+                            current_app.logger.warning("  Restore error %d: %s", i, err)
                     if stats.get("warnings"):
                         flash(f'⚠ {len(stats["warnings"])} warnings', "warning")
-                        for warning in stats["warnings"][:5]:
+                        for warning in stats["warnings"]:
                             flash(f"  • {warning}", "warning")
+                        current_app.logger.info("=== RESTORE WARNINGS (%d) ===", len(stats["warnings"]))
+                        for i, warning in enumerate(stats["warnings"], 1):
+                            current_app.logger.info("  Restore warning %d: %s", i, warning)
                 else:
                     flash("Restore failed", "danger")
                     error_msg = result.get("error", "Unknown error")
                     flash(error_msg, "danger")
-                    for err in result.get("errors", [])[:5]:
+                    for err in result.get("errors", []):
                         flash(f"  • {err}", "danger")
+                    current_app.logger.error("=== RESTORE FAILED === %s", error_msg)
+                    for i, err in enumerate(result.get("errors", []), 1):
+                        current_app.logger.error("  Restore error %d: %s", i, err)
 
         else:
             # YAML - structure only (backward compatibility)
@@ -1424,18 +1433,27 @@ def full_backup_governance_mapping():
 
                 if stats.get("errors"):
                     flash(f'Restore errors: {len(stats["errors"])}', "danger")
-                    for err in stats["errors"][:5]:
+                    for err in stats["errors"]:
                         flash(f"  • {err}", "danger")
+                    current_app.logger.warning("=== RESTORE ERRORS (%d) ===", len(stats["errors"]))
+                    for i, err in enumerate(stats["errors"], 1):
+                        current_app.logger.warning("  Restore error %d: %s", i, err)
                 if stats.get("warnings"):
                     flash(f'⚠ {len(stats["warnings"])} warnings', "warning")
-                    for warning in stats["warnings"][:5]:
+                    for warning in stats["warnings"]:
                         flash(f"  • {warning}", "warning")
+                    current_app.logger.info("=== RESTORE WARNINGS (%d) ===", len(stats["warnings"]))
+                    for i, warning in enumerate(stats["warnings"], 1):
+                        current_app.logger.info("  Restore warning %d: %s", i, warning)
             else:
                 flash("Restore failed", "danger")
                 error_msg = result.get("error", "Unknown error")
                 flash(error_msg, "danger")
-                for error in result.get("errors", [])[:5]:
+                for error in result.get("errors", []):
                     flash(f"  • {error}", "danger")
+                current_app.logger.error("=== RESTORE FAILED === %s", error_msg)
+                for i, error in enumerate(result.get("errors", []), 1):
+                    current_app.logger.error("  Restore error %d: %s", i, error)
 
             return redirect(url_for("global_admin.backup_restore"))
 
