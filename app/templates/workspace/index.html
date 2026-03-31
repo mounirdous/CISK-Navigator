@@ -2502,8 +2502,12 @@
                                 <i x-show="!space.logo_url && !space.icon" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
 
                                 <span x-text="space.name" :data-tooltip="space.description || null" :data-tooltip-actions="tooltipActions(space, 'space') || null"></span>
-                                <template x-if="badgeMode >= 2 && space.impact_level && impactScale[space.impact_level]">
-                                    <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[space.impact_level].color + '80; color:' + impactScale[space.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[space.impact_level].icon" x-text="impactScale[space.impact_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
+                                <template x-if="badgeMode >= 2">
+                                    <span class="ws-impact-badge ws-ib-assessed"
+                                          :style="(space.impact_level && impactScale[space.impact_level]) ? 'border-color:' + impactScale[space.impact_level].color + '80; color:' + impactScale[space.impact_level].color + '; cursor:pointer;' : space.impact_no_consensus ? 'border-color:' + noConsensusColor + '80; color:' + noConsensusColor + '; cursor:pointer;' : 'border-color:' + notSetColor + '80; color:' + notSetColor + '; cursor:pointer;'"
+                                          :title="(space.impact_level && impactScale[space.impact_level]) ? 'Assessed: ' + impactScale[space.impact_level].icon : space.impact_no_consensus ? 'No consensus' : 'Not set — click to assess'"
+                                          @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event, space.impact_no_consensus, space.impact_no_consensus_note)"
+                                          x-text="(space.impact_level && impactScale[space.impact_level]) ? impactScale[space.impact_level].icon : space.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                 </template>
 
                                 <!-- Space label badge (removed — always hidden) -->
@@ -2542,12 +2546,11 @@
                         </div>
                         <!-- Impact column cell (Level 2) -->
                         <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
-                            <template x-if="space.true_importance_level && impactScale[space.true_importance_level]">
-                                <span class="ws-impact-col-badge" :style="'background:' + impactScale[space.true_importance_level].color + '; color:white; cursor:pointer;'" :title="'True importance: ' + impactScale[space.true_importance_level].icon" x-text="impactScale[space.true_importance_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
-                            </template>
-                            <template x-if="space.impact_level && !space.true_importance_level && impactScale[space.impact_level]">
-                                <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[space.impact_level].color + '; color:' + impactScale[space.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[space.impact_level].icon" x-text="impactScale[space.impact_level].icon" @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event)"></span>
-                            </template>
+                            <span class="ws-impact-col-badge"
+                                  :class="(space.true_importance_level && impactScale[space.true_importance_level]) ? '' : 'ws-impact-col-assessed'"
+                                  :style="(space.true_importance_level && impactScale[space.true_importance_level]) ? 'background:' + impactScale[space.true_importance_level].color + '; color:white; cursor:pointer;' : (space.impact_level && impactScale[space.impact_level]) ? 'border-color:' + impactScale[space.impact_level].color + '; color:' + impactScale[space.impact_level].color + '; cursor:pointer;' : space.impact_no_consensus ? 'background:' + noConsensusColor + '; color:white; cursor:pointer;' : 'border-color:' + notSetColor + '; color:' + notSetColor + '; cursor:pointer;'"
+                                  @click.stop="_openImpactPopup('space', space.id, space.name, space.impact_level, space.true_importance_level, $event, space.impact_no_consensus, space.impact_no_consensus_note)"
+                                  x-text="(space.true_importance_level && impactScale[space.true_importance_level]) ? impactScale[space.true_importance_level].icon : (space.impact_level && impactScale[space.impact_level]) ? impactScale[space.impact_level].icon : space.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                         </div>
                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                             <div class="ws-cell value-cell text-center"
@@ -2663,8 +2666,12 @@
                                         <i x-show="!challenge.logo_url && !challenge.icon" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
 
                                         <span x-text="challenge.name" :data-tooltip="challenge.description || null" :data-tooltip-actions="tooltipActions(challenge, 'challenge') || null"></span>
-                                        <template x-if="badgeMode >= 2 && challenge.impact_level && impactScale[challenge.impact_level]">
-                                            <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[challenge.impact_level].color + '80; color:' + impactScale[challenge.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[challenge.impact_level].icon" x-text="impactScale[challenge.impact_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
+                                        <template x-if="badgeMode >= 2">
+                                            <span class="ws-impact-badge ws-ib-assessed"
+                                                  :style="(challenge.impact_level && impactScale[challenge.impact_level]) ? 'border-color:' + impactScale[challenge.impact_level].color + '80; color:' + impactScale[challenge.impact_level].color + '; cursor:pointer;' : challenge.impact_no_consensus ? 'border-color:' + noConsensusColor + '80; color:' + noConsensusColor + '; cursor:pointer;' : 'border-color:' + notSetColor + '80; color:' + notSetColor + '; cursor:pointer;'"
+                                                  :title="(challenge.impact_level && impactScale[challenge.impact_level]) ? 'Assessed: ' + impactScale[challenge.impact_level].icon : challenge.impact_no_consensus ? 'No consensus' : 'Not set — click to assess'"
+                                                  @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event, challenge.impact_no_consensus, challenge.impact_no_consensus_note)"
+                                                  x-text="(challenge.impact_level && impactScale[challenge.impact_level]) ? impactScale[challenge.impact_level].icon : challenge.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                         </template>
 
                                         <!-- Action icons (edit mode only) -->
@@ -2694,12 +2701,11 @@
                                 </div>
                                 <!-- Impact column cell (Level 2) -->
                                 <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
-                                    <template x-if="challenge.true_importance_level && impactScale[challenge.true_importance_level]">
-                                        <span class="ws-impact-col-badge" :style="'background:' + impactScale[challenge.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[challenge.true_importance_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
-                                    </template>
-                                    <template x-if="challenge.impact_level && !challenge.true_importance_level && impactScale[challenge.impact_level]">
-                                        <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[challenge.impact_level].color + '; color:' + impactScale[challenge.impact_level].color + '; cursor:pointer;'" x-text="impactScale[challenge.impact_level].icon" @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event)"></span>
-                                    </template>
+                                    <span class="ws-impact-col-badge"
+                                          :class="(challenge.true_importance_level && impactScale[challenge.true_importance_level]) ? '' : 'ws-impact-col-assessed'"
+                                          :style="(challenge.true_importance_level && impactScale[challenge.true_importance_level]) ? 'background:' + impactScale[challenge.true_importance_level].color + '; color:white; cursor:pointer;' : (challenge.impact_level && impactScale[challenge.impact_level]) ? 'border-color:' + impactScale[challenge.impact_level].color + '; color:' + impactScale[challenge.impact_level].color + '; cursor:pointer;' : challenge.impact_no_consensus ? 'background:' + noConsensusColor + '; color:white; cursor:pointer;' : 'border-color:' + notSetColor + '; color:' + notSetColor + '; cursor:pointer;'"
+                                          @click.stop="_openImpactPopup('challenge', challenge.id, challenge.name, challenge.impact_level, challenge.true_importance_level, $event, challenge.impact_no_consensus, challenge.impact_no_consensus_note)"
+                                          x-text="(challenge.true_importance_level && impactScale[challenge.true_importance_level]) ? impactScale[challenge.true_importance_level].icon : (challenge.impact_level && impactScale[challenge.impact_level]) ? impactScale[challenge.impact_level].icon : challenge.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                 </div>
                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                     <div class="ws-cell value-cell text-center"
@@ -2777,8 +2783,12 @@
                                                 <i x-show="!initiative.logo_url && !initiative.icon" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
 
                                                 <span x-text="initiative.name" :data-tooltip="initiative.description || null" :data-tooltip-actions="tooltipActions(initiative, 'initiative') || null"></span>
-                                                <template x-if="badgeMode >= 2 && initiative.impact_level && impactScale[initiative.impact_level]">
-                                                    <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[initiative.impact_level].color + '80; color:' + impactScale[initiative.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[initiative.impact_level].icon" x-text="impactScale[initiative.impact_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
+                                                <template x-if="badgeMode >= 2">
+                                                    <span class="ws-impact-badge ws-ib-assessed"
+                                                          :style="(initiative.impact_level && impactScale[initiative.impact_level]) ? 'border-color:' + impactScale[initiative.impact_level].color + '80; color:' + impactScale[initiative.impact_level].color + '; cursor:pointer;' : initiative.impact_no_consensus ? 'border-color:' + noConsensusColor + '80; color:' + noConsensusColor + '; cursor:pointer;' : 'border-color:' + notSetColor + '80; color:' + notSetColor + '; cursor:pointer;'"
+                                                          :title="(initiative.impact_level && impactScale[initiative.impact_level]) ? 'Assessed: ' + impactScale[initiative.impact_level].icon : initiative.impact_no_consensus ? 'No consensus' : 'Not set — click to assess'"
+                                                          @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event, initiative.impact_no_consensus, initiative.impact_no_consensus_note)"
+                                                          x-text="(initiative.impact_level && impactScale[initiative.impact_level]) ? impactScale[initiative.impact_level].icon : initiative.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                                 </template>
 
                                                 <!-- Initiative form link (always visible) -->
@@ -2817,12 +2827,11 @@
                                         </div>
                                         <!-- Impact column cell (Level 2) -->
                                         <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
-                                            <template x-if="initiative.true_importance_level && impactScale[initiative.true_importance_level]">
-                                                <span class="ws-impact-col-badge" :style="'background:' + impactScale[initiative.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[initiative.true_importance_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
-                                            </template>
-                                            <template x-if="initiative.impact_level && !initiative.true_importance_level && impactScale[initiative.impact_level]">
-                                                <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[initiative.impact_level].color + '; color:' + impactScale[initiative.impact_level].color + '; cursor:pointer;'" x-text="impactScale[initiative.impact_level].icon" @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event)"></span>
-                                            </template>
+                                            <span class="ws-impact-col-badge"
+                                                  :class="(initiative.true_importance_level && impactScale[initiative.true_importance_level]) ? '' : 'ws-impact-col-assessed'"
+                                                  :style="(initiative.true_importance_level && impactScale[initiative.true_importance_level]) ? 'background:' + impactScale[initiative.true_importance_level].color + '; color:white; cursor:pointer;' : (initiative.impact_level && impactScale[initiative.impact_level]) ? 'border-color:' + impactScale[initiative.impact_level].color + '; color:' + impactScale[initiative.impact_level].color + '; cursor:pointer;' : initiative.impact_no_consensus ? 'background:' + noConsensusColor + '; color:white; cursor:pointer;' : 'border-color:' + notSetColor + '; color:' + notSetColor + '; cursor:pointer;'"
+                                                  @click.stop="_openImpactPopup('initiative', initiative.id, initiative.name, initiative.impact_level, initiative.true_importance_level, $event, initiative.impact_no_consensus, initiative.impact_no_consensus_note)"
+                                                  x-text="(initiative.true_importance_level && impactScale[initiative.true_importance_level]) ? impactScale[initiative.true_importance_level].icon : (initiative.impact_level && impactScale[initiative.impact_level]) ? impactScale[initiative.impact_level].icon : initiative.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                         </div>
                                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                             <div class="ws-cell value-cell text-center"
@@ -2937,8 +2946,12 @@
                                                                 <i class="bi bi-arrow-right" style="font-size:0.6rem; opacity:0.6;"></i>
                                                             </a>
                                                         </template>
-                                                        <template x-if="badgeMode >= 2 && system.impact_level && impactScale[system.impact_level]">
-                                                            <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[system.impact_level].color + '80; color:' + impactScale[system.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[system.impact_level].icon" x-text="impactScale[system.impact_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
+                                                        <template x-if="badgeMode >= 2">
+                                                            <span class="ws-impact-badge ws-ib-assessed"
+                                                                  :style="(system.impact_level && impactScale[system.impact_level]) ? 'border-color:' + impactScale[system.impact_level].color + '80; color:' + impactScale[system.impact_level].color + '; cursor:pointer;' : system.impact_no_consensus ? 'border-color:' + noConsensusColor + '80; color:' + noConsensusColor + '; cursor:pointer;' : 'border-color:' + notSetColor + '80; color:' + notSetColor + '; cursor:pointer;'"
+                                                                  :title="(system.impact_level && impactScale[system.impact_level]) ? 'Assessed: ' + impactScale[system.impact_level].icon : system.impact_no_consensus ? 'No consensus' : 'Not set — click to assess'"
+                                                                  @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event, system.impact_no_consensus, system.impact_no_consensus_note)"
+                                                                  x-text="(system.impact_level && impactScale[system.impact_level]) ? impactScale[system.impact_level].icon : system.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                                         </template>
 
                                                         <!-- Action icons (edit mode only) -->
@@ -2968,12 +2981,11 @@
                                                 </div>
                                                 <!-- Impact column cell (Level 2) -->
                                                 <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
-                                                    <template x-if="system.true_importance_level && impactScale[system.true_importance_level]">
-                                                        <span class="ws-impact-col-badge" :style="'background:' + impactScale[system.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[system.true_importance_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
-                                                    </template>
-                                                    <template x-if="system.impact_level && !system.true_importance_level && impactScale[system.impact_level]">
-                                                        <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[system.impact_level].color + '; color:' + impactScale[system.impact_level].color + '; cursor:pointer;'" x-text="impactScale[system.impact_level].icon" @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event)"></span>
-                                                    </template>
+                                                    <span class="ws-impact-col-badge"
+                                                          :class="(system.true_importance_level && impactScale[system.true_importance_level]) ? '' : 'ws-impact-col-assessed'"
+                                                          :style="(system.true_importance_level && impactScale[system.true_importance_level]) ? 'background:' + impactScale[system.true_importance_level].color + '; color:white; cursor:pointer;' : (system.impact_level && impactScale[system.impact_level]) ? 'border-color:' + impactScale[system.impact_level].color + '; color:' + impactScale[system.impact_level].color + '; cursor:pointer;' : system.impact_no_consensus ? 'background:' + noConsensusColor + '; color:white; cursor:pointer;' : 'border-color:' + notSetColor + '; color:' + notSetColor + '; cursor:pointer;'"
+                                                          @click.stop="_openImpactPopup('system', system.id, system.name, system.impact_level, system.true_importance_level, $event, system.impact_no_consensus, system.impact_no_consensus_note)"
+                                                          x-text="(system.true_importance_level && impactScale[system.true_importance_level]) ? impactScale[system.true_importance_level].icon : (system.impact_level && impactScale[system.impact_level]) ? impactScale[system.impact_level].icon : system.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                                 </div>
                                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                     <div class="ws-cell value-cell text-center"
@@ -3082,8 +3094,12 @@
 
                                                             <span x-text="kpi.name" :data-tooltip="kpi.description || null" :data-tooltip-actions="tooltipActions(kpi, 'kpi') || null"></span>
                                                             <!-- KPI assessed impact: level 0 + level 2 -->
-                                                            <template x-if="badgeMode !== 1 && kpi.impact_level && impactScale[kpi.impact_level]">
-                                                                <span class="ws-impact-badge ws-ib-assessed" :style="'border-color:' + impactScale[kpi.impact_level].color + '80; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;'" :title="'Assessed: ' + impactScale[kpi.impact_level].icon" x-text="impactScale[kpi.impact_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
+                                                            <template x-if="badgeMode !== 1">
+                                                                <span class="ws-impact-badge ws-ib-assessed"
+                                                                      :style="(kpi.impact_level && impactScale[kpi.impact_level]) ? 'border-color:' + impactScale[kpi.impact_level].color + '80; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;' : kpi.impact_no_consensus ? 'border-color:' + noConsensusColor + '80; color:' + noConsensusColor + '; cursor:pointer;' : 'border-color:' + notSetColor + '80; color:' + notSetColor + '; cursor:pointer;'"
+                                                                      :title="(kpi.impact_level && impactScale[kpi.impact_level]) ? 'Assessed: ' + impactScale[kpi.impact_level].icon : kpi.impact_no_consensus ? 'No consensus' : 'Not set — click to assess'"
+                                                                      @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event, kpi.impact_no_consensus, kpi.impact_no_consensus_note)"
+                                                                      x-text="(kpi.impact_level && impactScale[kpi.impact_level]) ? impactScale[kpi.impact_level].icon : kpi.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                                             </template>
 
                                                             <!-- Linked KPI indicator -->
@@ -3122,12 +3138,11 @@
                                                     </div>
                                                     <!-- Impact column cell (Level 2) -->
                                                     <div class="ws-cell ws-impact-col text-center" x-show="badgeMode >= 2" :class="{'column-collapsed': impactColCollapsed}" style="min-width:60px; max-width:70px;">
-                                                        <template x-if="kpi.true_importance_level && impactScale[kpi.true_importance_level]">
-                                                            <span class="ws-impact-col-badge" :style="'background:' + impactScale[kpi.true_importance_level].color + '; color:white; cursor:pointer;'" x-text="impactScale[kpi.true_importance_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
-                                                        </template>
-                                                        <template x-if="kpi.impact_level && !kpi.true_importance_level && impactScale[kpi.impact_level]">
-                                                            <span class="ws-impact-col-badge ws-impact-col-assessed" :style="'border-color:' + impactScale[kpi.impact_level].color + '; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;'" x-text="impactScale[kpi.impact_level].icon" @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event)"></span>
-                                                        </template>
+                                                        <span class="ws-impact-col-badge"
+                                                              :class="(kpi.true_importance_level && impactScale[kpi.true_importance_level]) ? '' : 'ws-impact-col-assessed'"
+                                                              :style="(kpi.true_importance_level && impactScale[kpi.true_importance_level]) ? 'background:' + impactScale[kpi.true_importance_level].color + '; color:white; cursor:pointer;' : (kpi.impact_level && impactScale[kpi.impact_level]) ? 'border-color:' + impactScale[kpi.impact_level].color + '; color:' + impactScale[kpi.impact_level].color + '; cursor:pointer;' : kpi.impact_no_consensus ? 'background:' + noConsensusColor + '; color:white; cursor:pointer;' : 'border-color:' + notSetColor + '; color:' + notSetColor + '; cursor:pointer;'"
+                                                              @click.stop="_openImpactPopup('kpi', kpi.id, kpi.name, kpi.impact_level, kpi.true_importance_level, $event, kpi.impact_no_consensus, kpi.impact_no_consensus_note)"
+                                                              x-text="(kpi.true_importance_level && impactScale[kpi.true_importance_level]) ? impactScale[kpi.true_importance_level].icon : (kpi.impact_level && impactScale[kpi.impact_level]) ? impactScale[kpi.impact_level].icon : kpi.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                                     </div>
                                                     <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                         <!-- KPI Cell: Show with consensus styling if config exists, otherwise clean N/A -->
@@ -3871,7 +3886,11 @@ function workspaceV2(orgId, filterPresets) {
             this.groups = data.groups;
             this.impactLevels = data.impactLevels;
             this.impactScale = data.impactScale || {};
+            this.noConsensusColor = data.noConsensusColor || '#f59e0b';
+            this.notSetColor = data.notSetColor || '#94a3b8';
             window._wsImpactScale = this.impactScale;
+            window._wsNoConsensusColor = this.noConsensusColor;
+            window._wsNotSetColor = this.notSetColor;
             this.orgData = {
                 name:            this.orgName,
                 entity_links:    (data.orgEntityLinks   || []).filter(function(l) { return !l.is_private; }),
@@ -3935,7 +3954,7 @@ function workspaceV2(orgId, filterPresets) {
             try {
                 this.loadingStatus = 'Fetching workspace data\u2026';
                 this.loadingPct = 25;
-                var response = await fetch('{{ url_for("workspace.get_data") }}');
+                var response = await fetch('{{ url_for("workspace.get_data") }}' + '?_t=' + Date.now());
                 this.loadingStatus = 'Processing response\u2026';
                 this.loadingPct = 50;
                 var data = await response.json();
@@ -6047,18 +6066,22 @@ function _openPortal(orgId) {
 }
 
 // ── Impact badge click → info window with edit ──
-function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueLevel, event) {
+function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueLevel, event, noConsensus, noConsensusNote) {
     event.stopPropagation();
     var scale = window._wsImpactScale || {};
+    var ncColor = window._wsNoConsensusColor || '#f59e0b';
+    var nsColor = window._wsNotSetColor || '#94a3b8';
     var method = '{{ (organization.impact_calc_method or "geometric_mean") if organization else "geometric_mean" }}';
     var methodNames = { simple_product: 'Simple Product', geometric_mean: 'Geometric Mean', toyota_qfd: 'Toyota QFD', toyota_weighted_ds: 'Toyota Weighted (DS)', toyota_weighted_full: 'Toyota Weighted (Full)' };
 
-    var assessedHtml = '<span style="color:#94a3b8;">Not set</span>';
-    if (assessedLevel && scale[assessedLevel]) {
+    var assessedHtml = '<span style="color:' + nsColor + ';">Not set</span>';
+    if (noConsensus) {
+        assessedHtml = '<span style="color:' + ncColor + '; font-weight:700; font-size:1.1rem;" title="No consensus">&#9888; No consensus</span>';
+    } else if (assessedLevel && scale[assessedLevel]) {
         assessedHtml = '<span style="color:' + scale[assessedLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[assessedLevel].icon + '</span>';
     }
 
-    var trueHtml = '<span style="color:#94a3b8;" title="Chain incomplete or method yields no result">—</span>';
+    var trueHtml = '<span style="color:' + nsColor + ';" title="Chain incomplete or method yields no result">—</span>';
     if (trueLevel && scale[trueLevel]) {
         trueHtml = '<span style="color:' + scale[trueLevel].color + '; font-weight:700; font-size:1.1rem;">' + scale[trueLevel].icon + '</span>';
     } else if (assessedLevel) {
@@ -6068,10 +6091,20 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
     var optionsHtml = '<option value="">Not set</option>';
     [1, 2, 3].forEach(function(lvl) {
         if (scale[lvl]) {
-            var sel = assessedLevel === lvl ? ' selected' : '';
+            var sel = (!noConsensus && assessedLevel === lvl) ? ' selected' : '';
             optionsHtml += '<option value="' + lvl + '"' + sel + '>' + scale[lvl].icon + '</option>';
         }
     });
+    optionsHtml += '<option value="no_consensus"' + (noConsensus ? ' selected' : '') + '>&#9888; No consensus</option>';
+
+    var noteHtml = '';
+    if (noConsensus && noConsensusNote) {
+        noteHtml =
+            '<div style="margin-bottom:0.75rem; padding:0.5rem; background:' + ncColor + '18; border:1px solid ' + ncColor + '4d; border-radius:6px;">' +
+                '<span style="color:' + ncColor + '; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:0.25rem;">Disagreement Note</span>' +
+                '<span style="color:#e2e8f0; font-size:0.8rem; white-space:pre-wrap;">' + noConsensusNote.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '<\/span>' +
+            '<\/div>';
+    }
 
     var win = document.createElement('div');
     win.className = 'ws-info-window';
@@ -6086,6 +6119,7 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
                 '<span style="color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">Assessed</span>' +
                 assessedHtml +
             '<\/div>' +
+            noteHtml +
             '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">' +
                 '<span style="color:#94a3b8; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;">True Importance</span>' +
                 trueHtml +
@@ -6100,6 +6134,11 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
                     optionsHtml +
                 '<\/select>' +
             '<\/div>' +
+            '<div id="_ncNoteGroup" style="display:' + (noConsensus ? 'block' : 'none') + '; margin-top:0.5rem;">' +
+                '<label style="color:' + ncColor + '; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:0.3rem;">Disagreement Note *</label>' +
+                '<textarea id="_ncNoteInput" class="form-control form-control-sm" rows="2" style="background:#2d3748; color:#e2e8f0; border-color:rgba(255,255,255,0.15); font-size:0.8rem;" placeholder="Describe the disagreement...">' + (noConsensusNote || '').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '<\/textarea>' +
+                '<button id="_ncSaveBtn" class="btn btn-sm btn-warning mt-2 w-100" style="font-size:0.8rem;">Save</button>' +
+            '<\/div>' +
         '<\/div>';
 
     var x = Math.min(event.clientX + 10, window.innerWidth - 260);
@@ -6111,21 +6150,64 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
     win.querySelector('.ws-iw-close').addEventListener('click', function(ev) { ev.stopPropagation(); win.remove(); });
     _makeIWDraggable(win);
 
-    // AJAX save on change
+    function _markDirtyAndClose(newImpactLevel, newNoConsensus) {
+        win.remove();
+        // Update Alpine data directly — find entity in the tree and patch it
+        var wsEl = document.querySelector('.workspace-v2');
+        if (wsEl && wsEl._x_dataStack) {
+            var root = wsEl._x_dataStack[0];
+            var found = false;
+            (root.spaces || []).forEach(function(s) {
+                if (!found && entityType === 'space' && s.id === entityId) { s.impact_level = newImpactLevel; s.impact_no_consensus = newNoConsensus; s.impact_no_consensus_note = newNoConsensus ? (win.querySelector && win.querySelector('#_ncNoteInput') ? win.querySelector('#_ncNoteInput').value : '') : null; found = true; }
+                (s.challenges || []).forEach(function(c) {
+                    if (!found && entityType === 'challenge' && c.id === entityId) { c.impact_level = newImpactLevel; c.impact_no_consensus = newNoConsensus; found = true; }
+                    (c.initiatives || []).forEach(function(i) {
+                        if (!found && entityType === 'initiative' && i.id === entityId) { i.impact_level = newImpactLevel; i.impact_no_consensus = newNoConsensus; found = true; }
+                        (i.systems || []).forEach(function(sy) {
+                            if (!found && entityType === 'system' && sy.id === entityId) { sy.impact_level = newImpactLevel; sy.impact_no_consensus = newNoConsensus; found = true; }
+                            (sy.kpis || []).forEach(function(k) {
+                                if (!found && entityType === 'kpi' && k.id === entityId) { k.impact_level = newImpactLevel; k.impact_no_consensus = newNoConsensus; found = true; }
+                            });
+                        });
+                    });
+                });
+            });
+        }
+        // Also mark stale so full refresh picks up true_importance recalc
+        try { localStorage.removeItem('ws_data_{{ org_id }}'); localStorage.removeItem('ws_data_meta_{{ org_id }}'); localStorage.setItem('ws_dirty', '1'); } catch(e) {}
+        if (wsEl && wsEl._x_dataStack) { wsEl._x_dataStack[0]._stale = true; }
+    }
+
+    // Toggle note field visibility on dropdown change
     win.querySelector('#_impactSelect').addEventListener('change', function() {
-        var val = this.value || null;
+        var val = this.value;
+        var noteGroup = win.querySelector('#_ncNoteGroup');
+        if (val === 'no_consensus') {
+            noteGroup.style.display = 'block';
+        } else {
+            noteGroup.style.display = 'none';
+            // AJAX save immediately for non-NC values
+            var _newLevel = val ? parseInt(val) : null;
+            fetch('/workspace/api/impact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
+                body: JSON.stringify({ entity_type: entityType, entity_id: entityId, impact_level: _newLevel, no_consensus: false })
+            }).then(function(r) { return r.json(); }).then(function(data) {
+                if (data.ok) { _markDirtyAndClose(_newLevel, false); }
+            });
+        }
+    });
+
+    // Save button for no_consensus (requires note)
+    win.querySelector('#_ncSaveBtn').addEventListener('click', function() {
+        var note = win.querySelector('#_ncNoteInput').value.trim();
+        if (!note) { win.querySelector('#_ncNoteInput').style.borderColor = '#ef4444'; return; }
         fetch('/workspace/api/impact', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
-            body: JSON.stringify({ entity_type: entityType, entity_id: entityId, impact_level: val })
+            body: JSON.stringify({ entity_type: entityType, entity_id: entityId, no_consensus: true, no_consensus_note: note })
         }).then(function(r) { return r.json(); }).then(function(data) {
-            if (data.ok) {
-                console.log('[PERF_TRACE] Impact saved — marking stale (NO rollup recompute needed)'); // [PERF_TRACE]
-                win.remove();
-                try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}
-                var wsEl = document.querySelector('.workspace-v2');
-                if (wsEl && wsEl._x_dataStack) wsEl._x_dataStack[0]._stale = true;
-            }
+            if (data.ok) { _markDirtyAndClose(null, true); }
         });
     });
 }

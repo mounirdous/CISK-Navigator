@@ -385,6 +385,9 @@ def impact_levels():
                 org.impact_qfd_matrix = _json.loads(matrix_json)
             except (ValueError, TypeError):
                 pass
+        # Save no-consensus and not-set colors
+        org.impact_no_consensus_color = request.form.get("no_consensus_color", "#f59e0b").strip()
+        org.impact_not_set_color = request.form.get("not_set_color", "#94a3b8").strip()
         # Save custom reinforcement weights if provided
         reinforce_json = request.form.get("reinforce_json", "")
         if reinforce_json:
@@ -412,6 +415,8 @@ def impact_levels():
         calc_method=org.impact_calc_method or "geometric_mean",
         qfd_matrix=org.impact_qfd_matrix,
         reinforce_weights=org.impact_reinforce_weights,
+        no_consensus_color=org.impact_no_consensus_color or "#f59e0b",
+        not_set_color=org.impact_not_set_color or "#94a3b8",
     )
 
 
@@ -1369,7 +1374,9 @@ def create_space():
             display_order=form.display_order.data,
             is_private=form.is_private.data,
             created_by=current_user.id,
-            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None,
+            impact_no_consensus=request.form.get("impact_no_consensus") == "true",
+            impact_no_consensus_note=request.form.get("impact_no_consensus_note", "").strip() or None if request.form.get("impact_no_consensus") == "true" else None,
         )
         db.session.add(space)
         db.session.flush()
@@ -1423,7 +1430,15 @@ def edit_space(space_id):
         space.space_label = form.space_label.data
         space.display_order = form.display_order.data
         space.is_private = form.is_private.data
-        space.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
+        _nc = request.form.get("impact_no_consensus") == "true"
+        if _nc:
+            space.impact_level = None
+            space.impact_no_consensus = True
+            space.impact_no_consensus_note = request.form.get("impact_no_consensus_note", "").strip() or None
+        else:
+            space.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None
+            space.impact_no_consensus = False
+            space.impact_no_consensus_note = None
 
         # Audit log
         new_values = {
@@ -1467,6 +1482,8 @@ def edit_space(space_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=space.impact_level,
+        current_no_consensus=space.impact_no_consensus,
+        current_no_consensus_note=space.impact_no_consensus_note,
         **nav,
     )
 
@@ -1623,7 +1640,9 @@ def create_challenge(space_id):
             name=form.name.data,
             description=form.description.data,
             display_order=max_order + 1,
-            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None,
+            impact_no_consensus=request.form.get("impact_no_consensus") == "true",
+            impact_no_consensus_note=request.form.get("impact_no_consensus_note", "").strip() or None if request.form.get("impact_no_consensus") == "true" else None,
         )
         db.session.add(challenge)
         db.session.flush()
@@ -1688,7 +1707,15 @@ def edit_challenge(challenge_id):
         challenge.name = form.name.data
         challenge.description = form.description.data
         challenge.space_id = form.space_id.data
-        challenge.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
+        _nc = request.form.get("impact_no_consensus") == "true"
+        if _nc:
+            challenge.impact_level = None
+            challenge.impact_no_consensus = True
+            challenge.impact_no_consensus_note = request.form.get("impact_no_consensus_note", "").strip() or None
+        else:
+            challenge.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None
+            challenge.impact_no_consensus = False
+            challenge.impact_no_consensus_note = None
 
         # Audit log
         new_values = {
@@ -1734,6 +1761,8 @@ def edit_challenge(challenge_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=challenge.impact_level,
+        current_no_consensus=challenge.impact_no_consensus,
+        current_no_consensus_note=challenge.impact_no_consensus_note,
         parent_context={"space": {"name": challenge.space.name, "impact_level": challenge.space.impact_level, "true_importance_level": challenge.space.impact_level}} if challenge.space else {},
         **nav,
     )
@@ -1797,7 +1826,9 @@ def create_initiative(challenge_id):
             name=form.name.data,
             description=form.description.data,
             group_label=form.group_label.data if form.group_label.data else None,
-            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None,
+            impact_no_consensus=request.form.get("impact_no_consensus") == "true",
+            impact_no_consensus_note=request.form.get("impact_no_consensus_note", "").strip() or None if request.form.get("impact_no_consensus") == "true" else None,
         )
         db.session.add(initiative)
         db.session.flush()  # Get the ID
@@ -1923,7 +1954,15 @@ def edit_initiative(initiative_id):
         initiative.name = form.name.data
         initiative.description = form.description.data
         initiative.group_label = form.group_label.data if form.group_label.data else None
-        initiative.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
+        _nc = request.form.get("impact_no_consensus") == "true"
+        if _nc:
+            initiative.impact_level = None
+            initiative.impact_no_consensus = True
+            initiative.impact_no_consensus_note = request.form.get("impact_no_consensus_note", "").strip() or None
+        else:
+            initiative.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None
+            initiative.impact_no_consensus = False
+            initiative.impact_no_consensus_note = None
 
         # Update challenge links
         new_challenge_ids = form.challenge_ids.data
@@ -2015,6 +2054,8 @@ def edit_initiative(initiative_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=initiative.impact_level,
+        current_no_consensus=initiative.impact_no_consensus,
+        current_no_consensus_note=initiative.impact_no_consensus_note,
         parent_context=_init_parent_ctx,
         **nav,
     )
@@ -2083,7 +2124,9 @@ def create_system(initiative_id):
         _linked_org = request.form.get("linked_organization_id")
         system = System(
             organization_id=org_id, name=form.name.data, description=form.description.data,
-            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None,
+            impact_no_consensus=request.form.get("impact_no_consensus") == "true",
+            impact_no_consensus_note=request.form.get("impact_no_consensus_note", "").strip() or None if request.form.get("impact_no_consensus") == "true" else None,
             linked_organization_id=int(_linked_org) if _linked_org else None,
         )
         db.session.add(system)
@@ -2170,7 +2213,15 @@ def edit_system(system_id):
 
         system.name = form.name.data
         system.description = form.description.data
-        system.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
+        _nc = request.form.get("impact_no_consensus") == "true"
+        if _nc:
+            system.impact_level = None
+            system.impact_no_consensus = True
+            system.impact_no_consensus_note = request.form.get("impact_no_consensus_note", "").strip() or None
+        else:
+            system.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None
+            system.impact_no_consensus = False
+            system.impact_no_consensus_note = None
         _linked_org = request.form.get("linked_organization_id")
         system.linked_organization_id = int(_linked_org) if _linked_org else None
 
@@ -2241,6 +2292,8 @@ def edit_system(system_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=system.impact_level,
+        current_no_consensus=system.impact_no_consensus,
+        current_no_consensus_note=system.impact_no_consensus_note,
         parent_context=_sys_parent_ctx,
         all_orgs=all_orgs,
         **nav,
@@ -2404,7 +2457,9 @@ def create_kpi(link_id):
             name=form.name.data,
             description=form.description.data,
             display_order=form.display_order.data,
-            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") else None,
+            impact_level=int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None,
+            impact_no_consensus=request.form.get("impact_no_consensus") == "true",
+            impact_no_consensus_note=request.form.get("impact_no_consensus_note", "").strip() or None if request.form.get("impact_no_consensus") == "true" else None,
         )
         db.session.add(kpi)
         db.session.flush()  # Get the ID
@@ -2702,7 +2757,15 @@ def edit_kpi(kpi_id):
         kpi.name = form.name.data
         kpi.description = form.description.data
         kpi.display_order = form.display_order.data
-        kpi.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") else None
+        _nc = request.form.get("impact_no_consensus") == "true"
+        if _nc:
+            kpi.impact_level = None
+            kpi.impact_no_consensus = True
+            kpi.impact_no_consensus_note = request.form.get("impact_no_consensus_note", "").strip() or None
+        else:
+            kpi.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None
+            kpi.impact_no_consensus = False
+            kpi.impact_no_consensus_note = None
 
         # Update colors and targets for each value type config
         for config in kpi.value_type_configs:
@@ -2907,6 +2970,8 @@ def edit_kpi(kpi_id):
         entity_links=entity_links,
         csrf_token=generate_csrf,
         current_impact=kpi.impact_level,
+        current_no_consensus=kpi.impact_no_consensus,
+        current_no_consensus_note=kpi.impact_no_consensus_note,
         parent_context=_kpi_parent_ctx,
         **nav,
     )

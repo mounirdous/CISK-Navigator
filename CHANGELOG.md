@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.5.0] - 2026-03-31
+
+### Added
+- "No consensus" option in impact level dropdown for all entity types (space, challenge, initiative, system, KPI)
+- Required disagreement note when "No consensus" is selected, documenting who disagreed and why
+- Warning badge in workspace tree for entities with no consensus on impact
+- Disagreement note visible in impact popup when clicking the badge
+- No consensus breaks the true importance chain (treated as unset), ensuring no misleading rollup values
+- "Not set" clickable badges (—) in workspace tree for entities without impact assessment, enabling inline assessment
+- Configurable colors for "No Consensus" and "Not Set" badges in Impact Scale admin (Special State Colors section)
+- Inline impact change via popup now updates the assessed badge instantly without refresh
+
+### Known Issues
+- After changing impact via the workspace tree popup, the True Importance column requires 2 refreshes to update correctly. The assessed badge updates instantly but the compounded True Importance recalculation may show stale values on the first refresh.
+
 ## [7.4.1] - 2026-03-31
 
 ### Fixed

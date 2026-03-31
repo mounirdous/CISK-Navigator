@@ -1155,6 +1155,17 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.5",
+            "date": "March 31, 2026",
+            "tags": ["feature"],
+            "changes": [
+                '<strong>"No consensus" impact option</strong> — when assessors cannot agree on an entity\'s impact level, select "No consensus" instead of a star rating. A required disagreement note documents who disagreed and why.',
+                "<strong>Warning badge in workspace tree</strong> — entities with no consensus display a &#9888; warning badge inline and in the impact column. Click the badge to read the disagreement note or change the assessment.",
+                "<strong>True importance chain break</strong> — no consensus is treated as unset, so no misleading rollup numbers are produced. The entity and all its descendants show no True Importance until the disagreement is resolved.",
+                '<strong>Configurable badge colors</strong> — the "No Consensus" and "Not Set" badge colors are now customizable in Workspace Administration &rarr; Impact Scale under "Special State Colors".',
+            ],
+        },
+        {
             "version": "7.4.1",
             "date": "March 31, 2026",
             "tags": ["fix"],
@@ -4446,6 +4457,8 @@ def update_impact():
     entity_type = data.get("entity_type")
     entity_id = data.get("entity_id")
     impact_level = data.get("impact_level")  # 1, 2, 3, or None
+    no_consensus = data.get("no_consensus", False)
+    no_consensus_note = data.get("no_consensus_note", "")
 
     org_id = session.get("organization_id")
     if not entity_type or not entity_id:
@@ -4460,13 +4473,27 @@ def update_impact():
     if not entity:
         return jsonify({"error": "Entity not found"}), 404
 
-    entity.impact_level = int(impact_level) if impact_level else None
+    if no_consensus:
+        if not no_consensus_note or not no_consensus_note.strip():
+            return jsonify({"error": "A note is required when there is no consensus"}), 400
+        entity.impact_level = None
+        entity.impact_no_consensus = True
+        entity.impact_no_consensus_note = no_consensus_note.strip()
+    else:
+        entity.impact_level = int(impact_level) if impact_level else None
+        entity.impact_no_consensus = False
+        entity.impact_no_consensus_note = None
+
     db.session.commit()
     try:
         localStorage_key = "ws_dirty"
     except Exception:
         pass
-    return jsonify({"ok": True, "impact_level": entity.impact_level})
+    return jsonify({
+        "ok": True,
+        "impact_level": entity.impact_level,
+        "no_consensus": entity.impact_no_consensus,
+    })
 
 
 @bp.route("/api/filter-presets")
@@ -4969,7 +4996,9 @@ def get_data():
     org_id = session.get("organization_id")
 
     try:
-        return _build_workspace_data(org_id)
+        response = _build_workspace_data(org_id)
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        return response
     except Exception as e:
         import traceback
         current_app.logger.error(f"Workspace get_data error: {traceback.format_exc()}")
@@ -4985,6 +5014,8 @@ def _build_workspace_data(org_id):
     if not _pt.handlers: _pt.addHandler(_perf_log.FileHandler(_perf_logpath)); _pt.setLevel(_perf_log.INFO)  # [PERF_TRACE]
     _perf_start = _perf_time.time()  # [PERF_TRACE]
     _pt.info(f"[PERF_TRACE] _build_workspace_data START org={org_id}")  # [PERF_TRACE]
+    # Expire all cached objects to ensure fresh reads
+    db.session.expire_all()
     # Get spaces with privacy filtering
     spaces_query = Space.query.filter_by(organization_id=org_id)
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
@@ -5552,6 +5583,8 @@ def _build_workspace_data(org_id):
                                 "has_linked_sources": has_linked_sources,
                                 "entity_links": kpi_entity_links,
                                 "impact_level": kpi.impact_level,
+                                "impact_no_consensus": kpi.impact_no_consensus,
+                                "impact_no_consensus_note": kpi.impact_no_consensus_note,
                             }
                         )
 
@@ -5594,6 +5627,8 @@ def _build_workspace_data(org_id):
                             "inherited_links": system_inherited,
                             "kpis": kpis_data,
                             "impact_level": system.impact_level,
+                            "impact_no_consensus": system.impact_no_consensus,
+                            "impact_no_consensus_note": system.impact_no_consensus_note,
                             "portal": _portal,
                         }
                     )
@@ -5632,6 +5667,8 @@ def _build_workspace_data(org_id):
                         "systems": systems_data,
                         "execution_rag": initiative.execution_rag,
                         "impact_level": initiative.impact_level,
+                        "impact_no_consensus": initiative.impact_no_consensus,
+                        "impact_no_consensus_note": initiative.impact_no_consensus_note,
                     }
                 )
 
@@ -5665,6 +5702,8 @@ def _build_workspace_data(org_id):
                     "inherited_links": challenge_inherited,
                     "initiatives": initiatives_data,
                     "impact_level": challenge.impact_level,
+                    "impact_no_consensus": challenge.impact_no_consensus,
+                    "impact_no_consensus_note": challenge.impact_no_consensus_note,
                 }
             )
 
@@ -5701,6 +5740,8 @@ def _build_workspace_data(org_id):
                 "inherited_links": space_inherited,
                 "challenges": challenges_data,
                 "impact_level": space.impact_level,
+                "impact_no_consensus": space.impact_no_consensus,
+                "impact_no_consensus_note": space.impact_no_consensus_note,
             }
         )
 
@@ -5826,6 +5867,8 @@ def _build_workspace_data(org_id):
             "groups": groups_data,
             "impactLevels": impact_levels_data,
             "impactScale": impact_scale,
+            "noConsensusColor": getattr(Organization.query.get(org_id), "impact_no_consensus_color", None) or "#f59e0b",
+            "notSetColor": getattr(Organization.query.get(org_id), "impact_not_set_color", None) or "#94a3b8",
             "orgEntityLinks": org_entity_links,
             "orgInheritedLinks": org_inherited_links,
         }

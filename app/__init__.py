@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.4.1"
+__version__ = "7.5.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -587,7 +587,7 @@ def create_app(config_name=None):
         from flask import request as _req
         if _req.method in ("POST", "PUT", "DELETE") and response.status_code < 400:
             path = _req.path
-            if "/org-admin/" in path or "/workspace/kpi/" in path or "/workspace/decision-register" in path:
+            if "/org-admin/" in path or "/workspace/kpi/" in path or "/workspace/decision-register" in path or "/workspace/api/impact" in path:
                 from flask import session as _sess
                 org_id = _sess.get("organization_id")
                 if org_id:

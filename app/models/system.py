@@ -24,6 +24,13 @@ class System(db.Model):
     logo_data = db.Column(db.LargeBinary, nullable=True, comment="Logo image binary data")
     logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type")
     impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
+    impact_no_consensus = db.Column(
+        db.Boolean, default=False, nullable=False, server_default=db.text("false"),
+        comment="True when assessors could not agree on impact level",
+    )
+    impact_no_consensus_note = db.Column(
+        db.Text, nullable=True, comment="Documents the disagreement when no consensus reached",
+    )
     linked_organization_id = db.Column(
         db.Integer, db.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True,
         comment="If set, this system is a portal to another CISK workspace"

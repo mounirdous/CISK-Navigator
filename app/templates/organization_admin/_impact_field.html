@@ -1,20 +1,43 @@
 {# Reusable impact level dropdown with parent context #}
 {# Requires: impact_levels_config (from context processor), current_impact (optional), parent_context (optional) #}
+{# Optional: current_no_consensus (bool), current_no_consensus_note (string) #}
 
 {% if impact_levels_config %}
 <div class="mb-4">
     <label class="form-label fw-semibold">Impact Level</label>
     {% include 'organization_admin/_impact_context.html' %}
-    <select name="impact_level" class="form-select">
-        <option value="" {% if not current_impact %}selected{% endif %}>Not set</option>
+    <select name="impact_level" class="form-select" id="impactLevelSelect" onchange="toggleNoConsensusNote()">
+        <option value="" {% if not current_impact and not current_no_consensus %}selected{% endif %}>Not set</option>
         {% for lvl in [1, 2, 3] %}
         {% if lvl in impact_levels_config %}
         {% set il = impact_levels_config[lvl] %}
-        <option value="{{ lvl }}" {% if current_impact == lvl %}selected{% endif %}>
+        <option value="{{ lvl }}" {% if current_impact == lvl and not current_no_consensus %}selected{% endif %}>
             {{ il.icon }}
         </option>
         {% endif %}
         {% endfor %}
+        <option value="no_consensus" {% if current_no_consensus %}selected{% endif %}>&#9888; No consensus</option>
     </select>
 </div>
+<div class="mb-4" id="noConsensusNoteGroup" style="{% if not current_no_consensus %}display:none;{% endif %}">
+    <label class="form-label fw-semibold">Disagreement Note <span class="text-danger">*</span></label>
+    <textarea name="impact_no_consensus_note" class="form-control" rows="3"
+              placeholder="Document the disagreement — who disagreed and why...">{{ current_no_consensus_note or '' }}</textarea>
+    <div class="form-text">This note will be visible in the workspace tree when hovering the impact badge.</div>
+</div>
+<input type="hidden" name="impact_no_consensus" id="impactNoConsensusHidden" value="{{ 'true' if current_no_consensus else 'false' }}">
+<script>
+function toggleNoConsensusNote() {
+    var sel = document.getElementById('impactLevelSelect');
+    var noteGroup = document.getElementById('noConsensusNoteGroup');
+    var hiddenField = document.getElementById('impactNoConsensusHidden');
+    if (sel.value === 'no_consensus') {
+        noteGroup.style.display = '';
+        hiddenField.value = 'true';
+    } else {
+        noteGroup.style.display = 'none';
+        hiddenField.value = 'false';
+    }
+}
+</script>
 {% endif %}

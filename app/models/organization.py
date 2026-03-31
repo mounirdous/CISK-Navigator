@@ -55,6 +55,16 @@ class Organization(db.Model):
         db.JSON, nullable=True,
         comment="Exponential reinforcement: {'1': 1, '2': 2, '3': 4}"
     )
+    # No consensus badge color (defaults to amber #f59e0b)
+    impact_no_consensus_color = db.Column(
+        db.String(7), nullable=True, default="#f59e0b",
+        comment="Hex color for no-consensus impact badge"
+    )
+    # Not set badge color (defaults to slate #94a3b8)
+    impact_not_set_color = db.Column(
+        db.String(7), nullable=True, default="#94a3b8",
+        comment="Hex color for not-set impact badge"
+    )
     # Feature toggles
     strategy_enabled = db.Column(
         db.Boolean, nullable=False, default=False,

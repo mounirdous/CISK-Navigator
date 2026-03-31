@@ -324,5 +324,40 @@
             Toyota Weighted (full) provides the strongest differentiation — only consistently high chains get ★★★.
         </p>
     </div>
+
+    <!-- No Consensus -->
+    <div class="method-card" id="no-consensus">
+        <h2>
+            <span style="font-size:1.5rem;">&#9888;</span> No Consensus
+            <span class="tag" style="background:#fef3c7; color:#92400e;">Special State</span>
+        </h2>
+        <p>
+            When assessors cannot agree on an entity's impact level, the <strong>"No consensus"</strong> option
+            can be selected instead of a star rating. This requires a <strong>disagreement note</strong> documenting
+            who disagreed and why.
+        </p>
+        <div class="formula" style="border-color: #f59e0b;">
+            <strong>Effect on True Importance:</strong> No consensus is treated as "not set" — it breaks the
+            compounding chain. The entity and all its descendants will show no True Importance value (—),
+            regardless of which calculation method is configured.
+        </div>
+        <p>
+            This ensures that no misleading rollup numbers are produced when there is genuine disagreement
+            about an entity's importance. The warning badge (&#9888;) appears in the workspace tree to make
+            unresolved disagreements visible. Clicking the badge shows the disagreement note.
+        </p>
+        <h3 style="font-size:1rem; font-weight:700; margin-top:1.5rem; color:#1e293b;">Workspace Tree Display</h3>
+        <ul style="color:#475569; line-height:1.8;">
+            <li><strong>Inline badge:</strong> An outlined &#9888; badge appears next to the entity name</li>
+            <li><strong>Impact column:</strong> A filled &#9888; badge replaces the star rating</li>
+            <li><strong>Popup:</strong> Click either badge to see the disagreement note and change the assessment</li>
+        </ul>
+        <h3 style="font-size:1rem; font-weight:700; margin-top:1.5rem; color:#1e293b;">Configuration</h3>
+        <p>
+            The color of the No Consensus badge can be customized in
+            <strong>Workspace Administration &rarr; Impact Scale</strong> under "Special State Colors".
+            The default color is amber (#f59e0b).
+        </p>
+    </div>
 </div>
 {% endblock %}

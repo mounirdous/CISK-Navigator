@@ -916,6 +916,21 @@ body.dark-mode .doc-search input { background: #0f172a; color: #e2e8f0; border-c
                 </div>
             </div>
 
+            <div class="doc-card">
+                <h3>&#9888; No Consensus</h3>
+                <span class="doc-tag" style="background:#fef3c7; color:#92400e;">Special State</span>
+                <p style="margin-top:0.5rem;">
+                    When assessors cannot agree on an entity's impact level, select <strong>"No consensus"</strong> instead of a star rating.
+                    A <strong>disagreement note</strong> is required to document who disagreed and why.
+                </p>
+                <ul>
+                    <li>No consensus <strong>breaks the compounding chain</strong> — the entity and all descendants show no True Importance (—)</li>
+                    <li>A &#9888; warning badge appears in the workspace tree, making unresolved disagreements visible</li>
+                    <li>Click the badge to read the note or change the assessment</li>
+                    <li>The badge color is configurable in <strong>Workspace Administration &rarr; Impact Scale &rarr; Special State Colors</strong></li>
+                </ul>
+            </div>
+
             <div class="doc-tip info">
                 <span class="doc-tip-icon"><i class="bi bi-info-circle-fill"></i></span>
                 <span>For detailed examples with real numbers, see <a href="{{ url_for('workspace.impact_docs') }}" style="color: inherit; text-decoration: underline;">Impact Calculation Docs</a>.</span>

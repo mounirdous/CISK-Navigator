@@ -26,6 +26,13 @@ class Space(db.Model):
     space_label = db.Column(db.String(100), nullable=True, comment="e.g., Season, Site, Customer, Supplier")
     display_order = db.Column(db.Integer, default=0, nullable=False)
     impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
+    impact_no_consensus = db.Column(
+        db.Boolean, default=False, nullable=False, server_default=db.text("false"),
+        comment="True when assessors could not agree on impact level",
+    )
+    impact_no_consensus_note = db.Column(
+        db.Text, nullable=True, comment="Documents the disagreement when no consensus reached",
+    )
     is_private = db.Column(
         db.Boolean,
         default=False,

@@ -139,6 +139,35 @@
                     </div>
                     {% endfor %}
 
+                    <!-- Special state colors -->
+                    <div class="mt-4 p-3" style="background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+                        <label class="form-label fw-bold mb-3">Special State Colors</label>
+                        <div class="d-flex gap-4 flex-wrap">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="il-preview" style="background: {{ no_consensus_color }}; font-size: 1.1rem;">&#9888;</div>
+                                <div>
+                                    <div class="fw-bold" style="font-size: 0.82rem; color: #1e293b;">No Consensus</div>
+                                    <div style="font-size: 0.72rem; color: #64748b;">Shown when assessors disagree</div>
+                                </div>
+                                <div>
+                                    <label class="form-label fw-semibold mb-1" style="font-size: 0.72rem;">Color</label>
+                                    <input type="color" name="no_consensus_color" value="{{ no_consensus_color }}" class="il-color-input">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="il-preview" style="background: {{ not_set_color }}; font-size: 0.9rem;">&#8212;</div>
+                                <div>
+                                    <div class="fw-bold" style="font-size: 0.82rem; color: #1e293b;">Not Set</div>
+                                    <div style="font-size: 0.72rem; color: #64748b;">No impact level assigned</div>
+                                </div>
+                                <div>
+                                    <label class="form-label fw-semibold mb-1" style="font-size: 0.72rem;">Color</label>
+                                    <input type="color" name="not_set_color" value="{{ not_set_color }}" class="il-color-input">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Calculation Method -->
                     <div class="mt-4 p-3" style="background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
                         <div class="d-flex justify-content-between align-items-center mb-2">

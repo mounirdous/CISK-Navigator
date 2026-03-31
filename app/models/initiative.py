@@ -47,6 +47,13 @@ class Initiative(db.Model):
 
     # Impact Level (v4.6.0 — new configurable system)
     impact_level = db.Column(db.Integer, nullable=True, comment="1/2/3 = org impact levels, NULL = not assessed")
+    impact_no_consensus = db.Column(
+        db.Boolean, default=False, nullable=False, server_default=db.text("false"),
+        comment="True when assessors could not agree on impact level",
+    )
+    impact_no_consensus_note = db.Column(
+        db.Text, nullable=True, comment="Documents the disagreement when no consensus reached",
+    )
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
