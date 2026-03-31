@@ -1149,6 +1149,215 @@ def documentation():
     )
 
 
+@bp.route("/changelog")
+@login_required
+def changelog():
+    """User-friendly changelog — What's New page"""
+    changelog_data = [
+        {
+            "version": "7.4",
+            "date": "March 31, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Documentation hub</strong> — a complete platform guide is now available under Help &gt; Documentation. It covers everything from getting started to advanced calculations, with searchable sidebar navigation and real-world examples for naming your Spaces, Challenges, Initiatives, Systems, and Value Types.",
+                "<strong>Guided setup with the Assistant</strong> — the contextual Assistant now walks you through the full journey: competitive analysis (Porter's Five Forces), creating Spaces, Challenges, Initiatives, defining Value Types, and adding Systems &amp; KPIs. Page-specific hints appear on 30+ pages with links to relevant documentation.",
+                "<strong>Fullscreen mode</strong> — a new fullscreen icon in the top-right navbar lets you focus on your work without browser distractions. Works on all pages.",
+                "<strong>Tree icons in view mode</strong> — entity icons (folder, target, rocket, gear, chart) are now always visible, not just in Edit Mode. The tree looks consistent regardless of mode.",
+                "<strong>Auto-expand on create</strong> — when you create a new entity, the tree automatically expands to reveal it. No more hunting for what you just created.",
+                "<strong>Instant refresh on delete</strong> — removing an entity instantly updates the tree. No manual refresh needed, no confirmation alerts cluttering your flow.",
+                "<strong>What's New page</strong> — you're looking at it! Click the version number next to the CISK logo anytime to see the latest changes.",
+            ],
+        },
+        {
+            "version": "7.2",
+            "date": "March 31, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Help menu</strong> — a new Help dropdown in the navigation bar gives you quick access to Documentation, CISK Theory, and the Assistant toggle.",
+                "<strong>Contextual Assistant</strong> — a floating panel in the bottom-right corner tells you where you are, what you can do on the current page, and highlights the relevant UI elements with a yellow glow when you hover over a hint.",
+            ],
+        },
+        {
+            "version": "7.1",
+            "date": "March 31, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Inline contribution editing</strong> — click the pencil icon next to any contribution to edit it in place. No more scrolling to the top of the page — just change the value and save.",
+                "<strong>Contributor name autocomplete</strong> — when entering a contributor name, the system suggests names already used in your workspace. This prevents typos and keeps contributor data consistent.",
+            ],
+        },
+        {
+            "version": "7.0",
+            "date": "March 31, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>22x faster workspace loading</strong> — all aggregated values are now pre-computed and cached. Workspaces that took 6 seconds to load now appear in under 300 milliseconds.",
+                "<strong>Smart incremental refresh</strong> — when you change a KPI value, only the affected branch (KPI → System → Initiative → Challenge → Space) is recomputed, not the entire workspace.",
+                "<strong>Stale data indicator</strong> — an orange pulsing refresh button appears when your data has changed since you last loaded. Click it to get fresh numbers.",
+            ],
+        },
+        {
+            "version": "6.4",
+            "date": "March 31, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Visibility Dashboard</strong> — a new dashboard shows what's public vs private across your workspace. Coverage rings, a disclosure meter, category breakdowns, and a detailed table of private items help you understand your transparency posture.",
+            ],
+        },
+        {
+            "version": "6.3",
+            "date": "March 30, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Challenges Dashboard</strong> — see how your strategic challenges are progressing. RAG indicators show each initiative's health, coverage bars reveal KPI assignment gaps, and impact badges highlight priority.",
+                "<strong>Systems Dashboard</strong> — track system health and reuse. See which systems are shared across initiatives, which have KPI coverage, and navigate to linked portal workspaces.",
+                "<strong>Impacts Dashboard</strong> — understand your impact assessment coverage with interactive rings, a colour-coded heatmap of all entities, and a gaps table listing what's missing.",
+            ],
+        },
+        {
+            "version": "6.2",
+            "date": "March 30, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>KPI Dashboard</strong> — a performance overview for all your KPIs in one place. Colour-coded target progress bars, impact badges, consensus indicators, and governance body filtering. A stats bar summarises how many KPIs are on track, at risk, or off track.",
+            ],
+        },
+        {
+            "version": "6.1",
+            "date": "March 30, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Value Types page redesigned</strong> — a modern card layout with colour-coded kind indicators, summary statistics, and rich detail pills showing units, decimals, formulas, and aggregation methods. Drag to reorder columns.",
+                "<strong>Editable formula value types</strong> — formula configurations can now be modified after creation. Previously they were locked once saved.",
+            ],
+        },
+        {
+            "version": "6.0",
+            "date": "March 30, 2026",
+            "tags": ["feature", "breaking"],
+            "changes": [
+                "<strong>Unified Decision Register</strong> — all decisions are now in one place, whether created during an initiative review or independently. Tags, entity mentions, RAG status, and governance body links give each decision full context.",
+                "<strong>Cleaner navigation</strong> — the menu has been reorganised with Collaborate (actions, decisions, stakeholders) and Dashboards as distinct sections. The CISK logo is now the main workspace entry point.",
+            ],
+        },
+        {
+            "version": "5.14",
+            "date": "March 30, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Toyota Weighted methods</strong> — two new impact compounding methods that use exponential reinforcement. High-importance items are amplified disproportionately, making it easier to distinguish what truly matters.",
+                "<strong>5 compounding methods</strong> — choose from Simple Product, Geometric Mean, Toyota QFD, Toyota Weighted (downstream), or Toyota Weighted (full) to match how your domain weights importance.",
+            ],
+        },
+        {
+            "version": "5.12",
+            "date": "March 30, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Impact column</strong> — a dedicated column shows the true calculated importance of every entity, from Space down to KPI. Click any badge to view or change the assessment.",
+                "<strong>Impact filter</strong> — cycle through importance levels with a star icon in the toolbar to focus on what matters most.",
+            ],
+        },
+        {
+            "version": "5.10",
+            "date": "March 30, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Portal Systems</strong> — link a system to another CISK workspace. A portal chip appears in the tree showing the linked workspace's logo — click it to navigate across. Perfect for shared services, platforms, or cross-team dependencies.",
+            ],
+        },
+        {
+            "version": "5.8",
+            "date": "March 29, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Governance Body Dashboard</strong> — a dedicated view per governance body showing all their KPIs, actions, decisions, and initiatives in one place. A hero header with floating stats gives an instant overview.",
+                "<strong>Multi-tag decisions</strong> — decisions can now have multiple tags (scope, budget, timeline, resource, technical, governance) for richer categorisation.",
+                "<strong>Cinematic loading screen</strong> — a glassmorphism backdrop with animated entity icons that glow and pulse while your workspace data loads.",
+            ],
+        },
+        {
+            "version": "5.7",
+            "date": "March 29, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>CISK Theory page</strong> — a rich, interactive explainer covering the CISK Ecosystem (hierarchy, dimensions, governance), the Execution Engine (actions, decisions, progress), the Intelligence Layer (impact, consensus, rollups), and Strategic Context (pillars, Porter's, SWOT).",
+            ],
+        },
+        {
+            "version": "5.5",
+            "date": "March 29, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Decision Register</strong> — record and track decisions with tags, entity mentions, and CSV export. Filter by date, tag, RAG status, or initiative. Three detail levels let you scan quickly or dig deep.",
+                "<strong>Configurable decision tags</strong> — workspace admins can customise which tag categories are available.",
+                "<strong>Bridge navigation</strong> — skip-forward and skip-backward buttons on entity edit pages let you jump across parent boundaries without going back to the workspace.",
+                "<strong>Missing impact indicators</strong> — entities without an impact assessment show a dashed (+) icon. Click it to assign one immediately.",
+            ],
+        },
+        {
+            "version": "5.3",
+            "date": "March 28, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Entity mentions in decisions</strong> — link any decision to Spaces, Challenges, Initiatives, Systems, or KPIs. The workspace tree shows a decision count chip on each entity, and decisions show entity badges linking back.",
+                "<strong>Impact assessment popups</strong> — click any entity's impact badge to see and change its assessed level, true importance, and the calculation method in a clean popup.",
+            ],
+        },
+        {
+            "version": "5.0",
+            "date": "March 28, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Action Register</strong> — a full task and memo management system with status tracking, priority levels, due dates, governance body links, and duplicate detection. Timeline view gives a visual overview. Export and import via JSON.",
+                "<strong>Stakeholder Management</strong> — create stakeholder profiles, define relationships, link them to CISK entities, and build power-vs-interest matrices for analysis.",
+                "<strong>Geography</strong> — organise your data by location with a three-level hierarchy (Region → Country → Site). An interactive world map dashboard shows KPI distribution with marker clustering.",
+                "<strong>Snapshots &amp; Charts</strong> — capture point-in-time data for historical analysis. Build custom charts and pivot tables from your snapshot data.",
+                "<strong>Strategic Pillars</strong> — define your guiding themes with icons, accent colours, and bullet-point descriptions. Enable per workspace.",
+                "<strong>Cell Comments</strong> — start threaded discussions on any KPI cell. Use @mentions to tag users and entities, with read/unread notification tracking.",
+                "<strong>Global Search</strong> — find any entity instantly with fuzzy matching. Use modifiers like @requires_action, @incomplete, or @missing_kpis to filter results.",
+                "<strong>Saved filter presets</strong> — save and restore your favourite filter configurations on the workspace, action register, and decision register.",
+            ],
+        },
+        {
+            "version": "4.0",
+            "date": "March 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Granular permissions</strong> — 11 independent permissions per user per workspace control access to entities, contributions, actions, stakeholders, and the map. Admins and global admins bypass all checks.",
+                "<strong>SSO authentication</strong> — single sign-on via OIDC/SAML with global and per-workspace configuration.",
+                "<strong>Audit logging</strong> — all changes are tracked for compliance with user, action, entity, and timestamp details.",
+                "<strong>System announcements</strong> — target messages to specific users or workspaces with acknowledgement tracking.",
+            ],
+        },
+        {
+            "version": "3.0",
+            "date": "March 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Formula value types</strong> — define computed columns like Net = Revenue - Cost, or write custom expressions using abs(), round(), max(), min(). Formulas update automatically when source values change.",
+                "<strong>KPI targets</strong> — set targets with direction (maximise, minimise, exact) and tolerance. Colour-coded progress bars show achievement at a glance.",
+                "<strong>Linked KPIs</strong> — read values from a KPI in another workspace in real time. Perfect for shared metrics across teams.",
+                "<strong>YAML backup &amp; restore</strong> — export your entire workspace structure as YAML. On import, map users and governance bodies from source to target.",
+            ],
+        },
+        {
+            "version": "2.0",
+            "date": "March 2026",
+            "tags": ["feature", "breaking"],
+            "changes": [
+                "<strong>PostgreSQL migration</strong> — moved from SQLite to PostgreSQL for production-grade performance and reliability.",
+                "<strong>Multi-workspace support</strong> — users can belong to multiple workspaces with different permissions in each.",
+                "<strong>Consensus-based data collection</strong> — multiple contributors enter independent values, and the system computes consensus automatically. Only strong consensus values participate in roll-ups.",
+                "<strong>Five-level hierarchy</strong> — Space → Challenge → Initiative → System → KPI with flexible many-to-many linkage between initiatives and challenges.",
+                "<strong>Seven aggregation formulas</strong> — SUM, AVG, MAX, MIN, MEDIAN, COUNT, MODE — configurable per value type at each hierarchy level.",
+                "<strong>Colour-coded workspace grid</strong> — heatmap colouring based on value type scales, with drag-to-reorder columns and collapsible tree nodes.",
+            ],
+        },
+    ]
+    return render_template("workspace/changelog.html", changelog=changelog_data)
+
+
 @bp.route("/strategy")
 @login_required
 @organization_required

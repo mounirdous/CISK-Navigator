@@ -372,9 +372,9 @@
                     </span>
                     {% if session.organization_name %}<span style="font-size: 0.55rem; font-weight: 600; color: rgba(255,255,255,0.5); letter-spacing: 0.03em; margin-top: -2px; white-space: nowrap; max-width: 100px; overflow: hidden; text-overflow: ellipsis;">{{ session.organization_name }}</span>{% endif %}
                 </span>
-                <span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.theory') }}';"
+                <span onclick="event.preventDefault(); event.stopPropagation(); window.location='{{ url_for('workspace.changelog') }}';"
                       style="display:flex; align-items:center; gap:0.2rem; opacity:0.4; margin-top:2px; cursor:pointer;"
-                      title="CISK Theory" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='0.4'">
+                      title="What's new in v{{ app_version }}" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='0.4'">
                     <span style="font-size:0.5rem; color:rgba(255,255,255,0.6);">v{{ app_version }}</span>
                     <i class="bi bi-info-circle" style="font-size:0.55rem; color:rgba(255,255,255,0.6);"></i>
                 </span>
