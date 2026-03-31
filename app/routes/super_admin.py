@@ -49,6 +49,7 @@ def index():
     sso_enabled = sso_config and sso_config.is_enabled
     maintenance_mode = SystemSetting.is_maintenance_mode()
     beta_enabled = SystemSetting.is_beta_enabled()
+    tree_cache_enabled = SystemSetting.is_tree_cache_enabled()
 
     return render_template(
         "super_admin/index.html",
@@ -59,6 +60,7 @@ def index():
         sso_enabled=sso_enabled,
         maintenance_mode=maintenance_mode,
         beta_enabled=beta_enabled,
+        tree_cache_enabled=tree_cache_enabled,
         csrf_token=generate_csrf,
     )
 
@@ -215,6 +217,25 @@ def toggle_beta():
         db.session.rollback()
         flash(f"Error toggling beta: {str(e)}", "danger")
 
+    return redirect(url_for("super_admin.index"))
+
+
+@bp.route("/settings/tree-cache/toggle", methods=["POST"])
+@super_admin_required
+def toggle_tree_cache():
+    """Toggle workspace tree data caching"""
+    current_state = SystemSetting.is_tree_cache_enabled()
+    new_state = not current_state
+    try:
+        SystemSetting.set_value("tree_cache_enabled", str(new_state).lower(), current_user.id)
+        db.session.commit()
+        if new_state:
+            flash("Tree data caching ENABLED — workspace loads from localStorage cache (faster, up to 20 min stale)", "success")
+        else:
+            flash("Tree data caching DISABLED — workspace always loads fresh from server", "warning")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error toggling tree cache: {str(e)}", "danger")
     return redirect(url_for("super_admin.index"))
 
 

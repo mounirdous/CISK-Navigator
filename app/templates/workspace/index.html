@@ -1960,8 +1960,8 @@
             <!-- Refresh data (force reload from server) -->
             <button @click="_stale=false; loadData(true)"
                     class="btn btn-sm"
-                    :class="_stale ? 'btn-warning' : 'btn-outline-light'"
-                    :style="_stale ? 'animation:ws-pulse 1.5s ease infinite;' : 'opacity:0.7;'"
+                    :class="_stale && _treeCacheEnabled ? 'btn-warning' : 'btn-outline-light'"
+                    :style="_stale && _treeCacheEnabled ? 'animation:ws-pulse 1.5s ease infinite;' : 'opacity:0.7;'"
                     :title="_stale ? 'Data changed — click to refresh' : 'Refresh workspace data'">
                 <i class="bi bi-arrow-clockwise" style="font-size: 1rem;"></i>
             </button>
@@ -3523,6 +3523,7 @@ function workspaceV2(orgId, filterPresets) {
         loadingPct: 10,
         loadingDetail: '',
         _stale: false,
+        _treeCacheEnabled: {{ 'true' if tree_cache_enabled else 'false' }},
         filtersExpanded: false,
         editMode: false,
         draggedColumnId: null,  // Store value type ID, not index
@@ -3895,7 +3896,7 @@ function workspaceV2(orgId, filterPresets) {
             } catch(e) {}
 
             // Try cache first (instant — no loading card)
-            if (!forceRefresh) {
+            if (!forceRefresh && this._treeCacheEnabled) {
                 try {
                     var cachedMeta = localStorage.getItem(cacheMetaKey);
                     if (cachedMeta) {
@@ -3944,8 +3945,10 @@ function workspaceV2(orgId, filterPresets) {
 
                 // Save to localStorage cache + clear dirty flag (fresh data from server)
                 try {
-                    localStorage.setItem(cacheKey, JSON.stringify(data));
-                    localStorage.setItem(cacheMetaKey, JSON.stringify({ timestamp: Date.now() }));
+                    if (this._treeCacheEnabled) {
+                        localStorage.setItem(cacheKey, JSON.stringify(data));
+                        localStorage.setItem(cacheMetaKey, JSON.stringify({ timestamp: Date.now() }));
+                    }
                     localStorage.removeItem('ws_dirty');
                     this._stale = false;
                 } catch(e) { /* quota exceeded — ignore */ }

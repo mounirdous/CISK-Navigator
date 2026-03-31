@@ -172,6 +172,30 @@
                 </div>
             </div>
         </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-hdd-stack text-success fs-4 me-2"></i>
+                        <h6 class="mb-0 fw-bold">Tree Cache</h6>
+                        <div class="form-check form-switch ms-auto">
+                            <input class="form-check-input" type="checkbox" id="treeCacheToggle"
+                                   {% if tree_cache_enabled %}checked{% endif %}
+                                   onchange="document.getElementById('treeCacheToggleForm').submit()">
+                        </div>
+                    </div>
+                    <form id="treeCacheToggleForm" method="POST" action="{{ url_for('super_admin.toggle_tree_cache') }}" style="display: none;"></form>
+                    <small class="text-muted">
+                        {% if tree_cache_enabled %}
+                        <span class="text-success"><i class="bi bi-check-circle"></i> ON</span> — workspace cached in localStorage
+                        {% else %}
+                        <span class="text-warning"><i class="bi bi-x-circle"></i> OFF</span> — always loads from server
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- User & Access Management -->

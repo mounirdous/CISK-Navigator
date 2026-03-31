@@ -101,6 +101,13 @@ class SystemSetting(db.Model):
         return SystemSetting.get_bool("beta_enabled", default=False)
 
     @staticmethod
+    def is_tree_cache_enabled():
+        """Check if workspace tree data caching is enabled (localStorage).
+        When OFF, workspace always fetches fresh data from server.
+        When ON (default), data is cached in localStorage for up to 20 minutes."""
+        return SystemSetting.get_bool("tree_cache_enabled", default=True)
+
+    @staticmethod
     def get_session_timeout():
         """Get session timeout in seconds"""
         return SystemSetting.get_int("session_timeout_seconds", default=3600)

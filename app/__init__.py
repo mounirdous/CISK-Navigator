@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "6.4.0"
+__version__ = "6.5.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -230,6 +230,7 @@ def create_app(config_name=None):
         return {
             "maintenance_mode": SystemSetting.is_maintenance_mode(),
             "beta_enabled": SystemSetting.is_beta_enabled(),
+            "tree_cache_enabled": SystemSetting.is_tree_cache_enabled(),
             "app_version": __version__,
             "csrf_token": generate_csrf,
         }
