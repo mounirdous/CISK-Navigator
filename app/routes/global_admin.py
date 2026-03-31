@@ -351,6 +351,7 @@ def create_user():
             is_global_admin=form.is_global_admin.data,
             is_super_admin=form.is_super_admin.data if current_user.is_super_admin else False,
             beta_tester=form.beta_tester.data,
+            assistant_enabled=form.assistant_enabled.data,
             must_change_password=True,
         )
         user.set_password(form.password.data)
@@ -444,6 +445,7 @@ def edit_user(user_id):
 
         user.must_change_password = form.must_change_password.data
         user.beta_tester = form.beta_tester.data
+        user.assistant_enabled = form.assistant_enabled.data
 
         # Only reset password if field has actual content (strip whitespace)
         if form.reset_password.data and form.reset_password.data.strip():
