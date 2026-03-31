@@ -1,0 +1,1320 @@
+{% extends "base.html" %}
+{% block title %}Documentation — CISK Navigator{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── Variables ── */
+:root {
+    --doc-bg: #f8fafc;
+    --doc-card: #ffffff;
+    --doc-border: #e2e8f0;
+    --doc-text: #1e293b;
+    --doc-muted: #64748b;
+    --doc-accent: #3b82f6;
+    --doc-accent-light: #eff6ff;
+    --doc-success: #10b981;
+    --doc-warning: #f59e0b;
+    --doc-danger: #ef4444;
+    --doc-purple: #8b5cf6;
+    --doc-pink: #ec4899;
+    --doc-teal: #14b8a6;
+    --doc-orange: #f97316;
+    --doc-radius: 16px;
+}
+
+/* ── Layout ── */
+.doc-wrapper {
+    display: flex;
+    min-height: calc(100vh - 56px);
+    background: var(--doc-bg);
+}
+.doc-sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--doc-card);
+    border-right: 1px solid var(--doc-border);
+    padding: 2rem 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    z-index: 10;
+}
+.doc-main {
+    flex: 1;
+    padding: 2.5rem 3rem;
+    max-width: 960px;
+}
+
+/* ── Sidebar ── */
+.doc-sidebar-title {
+    font-size: 0.65rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--doc-muted);
+    padding: 0 1.5rem;
+    margin-bottom: 0.75rem;
+}
+.doc-nav a {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 1.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--doc-muted);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.15s ease;
+}
+.doc-nav a:hover {
+    color: var(--doc-text);
+    background: var(--doc-accent-light);
+}
+.doc-nav a.active {
+    color: var(--doc-accent);
+    border-left-color: var(--doc-accent);
+    background: var(--doc-accent-light);
+    font-weight: 600;
+}
+.doc-nav a i {
+    font-size: 1rem;
+    width: 20px;
+    text-align: center;
+}
+.doc-nav-divider {
+    height: 1px;
+    background: var(--doc-border);
+    margin: 0.75rem 1.5rem;
+}
+
+/* ── Hero ── */
+.doc-hero {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+    border-radius: var(--doc-radius);
+    padding: 2.5rem 3rem;
+    color: white;
+    margin-bottom: 2.5rem;
+    position: relative;
+    overflow: hidden;
+}
+.doc-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+.doc-hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #93c5fd;
+    margin-bottom: 1rem;
+}
+.doc-hero h1 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+}
+.doc-hero p {
+    font-size: 1.05rem;
+    color: rgba(200, 220, 255, 0.7);
+    font-weight: 300;
+    max-width: 600px;
+}
+
+/* ── Section ── */
+.doc-section {
+    margin-bottom: 3rem;
+    scroll-margin-top: 80px;
+}
+.doc-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+.doc-section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    color: white;
+    flex-shrink: 0;
+}
+.doc-section-header h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--doc-text);
+    margin: 0;
+}
+
+/* ── Cards ── */
+.doc-card {
+    background: var(--doc-card);
+    border: 1px solid var(--doc-border);
+    border-radius: var(--doc-radius);
+    padding: 1.75rem;
+    margin-bottom: 1rem;
+    transition: box-shadow 0.2s ease;
+}
+.doc-card:hover {
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+}
+.doc-card h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--doc-text);
+    margin-bottom: 0.6rem;
+}
+.doc-card p, .doc-card li {
+    font-size: 0.88rem;
+    color: var(--doc-muted);
+    line-height: 1.7;
+}
+.doc-card ul {
+    padding-left: 1.2rem;
+    margin-bottom: 0;
+}
+.doc-card ul li {
+    margin-bottom: 0.25rem;
+}
+
+/* ── Hierarchy Visual ── */
+.doc-hierarchy {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+.doc-hierarchy-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.doc-hierarchy-arrow {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    margin: 0 0.15rem;
+}
+
+/* ── Formula Box ── */
+.doc-formula {
+    background: #f1f5f9;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #334155;
+    border-left: 4px solid var(--doc-accent);
+    margin: 0.75rem 0;
+    overflow-x: auto;
+}
+
+/* ── Tag ── */
+.doc-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ── Table ── */
+.doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin: 0.75rem 0;
+}
+.doc-table th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: var(--doc-muted);
+    text-align: left;
+    padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid var(--doc-border);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.doc-table td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--doc-border);
+    color: var(--doc-text);
+}
+.doc-table tr:last-child td { border-bottom: none; }
+
+/* ── Traffic lights ── */
+.doc-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+.doc-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* ── Grid ── */
+.doc-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+
+/* ── Tip / Note ── */
+.doc-tip {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+    margin: 0.75rem 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+.doc-tip-icon {
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+.doc-tip.info { background: #eff6ff; color: #1e40af; }
+.doc-tip.warn { background: #fffbeb; color: #92400e; }
+.doc-tip.success { background: #f0fdf4; color: #166534; }
+
+/* ── Search ── */
+.doc-search {
+    position: relative;
+    margin: 0 1.25rem 1.25rem;
+}
+.doc-search input {
+    width: 100%;
+    padding: 0.55rem 0.75rem 0.55rem 2.2rem;
+    border: 1px solid var(--doc-border);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    background: var(--doc-bg);
+    color: var(--doc-text);
+    outline: none;
+    transition: border-color 0.15s;
+}
+.doc-search input:focus { border-color: var(--doc-accent); }
+.doc-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--doc-muted);
+    font-size: 0.85rem;
+}
+
+/* ── Back to top ── */
+.doc-back-top {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--doc-accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    text-decoration: none;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 100;
+}
+.doc-back-top.visible { opacity: 1; }
+
+/* ── Mobile ── */
+@media (max-width: 991.98px) {
+    .doc-sidebar { display: none; }
+    .doc-main { padding: 1.5rem 1rem; }
+    .doc-hero { padding: 1.75rem 1.5rem; }
+    .doc-hero h1 { font-size: 1.6rem; }
+}
+
+/* ── Dark mode ── */
+body.dark-mode .doc-wrapper { --doc-bg: #0f172a; --doc-card: #1e293b; --doc-border: #334155; --doc-text: #e2e8f0; --doc-muted: #94a3b8; --doc-accent-light: rgba(59,130,246,0.1); }
+body.dark-mode .doc-formula { background: #0f172a; color: #cbd5e1; }
+body.dark-mode .doc-table th { background: #0f172a; }
+body.dark-mode .doc-tip.info { background: rgba(59,130,246,0.1); color: #93c5fd; }
+body.dark-mode .doc-tip.warn { background: rgba(245,158,11,0.1); color: #fcd34d; }
+body.dark-mode .doc-tip.success { background: rgba(16,185,129,0.1); color: #6ee7b7; }
+body.dark-mode .doc-search input { background: #0f172a; color: #e2e8f0; border-color: #334155; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="doc-wrapper" id="doc-top">
+
+    <!-- ── Sidebar ── -->
+    <nav class="doc-sidebar">
+        <div class="doc-sidebar-title">Documentation</div>
+        <div class="doc-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="docSearch" placeholder="Search docs..." autocomplete="off">
+        </div>
+        <div class="doc-nav" id="docNav">
+            <a href="#getting-started"><i class="bi bi-rocket-takeoff"></i> Getting Started</a>
+            <a href="#hierarchy"><i class="bi bi-diagram-3"></i> CISK Hierarchy</a>
+            <a href="#workspaces"><i class="bi bi-grid-3x3-gap"></i> Workspaces</a>
+            <div class="doc-nav-divider"></div>
+            <a href="#contributions"><i class="bi bi-pencil-square"></i> Contributions</a>
+            <a href="#consensus"><i class="bi bi-people"></i> Consensus</a>
+            <a href="#value-types"><i class="bi bi-sliders"></i> Value Types</a>
+            <div class="doc-nav-divider"></div>
+            <a href="#aggregation"><i class="bi bi-arrow-up-circle"></i> Aggregation</a>
+            <a href="#formulas"><i class="bi bi-calculator"></i> Formulas</a>
+            <a href="#impact"><i class="bi bi-stars"></i> Impact Methods</a>
+            <a href="#targets"><i class="bi bi-bullseye"></i> Targets &amp; Status</a>
+            <div class="doc-nav-divider"></div>
+            <a href="#dashboards"><i class="bi bi-bar-chart-line"></i> Dashboards</a>
+            <a href="#decisions"><i class="bi bi-journal-check"></i> Decisions</a>
+            <a href="#actions"><i class="bi bi-check2-square"></i> Action Items</a>
+            <a href="#stakeholders"><i class="bi bi-person-lines-fill"></i> Stakeholders</a>
+            <a href="#geography"><i class="bi bi-globe-americas"></i> Geography</a>
+            <div class="doc-nav-divider"></div>
+            <a href="#permissions"><i class="bi bi-shield-lock"></i> Permissions</a>
+            <a href="#governance"><i class="bi bi-bank"></i> Governance</a>
+            <a href="#snapshots"><i class="bi bi-camera"></i> Snapshots</a>
+            <a href="#tips"><i class="bi bi-lightbulb"></i> Tips &amp; Shortcuts</a>
+            {% if is_admin %}
+            <div class="doc-nav-divider"></div>
+            <div class="doc-sidebar-title" style="margin-top:0.5rem;">Administration</div>
+            <a href="#admin-entities"><i class="bi bi-collection"></i> Entity Management</a>
+            <a href="#admin-valuetypes"><i class="bi bi-sliders2"></i> Value Type Config</a>
+            <a href="#admin-rollups"><i class="bi bi-arrow-repeat"></i> Rollup &amp; Cache</a>
+            <a href="#admin-backup"><i class="bi bi-cloud-download"></i> Backup &amp; Restore</a>
+            <a href="#admin-branding"><i class="bi bi-palette"></i> Branding</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- ── Main Content ── -->
+    <main class="doc-main">
+
+        <!-- Hero -->
+        <div class="doc-hero">
+            <div class="doc-hero-badge"><i class="bi bi-book"></i> CISK Navigator v{{ version }}</div>
+            <h1>Documentation</h1>
+            <p>Everything you need to know about the platform — from first login to advanced calculations.</p>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- GETTING STARTED                                -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="getting-started">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                    <i class="bi bi-rocket-takeoff"></i>
+                </div>
+                <h2>Getting Started</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>1. Log in &amp; choose a Workspace</h3>
+                <p>After logging in you land on the Workspace selector. Pick the workspace you want to explore, or ask your administrator to invite you to one.</p>
+            </div>
+            <div class="doc-card">
+                <h3>2. Explore the Workspace tree</h3>
+                <p>The main view is the <strong>Workspace Grid</strong> — a collapsible tree that shows the full CISK hierarchy. Use the three detail levels to control how much information is displayed:</p>
+                <ul>
+                    <li><strong>Minimal</strong> — entity names only, cleanest view</li>
+                    <li><strong>Standard</strong> — names plus KPI values and consensus indicators</li>
+                    <li><strong>Full Detail</strong> — everything including impact levels, targets, and governance badges</li>
+                </ul>
+            </div>
+            <div class="doc-card">
+                <h3>3. Contribute values</h3>
+                <p>Click any KPI cell to open the contribution panel. Enter your value (numeric, risk level, or list choice), add an optional comment, and submit. Your entry joins the consensus calculation automatically.</p>
+            </div>
+            <div class="doc-card">
+                <h3>4. Use Dashboards for insight</h3>
+                <p>Navigate to <strong>Dashboards</strong> in the top menu to access KPI performance, challenge execution, system health, impact coverage, and more.</p>
+            </div>
+
+            <div class="doc-tip info">
+                <span class="doc-tip-icon"><i class="bi bi-info-circle-fill"></i></span>
+                <span><strong>Tip:</strong> Use the global search bar (top of page) to quickly find any entity. Type <code>@requires_action</code> or <code>@incomplete</code> to filter by status.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- CISK HIERARCHY                                 -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="hierarchy">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                    <i class="bi bi-diagram-3"></i>
+                </div>
+                <h2>The CISK Hierarchy</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>CISK organises data collection into a <strong>five-level hierarchy</strong>. Each level adds context and allows values to roll up from leaf to root.</p>
+                <div class="doc-hierarchy">
+                    <span class="doc-hierarchy-node" style="background:#ede9fe; color:#6d28d9;">Space</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-chevron-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#fef3c7; color:#92400e;">Challenge</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-chevron-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#dbeafe; color:#1e40af;">Initiative</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-chevron-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#d1fae5; color:#065f46;">System</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-chevron-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#fee2e2; color:#991b1b;">KPI</span>
+                </div>
+                <table class="doc-table">
+                    <thead><tr><th>Level</th><th>Purpose</th><th>Example</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Space</strong></td><td>Top-level grouping (season, site, customer, supplier)</td><td>FY 2026, Europe Operations</td></tr>
+                        <tr><td><strong>Challenge</strong></td><td>Strategic objective within a space</td><td>Reduce carbon footprint</td></tr>
+                        <tr><td><strong>Initiative</strong></td><td>Concrete work item addressing one or more challenges</td><td>EV Fleet Migration</td></tr>
+                        <tr><td><strong>System</strong></td><td>Reusable component, process, or technology</td><td>Fleet Management Platform</td></tr>
+                        <tr><td><strong>KPI</strong></td><td>Measurable indicator attached to a system-initiative link</td><td>CO2 per km, Cost savings</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-tip info">
+                <span class="doc-tip-icon"><i class="bi bi-info-circle-fill"></i></span>
+                <span><strong>Flexible linkage:</strong> Initiatives can be linked to multiple challenges, and systems can be reused across multiple initiatives. This avoids duplication and reflects real-world relationships.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- WORKSPACES                                     -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="workspaces">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </div>
+                <h2>Workspaces</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>What is a Workspace?</h3>
+                <p>A <strong>Workspace</strong> is a self-contained environment for a specific organisation or project. Each workspace has its own hierarchy of spaces, challenges, initiatives, systems, and KPIs. Users can belong to multiple workspaces with different permissions in each.</p>
+            </div>
+            <div class="doc-card">
+                <h3>Switching Workspaces</h3>
+                <p>Click the <strong>Workspaces</strong> dropdown in the navigation bar and select your target workspace. Your tree state, filters, and presets are saved per workspace.</p>
+            </div>
+            <div class="doc-card">
+                <h3>Portal Systems</h3>
+                <p>A system can be linked to another workspace, creating a <strong>Portal</strong>. Portal systems appear with a gradient pill in the tree showing the linked workspace's logo — click it to navigate across.</p>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- CONTRIBUTIONS                                  -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="contributions">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <h2>Contributions</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>How data enters the system</h3>
+                <p>Values in CISK are entered through <strong>contributions</strong>. Each contributor provides their independent assessment for a KPI cell. The platform then calculates consensus from all contributions.</p>
+                <ul>
+                    <li><strong>Numeric values</strong> — costs, counts, percentages (e.g., 150,000)</li>
+                    <li><strong>Qualitative levels</strong> — risk, impact, sentiment on a 1-3 scale</li>
+                    <li><strong>List choices</strong> — select from a predefined set of options</li>
+                </ul>
+            </div>
+            <div class="doc-tip success">
+                <span class="doc-tip-icon"><i class="bi bi-check-circle-fill"></i></span>
+                <span>Contributors are identified by name and don't need user accounts. This makes it easy to collect expert opinions from outside the platform.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- CONSENSUS                                      -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="consensus">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                    <i class="bi bi-people"></i>
+                </div>
+                <h2>Consensus Calculation</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>How consensus is determined</h3>
+                <p>When multiple contributors provide values for the same KPI cell, CISK computes a <strong>consensus status</strong> to determine the cell's value and whether it can participate in roll-ups.</p>
+                <table class="doc-table">
+                    <thead><tr><th>Status</th><th>Condition</th><th>Roll-up Eligible</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="doc-status"><span class="doc-dot" style="background:#94a3b8;"></span> No Data</span></td>
+                            <td>No contributions yet</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><span class="doc-status"><span class="doc-dot" style="background:#10b981;"></span> Strong Consensus</span></td>
+                            <td>Single contribution, or all contributors agree</td>
+                            <td><strong>Yes</strong></td>
+                        </tr>
+                        <tr>
+                            <td><span class="doc-status"><span class="doc-dot" style="background:#f59e0b;"></span> Weak Consensus</span></td>
+                            <td>Majority (&gt; 50%) but not unanimous</td>
+                            <td>No</td>
+                        </tr>
+                        <tr>
+                            <td><span class="doc-status"><span class="doc-dot" style="background:#ef4444;"></span> No Consensus</span></td>
+                            <td>No clear majority among contributors</td>
+                            <td>No</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-tip warn">
+                <span class="doc-tip-icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                <span><strong>Important:</strong> Only values in <strong>Strong Consensus</strong> participate in upward roll-ups. This ensures aggregated numbers are based on agreed-upon data.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- VALUE TYPES                                    -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="value-types">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <i class="bi bi-sliders"></i>
+                </div>
+                <h2>Value Types</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>Measurement dimensions</h3>
+                <p>Value Types define <strong>what</strong> you measure. Each KPI can track multiple value types simultaneously (e.g., cost and risk for the same KPI).</p>
+                <table class="doc-table">
+                    <thead><tr><th>Kind</th><th>Description</th><th>Default Aggregation</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Numeric</strong></td><td>Cost, count, percentage — integer or decimal</td><td>SUM</td></tr>
+                        <tr><td><strong>Risk</strong></td><td>Risk levels on a 3-point scale (!, !!, !!!)</td><td>MAX</td></tr>
+                        <tr><td><strong>Positive Impact</strong></td><td>Benefit levels on a 3-point scale</td><td>MAX</td></tr>
+                        <tr><td><strong>Negative Impact</strong></td><td>Adverse impact on a 3-point scale</td><td>MAX</td></tr>
+                        <tr><td><strong>Level</strong></td><td>Maturity or capability level (1-3)</td><td>MAX</td></tr>
+                        <tr><td><strong>Sentiment</strong></td><td>Mood or satisfaction indicator (1-3)</td><td>AVG</td></tr>
+                        <tr><td><strong>List</strong></td><td>Custom choices with colour coding</td><td>MODE</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- AGGREGATION                                    -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="aggregation">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                    <i class="bi bi-arrow-up-circle"></i>
+                </div>
+                <h2>Aggregation (Roll-Up)</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>How values flow upward</h3>
+                <p>Values are aggregated from the bottom of the hierarchy to the top:</p>
+                <div class="doc-hierarchy">
+                    <span class="doc-hierarchy-node" style="background:#fee2e2; color:#991b1b;">KPI</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-arrow-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#d1fae5; color:#065f46;">System</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-arrow-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#dbeafe; color:#1e40af;">Initiative</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-arrow-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#fef3c7; color:#92400e;">Challenge</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-arrow-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#ede9fe; color:#6d28d9;">Space</span>
+                </div>
+                <p>At each level, a configurable <strong>aggregation formula</strong> combines child values into a parent value.</p>
+            </div>
+
+            <div class="doc-card">
+                <h3>Available aggregation formulas</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Formula</th><th>Behaviour</th><th>Best For</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>SUM</strong></td><td>Total of all child values</td><td>Costs, emissions, counts</td></tr>
+                        <tr><td><strong>AVG</strong></td><td>Arithmetic mean</td><td>Sentiment, satisfaction</td></tr>
+                        <tr><td><strong>MAX</strong></td><td>Highest value wins</td><td>Risk, impact (worst case)</td></tr>
+                        <tr><td><strong>MIN</strong></td><td>Lowest value</td><td>Best-case scenarios</td></tr>
+                        <tr><td><strong>MEDIAN</strong></td><td>Middle value (robust to outliers)</td><td>General-purpose</td></tr>
+                        <tr><td><strong>COUNT</strong></td><td>Number of contributing children</td><td>"How many" metrics</td></tr>
+                        <tr><td><strong>MODE</strong></td><td>Most frequent value</td><td>List-type value types</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-card">
+                <h3>Rollup Rules</h3>
+                <p>Administrators can configure <strong>Rollup Rules</strong> to override the default aggregation formula at any link in the hierarchy, or disable roll-up entirely for specific branches.</p>
+            </div>
+
+            <div class="doc-tip info">
+                <span class="doc-tip-icon"><i class="bi bi-info-circle-fill"></i></span>
+                <span>Qualitative types (risk, impact, level, sentiment) cannot use SUM — it is automatically converted to AVG for these types.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- FORMULAS                                       -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="formulas">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                    <i class="bi bi-calculator"></i>
+                </div>
+                <h2>Formulas &amp; Calculated Values</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>Value Type Formulas</h3>
+                <p>A value type can be defined as a <strong>formula</strong> that computes its value from other value types on the same KPI. Two modes are available:</p>
+
+                <h3 style="margin-top:1.25rem;">Simple Mode</h3>
+                <p>Choose an operation and source value types:</p>
+                <div class="doc-formula">
+                    <strong>add</strong>: sum of all source values<br>
+                    <strong>subtract</strong>: first value &minus; sum of remaining<br>
+                    <strong>multiply</strong>: product of all values<br>
+                    <strong>divide</strong>: first value &divide; product of remaining
+                </div>
+
+                <h3 style="margin-top:1.25rem;">Advanced Mode</h3>
+                <p>Write a Python-safe expression referencing source value types by name:</p>
+                <div class="doc-formula">
+                    round((revenue - cost) / cost * 100)&nbsp;&nbsp;&nbsp;# ROI %<br>
+                    (kpi_actual / kpi_target) * 100&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Achievement %<br>
+                    (kpi_1 * 0.7 + kpi_2 * 0.3)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;# Weighted average
+                </div>
+                <p style="margin-top:0.75rem;">Available functions: <code>abs()</code>, <code>round()</code>, <code>max()</code>, <code>min()</code>, <code>sum()</code></p>
+            </div>
+
+            <div class="doc-card">
+                <h3>KPI Value Priority Chain</h3>
+                <p>When determining a KPI cell's value, CISK checks these sources in order:</p>
+                <ol style="padding-left:1.2rem; color:var(--doc-muted); font-size:0.88rem; line-height:1.8;">
+                    <li><strong>Value Type Formula</strong> — computed from other value types on the same KPI</li>
+                    <li><strong>KPI Formula</strong> — computed from other KPIs at the same cell</li>
+                    <li><strong>Linked KPI</strong> — read from a source in another workspace</li>
+                    <li><strong>Manual Contributions</strong> — consensus from contributor entries</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- IMPACT METHODS                                 -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="impact">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                    <i class="bi bi-stars"></i>
+                </div>
+                <h2>Impact Compounding Methods</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>True Importance</h3>
+                <p>Each entity has an <strong>assessed impact level</strong> (1-3) representing its importance to its parent. The <strong>true importance</strong> is computed by compounding these levels through the full chain from root to leaf.</p>
+                <div class="doc-hierarchy">
+                    <span class="doc-hierarchy-node" style="background:#fce7f3; color:#9d174d;">Space &#9733;&#9733;</span>
+                    <span class="doc-hierarchy-arrow">&times;</span>
+                    <span class="doc-hierarchy-node" style="background:#fce7f3; color:#9d174d;">Challenge &#9733;&#9733;&#9733;</span>
+                    <span class="doc-hierarchy-arrow">&times;</span>
+                    <span class="doc-hierarchy-node" style="background:#fce7f3; color:#9d174d;">Initiative &#9733;</span>
+                    <span class="doc-hierarchy-arrow">=</span>
+                    <span class="doc-hierarchy-node" style="background:#1e293b; color:white;">True Importance ?</span>
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3>Method 1: Simple Product</h3>
+                <span class="doc-tag" style="background:#fef3c7; color:#92400e;">Basic</span>
+                <p style="margin-top:0.5rem;">Multiply weights through the chain, normalise by maximum possible score.</p>
+                <div class="doc-formula">
+                    score = w<sub>space</sub> &times; w<sub>challenge</sub> &times; w<sub>initiative</sub> &times; ...<br>
+                    percentage = score / max_weight<sup>depth</sup><br>
+                    &le; 33% &rarr; Level 1 &nbsp;|&nbsp; &le; 66% &rarr; Level 2 &nbsp;|&nbsp; &gt; 66% &rarr; Level 3
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3>Method 2: Geometric Mean</h3>
+                <span class="doc-tag" style="background:#dbeafe; color:#1e40af;">Balanced</span>
+                <p style="margin-top:0.5rem;">At each step, compute the square root of parent weight &times; child weight. Stays naturally in the weight scale.</p>
+                <div class="doc-formula">
+                    current = &radic;(parent_weight &times; child_weight)<br>
+                    Final value mapped to nearest level (1, 2, or 3)
+                </div>
+            </div>
+
+            <div class="doc-card">
+                <h3>Method 3: Toyota QFD</h3>
+                <span class="doc-tag" style="background:#fee2e2; color:#991b1b;">Strongest Contrast</span>
+                <p style="margin-top:0.5rem;">Uses a fuzzy lookup table — a weak link pulls the result down hard.</p>
+                <table class="doc-table" style="max-width:360px;">
+                    <thead>
+                        <tr><th></th><th>Child 3</th><th>Child 2</th><th>Child 1</th><th>Child 0</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td><strong>Parent 3</strong></td><td style="background:#fef2f2; color:#dc2626; font-weight:700;">3</td><td style="background:#fef2f2; color:#dc2626; font-weight:700;">3</td><td style="background:#fffbeb; color:#d97706; font-weight:700;">2</td><td style="color:#94a3b8;">0</td></tr>
+                        <tr><td><strong>Parent 2</strong></td><td style="background:#fef2f2; color:#dc2626; font-weight:700;">3</td><td style="background:#fffbeb; color:#d97706; font-weight:700;">2</td><td style="background:#f0fdf4; color:#16a34a; font-weight:700;">1</td><td style="color:#94a3b8;">0</td></tr>
+                        <tr><td><strong>Parent 1</strong></td><td style="background:#fffbeb; color:#d97706; font-weight:700;">2</td><td style="background:#f0fdf4; color:#16a34a; font-weight:700;">1</td><td style="color:#94a3b8;">0</td><td style="color:#94a3b8;">0</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-card">
+                <h3>Methods 4 &amp; 5: Toyota Weighted</h3>
+                <span class="doc-tag" style="background:#f3e8ff; color:#7c3aed;">Advanced</span>
+                <p style="margin-top:0.5rem;">Applies exponential reinforcement: Level 1 &rarr; 1, Level 2 &rarr; 2, Level 3 &rarr; 4 (configurable).</p>
+                <ul>
+                    <li><strong>Downstream Only</strong> — exponential reinforcement on the deepest (child) rating only</li>
+                    <li><strong>Full</strong> — exponential reinforcement on all levels in the chain</li>
+                </ul>
+                <div class="doc-formula">
+                    Normalised against max_r<sup>depth</sup> &rarr; mapped to Level 1 / 2 / 3
+                </div>
+            </div>
+
+            <div class="doc-tip info">
+                <span class="doc-tip-icon"><i class="bi bi-info-circle-fill"></i></span>
+                <span>For detailed examples with real numbers, see <a href="{{ url_for('workspace.impact_docs') }}" style="color: inherit; text-decoration: underline;">Impact Calculation Docs</a>.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TARGETS & STATUS                               -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="targets">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <i class="bi bi-bullseye"></i>
+                </div>
+                <h2>Targets &amp; KPI Status</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>Target directions</h3>
+                <p>Each KPI can have a target with a direction that determines how achievement is calculated:</p>
+                <table class="doc-table">
+                    <thead><tr><th>Direction</th><th>Formula</th><th>Example</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Maximize</strong></td><td>(current / target) &times; 100</td><td>Revenue: higher is better</td></tr>
+                        <tr><td><strong>Minimize</strong></td><td>(target / current) &times; 100</td><td>Cost: lower is better</td></tr>
+                        <tr><td><strong>Exact</strong></td><td>100 if within tolerance, else scaled down</td><td>Temperature: stay at 20&deg;C &plusmn; 2&deg;</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-card">
+                <h3>Traffic light status</h3>
+                <p>KPIs display a colour-coded status based on activity, consensus, and target progress:</p>
+                <table class="doc-table">
+                    <thead><tr><th>Colour</th><th>Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="doc-status"><span class="doc-dot" style="background:#10b981;"></span> Green</span></td><td>On track — good activity, consensus, and progress (&ge; 90%)</td></tr>
+                        <tr><td><span class="doc-status"><span class="doc-dot" style="background:#f59e0b;"></span> Yellow</span></td><td>Attention needed — low activity (14-29 days), low consensus, or progress 60-89%</td></tr>
+                        <tr><td><span class="doc-status"><span class="doc-dot" style="background:#ef4444;"></span> Red</span></td><td>Action required — stale (&ge; 30 days), no contributions, deadline passed, or progress &lt; 60%</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- DASHBOARDS                                     -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="dashboards">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                    <i class="bi bi-bar-chart-line"></i>
+                </div>
+                <h2>Dashboards</h2>
+            </div>
+
+            <div class="doc-grid">
+                <div class="doc-card">
+                    <h3><i class="bi bi-speedometer2" style="color:#3b82f6;"></i> KPI Dashboard</h3>
+                    <p>Target progress bars, consensus status, governance body filtering, and overall KPI health.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-flag" style="color:#f59e0b;"></i> Challenges</h3>
+                    <p>RAG indicators per initiative, coverage bars, and decision counts for each challenge.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-gear" style="color:#10b981;"></i> Systems</h3>
+                    <p>Reuse badges, KPI health indicators, and portal system links across workspaces.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-stars" style="color:#ec4899;"></i> Impacts</h3>
+                    <p>Coverage rings, entity heatmap, and gap analysis for impact assessments.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-eye" style="color:#8b5cf6;"></i> Visibility</h3>
+                    <p>Public vs private content transparency analysis across the workspace.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-bank" style="color:#14b8a6;"></i> Governance</h3>
+                    <p>Per-governance-body view of KPIs, actions, and decisions.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-globe-americas" style="color:#f97316;"></i> Geography</h3>
+                    <p>World map with country colouring, marker clustering, and interactive site exploration.</p>
+                </div>
+                <div class="doc-card">
+                    <h3><i class="bi bi-graph-up" style="color:#6366f1;"></i> Analytics</h3>
+                    <p>Trends, historical comparison, and performance metrics aggregation.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- DECISIONS                                      -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="decisions">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <i class="bi bi-journal-check"></i>
+                </div>
+                <h2>Decision Register</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>The Decision Register tracks all decisions made within a workspace. Each decision includes:</p>
+                <ul>
+                    <li><strong>What</strong> — the decision description</li>
+                    <li><strong>Who</strong> — who made the decision</li>
+                    <li><strong>Tags</strong> — scope, budget, timeline, resource, technical, governance</li>
+                    <li><strong>RAG status</strong> — traffic-light indicator</li>
+                    <li><strong>Entity mentions</strong> — link decisions to any CISK entity with <code>@"Entity Name"</code></li>
+                    <li><strong>Governance Body</strong> — assign to an oversight entity</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ACTION ITEMS                                   -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="actions">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <i class="bi bi-check2-square"></i>
+                </div>
+                <h2>Action Items</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>The Action Register manages tasks and memos across the workspace. Features include:</p>
+                <ul>
+                    <li>Status tracking (open, in progress, done, blocked)</li>
+                    <li>Priority levels and due dates</li>
+                    <li>Governance body linking</li>
+                    <li>Entity mentions with <code>@"Entity Name"</code></li>
+                    <li>Timeline view for visual planning</li>
+                    <li>Duplicate detection using similarity analysis</li>
+                    <li>JSON export/import with templates</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- STAKEHOLDERS                                   -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="stakeholders">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                    <i class="bi bi-person-lines-fill"></i>
+                </div>
+                <h2>Stakeholders</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>Manage the people and roles involved in your workspace:</p>
+                <ul>
+                    <li><strong>Stakeholder profiles</strong> — name, role, and contact details</li>
+                    <li><strong>Relationships</strong> — define reporting lines and connections between stakeholders</li>
+                    <li><strong>Entity linking</strong> — connect stakeholders to any CISK entity</li>
+                    <li><strong>Stakeholder maps</strong> — create power-vs-interest matrices for analysis</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- GEOGRAPHY                                      -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="geography">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                    <i class="bi bi-globe-americas"></i>
+                </div>
+                <h2>Geography</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>Organise your data geographically with a three-level location hierarchy:</p>
+                <div class="doc-hierarchy">
+                    <span class="doc-hierarchy-node" style="background:#ffedd5; color:#9a3412;">Region</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-chevron-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#ffedd5; color:#9a3412;">Country</span>
+                    <span class="doc-hierarchy-arrow"><i class="bi bi-chevron-right"></i></span>
+                    <span class="doc-hierarchy-node" style="background:#ffedd5; color:#9a3412;">Site</span>
+                </div>
+                <ul>
+                    <li>Custom country colouring for map visualisation</li>
+                    <li>KPI geo-assignment to track metrics by location</li>
+                    <li>CSV import for batch site setup</li>
+                    <li>Interactive map dashboard with marker clustering</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- PERMISSIONS                                    -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="permissions">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                    <i class="bi bi-shield-lock"></i>
+                </div>
+                <h2>Permissions</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>User roles</h3>
+                <table class="doc-table">
+                    <thead><tr><th>Role</th><th>Scope</th><th>Access</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Regular User</strong></td><td>Per-workspace</td><td>Controlled by 11 granular permissions</td></tr>
+                        <tr><td><strong>Global Admin</strong></td><td>Instance-wide</td><td>Full access everywhere, manage users &amp; workspaces</td></tr>
+                        <tr><td><strong>Super Admin</strong></td><td>System-wide</td><td>System settings, SSO, maintenance mode, announcements</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="doc-card">
+                <h3>Granular permissions</h3>
+                <p>Each user-workspace membership has <strong>11 independent permissions</strong>:</p>
+                <div class="doc-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div>
+                        <p style="font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--doc-muted); margin-bottom:0.4rem;">Structural</p>
+                        <ul>
+                            <li>Spaces</li>
+                            <li>Challenges</li>
+                            <li>Initiatives</li>
+                            <li>Systems</li>
+                            <li>KPIs</li>
+                            <li>Value Types</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p style="font-weight:700; font-size:0.78rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--doc-muted); margin-bottom:0.4rem;">Feature Access</p>
+                        <ul>
+                            <li>Contribute Values</li>
+                            <li>View / Create Action Items</li>
+                            <li>View / Manage Stakeholders</li>
+                            <li>View Map</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- GOVERNANCE                                     -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="governance">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                    <i class="bi bi-bank"></i>
+                </div>
+                <h2>Governance Bodies</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>Governance Bodies represent the committees, boards, or teams that oversee KPIs and decisions:</p>
+                <ul>
+                    <li>Each body has a name, abbreviation, colour, and description</li>
+                    <li>KPIs can belong to multiple governance bodies</li>
+                    <li>Filter the workspace view by governance body</li>
+                    <li>Action items and decisions can be linked to governance bodies</li>
+                    <li>Dedicated governance dashboard per body</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- SNAPSHOTS                                      -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="snapshots">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                    <i class="bi bi-camera"></i>
+                </div>
+                <h2>Snapshots &amp; Trends</h2>
+            </div>
+
+            <div class="doc-card">
+                <p>Capture point-in-time data for historical analysis:</p>
+                <ul>
+                    <li><strong>KPI Snapshots</strong> — freeze current KPI values for trend tracking</li>
+                    <li><strong>Rollup Snapshots</strong> — save aggregated hierarchy values</li>
+                    <li><strong>Trend Charts</strong> — visualise KPI progression over time</li>
+                    <li><strong>Pivot Tables</strong> — multi-dimensional snapshot analysis</li>
+                    <li><strong>Chart Builder</strong> — create and save custom chart configurations</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- TIPS & SHORTCUTS                               -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="tips">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                    <i class="bi bi-lightbulb"></i>
+                </div>
+                <h2>Tips &amp; Shortcuts</h2>
+            </div>
+
+            <div class="doc-card">
+                <table class="doc-table">
+                    <thead><tr><th>Feature</th><th>Tip</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Detail levels</strong></td><td>Toggle between Minimal / Standard / Full Detail to control information density</td></tr>
+                        <tr><td><strong>Impact filter</strong></td><td>Cycle the star icon to show only entities at a specific importance level</td></tr>
+                        <tr><td><strong>Search modifiers</strong></td><td>Use <code>@requires_action</code>, <code>@incomplete</code>, <code>@missing_kpis</code> in the search bar</td></tr>
+                        <tr><td><strong>Keyboard navigation</strong></td><td>Use left/right arrows to expand/collapse tree nodes</td></tr>
+                        <tr><td><strong>Filter presets</strong></td><td>Save and restore your favourite filter configurations</td></tr>
+                        <tr><td><strong>Cell comments</strong></td><td>Click any KPI cell to open threaded discussions with @mentions</td></tr>
+                        <tr><td><strong>YAML backup</strong></td><td>Export your full workspace structure via Administration for safe-keeping</td></tr>
+                        <tr><td><strong>Dark mode</strong></td><td>Toggle in your profile settings for a darker interface</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        {% if is_admin %}
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ADMIN: ENTITY MANAGEMENT                       -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="admin-entities">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #dc2626, #b91c1c);">
+                    <i class="bi bi-collection"></i>
+                </div>
+                <h2>Entity Management</h2>
+                <span class="doc-tag" style="background:#fee2e2; color:#991b1b; margin-left:0.5rem;">Admin</span>
+            </div>
+
+            <div class="doc-card">
+                <h3>Administration panel</h3>
+                <p>Organisation administrators can create, edit, reorder, and delete all entities from the <strong>Administration</strong> menu. Each entity type has its own management page:</p>
+                <table class="doc-table">
+                    <thead><tr><th>Entity</th><th>Key Operations</th></tr></thead>
+                    <tbody>
+                        <tr><td><strong>Spaces</strong></td><td>Create/edit with SWOT analysis, set display order, assign colours</td></tr>
+                        <tr><td><strong>Challenges</strong></td><td>Link to one or more initiatives, set impact level</td></tr>
+                        <tr><td><strong>Initiatives</strong></td><td>Full form with mission, deliverables, team, success criteria</td></tr>
+                        <tr><td><strong>Systems</strong></td><td>Define reusable components, link to initiatives, create portals</td></tr>
+                        <tr><td><strong>KPIs</strong></td><td>Multi-value-type configuration, governance body assignment, targets</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="doc-tip warn">
+                <span class="doc-tip-icon"><i class="bi bi-exclamation-triangle-fill"></i></span>
+                <span>Deleting an entity also removes all its children. This action cannot be undone — export a YAML backup first if in doubt.</span>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ADMIN: VALUE TYPE CONFIG                       -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="admin-valuetypes">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #7c3aed, #6d28d9);">
+                    <i class="bi bi-sliders2"></i>
+                </div>
+                <h2>Value Type Configuration</h2>
+                <span class="doc-tag" style="background:#fee2e2; color:#991b1b; margin-left:0.5rem;">Admin</span>
+            </div>
+
+            <div class="doc-card">
+                <h3>Creating value types</h3>
+                <p>Value types define columns in the workspace grid. Each value type has:</p>
+                <ul>
+                    <li><strong>Kind</strong> — numeric, risk, positive/negative impact, level, sentiment, or list</li>
+                    <li><strong>Aggregation formula</strong> — how child values combine (SUM, AVG, MAX, etc.)</li>
+                    <li><strong>Display settings</strong> — unit, prefix/suffix, decimal places, divisor for scaling</li>
+                    <li><strong>Colour scale</strong> — min/mid/max colours for numeric heatmapping</li>
+                    <li><strong>Formula</strong> — optional computed value from other value types</li>
+                </ul>
+            </div>
+            <div class="doc-card">
+                <h3>List-type options</h3>
+                <p>For list value types, define custom choices with a key, label, and colour. The aggregation formula is always <strong>MODE</strong> (most common choice). Ties return no value.</p>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ADMIN: ROLLUP & CACHE                          -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="admin-rollups">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #059669, #047857);">
+                    <i class="bi bi-arrow-repeat"></i>
+                </div>
+                <h2>Rollup &amp; Cache</h2>
+                <span class="doc-tag" style="background:#fee2e2; color:#991b1b; margin-left:0.5rem;">Admin</span>
+            </div>
+
+            <div class="doc-card">
+                <h3>Pre-computed rollups</h3>
+                <p>When enabled, CISK pre-computes all aggregated values and stores them in a cache. This dramatically speeds up workspace loading (1 query instead of hundreds).</p>
+                <ul>
+                    <li>Cache is auto-invalidated when data changes (contributions, entity edits)</li>
+                    <li>Stale cache is auto-recomputed on next workspace load</li>
+                    <li>Manual recompute available via Administration or API</li>
+                </ul>
+            </div>
+            <div class="doc-card">
+                <h3>Rollup rules</h3>
+                <p>Override the default aggregation formula at any link in the hierarchy. You can also <strong>disable</strong> roll-up entirely for specific branches — useful when a system or initiative should not contribute to its parent's aggregate.</p>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ADMIN: BACKUP & RESTORE                        -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="admin-backup">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #0891b2, #0e7490);">
+                    <i class="bi bi-cloud-download"></i>
+                </div>
+                <h2>Backup &amp; Restore</h2>
+                <span class="doc-tag" style="background:#fee2e2; color:#991b1b; margin-left:0.5rem;">Admin</span>
+            </div>
+
+            <div class="doc-card">
+                <h3>YAML export / import</h3>
+                <p>Export the full workspace structure as a YAML file for safe-keeping or migration. On import, you can map users and governance bodies from the source to the target workspace.</p>
+                <ul>
+                    <li>Includes all entities, KPIs, value types, contributions, decisions, and action items</li>
+                    <li>Format version 3.0 with stable cross-reference IDs</li>
+                    <li>Organisation cloning available for creating test environments</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- ADMIN: BRANDING                                -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="admin-branding">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+                    <i class="bi bi-palette"></i>
+                </div>
+                <h2>Branding &amp; Customisation</h2>
+                <span class="doc-tag" style="background:#fee2e2; color:#991b1b; margin-left:0.5rem;">Admin</span>
+            </div>
+
+            <div class="doc-card">
+                <p>Customise the look and feel of each entity type per workspace:</p>
+                <ul>
+                    <li><strong>Colours</strong> — set default colours for spaces, challenges, initiatives, systems</li>
+                    <li><strong>Icons</strong> — choose icons per entity type</li>
+                    <li><strong>Logos</strong> — upload custom logos for entity types</li>
+                    <li><strong>Impact scale</strong> — configure 3-level symbols, weights, and colours</li>
+                    <li><strong>Strategic pillars</strong> — define organisation strategy with icons and descriptions</li>
+                </ul>
+            </div>
+        </section>
+        {% endif %}
+
+    </main>
+</div>
+
+<!-- Back to top -->
+<a href="#doc-top" class="doc-back-top" id="backToTop"><i class="bi bi-chevron-up"></i></a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // ── Sidebar active state on scroll ──
+    var sections = document.querySelectorAll('.doc-section');
+    var navLinks = document.querySelectorAll('.doc-nav a');
+    var backTop  = document.getElementById('backToTop');
+
+    function onScroll() {
+        var scrollY = window.scrollY + 120;
+        sections.forEach(function(sec) {
+            if (sec.offsetTop <= scrollY && sec.offsetTop + sec.offsetHeight > scrollY) {
+                navLinks.forEach(function(a) { a.classList.remove('active'); });
+                var link = document.querySelector('.doc-nav a[href="#' + sec.id + '"]');
+                if (link) link.classList.add('active');
+            }
+        });
+        backTop.classList.toggle('visible', window.scrollY > 400);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // ── Sidebar search ──
+    var searchInput = document.getElementById('docSearch');
+    searchInput.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        navLinks.forEach(function(a) {
+            a.style.display = a.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+
+    // ── Smooth scroll ──
+    navLinks.forEach(function(a) {
+        a.addEventListener('click', function(e) {
+            e.preventDefault();
+            var target = document.querySelector(this.getAttribute('href'));
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+})();
+</script>
+{% endblock %}

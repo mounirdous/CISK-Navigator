@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.4.0] - 2026-03-31
+
+### Added
+- **Documentation hub** — ultra-modern docs page under Help > Documentation with sidebar navigation, search, and scroll-spy
+  - Getting Started guide for new users
+  - CISK Hierarchy, Workspaces, Contributions, Consensus, Value Types
+  - Full calculation reference: Aggregation formulas, Formula engine, Impact compounding methods
+  - Targets & KPI status (traffic lights), Dashboards overview
+  - Decisions, Action Items, Stakeholders, Geography, Governance, Snapshots
+  - Tips & Shortcuts section
+  - Admin-only sections (entity management, value type config, rollup/cache, backup/restore, branding) visible only to org admins, global admins, and super admins
+  - Dark mode support, responsive mobile layout, back-to-top button
+
 ## [7.3.0] - 2026-03-31
 
 ### Fixed

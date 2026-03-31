@@ -1132,6 +1132,23 @@ def impact_docs():
     return render_template("workspace/impact_docs.html")
 
 
+@bp.route("/documentation")
+@login_required
+def documentation():
+    """Platform documentation hub"""
+    from app import __version__
+
+    org_id = session.get("organization_id")
+    is_admin = current_user.is_global_admin or current_user.is_super_admin or (
+        org_id and current_user.is_org_admin(org_id)
+    )
+    return render_template(
+        "workspace/documentation.html",
+        version=__version__,
+        is_admin=is_admin,
+    )
+
+
 @bp.route("/strategy")
 @login_required
 @organization_required

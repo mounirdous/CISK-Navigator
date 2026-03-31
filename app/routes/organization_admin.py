@@ -915,7 +915,7 @@ def _get_all_org_links_enriched(org_id):
     }
     type_labels = {
         "space": "Space", "challenge": "Challenge", "initiative": "Initiative",
-        "system": "System", "kpi": "KPI", "organization": "Organization",
+        "system": "System", "kpi": "KPI", "organization": "Workspace",
         "action_item": "Action Item",
     }
 

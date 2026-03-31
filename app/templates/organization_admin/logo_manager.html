@@ -176,7 +176,7 @@
         </a>
     </div>
 
-    <!-- Organization Info Banner -->
+    <!-- Workspace Info Banner -->
     <div class="org-banner">
         <div class="row align-items-center">
             <div class="col-md-2 text-center">
@@ -190,26 +190,26 @@
             </div>
             <div class="col-md-10 text-white">
                 <h3 class="mb-1">{{ organization.name }}</h3>
-                <p class="mb-0 opacity-75">Customize all logos for your organization's entity types</p>
+                <p class="mb-0 opacity-75">Customize all logos for your workspace's entity types</p>
             </div>
         </div>
     </div>
 
     <!-- Logo Grid -->
     <div class="row g-4" id="logoGrid">
-        <!-- Organization Logo -->
+        <!-- Workspace Logo -->
         <div class="col-md-4">
             <div class="logo-card">
                 <div class="entity-type-badge">🏢</div>
                 <div class="logo-preview-circle" style="border-color: {{ entity_defaults.organization.color if entity_defaults.organization else '#6366f1' }};">
                     {% if organization.logo_data %}
-                        <img src="{{ url_for('logo.organization_logo', entity_id=organization.id) }}" alt="Organization Logo">
+                        <img src="{{ url_for('logo.organization_logo', entity_id=organization.id) }}" alt="Workspace Logo">
                     {% else %}
                         <i class="bi bi-building empty-icon"></i>
                     {% endif %}
                 </div>
-                <h5 class="text-center mb-2">Organization</h5>
-                <p class="text-center text-muted small mb-3">Main organization logo</p>
+                <h5 class="text-center mb-2">Workspace</h5>
+                <p class="text-center text-muted small mb-3">Main workspace logo</p>
                 <div class="action-buttons">
                     <button class="btn btn-primary btn-circle" onclick="openUploadModal('organization', {{ organization.id }})" title="Upload">
                         <i class="bi bi-upload"></i>
