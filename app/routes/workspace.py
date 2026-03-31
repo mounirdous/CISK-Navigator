@@ -302,6 +302,15 @@ def gb_dashboard_index():
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/api/toggle-assistant", methods=["POST"])
+@login_required
+def toggle_assistant():
+    """Toggle assistant panel for current user"""
+    current_user.assistant_enabled = not current_user.assistant_enabled
+    db.session.commit()
+    return jsonify({"ok": True, "enabled": current_user.assistant_enabled})
+
+
 @bp.route("/api/compare-rollups")
 @login_required
 @organization_required

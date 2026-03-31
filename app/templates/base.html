@@ -534,6 +534,35 @@
                                 {% endif %}
                             </ul>
                         </li>
+                        <!-- Help menu -->
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="helpDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-question-circle"></i> Help
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="helpDropdown">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.theory') }}">
+                                        <i class="bi bi-book"></i> CISK Theory
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.impact_docs') }}" target="_blank">
+                                        <i class="bi bi-calculator"></i> Impact Calculation Docs
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center justify-content-between" href="#"
+                                       onclick="event.preventDefault(); fetch('/workspace/api/toggle-assistant', {method:'POST', headers:{'X-CSRFToken':'{{ csrf_token() }}'}}).then(function(r){return r.json();}).then(function(d){ location.reload(); });">
+                                        <span><i class="bi bi-lightbulb"></i> Assistant</span>
+                                        <span class="form-check form-switch mb-0 ms-2" style="pointer-events:none;">
+                                            <input class="form-check-input" type="checkbox" {% if current_user.assistant_enabled %}checked{% endif %} tabindex="-1">
+                                        </span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+
                         {% set org_id = session.get('organization_id') %}
                         {% set has_org_admin_access = current_user.is_global_admin or current_user.is_super_admin or (org_id and (current_user.can_manage_spaces(org_id) or current_user.can_manage_value_types(org_id) or current_user.can_manage_governance_bodies(org_id) or current_user.can_manage_challenges(org_id) or current_user.can_manage_initiatives(org_id) or current_user.can_manage_systems(org_id) or current_user.can_manage_kpis(org_id))) %}
                         {% if has_org_admin_access %}
@@ -1559,6 +1588,9 @@
     {% endif %}
 
     {% block extra_js %}{% endblock %}
+
+    <!-- Contextual Assistant -->
+    {% include '_assistant.html' %}
 
     <!-- Mark workspace cache dirty when org-admin forms are submitted -->
     {% if '/org-admin/' in request.path or '/global-admin/' in request.path or '/workspace/kpi/' in request.path or '/workspace/decision-register' in request.path %}

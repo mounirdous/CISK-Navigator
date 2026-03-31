@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.2.0] - 2026-03-31
+
+### Added
+- **Help menu** — navbar dropdown with CISK Theory, Impact Docs, and Assistant toggle (per-user preference stored in DB)
+- **Contextual Assistant** — floating glassmorphism panel (bottom-right) with:
+  - "Where you are" section — page name + description for every page
+  - Role-aware contextual hints — progressive guidance based on workspace state (empty → building → populated)
+  - **Yellow highlight on hover** — hints with 👆 highlight the referenced UI element (pulsing yellow glow + outline)
+  - Expand/collapse state remembered via localStorage
+  - Covers: Workspace, KPI Contribution, Decision Register, all Dashboards, Action Register, Initiative Review, Org Admin, Instance Admin
+
 ## [7.1.0] - 2026-03-31
 
 ### Changed

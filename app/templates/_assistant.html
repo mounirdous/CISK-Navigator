@@ -1,0 +1,166 @@
+{% if current_user.is_authenticated and current_user.assistant_enabled %}
+<style>
+.ast-pill {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1000;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
+    border: none; border-radius: 24px; padding: 0.5rem 1rem;
+    font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+    display: flex; align-items: center; gap: 0.4rem;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ast-pill:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,102,241,0.5); }
+.ast-pill.hidden { display: none; }
+
+.ast-panel {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1001;
+    width: 340px; max-height: 480px;
+    background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(99,102,241,0.1);
+    display: none; flex-direction: column;
+    animation: astSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ast-panel.open { display: flex; }
+@keyframes astSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.ast-header {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white;
+    padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+}
+.ast-header-title { font-weight: 700; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+.ast-close { background: none; border: none; color: white; font-size: 1.1rem; cursor: pointer; opacity: 0.7; padding: 0; line-height: 1; }
+.ast-close:hover { opacity: 1; }
+
+.ast-body { padding: 1rem; overflow-y: auto; flex: 1; }
+
+/* Where you are */
+.ast-location {
+    background: linear-gradient(135deg, #f0f4ff, #ede9fe);
+    border: 1px solid #c7d2fe; border-radius: 10px;
+    padding: 0.6rem 0.8rem; margin-bottom: 0.75rem;
+    font-size: 0.78rem;
+}
+.ast-location-title { font-weight: 700; color: #4338ca; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.2rem; }
+.ast-location-page { font-weight: 600; color: #1e293b; }
+.ast-location-desc { color: #64748b; margin-top: 0.15rem; }
+
+/* Hints */
+.ast-hint {
+    background: white; border: 1px solid #e2e8f0; border-radius: 10px;
+    padding: 0.6rem 0.8rem; margin-bottom: 0.5rem;
+    font-size: 0.78rem; transition: all 0.15s;
+}
+.ast-hint:hover { border-color: #c7d2fe; }
+.ast-hint-icon { font-size: 1rem; margin-right: 0.4rem; vertical-align: middle; }
+.ast-hint-text { color: #475569; line-height: 1.4; }
+.ast-hint-action { color: #6366f1; font-weight: 600; text-decoration: none; font-size: 0.75rem; }
+.ast-hint-action:hover { text-decoration: underline; }
+
+.ast-hint.tip { border-left: 3px solid #22c55e; }
+.ast-hint.action { border-left: 3px solid #f59e0b; }
+.ast-hint.info { border-left: 3px solid #3b82f6; }
+.ast-hint.warning { border-left: 3px solid #ef4444; }
+
+.ast-empty { text-align: center; color: #94a3b8; padding: 1rem; font-size: 0.82rem; }
+
+/* Highlight pulse on target elements */
+.ast-highlight-target {
+    animation: astPulseGlow 1s ease-in-out infinite;
+    position: relative; z-index: 100;
+    outline: 3px solid rgba(250, 204, 21, 0.9);
+    outline-offset: 3px;
+    border-radius: 8px;
+    background-color: rgba(250, 204, 21, 0.15) !important;
+}
+@keyframes astPulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(250,204,21,0), 0 0 0 rgba(250,204,21,0); }
+    50% { box-shadow: 0 0 0 10px rgba(250,204,21,0.35), 0 0 30px rgba(250,204,21,0.2); }
+}
+.ast-hint[data-highlight] { cursor: pointer; }
+.ast-hint[data-highlight]:hover { background: #f5f3ff; }
+.ast-hint[data-highlight]::after {
+    content: '👆'; font-size: 0.65rem; float: right; opacity: 0.5;
+}
+
+@media (max-width: 768px) {
+    .ast-panel { width: calc(100vw - 2rem); right: 1rem; bottom: 1rem; }
+}
+</style>
+
+<!-- Pill button -->
+<button class="ast-pill" id="astPill" onclick="toggleAssistant(true)" title="Open Assistant">
+    <i class="bi bi-lightbulb-fill"></i> Assistant
+    {% if assistant_hints %}<span style="background:rgba(255,255,255,0.3); border-radius:10px; padding:0 0.4rem; font-size:0.7rem;">{{ assistant_hints | length }}</span>{% endif %}
+</button>
+
+<!-- Panel -->
+<div class="ast-panel" id="astPanel">
+    <div class="ast-header">
+        <span class="ast-header-title"><i class="bi bi-lightbulb-fill"></i> Assistant</span>
+        <button class="ast-close" onclick="toggleAssistant(false)" title="Close">&times;</button>
+    </div>
+    <div class="ast-body">
+        <!-- Where you are -->
+        {% if assistant_location %}
+        <div class="ast-location">
+            <div class="ast-location-title"><i class="bi bi-geo-alt"></i> Where you are</div>
+            <div class="ast-location-page">{{ assistant_location.page }}</div>
+            <div class="ast-location-desc">{{ assistant_location.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Contextual hints -->
+        {% if assistant_hints %}
+            {% for hint in assistant_hints %}
+            <div class="ast-hint {{ hint.type }}" {% if hint.highlight %}data-highlight="{{ hint.highlight | e }}"{% endif %}>
+                <span class="ast-hint-icon">{{ hint.icon }}</span>
+                <span class="ast-hint-text">{{ hint.text }}</span>
+                {% if hint.action_url %}
+                <br><a href="{{ hint.action_url }}" class="ast-hint-action">{{ hint.action_label }} &rarr;</a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="ast-empty">
+            <i class="bi bi-check-circle" style="font-size:1.5rem; display:block; margin-bottom:0.3rem; color:#22c55e;"></i>
+            You're all set! No suggestions right now.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function astHighlight(selector, on) {
+    try {
+        document.querySelectorAll('.ast-highlight-target').forEach(function(el) { el.classList.remove('ast-highlight-target'); });
+        if (on && selector) {
+            var targets = document.querySelectorAll(selector);
+            targets.forEach(function(el) { el.classList.add('ast-highlight-target'); });
+            if (targets.length > 0) targets[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    } catch(e) {}
+}
+function toggleAssistant(open) {
+    document.getElementById('astPanel').classList.toggle('open', open);
+    document.getElementById('astPill').classList.toggle('hidden', open);
+    try { localStorage.setItem('ast_open', open ? '1' : '0'); } catch(e) {}
+}
+// Highlight on hover via event delegation
+// Attach highlight handlers directly to hint elements
+document.querySelectorAll('.ast-hint[data-highlight]').forEach(function(hint) {
+    hint.addEventListener('mouseover', function() { astHighlight(this.dataset.highlight, true); });
+    hint.addEventListener('mouseout', function() { astHighlight(this.dataset.highlight, false); });
+    hint.addEventListener('click', function() { astHighlight(this.dataset.highlight, true); setTimeout(function() { astHighlight(null, false); }, 3000); });
+});
+// Restore state
+(function() {
+    try { if (localStorage.getItem('ast_open') === '1') toggleAssistant(true); } catch(e) {}
+})();
+</script>
+{% endif %}

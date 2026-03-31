@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.1.0"
+__version__ = "7.2.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -287,6 +287,196 @@ def create_app(config_name=None):
                 return {"impact_levels_config": levels, "decision_tags": decision_tags, "strategy_enabled": strategy_enabled}
             return {"impact_levels_config": {}, "decision_tags": decision_tags, "strategy_enabled": strategy_enabled}
         return {"impact_levels_config": {}, "decision_tags": [], "strategy_enabled": False}
+
+    @app.context_processor
+    def inject_assistant():
+        """Generate contextual assistant hints based on current page, role, and data state."""
+        from flask import request, session
+        from flask_login import current_user
+
+        if not current_user.is_authenticated or not getattr(current_user, "assistant_enabled", False):
+            return {"assistant_hints": [], "assistant_location": None}
+
+        org_id = session.get("organization_id")
+        path = request.path
+        hints = []
+        location = None
+
+        # Helper to build hint dicts concisely
+        def H(htype, icon, text, action_url=None, action_label=None, highlight=None):
+            return {"type": htype, "icon": icon, "text": text, "action_url": action_url, "action_label": action_label, "highlight": highlight}
+
+        try:
+            is_admin = current_user.is_global_admin or current_user.is_super_admin or (current_user.is_org_admin(org_id) if org_id else False)
+
+            if "/workspace" in path and "/org-admin" not in path:
+                # ── WORKSPACE TREE ──
+                if path.endswith("/workspace") or path.endswith("/workspace/"):
+                    location = {"page": "CISK Workspace", "description": "The main tree view — your full hierarchy of Spaces, Challenges, Initiatives, Systems, and KPIs."}
+                    if org_id:
+                        from app.models import Space, Challenge, Initiative, KPI
+                        from app.models.system import InitiativeSystemLink
+                        spaces = Space.query.filter_by(organization_id=org_id).count()
+                        challenges = Challenge.query.filter_by(organization_id=org_id).count()
+                        initiatives = Initiative.query.filter_by(organization_id=org_id).count()
+                        kpis = db.session.query(KPI).join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).count()
+
+                        if spaces == 0:
+                            hints.append(H("action", "🚀", "Your workspace is empty! Start by creating your first Space.", "/org-admin/spaces/create", "Create Space"))
+                        elif challenges == 0:
+                            hints.append(H("action", "🎯", f"{spaces} space(s) created. Now add Challenges — click Edit Mode, then + on a space.", highlight="#wsEditModeBtn"))
+                        elif initiatives == 0:
+                            hints.append(H("action", "🚀", f"{challenges} challenge(s) defined. Create Initiatives to address them. Use Edit Mode.", highlight="#wsEditModeBtn"))
+                        elif kpis == 0:
+                            hints.append(H("action", "📊", "Structure ready! Add KPIs to start measuring. Click on a System in Edit Mode."))
+                        else:
+                            hints.append(H("tip", "✅", f"{spaces} spaces, {challenges} challenges, {initiatives} initiatives, {kpis} KPIs."))
+                            hints.append(H("tip", "📊", "Click any KPI cell to contribute data or view details."))
+
+                        from app.models import ImpactLevel
+                        if not ImpactLevel.get_org_levels(org_id) and is_admin:
+                            hints.append(H("info", "⚡", "Impact scale not configured. Set it up to enable prioritization.", "/org-admin/impact-levels", "Configure Impact"))
+
+                        hints.append(H("tip", "🌱", "Detail level: 🌱 tree only → 🌲 with values → 🎄 full detail + impact column.", highlight="#wsTreeBtn"))
+                        hints.append(H("tip", "☆", "Impact filter: cycle ☆→○→★→★★→★★★ to show entities by importance.", highlight="#wsImpactBtn"))
+                        hints.append(H("tip", "🔄", "Orange refresh button = data changed. Click to reload fresh values.", highlight="#wsRefreshBtn"))
+                        if is_admin:
+                            hints.append(H("info", "✏️", "Edit Mode lets you add/remove/reorder entities and drag columns.", highlight="#wsEditModeBtn"))
+                            hints.append(H("tip", "💾", "Save/load filter presets with My Presets.", highlight=".preset-bar"))
+
+                # ── KPI CONTRIBUTION ──
+                elif "/workspace/kpi/" in path:
+                    location = {"page": "KPI Contribution", "description": "Enter or edit values for this KPI. Consensus is computed automatically from all contributors."}
+                    hints.append(H("tip", "📝", "Type a contributor name — autocomplete suggests existing names to prevent typos.", highlight="#contributor_name"))
+                    hints.append(H("tip", "✏️", "Click the pencil icon on any row to edit inline — no scrolling needed.", highlight=".btn-outline-primary"))
+                    hints.append(H("info", "🤝", "If multiple contributors enter values, the system computes consensus (strong/weak/no consensus)."))
+                    hints.append(H("tip", "🗑️", "Delete a contribution to remove it from the consensus calculation.", highlight=".btn-outline-danger"))
+
+                # ── DECISION REGISTER ──
+                elif "/workspace/decision-register" in path:
+                    location = {"page": "Decision Register", "description": "Record and track decisions. Mention entities to link decisions to your CISK structure."}
+                    hints.append(H("action", "➕", "Click New Decision to record one.", highlight=".btn-light"))
+                    hints.append(H("tip", "🏷️", "Click tags to categorize (scope, budget, timeline...). Multiple tags allowed."))
+                    hints.append(H("tip", "🔗", "Type in Entity Mentions to link to initiatives, systems, or KPIs."))
+                    hints.append(H("tip", "🌱", "Use the tree icon to show/hide columns: 🌱 minimal → 🌲 + who/tags → 🎄 full detail.", highlight="#drDetailBtn"))
+                    hints.append(H("tip", "💾", "Save filter presets to quickly recall your preferred view.", highlight=".preset-bar"))
+
+                # ── KPI DASHBOARD ──
+                elif "/workspace/kpi-dashboard" in path:
+                    location = {"page": "KPI Dashboard", "description": "Performance overview — target progress, impact, consensus status for all KPIs."}
+                    hints.append(H("tip", "🎯", "Green/amber/red progress bars show target achievement. Click column headers to understand.", highlight=".kd-target-bar"))
+                    hints.append(H("tip", "☆", "Star filter: show only KPIs under high-importance entities.", highlight="#kdImpactBtn"))
+                    hints.append(H("tip", "🔽", "Open filters to narrow by governance body or target status.", highlight="[title='Filters']"))
+                    hints.append(H("tip", "🌱", "Detail level controls which columns are visible.", highlight="#kdDetailBtn"))
+
+                # ── CHALLENGES DASHBOARD ──
+                elif "/workspace/challenges-dashboard" in path:
+                    location = {"page": "Challenges Dashboard", "description": "Strategic alignment — how challenges are covered by initiatives and their execution health."}
+                    hints.append(H("tip", "🔴", "RAG dots show each initiative's execution status under the challenge."))
+                    hints.append(H("tip", "📊", "Coverage bar: what % of initiatives have KPIs assigned."))
+                    hints.append(H("tip", "☆", "Filter by impact to focus on high-priority challenges.", highlight="#cdImpactBtn"))
+
+                # ── SYSTEMS DASHBOARD ──
+                elif "/workspace/systems-dashboard" in path:
+                    location = {"page": "Systems Dashboard", "description": "System health, reuse across initiatives, KPI coverage, and portal links."}
+                    hints.append(H("tip", "🔗", "Systems shared across multiple initiatives show a reuse badge (e.g. '3x')."))
+                    hints.append(H("tip", "🧭", "Portal chips link to other CISK workspaces — click to open."))
+                    hints.append(H("tip", "🔽", "Filter by Shared, Portal, No KPIs, or With KPIs.", highlight="[title='Filters']"))
+
+                # ── IMPACTS DASHBOARD ──
+                elif "/workspace/impacts-dashboard" in path:
+                    location = {"page": "Impacts Dashboard", "description": "Impact assessment coverage, distribution, and gap analysis across your hierarchy."}
+                    hints.append(H("tip", "🎯", "Coverage rings show what % of entities have impact assessed."))
+                    hints.append(H("tip", "🟩", "Heatmap: each cell = one entity. Color = true importance. Grey = assessed but chain incomplete. Light = not set.", highlight=".id-heatmap"))
+                    hints.append(H("info", "📋", "Gaps table lists entities missing impact — fix them to complete the chain.", highlight=".id-gaps"))
+                    hints.append(H("tip", "🌱", "🌱 = rings + coverage → 🌲 + heatmap + method → 🎄 + gaps table.", highlight="#idDetailBtn"))
+
+                # ── VISIBILITY DASHBOARD ──
+                elif "/workspace/visibility-dashboard" in path:
+                    location = {"page": "Visibility Dashboard", "description": "Public vs private content — understand what's shared and what's restricted."}
+                    hints.append(H("tip", "🟢", "Green ring = shared items visible to all. Red = private, owner-only."))
+                    hints.append(H("tip", "🔒", "Private items table shows exactly what's hidden and who owns it."))
+
+                # ── GOVERNANCE DASHBOARD ──
+                elif "/workspace/governance" in path:
+                    location = {"page": "Governance Dashboard", "description": "Per governance body: KPIs, actions, decisions, and initiatives they oversee."}
+                    hints.append(H("tip", "🏛️", "Use the GB selector to switch between governance bodies."))
+                    hints.append(H("tip", "🌱", "Detail level: 🌱 KPIs only → 🌲 + actions/decisions → 🎄 + initiatives.", highlight="#gbdDetailBtn"))
+
+                # ── STRATEGY ──
+                elif "/workspace/strategy" in path:
+                    location = {"page": "Strategic Pillars", "description": "Your organization's guiding themes. Each pillar has an icon, color, and bullet points."}
+                    if is_admin:
+                        hints.append(H("info", "✏️", "Click Edit to modify pillars — drag to reorder, click icons to change."))
+
+                # ── THEORY ──
+                elif "/workspace/theory" in path:
+                    location = {"page": "CISK Theory", "description": "The theoretical foundation — how entities, values, consensus, and impacts work together."}
+                    hints.append(H("tip", "📖", "Scroll through sections to understand the CISK framework."))
+
+                # ── IMPACT DOCS ──
+                elif "/workspace/impact-docs" in path:
+                    location = {"page": "Impact Calculation Docs", "description": "The 5 compounding methods: Simple Product, Geometric Mean, Toyota QFD, Toyota Weighted (DS/Full)."}
+                    hints.append(H("tip", "📊", "Comparison table at the bottom shows how each method scores the same chains differently."))
+
+                # ── INITIATIVE REVIEW ──
+                elif "/org-admin/initiatives/" in path and "/form" in path:
+                    location = {"page": "Initiative Review", "description": "Detailed initiative view with execution tracking, KPIs, actions, and decisions."}
+                    hints.append(H("tip", "🔄", "Form tab = edit details. Execution tab = RAG status, progress updates, decisions.", highlight=".initiative-tab-btn"))
+                    hints.append(H("tip", "🌱", "Detail level: 🌱 minimal → 🌲 key context → 🎄 everything.", highlight="#detailModeBtn"))
+                    hints.append(H("tip", "◀▶", "Use prev/next arrows to navigate between initiatives without going back."))
+
+            # ── ACTION REGISTER ──
+            elif "/toolbox/actions" in path:
+                location = {"page": "Action Register", "description": "Track action items and memos across the organization."}
+                hints.append(H("action", "➕", "Click New Item to create an action or memo.", highlight=".btn-light.fw-semibold"))
+                hints.append(H("tip", "📌", "Use @mentions in descriptions to link actions to CISK entities."))
+                hints.append(H("tip", "🌱", "Detail level: 🌱 title/status → 🌲 + dates/owner → 🎄 + GB/type/links.", highlight="#actionDetailBtn"))
+                hints.append(H("tip", "☆", "Star filter: show only actions linked to high-importance entities.", highlight="#actImpactBtn"))
+                hints.append(H("tip", "🔽", "Open filters for status, priority, governance body, and more.", highlight="#filters-toggle-btn"))
+
+            # ── ORG ADMIN ──
+            elif "/org-admin" in path:
+                if path.endswith("/org-admin") or path.endswith("/org-admin/"):
+                    location = {"page": "Workspace Administration", "description": "Central hub for configuring your workspace: branding, impact, geography, value types, strategy."}
+                    hints.append(H("tip", "🎨", "Branding: customize colors, icons, and logos for all entity types."))
+                    hints.append(H("tip", "⚡", "Impact Scale: configure the 3-level assessment and compounding method."))
+                    hints.append(H("tip", "📊", "Value Types: define what gets measured — each becomes a workspace column."))
+                elif "/impact-levels" in path:
+                    location = {"page": "Impact Scale Configuration", "description": "Configure symbols, weights, colors for 3 impact levels, and choose a compounding method."}
+                    hints.append(H("tip", "🎚️", "Choose a compounding method: Geometric Mean (balanced), Toyota QFD (sharp), or Toyota Weighted (amplified)."))
+                    hints.append(H("info", "📖", "Click Documentation to see formulas and comparison tables.", highlight="[target='_blank']"))
+                elif "/strategy" in path:
+                    location = {"page": "Strategic Pillars Editor", "description": "Define pillars with icons, accent colors, and bullet-point descriptions. Drag to reorder."}
+                elif "/value-types" in path:
+                    location = {"page": "Value Types", "description": "Each value type becomes a column in the workspace. Drag to reorder columns."}
+                    hints.append(H("tip", "🔢", "Numeric, qualitative (risk, sentiment, level), list, and formula types available."))
+                    hints.append(H("tip", "📐", "Formula types compute automatically from other value types (e.g. Net = Revenue - Cost)."))
+                elif "/branding" in path:
+                    location = {"page": "Branding Manager", "description": "Set default colors, icons, and logos for each entity type (space, challenge, initiative, system, KPI)."}
+                else:
+                    location = {"page": "Workspace Admin", "description": "Organization configuration and management."}
+                if is_admin:
+                    hints.append(H("info", "🔧", "Admin changes affect all users in this workspace."))
+
+            # ── INSTANCE ADMIN ──
+            elif "/global-admin" in path:
+                location = {"page": "Instance Administration", "description": "Manage workspaces, users, backup/restore, and system health."}
+                hints.append(H("tip", "🏢", "Create and manage workspaces from the Workspaces tab."))
+                hints.append(H("tip", "💾", "Use Backup & Restore for full JSON exports with user/GB mapping on import."))
+
+            elif "/super-admin" in path:
+                location = {"page": "Super Administration", "description": "System-wide settings: maintenance mode, SSO, beta, pre-compute rollups, tree cache."}
+                hints.append(H("tip", "⚡", "Pre-compute rollups: 22x faster workspace loads. Toggle ON and recompute per org.", highlight="#precomputeToggle"))
+                hints.append(H("tip", "💾", "Tree cache: stores workspace data in browser localStorage for instant loads.", highlight="#treeCacheToggle"))
+
+            if not location:
+                location = {"page": "CISK Navigator", "description": "Navigate using the menu bar above."}
+
+        except Exception:
+            pass
+
+        return {"assistant_hints": hints, "assistant_location": location}
 
     # Mark rollup cache stale on data-changing requests
     @app.after_request
