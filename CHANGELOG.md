@@ -15,8 +15,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Targets & KPI status (traffic lights), Dashboards overview
   - Decisions, Action Items, Stakeholders, Geography, Governance, Snapshots
   - Tips & Shortcuts section
+  - Naming guides with real-world examples: Spaces, Challenges, Initiatives, Systems, Value Types (8-10 domains each)
   - Admin-only sections (entity management, value type config, rollup/cache, backup/restore, branding) visible only to org admins, global admins, and super admins
   - Dark mode support, responsive mobile layout, back-to-top button
+- **What's New page** (`/workspace/changelog`) — user-friendly release history (22 releases, v2.0–v7.4); version number + (i) in navbar links to it
+- **Contextual Assistant guided journey** — full setup flow: Porter's Five Forces → Spaces → Challenges → Initiatives → Value Types → Systems → KPIs, with documentation links at each step
+  - Page-specific hints on 30+ pages (Porter's, SWOT, Spaces, Challenges, Initiatives, Systems, KPIs, Value Types, Stakeholders, Map, Documentation, dashboards, etc.)
+  - Fix page detection order for nested URLs (e.g. `/challenges/X/initiatives/create`)
+  - Rename "Initiative Form" → "Create Initiative" / "Edit Initiative", same for Systems
+  - Remove generic "Admin changes affect all users" hint
+- **Fullscreen toggle** — icon in navbar top-right, works on all pages, cross-browser (requestFullscreen + webkit + ms)
+- **Tree auto-expand on create** — creating an entity passes parent chain via `expand` URL param; tree expands to reveal the new entity
+- **Tree auto-refresh on delete** — space, challenge, initiative, system unlink, and KPI deletions instantly refresh the tree via `loadData(true)`; no more alert boxes on success
+
+### Changed
+- **Entity icons always visible** — folder, bullseye, rocket, gear, graph icons now show in both view and edit modes (removed `editMode` condition)
+- **Consistent tree indentation** — drag handles use `visibility:hidden` instead of `display:none` in view mode, keeping indentation identical between modes
+- **Workspace Dashboard renamed to Workspace Home** — page title, assistant, and value type hints updated
+- **Onboarding wizard disabled** — the contextual Assistant now handles the guided setup journey (code preserved, `needs_onboarding = False`)
+- **Help menu** — removed "Impact Calculation Docs" (covered in Documentation hub); added "Documentation" as first item
+
+### Fixed
+- **"Organization" → "Workspace"** in 13 org-admin UI locations (branding, logos, spaces, links, KPI source, onboarding, link health, type labels)
+- **Unicode accent comparison** for org name confirmation — strip + NFC + NFKD + accent-stripped casefold fallback
+- **Trailing whitespace on org names** — `@validates("name")` on Organization model strips automatically
+- **Assistant page detection** — nested URLs like `/challenges/X/initiatives/create` now match the correct page (most-nested first ordering)
 
 ## [7.3.0] - 2026-03-31
 
