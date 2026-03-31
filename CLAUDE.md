@@ -12,6 +12,17 @@ The UI uses different terms than the database models:
 | **Portal System** | `System.linked_organization_id` | System linked to another CISK org |
 | **Decision Register** | `Decision` model | All decisions (standalone + from initiative review). Entity mentions link to any entity. Legacy `InitiativeProgressUpdate.decisions` JSON is deprecated |
 
+## Pre-computed Rollups (Performance)
+
+When "Pre-compute" is ON in Super Admin:
+- `RollupCacheEntry` table stores all computed rollup values per (entity, value_type)
+- `RollupComputeService.recompute_organization(org_id)` walks the full hierarchy and populates cache
+- `_build_workspace_data()` reads from cache (1 query) instead of computing on the fly (hundreds of queries)
+- Cache auto-invalidated via `after_request` hook on POST/PUT/DELETE to `/org-admin/`, `/workspace/contribute`, `/workspace/decision-register`
+- Stale cache auto-recomputed on next workspace load
+- Per-org stale flag: `SystemSetting` key `rollup_cache_stale_{org_id}`
+- Manual recompute: Super Admin buttons or `/workspace/api/recompute-rollups` (POST)
+
 **Rule:** Use "Workspace" in UI text, "Organization" only in code/models/DB.
 
 ## Presets System (IMPORTANT)

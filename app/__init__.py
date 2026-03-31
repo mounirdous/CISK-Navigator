@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "6.5.0"
+__version__ = "7.0.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -231,6 +231,7 @@ def create_app(config_name=None):
             "maintenance_mode": SystemSetting.is_maintenance_mode(),
             "beta_enabled": SystemSetting.is_beta_enabled(),
             "tree_cache_enabled": SystemSetting.is_tree_cache_enabled(),
+            "precompute_rollups_enabled": SystemSetting.is_precompute_rollups_enabled(),
             "app_version": __version__,
             "csrf_token": generate_csrf,
         }
@@ -286,6 +287,26 @@ def create_app(config_name=None):
                 return {"impact_levels_config": levels, "decision_tags": decision_tags, "strategy_enabled": strategy_enabled}
             return {"impact_levels_config": {}, "decision_tags": decision_tags, "strategy_enabled": strategy_enabled}
         return {"impact_levels_config": {}, "decision_tags": [], "strategy_enabled": False}
+
+    # Mark rollup cache stale on data-changing requests
+    @app.after_request
+    def mark_rollup_cache_stale_on_change(response):
+        """Mark rollup cache as stale when data-modifying requests succeed."""
+        from flask import request as _req
+        if _req.method in ("POST", "PUT", "DELETE") and response.status_code < 400:
+            path = _req.path
+            if "/org-admin/" in path or "/workspace/kpi/" in path or "/workspace/decision-register" in path:
+                from flask import session as _sess
+                org_id = _sess.get("organization_id")
+                if org_id:
+                    try:
+                        from app.models import SystemSetting
+                        SystemSetting.mark_rollup_cache_stale(org_id, changed_path=path)
+                        db.session.commit()
+                        import logging as _plog; _ptl = _plog.getLogger("perf_trace"); _ptl.info(f"[PERF_TRACE] Marked rollup cache STALE for org={org_id} (path={path})")  # [PERF_TRACE]
+                    except Exception:
+                        pass  # Don't break the response if stale marking fails
+        return response
 
     # Register error handlers
     @app.errorhandler(404)

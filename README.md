@@ -1,8 +1,8 @@
-# 🧭 CISK Navigator v6.3.0
+# 🧭 CISK Navigator v7.0.0
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-6.3.0-blue)
+![Version](https://img.shields.io/badge/version-7.0.0-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
@@ -68,6 +68,7 @@
 - **3-level xmas tree** (🌲/🎄/🎄✨) — Level 0 = tree only, Level 1 = tree + values, Level 2 = full decorations + Impact column
 - **Impact filter** (☆/○/★/★★/★★★) — cycling icon filters all entity levels by true importance; available on workspace, action register, and decision register
 - **Tree state persistence** — expanded/collapsed nodes survive navigation and page reloads via localStorage
+- **Pre-computed rollups** — 22x faster workspace loads (220ms vs 6s); incremental recompute on data changes (5 entities vs 180); auto-invalidation on saves; Super Admin toggle
 - **5 impact compounding methods** — Simple Product, Geometric Mean, Toyota QFD, Toyota Weighted (DS), Toyota Weighted (Full); configurable reinforcement weights
 - **Decision Register** — unified decision management with tags, entity mentions, GB selector, presets, filters, xmas tree, impact filter. Decisions created from initiative review or standalone — single `Decision` model, no more JSON blobs
 - **Click-based info windows** replacing hover tooltips — draggable with touch support

@@ -1960,8 +1960,8 @@
             <!-- Refresh data (force reload from server) -->
             <button @click="_stale=false; loadData(true)"
                     class="btn btn-sm"
-                    :class="_stale && _treeCacheEnabled ? 'btn-warning' : 'btn-outline-light'"
-                    :style="_stale && _treeCacheEnabled ? 'animation:ws-pulse 1.5s ease infinite;' : 'opacity:0.7;'"
+                    :class="_stale ? 'btn-warning' : 'btn-outline-light'"
+                    :style="_stale ? 'animation:ws-pulse 1.5s ease infinite;' : 'opacity:0.7;'"
                     :title="_stale ? 'Data changed — click to refresh' : 'Refresh workspace data'">
                 <i class="bi bi-arrow-clockwise" style="font-size: 1rem;"></i>
             </button>
@@ -3886,6 +3886,8 @@ function workspaceV2(orgId, filterPresets) {
             if (this._loadDataInProgress) return;
             this._loadDataInProgress = true;
 
+            console.log('[PERF_TRACE] loadData START forceRefresh=' + forceRefresh + ' treeCacheEnabled=' + this._treeCacheEnabled + ' time=' + new Date().toISOString()); // [PERF_TRACE]
+
             var cacheKey = 'ws_data_' + {{ org_id }};
             var cacheMetaKey = 'ws_data_meta_' + {{ org_id }};
 
@@ -3896,7 +3898,8 @@ function workspaceV2(orgId, filterPresets) {
             } catch(e) {}
 
             // Try cache first (instant — no loading card)
-            if (!forceRefresh && this._treeCacheEnabled) {
+            // Skip cache if data is dirty (ws_dirty flag set by form submissions)
+            if (!forceRefresh && this._treeCacheEnabled && !this._stale) {
                 try {
                     var cachedMeta = localStorage.getItem(cacheMetaKey);
                     if (cachedMeta) {
@@ -3905,6 +3908,7 @@ function workspaceV2(orgId, filterPresets) {
                         if (ageMs < 1200000) {
                             var cachedData = localStorage.getItem(cacheKey);
                             if (cachedData) {
+                                console.log('[PERF_TRACE] CACHE HIT — loading from localStorage (age=' + Math.round(ageMs/1000) + 's)'); // [PERF_TRACE]
                                 this._processData(JSON.parse(cachedData));
                                 this.loading = false;
                                 this._loadDataInProgress = false;
@@ -3922,6 +3926,8 @@ function workspaceV2(orgId, filterPresets) {
             }
 
             // No cache — show loading card and fetch from server
+            console.log('[PERF_TRACE] CACHE MISS — fetching from server, time=' + new Date().toISOString()); // [PERF_TRACE]
+            var _fetchStart = performance.now(); // [PERF_TRACE]
             this.loading = true;
             this.loadingPct = 10;
             this.loadingDetail = '';
@@ -3934,6 +3940,7 @@ function workspaceV2(orgId, filterPresets) {
                 this.loadingPct = 50;
                 var data = await response.json();
 
+                console.log('[PERF_TRACE] Server response received in ' + Math.round(performance.now() - _fetchStart) + 'ms'); // [PERF_TRACE]
                 // Check for server error
                 if (data.error) {
                     console.error('Server error:', data.error);
@@ -6080,8 +6087,11 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
             body: JSON.stringify({ entity_type: entityType, entity_id: entityId, impact_level: val })
         }).then(function(r) { return r.json(); }).then(function(data) {
             if (data.ok) {
-                try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}
+                console.log('[PERF_TRACE] Impact saved — marking stale (NO rollup recompute needed)'); // [PERF_TRACE]
                 win.remove();
+                try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}
+                var wsEl = document.querySelector('.workspace-v2');
+                if (wsEl && wsEl._x_dataStack) wsEl._x_dataStack[0]._stale = true;
             }
         });
     });

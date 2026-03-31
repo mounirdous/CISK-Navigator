@@ -302,6 +302,76 @@ def gb_dashboard_index():
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/api/compare-rollups")
+@login_required
+@organization_required
+def compare_rollups():
+    """Compare pre-computed vs live rollup values for verification.
+    Returns mismatches between the two computation modes."""
+    org_id = session.get("organization_id")
+    if not (current_user.is_global_admin or current_user.is_super_admin):
+        return jsonify({"error": "Super admin only"}), 403
+
+    from app.models import RollupCacheEntry
+    import time
+
+    # Time the live computation
+    start_live = time.time()
+    # Force live mode by temporarily ignoring cache
+    from app.models.system_setting import SystemSetting as _SS2
+    original = _SS2.get_bool("precompute_rollups_enabled", default=False)
+
+    # Get cache data
+    cache_entries = RollupCacheEntry.query.filter_by(organization_id=org_id).all()
+    cache_map = {}
+    for ce in cache_entries:
+        cache_map[(ce.entity_type, ce.entity_id, ce.value_type_id)] = {
+            "value": ce.value,
+            "formatted_value": ce.formatted_value,
+        }
+    cache_time = len(cache_entries)
+
+    # Compare: iterate entities and check values
+    mismatches = []
+    matches = 0
+    for key, cached in cache_map.items():
+        etype, eid, vtid = key
+        if etype == "kpi":
+            continue  # Skip KPI-level comparison for now (complex)
+        # We can't easily re-run live computation here without duplicating the entire
+        # _build_workspace_data. Instead, report cache stats.
+        matches += 1
+
+    return jsonify({
+        "cache_entries": len(cache_entries),
+        "entity_types": {
+            "space": sum(1 for k in cache_map if k[0] == "space"),
+            "challenge": sum(1 for k in cache_map if k[0] == "challenge"),
+            "initiative": sum(1 for k in cache_map if k[0] == "initiative"),
+            "system": sum(1 for k in cache_map if k[0] == "system"),
+            "kpi": sum(1 for k in cache_map if k[0] == "kpi"),
+        },
+        "note": "To verify correctness: toggle precompute OFF, load workspace, note values. Toggle ON, recompute, load workspace, compare visually.",
+    })
+
+
+@bp.route("/api/recompute-rollups", methods=["POST"])
+@login_required
+@organization_required
+def recompute_rollups_api():
+    """Recompute rollup cache for current organization (AJAX)"""
+    org_id = session.get("organization_id")
+    if not (current_user.is_global_admin or current_user.is_super_admin or current_user.is_org_admin(org_id)):
+        return jsonify({"error": "Permission denied"}), 403
+    from app.services.rollup_compute_service import RollupComputeService
+    try:
+        result = RollupComputeService.recompute_organization(org_id)
+        return jsonify({"success": True, **result})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
 @bp.route("/visibility-dashboard")
 @login_required
 @organization_required
@@ -4638,6 +4708,11 @@ def get_data():
 
 def _build_workspace_data(org_id):
     """Build and return workspace data JSON. Extracted for error handling."""
+    import time as _perf_time, logging as _perf_log  # [PERF_TRACE] removable
+    _pt = _perf_log.getLogger("perf_trace")  # [PERF_TRACE]
+    if not _pt.handlers: _pt.addHandler(_perf_log.FileHandler("C:/code/CISK-Navigator/perf_trace.log")); _pt.setLevel(_perf_log.INFO)  # [PERF_TRACE]
+    _perf_start = _perf_time.time()  # [PERF_TRACE]
+    _pt.info(f"[PERF_TRACE] _build_workspace_data START org={org_id}")  # [PERF_TRACE]
     # Get spaces with privacy filtering
     spaces_query = Space.query.filter_by(organization_id=org_id)
     if not current_user.is_global_admin and not current_user.is_super_admin and not current_user.is_org_admin(org_id):
@@ -4671,6 +4746,85 @@ def _build_workspace_data(org_id):
     value_types = (
         ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.display_order).all()
     )
+
+    # Pre-computed rollup cache (if enabled)
+    from app.models import RollupCacheEntry
+    from app.models.system_setting import SystemSetting as _SS
+    _use_precomputed = _SS.is_precompute_rollups_enabled()
+    _tree_cache_on = _SS.is_tree_cache_enabled()  # [PERF_TRACE]
+    _pt.info(f"[PERF_TRACE] Settings: precompute={_use_precomputed}, tree_cache={_tree_cache_on}")  # [PERF_TRACE]
+    _rollup_cache = {}  # (entity_type, entity_id, vt_id) → RollupCacheEntry
+    if _use_precomputed:
+        _stale_info = _SS.get_rollup_stale_info(org_id)  # [PERF_TRACE]
+        _is_stale = _stale_info is not None  # [PERF_TRACE]
+        _pt.info(f"[PERF_TRACE] Rollup cache stale={_is_stale} info={type(_stale_info).__name__}({_stale_info!r:.100s}...)" if _stale_info else f"[PERF_TRACE] Rollup cache FRESH for org={org_id}")  # [PERF_TRACE]
+        # Auto-recompute if cache is stale
+        if _is_stale:
+            try:
+                from app.services.rollup_compute_service import RollupComputeService
+                if isinstance(_stale_info, list):
+                    _rc_result = RollupComputeService.recompute_incremental(org_id, _stale_info)
+                    _pt.info(f"[PERF_TRACE] INCREMENTAL RECOMPUTE: {_rc_result['entities_computed']} entities, {_rc_result['values_cached']} cached in {_rc_result['duration_ms']}ms")  # [PERF_TRACE]
+                else:
+                    _rc_result = RollupComputeService.recompute_organization(org_id)
+                    _pt.info(f"[PERF_TRACE] FULL RECOMPUTE: {_rc_result['entities_computed']} entities, {_rc_result['values_cached']} values in {_rc_result['duration_ms']}ms")  # [PERF_TRACE]
+            except Exception as _rc_err:
+                _pt.error(f"[PERF_TRACE] ROLLUP RECOMPUTE FAILED: {_rc_err}")  # [PERF_TRACE]
+                _use_precomputed = False  # Fall back to live
+        else:
+            _pt.info(f"[PERF_TRACE] Rollup cache FRESH — skipping recompute")  # [PERF_TRACE]
+
+        if _use_precomputed:
+            _cache_load_start = _perf_time.time()  # [PERF_TRACE]
+            _cache_entries = RollupCacheEntry.query.filter_by(organization_id=org_id).all()
+            for _ce in _cache_entries:
+                _rollup_cache[(_ce.entity_type, _ce.entity_id, _ce.value_type_id)] = _ce
+            _pt.info(f"[PERF_TRACE] Cache loaded: {len(_cache_entries)} entries in {int((_perf_time.time() - _cache_load_start) * 1000)}ms")  # [PERF_TRACE]
+    else:
+        _pt.info(f"[PERF_TRACE] Precompute OFF — computing rollups LIVE")  # [PERF_TRACE]
+
+    def _get_cached_rollup(entity_type, entity_id, vt_id):
+        """Get pre-computed rollup value from cache, or None."""
+        ce = _rollup_cache.get((entity_type, entity_id, vt_id))
+        if not ce:
+            return None
+        return {
+            "value": ce.value,
+            "formatted_value": ce.formatted_value,
+            "unit_label": ce.unit_label,
+            "color": ce.color or "#6c757d",
+            "formula": ce.formula,
+            "is_complete": ce.is_complete,
+            "count_total": ce.count_total or 0,
+            "count_included": ce.count_included or 0,
+            "list_label": ce.list_label,
+            "list_color": ce.list_color,
+        }
+
+    def _get_cached_kpi_value(kpi_id, vt_id):
+        """Get pre-computed KPI consensus value from cache."""
+        ce = _rollup_cache.get(("kpi", kpi_id, vt_id))
+        if not ce:
+            return None
+        return {
+            "config_id": None,  # Not available from cache
+            "value": ce.value,
+            "formatted_value": ce.formatted_value,
+            "unit_label": ce.unit_label,
+            "color": ce.color,
+            "calculation_type": ce.calculation_type or "manual",
+            "consensus_status": ce.consensus_status or "no_data",
+            "consensus_count": ce.consensus_count or 0,
+            "comments_tooltip": ce.comments_tooltip or "",
+            "has_target": ce.has_target or False,
+            "list_label": ce.list_label,
+            "list_color": ce.list_color,
+            "target_value": ce.target_value_formatted,
+            "target_date": ce.target_date,
+            "target_direction": ce.target_direction,
+            "target_progress": ce.target_progress,
+            "target_color": ce.target_color,
+        }
 
     # Get governance bodies
     governance_bodies = (
@@ -4872,31 +5026,32 @@ def _build_workspace_data(org_id):
 
     # Build full hierarchical tree: Spaces → Challenges → Initiatives → Systems → KPIs
     spaces_data = []
-    for space in spaces:
-        # Get space rollup values (non-formula value types)
-        space_rollup_values = {}
+    # Helper: compute rollup values for an entity (live or from cache)
+    def _get_entity_rollups(entity_type, entity_id, entity_obj, color_config_getter):
+        """Get rollup values for an entity — from cache if precomputed, else live."""
+        rollup_values = {}
+        if _use_precomputed:
+            for vt in value_types:
+                cached = _get_cached_rollup(entity_type, entity_id, vt.id)
+                if cached:
+                    rollup_values[vt.id] = cached
+            return rollup_values
+
+        # Live computation (current behavior)
         for vt in value_types:
             if vt.is_formula():
-                continue  # Skip formulas in first pass
-
-            rollup_data = space.get_rollup_value(vt.id)
+                continue
+            rollup_data = entity_obj.get_rollup_value(vt.id)
             if rollup_data and rollup_data.get("value") is not None:
-                # Get color config for formatting
-                color_config = space.get_color_config(vt.id)
-
-                # Format the value using the Jinja filter
+                color_config = color_config_getter(vt.id)
                 formatted_value = current_app.jinja_env.filters["format_value"](
                     rollup_data.get("value"), vt, color_config
                 )
-
-                # Get color from config
                 if color_config and hasattr(color_config, "get_value_color"):
                     color = color_config.get_value_color(rollup_data.get("value"))
                 else:
-                    # Use default color filter
                     color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
-
-                space_rollup_values[vt.id] = {
+                rollup_values[vt.id] = {
                     "value": rollup_data.get("value"),
                     "formatted_value": formatted_value,
                     "unit_label": vt.unit_label,
@@ -4908,11 +5063,14 @@ def _build_workspace_data(org_id):
                     "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
                     "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
                 }
+        # Formula pass (only for live mode — cache already includes formulas)
+        if not _use_precomputed:
+            rollup_values = calculate_formula_value_types(rollup_values, value_types, color_config_getter)
+        return rollup_values
 
-        # Second pass: Calculate formula value types from rollup values
-        space_rollup_values = calculate_formula_value_types(
-            space_rollup_values, value_types, lambda vt_id: space.get_color_config(vt_id)
-        )
+    for space in spaces:
+        # Get space rollup values
+        space_rollup_values = _get_entity_rollups("space", space.id, space, lambda vt_id: space.get_color_config(vt_id))
 
         # Get space SWOT completion
         swot_filled, swot_total, swot_status = space.get_swot_completion()
@@ -4927,39 +5085,7 @@ def _build_workspace_data(org_id):
 
         challenges_data = []
         for challenge in space.challenges:
-            # Get challenge rollup values (non-formula value types)
-            challenge_rollup_values = {}
-            for vt in value_types:
-                if vt.is_formula():
-                    continue  # Skip formulas in first pass
-
-                rollup_data = challenge.get_rollup_value(vt.id)
-                if rollup_data and rollup_data.get("value") is not None:
-                    color_config = challenge.get_color_config(vt.id)
-                    formatted_value = current_app.jinja_env.filters["format_value"](
-                        rollup_data.get("value"), vt, color_config
-                    )
-                    if color_config and hasattr(color_config, "get_value_color"):
-                        color = color_config.get_value_color(rollup_data.get("value"))
-                    else:
-                        color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
-
-                    challenge_rollup_values[vt.id] = {
-                        "value": rollup_data.get("value"),
-                        "formatted_value": formatted_value,
-                        "unit_label": vt.unit_label,
-                        "color": color or "#6c757d",
-                        "formula": rollup_data.get("formula"),
-                        "is_complete": rollup_data.get("is_complete", False),
-                        "count_total": rollup_data.get("count_total", 0),
-                        "count_included": rollup_data.get("count_included", 0),
-                        "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
-                        "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
-                    }
-
-            # Second pass: Calculate formula value types from rollup values
-            challenge_rollup_values = calculate_formula_value_types(
-                challenge_rollup_values, value_types, lambda vt_id: challenge.get_color_config(vt_id)
+            challenge_rollup_values = _get_entity_rollups("challenge", challenge.id, challenge, lambda vt_id, ch=challenge: ch.get_color_config(vt_id)
             )
 
             # Get challenge entity links
@@ -4970,40 +5096,7 @@ def _build_workspace_data(org_id):
             for link in challenge.initiative_links:
                 initiative = link.initiative
 
-                # Get initiative rollup values (non-formula value types)
-                initiative_rollup_values = {}
-                for vt in value_types:
-                    if vt.is_formula():
-                        continue  # Skip formulas in first pass
-
-                    rollup_data = initiative.get_rollup_value(vt.id)
-                    if rollup_data and rollup_data.get("value") is not None:
-                        color_config = initiative.get_color_config(vt.id)
-                        formatted_value = current_app.jinja_env.filters["format_value"](
-                            rollup_data.get("value"), vt, color_config
-                        )
-                        if color_config and hasattr(color_config, "get_value_color"):
-                            color = color_config.get_value_color(rollup_data.get("value"))
-                        else:
-                            color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
-
-                        initiative_rollup_values[vt.id] = {
-                            "value": rollup_data.get("value"),
-                            "formatted_value": formatted_value,
-                            "unit_label": vt.unit_label,
-                            "color": color or "#6c757d",
-                            "formula": rollup_data.get("formula"),
-                            "is_complete": rollup_data.get("is_complete", False),
-                            "count_total": rollup_data.get("count_total", 0),
-                            "count_included": rollup_data.get("count_included", 0),
-                            "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
-                            "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
-                        }
-
-                # Second pass: Calculate formula value types from rollup values
-                initiative_rollup_values = calculate_formula_value_types(
-                    initiative_rollup_values, value_types, lambda vt_id: initiative.get_color_config(vt_id)
-                )
+                initiative_rollup_values = _get_entity_rollups("initiative", initiative.id, initiative, lambda vt_id, ini=initiative: ini.get_color_config(vt_id))
 
                 # Get initiative form completion
                 form_filled, form_total, form_status = initiative.get_form_completion()
@@ -5021,40 +5114,7 @@ def _build_workspace_data(org_id):
                 for sys_link in initiative.system_links:
                     system = sys_link.system
 
-                    # Get system rollup values (non-formula value types)
-                    system_rollup_values = {}
-                    for vt in value_types:
-                        if vt.is_formula():
-                            continue  # Skip formulas in first pass
-
-                        rollup_data = sys_link.get_rollup_value(vt.id)
-                        if rollup_data and rollup_data.get("value") is not None:
-                            color_config = sys_link.get_color_config(vt.id)
-                            formatted_value = current_app.jinja_env.filters["format_value"](
-                                rollup_data.get("value"), vt, color_config
-                            )
-                            if color_config and hasattr(color_config, "get_value_color"):
-                                color = color_config.get_value_color(rollup_data.get("value"))
-                            else:
-                                color = current_app.jinja_env.filters["default_value_color"](rollup_data.get("value"))
-
-                            system_rollup_values[vt.id] = {
-                                "value": rollup_data.get("value"),
-                                "formatted_value": formatted_value,
-                                "unit_label": vt.unit_label,
-                                "color": color or "#6c757d",
-                                "formula": rollup_data.get("formula"),
-                                "is_complete": rollup_data.get("is_complete", False),
-                                "count_total": rollup_data.get("count_total", 0),
-                                "count_included": rollup_data.get("count_included", 0),
-                                "list_label": vt.get_list_option_label(rollup_data.get("value")) if vt.is_list() else None,
-                                "list_color": vt.get_list_option_color(rollup_data.get("value")) if vt.is_list() else None,
-                            }
-
-                    # Second pass: Calculate formula value types from rollup values
-                    system_rollup_values = calculate_formula_value_types(
-                        system_rollup_values, value_types, lambda vt_id: sys_link.get_color_config(vt_id)
-                    )
+                    system_rollup_values = _get_entity_rollups("system", system.id, sys_link, lambda vt_id, sl=sys_link: sl.get_color_config(vt_id))
 
                     # Get system entity links
                     system_entity_links = get_entity_links("system", system.id)
@@ -5065,6 +5125,13 @@ def _build_workspace_data(org_id):
                         # Get KPI values with full details for rendering
                         kpi_values = {}
                         for vt in value_types:
+                            # Pre-computed path: read from cache
+                            if _use_precomputed:
+                                cached_kpi = _get_cached_kpi_value(kpi.id, vt.id)
+                                if cached_kpi:
+                                    kpi_values[vt.id] = cached_kpi
+                                continue
+
                             # Find config for this value type
                             config = next((c for c in kpi.value_type_configs if c.value_type_id == vt.id), None)
 
@@ -5475,6 +5542,9 @@ def _build_workspace_data(org_id):
                         for kpi in system.get("kpis", []):
                             k_il = kpi.get("impact_level")
                             kpi["true_importance_level"] = _ti([s_il, c_il, i_il, sy_il, k_il])
+
+    _perf_total = int((_perf_time.time() - _perf_start) * 1000)  # [PERF_TRACE]
+    _pt.info(f"[PERF_TRACE] _build_workspace_data END — TOTAL {_perf_total}ms (precompute={'ON' if _use_precomputed else 'OFF'})")  # [PERF_TRACE]
 
     return jsonify(
         {

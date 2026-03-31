@@ -24,6 +24,7 @@ from .initiative import ChallengeInitiativeLink, Initiative, InitiativeProgressU
 from .kpi import KPI
 from .kpi_snapshot import KPISnapshot, RollupSnapshot
 from .organization import Organization, UserOrganizationMembership
+from .rollup_cache import RollupCacheEntry
 from .rollup_rule import RollupRule
 from .saved_chart import SavedChart
 from .saved_search import SavedSearch

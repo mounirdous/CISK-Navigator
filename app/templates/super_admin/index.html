@@ -177,6 +177,42 @@
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-lightning-charge text-warning fs-4 me-2"></i>
+                        <h6 class="mb-0 fw-bold">Pre-compute</h6>
+                        <div class="form-check form-switch ms-auto">
+                            <input class="form-check-input" type="checkbox" id="precomputeToggle"
+                                   {% if precompute_rollups_enabled %}checked{% endif %}
+                                   onchange="document.getElementById('precomputeToggleForm').submit()">
+                        </div>
+                    </div>
+                    <form id="precomputeToggleForm" method="POST" action="{{ url_for('super_admin.toggle_precompute_rollups') }}" style="display: none;"></form>
+                    <small class="text-muted">
+                        {% if precompute_rollups_enabled %}
+                        <span class="text-success"><i class="bi bi-check-circle"></i> ON</span> — rollups from cache
+                        {% else %}
+                        <span class="text-warning"><i class="bi bi-x-circle"></i> OFF</span> — computed on the fly
+                        {% endif %}
+                    </small>
+                    {% if precompute_rollups_enabled %}
+                    <div class="mt-2" style="font-size:0.75rem;">
+                        <strong>Recompute:</strong>
+                        {% for org in organizations if not org.is_deleted %}
+                        <form method="POST" action="{{ url_for('super_admin.recompute_rollups', org_id=org.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-outline-warning btn-sm" style="font-size:0.65rem; padding:0.1rem 0.3rem;" title="Recompute {{ org.name }}">
+                                {{ org.name }}
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
                         <i class="bi bi-hdd-stack text-success fs-4 me-2"></i>
                         <h6 class="mb-0 fw-bold">Tree Cache</h6>
                         <div class="form-check form-switch ms-auto">

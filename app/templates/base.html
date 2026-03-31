@@ -1561,7 +1561,7 @@
     {% block extra_js %}{% endblock %}
 
     <!-- Mark workspace cache dirty when org-admin forms are submitted -->
-    {% if '/org-admin/' in request.path or '/global-admin/' in request.path or '/workspace/contribute' in request.path %}
+    {% if '/org-admin/' in request.path or '/global-admin/' in request.path or '/workspace/kpi/' in request.path or '/workspace/decision-register' in request.path %}
     <script>
     document.addEventListener('submit', function() {
         try { localStorage.setItem('ws_dirty', '1'); } catch(e) {}

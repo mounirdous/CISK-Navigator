@@ -101,6 +101,70 @@ class SystemSetting(db.Model):
         return SystemSetting.get_bool("beta_enabled", default=False)
 
     @staticmethod
+    def is_rollup_cache_stale(organization_id):
+        """Check if rollup cache is stale for an organization."""
+        val = SystemSetting.get_value(f"rollup_cache_stale_{organization_id}")
+        if val is None:
+            return True  # Default stale (never computed)
+        return val not in ("false", "0")
+
+    @staticmethod
+    def get_rollup_stale_info(organization_id):
+        """Get stale info — returns None (fresh), 'full' (full recompute), or list of changed entity paths."""
+        import json
+        val = SystemSetting.get_value(f"rollup_cache_stale_{organization_id}")
+        if val is None or val == "true":
+            return "full"
+        if val == "false":
+            return None
+        try:
+            return json.loads(val)  # List of changed paths
+        except (ValueError, TypeError):
+            return "full"
+
+    @staticmethod
+    def mark_rollup_cache_stale(organization_id, changed_path=None):
+        """Mark rollup cache as stale. If changed_path provided, store for incremental recompute."""
+        import json
+        current = SystemSetting.get_value(f"rollup_cache_stale_{organization_id}")
+        if current == "false" or current is None:
+            # Fresh → stale with specific change
+            if changed_path:
+                SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", json.dumps([changed_path]))
+            else:
+                SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", "true")
+        elif current == "true":
+            pass  # Already full stale
+        else:
+            # Already has incremental changes — append or escalate to full
+            try:
+                changes = json.loads(current)
+                if isinstance(changes, list):
+                    if changed_path:
+                        changes.append(changed_path)
+                    if len(changes) > 20:
+                        # Too many incremental changes — escalate to full recompute
+                        SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", "true")
+                    else:
+                        SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", json.dumps(changes))
+                else:
+                    SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", "true")
+            except (ValueError, TypeError):
+                SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", "true")
+
+    @staticmethod
+    def mark_rollup_cache_fresh(organization_id):
+        """Mark rollup cache as fresh after recomputation."""
+        SystemSetting.set_value(f"rollup_cache_stale_{organization_id}", "false")
+
+    @staticmethod
+    def is_precompute_rollups_enabled():
+        """Check if rollup pre-computation is enabled.
+        When ON, workspace reads from rollup_cache table (fast).
+        When OFF (default), computes on the fly (slow but always fresh)."""
+        return SystemSetting.get_bool("precompute_rollups_enabled", default=False)
+
+    @staticmethod
     def is_tree_cache_enabled():
         """Check if workspace tree data caching is enabled (localStorage).
         When OFF, workspace always fetches fresh data from server.

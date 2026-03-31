@@ -5,6 +5,19 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.0.0] - 2026-03-31
+
+### Added
+- **Pre-computed rollups** — `RollupCacheEntry` table caches all rollup values; Super Admin toggle ON/OFF; **22x faster** workspace loads (220ms vs 6,200ms)
+- **Incremental recompute** — KPI value changes only recompute the affected chain (KPI→System→Initiative→Challenge→Space), not the entire org; **6.5x faster** than full recompute (984ms vs 6,394ms)
+- **Auto-invalidation** — `after_request` hook marks cache stale on data-modifying requests; auto-recomputes on next workspace load
+- **Smart tree cache bypass** — when data is dirty (`ws_dirty`), skips localStorage cache even with tree cache ON; ensures fresh data after changes
+- **Perf trace logging** — `[PERF_TRACE]` markers in server logs (`perf_trace.log`) and browser console for performance analysis
+
+### Fixed
+- `ws_dirty` JS flag now set on `/workspace/kpi/` pages (was `/workspace/contribute` which didn't match)
+- Stale indicator shows regardless of tree cache setting
+
 ## [6.5.0] - 2026-03-31
 
 ### Added

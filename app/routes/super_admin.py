@@ -43,6 +43,7 @@ def index():
     total_users = User.query.count()
     super_admins = User.query.filter_by(is_super_admin=True, is_active=True).count()
     global_admins = User.query.filter_by(is_global_admin=True, is_active=True).count()
+    organizations = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
 
     # Check key feature flags
     sso_config = SSOConfig.get_instance()
@@ -50,6 +51,7 @@ def index():
     maintenance_mode = SystemSetting.is_maintenance_mode()
     beta_enabled = SystemSetting.is_beta_enabled()
     tree_cache_enabled = SystemSetting.is_tree_cache_enabled()
+    precompute_rollups_enabled = SystemSetting.is_precompute_rollups_enabled()
 
     return render_template(
         "super_admin/index.html",
@@ -61,6 +63,8 @@ def index():
         maintenance_mode=maintenance_mode,
         beta_enabled=beta_enabled,
         tree_cache_enabled=tree_cache_enabled,
+        precompute_rollups_enabled=precompute_rollups_enabled,
+        organizations=organizations,
         csrf_token=generate_csrf,
     )
 
@@ -217,6 +221,43 @@ def toggle_beta():
         db.session.rollback()
         flash(f"Error toggling beta: {str(e)}", "danger")
 
+    return redirect(url_for("super_admin.index"))
+
+
+@bp.route("/settings/precompute-rollups/toggle", methods=["POST"])
+@super_admin_required
+def toggle_precompute_rollups():
+    """Toggle rollup pre-computation"""
+    current_state = SystemSetting.is_precompute_rollups_enabled()
+    new_state = not current_state
+    try:
+        SystemSetting.set_value("precompute_rollups_enabled", str(new_state).lower(), current_user.id)
+        db.session.commit()
+        if new_state:
+            flash("Pre-compute rollups ENABLED — workspace reads from cache (run recompute to populate)", "success")
+        else:
+            flash("Pre-compute rollups DISABLED — workspace computes on the fly", "warning")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error toggling pre-compute: {str(e)}", "danger")
+    return redirect(url_for("super_admin.index"))
+
+
+@bp.route("/settings/precompute-rollups/recompute/<int:org_id>", methods=["POST"])
+@super_admin_required
+def recompute_rollups(org_id):
+    """Manually trigger rollup recomputation for an organization"""
+    from app.services.rollup_compute_service import RollupComputeService
+    try:
+        result = RollupComputeService.recompute_organization(org_id)
+        flash(
+            f"Rollups recomputed: {result['entities_computed']} entities, "
+            f"{result['values_cached']} values cached in {result['duration_ms']}ms",
+            "success"
+        )
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error recomputing rollups: {str(e)}", "danger")
     return redirect(url_for("super_admin.index"))
 
 
