@@ -302,6 +302,68 @@ def gb_dashboard_index():
     return redirect(url_for("workspace.index"))
 
 
+@bp.route("/visibility-dashboard")
+@login_required
+@organization_required
+def visibility_dashboard():
+    """Visibility Dashboard — what's public vs private across the workspace"""
+    from app.models import ActionItem, Space, Stakeholder, StakeholderMap, Decision
+
+    org_id = session.get("organization_id")
+
+    # Spaces
+    all_spaces = Space.query.filter_by(organization_id=org_id).all()
+    spaces_public = [s for s in all_spaces if not s.is_private]
+    spaces_private = [s for s in all_spaces if s.is_private]
+
+    # Action Items
+    all_actions = ActionItem.query.filter_by(organization_id=org_id).all()
+    actions_shared = [a for a in all_actions if a.visibility == "shared"]
+    actions_private = [a for a in all_actions if a.visibility == "private"]
+    private_owners = {}
+    for a in actions_private:
+        owner = a.owner_user.display_name or a.owner_user.login if a.owner_user else "Unknown"
+        private_owners[owner] = private_owners.get(owner, 0) + 1
+
+    # Stakeholders
+    all_stakeholders = Stakeholder.query.filter_by(organization_id=org_id).all()
+    stk_shared = [s for s in all_stakeholders if s.visibility == "shared"]
+    stk_private = [s for s in all_stakeholders if s.visibility == "private"]
+
+    # Stakeholder Maps
+    all_maps = StakeholderMap.query.filter_by(organization_id=org_id).all()
+    maps_shared = [m for m in all_maps if m.visibility == "shared"]
+    maps_private = [m for m in all_maps if m.visibility == "private"]
+
+    # Decisions (all shared)
+    decisions_count = Decision.query.filter_by(organization_id=org_id).count()
+
+    categories = [
+        {"name": "Spaces", "icon": "bi-folder", "color": "#10b981", "total": len(all_spaces), "shared": len(spaces_public), "private": len(spaces_private)},
+        {"name": "Action Items", "icon": "bi-card-checklist", "color": "#3b82f6", "total": len(all_actions), "shared": len(actions_shared), "private": len(actions_private)},
+        {"name": "Stakeholders", "icon": "bi-people", "color": "#f59e0b", "total": len(all_stakeholders), "shared": len(stk_shared), "private": len(stk_private)},
+        {"name": "Stakeholder Maps", "icon": "bi-diagram-3", "color": "#8b5cf6", "total": len(all_maps), "shared": len(maps_shared), "private": len(maps_private)},
+        {"name": "Decisions", "icon": "bi-journal-bookmark-fill", "color": "#8b5cf6", "total": decisions_count, "shared": decisions_count, "private": 0},
+    ]
+
+    total_all = sum(c["total"] for c in categories)
+    total_shared = sum(c["shared"] for c in categories)
+    total_private = sum(c["private"] for c in categories)
+
+    return render_template(
+        "workspace/visibility_dashboard.html",
+        categories=categories,
+        total_all=total_all,
+        total_shared=total_shared,
+        total_private=total_private,
+        shared_pct=int(total_shared / total_all * 100) if total_all else 100,
+        spaces_private=spaces_private,
+        actions_private=actions_private,
+        private_owners=private_owners,
+        csrf_token=generate_csrf,
+    )
+
+
 @bp.route("/impacts-dashboard")
 @login_required
 @organization_required

@@ -500,6 +500,11 @@
                                         <i class="bi bi-speedometer2" style="color:#8b5cf6;"></i> Impacts Dashboard
                                     </a>
                                 </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('workspace.visibility_dashboard') }}">
+                                        <i class="bi bi-eye" style="color:#f59e0b;"></i> Visibility Dashboard
+                                    </a>
+                                </li>
                                 {% else %}
                                 <li>
                                     <a class="dropdown-item" href="{{ url_for('map_dashboard.index') }}">

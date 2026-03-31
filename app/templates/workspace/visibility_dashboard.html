@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}Visibility Dashboard{% endblock %}
+{% from "_preset_bar.html" import preset_bar %}
+
+{% block extra_css %}
+<style>
+.vd-page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+.vd-header { background: linear-gradient(135deg, #1565c0, #0d47a1); color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; }
+.vd-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 0.5rem; }
+.vd-header p { margin: 0.25rem 0 0; opacity: 0.85; font-size: 0.9rem; }
+[data-detail-mode="0"] .vd-d1 { display: none !important; }
+[data-detail-mode="0"] .vd-d2 { display: none !important; }
+[data-detail-mode="1"] .vd-d2 { display: none !important; }
+
+.vd-filters { display: none; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.vd-filters.show { display: block; }
+.vd-filter-pills { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.vd-filter-pill { padding: 0.2rem 0.6rem; border-radius: 16px; font-size: 0.75rem; font-weight: 600; cursor: pointer; border: 1px solid #dee2e6; background: white; color: #495057; transition: all 0.15s; }
+.vd-filter-pill:hover { background: #e9ecef; }
+.vd-filter-pill.active { background: #1565c0; color: white; border-color: #1565c0; }
+
+/* Hero */
+.vd-hero { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.vd-hero-card { background: white; border: 1px solid #e2e8f0; border-radius: 14px; padding: 1.5rem; flex: 1; min-width: 220px; display: flex; align-items: center; gap: 1.25rem; }
+.vd-ring { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+.vd-ring svg { transform: rotate(-90deg); }
+.vd-ring-bg { fill: none; stroke: #e2e8f0; stroke-width: 7; }
+.vd-ring-fill { fill: none; stroke-width: 7; stroke-linecap: round; }
+.vd-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.vd-ring-pct { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.vd-ring-label { font-size: 0.55rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Category cards */
+.vd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.vd-card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; transition: all 0.2s; position: relative; overflow: hidden; }
+.vd-card:hover { border-color: #93c5fd; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.vd-card-top { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
+.vd-card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.vd-card-name { font-weight: 700; font-size: 0.95rem; color: #1e293b; }
+.vd-card-total { font-size: 0.75rem; color: #94a3b8; }
+
+/* Split bar */
+.vd-split { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 0.6rem; }
+.vd-split-shared { background: #22c55e; }
+.vd-split-private { background: #ef4444; }
+.vd-split-empty { background: #f1f5f9; }
+
+.vd-legend { display: flex; justify-content: space-between; font-size: 0.72rem; }
+.vd-legend-shared { color: #22c55e; font-weight: 700; }
+.vd-legend-private { color: #ef4444; font-weight: 700; }
+
+/* Private items section */
+.vd-private-section { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+.vd-private-header { padding: 0.75rem 1.25rem; background: #fef2f2; border-bottom: 1px solid #fecaca; display: flex; align-items: center; justify-content: space-between; }
+.vd-private-title { font-weight: 700; color: #991b1b; font-size: 0.85rem; display: flex; align-items: center; gap: 0.4rem; }
+.vd-private-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.vd-private-table th { background: #fef2f2; padding: 0.4rem 0.75rem; font-weight: 600; color: #991b1b; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.vd-private-table td { padding: 0.4rem 0.75rem; border-bottom: 1px solid #fef2f2; }
+.vd-private-table tr:hover { background: #fff5f5; }
+
+.vd-type-badge { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 6px; }
+.vd-owner-badge { font-size: 0.65rem; font-weight: 600; padding: 0.1rem 0.4rem; border-radius: 6px; background: #fef3c7; color: #92400e; }
+
+/* Disclosure meter */
+.vd-disclosure { background: linear-gradient(135deg, #f0fdf4, #ecfdf5); border: 1px solid #bbf7d0; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; }
+.vd-disclosure.warning { background: linear-gradient(135deg, #fef2f2, #fff5f5); border-color: #fecaca; }
+.vd-disclosure-icon { font-size: 2rem; flex-shrink: 0; }
+.vd-disclosure-text { font-size: 0.85rem; color: #1e293b; }
+.vd-disclosure-text strong { display: block; font-size: 1rem; margin-bottom: 0.2rem; }
+
+@media (max-width: 768px) {
+    .vd-hero { flex-direction: column; }
+    .vd-grid { grid-template-columns: 1fr; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="vd-page" id="vdContainer" data-detail-mode="1">
+
+    <!-- Header -->
+    <div class="vd-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1>
+                <i class="bi bi-eye"></i> Visibility Dashboard
+                <button type="button" class="btn btn-sm btn-outline-light" id="vdDetailBtn" onclick="cycleVdMode()" title="Detail level" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="vdDetailIcon">🌲</span></button>
+                <button type="button" class="btn btn-sm btn-outline-light" id="vdVisBtn" onclick="cycleVdVisFilter()" title="Showing: all" style="opacity:0.9; min-width:32px; font-size:1rem; padding:0.15rem 0.35rem; line-height:1;"><span id="vdVisIcon" style="opacity:0.5;">👁</span></button>
+            </h1>
+            <p>Understand what's shared vs private across your workspace — who sees what</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button type="button" class="btn btn-outline-light btn-sm" onclick="document.getElementById('vdFilters').classList.toggle('show')" title="Filters"><i class="bi bi-funnel me-1"></i>&#9660;</button>
+            {{ preset_bar('visibility_dashboard', []) }}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="vd-filters" id="vdFilters">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Entity Type</label>
+                <div class="vd-filter-pills">
+                    {% for cat in categories %}
+                    <span class="vd-filter-pill" data-filter="type" data-value="{{ cat.name }}" onclick="toggleVdFilter(this)"><i class="bi {{ cat.icon }}"></i> {{ cat.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <label style="font-size:0.75rem; font-weight:600; color:#64748b; margin-bottom:0.3rem; display:block;">Visibility</label>
+                <div class="vd-filter-pills">
+                    <span class="vd-filter-pill" data-filter="vis" data-value="has_private" onclick="toggleVdFilter(this)"><i class="bi bi-lock-fill" style="color:#ef4444;"></i> Has Private</span>
+                    <span class="vd-filter-pill" data-filter="vis" data-value="all_shared" onclick="toggleVdFilter(this)"><i class="bi bi-unlock" style="color:#22c55e;"></i> All Shared</span>
+                </div>
+            </div>
+        </div>
+        <div style="margin-top:0.5rem;"><button class="btn btn-sm btn-outline-secondary" onclick="clearVdFilters()" style="font-size:0.75rem;"><i class="bi bi-x-circle"></i> Clear</button></div>
+    </div>
+
+    <!-- Disclosure Meter -->
+    {% set private_pct = 100 - shared_pct %}
+    <div class="vd-disclosure {% if private_pct > 30 %}warning{% endif %}">
+        {% if private_pct == 0 %}
+        <div class="vd-disclosure-icon">🟢</div>
+        <div class="vd-disclosure-text">
+            <strong>Fully Transparent</strong>
+            Everything is shared — all team members see the same data.
+        </div>
+        {% elif private_pct <= 10 %}
+        <div class="vd-disclosure-icon">🟢</div>
+        <div class="vd-disclosure-text">
+            <strong>Mostly Open</strong>
+            {{ shared_pct }}% of content is shared. {{ total_private }} item{{ 's' if total_private != 1 else '' }} restricted to their owners.
+        </div>
+        {% elif private_pct <= 30 %}
+        <div class="vd-disclosure-icon">🟡</div>
+        <div class="vd-disclosure-text">
+            <strong>Moderate Privacy</strong>
+            {{ private_pct }}% of content is private. Consider reviewing if all restrictions are necessary.
+        </div>
+        {% else %}
+        <div class="vd-disclosure-icon">🔴</div>
+        <div class="vd-disclosure-text">
+            <strong>High Privacy</strong>
+            {{ private_pct }}% of content is restricted. Team members may lack visibility into important data.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Hero Rings -->
+    <div class="vd-hero">
+        {% set circ = 251 %}
+        <!-- Shared ring -->
+        <div class="vd-hero-card">
+            {% set s_offset = circ - (circ * shared_pct / 100) %}
+            <div class="vd-ring">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle class="vd-ring-bg" cx="45" cy="45" r="40"></circle>
+                    <circle class="vd-ring-fill" cx="45" cy="45" r="40" style="stroke:#22c55e; stroke-dasharray:{{ circ }}; stroke-dashoffset:{{ s_offset }};"></circle>
+                </svg>
+                <div class="vd-ring-text">
+                    <div class="vd-ring-pct" style="color:#22c55e;">{{ total_shared }}</div>
+                    <div class="vd-ring-label">Shared</div>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:1.2rem; font-weight:800; color:#22c55e;">{{ shared_pct }}%</div>
+                <div style="font-size:0.72rem; color:#64748b;">of {{ total_all }} items are visible to all team members</div>
+            </div>
+        </div>
+
+        <!-- Private ring -->
+        <div class="vd-hero-card">
+            {% set p_offset = circ - (circ * private_pct / 100) %}
+            <div class="vd-ring">
+                <svg width="90" height="90" viewBox="0 0 90 90">
+                    <circle class="vd-ring-bg" cx="45" cy="45" r="40"></circle>
+                    <circle class="vd-ring-fill" cx="45" cy="45" r="40" style="stroke:#ef4444; stroke-dasharray:{{ circ }}; stroke-dashoffset:{{ p_offset }};"></circle>
+                </svg>
+                <div class="vd-ring-text">
+                    <div class="vd-ring-pct" style="color:#ef4444;">{{ total_private }}</div>
+                    <div class="vd-ring-label">Private</div>
+                </div>
+            </div>
+            <div>
+                <div style="font-size:1.2rem; font-weight:800; color:#ef4444;">{{ private_pct }}%</div>
+                <div style="font-size:0.72rem; color:#64748b;">restricted to their owners only</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Cards -->
+    <div class="vd-grid vd-d1">
+        {% for cat in categories %}
+        <div class="vd-card" data-type="{{ cat.name }}" data-vis="{% if cat.private > 0 %}has_private{% else %}all_shared{% endif %}">
+            <div class="vd-card-top">
+                <div class="vd-card-icon" style="background:{{ cat.color }}15; color:{{ cat.color }};"><i class="bi {{ cat.icon }}"></i></div>
+                <div>
+                    <div class="vd-card-name">{{ cat.name }}</div>
+                    <div class="vd-card-total">{{ cat.total }} total</div>
+                </div>
+            </div>
+            <div class="vd-split">
+                {% if cat.total > 0 %}
+                <div class="vd-split-shared" style="width:{{ (cat.shared / cat.total * 100) | int }}%;"></div>
+                <div class="vd-split-private" style="width:{{ (cat.private / cat.total * 100) | int }}%;"></div>
+                {% else %}
+                <div class="vd-split-empty" style="width:100%;"></div>
+                {% endif %}
+            </div>
+            <div class="vd-legend">
+                <span class="vd-legend-shared"><i class="bi bi-unlock"></i> {{ cat.shared }} shared</span>
+                {% if cat.private > 0 %}
+                <span class="vd-legend-private"><i class="bi bi-lock-fill"></i> {{ cat.private }} private</span>
+                {% else %}
+                <span style="color:#94a3b8;">No private items</span>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Private Items Detail -->
+    {% if total_private > 0 %}
+    <div class="vd-private-section vd-d2">
+        <div class="vd-private-header">
+            <span class="vd-private-title"><i class="bi bi-lock-fill"></i> Private Items ({{ total_private }})</span>
+            <span style="font-size:0.75rem; color:#991b1b;">Only visible to their respective owners</span>
+        </div>
+        <table class="vd-private-table">
+            <thead><tr><th>Item</th><th>Type</th><th>Owner</th></tr></thead>
+            <tbody>
+                {% for sp in spaces_private %}
+                <tr>
+                    <td style="font-weight:600;">{{ sp.name }}</td>
+                    <td><span class="vd-type-badge" style="background:#d1fae520; color:#10b981;">Space</span></td>
+                    <td>{% if sp.created_by %}<span class="vd-owner-badge">{{ sp.created_by }}</span>{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+                {% for a in actions_private %}
+                <tr>
+                    <td style="font-weight:600;">{{ a.title | truncate(60) }}</td>
+                    <td><span class="vd-type-badge" style="background:#dbeafe; color:#1d4ed8;">{{ a.type | capitalize }}</span></td>
+                    <td><span class="vd-owner-badge">{{ a.owner_user.display_name or a.owner_user.login if a.owner_user else '—' }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+
+<script>
+// Detail mode
+var _vdMode = parseInt(localStorage.getItem('vd_detail_mode') || '1');
+var _vdIcons = ['🌱','🌲','🎄'];
+function applyVdMode(m) { _vdMode=m; var c=document.getElementById('vdContainer'); if(c)c.dataset.detailMode=String(m); var i=document.getElementById('vdDetailIcon'); if(i)i.textContent=_vdIcons[m]; }
+function cycleVdMode() { var n=(_vdMode+1)%3; localStorage.setItem('vd_detail_mode',String(n)); applyVdMode(n); }
+applyVdMode(_vdMode);
+
+// Visibility filter (eye icon): all → shared only → private only
+var _vdVisStates = [0, 1, 2]; // 0=all, 1=shared only, 2=private only
+var _vdVisIdx = 0;
+var _vdVisLabels = ['👁', '🔓', '🔒'];
+var _vdVisTitles = ['Showing: all', 'Showing: shared only', 'Showing: private only'];
+function cycleVdVisFilter() {
+    _vdVisIdx = (_vdVisIdx + 1) % _vdVisStates.length;
+    var icon = document.getElementById('vdVisIcon');
+    var btn = document.getElementById('vdVisBtn');
+    icon.textContent = _vdVisLabels[_vdVisIdx];
+    icon.style.opacity = _vdVisIdx === 0 ? '0.5' : '1';
+    btn.title = _vdVisTitles[_vdVisIdx];
+    applyVdFilters();
+}
+
+// Filters
+function toggleVdFilter(el) { el.classList.toggle('active'); applyVdFilters(); }
+function clearVdFilters() { document.querySelectorAll('.vd-filter-pill.active').forEach(function(p){p.classList.remove('active');}); applyVdFilters(); }
+function applyVdFilters() {
+    var aType = [], aVis = [];
+    document.querySelectorAll('.vd-filter-pill.active').forEach(function(p) {
+        if (p.dataset.filter === 'type') aType.push(p.dataset.value);
+        if (p.dataset.filter === 'vis') aVis.push(p.dataset.value);
+    });
+    var visLevel = _vdVisStates[_vdVisIdx];
+    document.querySelectorAll('.vd-card').forEach(function(card) {
+        var show = true;
+        if (aType.length > 0) show = aType.indexOf(card.dataset.type) >= 0;
+        if (show && aVis.length > 0) show = aVis.indexOf(card.dataset.vis) >= 0;
+        if (show && visLevel === 1) show = card.dataset.vis === 'all_shared';
+        if (show && visLevel === 2) show = card.dataset.vis === 'has_private';
+        card.style.display = show ? '' : 'none';
+    });
+    // Filter private items table rows
+    document.querySelectorAll('.vd-private-table tbody tr').forEach(function(row) {
+        var show = true;
+        if (aType.length > 0) {
+            var rowType = row.querySelector('.vd-type-badge') ? row.querySelector('.vd-type-badge').textContent.trim() : '';
+            show = aType.some(function(t) { return t.toLowerCase().indexOf(rowType.toLowerCase()) >= 0 || rowType.toLowerCase().indexOf(t.toLowerCase().replace('s','')) >= 0; });
+        }
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+// Presets
+PresetManager.setCsrf('{{ csrf_token() }}');
+PresetManager.register('visibility_dashboard', {
+    getState: function() {
+        var t = [], v = [];
+        document.querySelectorAll('.vd-filter-pill.active').forEach(function(p) {
+            if (p.dataset.filter === 'type') t.push(p.dataset.value);
+            if (p.dataset.filter === 'vis') v.push(p.dataset.value);
+        });
+        return { type: t, vis: v };
+    },
+    applyState: function(c) {
+        document.querySelectorAll('.vd-filter-pill.active').forEach(function(p) { p.classList.remove('active'); });
+        (c.type || []).forEach(function(v) { var e = document.querySelector('.vd-filter-pill[data-filter="type"][data-value="' + v + '"]'); if (e) e.classList.add('active'); });
+        (c.vis || []).forEach(function(v) { var e = document.querySelector('.vd-filter-pill[data-filter="vis"][data-value="' + v + '"]'); if (e) e.classList.add('active'); });
+        applyVdFilters();
+        if ((c.type || []).length || (c.vis || []).length) document.getElementById('vdFilters').classList.add('show');
+    },
+    onReset: function() { clearVdFilters(); }
+}, true);
+</script>
+{% endblock %}
