@@ -1708,6 +1708,17 @@ def kpi_cell_detail(kpi_id, vt_id):
     else:
         logger.info("🔍 No workspace in referrer, workspace_filters empty")
 
+    # Get all contributor names in this org for autocomplete
+    all_contributor_names = sorted(set(
+        r[0] for r in db.session.query(Contribution.contributor_name)
+        .join(KPIValueTypeConfig, Contribution.kpi_value_type_config_id == KPIValueTypeConfig.id)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id)
+        .distinct().all()
+    ))
+
     return render_template(
         "workspace/kpi_cell_detail.html",
         kpi=kpi,
@@ -1721,6 +1732,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         can_contribute=current_user.can_contribute(org_id),
         entity_defaults=entity_defaults,
         workspace_filters=workspace_filters,
+        all_contributor_names=all_contributor_names,
         csrf_token=generate_csrf,
     )
 

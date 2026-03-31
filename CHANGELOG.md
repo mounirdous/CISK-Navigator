@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.1.0] - 2026-03-31
+
+### Changed
+- **Inline contribution editing** — click pencil icon to edit value/comment in place (no scroll to top); save/cancel buttons inline; auto-focus on value input
+- **Contributor name autocomplete** — datalist with all org-wide contributor names on both new and inline edit forms; prevents typos, ensures reuse
+
 ## [7.0.0] - 2026-03-31
 
 ### Added
