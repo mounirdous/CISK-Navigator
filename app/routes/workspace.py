@@ -420,6 +420,14 @@ def visibility_dashboard():
     total_shared = sum(c["shared"] for c in categories)
     total_private = sum(c["private"] for c in categories)
 
+    # Compute impact for private items (for star filter)
+    from app.models import ImpactLevel
+    impact_scale = ImpactLevel.get_org_levels(org_id)
+    # Spaces have impact_level directly
+    space_impacts = {s.id: s.impact_level or 0 for s in spaces_private}
+    # Actions: use 0 (no direct impact)
+    action_impacts = {a.id: 0 for a in actions_private}
+
     return render_template(
         "workspace/visibility_dashboard.html",
         categories=categories,
@@ -430,6 +438,9 @@ def visibility_dashboard():
         spaces_private=spaces_private,
         actions_private=actions_private,
         private_owners=private_owners,
+        impact_scale=impact_scale,
+        space_impacts=space_impacts,
+        action_impacts=action_impacts,
         csrf_token=generate_csrf,
     )
 
@@ -4710,7 +4721,9 @@ def _build_workspace_data(org_id):
     """Build and return workspace data JSON. Extracted for error handling."""
     import time as _perf_time, logging as _perf_log  # [PERF_TRACE] removable
     _pt = _perf_log.getLogger("perf_trace")  # [PERF_TRACE]
-    if not _pt.handlers: _pt.addHandler(_perf_log.FileHandler("C:/code/CISK-Navigator/perf_trace.log")); _pt.setLevel(_perf_log.INFO)  # [PERF_TRACE]
+    import os as _perf_os  # [PERF_TRACE]
+    _perf_logpath = _perf_os.path.join(_perf_os.path.dirname(_perf_os.path.dirname(_perf_os.path.dirname(__file__))), "perf_trace.log")  # [PERF_TRACE]
+    if not _pt.handlers: _pt.addHandler(_perf_log.FileHandler(_perf_logpath)); _pt.setLevel(_perf_log.INFO)  # [PERF_TRACE]
     _perf_start = _perf_time.time()  # [PERF_TRACE]
     _pt.info(f"[PERF_TRACE] _build_workspace_data START org={org_id}")  # [PERF_TRACE]
     # Get spaces with privacy filtering
