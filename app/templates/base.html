@@ -656,6 +656,11 @@
                 </div>
                 {% endif %}
                 <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="event.preventDefault(); var d=document; if(d.fullscreenElement){d.exitFullscreen();}else{var e=d.documentElement; e.requestFullscreen?e.requestFullscreen():e.webkitRequestFullscreen?e.webkitRequestFullscreen():e.msRequestFullscreen&&e.msRequestFullscreen();}" title="Toggle fullscreen">
+                            <i class="bi bi-arrows-fullscreen" style="font-size: 1.1rem;"></i>
+                        </a>
+                    </li>
                     {% if session.organization_id and current_user.can_view_comments(session.organization_id) %}
                     <li class="nav-item">
                         <a class="nav-link mentions-btn position-relative" href="#" onclick="showMentions(); return false;" title="Mentions">

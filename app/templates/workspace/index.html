@@ -4267,6 +4267,19 @@ function workspaceV2(orgId, filterPresets) {
             }
         },
 
+        _toggleFullscreen() {
+            var el = document.documentElement;
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            } else if (el.requestFullscreen) {
+                el.requestFullscreen();
+            } else if (el.webkitRequestFullscreen) {
+                el.webkitRequestFullscreen();
+            } else if (el.msRequestFullscreen) {
+                el.msRequestFullscreen();
+            }
+        },
+
         _cycleImpactFilter() {
             // Cycle: none → 0 (not set) → 1 → 2 → 3 → none
             if (this.selectedImpactLevels.length === 0) {
