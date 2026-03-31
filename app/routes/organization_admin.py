@@ -1638,7 +1638,7 @@ def create_challenge(space_id):
 
         db.session.commit()
         flash(f"Challenge {challenge.name} created successfully in {space.name}", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        return redirect(url_for("workspace.index", auto_edit=1, expand=f"s{space_id}"))
 
     return render_template("organization_admin/create_challenge.html", form=form, space=space, csrf_token=generate_csrf)
 
@@ -1825,7 +1825,7 @@ def create_initiative(challenge_id):
         db.session.commit()
 
         flash(f"Initiative {initiative.name} created and linked to {challenge.name}", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        return redirect(url_for("workspace.index", auto_edit=1, expand=f"s{challenge.space_id},c{challenge_id}"))
 
     # Get entity type defaults with logos
     entity_defaults_raw = EntityTypeDefault.query.filter_by(organization_id=org_id).all()
@@ -2107,7 +2107,14 @@ def create_system(initiative_id):
         db.session.commit()
 
         flash(f"System {system.name} created and linked to {initiative.name}", "success")
-        return redirect(url_for("workspace.index", auto_edit=1))
+        # Find parent chain for auto-expand
+        cli = ChallengeInitiativeLink.query.filter_by(initiative_id=initiative_id).first()
+        if cli:
+            ch = Challenge.query.get(cli.challenge_id)
+            expand = f"s{ch.space_id},c{cli.challenge_id},i{initiative_id}" if ch else f"i{initiative_id}"
+        else:
+            expand = f"i{initiative_id}"
+        return redirect(url_for("workspace.index", auto_edit=1, expand=expand))
 
     all_orgs = Organization.query.filter(Organization.id != org_id, Organization.is_deleted.is_(False)).order_by(Organization.name).all()
     return render_template(
@@ -2575,7 +2582,14 @@ def create_kpi(link_id):
                 url_for("workspace.kpi_cell_detail", kpi_id=kpi.id, vt_id=first_config_vt_id, open_formula=1)
             )
 
-        return redirect(url_for("workspace.index", auto_edit=1))
+        # Auto-expand parent chain
+        cli = ChallengeInitiativeLink.query.filter_by(initiative_id=link.initiative_id).first()
+        if cli:
+            ch = Challenge.query.get(cli.challenge_id)
+            expand = f"s{ch.space_id},c{cli.challenge_id},i{link.initiative_id},y{link.system_id}" if ch else ""
+        else:
+            expand = ""
+        return redirect(url_for("workspace.index", auto_edit=1, expand=expand))
 
     # Get preselected items from session (if returning from creation flow)
     preselect_value_types = session.pop("preselect_value_types", [])

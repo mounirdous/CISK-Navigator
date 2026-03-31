@@ -617,7 +617,7 @@ def create_organization():
                     preserved_permissions=preserved_permissions,
                 )
 
-        org = Organization(name=form.name.data, description=form.description.data, is_active=form.is_active.data)
+        org = Organization(name=form.name.data.strip(), description=form.description.data, is_active=form.is_active.data)
         db.session.add(org)
         db.session.flush()  # Get org.id before audit log
 
@@ -1527,9 +1527,22 @@ def empty_organization(org_id):
     from app.routes.organization_admin import _delete_all_organization_data
 
     org = Organization.query.get_or_404(org_id)
-    confirm_name = request.form.get("confirm_org_name", "").strip()
+    import unicodedata
+    raw_confirm = request.form.get("confirm_org_name", "").strip()
 
-    if confirm_name != org.name:
+    def _strip_accents(s):
+        """Remove all diacritical marks for comparison."""
+        return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+    # Try exact match, then NFC-normalized, then accent-stripped casefold
+    # Strip both sides — DB values may have trailing whitespace
+    org_name = org.name.strip()
+    match = (
+        raw_confirm == org_name
+        or unicodedata.normalize("NFC", raw_confirm) == unicodedata.normalize("NFC", org_name)
+        or _strip_accents(raw_confirm).casefold() == _strip_accents(org_name).casefold()
+    )
+    if not match:
         flash("Organization name confirmation does not match. Deletion cancelled.", "danger")
         return redirect(url_for("global_admin.organizations"))
 

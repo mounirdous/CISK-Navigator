@@ -4,6 +4,8 @@ Organization models
 
 from datetime import datetime
 
+from sqlalchemy.orm import validates
+
 from app.extensions import db
 
 
@@ -21,6 +23,10 @@ class Organization(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), unique=True, nullable=False, index=True)
+
+    @validates("name")
+    def _strip_name(self, key, value):
+        return value.strip() if value else value
     description = db.Column(db.Text, nullable=True)
     logo_data = db.Column(db.LargeBinary, nullable=True, comment="Logo image binary data")
     logo_mime_type = db.Column(db.String(50), nullable=True, comment="Logo MIME type (e.g., image/png)")

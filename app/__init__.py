@@ -310,25 +310,52 @@ def create_app(config_name=None):
             is_admin = current_user.is_global_admin or current_user.is_super_admin or (current_user.is_org_admin(org_id) if org_id else False)
 
             if "/workspace" in path and "/org-admin" not in path:
+                # ── WORKSPACE HOME ──
+                if "/workspace/dashboard" in path:
+                    location = {"page": "Workspace Home", "description": "Your workspace overview — stats, quick actions, and recent activity."}
+                    if org_id:
+                        from app.models import Space
+                        home_spaces = Space.query.filter_by(organization_id=org_id).count()
+                        if home_spaces == 0:
+                            hints.append(H("action", "🏠", "Click the CISK logo (top left) to open your workspace and start building your hierarchy.", "/workspace/", "Open Workspace", highlight=".navbar-brand"))
+                        else:
+                            hints.append(H("action", "🏠", "Click the CISK logo (top left) to open your workspace and continue working.", "/workspace/", "Open Workspace", highlight=".navbar-brand"))
+                    if is_admin:
+                        hints.append(H("tip", "👥", "Invite team members from Instance Admin > Users to collaborate on this workspace."))
+
                 # ── WORKSPACE TREE ──
-                if path.endswith("/workspace") or path.endswith("/workspace/"):
+                elif path.endswith("/workspace") or path.endswith("/workspace/"):
                     location = {"page": "CISK Workspace", "description": "The main tree view — your full hierarchy of Spaces, Challenges, Initiatives, Systems, and KPIs."}
                     if org_id:
-                        from app.models import Space, Challenge, Initiative, KPI
+                        from app.models import Space, Challenge, Initiative, KPI, ValueType
                         from app.models.system import InitiativeSystemLink
                         spaces = Space.query.filter_by(organization_id=org_id).count()
                         challenges = Challenge.query.filter_by(organization_id=org_id).count()
                         initiatives = Initiative.query.filter_by(organization_id=org_id).count()
+                        value_types = ValueType.query.filter_by(organization_id=org_id).count()
                         kpis = db.session.query(KPI).join(InitiativeSystemLink).join(Initiative).filter(Initiative.organization_id == org_id).count()
 
                         if spaces == 0:
-                            hints.append(H("action", "🚀", "Your workspace is empty! Start by creating your first Space.", "/org-admin/spaces/create", "Create Space"))
+                            from app.models import Organization as Org
+                            org_obj = Org.query.get(org_id)
+                            porters_filled, porters_total, porters_status = org_obj.get_porters_completion() if org_obj else (0, 5, "empty")
+                            if porters_status != "complete":
+                                hints.append(H("action", "🔍", "Start with a competitive analysis! Click your workspace name in the grid, then click the Porter's Five Forces chip to map the forces shaping your topic.", "/org-admin/porters", "Open Porter's Analysis", highlight=".ws-header-cell"))
+                            hints.append(H("action", "🚀", "Create your first Space to begin building your hierarchy.", "/org-admin/spaces/create", "Create Space"))
                         elif challenges == 0:
-                            hints.append(H("action", "🎯", f"{spaces} space(s) created. Now add Challenges — click Edit Mode, then + on a space.", highlight="#wsEditModeBtn"))
+                            s = "space" if spaces == 1 else "spaces"
+                            hints.append(H("action", "🎯", f"{spaces} {s} created. Now add Challenges — click Edit Mode, then + on a space. The tree will grow as you build out the hierarchy.", highlight="#wsEditModeBtn"))
+                            hints.append(H("info", "💡", "Need ideas for challenges? Check the documentation for examples.", "/workspace/documentation#naming-challenges", "See examples"))
                         elif initiatives == 0:
-                            hints.append(H("action", "🚀", f"{challenges} challenge(s) defined. Create Initiatives to address them. Use Edit Mode.", highlight="#wsEditModeBtn"))
+                            c = "challenge" if challenges == 1 else "challenges"
+                            hints.append(H("action", "🚀", f"{challenges} {c} defined. Create Initiatives to address them. Use Edit Mode.", highlight="#wsEditModeBtn"))
+                            hints.append(H("info", "💡", "Need ideas for initiatives? Check the documentation for examples.", "/workspace/documentation#naming-initiatives", "See examples"))
+                        elif value_types == 0 and is_admin:
+                            hints.append(H("action", "🔎", "Great structure! Now define your Value Types — the lenses through which you measure the success of your topic. Click the Value Types tile on the Workspace Home (house icon).", "/org-admin/value-types", "Create Value Types"))
+                            hints.append(H("info", "💡", "Not sure what to measure? Check the documentation for examples.", "/workspace/documentation#naming-value-types", "See examples"))
                         elif kpis == 0:
-                            hints.append(H("action", "📊", "Structure ready! Add KPIs to start measuring. Click on a System in Edit Mode."))
+                            hints.append(H("action", "📊", "Structure ready! Add Systems, then KPIs to start measuring. Click Edit Mode, then + on an initiative.", highlight="#wsEditModeBtn"))
+                            hints.append(H("info", "💡", "Need ideas for systems? Check the documentation for examples.", "/workspace/documentation#naming-systems", "See examples"))
                         else:
                             hints.append(H("tip", "✅", f"{spaces} spaces, {challenges} challenges, {initiatives} initiatives, {kpis} KPIs."))
                             hints.append(H("tip", "📊", "Click any KPI cell to contribute data or view details."))
@@ -414,6 +441,12 @@ def create_app(config_name=None):
                     location = {"page": "CISK Theory", "description": "The theoretical foundation — how entities, values, consensus, and impacts work together."}
                     hints.append(H("tip", "📖", "Scroll through sections to understand the CISK framework."))
 
+                # ── DOCUMENTATION ──
+                elif "/workspace/documentation" in path:
+                    location = {"page": "Documentation", "description": "Complete platform guide — from getting started to advanced calculations."}
+                    hints.append(H("tip", "🔍", "Use the sidebar search to quickly find a topic."))
+                    hints.append(H("tip", "📖", "Use the sidebar navigation to jump between sections."))
+
                 # ── IMPACT DOCS ──
                 elif "/workspace/impact-docs" in path:
                     location = {"page": "Impact Calculation Docs", "description": "The 5 compounding methods: Simple Product, Geometric Mean, Toyota QFD, Toyota Weighted (DS/Full)."}
@@ -435,6 +468,25 @@ def create_app(config_name=None):
                 hints.append(H("tip", "☆", "Star filter: show only actions linked to high-importance entities.", highlight="#actImpactBtn"))
                 hints.append(H("tip", "🔽", "Open filters for status, priority, governance body, and more.", highlight="#filters-toggle-btn"))
 
+            # ── MAP DASHBOARD ──
+            elif path.startswith("/map"):
+                location = {"page": "Geographic KPI Distribution", "description": "World map showing KPI locations, country colouring, and site markers."}
+                hints.append(H("tip", "🗺️", "Click on a country or marker to explore KPIs at that location."))
+                hints.append(H("tip", "📍", "Configure geography (regions, countries, sites) from the Workspace Home tiles."))
+
+            # ── STAKEHOLDERS ──
+            elif "/stakeholders" in path:
+                if "/network" in path or path.endswith("/stakeholders") or "organization" in path:
+                    location = {"page": "Stakeholder Analysis", "description": "Map the people and roles involved in your workspace — network view, influence, and relationships."}
+                    hints.append(H("tip", "👤", "Add stakeholders and define their relationships to build your network map."))
+                    hints.append(H("tip", "🗺️", "Use maps to create power-vs-interest matrices for stakeholder analysis."))
+                elif "/matrix" in path:
+                    location = {"page": "Stakeholder Matrix", "description": "Power-vs-interest matrix for stakeholder prioritisation."}
+                elif "/list" in path:
+                    location = {"page": "Stakeholder List", "description": "All stakeholders in a table view."}
+                else:
+                    location = {"page": "Stakeholders", "description": "Manage stakeholders, relationships, and analysis maps."}
+
             # ── ORG ADMIN ──
             elif "/org-admin" in path:
                 if path.endswith("/org-admin") or path.endswith("/org-admin/"):
@@ -445,19 +497,69 @@ def create_app(config_name=None):
                 elif "/impact-levels" in path:
                     location = {"page": "Impact Scale Configuration", "description": "Configure symbols, weights, colors for 3 impact levels, and choose a compounding method."}
                     hints.append(H("tip", "🎚️", "Choose a compounding method: Geometric Mean (balanced), Toyota QFD (sharp), or Toyota Weighted (amplified)."))
-                    hints.append(H("info", "📖", "Click Documentation to see formulas and comparison tables.", highlight="[target='_blank']"))
+                    hints.append(H("info", "📖", "See formulas and comparison tables in the Documentation.", "/workspace/documentation#impact", "Open Documentation"))
+                    hints.append(H("action", "🏠", "Done configuring? Click the CISK logo (top left) to go back to your workspace and switch to 🎄 Full Detail to see impact levels in the tree.", "/workspace/", "Go to Workspace", highlight=".navbar-brand"))
                 elif "/strategy" in path:
                     location = {"page": "Strategic Pillars Editor", "description": "Define pillars with icons, accent colors, and bullet-point descriptions. Drag to reorder."}
                 elif "/value-types" in path:
-                    location = {"page": "Value Types", "description": "Each value type becomes a column in the workspace. Drag to reorder columns."}
-                    hints.append(H("tip", "🔢", "Numeric, qualitative (risk, sentiment, level), list, and formula types available."))
-                    hints.append(H("tip", "📐", "Formula types compute automatically from other value types (e.g. Net = Revenue - Cost)."))
+                    location = {"page": "Value Types", "description": "The lenses through which you measure success — each value type becomes a column in the workspace."}
+                    hints.append(H("tip", "➕", "Add more value types with + New Value Type. Start with 2-4 — you can always add more later.", highlight=".btn-primary"))
+                    hints.append(H("tip", "🔢", "Types available: numeric (cost, count), qualitative (risk, sentiment, level), list (custom choices), and formula (computed)."))
+                    hints.append(H("info", "💡", "Not sure what to measure? Check the documentation for examples.", "/workspace/documentation#naming-value-types", "See examples"))
+                    hints.append(H("action", "🏠", "Done? Click the CISK logo (top left) to go back to your workspace.", "/workspace/", "Go to Workspace", highlight=".navbar-brand"))
+                elif "/kpis/create" in path or "/kpis/" in path:
+                    location = {"page": "KPI Form", "description": "Configure a KPI: value types, governance bodies, targets, and calculation method."}
+                elif "/systems" in path and "/create" in path:
+                    location = {"page": "Create System", "description": "Define a new reusable system, process, or tool."}
+                    hints.append(H("info", "💡", "Not sure what to call your system? Check the documentation for examples of tools, platforms, and processes.", "/workspace/documentation#naming-systems", "See examples"))
+                elif "/systems" in path and "/edit" in path:
+                    location = {"page": "Edit System", "description": "Update this system, process, or tool."}
+                    hints.append(H("info", "💡", "Check the documentation for examples of tools, platforms, and processes.", "/workspace/documentation#naming-systems", "See examples"))
+                elif "/initiatives" in path and "/form" in path:
+                    location = {"page": "Initiative Review", "description": "Detailed initiative view with execution tracking, KPIs, actions, and decisions."}
+                elif "/initiatives" in path and "/create" in path:
+                    location = {"page": "Create Initiative", "description": "Define a new initiative: mission, deliverables, team, and success criteria."}
+                    hints.append(H("info", "💡", "Not sure how to name your initiative? Check the documentation for examples of concrete, actionable projects.", "/workspace/documentation#naming-initiatives", "See examples"))
+                elif "/initiatives" in path and "/edit" in path:
+                    location = {"page": "Edit Initiative", "description": "Update this initiative: mission, deliverables, team, and success criteria."}
+                    hints.append(H("info", "💡", "Check the documentation for initiative naming examples.", "/workspace/documentation#naming-initiatives", "See examples"))
+                elif "/challenges" in path and "/rollup-config" in path:
+                    location = {"page": "Rollup Configuration", "description": "Configure how values aggregate for this challenge."}
+                elif "/challenges" in path and "/create" in path:
+                    location = {"page": "Create Challenge", "description": "Define a key objective within a space."}
+                    hints.append(H("info", "💡", "Not sure how to name your challenge? Check the documentation for examples across different domains.", "/workspace/documentation#naming-challenges", "See examples"))
+                elif "/challenges" in path and "/edit" in path:
+                    location = {"page": "Edit Challenge", "description": "Update this challenge's details, links, and impact level."}
+                    hints.append(H("info", "💡", "Need inspiration? Check challenge naming examples in the documentation.", "/workspace/documentation#naming-challenges", "See examples"))
+                elif "/porters" in path:
+                    location = {"page": "Porter's Five Forces", "description": "Analyse the competitive forces shaping your topic: new entrants, suppliers, buyers, substitutes, and rivalry."}
+                    hints.append(H("tip", "📝", "Fill in each force with bullet points or paragraphs to structure your analysis."))
+                    hints.append(H("action", "🏠", "Done? Click the CISK logo (top left) to go back to your workspace.", "/workspace/", "Go to Workspace", highlight=".navbar-brand"))
+                elif "/spaces" in path and "/swot" in path:
+                    location = {"page": "SWOT Analysis", "description": "Map Strengths, Weaknesses, Opportunities, and Threats for this space."}
+                elif "/spaces" in path:
+                    location = {"page": "Spaces", "description": "Create, edit, and organise the top-level areas of your workspace."}
+                    hints.append(H("info", "💡", "Not sure how to name your spaces? Check the documentation for examples across different domains.", "/workspace/documentation#naming-spaces", "See examples"))
+                elif "/link-health" in path:
+                    location = {"page": "Link Health", "description": "Check the status of all URLs attached to entities in this workspace."}
+                elif "/links" in path:
+                    location = {"page": "Workspace Links", "description": "Manage URLs and resources attached to this workspace."}
+                elif "/onboarding" in path:
+                    location = {"page": "Onboarding", "description": "Step-by-step guide to set up your workspace."}
+                elif "/logo-manager" in path:
+                    location = {"page": "Logo Manager", "description": "Upload and manage logos for each entity type."}
                 elif "/branding" in path:
                     location = {"page": "Branding Manager", "description": "Set default colors, icons, and logos for each entity type (space, challenge, initiative, system, KPI)."}
+                elif "/decision-tags" in path:
+                    location = {"page": "Decision Tags", "description": "Configure the tag categories available in the Decision Register."}
+                elif "/geography" in path:
+                    location = {"page": "Geography", "description": "Configure regions, countries, and sites for location-based tracking."}
+                elif "/governance" in path:
+                    location = {"page": "Governance Bodies", "description": "Create and manage the committees, boards, or teams that oversee KPIs."}
+                elif "/rollup" in path:
+                    location = {"page": "Rollup Rules", "description": "Configure how values aggregate through the hierarchy."}
                 else:
-                    location = {"page": "Workspace Admin", "description": "Organization configuration and management."}
-                if is_admin:
-                    hints.append(H("info", "🔧", "Admin changes affect all users in this workspace."))
+                    location = {"page": "Workspace Administration", "description": "Configure and manage your workspace settings."}
 
             # ── INSTANCE ADMIN ──
             elif "/global-admin" in path:

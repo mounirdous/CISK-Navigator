@@ -1229,9 +1229,11 @@ def dashboard():
     }
 
     # Check if organization needs onboarding (empty org + user has admin permissions)
-    is_empty_org = stats["spaces"] == 0 and stats["governance_bodies"] == 0 and stats["value_types"] == 0
-    has_admin_permissions = current_user.can_manage_spaces(org_id)
-    needs_onboarding = is_empty_org and has_admin_permissions
+    # Disabled: the contextual Assistant now guides users through setup
+    # is_empty_org = stats["spaces"] == 0 and stats["governance_bodies"] == 0 and stats["value_types"] == 0
+    # has_admin_permissions = current_user.can_manage_spaces(org_id)
+    # needs_onboarding = is_empty_org and has_admin_permissions
+    needs_onboarding = False
 
     # Get recent snapshots (last 5) - now with full snapshot info
     recent_snapshots = SnapshotService.get_all_snapshots(org_id, user_id=current_user.id, limit=5)
