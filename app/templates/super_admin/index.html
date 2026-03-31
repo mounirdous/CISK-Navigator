@@ -101,105 +101,99 @@
         </div>
     </div>
 
-    <!-- Feature Toggles - Compact Layout -->
-    <div class="row g-3 mb-3">
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- SYSTEM CONFIGURATION                         -->
+    <!-- ══════════════════════════════════════════════ -->
+    <h5 class="mb-3 mt-2"><i class="fas fa-cog text-primary me-2"></i>System Configuration</h5>
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-shield-alt text-primary fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">SSO</h6>
-                        <div class="form-check form-switch ms-auto">
-                            <input class="form-check-input" type="checkbox" id="ssoToggle"
-                                   {% if sso_enabled %}checked{% endif %} disabled>
+            <a href="{{ url_for('super_admin.sso_config') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-shield-alt text-primary fa-lg"></i>
                         </div>
+                        <h6 class="card-title mb-1">SSO</h6>
+                        <p class="text-muted small mb-0">{% if sso_enabled %}<span class="text-success"><i class="bi bi-check-circle-fill"></i> Enabled</span>{% else %}Not configured{% endif %}</p>
                     </div>
-                    <a href="{{ url_for('super_admin.sso_config') }}" class="btn btn-sm btn-outline-primary w-100">
-                        <i class="fas fa-cog"></i> Configure
-                    </a>
                 </div>
-            </div>
+            </a>
         </div>
-
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-wrench text-warning fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">Maintenance</h6>
-                        <div class="form-check form-switch ms-auto">
-                            <input class="form-check-input" type="checkbox" id="maintenanceToggle"
-                                   {% if maintenance_mode %}checked{% endif %} disabled>
+            <a href="{{ url_for('super_admin.maintenance_settings') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="{% if maintenance_mode %}bg-warning{% else %}bg-secondary{% endif %} bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-wrench {% if maintenance_mode %}text-warning{% else %}text-secondary{% endif %} fa-lg"></i>
                         </div>
+                        <h6 class="card-title mb-1">Maintenance</h6>
+                        <p class="text-muted small mb-0">{% if maintenance_mode %}<span class="text-warning"><i class="bi bi-exclamation-circle-fill"></i> Active</span>{% else %}Off{% endif %}</p>
                     </div>
-                    <a href="{{ url_for('super_admin.maintenance_settings') }}" class="btn btn-sm btn-outline-warning w-100">
-                        <i class="fas fa-tools"></i> Settings
-                    </a>
                 </div>
-            </div>
+            </a>
         </div>
-
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bi bi-envelope text-success fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">Email</h6>
-                    </div>
-                    <a href="{{ url_for('super_admin.email_settings') }}" class="btn btn-sm btn-outline-success w-100">
-                        <i class="bi bi-gear"></i> Configure SMTP
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-flask text-info fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">Beta</h6>
-                        <div class="form-check form-switch ms-auto">
-                            <input class="form-check-input" type="checkbox" id="betaToggle"
-                                   {% if beta_enabled %}checked{% endif %}
-                                   onchange="document.getElementById('betaToggleForm').submit()">
+            <a href="{{ url_for('super_admin.email_settings') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-success bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-envelope text-success fa-lg"></i>
                         </div>
+                        <h6 class="card-title mb-1">Email / SMTP</h6>
+                        <p class="text-muted small mb-0">Outbound email settings</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-4">
+                    <div class="bg-info bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                        <i class="fas fa-flask text-info fa-lg"></i>
+                    </div>
+                    <h6 class="card-title mb-1">Beta Features</h6>
+                    <div class="form-check form-switch d-inline-flex mb-0">
+                        <input class="form-check-input" type="checkbox" id="betaToggle"
+                               {% if beta_enabled %}checked{% endif %}
+                               onchange="document.getElementById('betaToggleForm').submit()">
                     </div>
                     <form id="betaToggleForm" method="POST" action="{{ url_for('super_admin.toggle_beta') }}" style="display: none;"></form>
-                    <a href="{{ url_for('beta.index') }}" class="btn btn-sm btn-outline-info w-100">
-                        <i class="fas fa-flask"></i> View Beta
-                    </a>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="col-md-3">
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- PERFORMANCE                                   -->
+    <!-- ══════════════════════════════════════════════ -->
+    <h5 class="mb-3"><i class="bi bi-lightning-charge text-warning me-2"></i>Performance</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bi bi-lightning-charge text-warning fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">Pre-compute</h6>
-                        <div class="form-check form-switch ms-auto">
-                            <input class="form-check-input" type="checkbox" id="precomputeToggle"
-                                   {% if precompute_rollups_enabled %}checked{% endif %}
-                                   onchange="document.getElementById('precomputeToggleForm').submit()">
-                        </div>
+                <div class="card-body text-center py-4">
+                    <div class="bg-warning bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                        <i class="bi bi-lightning-charge text-warning fa-lg"></i>
+                    </div>
+                    <h6 class="card-title mb-1">Pre-compute Rollups</h6>
+                    <div class="form-check form-switch d-inline-flex mb-1">
+                        <input class="form-check-input" type="checkbox" id="precomputeToggle"
+                               {% if precompute_rollups_enabled %}checked{% endif %}
+                               onchange="document.getElementById('precomputeToggleForm').submit()">
                     </div>
                     <form id="precomputeToggleForm" method="POST" action="{{ url_for('super_admin.toggle_precompute_rollups') }}" style="display: none;"></form>
-                    <small class="text-muted">
+                    <p class="text-muted small mb-0">
                         {% if precompute_rollups_enabled %}
-                        <span class="text-success"><i class="bi bi-check-circle"></i> ON</span> — rollups from cache
+                        <span class="text-success"><i class="bi bi-check-circle"></i></span> Cached — 22x faster
                         {% else %}
-                        <span class="text-warning"><i class="bi bi-x-circle"></i> OFF</span> — computed on the fly
+                        <span class="text-warning"><i class="bi bi-x-circle"></i></span> Computed on the fly
                         {% endif %}
-                    </small>
+                    </p>
                     {% if precompute_rollups_enabled %}
-                    <div class="mt-2" style="font-size:0.75rem;">
-                        <strong>Recompute:</strong>
+                    <div class="mt-2" style="font-size:0.7rem;">
                         {% for org in organizations if not org.is_deleted %}
                         <form method="POST" action="{{ url_for('super_admin.recompute_rollups', org_id=org.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-outline-warning btn-sm" style="font-size:0.65rem; padding:0.1rem 0.3rem;" title="Recompute {{ org.name }}">
-                                {{ org.name }}
+                            <button type="submit" class="btn btn-outline-warning btn-sm" style="font-size:0.6rem; padding:0.1rem 0.3rem;" title="Recompute {{ org.name }}">
+                                <i class="bi bi-arrow-repeat"></i> {{ org.name }}
                             </button>
                         </form>
                         {% endfor %}
@@ -208,206 +202,202 @@
                 </div>
             </div>
         </div>
-
-        <div class="col-md-3">
+        <div class="col-md-4">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body py-3">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="bi bi-hdd-stack text-success fs-4 me-2"></i>
-                        <h6 class="mb-0 fw-bold">Tree Cache</h6>
-                        <div class="form-check form-switch ms-auto">
-                            <input class="form-check-input" type="checkbox" id="treeCacheToggle"
-                                   {% if tree_cache_enabled %}checked{% endif %}
-                                   onchange="document.getElementById('treeCacheToggleForm').submit()">
-                        </div>
+                <div class="card-body text-center py-4">
+                    <div class="bg-success bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                        <i class="bi bi-hdd-stack text-success fa-lg"></i>
+                    </div>
+                    <h6 class="card-title mb-1">Tree Cache</h6>
+                    <div class="form-check form-switch d-inline-flex mb-1">
+                        <input class="form-check-input" type="checkbox" id="treeCacheToggle"
+                               {% if tree_cache_enabled %}checked{% endif %}
+                               onchange="document.getElementById('treeCacheToggleForm').submit()">
                     </div>
                     <form id="treeCacheToggleForm" method="POST" action="{{ url_for('super_admin.toggle_tree_cache') }}" style="display: none;"></form>
-                    <small class="text-muted">
+                    <p class="text-muted small mb-0">
                         {% if tree_cache_enabled %}
-                        <span class="text-success"><i class="bi bi-check-circle"></i> ON</span> — workspace cached in localStorage
+                        <span class="text-success"><i class="bi bi-check-circle"></i></span> localStorage cache ON
                         {% else %}
-                        <span class="text-warning"><i class="bi bi-x-circle"></i> OFF</span> — always loads from server
+                        <span class="text-warning"><i class="bi bi-x-circle"></i></span> Always from server
                         {% endif %}
-                    </small>
+                    </p>
                 </div>
             </div>
         </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('super_admin.benchmarks') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-info bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-speedometer2 text-info fa-lg"></i>
+                        </div>
+                        <h6 class="card-title mb-1">Benchmarks</h6>
+                        <p class="text-muted small mb-0">Run &amp; compare performance</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
-    <!-- User & Access Management -->
-    <h5 class="mb-3 mt-3"><i class="fas fa-users-cog text-primary me-2"></i>User & Access Management</h5>
-    <div class="row g-3 mb-3">
-        <div class="col-md-4">
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- USERS & ACCESS                                -->
+    <!-- ══════════════════════════════════════════════ -->
+    <h5 class="mb-3"><i class="fas fa-users text-success me-2"></i>Users &amp; Access</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
             <a href="{{ url_for('super_admin.users') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
                     <div class="card-body text-center py-4">
                         <div class="bg-success bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-users text-success fa-2x"></i>
+                            <i class="fas fa-users text-success fa-lg"></i>
                         </div>
-                        <h5 class="card-title">User Management</h5>
-                        <p class="text-muted small mb-0">View all users and admin levels</p>
+                        <h6 class="card-title mb-1">User Management</h6>
+                        <p class="text-muted small mb-0">All users, roles, and levels</p>
                     </div>
                 </div>
             </a>
         </div>
-
-        <div class="col-md-4">
+        <div class="col-md-3">
             <a href="{{ url_for('super_admin.pending_users') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
                     <div class="card-body text-center py-4">
                         <div class="bg-warning bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-user-clock text-warning fa-2x"></i>
+                            <i class="fas fa-user-clock text-warning fa-lg"></i>
                         </div>
-                        <h5 class="card-title">Pending SSO Users</h5>
-                        <p class="text-muted small mb-0">Assign organizations to new SSO users</p>
+                        <h6 class="card-title mb-1">Pending SSO Users</h6>
+                        <p class="text-muted small mb-0">Assign workspaces</p>
                     </div>
                 </div>
             </a>
         </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.linked_kpis') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="bi bi-link-45deg text-primary fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">Linked KPIs</h5>
-                        <p class="text-muted small mb-0">View data dependencies and value sharing</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-    </div>
-
-    <!-- System Operations -->
-    <h5 class="mb-3 mt-3"><i class="fas fa-cogs text-info me-2"></i>System Operations</h5>
-    <div class="row g-3 mb-3">
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.settings') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-sliders-h text-primary fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">System Settings</h5>
-                        <p class="text-muted small mb-0">Configure system-wide settings and features</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.health') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-info bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-heartbeat text-info fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">System Health</h5>
-                        <p class="text-muted small mb-0">Monitor system health and performance</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
+        <div class="col-md-3">
             <a href="{{ url_for('super_admin.logs') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
                     <div class="card-body text-center py-4">
                         <div class="bg-dark bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-clipboard-list text-dark fa-2x"></i>
+                            <i class="fas fa-clipboard-list text-dark fa-lg"></i>
                         </div>
-                        <h5 class="card-title">Audit Logs</h5>
-                        <p class="text-muted small mb-0">Track all system changes and user actions</p>
+                        <h6 class="card-title mb-1">Audit Logs</h6>
+                        <p class="text-muted small mb-0">Changes and user actions</p>
                     </div>
                 </div>
             </a>
         </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.backup') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-success bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="bi bi-database text-success fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">Backup & Restore</h5>
-                        <p class="text-muted small mb-0">Create and restore organization backups</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
+        <div class="col-md-3">
             <a href="{{ url_for('super_admin.list_announcements') }}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 hover-lift">
                     <div class="card-body text-center py-4">
                         <div class="bg-info bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="bi bi-megaphone text-info fa-2x"></i>
+                            <i class="bi bi-megaphone text-info fa-lg"></i>
                         </div>
-                        <h5 class="card-title">Announcements</h5>
-                        <p class="text-muted small mb-0">Manage system-wide notifications and banners</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.documentation') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-warning bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-book text-warning fa-2x"></i>
-                        </div>
-                        <h5 class="card-title">System Documentation</h5>
-                        <p class="text-muted small mb-0">Complete journey-driven documentation - 100% coverage</p>
+                        <h6 class="card-title mb-1">Announcements</h6>
+                        <p class="text-muted small mb-0">System-wide banners</p>
                     </div>
                 </div>
             </a>
         </div>
     </div>
 
-    <!-- Testing & Development -->
-    <h5 class="mb-3 mt-3"><i class="fas fa-flask text-success me-2"></i>Testing & Development</h5>
-    <div class="row g-3 mb-3">
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.demo_generator') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift border-primary border-2">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="fas fa-magic text-primary fa-2x"></i>
-                        </div>
-                        <h5 class="card-title text-primary">Demo Data Generator</h5>
-                        <p class="text-muted small mb-0">Create realistic demo organizations with full feature coverage</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.bulk_operations') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift border-danger border-2">
-                    <div class="card-body text-center py-4">
-                        <div class="bg-danger bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="bi bi-trash text-danger fa-2x"></i>
-                        </div>
-                        <h5 class="card-title text-danger">Bulk Operations</h5>
-                        <p class="text-muted small mb-0">Multi-delete orgs & users for testing</p>
-                    </div>
-                </div>
-            </a>
-        </div>
-
-        <div class="col-md-4">
-            <a href="{{ url_for('super_admin.benchmarks') }}" class="text-decoration-none">
-                <div class="card border-0 shadow-sm h-100 hover-lift border-info border-2">
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- DATA & MONITORING                             -->
+    <!-- ══════════════════════════════════════════════ -->
+    <h5 class="mb-3"><i class="bi bi-database text-primary me-2"></i>Data &amp; Monitoring</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.health') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
                     <div class="card-body text-center py-4">
                         <div class="bg-info bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
-                            <i class="bi bi-speedometer2 text-info fa-2x"></i>
+                            <i class="fas fa-heartbeat text-info fa-lg"></i>
                         </div>
-                        <h5 class="card-title text-info">Performance Benchmarks</h5>
-                        <p class="text-muted small mb-0">Run, save & compare DB and server performance</p>
+                        <h6 class="card-title mb-1">System Health</h6>
+                        <p class="text-muted small mb-0">Status and connectivity</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.backup') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-success bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-database text-success fa-lg"></i>
+                        </div>
+                        <h6 class="card-title mb-1">Backup &amp; Restore</h6>
+                        <p class="text-muted small mb-0">Workspace backups</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.linked_kpis') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-link-45deg text-primary fa-lg"></i>
+                        </div>
+                        <h6 class="card-title mb-1">Linked KPIs</h6>
+                        <p class="text-muted small mb-0">Cross-workspace data</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.settings') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-secondary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-sliders-h text-secondary fa-lg"></i>
+                        </div>
+                        <h6 class="card-title mb-1">All Settings</h6>
+                        <p class="text-muted small mb-0">Feature flags overview</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════ -->
+    <!-- DANGER ZONE                                   -->
+    <!-- ══════════════════════════════════════════════ -->
+    <h5 class="mb-3"><i class="fas fa-exclamation-triangle text-danger me-2"></i>Danger Zone</h5>
+    <div class="row g-3 mb-3">
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.demo_generator') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift border-start border-3 border-primary">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-primary bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-magic text-primary fa-lg"></i>
+                        </div>
+                        <h6 class="card-title mb-1">Demo Generator</h6>
+                        <p class="text-muted small mb-0">Create demo workspaces</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.bulk_operations') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift border-start border-3 border-danger">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-danger bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="bi bi-trash text-danger fa-lg"></i>
+                        </div>
+                        <h6 class="card-title text-danger mb-1">Bulk Delete</h6>
+                        <p class="text-muted small mb-0">Multi-delete workspaces &amp; users</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('super_admin.documentation') }}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 hover-lift">
+                    <div class="card-body text-center py-4">
+                        <div class="bg-warning bg-opacity-10 d-inline-flex p-3 rounded-circle mb-3">
+                            <i class="fas fa-book text-warning fa-lg"></i>
+                        </div>
+                        <h6 class="card-title mb-1">System Docs</h6>
+                        <p class="text-muted small mb-0">Technical documentation</p>
                     </div>
                 </div>
             </a>
