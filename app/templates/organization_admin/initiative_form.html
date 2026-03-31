@@ -1018,21 +1018,38 @@
             return -1;
         }
 
+        // Track current visual order (changes in focus mode)
+        var _navOrder = NAV_DOTS.slice(); // default: original order
+        var _navCurIdx = CUR_POS; // current position in _navOrder
+
+        function updateNavOrder(sortedDots, curIdx) {
+            _navOrder = sortedDots;
+            _navCurIdx = curIdx >= 0 ? curIdx : 0;
+        }
+
+        function navToDot(dot) {
+            var origPos = NAV_DOTS.findIndex(function(d) { return d.id === dot.id; });
+            if (origPos >= 0) navToPos(origPos);
+        }
+
         document.addEventListener('keydown', function(e) {
             if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
             if (e.key === 'ArrowLeft') {
                 if (e.shiftKey) {
-                    const pos = findNonGreen(CUR_POS, -1);
-                    if (pos >= 0) navToPos(pos);
+                    // Skip to next non-green in visual order
+                    var pos = _navCurIdx - 1;
+                    while (pos >= 0 && _navOrder[pos].rag === 'green') pos--;
+                    if (pos >= 0) navToDot(_navOrder[pos]);
                 } else {
-                    {% if nav_context.prev_id %}navToPos({{ nav_context.pos - 1 }});{% endif %}
+                    if (_navCurIdx > 0) navToDot(_navOrder[_navCurIdx - 1]);
                 }
             } else if (e.key === 'ArrowRight') {
                 if (e.shiftKey) {
-                    const pos = findNonGreen(CUR_POS, 1);
-                    if (pos >= 0) navToPos(pos);
+                    var pos = _navCurIdx + 1;
+                    while (pos < _navOrder.length && _navOrder[pos].rag === 'green') pos++;
+                    if (pos < _navOrder.length) navToDot(_navOrder[pos]);
                 } else {
-                    {% if nav_context.next_id %}navToPos({{ nav_context.pos + 1 }});{% endif %}
+                    if (_navCurIdx < _navOrder.length - 1) navToDot(_navOrder[_navCurIdx + 1]);
                 }
             }
         });
@@ -1073,6 +1090,8 @@
             var html = '';
             var prevImpact = -1;
             var curIdx = -1;
+            // Update keyboard nav order
+            updateNavOrder(dots, -1);
 
             dots.forEach(function(dot, idx) {
                 var impact = dot.impact_level || 0;
@@ -1102,6 +1121,8 @@
             });
 
             dotsEl.innerHTML = html;
+            // Update keyboard nav with the visual order + current position
+            updateNavOrder(dots, curIdx);
 
             // Update prev/next links to match sorted order
             var prevLink = document.getElementById('navPrevLink');
