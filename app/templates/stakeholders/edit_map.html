@@ -1,126 +1,206 @@
 {% extends "base.html" %}
+{% block title %}{{ stakeholder_map.name }} — Map{% endblock %}
 
-{% block title %}Edit Map - {{ stakeholder_map.name }}{% endblock %}
+{% block extra_css %}
+<style>
+.emap-hero {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-radius: 16px; padding: 1.75rem 2rem; color: white; margin-bottom: 1.5rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.emap-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0; }
+.emap-hero p { color: rgba(255,255,255,0.7); font-size: 0.85rem; margin: 0; }
+
+.emap-card {
+    background: white; border-radius: 14px; border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 1.75rem; margin-bottom: 1rem;
+}
+.emap-card h3 {
+    font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #64748b; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+
+/* Stakeholder list */
+.emap-stk {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.6rem 0.75rem; border-radius: 10px; margin-bottom: 0.4rem;
+    background: #f8fafc; transition: background 0.1s;
+}
+.emap-stk:hover { background: #f0fdfa; }
+.emap-stk-name { font-weight: 600; font-size: 0.88rem; color: #1e293b; }
+.emap-stk-role { font-size: 0.75rem; color: #94a3b8; }
+
+/* Add modal stakeholder items */
+.emap-add-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.3rem;
+    border: 1px solid #e2e8f0; transition: all 0.15s;
+}
+.emap-add-item:hover { border-color: #8b5cf6; background: #faf5ff; }
+
+.emap-vis-toggle { display: flex; gap: 0.5rem; }
+.emap-vis-btn {
+    flex: 1; padding: 0.5rem; border-radius: 10px; border: 2px solid #e2e8f0;
+    text-align: center; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; background: white; color: #64748b;
+}
+.emap-vis-btn:hover { border-color: #cbd5e1; }
+.emap-vis-btn.active { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+
+.emap-empty { text-align: center; padding: 2rem; color: #94a3b8; }
+.emap-empty i { font-size: 2rem; display: block; margin-bottom: 0.5rem; opacity: 0.3; }
+
+body.dark-mode .emap-card { background: #1e293b; border-color: #334155; }
+body.dark-mode .emap-card h3 { color: #94a3b8; }
+body.dark-mode .emap-stk { background: #0f172a; }
+body.dark-mode .emap-stk:hover { background: rgba(20,184,166,0.05); }
+body.dark-mode .emap-stk-name { color: #e2e8f0; }
+body.dark-mode .emap-add-item { border-color: #334155; }
+body.dark-mode .emap-add-item:hover { border-color: #8b5cf6; background: rgba(139,92,246,0.05); }
+body.dark-mode .emap-vis-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h2>Edit Map: {{ stakeholder_map.name }}</h2>
-            <p class="text-muted">{{ organization.name }}</p>
+<div style="max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem;">
 
-            <!-- Map Settings Card -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Map Settings</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" novalidate>
-                        {{ form.hidden_tag() }}
+    <!-- Header -->
+    <div class="emap-hero">
+        <div>
+            <h1><i class="bi bi-collection-fill"></i> {{ stakeholder_map.name }}</h1>
+            <p>{{ map_stakeholders|length }} stakeholder{{ 's' if map_stakeholders|length != 1 else '' }}{% if stakeholder_map.description %} &mdash; {{ stakeholder_map.description }}{% endif %}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('stakeholders.index', organization_id=organization.id, map_id=stakeholder_map.id) }}" class="btn btn-sm" style="background:rgba(255,255,255,0.15); color:white;">
+                <i class="bi bi-diagram-3"></i> View Network
+            </a>
+        </div>
+    </div>
 
-                        <div class="mb-3">
-                            {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
-                            {% if form.name.errors %}
-                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control", rows=3) }}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.visibility.label(class="form-label") }}
-                            {{ form.visibility(class="form-select") }}
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <button type="submit" class="btn btn-primary">Save Settings</button>
-                        </div>
-                    </form>
-                </div>
+    <!-- Map Settings -->
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="emap-card">
+            <h3><i class="bi bi-gear-fill" style="color:#8b5cf6;"></i> Map Settings</h3>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Name</label>
+                {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else ""), placeholder="Map name") }}
+                {% if form.name.errors %}<div class="invalid-feedback">{{ form.name.errors[0] }}</div>{% endif %}
             </div>
-
-            <!-- Stakeholders in Map Card -->
-            <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Stakeholders in Map ({{ map_stakeholders|length }})</h5>
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addStakeholderModal">
-                        <i class="bi bi-plus-circle"></i> Add Stakeholders
-                    </button>
-                </div>
-                <div class="card-body">
-                    {% if map_stakeholders %}
-                    <div class="list-group">
-                        {% for stakeholder in map_stakeholders %}
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>{{ stakeholder.name }}</strong>
-                                {% if stakeholder.role %}
-                                <br><small class="text-muted">{{ stakeholder.role }}</small>
-                                {% endif %}
-                            </div>
-                            <button class="btn btn-sm btn-danger" onclick="removeStakeholder({{ stakeholder.id }}, '{{ stakeholder.name }}')">
-                                <i class="bi bi-x-circle"></i> Remove
-                            </button>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <p class="text-muted">No stakeholders in this map yet. Click "Add Stakeholders" to add some.</p>
-                    {% endif %}
-                </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Description</label>
+                {{ form.description(class="form-control", rows=2, placeholder="What is this map for?") }}
             </div>
-
-            <!-- Actions -->
-            <div class="d-grid gap-2 d-md-flex justify-content-md-between">
-                <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Back to Maps
-                </a>
-                <a href="{{ url_for('stakeholders.index', organization_id=organization.id, map_id=stakeholder_map.id) }}" class="btn btn-primary">
-                    <i class="bi bi-diagram-3"></i> View Network
-                </a>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Visibility</label>
+                <div class="emap-vis-toggle">
+                    <span class="emap-vis-btn{% if stakeholder_map.visibility == 'shared' %} active{% endif %}"
+                          onclick="document.getElementById('vis').value='shared'; document.querySelectorAll('.emap-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-globe"></i> Shared
+                    </span>
+                    <span class="emap-vis-btn{% if stakeholder_map.visibility == 'private' %} active{% endif %}"
+                          onclick="document.getElementById('vis').value='private'; document.querySelectorAll('.emap-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-lock-fill"></i> Private
+                    </span>
+                </div>
+                <div style="display:none;">{{ form.visibility(id="vis") }}</div>
+            </div>
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Save Settings</button>
             </div>
         </div>
+    </form>
+
+    <!-- Stakeholders in Map -->
+    <div class="emap-card">
+        <h3>
+            <i class="bi bi-people-fill" style="color:#14b8a6;"></i> Stakeholders ({{ map_stakeholders|length }})
+            <button type="button" class="btn btn-sm btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#addStakeholderModal" style="font-size:0.78rem;">
+                <i class="bi bi-plus"></i> Add
+            </button>
+        </h3>
+        {% if map_stakeholders %}
+            {% for s in map_stakeholders %}
+            <div class="emap-stk">
+                <div>
+                    <span class="emap-stk-name">{{ s.name }}</span>
+                    {% if s.role %}<span class="emap-stk-role ms-2">{{ s.role }}</span>{% endif %}
+                </div>
+                <div class="d-flex gap-1">
+                    <a href="{{ url_for('stakeholders.edit', id=s.id) }}" class="btn btn-sm btn-outline-primary" style="padding:0.15rem 0.4rem; font-size:0.7rem;" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger" style="padding:0.15rem 0.4rem; font-size:0.7rem;"
+                            onclick="removeStakeholder({{ s.id }}, '{{ s.name }}')">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="emap-empty">
+                <i class="bi bi-people"></i>
+                No stakeholders in this map yet.<br>
+                <button type="button" class="btn btn-primary btn-sm mt-2" data-bs-toggle="modal" data-bs-target="#addStakeholderModal">
+                    <i class="bi bi-plus"></i> Add Stakeholders
+                </button>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+        <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Maps
+        </a>
+        <form method="POST" action="{{ url_for('stakeholders.delete_map', id=stakeholder_map.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Delete map &quot;{{ stakeholder_map.name }}&quot;? Stakeholders are kept.')">
+                <i class="bi bi-trash"></i> Delete Map
+            </button>
+        </form>
     </div>
 </div>
 
 <!-- Add Stakeholders Modal -->
-<div class="modal fade" id="addStakeholderModal" tabindex="-1" aria-labelledby="addStakeholderModalLabel" aria-hidden="true">
+<div class="modal fade" id="addStakeholderModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="addStakeholderModalLabel">Add Stakeholders to Map</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #14b8a6, #0d9488); color: white;">
+                <h5 class="modal-title"><i class="bi bi-person-plus-fill"></i> Add Stakeholders to {{ stakeholder_map.name }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <input type="text" id="stakeholderSearch" class="form-control" placeholder="Search stakeholders...">
+                <div class="mb-3" style="position:relative;">
+                    <i class="bi bi-search" style="position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); color:#94a3b8;"></i>
+                    <input type="text" id="stakeholderSearch" class="form-control" placeholder="Search by name or role..."
+                           style="padding-left:2.2rem;" autocomplete="off">
                 </div>
-                <div class="list-group" id="availableStakeholdersList">
-                    {% for stakeholder in all_stakeholders %}
-                    {% if stakeholder.id not in map_stakeholder_ids %}
-                    <div class="list-group-item stakeholder-item" data-name="{{ stakeholder.name|lower }}" data-role="{{ (stakeholder.role or '')|lower }}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>{{ stakeholder.name }}</strong>
-                                {% if stakeholder.role %}
-                                <br><small class="text-muted">{{ stakeholder.role }}</small>
-                                {% endif %}
-                            </div>
-                            <button class="btn btn-sm btn-success" onclick="addStakeholder({{ stakeholder.id }}, '{{ stakeholder.name }}')">
-                                <i class="bi bi-plus-circle"></i> Add
-                            </button>
+                <div id="availableStakeholdersList" style="max-height: 400px; overflow-y: auto;">
+                    {% set available = [] %}
+                    {% for s in all_stakeholders %}
+                        {% if s.id not in map_stakeholder_ids %}
+                    <div class="emap-add-item" data-search="{{ s.name|lower }} {{ (s.role or '')|lower }} {{ (s.department or '')|lower }}">
+                        <div>
+                            <strong style="font-size:0.88rem;">{{ s.name }}</strong>
+                            {% if s.role %}<span style="font-size:0.78rem; color:#94a3b8; margin-left:0.5rem;">{{ s.role }}</span>{% endif %}
+                            {% if s.department %}<span style="font-size:0.72rem; color:#cbd5e1; margin-left:0.3rem;">({{ s.department }})</span>{% endif %}
                         </div>
+                        <button class="btn btn-sm btn-success" style="font-size:0.75rem; padding:0.2rem 0.6rem;"
+                                onclick="addStakeholder({{ s.id }})">
+                            <i class="bi bi-plus"></i> Add
+                        </button>
                     </div>
-                    {% endif %}
+                        {% endif %}
                     {% endfor %}
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                {% if all_stakeholders|length == map_stakeholder_ids|length %}
+                <div class="emap-empty">
+                    <i class="bi bi-check-circle"></i>
+                    All stakeholders are already in this map.
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -130,67 +210,34 @@
 const mapId = {{ stakeholder_map.id }};
 const csrfToken = '{{ csrf_token() }}';
 
-// Search functionality
 document.getElementById('stakeholderSearch').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase();
-    const items = document.querySelectorAll('.stakeholder-item');
-
-    items.forEach(item => {
-        const name = item.getAttribute('data-name');
-        const role = item.getAttribute('data-role');
-        const matches = name.includes(searchTerm) || role.includes(searchTerm);
-        item.style.display = matches ? '' : 'none';
+    var q = e.target.value.toLowerCase();
+    document.querySelectorAll('.emap-add-item').forEach(function(item) {
+        item.style.display = !q || item.dataset.search.includes(q) ? '' : 'none';
     });
 });
 
-async function addStakeholder(stakeholderId, stakeholderName) {
+async function addStakeholder(id) {
     try {
-        const response = await fetch(`/stakeholders/maps/${mapId}/add-stakeholder`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ stakeholder_id: stakeholderId })
+        var r = await fetch('/stakeholders/maps/' + mapId + '/add-stakeholder', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({stakeholder_id: id})
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to add stakeholder');
-        }
-
-        location.reload();
-    } catch (error) {
-        console.error('Error adding stakeholder:', error);
-        alert('Error: ' + error.message);
-    }
+        if (r.ok) location.reload();
+        else { var e = await r.json(); alert(e.error || 'Failed'); }
+    } catch(e) { alert('Error: ' + e.message); }
 }
 
-async function removeStakeholder(stakeholderId, stakeholderName) {
-    if (!confirm(`Remove "${stakeholderName}" from this map?`)) {
-        return;
-    }
-
+async function removeStakeholder(id, name) {
+    if (!confirm('Remove "' + name + '" from this map?')) return;
     try {
-        const response = await fetch(`/stakeholders/maps/${mapId}/remove-stakeholder`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({ stakeholder_id: stakeholderId })
+        var r = await fetch('/stakeholders/maps/' + mapId + '/remove-stakeholder', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+            body: JSON.stringify({stakeholder_id: id})
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to remove stakeholder');
-        }
-
-        location.reload();
-    } catch (error) {
-        console.error('Error removing stakeholder:', error);
-        alert('Error: ' + error.message);
-    }
+        if (r.ok) location.reload();
+        else { var e = await r.json(); alert(e.error || 'Failed'); }
+    } catch(e) { alert('Error: ' + e.message); }
 }
 </script>
 {% endblock %}
