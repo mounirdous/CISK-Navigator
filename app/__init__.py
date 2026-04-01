@@ -591,21 +591,18 @@ def create_app(config_name=None):
         from flask import request as _req
         if _req.method in ("POST", "PUT", "DELETE") and response.status_code < 400:
             path = _req.path
-            # Skip org-admin paths that don't affect rollup values:
-            # - Edits to name/description (no value change)
-            # - Creating empty entities (no values yet)
-            # - Branding, settings, Porter's, strategy, etc.
-            _skip_patterns = ("/branding", "/logo-manager", "/settings/", "/porters", "/strategy",
-                              "/decision-tags", "/onboarding", "/link-health", "/links")
-            _is_org_admin_edit = "/org-admin/" in path and "/edit" in path and "/rollup" not in path
-            _is_org_admin_create = "/org-admin/" in path and "/create" in path
-            _is_skip = any(p in path for p in _skip_patterns)
+            # Only mark stale for operations that directly change rollup values:
+            # - KPI value contributions
+            # - Impact level changes
+            # - Rollup config changes
+            # Skip everything else (entity CRUD, branding, settings, etc.)
+            # Entity deletes: tree refreshes from DB; parent rollups stay
+            # slightly stale until next value change or manual recompute.
             _affects_rollups = (
-                ("/org-admin/" in path and not _is_org_admin_edit and not _is_org_admin_create and not _is_skip)
-                or "/workspace/kpi/" in path
-                or "/workspace/decision-register" in path
+                "/workspace/kpi/" in path
                 or "/workspace/api/impact" in path
                 or "/workspace/contribute" in path
+                or ("/org-admin/" in path and "/rollup" in path)
             )
             if _affects_rollups:
                 from flask import session as _sess
