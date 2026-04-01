@@ -1958,7 +1958,7 @@
                       x-text="_impactFilterIcon()"></span>
             </button>
             <!-- Refresh data (force reload from server) -->
-            <button id="wsRefreshBtn" @click="_stale=false; loadData(true)"
+            <button id="wsRefreshBtn" @click="console.log('[IMPACT_TRACE] REFRESH clicked — Alpine state BEFORE refresh:'); (spaces||[]).forEach(function(sp){ console.log('[IMPACT_TRACE]   PRE space#'+sp.id+' '+sp.name+' impact='+sp.impact_level+' true_imp='+sp.true_importance_level); (sp.challenges||[]).forEach(function(ch){ console.log('[IMPACT_TRACE]     PRE ch#'+ch.id+' '+ch.name+' impact='+ch.impact_level+' true_imp='+ch.true_importance_level); }); }); _stale=false; loadData(true)"
                     class="btn btn-sm"
                     :class="_stale ? 'btn-warning' : 'btn-outline-light'"
                     :style="_stale ? 'animation:ws-pulse 1.5s ease infinite;' : 'opacity:0.7;'"
@@ -3874,6 +3874,17 @@ function workspaceV2(orgId, filterPresets) {
             }; });
             this.pendingTreeState = null;
 
+            // [IMPACT_TRACE] Verify Alpine data after _processData
+            console.log('[IMPACT_TRACE] _processData complete — Alpine spaces:');
+            (this.spaces || []).forEach(function(sp) {
+                console.log('[IMPACT_TRACE]   ALPINE space#' + sp.id + ' ' + sp.name + ' impact=' + sp.impact_level + ' true_imp=' + sp.true_importance_level);
+                (sp.challenges || []).forEach(function(ch) {
+                    console.log('[IMPACT_TRACE]     ALPINE ch#' + ch.id + ' ' + ch.name + ' impact=' + ch.impact_level + ' true_imp=' + ch.true_importance_level);
+                });
+            });
+
+            console.log('[IMPACT_TRACE] _processData done'); // [IMPACT_TRACE]
+
             this.valueTypes = data.valueTypes.map(function(vt) { return {
                 ...vt, collapsed: vtCollapsed[vt.id] ?? false
             }; });
@@ -3960,6 +3971,15 @@ function workspaceV2(orgId, filterPresets) {
                 var data = await response.json();
 
                 console.log('[PERF_TRACE] Server response received in ' + Math.round(performance.now() - _fetchStart) + 'ms'); // [PERF_TRACE]
+                // [IMPACT_TRACE] Log first space's impact data
+                if (data.spaces && data.spaces.length > 0) {
+                    data.spaces.forEach(function(sp) {
+                        console.log('[IMPACT_TRACE] Server data: space#' + sp.id + ' ' + sp.name + ' impact=' + sp.impact_level + ' true_importance=' + sp.true_importance_level);
+                        (sp.challenges || []).forEach(function(ch) {
+                            console.log('[IMPACT_TRACE]   challenge#' + ch.id + ' ' + ch.name + ' impact=' + ch.impact_level + ' true_importance=' + ch.true_importance_level);
+                        });
+                    });
+                }
                 // Check for server error
                 if (data.error) {
                     console.error('Server error:', data.error);
@@ -3998,6 +4018,14 @@ function workspaceV2(orgId, filterPresets) {
                 await new Promise(function(r) { setTimeout(r, 150); });
                 this.loadingPct = 100;
                 this.loading = false;
+                // Force Alpine to re-render all nested properties (impact, true_importance)
+                // Alpine may cache DOM for x-show hidden elements; this ensures fresh render
+                var _forceSpaces = this.spaces;
+                this.spaces = [];
+                var _self_force = this;
+                await this.$nextTick();
+                _self_force.spaces = _forceSpaces;
+                console.log('[IMPACT_TRACE] Force re-render after loading=false via $nextTick'); // [IMPACT_TRACE]
                 // Expand all after onboarding fresh load
                 if (this._expandAllAfterLoad) {
                     this._expandAllAfterLoad = false;
@@ -6152,7 +6180,7 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
 
     function _markDirtyAndClose(newImpactLevel, newNoConsensus) {
         win.remove();
-        // Update Alpine data directly — find entity in the tree and patch it
+        // Update Alpine data directly for instant assessed badge update
         var wsEl = document.querySelector('.workspace-v2');
         if (wsEl && wsEl._x_dataStack) {
             var root = wsEl._x_dataStack[0];
@@ -6172,8 +6200,9 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
                     });
                 });
             });
+            console.log('[IMPACT_TRACE] Local patch done: ' + entityType + '#' + entityId + ' impact=' + newImpactLevel + ' found=' + found);
         }
-        // Also mark stale so full refresh picks up true_importance recalc
+        // Mark stale — user decides when to refresh
         try { localStorage.removeItem('ws_data_{{ org_id }}'); localStorage.removeItem('ws_data_meta_{{ org_id }}'); localStorage.setItem('ws_dirty', '1'); } catch(e) {}
         if (wsEl && wsEl._x_dataStack) { wsEl._x_dataStack[0]._stale = true; }
     }
@@ -6193,6 +6222,7 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}' },
                 body: JSON.stringify({ entity_type: entityType, entity_id: entityId, impact_level: _newLevel, no_consensus: false })
             }).then(function(r) { return r.json(); }).then(function(data) {
+                console.log('[IMPACT_TRACE] Impact save response:', data);
                 if (data.ok) { _markDirtyAndClose(_newLevel, false); }
             });
         }

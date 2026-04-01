@@ -4485,10 +4485,7 @@ def update_impact():
         entity.impact_no_consensus_note = None
 
     db.session.commit()
-    try:
-        localStorage_key = "ws_dirty"
-    except Exception:
-        pass
+    current_app.logger.info(f"[IMPACT_TRACE] Saved {entity_type}#{entity_id} impact_level={entity.impact_level} no_consensus={entity.impact_no_consensus}")
     return jsonify({
         "ok": True,
         "impact_level": entity.impact_level,
@@ -5724,6 +5721,9 @@ def _build_workspace_data(org_id):
                     _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
         space_inherited = list(_url_map.values())
 
+        _pt.info(f"[IMPACT_TRACE] DB READ space#{space.id} '{space.name}' impact_level={space.impact_level} (from DB model)")
+        for _ch in space.challenges:
+            _pt.info(f"[IMPACT_TRACE]   DB READ challenge#{_ch.id} '{_ch.name}' impact_level={_ch.impact_level}")
         spaces_data.append(
             {
                 "id": space.id,
@@ -5840,9 +5840,11 @@ def _build_workspace_data(org_id):
                 return None
             return compute_true_importance(chain, _method, _weights, _custom_matrix, _custom_reinforce)
 
+        import logging as _il_log; _il_logger = _il_log.getLogger("perf_trace")
         for space in spaces_data:
             s_il = space.get("impact_level")
             space["true_importance_level"] = _ti([s_il]) if s_il else None
+            _il_logger.info(f"[IMPACT_TRACE] space#{space['id']} '{space['name']}' impact={s_il} true_importance={space['true_importance_level']}")
             for challenge in space.get("challenges", []):
                 c_il = challenge.get("impact_level")
                 challenge["true_importance_level"] = _ti([s_il, c_il])
