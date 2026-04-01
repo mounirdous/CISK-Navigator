@@ -243,6 +243,20 @@
                     <td><span class="vd-owner-badge">{{ a.owner_user.display_name or a.owner_user.login if a.owner_user else '—' }}</span></td>
                 </tr>
                 {% endfor %}
+                {% for s in stk_private %}
+                <tr data-importance="0">
+                    <td style="font-weight:600;">{{ s.name }}</td>
+                    <td><span class="vd-type-badge" style="background:#fef3c720; color:#f59e0b;">Stakeholder</span></td>
+                    <td>{% if s.created_by %}<span class="vd-owner-badge">{{ s.created_by.display_name or s.created_by.login }}</span>{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
+                {% for m in maps_private %}
+                <tr data-importance="0">
+                    <td style="font-weight:600;">{{ m.name }}</td>
+                    <td><span class="vd-type-badge" style="background:#f3e8ff; color:#8b5cf6;">Stakeholder Map</span></td>
+                    <td>{% if m.created_by %}<span class="vd-owner-badge">{{ m.created_by.display_name or m.created_by.login }}</span>{% else %}—{% endif %}</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

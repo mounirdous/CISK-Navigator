@@ -446,6 +446,8 @@ def visibility_dashboard():
         shared_pct=int(total_shared / total_all * 100) if total_all else 100,
         spaces_private=spaces_private,
         actions_private=actions_private,
+        stk_private=stk_private,
+        maps_private=maps_private,
         private_owners=private_owners,
         impact_scale=impact_scale,
         space_impacts=space_impacts,
