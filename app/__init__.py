@@ -591,13 +591,17 @@ def create_app(config_name=None):
         from flask import request as _req
         if _req.method in ("POST", "PUT", "DELETE") and response.status_code < 400:
             path = _req.path
-            # Skip org-admin paths that don't affect rollups (edits to name/description/branding)
+            # Skip org-admin paths that don't affect rollup values:
+            # - Edits to name/description (no value change)
+            # - Creating empty entities (no values yet)
+            # - Branding, settings, Porter's, strategy, etc.
             _skip_patterns = ("/branding", "/logo-manager", "/settings/", "/porters", "/strategy",
                               "/decision-tags", "/onboarding", "/link-health", "/links")
             _is_org_admin_edit = "/org-admin/" in path and "/edit" in path and "/rollup" not in path
+            _is_org_admin_create = "/org-admin/" in path and "/create" in path
             _is_skip = any(p in path for p in _skip_patterns)
             _affects_rollups = (
-                ("/org-admin/" in path and not _is_org_admin_edit and not _is_skip)
+                ("/org-admin/" in path and not _is_org_admin_edit and not _is_org_admin_create and not _is_skip)
                 or "/workspace/kpi/" in path
                 or "/workspace/decision-register" in path
                 or "/workspace/api/impact" in path

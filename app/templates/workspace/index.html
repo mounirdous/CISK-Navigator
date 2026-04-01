@@ -2496,7 +2496,7 @@
                                 <i class="bi bi-chevron-down expand-icon"
                                    :class="{'collapsed': space.collapsed, 'empty': space.challenges.length === 0}"
                                    @click="_toggleCollapse('space', space.id)"
-                                   x-show="space.challenges.length > 0"></i>
+                                   :style="space.challenges.length === 0 ? 'visibility:hidden;' : ''"></i>
                                 <img x-show="space.logo_url" :src="space.logo_url" class="entity-logo" />
                                 <span x-show="!space.logo_url && space.icon" class="entity-icon-text" x-text="space.icon"></span>
                                 <i x-show="!space.logo_url && !space.icon" class="bi bi-folder-fill entity-icon" style="color: #3182ce;"></i>
@@ -2660,7 +2660,7 @@
                                         <i class="bi bi-chevron-down expand-icon"
                                            :class="{'collapsed': challenge.collapsed, 'empty': challenge.initiatives.length === 0}"
                                            @click="_toggleCollapse('challenge', challenge.id)"
-                                           x-show="challenge.initiatives.length > 0"></i>
+                                           :style="challenge.initiatives.length === 0 ? 'visibility:hidden;' : ''"></i>
                                         <img x-show="challenge.logo_url" :src="challenge.logo_url" class="entity-logo" />
                                         <span x-show="!challenge.logo_url && challenge.icon" class="entity-icon-text" x-text="challenge.icon"></span>
                                         <i x-show="!challenge.logo_url && !challenge.icon" class="bi bi-bullseye entity-icon" style="color: #e74c3c;"></i>
@@ -2777,7 +2777,7 @@
                                                 <i class="bi bi-chevron-down expand-icon"
                                                    :class="{'collapsed': initiative.collapsed, 'empty': initiative.systems.length === 0}"
                                                    @click="_toggleCollapse('initiative', initiative.id)"
-                                                   x-show="initiative.systems.length > 0"></i>
+                                                   :style="initiative.systems.length === 0 ? 'visibility:hidden;' : ''"></i>
                                                 <img x-show="initiative.logo_url" :src="initiative.logo_url" class="entity-logo" />
                                                 <span x-show="!initiative.logo_url && initiative.icon" class="entity-icon-text" x-text="initiative.icon"></span>
                                                 <i x-show="!initiative.logo_url && !initiative.icon" class="bi bi-rocket-takeoff entity-icon" style="color: #3498db;"></i>
@@ -2930,7 +2930,7 @@
                                                         <i class="bi bi-chevron-down expand-icon"
                                                            :class="{'collapsed': system.collapsed, 'empty': system.kpis.length === 0}"
                                                            @click="_toggleCollapse('system', system.id)"
-                                                           x-show="system.kpis.length > 0"></i>
+                                                           :style="system.kpis.length === 0 ? 'visibility:hidden;' : ''"></i>
                                                         <img x-show="system.logo_url" :src="system.logo_url" class="entity-logo" />
                                                         <span x-show="!system.logo_url && system.icon" class="entity-icon-text" x-text="system.icon"></span>
                                                         <i x-show="!system.logo_url && !system.icon" class="bi bi-gear-fill entity-icon" style="color: #95a5a6;"></i>
