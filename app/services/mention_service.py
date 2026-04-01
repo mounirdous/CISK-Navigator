@@ -9,7 +9,7 @@ import re
 from typing import Dict, List, Tuple
 
 from app.extensions import db
-from app.models import KPI, Challenge, Initiative, Space, System, User, UserOrganizationMembership
+from app.models import KPI, Challenge, Initiative, Space, Stakeholder, System, User, UserOrganizationMembership
 
 
 class MentionService:
@@ -158,6 +158,14 @@ class MentionService:
                 results.append(("kpi", kpi.id, name))
                 continue
 
+            # Search stakeholders
+            stakeholder = Stakeholder.query.filter(
+                Stakeholder.organization_id == organization_id, db.func.lower(Stakeholder.name) == name_lower
+            ).first()
+            if stakeholder:
+                results.append(("stakeholder", stakeholder.id, name))
+                continue
+
             # Try entity links by title, scoped to organization
             from app.models import EntityLink
             org_filter = MentionService._entity_link_org_filter(organization_id)
@@ -236,6 +244,14 @@ class MentionService:
         )
         for kpi in kpis:
             results.append({"type": "kpi", "id": kpi.id, "name": kpi.name, "label": f"{kpi.name} [KPI]"})
+
+        # Search stakeholders
+        stakeholders = Stakeholder.query.filter(
+            Stakeholder.organization_id == organization_id, db.func.lower(Stakeholder.name).like(search_pattern)
+        ).limit(limit)
+        for stk in stakeholders:
+            role_hint = f" — {stk.role}" if stk.role else ""
+            results.append({"type": "stakeholder", "id": stk.id, "name": stk.name, "label": f"{stk.name}{role_hint} [Stakeholder]"})
 
         # Search entity links (by title or URL), scoped to organization
         from app.models import EntityLink
@@ -359,6 +375,7 @@ class MentionService:
                 if comment_id
                 else url_for("workspace.index", _anchor=f"kpi-{entity_id}")
             ),
+            "stakeholder": lambda: url_for("stakeholders.edit", id=entity_id),
             "entity_link": lambda: MentionService._get_entity_link_url(entity_id),
         }
 

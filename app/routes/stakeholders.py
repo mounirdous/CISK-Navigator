@@ -11,6 +11,8 @@ from app.forms import StakeholderFilterForm, StakeholderForm, StakeholderMapForm
 from app.models import (
     KPI,
     Challenge,
+    GeographyCountry,
+    GeographyRegion,
     GeographySite,
     Initiative,
     Organization,
@@ -172,10 +174,11 @@ def create():
     organization = Organization.query.get_or_404(org_id)
     form = StakeholderForm()
 
-    # Populate site choices (all active sites in the organization)
+    # Populate site choices (only sites belonging to this organization)
     sites = (
-        GeographySite.query.join(GeographySite.country)
-        .filter(GeographySite.is_active.is_(True))
+        GeographySite.query.join(GeographyCountry, GeographySite.country_id == GeographyCountry.id)
+        .join(GeographyRegion, GeographyCountry.region_id == GeographyRegion.id)
+        .filter(GeographyRegion.organization_id == org_id, GeographySite.is_active.is_(True))
         .order_by(GeographySite.name)
         .all()
     )
@@ -252,10 +255,11 @@ def edit(id):
 
     form = StakeholderForm(obj=stakeholder)
 
-    # Populate site choices
+    # Populate site choices (only sites belonging to this organization)
     sites = (
-        GeographySite.query.join(GeographySite.country)
-        .filter(GeographySite.is_active.is_(True))
+        GeographySite.query.join(GeographyCountry, GeographySite.country_id == GeographyCountry.id)
+        .join(GeographyRegion, GeographyCountry.region_id == GeographyRegion.id)
+        .filter(GeographyRegion.organization_id == org_id, GeographySite.is_active.is_(True))
         .order_by(GeographySite.name)
         .all()
     )

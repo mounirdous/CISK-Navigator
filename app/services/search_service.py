@@ -86,7 +86,7 @@ class SearchService:
         else:
             # Determine which entity types to search
             entity_types = filters.get(
-                "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments", "action_items"]
+                "entity_types", ["kpis", "systems", "initiatives", "challenges", "spaces", "value_types", "comments", "action_items", "stakeholders"]
             )
 
         results = {
@@ -98,6 +98,7 @@ class SearchService:
             "value_types": [],
             "comments": [],
             "action_items": [],
+            "stakeholders": [],
             "entity_links": [],
             "query_info": {
                 "original_query": query,
@@ -131,6 +132,9 @@ class SearchService:
 
         if "action_items" in entity_types:
             results["action_items"] = SearchService.search_action_items(parsed, filters, organization_id)
+
+        if "stakeholders" in entity_types:
+            results["stakeholders"] = SearchService.search_stakeholders(parsed, organization_id)
 
         if "decisions" in entity_types:
             results["decisions"] = SearchService.search_decisions(parsed, organization_id)
@@ -886,10 +890,47 @@ class SearchService:
             "value_types": [],
             "comments": [],
             "action_items": [],
+            "stakeholders": [],
             "decisions": [],
             "entity_links": [],
             "query_info": {"original_query": "", "parsed_query": "", "modifiers": [], "operators": {}},
         }
+
+    @staticmethod
+    def search_stakeholders(parsed, organization_id):
+        """Search stakeholders by name, role, department, notes."""
+        from app.models import Stakeholder
+
+        clean_query = parsed.get("clean_query", "").strip().lower()
+        if not clean_query:
+            return []
+
+        pattern = f"%{clean_query}%"
+        stakeholders = Stakeholder.query.filter(
+            Stakeholder.organization_id == organization_id,
+            db.or_(
+                Stakeholder.name.ilike(pattern),
+                Stakeholder.role.ilike(pattern),
+                Stakeholder.department.ilike(pattern),
+                Stakeholder.notes.ilike(pattern),
+            ),
+        ).limit(20).all()
+
+        results = []
+        for s in stakeholders:
+            results.append({
+                "type": "stakeholder",
+                "id": s.id,
+                "title": s.name,
+                "subtitle": s.role or s.department or "",
+                "context": s.department or "",
+                "date": s.updated_at.strftime("%d %b %Y") if s.updated_at else "",
+                "url": f"/stakeholders/{s.id}/edit",
+                "icon": "bi-person-fill",
+                "icon_color": "#14b8a6",
+            })
+
+        return results
 
     @staticmethod
     def search_decisions(parsed, organization_id):

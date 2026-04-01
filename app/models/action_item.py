@@ -123,7 +123,7 @@ class ActionItemMention(db.Model):
 
     # Entity reference
     entity_type = db.Column(
-        Enum("space", "challenge", "initiative", "system", "kpi", "entity_link",
+        Enum("space", "challenge", "initiative", "system", "kpi", "entity_link", "stakeholder",
              name="action_item_mention_entity_type"),
         nullable=False,
     )
@@ -159,6 +159,7 @@ class ActionItemMention(db.Model):
             "initiative": lambda: url_for("workspace.index", _anchor=f"initiative-{self.entity_id}"),
             "system": lambda: url_for("workspace.index", _anchor=f"system-{self.entity_id}"),
             "kpi": lambda: url_for("workspace.index", _anchor=f"kpi-{self.entity_id}"),
+            "stakeholder": lambda: url_for("stakeholders.edit", id=self.entity_id),
             "entity_link": lambda: self._get_entity_link_url(),
         }
 

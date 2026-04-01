@@ -1157,6 +1157,16 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.7",
+            "date": "April 1, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Stakeholder mentions</strong> — you can now @mention stakeholders in Action Items and Decisions, just like you mention Spaces, Challenges, or KPIs. The autocomplete shows stakeholder name and role. Mention badges link to the stakeholder profile.",
+                "<strong>Stakeholders in search</strong> — stakeholders now appear in the global search results when you type in the search bar.",
+                "<strong>Filter reset fixed</strong> — clicking Clear in the Action Register now properly resets all filters instead of re-applying the last preset.",
+            ],
+        },
+        {
             "version": "7.6.2",
             "date": "April 1, 2026",
             "tags": ["fix"],
@@ -3556,8 +3566,8 @@ def search_page():
 
     if entity_types_param:
         entity_types_list = entity_types_param.split(",")
-        # Only add entity_types filter if it's not "all types" (less than 6 means actual filtering)
-        if len(entity_types_list) < 6:
+        # Only add entity_types filter if it's not "all types"
+        if len(entity_types_list) < 9:
             filters["entity_types"] = entity_types_list
     if date_range:
         filters["date_range"] = date_range
@@ -3597,6 +3607,7 @@ def search_page():
         "value_types": search_results.get("value_types", []),
         "comments": search_results.get("comments", []),
         "action_items": search_results.get("action_items", []),
+        "stakeholders": search_results.get("stakeholders", []),
         "entity_links": search_results.get("entity_links", []),
     }
 
@@ -3800,6 +3811,28 @@ def live_search():
             }
         )
 
+    # Search Stakeholders
+    from app.models import Stakeholder
+    stakeholders = (
+        Stakeholder.query.filter(
+            Stakeholder.organization_id == org_id,
+            db.or_(Stakeholder.name.ilike(search_pattern), Stakeholder.role.ilike(search_pattern)),
+        )
+        .limit(limit)
+        .all()
+    )
+    for stk in stakeholders:
+        results.append(
+            {
+                "type": "stakeholder",
+                "id": stk.id,
+                "name": stk.name,
+                "description": stk.role or None,
+                "url": url_for("stakeholders.edit", id=stk.id),
+                "icon": "👤",
+            }
+        )
+
     return jsonify({"results": results, "total": len(results), "limit_per_type": limit})
 
 
@@ -3887,8 +3920,12 @@ def advanced_search():
     for ai_result in results.get("action_items", []):
         ai_result["url"] = url_for("action_items.view", item_id=ai_result["id"])
         ai_result["edit_url"] = url_for("action_items.edit", item_id=ai_result["id"])
-        ai_result["icon"] = "bi-check2-square"
+        ai_result["icon"] = "bi-journal-text" if ai_result.get("action_type") == "memo" else "bi-check2-square"
         ai_result["logo"] = None
+
+    for stk_result in results.get("stakeholders", []):
+        stk_result["url"] = url_for("stakeholders.edit", id=stk_result["id"])
+        stk_result["icon"] = "bi-person-fill"
 
     # Calculate totals
     total_results = (
@@ -3899,6 +3936,7 @@ def advanced_search():
         + len(results.get("spaces", []))
         + len(results.get("entity_links", []))
         + len(results.get("action_items", []))
+        + len(results.get("stakeholders", []))
     )
 
     results["total_results"] = total_results

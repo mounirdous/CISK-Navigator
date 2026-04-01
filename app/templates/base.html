@@ -609,7 +609,7 @@
                         <div class="input-group" style="width: 340px;">
                             <input class="form-control form-control-sm" type="search" name="q" id="liveSearchInput" placeholder="Search..."
                                    autocomplete="off"
-                                   title="Ctrl+K to focus | Try: @requires_action @incomplete @missing_kpis"
+                                   title="Ctrl+K to focus"
                                    style="background-color: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: white; border-radius: 0.375rem 0 0 0.375rem;">
                             <!-- Saved Searches — unified preset style -->
                             <div class="btn-group" role="group">
@@ -641,18 +641,7 @@
                     <div id="liveSearchResults" class="position-absolute" style="display: none; top: 100%; left: 0; right: 0; z-index: 1050; margin-top: 4px; background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-height: 70vh; overflow-y: auto;">
                         <!-- Live search results will appear here -->
                     </div>
-                    <!-- Search hints (show on focus) -->
-                    <div id="searchHints" class="position-absolute" style="display: none; top: 100%; left: 0; right: 0; z-index: 1049; margin-top: 4px; background: rgba(255,255,255,0.95); border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 8px 12px; font-size: 0.75rem; color: #6c757d;">
-                        <div style="margin-bottom: 4px;"><strong>Search modifiers:</strong></div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <span style="background: #ffeaa7; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-weight: 600;" onclick="insertModifier('@requires_action')" title="All action items">@requires_action</span>
-                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@incomplete')">@incomplete</span>
-                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@no_consensus')">@no_consensus</span>
-                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@missing_kpis')">@missing_kpis</span>
-                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@missing_governance')">@missing_governance</span>
-                            <span style="background: #e7f3ff; padding: 2px 6px; border-radius: 4px; cursor: pointer;" onclick="insertModifier('@archived')">@archived</span>
-                        </div>
-                    </div>
+                    <!-- Search hints removed — search modifiers deprecated -->
                 </div>
                 {% endif %}
                 <ul class="navbar-nav">
@@ -1142,7 +1131,8 @@
             'system': 'System',
             'kpi': 'KPI',
             'entity_link': 'URL Link',
-            'action_item': 'Action'
+            'action_item': 'Action',
+            'stakeholder': 'Stakeholder'
         };
 
         function performLiveSearch(query) {
@@ -1155,7 +1145,7 @@
 
             // Get filters from global state or use defaults
             const filters = window.searchFilters || {
-                entity_types: ['kpis', 'systems', 'initiatives', 'challenges', 'spaces', 'action_items']
+                entity_types: ['kpis', 'systems', 'initiatives', 'challenges', 'spaces', 'action_items', 'stakeholders']
             };
 
             // Call new advanced search API with fuzzy matching
@@ -1284,6 +1274,7 @@
             // Add action items
             if (data.action_items) {
                 data.action_items.forEach(item => {
+                    var actionType = item.action_type || 'action';
                     results.push({
                         type: 'action_item',
                         id: item.id,
@@ -1291,11 +1282,29 @@
                         description: item.description,
                         url: item.url,
                         edit_url: item.edit_url,
-                        icon: item.icon || 'bi-check2-square',
+                        icon: item.icon || (actionType === 'memo' ? 'bi-journal-text' : 'bi-check2-square'),
                         logo: null,
                         match_score: item.match_score,
                         status: item.status,
-                        priority: item.priority
+                        priority: item.priority,
+                        type_label: actionType.charAt(0).toUpperCase() + actionType.slice(1)
+                    });
+                });
+            }
+
+            // Add stakeholders
+            if (data.stakeholders) {
+                data.stakeholders.forEach(item => {
+                    results.push({
+                        type: 'stakeholder',
+                        id: item.id,
+                        name: item.name,
+                        description: item.description,
+                        url: item.url,
+                        edit_url: null,
+                        icon: '👤',
+                        logo: null,
+                        match_score: item.match_score || 0
                     });
                 });
             }
@@ -1340,7 +1349,7 @@
             results.forEach(result => {
                 const icon = result.icon || typeIcons[result.type] || 'bi-circle';
                 const color = result.icon_color_override || typeColors[result.type] || '#6c757d';
-                const label = typeLabels[result.type] || result.type;
+                const label = result.type_label || typeLabels[result.type] || result.type;
 
                 var clickAction;
                 if (result.is_external) {
@@ -1656,7 +1665,11 @@
                         </button>
                         <input type="checkbox" id="filter_decisions" class="d-none" checked>
                         <button type="button" class="sf-pill active" data-for="filter_decisions" onclick="toggleEntityPill(this)">
-                            <i class="bi bi-gavel" style="color:#8b5cf6;"></i> Decisions
+                            <i class="bi bi-gavel"></i> Decisions
+                        </button>
+                        <input type="checkbox" id="filter_stakeholders" class="d-none" checked>
+                        <button type="button" class="sf-pill active" data-for="filter_stakeholders" onclick="toggleEntityPill(this)">
+                            <i class="bi bi-person-fill"></i> Stakeholders
                         </button>
                     </div>
                 </div>
@@ -1673,37 +1686,6 @@
                         <option value="last_month">Last 30 days</option>
                         <option value="last_quarter">Last 90 days</option>
                     </select>
-                </div>
-
-                <hr>
-
-                <!-- Status Filters -->
-                <div class="mb-4">
-                    <h6 class="fw-bold mb-3">Status</h6>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_at_risk" onchange="applySearchFilters()">
-                        <label class="form-check-label" for="filter_at_risk">
-                            <span class="badge bg-danger">At Risk</span>
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_incomplete" onchange="applySearchFilters()">
-                        <label class="form-check-label" for="filter_incomplete">
-                            <span class="badge bg-warning text-dark">Incomplete</span>
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_no_consensus" onchange="applySearchFilters()">
-                        <label class="form-check-label" for="filter_no_consensus">
-                            <span class="badge bg-secondary">No Consensus</span>
-                        </label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="filter_archived" onchange="applySearchFilters()">
-                        <label class="form-check-label" for="filter_archived">
-                            <span class="badge bg-dark">Archived</span>
-                        </label>
-                    </div>
                 </div>
 
                 <hr>
@@ -1810,22 +1792,16 @@
         if (document.getElementById('filter_spaces').checked) entityTypes.push('spaces');
         if (document.getElementById('filter_action_items').checked) entityTypes.push('action_items');
         if (document.getElementById('filter_decisions') && document.getElementById('filter_decisions').checked) entityTypes.push('decisions');
+        if (document.getElementById('filter_stakeholders') && document.getElementById('filter_stakeholders').checked) entityTypes.push('stakeholders');
 
         // Get date filter
         const dateFilter = document.getElementById('filter_date').value;
-
-        // Get status filters
-        const statusFilters = [];
-        if (document.getElementById('filter_at_risk').checked) statusFilters.push('at_risk');
-        if (document.getElementById('filter_incomplete').checked) statusFilters.push('incomplete');
-        if (document.getElementById('filter_no_consensus').checked) statusFilters.push('no_consensus');
-        if (document.getElementById('filter_archived').checked) statusFilters.push('archived');
 
         // Store filters globally for use by search
         window.searchFilters = {
             entity_types: entityTypes,
             date_range: dateFilter,
-            status: statusFilters,
+            status: [],
             include_entity_links: document.getElementById('filter_entity_links').checked
         };
 

@@ -347,7 +347,7 @@ function searchDrEntities(q) {
             .then(function(data) {
                 var seen = {};
                 var items = (data.results || []).filter(function(it) {
-                    if (['space','challenge','initiative','system','kpi'].indexOf(it.type) < 0) return false;
+                    if (['space','challenge','initiative','system','kpi','stakeholder'].indexOf(it.type) < 0) return false;
                     var key = it.type + '_' + it.id;
                     if (seen[key]) return false;
                     seen[key] = true;
@@ -359,7 +359,7 @@ function searchDrEntities(q) {
                 items.forEach(function(it, idx) {
                     var already = _drMentions.some(function(m) { return m.entity_type === it.type && String(m.entity_id) === String(it.id); });
                     if (already) return;
-                    var icon = it.type === 'space' ? 'folder' : it.type === 'challenge' ? 'bullseye' : it.type === 'initiative' ? 'flag' : it.type === 'system' ? 'cpu' : 'graph-up';
+                    var icon = it.type === 'space' ? 'folder' : it.type === 'challenge' ? 'bullseye' : it.type === 'initiative' ? 'flag' : it.type === 'system' ? 'cpu' : it.type === 'stakeholder' ? 'person-fill' : 'graph-up';
                     html += '<div class="dr-mention-item" data-idx="' + idx + '"><i class="bi bi-' + icon + '"></i> ' + (it.name || '').replace(/</g, '&lt;') + ' <small style="color:#94a3b8;">' + it.type + '</small></div>';
                 });
                 res.innerHTML = html || '<div style="padding:0.4rem;color:#94a3b8;font-size:0.8rem;">All mentioned</div>';
