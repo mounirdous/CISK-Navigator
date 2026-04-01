@@ -132,7 +132,7 @@
                             {% if item.description %}
                             <div class="mb-4">
                                 <div class="section-title">Description</div>
-                                <div style="white-space:pre-wrap; color:#37474f; font-size:0.92rem; line-height:1.7;">{{ item.description }}</div>
+                                <div class="md-content" style="color:#37474f; font-size:0.92rem; line-height:1.7;">{{ item.description | md }}</div>
                             </div>
                             {% endif %}
 

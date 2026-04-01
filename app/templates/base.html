@@ -10,6 +10,27 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block extra_css %}{% endblock %}
     <style>
+    /* Markdown content styling */
+    .md-content h1, .md-content h2, .md-content h3, .md-content h4 { margin-top: 0.75rem; margin-bottom: 0.4rem; font-weight: 700; }
+    .md-content h1 { font-size: 1.3rem; }
+    .md-content h2 { font-size: 1.15rem; }
+    .md-content h3 { font-size: 1rem; }
+    .md-content h4 { font-size: 0.9rem; }
+    .md-content p { margin-bottom: 0.5rem; }
+    .md-content ul, .md-content ol { padding-left: 1.5rem; margin-bottom: 0.5rem; }
+    .md-content li { margin-bottom: 0.15rem; }
+    .md-content code { background: #f1f5f9; padding: 0.1rem 0.35rem; border-radius: 4px; font-size: 0.85em; color: #e11d48; }
+    .md-content pre { background: #f1f5f9; padding: 0.75rem 1rem; border-radius: 8px; overflow-x: auto; margin-bottom: 0.5rem; }
+    .md-content pre code { background: none; padding: 0; color: inherit; }
+    .md-content blockquote { border-left: 3px solid #e2e8f0; padding-left: 0.75rem; margin: 0.5rem 0; color: #64748b; }
+    .md-content hr { border: none; border-top: 1px solid #e2e8f0; margin: 0.75rem 0; }
+    .md-content > *:first-child { margin-top: 0; }
+    .md-content > *:last-child { margin-bottom: 0; }
+
+    body.dark-mode .md-content code { background: #1e293b; color: #f472b6; }
+    body.dark-mode .md-content pre { background: #0f172a; }
+    body.dark-mode .md-content blockquote { border-color: #334155; color: #94a3b8; }
+
     /* Dark Mode Styles */
     body.dark-mode {
         background-color: #0a0a0a !important;

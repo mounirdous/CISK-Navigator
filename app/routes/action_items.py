@@ -5,6 +5,15 @@ Action Items and Memos routes
 import json
 from io import BytesIO
 
+import markdown as _markdown
+
+
+def _md_render(text):
+    """Render Markdown text to HTML."""
+    if not text:
+        return ""
+    return _markdown.markdown(text, extensions=["nl2br", "sane_lists", "smarty"])
+
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, send_file, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
@@ -292,6 +301,7 @@ def index():
             "id": item.id,
             "title_text": item.title,
             "description": (item.description or "")[:200],
+            "description_html": _md_render(item.description) if item.description else "",
             "status": item.status,
             "priority": item.priority,
             "type": item.type,

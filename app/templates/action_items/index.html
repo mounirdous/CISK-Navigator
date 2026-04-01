@@ -617,7 +617,8 @@
             <!-- Clear filters -->
             {% if current_filters.type != 'all' or current_filters.statuses or current_filters.visibility != 'all' or current_filters.gb_ids %}
             <div class="col-auto d-flex align-items-end">
-                <a href="{{ url_for('action_items.index') }}" class="btn btn-sm btn-outline-secondary">
+                <a href="{{ url_for('action_items.index') }}" class="btn btn-sm btn-outline-secondary"
+                   onclick="try{localStorage.removeItem('preset_active_action_items');localStorage.removeItem('preset_config_action_items');}catch(e){}">
                     <i class="bi bi-x-circle me-1"></i> Clear
                 </a>
             </div>
@@ -1777,7 +1778,7 @@ function showItemDetail(item) {
     document.getElementById('idp-gbs').textContent = item.gbs.join(', ');
     document.getElementById('idp-mentions-row').style.display = item.mentions.length ? '' : 'none';
     document.getElementById('idp-mentions').textContent = item.mentions.map(m => m.text).join(', ');
-    document.getElementById('idp-desc').textContent = item.description || '';
+    document.getElementById('idp-desc').innerHTML = item.description_html || item.description || '';
     const actions = document.getElementById('idp-actions');
     actions.innerHTML = '';
     actions.innerHTML += `<a href="${item.view_url}" class="btn btn-sm btn-primary"><i class="bi bi-eye me-1"></i>Open</a>`;

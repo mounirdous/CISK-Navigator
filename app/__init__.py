@@ -643,6 +643,16 @@ def create_app(config_name=None):
         return render_template("errors/403.html"), 403
 
     # Register Jinja2 filters
+    @app.template_filter("md")
+    def markdown_filter(text):
+        """Render Markdown text as safe HTML."""
+        if not text:
+            return ""
+        import markdown as _md
+        from markupsafe import Markup
+        html = _md.markdown(text, extensions=["nl2br", "sane_lists", "smarty"])
+        return Markup(html)
+
     @app.template_filter("format_value")
     def format_value_filter(value, value_type, config=None):
         """Format a numeric value according to its value type's decimal places and display scale"""

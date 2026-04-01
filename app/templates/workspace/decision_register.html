@@ -218,7 +218,7 @@
                     data-gb="{{ d.governance_body_id or '' }}"
                     data-max-importance="{{ decision_importance.get(d.id, 0) }}"
                     data-search="{{ d.what | lower }} {{ (d.who or '') | lower }}">
-                    <td class="dr-what">{{ d.what }}</td>
+                    <td class="dr-what md-content">{{ d.what | md }}</td>
                     <td class="dr-d1">{{ d.who or '' }}</td>
                     <td class="dr-d1">
                         {% if d.tags %}{% for t in d.tags %}<span class="dr-tag-badge">{{ t }}</span> {% endfor %}{% endif %}
