@@ -1157,6 +1157,17 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.8",
+            "date": "April 1, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Markdown formatting</strong> — descriptions in actions, memos, and decisions now support rich text. Use <code>**bold**</code>, <code>- bullet lists</code>, <code>## headings</code>, <code>&gt; quotes</code>, and more. The text renders beautifully on the view page while you type in plain text.",
+                "<strong>Stakeholder pages redesigned</strong> — all stakeholder management pages (create, edit, list, maps, network, matrix) have been modernised with consistent headers, modern sliders, support pills, map chips, and dark mode support.",
+                "<strong>New KPIs work immediately</strong> — previously, newly created KPIs showed empty cells until a full recompute. Now they show clickable contribution cells right away.",
+                "<strong>Faster workspace operations</strong> — editing entity names, creating entities, and deleting entities no longer trigger a full data recompute. Only value changes and impact assessments trigger recomputation.",
+            ],
+        },
+        {
             "version": "7.7",
             "date": "April 1, 2026",
             "tags": ["feature"],

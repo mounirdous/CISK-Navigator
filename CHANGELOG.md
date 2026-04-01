@@ -5,6 +5,20 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.8.0] - 2026-04-01
+
+### Added
+- **Markdown in descriptions** — action items, memos, and decisions support Markdown formatting: **bold**, *italic*, headings, bullet/numbered lists, blockquotes, inline code. Rendered on view; plain text in edit
+- **Markdown hints** in action item create/edit forms and assistant hints for Action Register and Decision Register
+- **`|strip_md` filter** — strips Markdown markers for clean plain-text snippets in table rows and search results
+- **Stakeholder management modernised** — all 8 templates redesigned with consistent teal/purple gradient headers, card sections, support pills, influence sliders, map chips, visibility toggles, dark mode
+- **Consistent stakeholder headers** — Network, List, Matrix views share identical teal gradient header with embedded view toggle
+
+### Fixed
+- **New KPIs show empty cells** when pre-compute is ON — `continue` was at wrong indentation, skipping live computation on cache miss. Now falls through to live computation so new KPIs show clickable cells immediately
+- **Action register Clear button** now properly clears preset from localStorage before navigating
+- **Site dropdown duplicates** in stakeholder create/edit — now filtered by organization
+
 ## [7.7.0] - 2026-04-01
 
 ### Added
