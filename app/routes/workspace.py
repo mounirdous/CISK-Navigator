@@ -5491,9 +5491,9 @@ def _build_workspace_data(org_id):
                                 cached_kpi = _get_cached_kpi_value(kpi.id, vt.id)
                                 if cached_kpi:
                                     kpi_values[vt.id] = cached_kpi
-                                continue
+                                    continue
 
-                            # Find config for this value type
+                            # Find config for this value type (also used as fallback when cache misses)
                             config = next((c for c in kpi.value_type_configs if c.value_type_id == vt.id), None)
 
                             # For formula value types: calculate on-the-fly if no config exists but source value types are available
