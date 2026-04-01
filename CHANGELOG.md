@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.6.1] - 2026-04-01
+
+### Fixed
+- **Fast entity name edits** — editing a space, challenge, initiative, system, or KPI name no longer triggers a full rollup recompute. Only structural changes (create/delete) and value changes mark the cache stale. Workspace loads instantly after name edits instead of 6-7 seconds
+
 ## [7.6.0] - 2026-04-01
 
 ### Added

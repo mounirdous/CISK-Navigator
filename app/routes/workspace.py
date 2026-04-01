@@ -1157,6 +1157,14 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.6.1",
+            "date": "April 1, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Faster entity edits</strong> — editing a space, challenge, initiative, system, or KPI name no longer triggers a full data recompute. The workspace now loads instantly after a name edit instead of waiting 6-7 seconds.",
+            ],
+        },
+        {
             "version": "7.6",
             "date": "April 1, 2026",
             "tags": ["feature", "fix"],

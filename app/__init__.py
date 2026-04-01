@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.6.0"
+__version__ = "7.6.1"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -583,11 +583,27 @@ def create_app(config_name=None):
     # Mark rollup cache stale on data-changing requests
     @app.after_request
     def mark_rollup_cache_stale_on_change(response):
-        """Mark rollup cache as stale when data-modifying requests succeed."""
+        """Mark rollup cache as stale when data-modifying requests succeed.
+
+        Only marks stale for operations that affect rollup values or structure.
+        Name/description edits, branding, settings changes do NOT trigger recompute.
+        """
         from flask import request as _req
         if _req.method in ("POST", "PUT", "DELETE") and response.status_code < 400:
             path = _req.path
-            if "/org-admin/" in path or "/workspace/kpi/" in path or "/workspace/decision-register" in path or "/workspace/api/impact" in path:
+            # Skip org-admin paths that don't affect rollups (edits to name/description/branding)
+            _skip_patterns = ("/branding", "/logo-manager", "/settings/", "/porters", "/strategy",
+                              "/decision-tags", "/onboarding", "/link-health", "/links")
+            _is_org_admin_edit = "/org-admin/" in path and "/edit" in path and "/rollup" not in path
+            _is_skip = any(p in path for p in _skip_patterns)
+            _affects_rollups = (
+                ("/org-admin/" in path and not _is_org_admin_edit and not _is_skip)
+                or "/workspace/kpi/" in path
+                or "/workspace/decision-register" in path
+                or "/workspace/api/impact" in path
+                or "/workspace/contribute" in path
+            )
+            if _affects_rollups:
                 from flask import session as _sess
                 org_id = _sess.get("organization_id")
                 if org_id:
@@ -598,6 +614,8 @@ def create_app(config_name=None):
                         import logging as _plog; _ptl = _plog.getLogger("perf_trace"); _ptl.info(f"[PERF_TRACE] Marked rollup cache STALE for org={org_id} (path={path})")  # [PERF_TRACE]
                     except Exception:
                         pass  # Don't break the response if stale marking fails
+            elif "/org-admin/" in path:
+                import logging as _plog2; _plog2.getLogger("perf_trace").info(f"[PERF_TRACE] SKIP stale mark — edit-only path: {path}")  # [PERF_TRACE]
         return response
 
     # Register error handlers
