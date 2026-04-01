@@ -813,7 +813,7 @@
                         <div style="font-weight:600; font-size:0.9rem;">{{ item.title }}</div>
                         {% if item.description %}
                         <div style="font-size:0.8rem; color:#78909c; margin-top:2px;">
-                            {{ item.description[:120] }}{% if item.description|length > 120 %}…{% endif %}
+                            {{ item.description | strip_md | truncate(120, True) }}
                         </div>
                         {% endif %}
                     </td>

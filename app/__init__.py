@@ -653,6 +653,24 @@ def create_app(config_name=None):
         html = _md.markdown(text, extensions=["nl2br", "sane_lists", "smarty"])
         return Markup(html)
 
+    @app.template_filter("strip_md")
+    def strip_markdown_filter(text):
+        """Strip Markdown markers for plain text display (table snippets, search)."""
+        if not text:
+            return ""
+        import re
+        t = text
+        t = re.sub(r'^#{1,6}\s+', '', t, flags=re.MULTILINE)  # headings
+        t = re.sub(r'\*\*(.+?)\*\*', r'\1', t)  # bold
+        t = re.sub(r'\*(.+?)\*', r'\1', t)  # italic
+        t = re.sub(r'`(.+?)`', r'\1', t)  # inline code
+        t = re.sub(r'^\s*[-*+]\s+', '• ', t, flags=re.MULTILINE)  # bullets
+        t = re.sub(r'^\s*\d+\.\s+', '', t, flags=re.MULTILINE)  # numbered
+        t = re.sub(r'^\s*>\s?', '', t, flags=re.MULTILINE)  # blockquotes
+        t = re.sub(r'\n{2,}', ' ', t)  # collapse double newlines
+        t = re.sub(r'\n', ' ', t)  # single newlines to space
+        return t.strip()
+
     @app.template_filter("format_value")
     def format_value_filter(value, value_type, config=None):
         """Format a numeric value according to its value type's decimal places and display scale"""
