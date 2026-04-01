@@ -1157,11 +1157,12 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
-            "version": "7.6.1",
+            "version": "7.6.2",
             "date": "April 1, 2026",
             "tags": ["fix"],
             "changes": [
-                "<strong>Faster entity edits</strong> — editing a space, challenge, initiative, system, or KPI name no longer triggers a full data recompute. The workspace now loads instantly after a name edit instead of waiting 6-7 seconds.",
+                "<strong>Much faster workspace operations</strong> — creating, editing, and deleting entities no longer triggers a full data recompute. Only KPI value changes, impact assessments, and rollup configuration edits cause a recompute. Everything else loads instantly.",
+                "<strong>Consistent tree alignment</strong> — empty entities (with no children) now keep the same indentation as entities with children. No more shifting layout.",
             ],
         },
         {
