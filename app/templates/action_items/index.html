@@ -1943,6 +1943,10 @@ PresetManager.register('action_items', {
         _applyActionFilters(config, _isAutoRestore);
     },
     onReset: function() {
+        try {
+            localStorage.removeItem('preset_active_action_items');
+            localStorage.removeItem('preset_config_action_items');
+        } catch(e) {}
         window.location.href = '{{ url_for("action_items.index") }}';
     }
 }, true); // Auto-restore enabled — URL-match guard in _applyActionFilters prevents loop

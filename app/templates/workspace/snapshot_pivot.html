@@ -531,7 +531,7 @@
                         chart_type: document.getElementById('chart_type')?.value,
                     };
                 },
-                onReset: function() { window.location.href = window.location.pathname; }
+                onReset: function() { try { localStorage.removeItem('preset_active_pivot'); localStorage.removeItem('preset_config_pivot'); } catch(e) {} window.location.href = window.location.pathname; }
             }, true); // Auto-restore enabled — URL-match guard in applyState prevents loop
         }
 
