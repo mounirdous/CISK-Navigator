@@ -125,7 +125,7 @@ body.dark-mode .stk-slider-val { background: #0f172a; color: #14b8a6; }
                     <span style="font-size:0.75rem; color:#94a3b8;">High</span>
                     <span class="stk-slider-val" id="infVal">{{ form.influence_level.data or 50 }}</span>
                 </div>
-                {{ form.influence_level(type="hidden", id="influence_level") }}
+                <input type="hidden" name="influence_level" id="influence_level" value="{{ form.influence_level.data or 50 }}">
             </div>
             <div class="mb-3">
                 <label class="form-label fw-semibold" style="font-size:0.82rem;">Interest Level</label>
@@ -136,7 +136,7 @@ body.dark-mode .stk-slider-val { background: #0f172a; color: #14b8a6; }
                     <span style="font-size:0.75rem; color:#94a3b8;">High</span>
                     <span class="stk-slider-val" id="intVal">{{ form.interest_level.data or 50 }}</span>
                 </div>
-                {{ form.interest_level(type="hidden", id="interest_level") }}
+                <input type="hidden" name="interest_level" id="interest_level" value="{{ form.interest_level.data or 50 }}">
             </div>
             <div>
                 <label class="form-label fw-semibold" style="font-size:0.82rem;">Support Level</label>
@@ -149,7 +149,7 @@ body.dark-mode .stk-slider-val { background: #0f172a; color: #14b8a6; }
                     </span>
                     {% endfor %}
                 </div>
-                {{ form.support_level(type="hidden", id="support_level") }}
+                <div style="display:none;">{{ form.support_level(id="support_level") }}</div>
             </div>
         </div>
 
@@ -182,7 +182,7 @@ body.dark-mode .stk-slider-val { background: #0f172a; color: #14b8a6; }
                         <i class="bi bi-lock-fill"></i> Private
                     </span>
                 </div>
-                {{ form.visibility(type="hidden", id="visibility") }}
+                <div style="display:none;">{{ form.visibility(id="visibility") }}</div>
             </div>
         </div>
 
