@@ -1,60 +1,100 @@
 {% extends "base.html" %}
+{% block title %}Create Stakeholder Map{% endblock %}
 
-{% block title %}Create Stakeholder Map - {{ organization.name }}{% endblock %}
+{% block extra_css %}
+<style>
+.cmap-hero {
+    background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+    border-radius: 16px; padding: 1.75rem 2rem; color: white; margin-bottom: 1.5rem;
+    position: relative; overflow: hidden;
+}
+.cmap-hero::before {
+    content: ''; position: absolute; top: -50%; right: -15%; width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;
+}
+.cmap-hero h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+.cmap-hero p { color: rgba(255,255,255,0.7); font-size: 0.88rem; margin: 0; }
+
+.cmap-card {
+    background: white; border-radius: 14px; border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 1.75rem; margin-bottom: 1rem;
+}
+
+.cmap-vis-toggle { display: flex; gap: 0.5rem; }
+.cmap-vis-btn {
+    flex: 1; padding: 0.5rem; border-radius: 10px; border: 2px solid #e2e8f0;
+    text-align: center; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; background: white; color: #64748b;
+}
+.cmap-vis-btn:hover { border-color: #cbd5e1; }
+.cmap-vis-btn.active { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+
+.cmap-ideas {
+    display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem;
+}
+.cmap-idea {
+    padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.78rem;
+    font-weight: 500; background: #f5f3ff; color: #7c3aed; cursor: pointer;
+    transition: all 0.15s;
+}
+.cmap-idea:hover { background: #8b5cf6; color: white; }
+
+body.dark-mode .cmap-card { background: #1e293b; border-color: #334155; }
+body.dark-mode .cmap-vis-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .cmap-idea { background: rgba(139,92,246,0.15); color: #a78bfa; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h2>Create Stakeholder Map</h2>
-            <p class="text-muted">{{ organization.name }}</p>
+<div style="max-width: 600px; margin: 0 auto; padding: 1.5rem 1rem;">
+    <div class="cmap-hero">
+        <h1><i class="bi bi-collection-fill"></i> New Map</h1>
+        <p>Create a named group to organise your stakeholders</p>
+    </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" novalidate>
-                        {{ form.hidden_tag() }}
-                        <input type="hidden" name="organization_id" value="{{ organization.id }}">
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="organization_id" value="{{ organization.id }}">
 
-                        <div class="mb-3">
-                            {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
-                            {% if form.name.errors %}
-                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
-                            {% endif %}
-                            <small class="form-text text-muted">{{ form.name.description }}</small>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control", rows=3) }}
-                            <small class="form-text text-muted">{{ form.description.description }}</small>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.visibility.label(class="form-label") }}
-                            {{ form.visibility(class="form-select") }}
-                        </div>
-
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>What's a stakeholder map?</strong><br>
-                            A map is a named collection of stakeholders. You can create different maps for different purposes:
-                            <ul class="mb-0 mt-2">
-                                <li><strong>Executive Team</strong> - C-level executives and board members</li>
-                                <li><strong>IT Leadership</strong> - Technology decision makers</li>
-                                <li><strong>Project Sponsors</strong> - Key sponsors for a specific initiative</li>
-                                <li><strong>Change Champions</strong> - People driving organizational change</li>
-                            </ul>
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Create Map</button>
-                        </div>
-                    </form>
+        <div class="cmap-card">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Map Name</label>
+                {{ form.name(class="form-control form-control-lg" + (" is-invalid" if form.name.errors else ""), placeholder="e.g. Executive Team, Project Sponsors") }}
+                {% if form.name.errors %}<div class="invalid-feedback">{{ form.name.errors[0] }}</div>{% endif %}
+                <div class="cmap-ideas">
+                    {% for idea in ['Executive Team', 'IT Leadership', 'Project Sponsors', 'Change Champions', 'External Partners', 'Steering Committee'] %}
+                    <span class="cmap-idea" onclick="document.querySelector('[name=name]').value='{{ idea }}';">{{ idea }}</span>
+                    {% endfor %}
                 </div>
             </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Description</label>
+                {{ form.description(class="form-control", rows=2, placeholder="What is this map for?") }}
+            </div>
+
+            <div>
+                <label class="form-label fw-semibold">Visibility</label>
+                <div class="cmap-vis-toggle">
+                    <span class="cmap-vis-btn active" onclick="document.getElementById('vis').value='shared'; document.querySelectorAll('.cmap-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-globe"></i> Shared
+                    </span>
+                    <span class="cmap-vis-btn" onclick="document.getElementById('vis').value='private'; document.querySelectorAll('.cmap-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-lock-fill"></i> Private
+                    </span>
+                </div>
+                <div style="display:none;">{{ form.visibility(id="vis") }}</div>
+            </div>
         </div>
-    </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+            <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-collection-fill"></i> Create Map
+            </button>
+        </div>
+    </form>
 </div>
 {% endblock %}

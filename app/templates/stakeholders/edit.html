@@ -1,223 +1,273 @@
 {% extends "base.html" %}
+{% block title %}Edit {{ stakeholder.name }}{% endblock %}
 
-{% block title %}Edit Stakeholder - {{ stakeholder.name }}{% endblock %}
+{% block extra_css %}
+<style>
+.stk-hero {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    border-radius: 16px; padding: 1.75rem 2rem; color: white; margin-bottom: 1.5rem;
+    position: relative; overflow: hidden;
+}
+.stk-hero::before {
+    content: ''; position: absolute; top: -50%; right: -15%; width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;
+}
+.stk-hero h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+.stk-hero p { color: rgba(255,255,255,0.7); font-size: 0.88rem; margin: 0; }
+
+.stk-form-card {
+    background: white; border-radius: 14px; border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 1.75rem; margin-bottom: 1rem;
+}
+.stk-form-card h3 {
+    font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #64748b; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+
+.stk-slider-group { display: flex; align-items: center; gap: 1rem; }
+.stk-slider-group input[type="range"] { flex: 1; }
+.stk-slider-val {
+    min-width: 42px; text-align: center; font-weight: 700; font-size: 1.1rem;
+    color: #14b8a6; background: #f0fdfa; border-radius: 8px; padding: 0.3rem 0.5rem;
+}
+
+.stk-support-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.stk-support-pill {
+    padding: 0.4rem 1rem; border-radius: 20px; border: 2px solid #e2e8f0;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    background: white; color: #64748b;
+}
+.stk-support-pill:hover { border-color: #cbd5e1; }
+.stk-support-pill.active { color: white; border-color: transparent; }
+.stk-support-pill[data-val="champion"].active { background: #10b981; }
+.stk-support-pill[data-val="supporter"].active { background: #6b7280; }
+.stk-support-pill[data-val="neutral"].active { background: #f59e0b; }
+.stk-support-pill[data-val="skeptic"].active { background: #f97316; }
+.stk-support-pill[data-val="blocker"].active { background: #ef4444; }
+
+.stk-map-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.stk-map-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.8rem;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+    border: 2px solid #e2e8f0; background: white; color: #64748b;
+}
+.stk-map-chip:hover { border-color: #a78bfa; }
+.stk-map-chip.active { background: #8b5cf6; color: white; border-color: #8b5cf6; }
+
+.stk-vis-toggle { display: flex; gap: 0.5rem; }
+.stk-vis-btn {
+    flex: 1; padding: 0.5rem; border-radius: 10px; border: 2px solid #e2e8f0;
+    text-align: center; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; background: white; color: #64748b;
+}
+.stk-vis-btn:hover { border-color: #cbd5e1; }
+.stk-vis-btn.active { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+
+/* Linked entities */
+.stk-link-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.5rem 0.75rem; border-radius: 8px; margin-bottom: 0.3rem;
+    background: #f8fafc; font-size: 0.85rem; transition: background 0.1s;
+}
+.stk-link-item:hover { background: #f0fdfa; }
+.stk-link-type {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; padding: 0.1rem 0.4rem; border-radius: 4px;
+    margin-right: 0.5rem;
+}
+
+body.dark-mode .stk-form-card { background: #1e293b; border-color: #334155; }
+body.dark-mode .stk-form-card h3 { color: #94a3b8; }
+body.dark-mode .stk-support-pill { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .stk-map-chip { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .stk-vis-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .stk-slider-val { background: #0f172a; color: #14b8a6; }
+body.dark-mode .stk-link-item { background: #0f172a; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h2>Edit Stakeholder</h2>
-            <p class="text-muted">{{ organization.name }}</p>
+<div style="max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem;">
+    <div class="stk-hero">
+        <h1><i class="bi bi-pencil-fill"></i> {{ stakeholder.name }}</h1>
+        <p>{{ stakeholder.role or 'Stakeholder' }}{% if stakeholder.department %} &mdash; {{ stakeholder.department }}{% endif %}</p>
+    </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" novalidate>
-                        {{ form.hidden_tag() }}
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
 
-                        <div class="mb-3">
-                            {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
-                            {% if form.name.errors %}
-                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.role.label(class="form-label") }}
-                                {{ form.role(class="form-control") }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.department.label(class="form-label") }}
-                                {{ form.department(class="form-control") }}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.site_id.label(class="form-label") }}
-                                {{ form.site_id(class="form-select") }}
-                                <small class="text-muted">{{ form.site_id.description }}</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.email.label(class="form-label") }}
-                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
-                                {% if form.email.errors %}
-                                <div class="invalid-feedback">{{ form.email.errors[0] }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.influence_level.label(class="form-label") }}
-                                <input type="range" class="form-range" id="influenceRange" min="1" max="100" value="{{ stakeholder.influence_level }}" oninput="document.getElementById('influence_level').value = this.value; document.getElementById('influenceValue').innerText = this.value">
-                                {{ form.influence_level(class="form-control", id="influence_level", readonly=True) }}
-                                <small class="text-muted">Current: <span id="influenceValue">{{ stakeholder.influence_level }}</span> (1=Low, 100=High)</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.interest_level.label(class="form-label") }}
-                                <input type="range" class="form-range" id="interestRange" min="1" max="100" value="{{ stakeholder.interest_level }}" oninput="document.getElementById('interest_level').value = this.value; document.getElementById('interestValue').innerText = this.value">
-                                {{ form.interest_level(class="form-control", id="interest_level", readonly=True) }}
-                                <small class="text-muted">Current: <span id="interestValue">{{ stakeholder.interest_level }}</span> (1=Low, 100=High)</small>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.support_level.label(class="form-label") }}
-                            {{ form.support_level(class="form-select") }}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.visibility.label(class="form-label") }}
-                            {{ form.visibility(class="form-select") }}
-                            <small class="text-muted">Choose who can see this stakeholder in the network map</small>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.maps.label(class="form-label") }}
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                                {% for value, label in form.maps.choices %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="maps" value="{{ value }}" id="map_{{ value }}"
-                                           {% if value in form.maps.data %}checked{% endif %}>
-                                    <label class="form-check-label" for="map_{{ value }}">
-                                        {{ label }}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% if form.maps.errors %}
-                            <div class="text-danger small mt-1">{{ form.maps.errors[0] }}</div>
-                            {% endif %}
-                            <small class="text-muted d-block mt-1">Select at least one map</small>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.notes.label(class="form-label") }}
-                            {{ form.notes(class="form-control", rows=4) }}
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('stakeholders.index', organization_id=stakeholder.organization_id) }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Save Changes</button>
-                        </div>
-                    </form>
-                </div>
+        <!-- Identity -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-person-fill" style="color:#14b8a6;"></i> Identity</h3>
+            <div class="mb-3">
+                {{ form.name(class="form-control form-control-lg" + (" is-invalid" if form.name.errors else ""), placeholder="Full name") }}
+                {% if form.name.errors %}<div class="invalid-feedback">{{ form.name.errors[0] }}</div>{% endif %}
             </div>
-
-            <!-- Linked Entities Section -->
-            <div class="card mt-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Linked Entities</h5>
-                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#linkEntityModal">
-                        <i class="bi bi-plus-circle"></i> Link Entity
-                    </button>
-                </div>
-                <div class="card-body">
-                    {% set linked = stakeholder.get_linked_entities() %}
-                    {% if linked.challenge or linked.initiative or linked.system or linked.kpi %}
-                        <div class="row">
-                            {% if linked.challenge %}
-                            <div class="col-md-6 mb-3">
-                                <h6>Challenges</h6>
-                                <ul class="list-group">
-                                    {% for item in linked.challenge %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>{{ item.entity.name }}</span>
-                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('challenge', {{ item.entity.id }})">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
-
-                            {% if linked.initiative %}
-                            <div class="col-md-6 mb-3">
-                                <h6>Initiatives</h6>
-                                <ul class="list-group">
-                                    {% for item in linked.initiative %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>{{ item.entity.name }}</span>
-                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('initiative', {{ item.entity.id }})">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
-
-                            {% if linked.system %}
-                            <div class="col-md-6 mb-3">
-                                <h6>Systems</h6>
-                                <ul class="list-group">
-                                    {% for item in linked.system %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>{{ item.entity.name }}</span>
-                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('system', {{ item.entity.id }})">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
-
-                            {% if linked.kpi %}
-                            <div class="col-md-6 mb-3">
-                                <h6>KPIs</h6>
-                                <ul class="list-group">
-                                    {% for item in linked.kpi %}
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span>{{ item.entity.name }}</span>
-                                        <button class="btn btn-sm btn-danger" onclick="unlinkEntity('kpi', {{ item.entity.id }})">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            {% endif %}
-                        </div>
-                    {% else %}
-                        <p class="text-muted">No linked entities yet. Click "Link Entity" to connect this stakeholder to challenges, initiatives, systems, or KPIs.</p>
-                    {% endif %}
-                </div>
+            <div class="row g-3">
+                <div class="col-md-6">{{ form.role(class="form-control", placeholder="e.g. CTO, Project Manager") }}</div>
+                <div class="col-md-6">{{ form.department(class="form-control", placeholder="e.g. IT, Finance") }}</div>
             </div>
-
-            <!-- Relationships Section -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="mb-0">Relationships</h5>
+            <div class="row g-3 mt-0">
+                <div class="col-md-6">
+                    {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="Email address") }}
+                    {% if form.email.errors %}<div class="invalid-feedback">{{ form.email.errors[0] }}</div>{% endif %}
                 </div>
-                <div class="card-body">
-                    <p class="text-muted">
-                        View and manage relationships on the <a href="{{ url_for('stakeholders.index', organization_id=stakeholder.organization_id) }}">Network Map</a>
-                    </p>
-                </div>
+                <div class="col-md-6">{{ form.site_id(class="form-select") }}</div>
             </div>
         </div>
+
+        <!-- Influence & Support -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-bar-chart-fill" style="color:#f59e0b;"></i> Influence &amp; Support</h3>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Influence Level</label>
+                <div class="stk-slider-group">
+                    <span style="font-size:0.75rem; color:#94a3b8;">Low</span>
+                    <input type="range" class="form-range" min="1" max="100" value="{{ stakeholder.influence_level }}"
+                           oninput="document.getElementById('influence_level').value=this.value; document.getElementById('infVal').textContent=this.value;">
+                    <span style="font-size:0.75rem; color:#94a3b8;">High</span>
+                    <span class="stk-slider-val" id="infVal">{{ stakeholder.influence_level }}</span>
+                </div>
+                <input type="hidden" name="influence_level" id="influence_level" value="{{ stakeholder.influence_level }}">
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Interest Level</label>
+                <div class="stk-slider-group">
+                    <span style="font-size:0.75rem; color:#94a3b8;">Low</span>
+                    <input type="range" class="form-range" min="1" max="100" value="{{ stakeholder.interest_level }}"
+                           oninput="document.getElementById('interest_level').value=this.value; document.getElementById('intVal').textContent=this.value;">
+                    <span style="font-size:0.75rem; color:#94a3b8;">High</span>
+                    <span class="stk-slider-val" id="intVal">{{ stakeholder.interest_level }}</span>
+                </div>
+                <input type="hidden" name="interest_level" id="interest_level" value="{{ stakeholder.interest_level }}">
+            </div>
+            <div>
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Support Level</label>
+                <div class="stk-support-pills">
+                    {% for val, label in [('champion','Champion'),('supporter','Supporter'),('neutral','Neutral'),('skeptic','Skeptic'),('blocker','Blocker')] %}
+                    <span class="stk-support-pill{% if stakeholder.support_level == val %} active{% endif %}"
+                          data-val="{{ val }}"
+                          onclick="document.getElementById('support_level').value='{{ val }}'; document.querySelectorAll('.stk-support-pill').forEach(function(p){p.classList.remove('active');}); this.classList.add('active');">
+                        {{ label }}
+                    </span>
+                    {% endfor %}
+                </div>
+                <div style="display:none;">{{ form.support_level(id="support_level") }}</div>
+            </div>
+        </div>
+
+        <!-- Maps & Visibility -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-collection-fill" style="color:#8b5cf6;"></i> Maps &amp; Visibility</h3>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Maps</label>
+                <div class="stk-map-chips">
+                    {% for value, label in form.maps.choices %}
+                    <span class="stk-map-chip{% if value in (form.maps.data or []) %} active{% endif %}" data-val="{{ value }}"
+                          onclick="var cb=document.getElementById('map_h_{{ value }}'); cb.checked=!cb.checked; this.classList.toggle('active', cb.checked);">
+                        <i class="bi bi-diagram-3"></i> {{ label }}
+                    </span>
+                    <input type="checkbox" name="maps" value="{{ value }}" id="map_h_{{ value }}" class="d-none"
+                           {% if value in (form.maps.data or []) %}checked{% endif %}>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Visibility</label>
+                <div class="stk-vis-toggle">
+                    <span class="stk-vis-btn{% if stakeholder.visibility == 'shared' %} active{% endif %}"
+                          onclick="document.getElementById('visibility').value='shared'; document.querySelectorAll('.stk-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-globe"></i> Shared
+                    </span>
+                    <span class="stk-vis-btn{% if stakeholder.visibility == 'private' %} active{% endif %}"
+                          onclick="document.getElementById('visibility').value='private'; document.querySelectorAll('.stk-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-lock-fill"></i> Private
+                    </span>
+                </div>
+                <div style="display:none;">{{ form.visibility(id="visibility") }}</div>
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-journal-text" style="color:#6366f1;"></i> Notes</h3>
+            {{ form.notes(class="form-control", rows=3, placeholder="Background, context, or anything relevant...") }}
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <a href="{{ url_for('stakeholders.index', organization_id=stakeholder.organization_id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <div class="d-flex gap-2">
+                <form method="POST" action="{{ url_for('stakeholders.delete', id=stakeholder.id) }}" style="display:inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Delete {{ stakeholder.name }}?')">
+                        <i class="bi bi-trash"></i> Delete
+                    </button>
+                </form>
+                <button type="submit" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-check-lg"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Linked Entities -->
+    <div class="stk-form-card mt-4">
+        <h3>
+            <i class="bi bi-link-45deg" style="color:#3b82f6;"></i> Linked Entities
+            <button type="button" class="btn btn-sm btn-primary ms-auto" data-bs-toggle="modal" data-bs-target="#linkEntityModal" style="font-size:0.75rem;">
+                <i class="bi bi-plus"></i> Link
+            </button>
+        </h3>
+        {% set linked = stakeholder.get_linked_entities() %}
+        {% set type_colors = {'challenge': '#f59e0b', 'initiative': '#3b82f6', 'system': '#6b7280', 'kpi': '#10b981'} %}
+        {% set has_links = linked.challenge or linked.initiative or linked.system or linked.kpi %}
+        {% if has_links %}
+            {% for etype in ['challenge', 'initiative', 'system', 'kpi'] %}
+                {% for item in linked.get(etype, []) %}
+                <div class="stk-link-item">
+                    <div>
+                        <span class="stk-link-type" style="background: {{ type_colors[etype] }}15; color: {{ type_colors[etype] }};">{{ etype }}</span>
+                        {{ item.entity.name }}
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" style="padding:0.15rem 0.4rem; font-size:0.7rem;" onclick="unlinkEntity('{{ etype }}', {{ item.entity.id }})">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                {% endfor %}
+            {% endfor %}
+        {% else %}
+            <p class="text-muted small mb-0">No linked entities. Link this stakeholder to challenges, initiatives, systems, or KPIs.</p>
+        {% endif %}
+    </div>
+
+    <!-- Relationships -->
+    <div class="stk-form-card mt-1 mb-4">
+        <h3><i class="bi bi-diagram-3" style="color:#ec4899;"></i> Relationships</h3>
+        <p class="text-muted small mb-0">
+            View and manage relationships on the <a href="{{ url_for('stakeholders.index', organization_id=stakeholder.organization_id) }}">Network Map</a>.
+        </p>
     </div>
 </div>
 
 <!-- Link Entity Modal -->
-<div class="modal fade" id="linkEntityModal" tabindex="-1" aria-labelledby="linkEntityModalLabel" aria-hidden="true">
+<div class="modal fade" id="linkEntityModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="linkEntityModalLabel">Link Entity to Stakeholder</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white;">
+                <h5 class="modal-title"><i class="bi bi-link-45deg"></i> Link Entity</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="linkEntityForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-
                     <div class="mb-3">
-                        <label for="entityType" class="form-label">Entity Type</label>
-                        <select class="form-select" id="entityType" name="entity_type" required onchange="loadEntities()">
+                        <label class="form-label fw-semibold">Entity Type</label>
+                        <select class="form-select" id="entityType" onchange="loadEntities()">
                             <option value="">Select type...</option>
                             <option value="challenge">Challenge</option>
                             <option value="initiative">Initiative</option>
@@ -225,26 +275,24 @@
                             <option value="kpi">KPI</option>
                         </select>
                     </div>
-
                     <div class="mb-3">
-                        <label for="entityId" class="form-label">Entity</label>
-                        <select class="form-select" id="entityId" name="entity_id" required disabled>
+                        <label class="form-label fw-semibold">Entity</label>
+                        <select class="form-select" id="entityId" disabled>
                             <option value="">Select entity type first...</option>
                         </select>
                     </div>
-
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="interestLevel" class="form-label">Interest Level</label>
-                            <select class="form-select" id="interestLevel" name="interest_level">
+                            <label class="form-label">Interest Level</label>
+                            <select class="form-select" id="interestLevel">
                                 <option value="high">High</option>
                                 <option value="medium" selected>Medium</option>
                                 <option value="low">Low</option>
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="impactLevel" class="form-label">Impact Level</label>
-                            <select class="form-select" id="impactLevel" name="impact_level">
+                            <label class="form-label">Impact Level</label>
+                            <select class="form-select" id="impactLevel">
                                 <option value="high">High</option>
                                 <option value="medium" selected>Medium</option>
                                 <option value="low">Low</option>
@@ -254,8 +302,8 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="submitLink()">Link Entity</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitLink()"><i class="bi bi-link-45deg"></i> Link</button>
             </div>
         </div>
     </div>
@@ -266,112 +314,42 @@ const stakeholderId = {{ stakeholder.id }};
 const organizationId = {{ stakeholder.organization_id }};
 
 async function loadEntities() {
-    const entityType = document.getElementById('entityType').value;
-    const entitySelect = document.getElementById('entityId');
-
-    if (!entityType) {
-        entitySelect.disabled = true;
-        entitySelect.innerHTML = '<option value="">Select entity type first...</option>';
-        return;
-    }
-
-    entitySelect.disabled = true;
-    entitySelect.innerHTML = '<option value="">Loading...</option>';
-
+    var sel = document.getElementById('entityId');
+    var type = document.getElementById('entityType').value;
+    if (!type) { sel.disabled = true; sel.innerHTML = '<option value="">Select entity type first...</option>'; return; }
+    sel.innerHTML = '<option value="">Loading...</option>';
     try {
-        const response = await fetch(`/stakeholders/api/entities/${entityType}?organization_id=${organizationId}`);
-        if (!response.ok) throw new Error('Failed to load entities');
-
-        const entities = await response.json();
-
-        if (entities.length === 0) {
-            entitySelect.innerHTML = '<option value="">No entities found</option>';
-        } else {
-            entitySelect.innerHTML = '<option value="">Select entity...</option>' +
-                entities.map(e => `<option value="${e.id}">${e.name}</option>`).join('');
-            entitySelect.disabled = false;
-        }
-    } catch (error) {
-        console.error('Error loading entities:', error);
-        entitySelect.innerHTML = '<option value="">Error loading entities</option>';
-    }
+        var r = await fetch('/stakeholders/api/entities/' + type + '?organization_id=' + organizationId);
+        var data = await r.json();
+        sel.innerHTML = '<option value="">Select...</option>' + data.map(function(e) { return '<option value="' + e.id + '">' + e.name + '</option>'; }).join('');
+        sel.disabled = false;
+    } catch(e) { sel.innerHTML = '<option value="">Error loading</option>'; }
 }
 
 async function submitLink() {
-    const form = document.getElementById('linkEntityForm');
-    const formData = new FormData(form);
-
-    const entityType = formData.get('entity_type');
-    const entityId = formData.get('entity_id');
-    const interestLevel = formData.get('interest_level');
-    const impactLevel = formData.get('impact_level');
-    const csrfToken = formData.get('csrf_token');
-
-    if (!entityType || !entityId) {
-        alert('Please select both entity type and entity');
-        return;
-    }
-
+    var type = document.getElementById('entityType').value;
+    var id = document.getElementById('entityId').value;
+    if (!type || !id) { alert('Please select both type and entity'); return; }
+    var csrf = document.querySelector('#linkEntityForm input[name="csrf_token"]').value;
     try {
-        const response = await fetch(`/stakeholders/${stakeholderId}/link-entity`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                entity_type: entityType,
-                entity_id: parseInt(entityId),
-                interest_level: interestLevel,
-                impact_level: impactLevel
-            })
+        var r = await fetch('/stakeholders/' + stakeholderId + '/link-entity', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+            body: JSON.stringify({entity_type: type, entity_id: parseInt(id), interest_level: document.getElementById('interestLevel').value, impact_level: document.getElementById('impactLevel').value})
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to link entity');
-        }
-
-        // Close modal and reload page
-        const modal = bootstrap.Modal.getInstance(document.getElementById('linkEntityModal'));
-        modal.hide();
-        location.reload();
-    } catch (error) {
-        console.error('Error linking entity:', error);
-        alert('Error: ' + error.message);
-    }
+        if (r.ok) { location.reload(); } else { var err = await r.json(); alert(err.error || 'Failed'); }
+    } catch(e) { alert('Error: ' + e.message); }
 }
 
-async function unlinkEntity(entityType, entityId) {
-    if (!confirm('Are you sure you want to unlink this entity?')) {
-        return;
-    }
-
-    const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-
+async function unlinkEntity(type, id) {
+    if (!confirm('Unlink this entity?')) return;
+    var csrf = document.querySelector('input[name="csrf_token"]').value;
     try {
-        const response = await fetch(`/stakeholders/${stakeholderId}/unlink-entity`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            },
-            body: JSON.stringify({
-                entity_type: entityType,
-                entity_id: entityId
-            })
+        var r = await fetch('/stakeholders/' + stakeholderId + '/unlink-entity', {
+            method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrf},
+            body: JSON.stringify({entity_type: type, entity_id: id})
         });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to unlink entity');
-        }
-
-        location.reload();
-    } catch (error) {
-        console.error('Error unlinking entity:', error);
-        alert('Error: ' + error.message);
-    }
+        if (r.ok) location.reload();
+    } catch(e) { alert('Error'); }
 }
 </script>
 {% endblock %}
