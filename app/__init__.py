@@ -384,7 +384,8 @@ def create_app(config_name=None):
                     location = {"page": "Decision Register", "description": "Record and track decisions. Mention entities to link decisions to your CISK structure."}
                     hints.append(H("action", "➕", "Click New Decision to record one.", highlight=".btn-light"))
                     hints.append(H("tip", "🏷️", "Click tags to categorize (scope, budget, timeline...). Multiple tags allowed."))
-                    hints.append(H("tip", "🔗", "Type in Entity Mentions to link to initiatives, systems, or KPIs."))
+                    hints.append(H("tip", "🔗", "Type in Entity Mentions to link to initiatives, systems, KPIs, or stakeholders."))
+                    hints.append(H("tip", "📝", "Decision text supports Markdown: **bold**, - lists, ## headings."))
                     hints.append(H("tip", "🌱", "Use the tree icon to show/hide columns: 🌱 minimal → 🌲 + who/tags → 🎄 full detail.", highlight="#drDetailBtn"))
                     hints.append(H("tip", "💾", "Save filter presets to quickly recall your preferred view.", highlight=".preset-bar"))
 
@@ -463,7 +464,8 @@ def create_app(config_name=None):
             elif "/toolbox/actions" in path:
                 location = {"page": "Action Register", "description": "Track action items and memos across the organization."}
                 hints.append(H("action", "➕", "Click New Item to create an action or memo.", highlight=".btn-light.fw-semibold"))
-                hints.append(H("tip", "📌", "Use @mentions in descriptions to link actions to CISK entities."))
+                hints.append(H("tip", "📌", "Use @mentions in descriptions to link entities and stakeholders."))
+                hints.append(H("tip", "📝", "Descriptions support Markdown: **bold**, - bullet list, ## heading, > quote."))
                 hints.append(H("tip", "🌱", "Detail level: 🌱 title/status → 🌲 + dates/owner → 🎄 + GB/type/links.", highlight="#actionDetailBtn"))
                 hints.append(H("tip", "☆", "Star filter: show only actions linked to high-importance entities.", highlight="#actImpactBtn"))
                 hints.append(H("tip", "🔽", "Open filters for status, priority, governance body, and more.", highlight="#filters-toggle-btn"))
