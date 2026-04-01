@@ -3,50 +3,36 @@
 {% block title %}Power/Interest Matrix - {{ organization.name }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Modern Header with View Toggle -->
-    <div class="row mb-3 align-items-center">
-        <div class="col-md-4">
-            <h2 class="mb-1">🗺️ Stakeholder Analysis</h2>
-            <p class="text-muted mb-0 small">
-                <strong>{{ organization.name }}</strong> •
-                Power/Interest Matrix
-            </p>
+<div class="container-fluid" style="padding: 1.25rem;">
+    <!-- Unified Header -->
+    <div style="background:linear-gradient(135deg,#14b8a6,#0d9488); border-radius:16px; padding:1.5rem 2rem; color:white; margin-bottom:1.25rem; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+        <div>
+            <h1 style="font-size:1.4rem; font-weight:800; margin:0;"><i class="bi bi-people-fill"></i> Stakeholders</h1>
+            <div style="font-size:0.82rem; color:rgba(255,255,255,0.7);">Power / Interest Matrix</div>
         </div>
-        <div class="col-md-4 text-center">
-            <!-- View Toggle -->
-            <div class="btn-group view-toggle shadow-sm" role="group" aria-label="View selection">
-                <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}"
-                   class="btn btn-view">
-                    <i class="bi bi-diagram-3"></i>
-                    <span class="d-none d-lg-inline">Network</span>
+        <div class="d-flex align-items-center gap-2">
+            <div style="display:inline-flex; background:rgba(255,255,255,0.15); border-radius:10px; padding:3px; gap:2px;">
+                <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" style="padding:0.4rem 1rem; border-radius:8px; font-size:0.82rem; font-weight:600; color:rgba(255,255,255,0.7); text-decoration:none; display:flex; align-items:center; gap:0.4rem; transition:all 0.15s;" onmouseover="this.style.color='white';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.7)';this.style.background='none'">
+                    <i class="bi bi-diagram-3"></i> Network
                 </a>
-                <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}"
-                   class="btn btn-view">
-                    <i class="bi bi-list-ul"></i>
-                    <span class="d-none d-lg-inline">List</span>
+                <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}" style="padding:0.4rem 1rem; border-radius:8px; font-size:0.82rem; font-weight:600; color:rgba(255,255,255,0.7); text-decoration:none; display:flex; align-items:center; gap:0.4rem; transition:all 0.15s;" onmouseover="this.style.color='white';this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.color='rgba(255,255,255,0.7)';this.style.background='none'">
+                    <i class="bi bi-list-ul"></i> List
                 </a>
-                <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}"
-                   class="btn btn-view active">
-                    <i class="bi bi-grid-3x3"></i>
-                    <span class="d-none d-lg-inline">Matrix</span>
+                <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}" style="padding:0.4rem 1rem; border-radius:8px; font-size:0.82rem; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:0.4rem; background:white; color:#0d9488; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+                    <i class="bi bi-grid-3x3"></i> Matrix
                 </a>
             </div>
         </div>
-        <div class="col-md-4 text-end">
-            <div class="btn-toolbar justify-content-end gap-2" role="toolbar">
-                <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}"
-                   class="btn btn-outline-info btn-sm">
-                    <i class="bi bi-collection"></i>
-                    <span class="d-none d-lg-inline">Manage Maps</span>
-                </a>
-                <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}"
-                   class="btn btn-primary btn-sm">
-                    <i class="bi bi-person-plus"></i>
-                    <span class="d-none d-lg-inline">Add Stakeholder</span>
-                </a>
-            </div>
-        </div>
+    </div>
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1rem; flex-wrap:wrap;">
+        <div style="flex:1;"></div>
+        <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-collection"></i> Maps
+        </a>
+        <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus-fill"></i> Add Stakeholder
+        </a>
     </div>
 
     <div class="row">
