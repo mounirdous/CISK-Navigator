@@ -1,181 +1,210 @@
 {% extends "base.html" %}
-
 {% block title %}Stakeholders - {{ organization.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+.stk-header {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    border-radius: 16px; padding: 1.5rem 2rem; color: white; margin-bottom: 1.25rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.stk-header h1 { font-size: 1.4rem; font-weight: 800; margin: 0; }
+.stk-header-stats { display: flex; gap: 1.5rem; font-size: 0.82rem; color: rgba(255,255,255,0.7); }
+.stk-header-stat strong { color: white; font-size: 1.1rem; }
+
+/* View Toggle */
+.stk-views { display: inline-flex; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 3px; gap: 2px; }
+.stk-view-btn {
+    padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    color: rgba(255,255,255,0.7); text-decoration: none; display: flex; align-items: center; gap: 0.4rem;
+    transition: all 0.15s;
+}
+.stk-view-btn:hover { color: white; background: rgba(255,255,255,0.1); }
+.stk-view-btn.active { background: white; color: #0d9488; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+/* Search + actions bar */
+.stk-toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.stk-search {
+    flex: 1; min-width: 200px; position: relative;
+}
+.stk-search input {
+    width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+    border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.85rem;
+    background: white; outline: none; transition: border-color 0.15s;
+}
+.stk-search input:focus { border-color: #14b8a6; }
+.stk-search i {
+    position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%);
+    color: #94a3b8; font-size: 0.9rem;
+}
+
+/* Table */
+.stk-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.stk-table thead th {
+    background: #f8fafc; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: #64748b; padding: 0.6rem 0.75rem;
+    border-bottom: 2px solid #e2e8f0; position: sticky; top: 0; z-index: 1;
+}
+.stk-table tbody td {
+    padding: 0.65rem 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem;
+    vertical-align: middle;
+}
+.stk-table tbody tr { transition: background 0.1s; }
+.stk-table tbody tr:hover { background: #f0fdfa; }
+
+.stk-name { font-weight: 600; color: #1e293b; }
+.stk-email { font-size: 0.75rem; color: #94a3b8; }
+.stk-role { color: #475569; }
+.stk-dept { font-size: 0.8rem; color: #94a3b8; }
+
+/* Influence bar */
+.stk-inf-bar {
+    width: 60px; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;
+    display: inline-block; vertical-align: middle;
+}
+.stk-inf-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.stk-inf-val { font-size: 0.75rem; color: #94a3b8; margin-left: 0.3rem; }
+
+/* Support badge */
+.stk-support {
+    display: inline-flex; padding: 0.15rem 0.5rem; border-radius: 10px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+}
+
+/* Empty state */
+.stk-empty {
+    text-align: center; padding: 3rem 1rem; color: #94a3b8;
+}
+.stk-empty i { font-size: 3rem; display: block; margin-bottom: 0.75rem; opacity: 0.3; }
+
+body.dark-mode .stk-table thead th { background: #0f172a; color: #94a3b8; border-color: #334155; }
+body.dark-mode .stk-table tbody td { border-color: #1e293b; }
+body.dark-mode .stk-table tbody tr:hover { background: rgba(20,184,166,0.05); }
+body.dark-mode .stk-name { color: #e2e8f0; }
+body.dark-mode .stk-search input { background: #1e293b; border-color: #334155; color: #e2e8f0; }
+body.dark-mode .stk-inf-bar { background: #334155; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <!-- Modern Header with View Toggle -->
-    <div class="row mb-3 align-items-center">
-        <div class="col-md-4">
-            <h2 class="mb-1">🗺️ Stakeholder Analysis</h2>
-            <p class="text-muted mb-0 small">
-                <strong>{{ organization.name }}</strong> •
-                {{ stakeholders|length }} stakeholders
-            </p>
-        </div>
-        <div class="col-md-4 text-center">
-            <!-- View Toggle -->
-            <div class="btn-group view-toggle shadow-sm" role="group" aria-label="View selection">
-                <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}"
-                   class="btn btn-view">
-                    <i class="bi bi-diagram-3"></i>
-                    <span class="d-none d-lg-inline">Network</span>
-                </a>
-                <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}"
-                   class="btn btn-view active">
-                    <i class="bi bi-list-ul"></i>
-                    <span class="d-none d-lg-inline">List</span>
-                </a>
-                <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}"
-                   class="btn btn-view">
-                    <i class="bi bi-grid-3x3"></i>
-                    <span class="d-none d-lg-inline">Matrix</span>
-                </a>
+<div class="container-fluid" style="padding: 1.25rem;">
+
+    <!-- Header -->
+    <div class="stk-header">
+        <div>
+            <h1><i class="bi bi-people-fill"></i> Stakeholders</h1>
+            <div class="stk-header-stats">
+                <span><strong>{{ stakeholders|length }}</strong> people</span>
+                {% set dept_count = stakeholders|map(attribute='department')|select|unique|list|length %}
+                {% if dept_count %}<span><strong>{{ dept_count }}</strong> departments</span>{% endif %}
             </div>
         </div>
-        <div class="col-md-4 text-end">
-            <div class="btn-toolbar justify-content-end gap-2" role="toolbar">
-                <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}"
-                   class="btn btn-outline-info btn-sm">
-                    <i class="bi bi-collection"></i>
-                    <span class="d-none d-lg-inline">Manage Maps</span>
+        <div class="d-flex align-items-center gap-2">
+            <div class="stk-views">
+                <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" class="stk-view-btn">
+                    <i class="bi bi-diagram-3"></i> Network
                 </a>
-                <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}"
-                   class="btn btn-primary btn-sm">
-                    <i class="bi bi-person-plus"></i>
-                    <span class="d-none d-lg-inline">Add Stakeholder</span>
+                <a href="{{ url_for('stakeholders.list_stakeholders', organization_id=organization.id) }}" class="stk-view-btn active">
+                    <i class="bi bi-list-ul"></i> List
+                </a>
+                <a href="{{ url_for('stakeholders.power_interest_matrix', organization_id=organization.id) }}" class="stk-view-btn">
+                    <i class="bi bi-grid-3x3"></i> Matrix
                 </a>
             </div>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-body">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Role</th>
-                        <th>Department</th>
-                        <th>Site</th>
-                        <th>Influence</th>
-                        <th>Support</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for stakeholder in stakeholders %}
-                    <tr>
-                        <td>
-                            <strong>{{ stakeholder.name }}</strong><br>
-                            {% if stakeholder.email %}
-                            <small class="text-muted">{{ stakeholder.email }}</small>
-                            {% endif %}
-                        </td>
-                        <td>{{ stakeholder.role or '-' }}</td>
-                        <td>{{ stakeholder.department or '-' }}</td>
-                        <td>
-                            {% if stakeholder.site %}
-                            <small>{{ stakeholder.site.name }}</small>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="progress" style="height: 20px; min-width: 60px;">
-                                <div class="progress-bar" role="progressbar" style="width: {{ stakeholder.influence_level }}%">
-                                    {{ stakeholder.influence_level }}
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            {% set colors = {'champion': '#28a745', 'supporter': '#6c757d', 'neutral': '#ffc107', 'skeptic': '#fd7e14', 'blocker': '#dc3545'} %}
-                            <span class="badge" style="background-color: {{ colors[stakeholder.support_level] }}">
-                                {{ stakeholder.support_level.capitalize() }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{{ url_for('stakeholders.edit', id=stakeholder.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <form method="POST" action="{{ url_for('stakeholders.delete', id=stakeholder.id) }}" style="display: inline;">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this stakeholder?')">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted">
-                            No stakeholders yet. <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}">Add one</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Toolbar -->
+    <div class="stk-toolbar">
+        <div class="stk-search">
+            <i class="bi bi-search"></i>
+            <input type="text" id="stkSearch" placeholder="Search stakeholders..." autocomplete="off"
+                   oninput="filterStk(this.value)">
         </div>
+        <a href="{{ url_for('stakeholders.list_maps', organization_id=organization.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-collection"></i> Maps
+        </a>
+        <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-person-plus-fill"></i> Add Stakeholder
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; overflow: hidden;">
+        <table class="stk-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Department</th>
+                    <th>Site</th>
+                    <th>Influence</th>
+                    <th>Interest</th>
+                    <th>Support</th>
+                    <th style="width:80px;"></th>
+                </tr>
+            </thead>
+            <tbody id="stkBody">
+                {% for s in stakeholders %}
+                <tr data-search="{{ s.name|lower }} {{ (s.role or '')|lower }} {{ (s.department or '')|lower }} {{ (s.email or '')|lower }}">
+                    <td>
+                        <span class="stk-name">{{ s.name }}</span>
+                        {% if s.email %}<br><span class="stk-email">{{ s.email }}</span>{% endif %}
+                    </td>
+                    <td><span class="stk-role">{{ s.role or '—' }}</span></td>
+                    <td><span class="stk-dept">{{ s.department or '—' }}</span></td>
+                    <td><span class="stk-dept">{{ s.site.name if s.site else '—' }}</span></td>
+                    <td>
+                        <span class="stk-inf-bar"><span class="stk-inf-fill" style="width:{{ s.influence_level }}%; background:{% if s.influence_level >= 70 %}#ef4444{% elif s.influence_level >= 40 %}#f59e0b{% else %}#10b981{% endif %};"></span></span>
+                        <span class="stk-inf-val">{{ s.influence_level }}</span>
+                    </td>
+                    <td>
+                        <span class="stk-inf-bar"><span class="stk-inf-fill" style="width:{{ s.interest_level }}%; background:{% if s.interest_level >= 70 %}#3b82f6{% elif s.interest_level >= 40 %}#8b5cf6{% else %}#94a3b8{% endif %};"></span></span>
+                        <span class="stk-inf-val">{{ s.interest_level }}</span>
+                    </td>
+                    <td>
+                        {% set support_colors = {'champion': '#10b981', 'supporter': '#6b7280', 'neutral': '#f59e0b', 'skeptic': '#f97316', 'blocker': '#ef4444'} %}
+                        <span class="stk-support" style="background: {{ support_colors[s.support_level] }}20; color: {{ support_colors[s.support_level] }};">
+                            {{ s.support_level|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('stakeholders.edit', id=s.id) }}" class="btn btn-sm btn-outline-primary" style="padding:0.2rem 0.5rem; font-size:0.75rem;" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('stakeholders.delete', id=s.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" style="padding:0.2rem 0.5rem; font-size:0.75rem;"
+                                    onclick="return confirm('Delete {{ s.name }}?')" title="Delete">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8">
+                        <div class="stk-empty">
+                            <i class="bi bi-people"></i>
+                            No stakeholders yet.<br>
+                            <a href="{{ url_for('stakeholders.create', organization_id=organization.id) }}" class="btn btn-primary btn-sm mt-2">
+                                <i class="bi bi-person-plus-fill"></i> Add your first stakeholder
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<style>
-/* View Toggle Styling */
-.view-toggle {
-    background: #fff;
-    border-radius: 12px;
-    padding: 4px;
-    border: 2px solid #e2e8f0;
-    display: inline-flex;
-    gap: 0;
+<script>
+function filterStk(q) {
+    q = q.toLowerCase();
+    document.querySelectorAll('#stkBody tr[data-search]').forEach(function(row) {
+        row.style.display = !q || row.dataset.search.includes(q) ? '' : 'none';
+    });
 }
-
-.btn-view {
-    border: none !important;
-    background: transparent;
-    color: #64748b;
-    padding: 0.6rem 1.5rem;
-    font-weight: 500;
-    font-size: 0.95rem;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    text-decoration: none;
-}
-
-.btn-view:hover {
-    background: rgba(102, 126, 234, 0.1);
-    color: #667eea;
-    transform: none;
-    box-shadow: none;
-}
-
-.btn-view.active {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-}
-
-.btn-view.active:hover {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-}
-
-.btn-view i {
-    font-size: 1.1rem;
-}
-
-@media (max-width: 991px) {
-    .btn-view {
-        padding: 0.6rem 1rem;
-    }
-}
-
-h2 {
-    font-weight: 700;
-    font-size: 1.75rem;
-}
-</style>
+</script>
 {% endblock %}

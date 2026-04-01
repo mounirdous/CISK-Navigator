@@ -1,111 +1,214 @@
 {% extends "base.html" %}
+{% block title %}Create Stakeholder{% endblock %}
 
-{% block title %}Create Stakeholder - {{ organization.name }}{% endblock %}
+{% block extra_css %}
+<style>
+.stk-hero {
+    background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+    border-radius: 16px; padding: 1.75rem 2rem; color: white; margin-bottom: 1.5rem;
+    position: relative; overflow: hidden;
+}
+.stk-hero::before {
+    content: ''; position: absolute; top: -50%; right: -15%; width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%); pointer-events: none;
+}
+.stk-hero h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 0.25rem; }
+.stk-hero p { color: rgba(255,255,255,0.7); font-size: 0.88rem; margin: 0; }
+
+.stk-form-card {
+    background: white; border-radius: 14px; border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); padding: 1.75rem; margin-bottom: 1rem;
+}
+.stk-form-card h3 {
+    font-size: 0.85rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #64748b; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 0.5rem;
+}
+.stk-form-card h3 i { font-size: 1rem; }
+
+.stk-slider-group { display: flex; align-items: center; gap: 1rem; }
+.stk-slider-group input[type="range"] { flex: 1; }
+.stk-slider-val {
+    min-width: 42px; text-align: center; font-weight: 700; font-size: 1.1rem;
+    color: #14b8a6; background: #f0fdfa; border-radius: 8px; padding: 0.3rem 0.5rem;
+}
+
+.stk-support-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.stk-support-pill {
+    padding: 0.4rem 1rem; border-radius: 20px; border: 2px solid #e2e8f0;
+    font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    background: white; color: #64748b;
+}
+.stk-support-pill:hover { border-color: #cbd5e1; }
+.stk-support-pill.active { color: white; border-color: transparent; }
+.stk-support-pill[data-val="champion"].active { background: #10b981; }
+.stk-support-pill[data-val="supporter"].active { background: #6b7280; }
+.stk-support-pill[data-val="neutral"].active { background: #f59e0b; }
+.stk-support-pill[data-val="skeptic"].active { background: #f97316; }
+.stk-support-pill[data-val="blocker"].active { background: #ef4444; }
+
+.stk-map-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.stk-map-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.3rem 0.75rem; border-radius: 20px; font-size: 0.8rem;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+    border: 2px solid #e2e8f0; background: white; color: #64748b;
+}
+.stk-map-chip:hover { border-color: #a78bfa; }
+.stk-map-chip.active { background: #8b5cf6; color: white; border-color: #8b5cf6; }
+.stk-map-chip i { font-size: 0.7rem; }
+
+.stk-vis-toggle { display: flex; gap: 0.5rem; }
+.stk-vis-btn {
+    flex: 1; padding: 0.5rem; border-radius: 10px; border: 2px solid #e2e8f0;
+    text-align: center; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; background: white; color: #64748b;
+}
+.stk-vis-btn:hover { border-color: #cbd5e1; }
+.stk-vis-btn.active { border-color: #3b82f6; background: #eff6ff; color: #1e40af; }
+
+body.dark-mode .stk-form-card { background: #1e293b; border-color: #334155; }
+body.dark-mode .stk-form-card h3 { color: #94a3b8; }
+body.dark-mode .stk-support-pill { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .stk-map-chip { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .stk-vis-btn { background: #1e293b; border-color: #334155; color: #94a3b8; }
+body.dark-mode .stk-slider-val { background: #0f172a; color: #14b8a6; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h2>Add New Stakeholder</h2>
-            <p class="text-muted">{{ organization.name }}</p>
+<div style="max-width: 720px; margin: 0 auto; padding: 1.5rem 1rem;">
+    <div class="stk-hero">
+        <h1><i class="bi bi-person-plus-fill"></i> New Stakeholder</h1>
+        <p>Add a new person or role to your workspace</p>
+    </div>
 
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" novalidate>
-                        {{ form.hidden_tag() }}
-                        <input type="hidden" name="organization_id" value="{{ organization.id }}">
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <input type="hidden" name="organization_id" value="{{ organization.id }}">
 
-                        <div class="mb-3">
-                            {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
-                            {% if form.name.errors %}
-                            <div class="invalid-feedback">{{ form.name.errors[0] }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.role.label(class="form-label") }}
-                                {{ form.role(class="form-control") }}
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.department.label(class="form-label") }}
-                                {{ form.department(class="form-control") }}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.site_id.label(class="form-label") }}
-                                {{ form.site_id(class="form-select") }}
-                                <small class="text-muted">{{ form.site_id.description }}</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.email.label(class="form-label") }}
-                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
-                                {% if form.email.errors %}
-                                <div class="invalid-feedback">{{ form.email.errors[0] }}</div>
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                {{ form.influence_level.label(class="form-label") }}
-                                <input type="range" class="form-range" id="influenceRange" min="1" max="100" value="50" oninput="document.getElementById('influence_level').value = this.value; document.getElementById('influenceValue').innerText = this.value">
-                                {{ form.influence_level(class="form-control", id="influence_level", readonly=True) }}
-                                <small class="text-muted">Current: <span id="influenceValue">50</span> (1=Low, 100=High)</small>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                {{ form.interest_level.label(class="form-label") }}
-                                <input type="range" class="form-range" id="interestRange" min="1" max="100" value="50" oninput="document.getElementById('interest_level').value = this.value; document.getElementById('interestValue').innerText = this.value">
-                                {{ form.interest_level(class="form-control", id="interest_level", readonly=True) }}
-                                <small class="text-muted">Current: <span id="interestValue">50</span> (1=Low, 100=High)</small>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.support_level.label(class="form-label") }}
-                            {{ form.support_level(class="form-select") }}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.visibility.label(class="form-label") }}
-                            {{ form.visibility(class="form-select") }}
-                            <small class="text-muted">Choose who can see this stakeholder in the network map</small>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.maps.label(class="form-label") }}
-                            <div class="border rounded p-3" style="max-height: 200px; overflow-y: auto;">
-                                {% for value, label in form.maps.choices %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="maps" value="{{ value }}" id="map_{{ value }}">
-                                    <label class="form-check-label" for="map_{{ value }}">
-                                        {{ label }}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                            {% if form.maps.errors %}
-                            <div class="text-danger small mt-1">{{ form.maps.errors[0] }}</div>
-                            {% endif %}
-                            <small class="text-muted d-block mt-1">Select at least one map</small>
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.notes.label(class="form-label") }}
-                            {{ form.notes(class="form-control", rows=4) }}
-                        </div>
-
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Create Stakeholder</button>
-                        </div>
-                    </form>
+        <!-- Identity -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-person-fill" style="color:#14b8a6;"></i> Identity</h3>
+            <div class="mb-3">
+                {{ form.name(class="form-control form-control-lg" + (" is-invalid" if form.name.errors else ""), placeholder="Full name") }}
+                {% if form.name.errors %}<div class="invalid-feedback">{{ form.name.errors[0] }}</div>{% endif %}
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    {{ form.role(class="form-control", placeholder="e.g. CTO, Project Manager") }}
+                </div>
+                <div class="col-md-6">
+                    {{ form.department(class="form-control", placeholder="e.g. IT, Finance, Operations") }}
+                </div>
+            </div>
+            <div class="row g-3 mt-0">
+                <div class="col-md-6">
+                    {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), placeholder="Email address") }}
+                    {% if form.email.errors %}<div class="invalid-feedback">{{ form.email.errors[0] }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    {{ form.site_id(class="form-select") }}
                 </div>
             </div>
         </div>
-    </div>
+
+        <!-- Influence & Support -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-bar-chart-fill" style="color:#f59e0b;"></i> Influence &amp; Support</h3>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Influence Level</label>
+                <div class="stk-slider-group">
+                    <span style="font-size:0.75rem; color:#94a3b8;">Low</span>
+                    <input type="range" class="form-range" min="1" max="100" value="{{ form.influence_level.data or 50 }}"
+                           oninput="document.getElementById('influence_level').value=this.value; document.getElementById('infVal').textContent=this.value;">
+                    <span style="font-size:0.75rem; color:#94a3b8;">High</span>
+                    <span class="stk-slider-val" id="infVal">{{ form.influence_level.data or 50 }}</span>
+                </div>
+                {{ form.influence_level(type="hidden", id="influence_level") }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Interest Level</label>
+                <div class="stk-slider-group">
+                    <span style="font-size:0.75rem; color:#94a3b8;">Low</span>
+                    <input type="range" class="form-range" min="1" max="100" value="{{ form.interest_level.data or 50 }}"
+                           oninput="document.getElementById('interest_level').value=this.value; document.getElementById('intVal').textContent=this.value;">
+                    <span style="font-size:0.75rem; color:#94a3b8;">High</span>
+                    <span class="stk-slider-val" id="intVal">{{ form.interest_level.data or 50 }}</span>
+                </div>
+                {{ form.interest_level(type="hidden", id="interest_level") }}
+            </div>
+            <div>
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Support Level</label>
+                <div class="stk-support-pills">
+                    {% for val, label in [('champion','Champion'),('supporter','Supporter'),('neutral','Neutral'),('skeptic','Skeptic'),('blocker','Blocker')] %}
+                    <span class="stk-support-pill{% if (form.support_level.data or 'neutral') == val %} active{% endif %}"
+                          data-val="{{ val }}"
+                          onclick="document.getElementById('support_level').value='{{ val }}'; document.querySelectorAll('.stk-support-pill').forEach(function(p){p.classList.remove('active');}); this.classList.add('active');">
+                        {{ label }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {{ form.support_level(type="hidden", id="support_level") }}
+            </div>
+        </div>
+
+        <!-- Maps & Visibility -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-collection-fill" style="color:#8b5cf6;"></i> Maps &amp; Visibility</h3>
+            <div class="mb-3">
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Add to Maps</label>
+                <div class="stk-map-chips">
+                    {% for value, label in form.maps.choices %}
+                    <span class="stk-map-chip" data-val="{{ value }}"
+                          onclick="var cb=document.getElementById('map_h_{{ value }}'); cb.checked=!cb.checked; this.classList.toggle('active', cb.checked);">
+                        <i class="bi bi-diagram-3"></i> {{ label }}
+                    </span>
+                    <input type="checkbox" name="maps" value="{{ value }}" id="map_h_{{ value }}" class="d-none"
+                           {% if value in (form.maps.data or []) %}checked{% endif %}>
+                    {% endfor %}
+                </div>
+                {% if form.maps.errors %}<div class="text-danger small mt-1">{{ form.maps.errors[0] }}</div>{% endif %}
+            </div>
+            <div>
+                <label class="form-label fw-semibold" style="font-size:0.82rem;">Visibility</label>
+                <div class="stk-vis-toggle">
+                    <span class="stk-vis-btn{% if (form.visibility.data or 'shared') == 'shared' %} active{% endif %}"
+                          onclick="document.getElementById('visibility').value='shared'; document.querySelectorAll('.stk-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-globe"></i> Shared
+                    </span>
+                    <span class="stk-vis-btn{% if form.visibility.data == 'private' %} active{% endif %}"
+                          onclick="document.getElementById('visibility').value='private'; document.querySelectorAll('.stk-vis-btn').forEach(function(b){b.classList.remove('active');}); this.classList.add('active');">
+                        <i class="bi bi-lock-fill"></i> Private
+                    </span>
+                </div>
+                {{ form.visibility(type="hidden", id="visibility") }}
+            </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="stk-form-card">
+            <h3><i class="bi bi-journal-text" style="color:#6366f1;"></i> Notes</h3>
+            {{ form.notes(class="form-control", rows=3, placeholder="Background, context, or anything relevant about this stakeholder...") }}
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between align-items-center mt-3 mb-4">
+            <a href="{{ url_for('stakeholders.index', organization_id=organization.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Cancel
+            </a>
+            <button type="submit" class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-person-plus-fill"></i> Create Stakeholder
+            </button>
+        </div>
+    </form>
 </div>
+
+<script>
+// Sync initial map chip states
+document.querySelectorAll('.stk-map-chip').forEach(function(chip) {
+    var cb = document.getElementById('map_h_' + chip.dataset.val);
+    if (cb && cb.checked) chip.classList.add('active');
+});
+</script>
 {% endblock %}
