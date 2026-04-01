@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.6.0] - 2026-04-01
+
+### Added
+- **Super Admin dashboard reorganised** — 6 logical groups (System Configuration, Performance, Users & Access, Monitoring & Health, Data & Content, Danger Zone) with uniform card style
+
+### Fixed
+- **Inline impact → computed importance on first refresh** — Alpine.js caches DOM for elements hidden via x-show (loading card); force re-render via $nextTick after loading=false
+- **Private stakeholders & maps in Visibility Dashboard** — were computed but never passed to template; now appear in private items table with type badges and creator names
+- **Unicode accent comparison** for org name confirmation — strip + NFC + NFKD + accent-stripped casefold fallback
+- **Trailing whitespace on org names** — `@validates("name")` on Organization model strips automatically
+- **Organisation → Workspace** text in 13 org-admin UI locations
+
 ## [7.5.0] - 2026-03-31
 
 ### Added

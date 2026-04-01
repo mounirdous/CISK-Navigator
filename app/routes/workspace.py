@@ -1157,6 +1157,18 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.6",
+            "date": "April 1, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Super Admin dashboard reorganised</strong> — cards are now grouped into 6 logical sections (System Configuration, Performance, Users &amp; Access, Monitoring &amp; Health, Data &amp; Content, Danger Zone) with a uniform card style throughout.",
+                "<strong>Impact updates work on first refresh</strong> — when you change an entity's assessed impact inline and hit refresh, the computed importance now updates immediately. No more double-clicking.",
+                "<strong>Private stakeholders &amp; maps in Visibility Dashboard</strong> — private stakeholders and stakeholder maps now appear in the private items table alongside spaces and actions.",
+                "<strong>Workspace names trimmed</strong> — trailing spaces in workspace names are now automatically stripped, fixing name-matching issues in confirmations.",
+                '<strong>"Organisation" &rarr; "Workspace"</strong> — fixed 13 places in the admin UI that still said "Organisation" instead of "Workspace".',
+            ],
+        },
+        {
             "version": "7.5",
             "date": "March 31, 2026",
             "tags": ["feature"],
