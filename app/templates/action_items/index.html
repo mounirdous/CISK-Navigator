@@ -203,11 +203,10 @@
 .vis-item.item-milestone .vis-item-content { color: white !important; }
 
 /* Milestone vertical markers */
-.vis-custom-time[id^="ms_"] { background-color: #e65100 !important; width: 2px !important; z-index: 0 !important; pointer-events: none !important; opacity: 0.6; }
-.vis-custom-time[id^="ms_"] .vis-custom-time-marker {
-    background: #e65100; color: white; font-size: 0.65rem; font-weight: 700;
-    padding: 1px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none;
-}
+/* All custom time markers (milestones + today): behind items, click-through */
+.vis-custom-time { z-index: 0 !important; pointer-events: none !important; }
+.vis-custom-time.ms-marker { background-color: #e65100 !important; width: 2px !important; opacity: 0.5; }
+.vis-custom-time .vis-custom-time-marker { pointer-events: none !important; }
 .vis-item.item-completed  { opacity:0.45; }
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
 .vis-item.item-undated    { border-style:dotted; opacity:0.7; }
@@ -1778,6 +1777,14 @@ function renderTimeline(groupBy) {
             } catch(e) {}
         }
     });
+
+    // Force milestone markers behind items (vis.js may override CSS)
+    setTimeout(function() {
+        document.querySelectorAll('.vis-custom-time').forEach(function(el) {
+            el.style.zIndex = '0';
+            el.style.pointerEvents = 'none';
+        });
+    }, 100);
 
     // Fit all items in view (200ms to ensure vis.js layout is complete)
     setTimeout(function() { if (tlInstance) tlInstance.fit({ animation: true }); }, 200);
