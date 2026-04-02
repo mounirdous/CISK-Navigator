@@ -202,11 +202,10 @@
 .vis-item.item-milestone  { background: linear-gradient(135deg, #ff6d00, #e65100) !important; color:white !important; border:2px solid #bf360c !important; font-weight:700; border-radius:4px; }
 .vis-item.item-milestone .vis-item-content { color: white !important; }
 
-/* Milestone vertical markers */
-/* All custom time markers (milestones + today): behind items, click-through */
-.vis-custom-time { z-index: 0 !important; pointer-events: none !important; }
-.vis-custom-time.ms-marker { background-color: #e65100 !important; width: 2px !important; opacity: 0.5; }
-.vis-custom-time .vis-custom-time-marker { pointer-events: none !important; }
+/* Milestone vertical markers — behind items, thin, click-through */
+.vis-custom-time { z-index: 0 !important; pointer-events: none !important;
+                   background-color: #e65100 !important; width: 2px !important; opacity: 0.4; }
+.vis-custom-time > * { pointer-events: none !important; }
 .vis-item.item-completed  { opacity:0.45; }
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
 .vis-item.item-undated    { border-style:dotted; opacity:0.7; }
@@ -224,7 +223,7 @@
 .vis-label input { display:none !important; }
 .vis-group { border-bottom:1px solid #f0f0f0; }
 .vis-item { border-radius:6px; border-width:1.5px; font-size:0.78rem; font-weight:500;
-            box-shadow:0 1px 4px rgba(0,0,0,0.08); transition:box-shadow 0.15s; }
+            box-shadow:0 1px 4px rgba(0,0,0,0.08); transition:box-shadow 0.15s; z-index:2 !important; }
 .vis-item:hover { box-shadow:0 3px 12px rgba(0,0,0,0.16); z-index:10; }
 .vis-item.vis-selected { box-shadow:0 2px 8px rgba(0,0,0,0.22); border-width:2px; }
 .vis-item.vis-range .vis-item-content { padding:1px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -1783,6 +1782,9 @@ function renderTimeline(groupBy) {
         document.querySelectorAll('.vis-custom-time').forEach(function(el) {
             el.style.zIndex = '0';
             el.style.pointerEvents = 'none';
+            el.style.width = '2px';
+            el.style.backgroundColor = '#e65100';
+            el.style.opacity = '0.4';
         });
     }, 100);
 

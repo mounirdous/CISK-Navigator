@@ -77,3 +77,6 @@ requirements-*.txt
 .local-pc-notes
 .coverage
 coverage.json
+
+# Terminal Paste Image folder
+.cp-images/
