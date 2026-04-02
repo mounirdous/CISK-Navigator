@@ -203,10 +203,10 @@
 .vis-item.item-milestone .vis-item-content { color: white !important; }
 
 /* Milestone vertical markers */
-.vis-custom-time[id^="ms_"] { background-color: #e65100 !important; width: 2px !important; z-index: 2; }
+.vis-custom-time[id^="ms_"] { background-color: #e65100 !important; width: 2px !important; z-index: 0 !important; pointer-events: none !important; opacity: 0.6; }
 .vis-custom-time[id^="ms_"] .vis-custom-time-marker {
     background: #e65100; color: white; font-size: 0.65rem; font-weight: 700;
-    padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+    padding: 1px 6px; border-radius: 3px; white-space: nowrap; pointer-events: none;
 }
 .vis-item.item-completed  { opacity:0.45; }
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
