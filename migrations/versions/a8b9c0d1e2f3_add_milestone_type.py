@@ -14,11 +14,19 @@ depends_on = None
 
 
 def upgrade():
+    # ALTER TYPE ... ADD VALUE cannot run inside a transaction
+    op.execute("COMMIT")
     op.execute("ALTER TYPE action_item_type ADD VALUE IF NOT EXISTS 'milestone'")
+    # Re-open transaction for DDL
+    op.execute("BEGIN")
     op.add_column("action_items", sa.Column("is_global", sa.Boolean(), nullable=False, server_default="false"))
     op.add_column("action_items", sa.Column("milestone_category", sa.String(50), nullable=True))
+    op.add_column("action_items", sa.Column("tags", sa.JSON(), nullable=True))
+    op.add_column("organizations", sa.Column("action_tags", sa.JSON(), nullable=True))
 
 
 def downgrade():
+    op.drop_column("organizations", "action_tags")
+    op.drop_column("action_items", "tags")
     op.drop_column("action_items", "milestone_category")
     op.drop_column("action_items", "is_global")

@@ -13,6 +13,8 @@ depends_on = None
 
 
 def upgrade():
+    # ALTER TYPE ... ADD VALUE cannot run inside a transaction
+    op.execute("COMMIT")
     op.execute("ALTER TYPE action_item_mention_entity_type ADD VALUE IF NOT EXISTS 'stakeholder'")
 
 
