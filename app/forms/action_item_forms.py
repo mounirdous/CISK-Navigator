@@ -12,7 +12,7 @@ class ActionItemCreateForm(FlaskForm):
 
     type = SelectField(
         "Type",
-        choices=[("memo", "Memo"), ("action", "Action")],
+        choices=[("action", "Action"), ("memo", "Memo"), ("milestone", "Milestone")],
         default="action",
         validators=[DataRequired()],
     )
@@ -94,7 +94,7 @@ class ActionItemFilterForm(FlaskForm):
 
     type_filter = SelectField(
         "Type",
-        choices=[("all", "All"), ("memo", "Memos"), ("action", "Actions")],
+        choices=[("all", "All"), ("action", "Actions"), ("memo", "Memos"), ("milestone", "Milestones")],
         default="all",
     )
 

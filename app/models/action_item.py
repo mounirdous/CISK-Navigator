@@ -35,7 +35,10 @@ class ActionItem(db.Model):
     organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
 
     # Type and content
-    type = db.Column(Enum("memo", "action", name="action_item_type"), nullable=False, default="action")
+    type = db.Column(Enum("memo", "action", "milestone", name="action_item_type"), nullable=False, default="action")
+    is_global = db.Column(db.Boolean, nullable=False, default=False, comment="Visible across all workspaces")
+    milestone_category = db.Column(db.String(50), nullable=True, comment="Legacy single category — use tags instead")
+    tags = db.Column(db.JSON, nullable=True, comment="Tag categories: ['contract', 'meeting', ...]")
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
 

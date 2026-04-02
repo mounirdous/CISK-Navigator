@@ -97,6 +97,7 @@ def index():
         "overdue_actions": sum(1 for i in items if i.is_overdue),
         "completed_actions": sum(1 for i in items if i.type == "action" and i.status == "completed"),
         "total_memos": sum(1 for i in items if i.type == "memo"),
+        "total_milestones": sum(1 for i in items if i.type == "milestone"),
     }
 
     # Filter form for persistence
@@ -305,6 +306,8 @@ def index():
             "status": item.status,
             "priority": item.priority,
             "type": item.type,
+            "milestone_category": item.milestone_category,
+            "is_global": item.is_global,
             "start_date": item.start_date.isoformat() if item.start_date else None,
             "due_date": item.due_date.isoformat() if item.due_date else None,
             "created_at": item.created_at.strftime("%Y-%m-%d"),
@@ -410,17 +413,32 @@ def create():
                 governance_body_ids=gb_ids,
             )
 
-            flash(f"{'Action' if item.type == 'action' else 'Memo'} created successfully!", "success")
+            # Set global scope and tags
+            item.is_global = request.form.get("is_global") == "1"
+            import json as _json
+            _tags_raw = request.form.get("tags_json", "[]")
+            try:
+                item.tags = _json.loads(_tags_raw) or None
+            except (ValueError, TypeError):
+                item.tags = None
+            db.session.commit()
+
+            type_labels = {"action": "Action", "memo": "Memo", "milestone": "Milestone"}
+            flash(f"{type_labels.get(item.type, 'Item')} created successfully!", "success")
             return redirect(return_to or url_for("action_items.index"))
 
         except Exception as e:
             db.session.rollback()
             flash(f"Error creating item: {str(e)}", "danger")
 
+    org = Organization.query.get(org_id)
+    action_tags = org.action_tags or ["contract", "meeting", "deadline", "go-live", "review", "checkpoint", "follow-up", "escalation"]
+
     return render_template(
         "action_items/create.html",
         form=form,
         governance_bodies=governance_bodies,
+        action_tags=action_tags,
         return_to=return_to or "",
         csrf_token=generate_csrf,
     )
@@ -488,6 +506,15 @@ def edit(item_id):
             )
 
             if updated_item:
+                # Save tags and global flag
+                import json as _json
+                updated_item.is_global = request.form.get("is_global") == "1"
+                _tags_raw = request.form.get("tags_json", "[]")
+                try:
+                    updated_item.tags = _json.loads(_tags_raw) or None
+                except (ValueError, TypeError):
+                    pass
+                db.session.commit()
                 flash("Item updated successfully!", "success")
                 return redirect(return_to or url_for("action_items.index"))
             else:
@@ -499,6 +526,9 @@ def edit(item_id):
 
     entity_links = EntityLink.get_links_for_entity("action_item", item.id, user_id=current_user.id)
 
+    org = Organization.query.get(item.organization_id)
+    action_tags = org.action_tags or ["contract", "meeting", "deadline", "go-live", "review", "checkpoint", "follow-up", "escalation"]
+
     return render_template(
         "action_items/edit.html",
         form=form,
@@ -506,6 +536,7 @@ def edit(item_id):
         governance_bodies=governance_bodies,
         current_gb_ids=current_gb_ids,
         entity_links=entity_links,
+        action_tags=action_tags,
         return_to=return_to or "",
         csrf_token=generate_csrf,
     )

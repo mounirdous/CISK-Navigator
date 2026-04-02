@@ -4,6 +4,16 @@
 
 {% block extra_css %}
 <style>
+.ms-cat-chip {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.35rem 0.8rem; border-radius: 20px; font-size: 0.8rem;
+    font-weight: 600; cursor: pointer; transition: all 0.15s;
+    border: 2px solid #e2e8f0; background: white; color: #64748b;
+}
+.ms-cat-chip:hover { border-color: var(--cat-color); color: var(--cat-color); }
+.ms-cat-chip.active { background: var(--cat-color); color: white; border-color: var(--cat-color); }
+.ms-cat-chip i { font-size: 0.85rem; }
+
 .autocomplete-dropdown {
     position: absolute;
     background: white;
@@ -92,7 +102,7 @@
                             <div id="mention-autocomplete" class="autocomplete-dropdown" style="display: none;"></div>
                         </div>
 
-                        <!-- Action-specific fields (shown conditionally) -->
+                        <!-- Action-specific fields (status + priority) -->
                         <div id="action-fields">
                             <hr class="my-4">
                             <h5 class="mb-3">Action Details</h5>
@@ -119,7 +129,7 @@
                                 {% endif %}
                             </div>
 
-                            <!-- Start Date / Due Date -->
+                            <!-- Start Date / Due Date (actions) -->
                             <div class="row g-2 mb-3">
                                 <div class="col-6">
                                     <label for="start_date" class="form-label">{{ form.start_date.label.text }}</label>
@@ -139,6 +149,34 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Milestone date (shown for milestones only) -->
+                        <div id="milestone-fields" style="display:none;">
+                            <hr class="my-4">
+                            <h5 class="mb-3"><i class="bi bi-diamond-fill" style="color:#e65100;"></i> Milestone Details</h5>
+                            <div class="mb-3">
+                                <label for="due_date_ms" class="form-label fw-semibold">Milestone Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="due_date_ms"
+                                       onchange="document.getElementById('due_date').value = this.value;">
+                                <div class="form-text">The date of this milestone event</div>
+                            </div>
+                        </div>
+
+                        <!-- Tags (for all types) -->
+                        {% if action_tags %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-tags"></i> Tags</label>
+                            <input type="hidden" name="tags_json" id="tags_json" value="[]">
+                            <div class="d-flex flex-wrap gap-2" id="ms-tag-chips">
+                                {% for tag in action_tags %}
+                                <span class="ms-cat-chip" data-tag="{{ tag }}" style="--cat-color:#1565c0;"
+                                      onclick="toggleTag(this);">
+                                    {{ tag | capitalize }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
 
                         <!-- Owner -->
                         <div class="mb-3">
@@ -165,7 +203,20 @@
                             {% endif %}
                             <div class="form-text">
                                 <strong>Private:</strong> Only visible to you<br>
-                                <strong>Shared:</strong> Visible to everyone in your organization
+                                <strong>Shared:</strong> Visible to everyone in your workspace
+                            </div>
+                        </div>
+
+                        <!-- Global scope -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_global" id="is_global" value="1">
+                                <label class="form-check-label" for="is_global">
+                                    <i class="bi bi-globe2"></i> <strong>Cross-workspace</strong>
+                                </label>
+                            </div>
+                            <div class="form-text">
+                                Visible in all workspaces on this instance (e.g. board meetings, contract renewals)
                             </div>
                         </div>
 
@@ -234,11 +285,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const typeSelect = document.getElementById('type-select');
     const actionFields = document.getElementById('action-fields');
 
+    const milestoneFields = document.getElementById('milestone-fields');
+
+    // Tag toggle
+    window.toggleTag = function(chip) {
+        chip.classList.toggle('active');
+        var selected = [];
+        document.querySelectorAll('.ms-cat-chip.active').forEach(function(c) { selected.push(c.dataset.tag); });
+        document.getElementById('tags_json').value = JSON.stringify(selected);
+    };
+
     function toggleActionFields() {
         if (typeSelect.value === 'action') {
             actionFields.style.display = 'block';
+            milestoneFields.style.display = 'none';
+        } else if (typeSelect.value === 'milestone') {
+            actionFields.style.display = 'none';
+            milestoneFields.style.display = 'block';
         } else {
             actionFields.style.display = 'none';
+            milestoneFields.style.display = 'none';
         }
     }
 

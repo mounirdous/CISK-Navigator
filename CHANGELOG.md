@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.9.0] - 2026-04-02
+
+### Added
+- **Milestones** — new item type in Action Register alongside Actions and Memos. Diamond marker on timeline, orange badge in table, filter pill, stats counter. Milestones have a date but no status/priority workflow
+- **Cross-workspace scope** (`is_global`) — any action, memo, or milestone can be marked as "Cross-workspace" to appear in all workspaces on the instance (e.g. board meetings, contract renewals)
+- **Stakeholder-linked contributions** — KPI contributor autocomplete includes stakeholders; contributions auto-link to stakeholder records; contributor name is clickable link to stakeholder profile
+- **Activity on stakeholder page** — stakeholder edit page shows all actions/memos mentioning this stakeholder, decisions referencing them, and KPI contributions they've made
+- Migration: `z7a8b9c0d1e2` (stakeholder_id on contributions), `a8b9c0d1e2f3` (milestone type + is_global)
+
 ## [7.8.0] - 2026-04-01
 
 ### Added

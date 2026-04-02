@@ -37,7 +37,13 @@ class ActionItemService:
         """
         from app.models.action_item import action_item_governance_body
 
-        query = ActionItem.query.filter_by(organization_id=organization_id).options(joinedload(ActionItem.mentions))
+        # Include items from this org + global items from all orgs
+        query = ActionItem.query.filter(
+            or_(
+                ActionItem.organization_id == organization_id,
+                ActionItem.is_global.is_(True),
+            )
+        ).options(joinedload(ActionItem.mentions))
 
         # Apply type filter
         if item_type:

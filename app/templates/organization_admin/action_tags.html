@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Action Tags - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+    color: white; padding: 2rem; border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem; text-align: center;
+}
+.page-header-icon {
+    width: 60px; height: 60px; background: rgba(255,255,255,0.2);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem; margin: 0 auto 1rem; backdrop-filter: blur(10px);
+}
+.tag-chip {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.4rem 0.75rem; border-radius: 10px; font-size: 0.88rem; font-weight: 600;
+    background: #e3f2fd; color: #0d47a1; border: 1.5px solid #90caf9;
+    transition: all 0.15s;
+}
+.tag-chip .remove-btn {
+    cursor: pointer; font-size: 0.75rem; opacity: 0.5; transition: opacity 0.15s;
+}
+.tag-chip .remove-btn:hover { opacity: 1; color: #dc2626; }
+.tag-chip .lock-icon { font-size: 0.65rem; opacity: 0.4; }
+.tag-chip.in-use { background: #bbdefb; border-style: dashed; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-6">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-tags-fill"></i>
+                </div>
+                <h2 class="mb-1">Action &amp; Milestone Tags</h2>
+                <p class="mb-0 opacity-75">Configure tag categories for actions, memos, and milestones</p>
+            </div>
+
+            <div class="card-body" style="padding: 2rem;">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action_tags_json" id="actionTagsJson">
+
+                    <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">
+                        Tags help categorize items in the Action Register. Tags currently in use cannot be removed.
+                    </p>
+
+                    <div id="tagsList" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-bottom:1.5rem; min-height:40px;"></div>
+
+                    <div style="display:flex; gap:0.4rem; margin-bottom:1.5rem;">
+                        <input type="text" class="form-control" id="newTagInput" placeholder="New tag name..." style="max-width:250px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addTag();}">
+                        <button type="button" class="btn btn-outline-primary" onclick="addTag()">
+                            <i class="bi bi-plus-lg"></i> Add Tag
+                        </button>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Save Tags
+                        </button>
+                        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var _tags = {{ current_tags | tojson }};
+var _usedTags = new Set({{ used_tags | tojson }});
+
+function renderTags() {
+    var container = document.getElementById('tagsList');
+    container.innerHTML = '';
+    _tags.forEach(function(tag) {
+        var inUse = _usedTags.has(tag);
+        var el = document.createElement('span');
+        el.className = 'tag-chip' + (inUse ? ' in-use' : '');
+        el.innerHTML = tag;
+        if (!inUse) {
+            el.innerHTML += ' <i class="bi bi-x-circle remove-btn" title="Remove" onclick="removeTag(\'' + tag + '\')"></i>';
+        } else {
+            el.innerHTML += ' <i class="bi bi-lock-fill lock-icon" title="In use — cannot remove"></i>';
+        }
+        container.appendChild(el);
+    });
+    document.getElementById('actionTagsJson').value = JSON.stringify(_tags);
+}
+
+function addTag() {
+    var input = document.getElementById('newTagInput');
+    var tag = input.value.trim().toLowerCase().replace(/[^a-z0-9_ -]/g, '').replace(/\s+/g, '-');
+    if (!tag || _tags.includes(tag)) { input.value = ''; return; }
+    _tags.push(tag);
+    input.value = '';
+    renderTags();
+}
+
+function removeTag(tag) {
+    if (_usedTags.has(tag)) return;
+    _tags = _tags.filter(function(t) { return t !== tag; });
+    renderTags();
+}
+
+renderTags();
+</script>
+{% endblock %}

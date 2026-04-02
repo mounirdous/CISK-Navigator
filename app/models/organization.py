@@ -76,6 +76,11 @@ class Organization(db.Model):
         db.JSON, nullable=True,
         comment="Decision tag categories: ['scope', 'budget', ...]"
     )
+    # Action/milestone tags (JSON array of strings) — configurable per org
+    action_tags = db.Column(
+        db.JSON, nullable=True,
+        comment="Action register tag categories: ['contract', 'meeting', 'deadline', ...]"
+    )
 
     # Soft delete fields
     is_deleted = db.Column(db.Boolean, default=False, nullable=False, index=True)

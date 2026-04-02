@@ -1157,6 +1157,17 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.9",
+            "date": "April 2, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Milestones</strong> — a new item type in the Action Register for date-anchored events: contract expirations, board meetings, go-live dates, key reviews. Milestones appear as orange diamond markers on the timeline and have their own filter pill and stats counter.",
+                "<strong>Cross-workspace items</strong> — any action, memo, or milestone can be marked as &ldquo;Cross-workspace&rdquo; so it appears in all workspaces on the instance. Perfect for company-wide deadlines or shared events.",
+                "<strong>Stakeholder-linked contributions</strong> — when entering KPI values, the contributor autocomplete now includes stakeholders. If a stakeholder name matches, the contribution is automatically linked. The contributor name becomes a clickable link to the stakeholder's profile.",
+                "<strong>Stakeholder activity feed</strong> — the stakeholder profile page now shows all actions, memos, and decisions that mention this stakeholder, plus all KPI contributions they've made. Full traceability from person to data.",
+            ],
+        },
+        {
             "version": "7.8",
             "date": "April 1, 2026",
             "tags": ["feature", "fix"],

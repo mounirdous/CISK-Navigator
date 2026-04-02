@@ -348,6 +348,49 @@ def decision_tags():
     )
 
 
+@bp.route("/action-tags", methods=["GET", "POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def action_tags():
+    """Configure action register tag categories (for actions, memos, milestones)"""
+    import json as _json
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    if request.method == "POST":
+        tags_json = request.form.get("action_tags_json", "")
+        if tags_json:
+            try:
+                org.action_tags = _json.loads(tags_json)
+            except (ValueError, TypeError):
+                pass
+        db.session.commit()
+        flash("Action tags updated", "success")
+        return redirect(url_for("organization_admin.action_tags"))
+
+    default_tags = ["contract", "meeting", "deadline", "go-live", "review", "checkpoint", "follow-up", "escalation"]
+    current_tags = org.action_tags or default_tags
+
+    # Find used tags
+    _used_tags = set()
+    _items = ActionItem.query.filter_by(organization_id=org_id).all()
+    for _item in _items:
+        if _item.tags:
+            for _t in _item.tags:
+                _used_tags.add(_t)
+        if _item.milestone_category:
+            _used_tags.add(_item.milestone_category)
+
+    return render_template(
+        "organization_admin/action_tags.html",
+        current_tags=current_tags,
+        used_tags=list(_used_tags),
+        csrf_token=generate_csrf,
+    )
+
+
 # Impact Levels Configuration
 
 

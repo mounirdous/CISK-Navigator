@@ -199,6 +199,15 @@
 .vis-item.item-overdue    { border-width:2px; border-style:solid; }
 .vis-item.item-overdue .vis-item-content::before { content:"⚠ "; }
 .vis-item.item-memo       { border-style:dashed; opacity:0.85; }
+.vis-item.item-milestone  { background: linear-gradient(135deg, #ff6d00, #e65100) !important; color:white !important; border:2px solid #bf360c !important; font-weight:700; border-radius:4px; }
+.vis-item.item-milestone .vis-item-content { color: white !important; }
+
+/* Milestone vertical markers */
+.vis-custom-time[id^="ms_"] { background-color: #e65100 !important; width: 2px !important; z-index: 2; }
+.vis-custom-time[id^="ms_"] .vis-custom-time-marker {
+    background: #e65100; color: white; font-size: 0.65rem; font-weight: 700;
+    padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+}
 .vis-item.item-completed  { opacity:0.45; }
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
 .vis-item.item-undated    { border-style:dotted; opacity:0.7; }
@@ -527,6 +536,17 @@
                     </div>
                 </div>
             </div>
+            <div class="col">
+                <div class="stat-card d-flex align-items-center gap-3">
+                    <div class="stat-card-icon" style="background:#fff3e0;">
+                        <i class="bi bi-diamond-fill" style="color:#e65100;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:1.4rem; font-weight:700; line-height:1;">{{ stats.total_milestones }}</div>
+                        <div style="font-size:0.75rem; color:#78909c;">Milestones</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -540,7 +560,7 @@
             <div class="col-auto">
                 <div class="filter-section-label">Type</div>
                 <div class="d-flex gap-2 flex-wrap">
-                    {% for val, label in [('all','All'), ('action','Actions'), ('memo','Memos')] %}
+                    {% for val, label in [('all','All'), ('action','Actions'), ('memo','Memos'), ('milestone','Milestones')] %}
                     <label class="filter-pill {% if current_filters.type == val %}active{% endif %}">
                         <input type="radio" name="type_filter" value="{{ val }}" {% if current_filters.type == val %}checked{% endif %} onchange="document.getElementById('filter-form').submit()">
                         {{ label }}
@@ -797,7 +817,11 @@
 
                     <!-- Type -->
                     <td class="act-d2">
-                        {% if item.type == 'memo' %}
+                        {% if item.type == 'milestone' %}
+                        <span class="badge" style="background:#fff3e0; color:#e65100; font-size:0.72rem;">
+                            <i class="bi bi-diamond-fill"></i> Milestone
+                        </span>
+                        {% elif item.type == 'memo' %}
                         <span class="badge" style="background:#e3f2fd; color:#1565c0; font-size:0.72rem;">
                             <i class="bi bi-sticky"></i> Memo
                         </span>
@@ -805,6 +829,18 @@
                         <span class="badge" style="background:#e8f5e9; color:#2e7d32; font-size:0.72rem;">
                             <i class="bi bi-check2"></i> Action
                         </span>
+                        {% endif %}
+                        {% if item.is_global %}
+                        <span class="badge" style="background:#e0f2f1; color:#00695c; font-size:0.6rem; margin-left:2px;" title="Visible across all workspaces">
+                            <i class="bi bi-globe2"></i>
+                        </span>
+                        {% endif %}
+                        {% if item.tags %}
+                        <div style="margin-top:2px;">
+                            {% for tag in item.tags %}
+                            <span class="badge" style="background:#e3f2fd; color:#1565c0; font-size:0.58rem;">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
                         {% endif %}
                     </td>
 
@@ -1591,12 +1627,13 @@ function buildVisData(groupBy) {
             `priority-${item.priority}`,
             item.is_overdue ? 'item-overdue' : '',
             item.type === 'memo' ? 'item-memo' : '',
+            item.type === 'milestone' ? 'item-milestone' : '',
             item.status === 'completed' ? 'item-completed' : '',
             item.status === 'cancelled' ? 'item-cancelled' : '',
             isUndated ? 'item-undated' : '',
         ].filter(Boolean).join(' ');
 
-        const typeIcon = item.type === 'memo' ? '📝 ' : '';
+        const typeIcon = item.type === 'memo' ? '📝 ' : item.type === 'milestone' ? '◆ ' : '';
         // For range bars show short label; for boxes/points show full title (no trunc) since bar is narrow
         const shortLabel = item.title_text.length > 30 ? item.title_text.slice(0, 28) + '…' : item.title_text;
 
@@ -1608,7 +1645,11 @@ function buildVisData(groupBy) {
             className: classes,
         };
 
-        if (hasStart && hasDue) {
+        // Milestones always render as a point marker on their due_date
+        if (item.type === 'milestone') {
+            visItem.start = item.due_date || today;
+            visItem.type = 'point';
+        } else if (hasStart && hasDue) {
             // Range bar: start_date → due_date
             visItem.start = item.start_date;
             visItem.end = item.due_date;
@@ -1635,8 +1676,15 @@ function buildVisData(groupBy) {
 
 function buildTooltip(item) {
     let t = `<div style="max-width:280px;padding:6px 8px;font-size:0.82rem;">`;
-    t += `<strong>${item.title_text}</strong><br>`;
-    t += `<span style="color:#78909c;">Status: ${item.status} · Priority: ${item.priority}</span><br>`;
+    t += `<strong>${item.type === 'milestone' ? '◆ ' : ''}${item.title_text}</strong><br>`;
+    if (item.type === 'milestone') {
+        var catLabel = item.milestone_category ? ` · ${item.milestone_category.charAt(0).toUpperCase() + item.milestone_category.slice(1)}` : '';
+        t += `<span style="color:#e65100; font-weight:600;">Milestone${catLabel}</span>`;
+        if (item.is_global) t += ` <span style="color:#00695c;">🌐 Cross-workspace</span>`;
+        t += '<br>';
+    } else {
+        t += `<span style="color:#78909c;">Status: ${item.status} · Priority: ${item.priority}</span><br>`;
+    }
     t += `<span style="color:#78909c;">Owner: ${item.owner}</span><br>`;
     if (item.start_date) t += `<span style="color:#546e7a;">Start: ${item.start_date}</span><br>`;
     if (item.due_date) t += `<span style="color:${item.is_overdue ? '#b71c1c' : '#546e7a'};">Due: ${item.due_date}${item.is_overdue ? ' ⚠ Overdue' : ''}</span><br>`;
@@ -1717,6 +1765,20 @@ function renderTimeline(groupBy) {
             }
         });
     }
+    // Add milestone vertical markers
+    var msIdx = 0;
+    TL_DATA.forEach(function(item) {
+        if (item.type === 'milestone' && item.due_date) {
+            var msId = 'ms_' + (msIdx++);
+            var catLabel = item.milestone_category ? item.milestone_category.charAt(0).toUpperCase() + item.milestone_category.slice(1) + ': ' : '';
+            try {
+                tlInstance.addCustomTime(item.due_date, msId);
+                tlInstance.setCustomTimeTitle('◆ ' + catLabel + item.title_text, msId);
+                tlInstance.setCustomTimeMarker('◆ ' + catLabel + item.title_text, msId);
+            } catch(e) {}
+        }
+    });
+
     // Fit all items in view (200ms to ensure vis.js layout is complete)
     setTimeout(function() { if (tlInstance) tlInstance.fit({ animation: true }); }, 200);
     renderUndated();
@@ -1762,9 +1824,9 @@ function renderUndated() {
 
 function showItemDetail(item) {
     if (!item) return;
-    document.getElementById('idp-title').textContent = item.title_text;
-    document.getElementById('idp-status').textContent = item.status;
-    document.getElementById('idp-priority').textContent = item.priority;
+    document.getElementById('idp-title').textContent = (item.type === 'milestone' ? '◆ ' : '') + item.title_text;
+    document.getElementById('idp-status').textContent = item.type === 'milestone' ? 'Milestone' : item.status;
+    document.getElementById('idp-priority').textContent = item.type === 'milestone' ? '—' : item.priority;
     document.getElementById('idp-owner').textContent = item.owner;
     const startRow = document.getElementById('idp-start-row');
     if (item.start_date) {

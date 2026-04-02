@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_entity_links.html" import render_links %}
 
-{% block title %}Edit {{ 'Action' if item.type == 'action' else 'Memo' }}{% endblock %}
+{% block title %}Edit {{ {'action': 'Action', 'memo': 'Memo', 'milestone': 'Milestone'}.get(item.type, 'Item') }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -44,7 +44,7 @@
         <div class="col-md-8 offset-md-2">
             <div class="card">
                 <div class="card-header">
-                    <h4>Edit {{ 'Action' if item.type == 'action' else 'Memo' }}</h4>
+                    <h4>Edit {{ {'action': 'Action', 'memo': 'Memo', 'milestone': 'Milestone'}.get(item.type, 'Item') }}</h4>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('action_items.edit', item_id=item.id) }}" novalidate>
@@ -55,7 +55,9 @@
                         <div class="mb-3">
                             <label class="form-label">Type</label>
                             <div>
-                                {% if item.type == 'memo' %}
+                                {% if item.type == 'milestone' %}
+                                    <span class="badge" style="background:#fff3e0; color:#e65100;"><i class="bi bi-diamond-fill"></i> Milestone</span>
+                                {% elif item.type == 'memo' %}
                                     <span class="badge bg-info">📝 Memo</span>
                                 {% else %}
                                     <span class="badge bg-primary">✓ Action</span>
@@ -219,6 +221,44 @@
                         </div>
                         {% endif %}
 
+                        <!-- Milestone date -->
+                        {% if item.type == 'milestone' %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-diamond-fill" style="color:#e65100;"></i> Milestone Date</label>
+                            {{ form.due_date(class="form-control", type="date") }}
+                        </div>
+                        {% endif %}
+
+                        <!-- Tags -->
+                        {% if action_tags %}
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold"><i class="bi bi-tags"></i> Tags</label>
+                            <input type="hidden" name="tags_json" id="edit_tags_json" value="{{ (item.tags or []) | tojson }}">
+                            <div class="d-flex flex-wrap gap-2">
+                                {% set current_item_tags = item.tags or [] %}
+                                {% for tag in action_tags %}
+                                <span class="badge rounded-pill {% if tag in current_item_tags %}text-bg-primary{% else %}text-bg-light text-dark{% endif %}"
+                                      style="cursor:pointer; font-size:0.78rem; padding:0.35rem 0.7rem;"
+                                      data-tag="{{ tag }}"
+                                      onclick="toggleEditTag(this);">
+                                    {{ tag | capitalize }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Cross-workspace -->
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="is_global" id="is_global" value="1" {% if item.is_global %}checked{% endif %}>
+                                <label class="form-check-label" for="is_global">
+                                    <i class="bi bi-globe2"></i> <strong>Cross-workspace</strong>
+                                </label>
+                            </div>
+                            <div class="form-text">Visible in all workspaces on this instance</div>
+                        </div>
+
                         <!-- Metadata -->
                         <div class="alert alert-light mt-4">
                             <small class="text-muted">
@@ -278,6 +318,15 @@ function updateGbLabel(id, color, checked) {
 }
 
 // Append missing mentions to description so they're not lost on save
+function toggleEditTag(chip) {
+    chip.classList.toggle('text-bg-primary');
+    chip.classList.toggle('text-bg-light');
+    chip.classList.toggle('text-dark');
+    var selected = [];
+    document.querySelectorAll('[data-tag].text-bg-primary').forEach(function(c) { selected.push(c.dataset.tag); });
+    document.getElementById('edit_tags_json').value = JSON.stringify(selected);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     var desc = document.getElementById('description-field');
     if (desc) {
