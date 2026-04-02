@@ -770,12 +770,59 @@ def create_app(config_name=None):
             db.create_all()
 
         try:
+            _ensure_schema_fixes()
+        except Exception as e:
+            print(f"Note: Skipping schema fixes: {e}")
+
+        try:
             _bootstrap_admin()
         except Exception as e:
             # During migrations, schema might not match models yet - that's OK
             print(f"Note: Skipping bootstrap (likely during migration): {e}")
 
     return app
+
+
+def _ensure_schema_fixes():
+    """Apply schema fixes that migrations may have failed to apply (e.g. enum ADD VALUE in transactions)."""
+    from sqlalchemy import text, inspect
+
+    try:
+        with db.engine.connect() as conn:
+            # Fix enum values (safe to re-run — IF NOT EXISTS)
+            conn.execute(text("COMMIT"))  # exit any failed transaction
+            conn.execute(text("ALTER TYPE action_item_mention_entity_type ADD VALUE IF NOT EXISTS 'stakeholder'"))
+            conn.execute(text("ALTER TYPE action_item_type ADD VALUE IF NOT EXISTS 'milestone'"))
+
+            # Fix missing columns
+            inspector = inspect(db.engine)
+            ai_cols = {c["name"] for c in inspector.get_columns("action_items")}
+            org_cols = {c["name"] for c in inspector.get_columns("organizations")}
+            contrib_cols = {c["name"] for c in inspector.get_columns("contributions")}
+
+            fixes = []
+            if "is_global" not in ai_cols:
+                fixes.append("ALTER TABLE action_items ADD COLUMN is_global BOOLEAN NOT NULL DEFAULT FALSE")
+            if "milestone_category" not in ai_cols:
+                fixes.append("ALTER TABLE action_items ADD COLUMN milestone_category VARCHAR(50)")
+            if "tags" not in ai_cols:
+                fixes.append("ALTER TABLE action_items ADD COLUMN tags JSON")
+            if "action_tags" not in org_cols:
+                fixes.append("ALTER TABLE organizations ADD COLUMN action_tags JSON")
+            if "stakeholder_id" not in contrib_cols:
+                fixes.append("ALTER TABLE contributions ADD COLUMN stakeholder_id INTEGER REFERENCES stakeholders(id) ON DELETE SET NULL")
+
+            if fixes:
+                conn.execute(text("BEGIN"))
+                for fix in fixes:
+                    print(f"[SCHEMA FIX] {fix}")
+                    conn.execute(text(fix))
+                conn.execute(text("COMMIT"))
+                print(f"[SCHEMA FIX] Applied {len(fixes)} fixes")
+            else:
+                print("[SCHEMA FIX] Schema is up to date")
+    except Exception as e:
+        print(f"[SCHEMA FIX] Error (non-fatal): {e}")
 
 
 def _bootstrap_admin():
