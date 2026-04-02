@@ -59,6 +59,35 @@ from app.services import AuditService, ValueTypeUsageService, YAMLExportService,
 
 bp = Blueprint("organization_admin", __name__, url_prefix="/org-admin")
 
+_DEFAULT_ACTION_TAGS = [
+    {"name": "contract", "icon": "bi-file-earmark-text", "color": "#1565c0"},
+    {"name": "meeting", "icon": "bi-people", "color": "#00695c"},
+    {"name": "deadline", "icon": "bi-clock", "color": "#c62828"},
+    {"name": "go-live", "icon": "bi-rocket", "color": "#2e7d32"},
+    {"name": "review", "icon": "bi-eye", "color": "#6a1b9a"},
+    {"name": "checkpoint", "icon": "bi-flag-fill", "color": "#ef6c00"},
+    {"name": "follow-up", "icon": "bi-arrow-repeat", "color": "#0277bd"},
+    {"name": "escalation", "icon": "bi-exclamation-triangle", "color": "#d84315"},
+]
+
+
+def normalize_action_tags(raw_tags):
+    """Normalize action tags to [{name, icon, color}] format.
+
+    Handles both legacy string lists and new object format for seamless deployment.
+    """
+    if not raw_tags:
+        return list(_DEFAULT_ACTION_TAGS)
+    result = []
+    for t in raw_tags:
+        if isinstance(t, str):
+            # Legacy plain-string tag — find matching default or use fallback
+            default = next((d for d in _DEFAULT_ACTION_TAGS if d["name"] == t), None)
+            result.append(default or {"name": t, "icon": "bi-tag", "color": "#1565c0"})
+        elif isinstance(t, dict) and "name" in t:
+            result.append({"name": t["name"], "icon": t.get("icon", "bi-tag"), "color": t.get("color", "#1565c0")})
+    return result
+
 
 class OnboardingConfirmForm(FlaskForm):
     """Simple form for onboarding confirmation steps"""
@@ -370,8 +399,7 @@ def action_tags():
         flash("Action tags updated", "success")
         return redirect(url_for("organization_admin.action_tags"))
 
-    default_tags = ["contract", "meeting", "deadline", "go-live", "review", "checkpoint", "follow-up", "escalation"]
-    current_tags = org.action_tags or default_tags
+    current_tags = normalize_action_tags(org.action_tags)
 
     # Find used tags
     _used_tags = set()

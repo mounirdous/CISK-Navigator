@@ -203,9 +203,9 @@
 .vis-item.item-milestone .vis-item-content { color: white !important; }
 
 /* Milestone vertical markers — behind items, thin, click-through */
-.vis-custom-time { z-index: 0 !important; pointer-events: none !important;
+.vis-custom-time:not(.vis-current-time) { z-index: 0 !important; pointer-events: none !important;
                    background-color: #e65100 !important; width: 2px !important; opacity: 0.4; }
-.vis-custom-time > * { pointer-events: none !important; }
+.vis-custom-time:not(.vis-current-time) > * { pointer-events: none !important; }
 .vis-item.item-completed  { opacity:0.45; }
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
 .vis-item.item-undated    { border-style:dotted; opacity:0.7; }
@@ -816,8 +816,11 @@
                     <!-- Type -->
                     <td class="act-d2">
                         {% if item.type == 'milestone' %}
-                        <span class="badge" style="background:#fff3e0; color:#e65100; font-size:0.72rem;">
-                            <i class="bi bi-diamond-fill"></i> Milestone
+                        {% set ms_tag = action_tag_config.get((item.tags or [None])[0] or '', {}) %}
+                        {% set ms_color = ms_tag.get('color', '#e65100') %}
+                        {% set ms_icon = ms_tag.get('icon', 'bi-diamond-fill') %}
+                        <span class="badge" style="background:{{ ms_color }}18; color:{{ ms_color }}; font-size:0.72rem;">
+                            <i class="bi {{ ms_icon }}"></i> Milestone
                         </span>
                         {% elif item.type == 'memo' %}
                         <span class="badge" style="background:#e3f2fd; color:#1565c0; font-size:0.72rem;">
@@ -836,7 +839,10 @@
                         {% if item.tags %}
                         <div style="margin-top:2px;">
                             {% for tag in item.tags %}
-                            <span class="badge" style="background:#e3f2fd; color:#1565c0; font-size:0.58rem;">{{ tag }}</span>
+                            {% set tc = action_tag_config.get(tag, {}) %}
+                            {% set tcolor = tc.get('color', '#1565c0') %}
+                            {% set ticon = tc.get('icon', 'bi-tag') %}
+                            <span class="badge" style="background:{{ tcolor }}18; color:{{ tcolor }}; font-size:0.58rem;"><i class="bi {{ ticon }}"></i> {{ tag }}</span>
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -1396,6 +1402,7 @@ updateCount();
 <script>
 // ── Timeline view ────────────────────────────────────────────────────────────
 const TL_DATA = {{ timeline_items | tojson }};
+const TAG_CONFIG = {{ action_tag_config | tojson }};
 const CSRF_TOKEN = document.querySelector('input[name=csrf_token]')?.value || '';
 const ENTITY_DEFAULTS = {{ entity_defaults | tojson }};
 // entity_parents: "initiative__42" / "system__7" / "kpi__15" → {challenge, initiative?, system?}
@@ -1585,9 +1592,10 @@ function buildVisData(groupBy) {
     const cfg = GROUP_CONFIGS[groupBy];
     const today = new Date().toISOString().split('T')[0];
 
-    // Compute item counts per group first (for badges)
+    // Compute item counts per group first (for badges) — exclude milestones (shown as vertical lines only)
     const itemGroupMap = {};
     TL_DATA.forEach(item => {
+        if (item.type === 'milestone') return;
         const isUndated = !item.start_date && !item.due_date && groupBy !== 'entity';
         const gid = isUndated ? '__undated' : cfg.getGroup(item);
         itemGroupMap[gid] = (itemGroupMap[gid] || 0) + 1;
@@ -1615,6 +1623,9 @@ function buildVisData(groupBy) {
 
     const visItemsList = [];
     TL_DATA.forEach(item => {
+        // Milestones are shown as vertical marker lines only — skip them as timeline items
+        if (item.type === 'milestone') return;
+
         const hasStart = !!item.start_date;
         const hasDue = !!item.due_date;
         // In entity view, don't override group to __undated — keep entity grouping
@@ -1625,13 +1636,12 @@ function buildVisData(groupBy) {
             `priority-${item.priority}`,
             item.is_overdue ? 'item-overdue' : '',
             item.type === 'memo' ? 'item-memo' : '',
-            item.type === 'milestone' ? 'item-milestone' : '',
             item.status === 'completed' ? 'item-completed' : '',
             item.status === 'cancelled' ? 'item-cancelled' : '',
             isUndated ? 'item-undated' : '',
         ].filter(Boolean).join(' ');
 
-        const typeIcon = item.type === 'memo' ? '📝 ' : item.type === 'milestone' ? '◆ ' : '';
+        const typeIcon = item.type === 'memo' ? '📝 ' : '';
         // For range bars show short label; for boxes/points show full title (no trunc) since bar is narrow
         const shortLabel = item.title_text.length > 30 ? item.title_text.slice(0, 28) + '…' : item.title_text;
 
@@ -1643,11 +1653,7 @@ function buildVisData(groupBy) {
             className: classes,
         };
 
-        // Milestones always render as a point marker on their due_date
-        if (item.type === 'milestone') {
-            visItem.start = item.due_date || today;
-            visItem.type = 'point';
-        } else if (hasStart && hasDue) {
+        if (hasStart && hasDue) {
             // Range bar: start_date → due_date
             visItem.start = item.start_date;
             visItem.end = item.due_date;
@@ -1692,6 +1698,13 @@ function buildTooltip(item) {
     }
     if (item.gbs.length) t += `<span style="color:#546e7a;">GB: ${item.gbs.join(', ')}</span><br>`;
     if (item.mentions.length) t += `<span style="color:#546e7a;">Links: ${item.mentions.map(m => m.text).join(', ')}</span><br>`;
+    if (item.tags && item.tags.length) {
+        t += item.tags.map(function(tg) {
+            var tc = TAG_CONFIG[tg] || {};
+            return `<span style="display:inline-block;padding:1px 5px;border-radius:4px;font-size:0.72rem;background:${tc.color || '#1565c0'}22;color:${tc.color || '#1565c0'};margin:1px 2px;">${tg}</span>`;
+        }).join('');
+        t += '<br>';
+    }
     if (item.description) t += `<span style="color:#90a4ae;">${item.description.slice(0,100)}${item.description.length>100?'…':''}</span>`;
     t += '</div>';
     return t;
@@ -1763,30 +1776,46 @@ function renderTimeline(groupBy) {
             }
         });
     }
-    // Add milestone vertical markers
+    // Add milestone vertical markers with tag-derived colors + icons
     var msIdx = 0;
+    var _msMarkers = [];  // ordered list of {color, icon, title}
     TL_DATA.forEach(function(item) {
         if (item.type === 'milestone' && item.due_date) {
             var msId = 'ms_' + (msIdx++);
             var catLabel = item.milestone_category ? item.milestone_category.charAt(0).toUpperCase() + item.milestone_category.slice(1) + ': ' : '';
-            try {
-                tlInstance.addCustomTime(item.due_date, msId);
-                tlInstance.setCustomTimeTitle('◆ ' + catLabel + item.title_text, msId);
-                tlInstance.setCustomTimeMarker('◆ ' + catLabel + item.title_text, msId);
-            } catch(e) {}
+            // Resolve tag config: tags → milestone_category → title match → default
+            var tc = null;
+            if (item.tags && item.tags.length) tc = TAG_CONFIG[item.tags[0]];
+            if (!tc && item.milestone_category) tc = TAG_CONFIG[item.milestone_category];
+            if (!tc) { var titleKey = item.title_text.toLowerCase().replace(/\s+/g, '-'); tc = TAG_CONFIG[titleKey]; }
+            var msColor = tc ? tc.color : '#e65100';
+            var msIcon = tc ? tc.icon : 'bi-diamond-fill';
+            _msMarkers.push({ color: msColor, icon: msIcon, title: item.title_text, catLabel: catLabel });
+            try { tlInstance.addCustomTime(item.due_date, msId); } catch(e) {}
         }
     });
 
-    // Force milestone markers behind items (vis.js may override CSS)
+    // Style milestone markers: color, label with icon, behind items
     setTimeout(function() {
+        var customs = [];
         document.querySelectorAll('.vis-custom-time').forEach(function(el) {
+            if (!el.classList.contains('vis-current-time')) customs.push(el);
+        });
+        customs.forEach(function(el, idx) {
+            var m = _msMarkers[idx];
+            if (!m) return;
             el.style.zIndex = '0';
             el.style.pointerEvents = 'none';
             el.style.width = '2px';
-            el.style.backgroundColor = '#e65100';
-            el.style.opacity = '0.4';
+            el.style.backgroundColor = m.color;
+            el.style.opacity = '0.6';
+            // Add a label at the top of the marker line
+            var label = document.createElement('div');
+            label.style.cssText = 'position:absolute;top:0;left:4px;white-space:nowrap;font-size:0.72rem;font-weight:600;color:' + m.color + ';pointer-events:none;z-index:1;';
+            label.innerHTML = '<i class="bi ' + m.icon + '"></i> ' + m.catLabel + m.title;
+            el.appendChild(label);
         });
-    }, 100);
+    }, 150);
 
     // Fit all items in view (200ms to ensure vis.js layout is complete)
     setTimeout(function() { if (tlInstance) tlInstance.fit({ animation: true }); }, 200);

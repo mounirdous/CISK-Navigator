@@ -18,6 +18,8 @@ from flask import Blueprint, flash, jsonify, redirect, render_template, request,
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 
+from app.routes.organization_admin import normalize_action_tags
+
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
 from app.models import ActionItem, EntityLink, EntityTypeDefault, Organization, StrategicPillar
@@ -305,6 +307,7 @@ def index():
             "priority": item.priority,
             "type": item.type,
             "milestone_category": item.milestone_category,
+            "tags": item.tags or [],
             "is_global": item.is_global,
             "start_date": item.start_date.isoformat() if item.start_date else None,
             "due_date": item.due_date.isoformat() if item.due_date else None,
@@ -347,6 +350,7 @@ def index():
         strategy_count=StrategicPillar.query.filter_by(organization_id=org_id).count(),
         impact_scale=_impact_scale,
         item_importance={item.id: _action_max_importance(item) for item in items},
+        action_tag_config={t["name"]: t for t in normalize_action_tags(Organization.query.get(org_id).action_tags)},
     )
 
 
@@ -428,7 +432,7 @@ def create():
             flash(f"Error creating item: {str(e)}", "danger")
 
     org = Organization.query.get(org_id)
-    action_tags = org.action_tags or ["contract", "meeting", "deadline", "go-live", "review", "checkpoint", "follow-up", "escalation"]
+    action_tags = normalize_action_tags(org.action_tags)
 
     return render_template(
         "action_items/create.html",
@@ -523,7 +527,7 @@ def edit(item_id):
     entity_links = EntityLink.get_links_for_entity("action_item", item.id, user_id=current_user.id)
 
     org = Organization.query.get(item.organization_id)
-    action_tags = org.action_tags or ["contract", "meeting", "deadline", "go-live", "review", "checkpoint", "follow-up", "escalation"]
+    action_tags = normalize_action_tags(org.action_tags)
 
     return render_template(
         "action_items/edit.html",

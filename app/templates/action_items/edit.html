@@ -237,11 +237,15 @@
                             <div class="d-flex flex-wrap gap-2">
                                 {% set current_item_tags = item.tags or [] %}
                                 {% for tag in action_tags %}
-                                <span class="badge rounded-pill {% if tag in current_item_tags %}text-bg-primary{% else %}text-bg-light text-dark{% endif %}"
-                                      style="cursor:pointer; font-size:0.78rem; padding:0.35rem 0.7rem;"
-                                      data-tag="{{ tag }}"
+                                {% set active = tag.name in current_item_tags %}
+                                <span class="badge rounded-pill"
+                                      style="cursor:pointer; font-size:0.78rem; padding:0.35rem 0.7rem;
+                                             background:{{ tag.color if active else '#e9ecef' }};
+                                             color:{{ 'white' if active else '#555' }};
+                                             border:1.5px solid {{ tag.color }};"
+                                      data-tag="{{ tag.name }}" data-color="{{ tag.color }}"
                                       onclick="toggleEditTag(this);">
-                                    {{ tag | capitalize }}
+                                    <i class="bi {{ tag.icon }}"></i> {{ tag.name | capitalize }}
                                 </span>
                                 {% endfor %}
                             </div>
@@ -319,13 +323,22 @@ function updateGbLabel(id, color, checked) {
 
 // Append missing mentions to description so they're not lost on save
 function toggleEditTag(chip) {
-    chip.classList.toggle('text-bg-primary');
-    chip.classList.toggle('text-bg-light');
-    chip.classList.toggle('text-dark');
+    var active = chip.dataset.active !== '1';
+    chip.dataset.active = active ? '1' : '0';
+    var color = chip.dataset.color || '#1565c0';
+    chip.style.background = active ? color : '#e9ecef';
+    chip.style.color = active ? 'white' : '#555';
     var selected = [];
-    document.querySelectorAll('[data-tag].text-bg-primary').forEach(function(c) { selected.push(c.dataset.tag); });
+    document.querySelectorAll('[data-tag]').forEach(function(c) {
+        if (c.dataset.active === '1') selected.push(c.dataset.tag);
+    });
     document.getElementById('edit_tags_json').value = JSON.stringify(selected);
 }
+// Init active state from server
+document.querySelectorAll('[data-tag]').forEach(function(c) {
+    var tags = JSON.parse(document.getElementById('edit_tags_json').value || '[]');
+    c.dataset.active = tags.includes(c.dataset.tag) ? '1' : '0';
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     var desc = document.getElementById('description-field');

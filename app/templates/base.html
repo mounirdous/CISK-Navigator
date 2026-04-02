@@ -1490,7 +1490,7 @@
 
         // Hide results when clicking outside
         document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+            if (searchInput && searchResults && !searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                 searchResults.style.display = 'none';
             }
         });
@@ -1563,6 +1563,7 @@
         const searchInput = document.getElementById('liveSearchInput');
         const searchHints = document.getElementById('searchHints');
         const searchResults = document.getElementById('liveSearchResults');
+        if (!searchInput) return;
 
         // Global keyboard shortcut
         document.addEventListener('keydown', function(e) {
@@ -1575,10 +1576,10 @@
 
             // Escape to close search and blur
             if (e.key === 'Escape') {
-                if (searchResults.style.display === 'block' || searchHints.style.display === 'block') {
+                if ((searchResults && searchResults.style.display === 'block') || (searchHints && searchHints.style.display === 'block')) {
                     e.preventDefault();
-                    searchResults.style.display = 'none';
-                    searchHints.style.display = 'none';
+                    if (searchResults) searchResults.style.display = 'none';
+                    if (searchHints) searchHints.style.display = 'none';
                     searchInput.blur();
                 }
             }
@@ -1587,24 +1588,24 @@
         // Show hints on focus (if empty)
         searchInput.addEventListener('focus', function() {
             if (this.value.trim().length === 0) {
-                searchHints.style.display = 'block';
-                searchResults.style.display = 'none';
+                if (searchHints) searchHints.style.display = 'block';
+                if (searchResults) searchResults.style.display = 'none';
             } else if (this.value.trim().length >= 2) {
-                searchHints.style.display = 'none';
+                if (searchHints) searchHints.style.display = 'none';
                 // Results will be shown by existing search logic
             }
         });
 
         // Hide hints when typing starts
         searchInput.addEventListener('input', function() {
-            if (this.value.trim().length > 0) {
+            if (this.value.trim().length > 0 && searchHints) {
                 searchHints.style.display = 'none';
             }
         });
 
         // Hide hints when clicking outside
         document.addEventListener('click', function(e) {
-            if (!searchInput.contains(e.target) && !searchHints.contains(e.target)) {
+            if (searchInput && searchHints && !searchInput.contains(e.target) && !searchHints.contains(e.target)) {
                 searchHints.style.display = 'none';
             }
         });

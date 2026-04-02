@@ -5,6 +5,21 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.0] - 2026-04-02
+
+### Added
+- **Tag icons and colors** — action tags now have customizable icons (60+ Bootstrap Icons) and colors (20-color palette) configured in Workspace Administration > Action Tags
+- **Tag admin redesign** — edit modal with live preview, icon grid picker, color swatches; tags display as colored chips with icons everywhere (table, timeline tooltips, create/edit forms)
+- **Milestone vertical markers use tag color** — timeline milestone lines inherit the color of their first tag instead of hardcoded orange
+
+### Changed
+- Tag data format upgraded from plain string list to `[{name, icon, color}]` objects — backward compatible, no migration needed; old string-format tags auto-normalize on read
+
+### Fixed
+- **Stakeholder map selection remembered** — selected map is stored in session per organization; navigating away (edit, create, delete) and returning preserves the selected map
+- **Milestone blocks removed from timeline** — milestones now only appear as vertical marker lines, no longer as point/block items cluttering the priority rows
+- **Milestone marker z-index** — vertical markers render behind action items (not as wide blue bars on top)
+
 ## [7.9.0] - 2026-04-02
 
 ### Added

@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required
 from flask_wtf.csrf import generate_csrf
 
@@ -61,9 +61,19 @@ def index():
     all_maps = StakeholderMap.query.filter_by(organization_id=org_id).all()
     visible_maps = [m for m in all_maps if m.is_visible_to_user(current_user)]
 
-    # Require map selection - redirect to first map if none selected
+    # Restore last selected map from session, or fall back to first map
     if not map_id and visible_maps:
-        return redirect(url_for("stakeholders.index", organization_id=org_id, map_id=visible_maps[0].id))
+        session_key = f"stakeholder_map_{org_id}"
+        remembered = session.get(session_key)
+        if remembered and any(m.id == remembered for m in visible_maps):
+            map_id = remembered
+        else:
+            map_id = visible_maps[0].id
+        return redirect(url_for("stakeholders.index", organization_id=org_id, map_id=map_id))
+
+    # Remember selected map in session
+    if map_id:
+        session[f"stakeholder_map_{org_id}"] = map_id
 
     # Filter stakeholders by selected map
     if map_id:
