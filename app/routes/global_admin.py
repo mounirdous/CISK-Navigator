@@ -1355,7 +1355,7 @@ def full_backup_governance_mapping():
     # Get existing governance bodies in target organization
     from app.models import GovernanceBody
 
-    existing_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).all()
+    existing_gbs = GovernanceBody.for_org(org_id)
 
     if request.method == "POST":
         try:

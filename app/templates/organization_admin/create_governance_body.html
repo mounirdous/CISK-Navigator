@@ -104,13 +104,25 @@
                         {% endif %}
                     </div>
 
-                    <div class="mb-4">
+                    <div class="mb-3">
                         <div class="form-check form-switch">
                             {{ form.is_active(class="form-check-input", checked=True) }}
                             {{ form.is_active.label(class="form-check-label fw-semibold") }}
                         </div>
                         <small class="form-text text-muted">
                             <i class="bi bi-info-circle"></i> Inactive governance bodies are hidden from selections
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_global" id="is_global" value="1">
+                            <label class="form-check-label fw-semibold" for="is_global">
+                                <i class="bi bi-globe2"></i> Cross-workspace
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            <i class="bi bi-info-circle"></i> Visible in all workspaces on this instance
                         </small>
                     </div>
 

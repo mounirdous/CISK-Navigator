@@ -168,7 +168,7 @@ def decision_register():
         .all()
     )
 
-    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.name).all()
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Decision tags from org config
     org = Organization.query.get(org_id)
@@ -295,7 +295,7 @@ def gb_dashboard_index():
     """Redirect to the first governance body dashboard"""
     from app.models import GovernanceBody
     org_id = session.get("organization_id")
-    first_gb = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).first()
+    first_gb = GovernanceBody.for_org(org_id)[0] if GovernanceBody.for_org(org_id) else None
     if first_gb:
         return redirect(url_for("workspace.gb_dashboard", gb_id=first_gb.id))
     flash("No governance bodies configured.", "warning")
@@ -653,7 +653,7 @@ def challenges_dashboard():
     partially_covered = sum(1 for c in challenge_list if 0 < c["coverage_pct"] < 100)
     empty = sum(1 for c in challenge_list if c["initiative_count"] == 0)
 
-    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.name).all()
+    governance_bodies = GovernanceBody.for_org(org_id)
     from app.models import UserFilterPreset
     presets = UserFilterPreset.query.filter_by(user_id=current_user.id, organization_id=org_id, feature="challenges_dashboard").order_by(UserFilterPreset.name).all()
 
@@ -940,7 +940,7 @@ def kpi_dashboard():
     off_track = [k for k in has_target if k["target_progress"] < 50]
 
     # Governance bodies for filter
-    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.name).all()
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Presets
     from app.models import UserFilterPreset
@@ -1010,7 +1010,7 @@ def gb_dashboard(gb_id):
     gb = GovernanceBody.query.filter_by(id=gb_id, organization_id=org_id).first_or_404()
 
     # All GBs for the selector
-    all_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(GovernanceBody.display_order).all()
+    all_gbs = GovernanceBody.for_org(org_id)
 
     # ── My KPIs ──
     kpi_links = KPIGovernanceBodyLink.query.filter_by(governance_body_id=gb_id).all()
@@ -1507,7 +1507,7 @@ def dashboard():
         .filter(Initiative.organization_id == org_id)
         .count(),
         "value_types": ValueType.query.filter_by(organization_id=org_id, is_active=True).count(),
-        "governance_bodies": GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count(),
+        "governance_bodies": len(GovernanceBody.for_org(org_id)),
         "initiatives_no_consensus": Initiative.query.filter_by(
             organization_id=org_id, impact_on_challenge="no_consensus"
         ).count(),
@@ -2837,12 +2837,8 @@ def view_snapshot(batch_id):
         ValueType.query.filter_by(organization_id=org_id, is_active=True).order_by(ValueType.display_order).all()
     )
 
-    # Get governance bodies for filtering
-    governance_bodies = (
-        GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
-        .order_by(GovernanceBody.display_order)
-        .all()
-    )
+    # Get governance bodies for filtering (including global)
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Get level visibility controls (default all visible)
     show_levels = {
@@ -5229,12 +5225,8 @@ def _build_workspace_data(org_id):
             "target_color": ce.target_color,
         }
 
-    # Get governance bodies
-    governance_bodies = (
-        GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
-        .order_by(GovernanceBody.display_order)
-        .all()
-    )
+    # Get governance bodies (including global)
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Get entity type defaults for logo/icon fallbacks
     entity_defaults = EntityTypeDefault.query.filter_by(organization_id=org_id).all()

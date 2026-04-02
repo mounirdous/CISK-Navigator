@@ -23,6 +23,7 @@ def upgrade():
     op.add_column("action_items", sa.Column("milestone_category", sa.String(50), nullable=True))
     op.add_column("action_items", sa.Column("tags", sa.JSON(), nullable=True))
     op.add_column("organizations", sa.Column("action_tags", sa.JSON(), nullable=True))
+    op.add_column("governance_bodies", sa.Column("is_global", sa.Boolean(), nullable=False, server_default="false"))
 
 
 def downgrade():

@@ -508,7 +508,7 @@ def index():
     initiatives_count = Initiative.query.filter_by(organization_id=org_id).count()
     systems_count = System.query.filter_by(organization_id=org_id).count()
     value_types_count = ValueType.query.filter_by(organization_id=org_id, is_active=True).count()
-    governance_bodies_count = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).count()
+    governance_bodies_count = len(GovernanceBody.for_org(org_id))
 
     # Count KPIs
     kpis_count = (
@@ -2451,12 +2451,8 @@ def create_kpi(link_id):
         .all()
     )
 
-    # Get active governance bodies for selection
-    governance_bodies = (
-        GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
-        .order_by(GovernanceBody.display_order)
-        .all()
-    )
+    # Get active governance bodies for selection (including global)
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Get active geography sites for selection (optional)
     from app.models import GeographyRegion
@@ -2763,12 +2759,8 @@ def edit_kpi(kpi_id):
             if next_kpis:
                 nav["bridge_next"] = {"url": url_for("organization_admin.edit_kpi", kpi_id=next_kpis[0]), "label": f"{next_sl.system.name} (next system)"}
 
-    # Get active governance bodies for selection
-    governance_bodies = (
-        GovernanceBody.query.filter_by(organization_id=org_id, is_active=True)
-        .order_by(GovernanceBody.display_order)
-        .all()
-    )
+    # Get active governance bodies for selection (including global)
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Get current governance body IDs for this KPI
     current_gb_ids = [link.governance_body_id for link in kpi.governance_body_links]
@@ -3966,6 +3958,7 @@ def create_governance_body():
             color=form.color.data,
             is_active=form.is_active.data,
             is_default=False,  # Only migration creates default
+            is_global=request.form.get("is_global") == "1",
         )
         db.session.add(governance_body)
         db.session.commit()
@@ -4015,6 +4008,7 @@ def edit_governance_body(gb_id):
         governance_body.description = form.description.data
         governance_body.color = form.color.data
         governance_body.is_active = form.is_active.data
+        governance_body.is_global = request.form.get("is_global") == "1"
         db.session.commit()
 
         # Navigate based on action
@@ -4496,9 +4490,7 @@ def initiative_form(initiative_id):
         .order_by(User.display_name)
         .all()
     )
-    org_governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(
-        GovernanceBody.display_order
-    ).all()
+    org_governance_bodies = GovernanceBody.for_org(org_id)
 
     # Collect all entity references that belong to this initiative
     # (initiative itself, its systems, and their KPIs)

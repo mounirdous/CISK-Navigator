@@ -106,9 +106,7 @@ def index():
     )
 
     # Governance bodies for filter
-    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(
-        GovernanceBody.display_order
-    ).all()
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Check if user is admin
     is_admin = current_user.is_super_admin or current_user.is_global_admin
@@ -385,9 +383,7 @@ def create():
     )
     form.owner_user_id.choices = [(u.id, u.display_name or u.login) for u in org_users]
 
-    governance_bodies = GovernanceBody.query.filter_by(organization_id=org_id, is_active=True).order_by(
-        GovernanceBody.display_order
-    ).all()
+    governance_bodies = GovernanceBody.for_org(org_id)
 
     # Default to current user
     if request.method == "GET":

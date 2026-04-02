@@ -812,6 +812,10 @@ def _ensure_schema_fixes():
             if "stakeholder_id" not in contrib_cols:
                 fixes.append("ALTER TABLE contributions ADD COLUMN stakeholder_id INTEGER REFERENCES stakeholders(id) ON DELETE SET NULL")
 
+            gb_cols = {c["name"] for c in inspector.get_columns("governance_bodies")}
+            if "is_global" not in gb_cols:
+                fixes.append("ALTER TABLE governance_bodies ADD COLUMN is_global BOOLEAN NOT NULL DEFAULT FALSE")
+
             if fixes:
                 conn.execute(text("BEGIN"))
                 for fix in fixes:
