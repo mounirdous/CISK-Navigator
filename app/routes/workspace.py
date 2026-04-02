@@ -1157,6 +1157,17 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.10",
+            "date": "April 2, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Tag icons &amp; colors</strong> — action tags now have customizable icons (60+ choices) and colors (20-color palette). Configure them in Workspace Administration &rarr; Action Tags. Icons and colors appear everywhere: table badges, create/edit forms, timeline tooltips, and milestone markers.",
+                "<strong>Milestone markers use tag styling</strong> — vertical milestone lines on the timeline now use the icon and color from their assigned tag. A &ldquo;Board&rdquo; milestone tagged with a star icon in dark blue shows exactly that.",
+                "<strong>Stakeholder map remembered</strong> — the selected stakeholder map is now remembered when you navigate away (edit, create, delete) and come back. No more resetting to the first map.",
+                "<strong>Cleaner timeline</strong> — milestones no longer appear as block items in the priority rows. They only show as vertical marker lines with a label at the top.",
+            ],
+        },
+        {
             "version": "7.9",
             "date": "April 2, 2026",
             "tags": ["feature"],
