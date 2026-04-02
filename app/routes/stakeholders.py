@@ -328,11 +328,29 @@ def edit(id):
         flash(f"Stakeholder '{stakeholder.name}' updated successfully", "success")
         return redirect(url_for("stakeholders.index", organization_id=stakeholder.organization_id))
 
+    # Get activity: action/memo mentions + contributions
+    from app.models import ActionItemMention, Contribution, Decision
+    stk_mentions = (
+        ActionItemMention.query.filter_by(entity_type="stakeholder", entity_id=stakeholder.id)
+        .order_by(ActionItemMention.created_at.desc()).limit(20).all()
+    )
+    stk_decisions = [
+        d for d in Decision.query.filter_by(organization_id=org_id).all()
+        if any(m.get("entity_type") == "stakeholder" and m.get("entity_id") == stakeholder.id for m in (d.entity_mentions or []))
+    ]
+    stk_contributions = (
+        Contribution.query.filter_by(stakeholder_id=stakeholder.id)
+        .order_by(Contribution.updated_at.desc()).limit(20).all()
+    )
+
     return render_template(
         "stakeholders/edit.html",
         form=form,
         stakeholder=stakeholder,
         organization=organization,
+        stk_mentions=stk_mentions,
+        stk_decisions=stk_decisions,
+        stk_contributions=stk_contributions,
         csrf_token=generate_csrf,
     )
 

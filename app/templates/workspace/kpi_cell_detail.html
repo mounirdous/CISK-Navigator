@@ -588,7 +588,15 @@ body.dark-mode .card.border-primary {
                             {% for contrib in contributions %}
                             <tr id="contrib-row-{{ contrib.id }}">
                                 <!-- Display mode -->
-                                <td class="contrib-display"><i class="bi bi-person"></i> {{ contrib.contributor_name }}</td>
+                                <td class="contrib-display">
+                                    {% if contrib.stakeholder_id %}
+                                    <a href="{{ url_for('stakeholders.edit', id=contrib.stakeholder_id) }}" style="text-decoration:none; color:inherit;" title="View stakeholder profile">
+                                        <i class="bi bi-person-fill" style="color:#14b8a6;"></i> {{ contrib.contributor_name }} <i class="bi bi-box-arrow-up-right" style="font-size:0.6rem; color:#94a3b8;"></i>
+                                    </a>
+                                    {% else %}
+                                    <i class="bi bi-person"></i> {{ contrib.contributor_name }}
+                                    {% endif %}
+                                </td>
                                 <td class="contrib-display">
                                     {% if contrib.numeric_value is not none %}
                                         <span style="color: {{ config.get_value_color(contrib.numeric_value) }};">{{ contrib.numeric_value|format_value(value_type, config) }}</span>
@@ -1206,9 +1214,9 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- Calculation Configuration Modal -->
 {% include 'workspace/_calculation_config_modal.html' %}
 
-<!-- Contributor names datalist for autocomplete (org-wide) -->
+<!-- Contributor names datalist for autocomplete (org-wide + stakeholders) -->
 <datalist id="contrib-names-list">
-    {% for name in all_contributor_names %}<option value="{{ name }}">{% endfor %}
+    {% for name in all_contributor_names %}<option value="{{ name }}"{% if name in stakeholder_map %} label="Stakeholder"{% endif %}>{% endfor %}
 </datalist>
 
 {% endblock %}

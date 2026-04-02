@@ -1774,6 +1774,12 @@ def kpi_cell_detail(kpi_id, vt_id):
         logger = logging.getLogger(__name__)
         logger.info("🔍 POST - Form validation PASSED")
         contributor_name = form.contributor_name.data
+        # Resolve stakeholder from contributor name
+        from app.models import Stakeholder as _Stk
+        _matched_stk = _Stk.query.filter(
+            _Stk.organization_id == org_id, db.func.lower(_Stk.name) == contributor_name.lower().strip()
+        ).first()
+        _stk_id = _matched_stk.id if _matched_stk else None
         entry_mode = request.form.get("entry_mode", "contributing")  # 'new_data' or 'contributing'
 
         # Check if this is "new data" mode (time evolved)
@@ -1800,7 +1806,8 @@ def kpi_cell_detail(kpi_id, vt_id):
 
                 # Create new contribution
                 contribution = Contribution(
-                    kpi_value_type_config_id=config.id, contributor_name=contributor_name, comment=form.comment.data
+                    kpi_value_type_config_id=config.id, contributor_name=contributor_name,
+                    stakeholder_id=_stk_id, comment=form.comment.data
                 )
                 if value_type.is_numeric():
                     contribution.numeric_value = form.numeric_value.data
@@ -1856,11 +1863,13 @@ def kpi_cell_detail(kpi_id, vt_id):
             else:
                 existing.qualitative_level = form.qualitative_level.data
             existing.comment = form.comment.data
+            existing.stakeholder_id = _stk_id
             flash(f"Contribution from {contributor_name} updated", "success")
         else:
             # Create new contribution
             contribution = Contribution(
-                kpi_value_type_config_id=config.id, contributor_name=contributor_name, comment=form.comment.data
+                kpi_value_type_config_id=config.id, contributor_name=contributor_name,
+                stakeholder_id=_stk_id, comment=form.comment.data
             )
             if value_type.is_numeric():
                 contribution.numeric_value = form.numeric_value.data
@@ -2021,6 +2030,16 @@ def kpi_cell_detail(kpi_id, vt_id):
         .distinct().all()
     ))
 
+    # Add stakeholder names for autocomplete (with id for linking)
+    from app.models import Stakeholder
+    org_stakeholders = Stakeholder.query.filter_by(organization_id=org_id).order_by(Stakeholder.name).all()
+    stakeholder_map = {s.name: s.id for s in org_stakeholders}
+    # Merge: stakeholder names that aren't already in contributor names
+    for s in org_stakeholders:
+        if s.name not in all_contributor_names:
+            all_contributor_names.append(s.name)
+    all_contributor_names.sort()
+
     return render_template(
         "workspace/kpi_cell_detail.html",
         kpi=kpi,
@@ -2035,6 +2054,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         entity_defaults=entity_defaults,
         workspace_filters=workspace_filters,
         all_contributor_names=all_contributor_names,
+        stakeholder_map=stakeholder_map,
         csrf_token=generate_csrf,
     )
 

@@ -245,6 +245,55 @@ body.dark-mode .stk-link-item { background: #0f172a; }
         {% endif %}
     </div>
 
+    <!-- Activity: Mentions + Contributions -->
+    {% if stk_mentions or stk_decisions or stk_contributions %}
+    <div class="stk-form-card mt-1">
+        <h3><i class="bi bi-activity" style="color:#f59e0b;"></i> Activity</h3>
+
+        {% if stk_mentions %}
+        <div class="mb-3">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; margin-bottom:0.4rem;">Mentioned in Actions &amp; Memos</div>
+            {% for m in stk_mentions %}
+            <div class="stk-link-item">
+                <a href="{{ url_for('action_items.view', item_id=m.action_item_id) }}" style="text-decoration:none; color:inherit; flex:1;">
+                    <i class="bi bi-check2-square" style="color:#3b82f6;"></i> {{ m.action_item.title | truncate(60) }}
+                </a>
+                <span style="font-size:0.7rem; color:#94a3b8;">{{ m.created_at.strftime('%d %b %Y') }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if stk_decisions %}
+        <div class="mb-3">
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; margin-bottom:0.4rem;">Mentioned in Decisions</div>
+            {% for d in stk_decisions %}
+            <div class="stk-link-item">
+                <a href="{{ url_for('workspace.decision_register') }}" style="text-decoration:none; color:inherit; flex:1;">
+                    <i class="bi bi-journal-check" style="color:#8b5cf6;"></i> {{ d.what | strip_md | truncate(60) }}
+                </a>
+                <span style="font-size:0.7rem; color:#94a3b8;">{{ d.created_at.strftime('%d %b %Y') }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if stk_contributions %}
+        <div>
+            <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.04em; color:#64748b; margin-bottom:0.4rem;">KPI Contributions</div>
+            {% for c in stk_contributions %}
+            <div class="stk-link-item">
+                <a href="{{ url_for('workspace.kpi_cell_detail', kpi_id=c.kpi_value_type_config.kpi_id, vt_id=c.kpi_value_type_config.value_type_id) }}" style="text-decoration:none; color:inherit; flex:1;">
+                    <i class="bi bi-graph-up" style="color:#10b981;"></i> {{ c.kpi_value_type_config.kpi.name }} &mdash; {{ c.kpi_value_type_config.value_type.name }}
+                </a>
+                <span style="font-size:0.7rem; color:#94a3b8;">{{ c.updated_at.strftime('%d %b %Y') }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
     <!-- Relationships -->
     <div class="stk-form-card mt-1 mb-4">
         <h3><i class="bi bi-diagram-3" style="color:#ec4899;"></i> Relationships</h3>

@@ -24,6 +24,10 @@ class Contribution(db.Model):
         db.Integer, db.ForeignKey("kpi_value_type_configs.id", ondelete="CASCADE"), nullable=False
     )
     contributor_name = db.Column(db.String(200), nullable=False, comment="Free text, e.g., Simon, Paul, Jacques")
+    stakeholder_id = db.Column(
+        db.Integer, db.ForeignKey("stakeholders.id", ondelete="SET NULL"), nullable=True,
+        comment="Optional link to stakeholder record for traceability"
+    )
     numeric_value = db.Column(db.Numeric(precision=20, scale=6), nullable=True, comment="For numeric value types")
     qualitative_level = db.Column(db.Integer, nullable=True, comment="1, 2, or 3 for qualitative value types")
     list_value = db.Column(db.String(255), nullable=True, comment="Selected option key for list value types")
@@ -33,6 +37,7 @@ class Contribution(db.Model):
 
     # Relationships
     kpi_value_type_config = db.relationship("KPIValueTypeConfig", back_populates="contributions")
+    stakeholder = db.relationship("Stakeholder", backref="contributions", foreign_keys=[stakeholder_id])
 
     def __repr__(self):
         return f"<Contribution {self.contributor_name} for config_id={self.kpi_value_type_config_id}>"
