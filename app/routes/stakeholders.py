@@ -253,6 +253,7 @@ def edit(id):
         flash("Access denied", "danger")
         return redirect(url_for("stakeholders.index", organization_id=stakeholder.organization_id))
 
+    org_id = stakeholder.organization_id
     form = StakeholderForm(obj=stakeholder)
 
     # Populate site choices (only sites belonging to this organization)
