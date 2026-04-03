@@ -5256,7 +5256,7 @@ function workspaceV2(orgId, filterPresets) {
                 h += '<a class="tt-chip" href="' + formUrl + '" onclick="event.stopPropagation()"><i class="bi bi-file-text"><\/i> Form ' + badge + '<\/a>';
             }
             // Entity links (all levels) — clickable to open edit modal
-            var links = (entity.entity_links||[]).length + (entity.inherited_links||[]).length;
+            var links = (entity.entity_links||[]).length + (entity.inherited_links||[]).length + (entity.portal_links||[]).length;
             if (links > 0) {
                 var idx = entityType + '_' + entity.id;
                 window._wsLinkData = window._wsLinkData || {};
@@ -5297,6 +5297,7 @@ function workspaceV2(orgId, filterPresets) {
         showEntityLinks(entity, entityType) {
             var ownLinks = entity.entity_links || [];
             var inheritedLinks = entity.inherited_links || [];
+            var portalLinks = entity.portal_links || [];
             var self = this;
             var csrf = '{{ csrf_token() }}';
 
@@ -5353,6 +5354,12 @@ function workspaceV2(orgId, filterPresets) {
                 if (ownLinks.length > 0) linksHTML += '<hr style="margin:0.75rem 0;">';
                 linksHTML += '<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#78909c;margin-bottom:0.5rem;">Inherited from children<\/div>';
                 linksHTML += inheritedLinks.map(renderInheritedLink).join('');
+            }
+            if (portalLinks.length > 0) {
+                if (ownLinks.length > 0 || inheritedLinks.length > 0) linksHTML += '<hr style="margin:0.75rem 0;">';
+                var portalName = entity.portal ? entity.portal.name : 'linked CISK';
+                linksHTML += '<div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#764ba2;margin-bottom:0.5rem;"><i class="bi bi-box-arrow-up-right"><\/i> Inherited from ' + self.escapeHtml(portalName) + '<\/div>';
+                linksHTML += portalLinks.map(renderInheritedLink).join('');
             }
 
             // Add new link form (AJAX, no page reload)

@@ -1157,11 +1157,13 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
-            "version": "7.10.1",
+            "version": "7.10.2",
             "date": "April 3, 2026",
-            "tags": ["feature"],
+            "tags": ["feature", "fix"],
             "changes": [
+                "<strong>Portal CISK links</strong> — when a system is linked to another CISK workspace, its links panel now shows a third section with all links from the linked CISK. Access rights and privacy are respected.",
                 "<strong>Show/hide password</strong> — the login page now has an eye icon toggle to reveal or hide your password as you type.",
+                "<strong>Links card fix</strong> — entity links no longer overflow outside the &ldquo;Links &amp; Resources&rdquo; card on admin pages.",
             ],
         },
         {
@@ -5710,8 +5712,9 @@ def _build_workspace_data(org_id):
                                 _url_map[lnk["url"]] = {**lnk, "from_label": label, "from_sources": [label]}
                     system_inherited = list(_url_map.values())
 
-                    # Portal: linked CISK org info
+                    # Portal: linked CISK org info + portal links
                     _portal = None
+                    _portal_links = []
                     if system.linked_organization_id:
                         _lo = system.linked_organization
                         if _lo:
@@ -5723,6 +5726,64 @@ def _build_workspace_data(org_id):
                                 "name": _lo.name,
                                 "logo_url": _lo_logo,
                             }
+
+                            # Load all links from the linked CISK if user has access
+                            if current_user.has_organization_access(_lo.id) or current_user.is_global_admin or current_user.is_super_admin:
+                                # Collect all entity IDs in the linked org
+                                _po_ids = {"organization": [_lo.id], "space": [], "challenge": [], "initiative": [], "system": [], "kpi": []}
+                                _po_spaces = Space.query.filter_by(organization_id=_lo.id).options(
+                                    selectinload(Space.challenges)
+                                    .selectinload(Challenge.initiative_links)
+                                    .selectinload(ChallengeInitiativeLink.initiative)
+                                    .selectinload(Initiative.system_links)
+                                    .options(
+                                        selectinload(InitiativeSystemLink.system),
+                                        selectinload(InitiativeSystemLink.kpis),
+                                    )
+                                ).all()
+                                # Build entity name lookup for labels
+                                _po_names = {("organization", _lo.id): _lo.name}
+                                for _ps in _po_spaces:
+                                    _po_ids["space"].append(_ps.id)
+                                    _po_names[("space", _ps.id)] = _ps.name
+                                    for _pc in _ps.challenges:
+                                        _po_ids["challenge"].append(_pc.id)
+                                        _po_names[("challenge", _pc.id)] = _pc.name
+                                        for _pi in _pc.initiative_links:
+                                            _po_ids["initiative"].append(_pi.initiative.id)
+                                            _po_names[("initiative", _pi.initiative.id)] = _pi.initiative.name
+                                            for _psl in _pi.initiative.system_links:
+                                                _po_ids["system"].append(_psl.system.id)
+                                                _po_names[("system", _psl.system.id)] = _psl.system.name
+                                                for _pk in _psl.kpis:
+                                                    _po_ids["kpi"].append(_pk.id)
+                                                    _po_names[("kpi", _pk.id)] = _pk.name
+
+                                # Query all links from the linked org with privacy filter
+                                _po_or = []
+                                for _pet, _peids in _po_ids.items():
+                                    if _peids:
+                                        _po_or.append(db.and_(EntityLink.entity_type == _pet, EntityLink.entity_id.in_(_peids)))
+                                if _po_or:
+                                    _po_all = EntityLink.query.filter(
+                                        or_(*_po_or),
+                                        or_(EntityLink.is_public == True, EntityLink.created_by == current_user.id),
+                                    ).order_by(EntityLink.display_order).all()
+
+                                    _type_labels = {"organization": "Workspace", "space": "Space", "challenge": "Challenge", "initiative": "Initiative", "system": "System", "kpi": "KPI"}
+                                    for _pl in _po_all:
+                                        _pti = _pl.get_type_info()
+                                        _ename = _po_names.get((_pl.entity_type, _pl.entity_id), "")
+                                        _plabel = f"{_type_labels.get(_pl.entity_type, _pl.entity_type)}: {_ename}"
+                                        _portal_links.append({
+                                            "id": _pl.id,
+                                            "title": _pl.title,
+                                            "url": _pl.url,
+                                            "bs_icon": _pti["bs_icon"],
+                                            "icon_color": _pti["color"],
+                                            "from_label": _plabel,
+                                            "from_sources": [_plabel],
+                                        })
 
                     systems_data.append(
                         {
@@ -5736,6 +5797,7 @@ def _build_workspace_data(org_id):
                             "rollup_values": system_rollup_values,
                             "entity_links": system_entity_links,
                             "inherited_links": system_inherited,
+                            "portal_links": _portal_links,
                             "kpis": kpis_data,
                             "impact_level": system.impact_level,
                             "impact_no_consensus": system.impact_no_consensus,

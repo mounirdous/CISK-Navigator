@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.2] - 2026-04-03
+
+### Added
+- Portal systems now show all links from the linked CISK workspace (with access and privacy checks)
+
+### Fixed
+- Entity links rendering outside the "Links & Resources" card container
+
 ## [7.10.1] - 2026-04-03
 
 ### Added
