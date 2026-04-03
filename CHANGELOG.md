@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.3] - 2026-04-04
+
+### Added
+- "Where Used" chip on CISK org-level row showing which other workspaces reference this CISK as a portal system
+- Toolbar header now wraps properly instead of clipping Edit Mode and Presets buttons
+
 ## [7.10.2] - 2026-04-03
 
 ### Added

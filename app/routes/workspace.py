@@ -1157,12 +1157,14 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
-            "version": "7.10.2",
-            "date": "April 3, 2026",
+            "version": "7.10.3",
+            "date": "April 4, 2026",
             "tags": ["feature", "fix"],
             "changes": [
+                "<strong>Where Used</strong> — the org-level row now shows a purple &ldquo;Used in N workspaces&rdquo; chip when other CISKs reference this workspace as a portal system. Click it to see which workspaces and systems link here, with a button to switch directly.",
                 "<strong>Portal CISK links</strong> — when a system is linked to another CISK workspace, its links panel now shows a third section with all links from the linked CISK. Access rights and privacy are respected.",
                 "<strong>Show/hide password</strong> — the login page now has an eye icon toggle to reveal or hide your password as you type.",
+                "<strong>Toolbar wrapping</strong> — the workspace toolbar no longer clips the Edit Mode button and Presets menu on narrower screens.",
                 "<strong>Links card fix</strong> — entity links no longer overflow outside the &ldquo;Links &amp; Resources&rdquo; card on admin pages.",
             ],
         },
@@ -5122,6 +5124,35 @@ def get_data():
         return jsonify({"error": str(e), "spaces": [], "valueTypes": [], "governanceBodies": [], "groups": [], "impactLevels": [], "impactScale": {}}), 500
 
 
+def _build_where_used(org_id):
+    """Find all systems in other CISKs that link to this organization (portal references)."""
+    portal_systems = System.query.filter_by(linked_organization_id=org_id).all()
+    if not portal_systems:
+        return []
+
+    result = []
+    for sys in portal_systems:
+        # Only include if the system belongs to a different org and the user can access it
+        if sys.organization_id == org_id:
+            continue
+        parent_org = Organization.query.get(sys.organization_id)
+        if not parent_org or parent_org.is_deleted:
+            continue
+        if not (current_user.is_global_admin or current_user.is_super_admin or current_user.has_organization_access(parent_org.id)):
+            continue
+
+        _logo = None
+        if parent_org.logo_data and parent_org.logo_mime_type:
+            _logo = f"data:{parent_org.logo_mime_type};base64,{base64.b64encode(parent_org.logo_data).decode('utf-8')}"
+        result.append({
+            "org_id": parent_org.id,
+            "org_name": parent_org.name,
+            "org_logo": _logo,
+            "system_name": sys.name,
+        })
+    return result
+
+
 def _build_workspace_data(org_id):
     """Build and return workspace data JSON. Extracted for error handling."""
     import time as _perf_time, logging as _perf_log  # [PERF_TRACE] removable
@@ -6049,6 +6080,7 @@ def _build_workspace_data(org_id):
             "notSetColor": getattr(Organization.query.get(org_id), "impact_not_set_color", None) or "#94a3b8",
             "orgEntityLinks": org_entity_links,
             "orgInheritedLinks": org_inherited_links,
+            "whereUsed": _build_where_used(org_id),
         }
     )
 

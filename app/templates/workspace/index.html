@@ -298,13 +298,15 @@
 
     /* Toolbar - Commands Band */
     .ws-header {
-        height: var(--header-height);
+        min-height: var(--header-height);
         background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
         color: white;
-        padding: 0 1.5rem;
+        padding: 0.5rem 1.5rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.5rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         flex-shrink: 0;
         transition: background 0.3s;
@@ -1910,7 +1912,7 @@
 <div class="workspace-v2" x-data="workspaceV2({{ org_id }}, [])" x-init="init(); loadData()" x-bind:data-badges-visible="badgeMode >= 2" x-bind:data-badge-mode="badgeMode">
     <!-- Toolbar - Commands Band -->
     <div class="ws-header" :class="{'edit-mode': editMode}">
-        <div style="display: flex; align-items: center; gap: 1.5rem;">
+        <div style="display: flex; align-items: center; gap: 1rem; flex-shrink: 1; min-width: 0; flex-wrap: wrap;">
             <span x-show="!loading" style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
                 <i x-show="hasActiveFilters" class="bi bi-funnel-fill" style="color: #ffc107;"></i>
                 <span x-text="filterSummary"></span>
@@ -1966,7 +1968,7 @@
                 <i class="bi bi-arrow-clockwise" style="font-size: 1rem;"></i>
             </button>
         </div>
-        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; flex-shrink: 0;">
             <!-- Unified Preset Bar -->
             <span class="ws-d1">{{ preset_bar('workspace', ws_presets_list) }}</span>
 
@@ -3580,6 +3582,7 @@ function workspaceV2(orgId, filterPresets) {
         newPresetName: '',
         activePresetName: '',  // Track which preset is currently active
         orgData: null,           // Org-level links (direct + inherited from whole tree)
+        whereUsed: [],           // Systems in other CISKs that link to this org
         pendingTreeState: null,  // Tree collapse state to apply after next loadData()
         _loadDataInProgress: false,  // Guard against concurrent loadData() calls
         _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
@@ -3907,6 +3910,7 @@ function workspaceV2(orgId, filterPresets) {
                 entity_links:    (data.orgEntityLinks   || []).filter(function(l) { return !l.is_private; }),
                 inherited_links: data.orgInheritedLinks || [],
             };
+            this.whereUsed = data.whereUsed || [];
             this._initialized = true;
             this.$nextTick(() => this._updateNavReviewLink());
         },
@@ -4630,6 +4634,54 @@ function workspaceV2(orgId, filterPresets) {
             };
             window._wsLinkData = {};
 
+            window._wsShowWhereUsed = function() {
+                try {
+                    // Close triggering info window
+                    var iw = event && event.target ? event.target.closest('.ws-info-window') : null;
+                    if (iw) iw.remove();
+
+                    var items = self.whereUsed || [];
+                    var bodyHTML = '';
+                    if (items.length === 0) {
+                        bodyHTML = '<p class="text-muted">Not referenced by any other workspace.<\/p>';
+                    } else {
+                        bodyHTML = '<div style="font-size:0.85rem;color:#6c757d;margin-bottom:1rem;">This CISK is referenced as a portal system in:<\/div>';
+                        items.forEach(function(w) {
+                            var logoHtml = w.org_logo
+                                ? '<img src="' + w.org_logo + '" style="width:28px;height:28px;border-radius:6px;object-fit:cover;flex-shrink:0;" alt="">'
+                                : '<div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#764ba2,#667eea);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:white;font-weight:700;font-size:0.75rem;">' + self.escapeHtml(w.org_name.charAt(0)) + '<\/div>';
+                            bodyHTML += '<div style="display:flex;align-items:center;gap:0.75rem;padding:0.65rem 0.75rem;margin-bottom:0.4rem;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;">' +
+                                logoHtml +
+                                '<div style="flex:1;min-width:0;">' +
+                                    '<div style="font-weight:600;color:#1e293b;">' + self.escapeHtml(w.org_name) + '<\/div>' +
+                                    '<div style="font-size:0.8rem;color:#64748b;"><i class="bi bi-hdd-stack" style="margin-right:0.25rem;"><\/i>' + self.escapeHtml(w.system_name) + '<\/div>' +
+                                '<\/div>' +
+                                '<button class="btn btn-sm btn-outline-primary" style="flex-shrink:0;" title="Switch to workspace" onclick="fetch(\'/auth/switch-organization/' + w.org_id + '\',{method:\'POST\',headers:{\'X-CSRFToken\':\'{{ csrf_token() }}\'}}).then(function(){window.location.href=\'/workspace/\';})"><i class="bi bi-box-arrow-up-right"><\/i><\/button>' +
+                            '<\/div>';
+                        });
+                    }
+
+                    var modalHTML = '<div class="modal fade" id="whereUsedModal" tabindex="-1" aria-hidden="true">' +
+                        '<div class="modal-dialog">' +
+                            '<div class="modal-content">' +
+                                '<div class="modal-header" style="background:linear-gradient(135deg,#764ba2,#667eea);color:white;">' +
+                                    '<h5 class="modal-title"><i class="bi bi-signpost-2"><\/i> Where Used<\/h5>' +
+                                    '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"><\/button>' +
+                                '<\/div>' +
+                                '<div class="modal-body">' + bodyHTML + '<\/div>' +
+                            '<\/div>' +
+                        '<\/div>' +
+                    '<\/div>';
+
+                    document.getElementById('whereUsedModal')?.remove();
+                    document.body.insertAdjacentHTML('beforeend', modalHTML);
+                    var modalEl = document.getElementById('whereUsedModal');
+                    var modal = new bootstrap.Modal(modalEl);
+                    modal.show();
+                    modalEl.addEventListener('hidden.bs.modal', function() { this.remove(); });
+                } catch(e) { console.error('[WHERE_USED] Error:', e); }
+            };
+
             // Wire up rollup tooltip events (pure DOM)
             // Rollup tips are now click-based multi-window (no single element setup needed)
 
@@ -5289,6 +5341,10 @@ function workspaceV2(orgId, filterPresets) {
                     window._wsLinkData['org'] = { entity: this.orgData, entityType: 'organization' };
                     h += '<span class="tt-chip" onclick="event.stopPropagation();window._wsShowEntityLinks(\'org\')"><i class="bi bi-link-45deg"><\/i> ' + links + ' link' + (links !== 1 ? 's' : '') + '<\/span>';
                 }
+            }
+            if (this.whereUsed.length > 0) {
+                var n = this.whereUsed.length;
+                h += '<span class="tt-chip" style="color:#764ba2;" onclick="event.stopPropagation();window._wsShowWhereUsed()"><i class="bi bi-signpost-2"><\/i> Used in ' + n + ' workspace' + (n !== 1 ? 's' : '') + '<\/span>';
             }
             return h;
         },
