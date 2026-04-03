@@ -1157,6 +1157,14 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.10.1",
+            "date": "April 3, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Show/hide password</strong> — the login page now has an eye icon toggle to reveal or hide your password as you type.",
+            ],
+        },
+        {
             "version": "7.10",
             "date": "April 2, 2026",
             "tags": ["feature", "fix"],

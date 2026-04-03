@@ -257,10 +257,15 @@ body.dark-mode .btn-sso:hover {
 
                 <div class="mb-3">
                     {{ form.password.label(class="form-label") }}
-                    {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""),
-                                    placeholder="Enter your password") }}
+                    <div class="position-relative">
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""),
+                                        placeholder="Enter your password", style="padding-right:2.5rem") }}
+                        <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y pe-3 text-muted" style="z-index:5;text-decoration:none;" onclick="var p=this.previousElementSibling;var i=this.querySelector('i');if(p.type==='password'){p.type='text';i.className='bi bi-eye-slash';}else{p.type='password';i.className='bi bi-eye';}">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                     {% if form.password.errors %}
-                        <div class="invalid-feedback">
+                        <div class="invalid-feedback d-block">
                             {% for error in form.password.errors %}{{ error }}{% endfor %}
                         </div>
                     {% endif %}
