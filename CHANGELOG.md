@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.4] - 2026-04-04
+
+### Fixed
+- Backup restore fails with UniqueViolation when governance body links contain duplicates
+- Deduplicate governance body links on both export and restore (KPIs and action items)
+
 ## [7.10.3] - 2026-04-04
 
 ### Added

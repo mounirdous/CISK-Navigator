@@ -1157,6 +1157,14 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.10.4",
+            "date": "April 4, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Backup restore fix</strong> — restoring a backup with duplicate governance body links no longer fails. Duplicates are now automatically deduplicated on both export and import.",
+            ],
+        },
+        {
             "version": "7.10.3",
             "date": "April 4, 2026",
             "tags": ["feature", "fix"],

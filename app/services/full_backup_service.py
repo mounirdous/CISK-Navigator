@@ -546,9 +546,12 @@ class FullBackupService:
                 "data": base64.b64encode(kpi.logo_data).decode("utf-8"),
             }
 
-        # Export governance body links
+        # Export governance body links (deduplicate)
+        _seen_gb_names = set()
         for link in kpi.governance_body_links:
-            kpi_data["governance_bodies"].append(link.governance_body.name)
+            if link.governance_body.name not in _seen_gb_names:
+                _seen_gb_names.add(link.governance_body.name)
+                kpi_data["governance_bodies"].append(link.governance_body.name)
 
         # Export geography assignments (region/country/site links)
         for geo_assignment in kpi.geography_assignments:

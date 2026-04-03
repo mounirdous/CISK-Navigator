@@ -1027,13 +1027,16 @@ class FullRestoreService:
         stats["kpi_id"] = kpi.id  # Returned so callers can build json_id_map
         stats["entity_links_restored"] += FullRestoreService._restore_entity_links("kpi", kpi.id, kpi_data)
 
-        # Restore governance body links
+        # Restore governance body links (deduplicate to avoid unique constraint violations)
+        _seen_gb_ids = set()
         for gb_name in kpi_data.get("governance_bodies", []):
             if gb_name in governance_body_map:
                 gb = governance_body_map[gb_name]
-                gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=gb.id)
-                db.session.add(gb_link)
-                stats["governance_body_links"] += 1
+                if gb.id not in _seen_gb_ids:
+                    _seen_gb_ids.add(gb.id)
+                    gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=gb.id)
+                    db.session.add(gb_link)
+                    stats["governance_body_links"] += 1
             else:
                 stats["errors"].append(f"KPI '{kpi_data['name']}': Governance body '{gb_name}' not mapped (skipped)")
 
@@ -1394,12 +1397,14 @@ class FullRestoreService:
                 db.session.add(action_item)
                 db.session.flush()
 
-                # Restore governance body links
+                # Restore governance body links (deduplicate)
+                _seen_ai_gb = set()
                 for gb_name in item_data.get("governance_bodies", []):
                     gb = governance_body_map.get(gb_name)
-                    if gb:
+                    if gb and gb.id not in _seen_ai_gb:
+                        _seen_ai_gb.add(gb.id)
                         action_item.governance_bodies.append(gb)
-                    else:
+                    elif not gb:
                         stats["warnings"].append(
                             f"Action item '{item_data['title']}': governance body '{gb_name}' not mapped (skipped)"
                         )
