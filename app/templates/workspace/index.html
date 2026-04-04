@@ -2486,9 +2486,9 @@
                     </template>
                     <span x-text="orgName"{% if organization and organization.description %} data-tooltip="{{ organization.description|e }}"{% endif %} :data-tooltip-actions="tooltipActionsOrg()"></span>
 
-                    <!-- Linked CISKs pills -->
-                    <template x-for="cisk in _linkedCISKs()" :key="cisk.id">
-                        <a href="#" class="ws-cisk-pill"
+                    <!-- Linked CISKs pills (hidden in tree-only mode) -->
+                    <template x-for="cisk in (badgeMode > 0 ? _linkedCISKs() : [])" :key="cisk.id">
+                        <a href="#" class="ws-cisk-pill ws-d1"
                            @click.stop.prevent="_openPortal(cisk.id)"
                            :title="'Open ' + cisk.name + ' workspace'">
                             <img x-show="cisk.logo_url" :src="cisk.logo_url"
