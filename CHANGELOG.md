@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.5] - 2026-04-04
+
+### Fixed
+- Backup restore drops `list_value` on contributions, causing list-type KPIs to show no_data after import
+- Workspace data endpoint returns 502 on production after restore due to full rollup recompute blocking the request (now falls back to live computation; recompute via Super Admin)
+- Increased Gunicorn worker timeout from 30s to 120s to prevent 502 on large workspaces
+
 ## [7.10.4] - 2026-04-04
 
 ### Fixed

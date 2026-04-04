@@ -1157,6 +1157,15 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.10.5",
+            "date": "April 4, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Backup restore — list values</strong> — restoring a backup now correctly preserves list-type KPI contributions. Previously, the <code>list_value</code> field was silently dropped, causing those KPIs to show &ldquo;no data&rdquo; after import.",
+                "<strong>502 fix after restore</strong> — loading a workspace after a backup restore no longer times out on production. Full rollup recompute is now deferred instead of blocking the page load. Trigger it from Super Admin when ready.",
+            ],
+        },
+        {
             "version": "7.10.4",
             "date": "April 4, 2026",
             "tags": ["fix"],
@@ -5225,8 +5234,10 @@ def _build_workspace_data(org_id):
                     _rc_result = RollupComputeService.recompute_incremental(org_id, _stale_info)
                     _pt.info(f"[PERF_TRACE] INCREMENTAL RECOMPUTE: {_rc_result['entities_computed']} entities, {_rc_result['values_cached']} cached in {_rc_result['duration_ms']}ms")  # [PERF_TRACE]
                 else:
-                    _rc_result = RollupComputeService.recompute_organization(org_id)
-                    _pt.info(f"[PERF_TRACE] FULL RECOMPUTE: {_rc_result['entities_computed']} entities, {_rc_result['values_cached']} values in {_rc_result['duration_ms']}ms")  # [PERF_TRACE]
+                    # Full recompute is too slow for inline request (causes 502 timeout).
+                    # Fall back to live computation; admin can trigger recompute separately.
+                    _pt.warning(f"[PERF_TRACE] FULL RECOMPUTE needed but skipped (too slow for inline request) — falling back to live computation. Trigger recompute from Super Admin or POST /workspace/api/recompute-rollups")  # [PERF_TRACE]
+                    _use_precomputed = False
             except Exception as _rc_err:
                 _pt.error(f"[PERF_TRACE] ROLLUP RECOMPUTE FAILED: {_rc_err}")  # [PERF_TRACE]
                 _use_precomputed = False  # Fall back to live

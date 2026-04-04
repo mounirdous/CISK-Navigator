@@ -1145,6 +1145,7 @@ class FullRestoreService:
                     contributor_name=contrib_data["contributor"],
                     numeric_value=contrib_data.get("value"),
                     qualitative_level=contrib_data.get("level"),
+                    list_value=contrib_data.get("list_value"),
                     comment=contrib_data.get("comment"),
                 )
                 db.session.add(contribution)
