@@ -5235,21 +5235,19 @@ def _build_workspace_data(org_id):
                     _pt.info(f"[PERF_TRACE] INCREMENTAL RECOMPUTE: {_rc_result['entities_computed']} entities, {_rc_result['values_cached']} cached in {_rc_result['duration_ms']}ms")  # [PERF_TRACE]
                 else:
                     # Full recompute is too slow for inline request (causes 502 timeout).
-                    # Fall back to live computation; admin can trigger recompute separately.
-                    _pt.warning(f"[PERF_TRACE] FULL RECOMPUTE needed but skipped (too slow for inline request) — falling back to live computation. Trigger recompute from Super Admin or POST /workspace/api/recompute-rollups")  # [PERF_TRACE]
-                    _use_precomputed = False
+                    # Serve stale cache entries instead — stale data is better than a 502.
+                    _pt.warning(f"[PERF_TRACE] FULL RECOMPUTE needed but skipped (too slow for inline request) — serving stale cache. Trigger recompute from Super Admin or POST /workspace/api/recompute-rollups")  # [PERF_TRACE]
             except Exception as _rc_err:
                 _pt.error(f"[PERF_TRACE] ROLLUP RECOMPUTE FAILED: {_rc_err}")  # [PERF_TRACE]
-                _use_precomputed = False  # Fall back to live
         else:
             _pt.info(f"[PERF_TRACE] Rollup cache FRESH — skipping recompute")  # [PERF_TRACE]
 
-        if _use_precomputed:
-            _cache_load_start = _perf_time.time()  # [PERF_TRACE]
-            _cache_entries = RollupCacheEntry.query.filter_by(organization_id=org_id).all()
-            for _ce in _cache_entries:
-                _rollup_cache[(_ce.entity_type, _ce.entity_id, _ce.value_type_id)] = _ce
-            _pt.info(f"[PERF_TRACE] Cache loaded: {len(_cache_entries)} entries in {int((_perf_time.time() - _cache_load_start) * 1000)}ms")  # [PERF_TRACE]
+        # Always load cache entries (even stale ones — better than 502 or slow live computation)
+        _cache_load_start = _perf_time.time()  # [PERF_TRACE]
+        _cache_entries = RollupCacheEntry.query.filter_by(organization_id=org_id).all()
+        for _ce in _cache_entries:
+            _rollup_cache[(_ce.entity_type, _ce.entity_id, _ce.value_type_id)] = _ce
+        _pt.info(f"[PERF_TRACE] Cache loaded: {len(_cache_entries)} entries in {int((_perf_time.time() - _cache_load_start) * 1000)}ms")  # [PERF_TRACE]
     else:
         _pt.info(f"[PERF_TRACE] Precompute OFF — computing rollups LIVE")  # [PERF_TRACE]
 
