@@ -246,18 +246,25 @@ def toggle_precompute_rollups():
 @bp.route("/settings/precompute-rollups/recompute/<int:org_id>", methods=["POST"])
 @super_admin_required
 def recompute_rollups(org_id):
-    """Manually trigger rollup recomputation for an organization"""
-    from app.services.rollup_compute_service import RollupComputeService
-    try:
-        result = RollupComputeService.recompute_organization(org_id)
-        flash(
-            f"Rollups recomputed: {result['entities_computed']} entities, "
-            f"{result['values_cached']} values cached in {result['duration_ms']}ms",
-            "success"
-        )
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error recomputing rollups: {str(e)}", "danger")
+    """Manually trigger rollup recomputation for an organization (background thread)"""
+    import threading
+    from flask import current_app
+
+    app = current_app._get_current_object()
+
+    def _recompute_in_background(app, org_id):
+        with app.app_context():
+            try:
+                from app.services.rollup_compute_service import RollupComputeService
+                result = RollupComputeService.recompute_organization(org_id)
+                app.logger.info(f"Background rollup recompute done for org {org_id}: {result}")
+            except Exception as e:
+                app.logger.error(f"Background rollup recompute failed for org {org_id}: {e}")
+
+    thread = threading.Thread(target=_recompute_in_background, args=(app, org_id))
+    thread.daemon = True
+    thread.start()
+    flash("Rollup recomputation started in background. Values will update within a minute.", "info")
     return redirect(url_for("super_admin.index"))
 
 

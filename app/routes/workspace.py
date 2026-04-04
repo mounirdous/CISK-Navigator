@@ -368,17 +368,27 @@ def compare_rollups():
 @login_required
 @organization_required
 def recompute_rollups_api():
-    """Recompute rollup cache for current organization (AJAX)"""
+    """Recompute rollup cache for current organization (AJAX, background thread)"""
+    import threading
     org_id = session.get("organization_id")
     if not (current_user.is_global_admin or current_user.is_super_admin or current_user.is_org_admin(org_id)):
         return jsonify({"error": "Permission denied"}), 403
-    from app.services.rollup_compute_service import RollupComputeService
-    try:
-        result = RollupComputeService.recompute_organization(org_id)
-        return jsonify({"success": True, **result})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+
+    app = current_app._get_current_object()
+
+    def _recompute_in_background(app, org_id):
+        with app.app_context():
+            try:
+                from app.services.rollup_compute_service import RollupComputeService
+                result = RollupComputeService.recompute_organization(org_id)
+                app.logger.info(f"Background rollup recompute done for org {org_id}: {result}")
+            except Exception as e:
+                app.logger.error(f"Background rollup recompute failed for org {org_id}: {e}")
+
+    thread = threading.Thread(target=_recompute_in_background, args=(app, org_id))
+    thread.daemon = True
+    thread.start()
+    return jsonify({"success": True, "message": "Rollup recomputation started in background. Refresh the page in a minute."})
 
 
 @bp.route("/visibility-dashboard")
