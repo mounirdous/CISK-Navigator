@@ -374,6 +374,27 @@
         transition: transform 0.2s ease;
     }
 
+    /* Linked CISK pills (org-level row) */
+    .ws-cisk-pill {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        font-size: 0.65rem; font-weight: 600;
+        padding: 0.15rem 0.5rem 0.15rem 0.35rem;
+        border-radius: 20px; margin-left: 0.35rem;
+        background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(59,130,246,0.1) 100%);
+        border: 1px solid rgba(139,92,246,0.25);
+        color: #a78bfa; text-decoration: none;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        white-space: nowrap; vertical-align: middle;
+    }
+    .ws-cisk-pill:hover {
+        background: linear-gradient(135deg, rgba(139,92,246,0.2) 0%, rgba(59,130,246,0.2) 100%);
+        border-color: rgba(139,92,246,0.5);
+        color: #c4b5fd;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(139,92,246,0.25);
+    }
+    .ws-cisk-pill:hover .bi-arrow-up-right { opacity: 1 !important; }
+
     /* Tools dropdown */
     .ws-tools-dropdown {
         position: absolute; top: calc(100% + 6px); right: 0; z-index: 1000;
@@ -2464,6 +2485,19 @@
                         <i class="bi bi-building"></i>
                     </template>
                     <span x-text="orgName"{% if organization and organization.description %} data-tooltip="{{ organization.description|e }}"{% endif %} :data-tooltip-actions="tooltipActionsOrg()"></span>
+
+                    <!-- Linked CISKs pills -->
+                    <template x-for="cisk in _linkedCISKs()" :key="cisk.id">
+                        <a href="#" class="ws-cisk-pill"
+                           @click.stop.prevent="_openPortal(cisk.id)"
+                           :title="'Open ' + cisk.name + ' workspace'">
+                            <img x-show="cisk.logo_url" :src="cisk.logo_url"
+                                 style="width:14px; height:14px; object-fit:contain; border-radius:3px;">
+                            <i x-show="!cisk.logo_url" class="bi bi-compass" style="font-size:0.65rem;"></i>
+                            <span x-text="cisk.name"></span>
+                            <i class="bi bi-arrow-up-right" style="font-size:0.55rem; opacity:0.5;"></i>
+                        </a>
+                    </template>
 
                     <!-- Action icons for creating spaces (edit mode only) -->
                     {% if current_user.can_manage_spaces(org_id) %}
@@ -5278,6 +5312,24 @@ function workspaceV2(orgId, filterPresets) {
                 // Trigger reactivity by re-assigning spaces array
                 this.spaces = [...this.spaces];
             });
+        },
+
+        _linkedCISKs() {
+            var seen = {};
+            var result = [];
+            this.spaces.forEach(function(space) {
+                (space.challenges || []).forEach(function(challenge) {
+                    (challenge.initiatives || []).forEach(function(initiative) {
+                        (initiative.systems || []).forEach(function(system) {
+                            if (system.portal && !seen[system.portal.id]) {
+                                seen[system.portal.id] = true;
+                                result.push(system.portal);
+                            }
+                        });
+                    });
+                });
+            });
+            return result;
         },
 
         _hasPortalSystems() {
