@@ -5,6 +5,17 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.6] - 2026-04-04
+
+### Added
+- Tools menu on workspace toolbar with organized sections: Tree, Columns, and Visibility
+- "Show CISK Systems" tool expands tree only along paths leading to portal systems (greyed out when none exist)
+- Moved Expand/Collapse All rows and columns, Archived KPIs toggle, and Level Focus toggle into Tools menu
+- Custom toggle switches with animated dot indicators in the Tools menu
+
+### Changed
+- Cleaner workspace toolbar — removed 4 buttons, replaced with a single Tools dropdown
+
 ## [7.10.5] - 2026-04-04
 
 ### Fixed

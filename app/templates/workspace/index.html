@@ -374,6 +374,48 @@
         transition: transform 0.2s ease;
     }
 
+    /* Tools dropdown */
+    .ws-tools-dropdown {
+        position: absolute; top: calc(100% + 6px); right: 0; z-index: 1000;
+        min-width: 300px; max-height: 80vh; overflow-y: auto;
+        background: #1e293b; border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 10px; padding: 0.35rem;
+        box-shadow: 0 12px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05);
+        backdrop-filter: blur(12px);
+    }
+    .ws-tools-item {
+        display: flex; align-items: flex-start; gap: 0.6rem;
+        width: 100%; padding: 0.55rem 0.65rem; border: none; background: none;
+        color: #e2e8f0; text-align: left; border-radius: 7px;
+        cursor: pointer; transition: background 0.15s;
+    }
+    .ws-tools-item:hover { background: rgba(255,255,255,0.08); }
+    .ws-tools-item i:first-child { font-size: 1rem; margin-top: 1px; flex-shrink: 0; }
+    .ws-tools-item-title { font-size: 0.78rem; font-weight: 600; line-height: 1.2; }
+    .ws-tools-item-desc { font-size: 0.65rem; color: #94a3b8; line-height: 1.3; margin-top: 1px; }
+    .ws-tools-section {
+        font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+        color: #64748b; padding: 0.5rem 0.65rem 0.2rem; margin-top: 0.15rem;
+        border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .ws-tools-section:first-child { border-top: none; margin-top: 0; }
+    .ws-tools-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 0.25rem 0.5rem; }
+    .ws-tools-item-disabled { opacity: 0.4; cursor: not-allowed; }
+    .ws-tools-item-disabled:hover { background: none; }
+    .ws-tools-toggle { align-items: center; }
+    .ws-tools-toggle-dot {
+        width: 28px; height: 16px; border-radius: 8px; flex-shrink: 0;
+        background: rgba(255,255,255,0.12); position: relative;
+        transition: background 0.2s;
+    }
+    .ws-tools-toggle-dot::after {
+        content: ''; position: absolute; top: 2px; left: 2px;
+        width: 12px; height: 12px; border-radius: 50%;
+        background: #94a3b8; transition: all 0.2s;
+    }
+    .ws-tools-toggle-dot.active { background: rgba(139,92,246,0.4); }
+    .ws-tools-toggle-dot.active::after { left: 14px; background: #a78bfa; }
+
     /* Impact column (Level 2) */
     .ws-impact-col-badge {
         display: inline-flex; align-items: center; justify-content: center;
@@ -1984,11 +2026,6 @@
 
             <!-- Tree Controls (Rows) -->
             <div class="btn-group btn-group-sm">
-                <button @click="expandAllRows(); $nextTick(() => _saveTreeState())"
-                        class="btn btn-outline-light"
-                        title="Expand All Rows">
-                    <i class="bi bi-arrows-expand"></i>
-                </button>
                 <button @click="expandOneLevel(); $nextTick(() => _saveTreeState())"
                         class="btn btn-outline-light"
                         title="Expand One Level">
@@ -1999,26 +2036,97 @@
                         title="Collapse One Level">
                     <i class="bi bi-chevron-bar-up"></i>
                 </button>
-                <button @click="collapseAllRows(); $nextTick(() => _saveTreeState())"
-                        class="btn btn-outline-light"
-                        title="Collapse All Rows">
-                    <i class="bi bi-arrows-collapse"></i>
-                </button>
             </div>
 
-            <!-- Column Controls — hidden in tree-only mode (no columns) -->
-            <div class="btn-group btn-group-sm" x-show="badgeMode > 0">
-                <button @click="expandAllColumns()"
-                        class="btn btn-outline-light"
-                        title="Expand All Columns">
-                    <i class="bi bi-arrows-angle-expand"></i>
+            <!-- Tools Menu -->
+            <div style="position:relative;">
+                <button @click="toolsMenuOpen = !toolsMenuOpen"
+                        class="btn btn-sm btn-outline-light"
+                        :class="{'active': toolsMenuOpen}"
+                        title="Tools"
+                        style="display:inline-flex; align-items:center; gap:4px;">
+                    <i class="bi bi-tools"></i>
+                    Tools
+                    <i class="bi bi-chevron-down" style="font-size:0.55rem;"></i>
                 </button>
-                <button @click="collapseAllColumns()"
-                        class="btn btn-outline-light"
-                        title="Collapse All Columns">
-                    <i class="bi bi-arrows-angle-contract"></i>
-                </button>
+                <div x-show="toolsMenuOpen" x-cloak
+                     @click.outside="toolsMenuOpen = false"
+                     class="ws-tools-dropdown"
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 transform scale-95"
+                     x-transition:enter-end="opacity-100 transform scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 transform scale-100"
+                     x-transition:leave-end="opacity-0 transform scale-95">
+                    <!-- ── Tree ── -->
+                    <div class="ws-tools-section">Tree</div>
+                    <button class="ws-tools-item" @click="expandAllRows(); toolsMenuOpen = false; $nextTick(() => _saveTreeState())">
+                        <i class="bi bi-arrows-expand" style="color:#3b82f6;"></i>
+                        <div>
+                            <div class="ws-tools-item-title">Expand All</div>
+                            <div class="ws-tools-item-desc">Expand the entire tree</div>
+                        </div>
+                    </button>
+                    <button class="ws-tools-item" @click="collapseAllRows(); toolsMenuOpen = false; $nextTick(() => _saveTreeState())">
+                        <i class="bi bi-arrows-collapse" style="color:#64748b;"></i>
+                        <div>
+                            <div class="ws-tools-item-title">Collapse All</div>
+                            <div class="ws-tools-item-desc">Collapse the entire tree</div>
+                        </div>
+                    </button>
+                    <button class="ws-tools-item"
+                            @click="expandToCISKSystems(); toolsMenuOpen = false; $nextTick(() => _saveTreeState())"
+                            :disabled="!_hasPortalSystems()"
+                            :class="{'ws-tools-item-disabled': !_hasPortalSystems()}">
+                        <i class="bi bi-compass" style="color:#9b59b6;"></i>
+                        <div>
+                            <div class="ws-tools-item-title">Show CISK Systems</div>
+                            <div class="ws-tools-item-desc" x-text="_hasPortalSystems() ? 'Expand tree to reveal portal systems linked to other CISKs' : 'No portal systems in this workspace'"></div>
+                        </div>
+                    </button>
+
+                    <!-- ── Columns ── -->
+                    <template x-if="badgeMode > 0">
+                        <div>
+                            <div class="ws-tools-section">Columns</div>
+                            <button class="ws-tools-item" @click="expandAllColumns(); toolsMenuOpen = false">
+                                <i class="bi bi-arrows-angle-expand" style="color:#10b981;"></i>
+                                <div>
+                                    <div class="ws-tools-item-title">Expand All Columns</div>
+                                    <div class="ws-tools-item-desc">Show all value type columns</div>
+                                </div>
+                            </button>
+                            <button class="ws-tools-item" @click="collapseAllColumns(); toolsMenuOpen = false">
+                                <i class="bi bi-arrows-angle-contract" style="color:#64748b;"></i>
+                                <div>
+                                    <div class="ws-tools-item-title">Collapse All Columns</div>
+                                    <div class="ws-tools-item-desc">Hide all value type columns</div>
+                                </div>
+                            </button>
+                        </div>
+                    </template>
+
+                    <!-- ── Visibility ── -->
+                    <div class="ws-tools-section">Visibility</div>
+                    <button class="ws-tools-item ws-tools-toggle" @click.stop="showArchivedKPIs = !showArchivedKPIs">
+                        <i class="bi" :class="showArchivedKPIs ? 'bi-archive-fill' : 'bi-archive'" :style="showArchivedKPIs ? 'color:#f59e0b;' : 'color:#64748b;'"></i>
+                        <div style="flex:1;">
+                            <div class="ws-tools-item-title">Archived KPIs</div>
+                            <div class="ws-tools-item-desc">Show KPIs that have been archived</div>
+                        </div>
+                        <div class="ws-tools-toggle-dot" :class="{'active': showArchivedKPIs}"></div>
+                    </button>
+                    <button class="ws-tools-item ws-tools-toggle" @click.stop="focusLevelMode = !focusLevelMode; if (!focusLevelMode) focusedLevel = null; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_focus_mode: focusLevelMode})})">
+                        <i class="bi" :class="focusLevelMode ? 'bi-layers-fill' : 'bi-layers-half'" :style="focusLevelMode ? 'color:#8b5cf6;' : 'color:#64748b;'"></i>
+                        <div style="flex:1;">
+                            <div class="ws-tools-item-title">Level Focus</div>
+                            <div class="ws-tools-item-desc">Dim parent levels when stepping through the tree</div>
+                        </div>
+                        <div class="ws-tools-toggle-dot" :class="{'active': focusLevelMode}"></div>
+                    </button>
+                </div>
             </div>
+
 
         </div>
     </div>
@@ -2170,24 +2278,6 @@
                         <span style="font-size: 0.85rem;"><i class="bi bi-graph-up"></i> KPIs</span>
                     </label>
 
-                    <!-- Divider -->
-                    <div style="grid-column: 1 / -1; height: 1px; background: #e9ecef; margin: 0.5rem 0;"></div>
-
-                    <!-- Options -->
-                    <label class="toggle-label">
-                        <label class="toggle-switch">
-                            <input type="checkbox" x-model="showArchivedKPIs">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span style="font-size: 0.85rem;"><i class="bi bi-archive-fill"></i> Archived KPIs</span>
-                    </label>
-                    <label class="toggle-label">
-                        <label class="toggle-switch">
-                            <input type="checkbox" x-model="focusLevelMode" @change="if (!focusLevelMode) focusedLevel = null; fetch('/workspace/api/preferences', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':'{{ csrf_token() }}'}, body: JSON.stringify({ws_focus_mode: focusLevelMode})})">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span style="font-size: 0.85rem;" data-bs-toggle="tooltip" data-bs-placement="top" title="When using the ▼/▲ step buttons, dims parent levels so only the deepest expanded level stays in focus. Resets on any manual expand/collapse."><i class="bi bi-layers-half"></i> Level Focus</span>
-                    </label>
                 </div>
             </div>
 
@@ -3584,6 +3674,7 @@ function workspaceV2(orgId, filterPresets) {
         orgData: null,           // Org-level links (direct + inherited from whole tree)
         whereUsed: [],           // Systems in other CISKs that link to this org
         pendingTreeState: null,  // Tree collapse state to apply after next loadData()
+        toolsMenuOpen: false,
         _loadDataInProgress: false,  // Guard against concurrent loadData() calls
         _initDone: false,  // Guard against Alpine calling init() twice (auto + x-init)
         _strategyCount: {{ strategy_count|default(0) }},
@@ -5185,6 +5276,55 @@ function workspaceV2(orgId, filterPresets) {
             // Force Alpine to re-evaluate by touching a reactive property
             this.$nextTick(() => {
                 // Trigger reactivity by re-assigning spaces array
+                this.spaces = [...this.spaces];
+            });
+        },
+
+        _hasPortalSystems() {
+            return this.spaces.some(space =>
+                space.challenges && space.challenges.some(challenge =>
+                    challenge.initiatives && challenge.initiatives.some(initiative =>
+                        initiative.systems && initiative.systems.some(system => system.portal)
+                    )
+                )
+            );
+        },
+
+        expandToCISKSystems() {
+            this.focusedLevel = null;
+
+            // First collapse everything
+            this.spaces.forEach(space => {
+                space.collapsed = true;
+                if (space.challenges) space.challenges.forEach(challenge => {
+                    challenge.collapsed = true;
+                    if (challenge.initiatives) challenge.initiatives.forEach(initiative => {
+                        initiative.collapsed = true;
+                        if (initiative.systems) initiative.systems.forEach(system => {
+                            system.collapsed = true;
+                        });
+                    });
+                });
+            });
+
+            // Then expand only paths leading to portal systems
+            this.spaces.forEach(space => {
+                if (!space.challenges) return;
+                space.challenges.forEach(challenge => {
+                    if (!challenge.initiatives) return;
+                    challenge.initiatives.forEach(initiative => {
+                        if (!initiative.systems) return;
+                        var hasPortal = initiative.systems.some(s => s.portal);
+                        if (hasPortal) {
+                            space.collapsed = false;
+                            challenge.collapsed = false;
+                            initiative.collapsed = false;
+                        }
+                    });
+                });
+            });
+
+            this.$nextTick(() => {
                 this.spaces = [...this.spaces];
             });
         },

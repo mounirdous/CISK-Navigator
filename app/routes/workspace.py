@@ -1167,6 +1167,15 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.10.6",
+            "date": "April 4, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Tools menu</strong> — a new dropdown in the workspace toolbar consolidates power-user actions into organized sections: <em>Tree</em> (Expand All, Collapse All, Show CISK Systems), <em>Columns</em> (Expand/Collapse All Columns), and <em>Visibility</em> (Archived KPIs, Level Focus). The toolbar is cleaner with fewer buttons.",
+                "<strong>Show CISK Systems</strong> — one-click tool that collapses the tree, then expands only the branches leading to portal systems linked to other CISKs. Greyed out with a message when no portal systems exist.",
+            ],
+        },
+        {
             "version": "7.10.5",
             "date": "April 4, 2026",
             "tags": ["fix"],
