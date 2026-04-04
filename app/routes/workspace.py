@@ -5245,8 +5245,21 @@ def _build_workspace_data(org_id):
                     _pt.info(f"[PERF_TRACE] INCREMENTAL RECOMPUTE: {_rc_result['entities_computed']} entities, {_rc_result['values_cached']} cached in {_rc_result['duration_ms']}ms")  # [PERF_TRACE]
                 else:
                     # Full recompute is too slow for inline request (causes 502 timeout).
-                    # Serve stale cache entries instead — stale data is better than a 502.
-                    _pt.warning(f"[PERF_TRACE] FULL RECOMPUTE needed but skipped (too slow for inline request) — serving stale cache. Trigger recompute from Super Admin or POST /workspace/api/recompute-rollups")  # [PERF_TRACE]
+                    # Serve stale cache entries and trigger recompute in background thread.
+                    _pt.warning(f"[PERF_TRACE] FULL RECOMPUTE needed — running in background thread, serving stale cache now")  # [PERF_TRACE]
+                    import threading
+                    _bg_app = current_app._get_current_object()
+                    def _bg_recompute(_app, _oid):
+                        with _app.app_context():
+                            try:
+                                from app.services.rollup_compute_service import RollupComputeService
+                                _r = RollupComputeService.recompute_organization(_oid)
+                                _app.logger.info(f"Background auto-recompute done for org {_oid}: {_r}")
+                            except Exception as _e:
+                                _app.logger.error(f"Background auto-recompute failed for org {_oid}: {_e}")
+                    _t = threading.Thread(target=_bg_recompute, args=(_bg_app, org_id))
+                    _t.daemon = True
+                    _t.start()
             except Exception as _rc_err:
                 _pt.error(f"[PERF_TRACE] ROLLUP RECOMPUTE FAILED: {_rc_err}")  # [PERF_TRACE]
         else:

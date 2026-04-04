@@ -264,6 +264,9 @@ def recompute_rollups(org_id):
     thread = threading.Thread(target=_recompute_in_background, args=(app, org_id))
     thread.daemon = True
     thread.start()
+
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return jsonify({"success": True, "message": "Recomputation started"})
     flash("Rollup recomputation started in background. Values will update within a minute.", "info")
     return redirect(url_for("super_admin.index"))
 

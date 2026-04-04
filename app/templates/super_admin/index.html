@@ -189,14 +189,25 @@
                         {% endif %}
                     </p>
                     {% if precompute_rollups_enabled %}
-                    <div class="mt-2" style="font-size:0.7rem;">
+                    <div class="mt-2" style="font-size:0.7rem;" id="recompute-buttons">
                         {% for org in organizations if not org.is_deleted %}
-                        <form method="POST" action="{{ url_for('super_admin.recompute_rollups', org_id=org.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-outline-warning btn-sm" style="font-size:0.6rem; padding:0.1rem 0.3rem;" title="Recompute {{ org.name }}">
-                                <i class="bi bi-arrow-repeat"></i> {{ org.name }}
-                            </button>
-                        </form>
+                        <button type="button" class="btn btn-outline-warning btn-sm recompute-btn"
+                                style="font-size:0.6rem; padding:0.1rem 0.3rem;"
+                                data-url="{{ url_for('super_admin.recompute_rollups', org_id=org.id) }}"
+                                data-org-name="{{ org.name }}"
+                                title="Recompute {{ org.name }}">
+                            <i class="bi bi-arrow-repeat"></i> {{ org.name }}
+                        </button>
                         {% endfor %}
+                    </div>
+                    <div id="recompute-status" class="mt-2" style="display:none;">
+                        <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill"
+                             style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); font-size: 0.75rem; font-weight: 600;">
+                            <div class="spinner-border spinner-border-sm text-warning" role="status" style="width:0.85rem; height:0.85rem;">
+                                <span class="visually-hidden">Recomputing...</span>
+                            </div>
+                            <span id="recompute-status-text">Recomputing...</span>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
@@ -419,5 +430,54 @@
     width: 3rem;
     height: 1.5rem;
 }
+.recompute-btn.running {
+    pointer-events: none;
+    opacity: 0.5;
+}
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.recompute-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var url = this.dataset.url;
+        var orgName = this.dataset.orgName;
+        var statusEl = document.getElementById('recompute-status');
+        var statusText = document.getElementById('recompute-status-text');
+        var buttons = document.getElementById('recompute-buttons');
+
+        // Disable all buttons
+        buttons.querySelectorAll('.recompute-btn').forEach(function(b) { b.classList.add('running'); });
+
+        // Show spinner
+        statusText.textContent = 'Recomputing ' + orgName + '...';
+        statusEl.style.display = 'block';
+
+        fetch(url, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            statusEl.innerHTML =
+                '<div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" ' +
+                'style="background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); font-size: 0.75rem; font-weight: 600;">' +
+                '<i class="bi bi-check-circle-fill text-success"></i> ' +
+                '<span>' + orgName + ' — recomputation started. Refresh in ~1 min.</span>' +
+                '</div>';
+            buttons.querySelectorAll('.recompute-btn').forEach(function(b) { b.classList.remove('running'); });
+        })
+        .catch(function() {
+            statusEl.innerHTML =
+                '<div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" ' +
+                'style="background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); font-size: 0.75rem; font-weight: 600;">' +
+                '<i class="bi bi-x-circle-fill text-danger"></i> ' +
+                '<span>Failed to start recomputation for ' + orgName + '</span>' +
+                '</div>';
+            buttons.querySelectorAll('.recompute-btn').forEach(function(b) { b.classList.remove('running'); });
+        });
+    });
+});
+</script>
 {% endblock %}
