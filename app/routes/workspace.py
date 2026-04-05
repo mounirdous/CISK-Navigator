@@ -2143,6 +2143,15 @@ def kpi_cell_detail(kpi_id, vt_id):
     for s in org_stakeholders:
         if s.name not in all_contributor_names:
             all_contributor_names.append(s.name)
+
+    # Add org member display names for autocomplete
+    from app.models import UserOrganizationMembership
+    memberships = UserOrganizationMembership.query.filter_by(organization_id=org_id).all()
+    for m in memberships:
+        user_name = m.user.display_name or m.user.login
+        if user_name not in all_contributor_names:
+            all_contributor_names.append(user_name)
+
     all_contributor_names.sort()
 
     return render_template(
