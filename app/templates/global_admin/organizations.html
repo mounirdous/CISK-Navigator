@@ -139,15 +139,20 @@
                         <div class="org-info">
                             <div class="org-name">
                                 {{ org.name }}
-                                {% if org.is_active %}
-                                <span class="badge bg-success">
-                                    <i class="bi bi-check-circle-fill"></i> Active
-                                </span>
-                                {% else %}
-                                <span class="badge bg-secondary">
-                                    <i class="bi bi-x-circle-fill"></i> Inactive
-                                </span>
-                                {% endif %}
+                                <form method="POST" action="{{ url_for('global_admin.toggle_organization_active', org_id=org.id) }}" style="display: inline;">
+                                    {{ csrf_form.hidden_tag() }}
+                                    {% if org.is_active %}
+                                    <button type="submit" class="badge bg-success border-0" style="cursor: pointer;"
+                                            title="Click to deactivate">
+                                        <i class="bi bi-check-circle-fill"></i> Active
+                                    </button>
+                                    {% else %}
+                                    <button type="submit" class="badge bg-secondary border-0" style="cursor: pointer;"
+                                            title="Click to activate">
+                                        <i class="bi bi-x-circle-fill"></i> Inactive
+                                    </button>
+                                    {% endif %}
+                                </form>
                             </div>
 
                             {% if org.description %}

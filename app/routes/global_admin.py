@@ -775,6 +775,19 @@ def edit_organization(org_id):
     return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users)
 
 
+@bp.route("/organizations/<int:org_id>/toggle-active", methods=["POST"])
+@login_required
+@global_admin_required
+def toggle_organization_active(org_id):
+    """Toggle organization active/inactive status."""
+    org = Organization.query.get_or_404(org_id)
+    org.is_active = not org.is_active
+    db.session.commit()
+    status = "activated" if org.is_active else "deactivated"
+    flash(f"Workspace '{org.name}' {status}.", "success")
+    return redirect(url_for("global_admin.organizations"))
+
+
 @bp.route("/organizations/<int:org_id>/delete-preview")
 @login_required
 @global_admin_required
