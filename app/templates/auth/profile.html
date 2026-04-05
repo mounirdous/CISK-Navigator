@@ -1,464 +1,305 @@
 {% extends "base.html" %}
-
 {% block title %}Profile - CISK Navigator{% endblock %}
 
 {% block extra_css %}
 <style>
-/* Profile page modern styling */
-.profile-header {
+.pf-header {
     background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 16px 16px 0 0;
-    margin: -1.5rem -1.5rem 0 -1.5rem;
+    color: white; padding: 1.5rem 2rem; border-radius: 16px;
+    display: flex; align-items: center; gap: 1.5rem; margin-bottom: 1.5rem;
 }
-
-.profile-avatar {
-    width: 80px;
-    height: 80px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2.5rem;
-    margin: 0 auto 1rem;
-    backdrop-filter: blur(10px);
+.pf-avatar {
+    width: 64px; height: 64px; background: rgba(255,255,255,0.2);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 2rem; flex-shrink: 0;
 }
-
-.profile-section {
-    margin-bottom: 2rem;
+.pf-tabs {
+    display: flex; gap: 0; border-bottom: 2px solid var(--border-color); margin-bottom: 1.5rem;
 }
-
-.profile-section-title {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.pf-tab {
+    padding: 0.6rem 1.25rem; font-size: 0.85rem; font-weight: 600;
+    color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; transition: all 0.15s; background: none; border-top: none; border-left: none; border-right: none;
 }
-
-.profile-section-title i {
-    color: var(--accent-primary);
+.pf-tab:hover { color: var(--text-primary); }
+.pf-tab.active { color: var(--accent-primary); border-bottom-color: var(--accent-primary); }
+.pf-panel { display: none; }
+.pf-panel.active { display: block; }
+.pf-card {
+    background: var(--bg-primary); border: 1.5px solid var(--border-color);
+    border-radius: 10px; padding: 1.25rem; margin-bottom: 0.75rem;
+    transition: all 0.15s;
 }
-
-.info-row {
-    display: flex;
-    padding: 1rem;
-    border-radius: 8px;
-    margin-bottom: 0.75rem;
-    background-color: var(--bg-secondary);
-    transition: all var(--transition-fast);
+.pf-card:hover { border-color: rgba(99,102,241,0.3); }
+.pf-card.highlighted { border-left: 3px solid var(--accent-primary); }
+.pf-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem; }
+.pf-section-head { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.pf-section-head i { color: var(--accent-primary); }
+.pf-add-row {
+    padding: 0.75rem 1rem; background: var(--bg-secondary); border-radius: 8px;
+    border: 2px dashed var(--border-color); margin-top: 0.75rem;
 }
-
-.info-row:hover {
-    background-color: var(--hover-bg);
-    transform: translateX(4px);
+.pf-badge-toggle {
+    cursor: pointer; font-size: 0.6rem; border-radius: 12px; padding: 0.15rem 0.45rem;
+    transition: all 0.15s; display: inline-flex; align-items: center; gap: 0.2rem;
 }
-
-.info-label {
-    font-weight: 600;
-    color: var(--text-secondary);
-    min-width: 140px;
-    font-size: 0.9rem;
+.icon-pick {
+    width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+    border: 2px solid transparent; background: var(--bg-secondary); transition: all 0.15s;
 }
-
-.info-value {
-    color: var(--text-primary);
-    font-weight: 500;
-}
-
-.org-card {
-    padding: 1rem;
-    border-radius: 10px;
-    background-color: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    margin-bottom: 0.75rem;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.org-card:hover {
-    border-color: var(--accent-primary);
-    transform: translateX(4px);
-    box-shadow: var(--shadow-sm);
-}
-
-.org-card.current {
-    border-color: var(--accent-primary);
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, var(--bg-secondary) 100%);
-}
-
-.form-switch .form-check-input {
-    width: 3rem;
-    height: 1.5rem;
-    cursor: pointer;
-}
-
-.form-switch .form-check-input:checked {
-    background-color: var(--accent-success);
-    border-color: var(--accent-success);
-}
-
-.action-buttons {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 2px solid var(--border-subtle);
-}
+.icon-pick.selected { border-color: var(--accent-primary); background: rgba(13,110,253,0.1); }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="row justify-content-center fade-in">
-    <div class="col-md-10 col-lg-8">
-        <div class="card hover-lift">
-            <div class="profile-header text-center">
-                <div class="profile-avatar">
-                    <i class="bi bi-person-fill"></i>
+    <div class="col-lg-9 col-xl-8">
+
+        <!-- Header -->
+        <div class="pf-header">
+            <div class="pf-avatar"><i class="bi bi-person-fill"></i></div>
+            <div>
+                <h4 class="mb-0 fw-bold">{{ current_user.display_name or current_user.login }}</h4>
+                <div class="opacity-75" style="font-size:0.85rem;">{{ current_user.email or 'No email set' }}</div>
+                <div class="mt-1" style="font-size:0.75rem;">
+                    {% if current_user.is_active %}<span class="badge bg-success">Active</span>{% endif %}
+                    {% if current_user.is_global_admin %}<span class="badge" style="background:rgba(255,255,255,0.2);">Instance Admin</span>{% endif %}
+                    {% if current_user.is_super_admin %}<span class="badge" style="background:rgba(255,255,255,0.2);">Super Admin</span>{% endif %}
                 </div>
-                <h2 class="mb-1">{{ current_user.display_name or current_user.login }}</h2>
-                <p class="mb-0 opacity-75">{{ current_user.email or 'No email set' }}</p>
             </div>
+            <div class="ms-auto text-end" style="font-size:0.75rem; opacity:0.7;">
+                Member since {{ current_user.created_at.strftime('%b %Y') }}
+            </div>
+        </div>
 
-            <div class="card-body" style="padding: 2.5rem;">
-                <!-- Account Information Section -->
-                <div class="profile-section">
-                    <div class="profile-section-title">
-                        <i class="bi bi-person-badge"></i>
-                        Account Information
+        <!-- Tabs -->
+        <div class="pf-tabs">
+            <button class="pf-tab active" onclick="switchTab('account')"><i class="bi bi-person"></i> Account</button>
+            <button class="pf-tab" onclick="switchTab('workspaces')"><i class="bi bi-building"></i> Workspaces</button>
+            <button class="pf-tab" onclick="switchTab('profiles')" id="profilesTab"><i class="bi bi-sliders"></i> Profiles</button>
+        </div>
+
+        <!-- ═══ ACCOUNT TAB ═══ -->
+        <div class="pf-panel active" id="panel-account">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        {{ form.display_name.label(class="form-label fw-bold", style="font-size:0.85rem;") }}
+                        {{ form.display_name(class="form-control", placeholder="Your full name") }}
                     </div>
-
-                    <div class="info-row">
-                        <div class="info-label">Login Username</div>
-                        <div class="info-value">
-                            {{ current_user.login }}
-                            <small class="text-muted d-block mt-1">Cannot be changed</small>
-                        </div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="info-label">Account Status</div>
-                        <div class="info-value">
-                            {% if current_user.is_active %}
-                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Active</span>
-                            {% else %}
-                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Inactive</span>
-                            {% endif %}
-                            {% if current_user.is_global_admin %}
-                                <span class="badge" style="background: linear-gradient(135deg, var(--accent-primary) 0%, #0b5ed7 100%);">
-                                    <i class="bi bi-shield-lock-fill"></i> Instance Admin
-                                </span>
-                            {% endif %}
-                        </div>
-                    </div>
-
-                    <div class="info-row">
-                        <div class="info-label">Member Since</div>
-                        <div class="info-value">
-                            <i class="bi bi-calendar-event"></i>
-                            {{ current_user.created_at.strftime('%B %d, %Y') }}
-                        </div>
+                    <div class="col-md-6">
+                        {{ form.email.label(class="form-label fw-bold", style="font-size:0.85rem;") }}
+                        {{ form.email(class="form-control", type="email", placeholder="your.email@company.com") }}
                     </div>
                 </div>
-
-                <!-- Edit Profile Section -->
-                <div class="profile-section">
-                    <div class="profile-section-title">
-                        <i class="bi bi-pencil-square"></i>
-                        Edit Profile
-                    </div>
-
-                    <form method="POST">
-                        {{ form.hidden_tag() }}
-
-                        <div class="mb-3">
-                            {{ form.display_name.label(class="form-label") }}
-                            {{ form.display_name(class="form-control", placeholder="Your full name") }}
-                            <small class="form-text text-muted">
-                                This name will be displayed throughout the application
-                            </small>
-                            {% if form.display_name.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.display_name.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.email.label(class="form-label") }}
-                            {{ form.email(class="form-control", type="email", placeholder="your.email@company.com") }}
-                            <small class="form-text text-muted">
-                                Used for notifications and account recovery
-                            </small>
-                            {% if form.email.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.email.errors %}{{ error }}{% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-
-
-                        <div class="mb-4">
-                            <div class="form-check form-switch">
-                                {{ form.dark_mode(class="form-check-input", role="switch", id="darkModeSwitch") }}
-                                {{ form.dark_mode.label(class="form-check-label", for="darkModeSwitch") }}
-                            </div>
-                            <small class="form-text text-muted d-block mt-2">
-                                <i class="bi bi-moon-stars"></i>
-                                Enable dark theme for reduced eye strain in low-light environments
-                            </small>
-                        </div>
-
-
-                        <div>
-                            {{ form.submit(class="btn btn-primary btn-lg") }}
-                        </div>
-                    </form>
-                </div>
-
-                <!-- Organizations Section -->
-                <div class="profile-section">
-                    <div class="profile-section-title">
-                        <i class="bi bi-building"></i>
-                        Your Organizations ({{ current_user.organization_memberships|length }})
-                    </div>
-
-                    {% if current_user.organization_memberships %}
-                        {% for membership in current_user.organization_memberships %}
-                            {% set org = membership.organization %}
-                            {% set org_label_ids = org.labels|selectattr('user_id', 'equalto', current_user.id)|map(attribute='id')|list %}
-                            <div class="org-card {% if org.id == session.get('organization_id') %}current{% endif %}">
-                                <div style="flex:1;">
-                                    <div class="fw-bold d-flex align-items-center gap-2">
-                                        {% if org_logos.get(org.id) %}
-                                        <img src="{{ org_logos[org.id] }}" alt="{{ org.name }}" style="width: 24px; height: 24px; object-fit: contain;">
-                                        {% else %}
-                                        <i class="bi bi-building"></i>
-                                        {% endif %}
-                                        {{ org.name }}
-                                        {% if org.id == session.get('organization_id') %}
-                                        <span class="badge" style="background: linear-gradient(135deg, var(--accent-info) 0%, #0aa2c0 100%); font-size:0.6rem;">
-                                            <i class="bi bi-star-fill"></i> Current
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                    {% if current_user.workspace_labels|list %}
-                                    <div style="margin-top:0.4rem; display:flex; gap:0.25rem; flex-wrap:wrap;">
-                                        {% for label in current_user.workspace_labels|sort(attribute='name') %}
-                                        {% set is_on = label.id in org_label_ids %}
-                                        <span class="badge org-label-toggle"
-                                              data-org-id="{{ org.id }}" data-label-id="{{ label.id }}"
-                                              onclick="toggleOrgLabel({{ org.id }}, {{ label.id }}, this)"
-                                              style="cursor:pointer; font-size:0.6rem; border:1px solid {{ label.color }};
-                                                     color:{{ label.color }};
-                                                     background:{% if is_on %}{{ label.color }}20{% else %}transparent{% endif %};
-                                                     opacity:{% if is_on %}1{% else %}0.35{% endif %};">
-                                            <i class="bi bi-tag-fill"></i> {{ label.name }}
-                                        </span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted text-nowrap">
-                                    {% if org.is_active %}
-                                        <span class="text-success"><i class="bi bi-check-circle-fill"></i> Active</span>
-                                    {% else %}
-                                        <span class="text-danger"><i class="bi bi-x-circle-fill"></i> Inactive</span>
-                                    {% endif %}
-                                </small>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <div class="empty-state py-4">
-                            <i class="bi bi-building"></i>
-                            <p class="mt-2 mb-0">No organizations assigned</p>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Workspace Labels Section -->
-                <div class="profile-section">
-                    <div class="profile-section-title">
-                        <i class="bi bi-tags"></i>
-                        Workspace Labels
-                    </div>
-                    <p class="text-muted mb-3" style="font-size: 0.85rem;">
-                        Create personal labels to organize your workspaces. Labels are private to you.
-                    </p>
-
-                    <!-- Existing labels -->
-                    <div id="labelList">
-                        {% for label in current_user.workspace_labels|sort(attribute='name') %}
-                        <div class="info-row d-flex align-items-center justify-content-between" id="labelRow{{ label.id }}">
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="color" value="{{ label.color }}" style="width:28px;height:28px;border:none;cursor:pointer;border-radius:4px;"
-                                       onchange="updateLabel({{ label.id }}, {color: this.value})">
-                                <span class="fw-bold label-name-editable" style="color: {{ label.color }}; cursor:pointer;"
-                                      id="labelName{{ label.id }}"
-                                      title="Click to rename"
-                                      onclick="editLabelName({{ label.id }}, this)">{{ label.name }}</span>
-                                <span class="badge bg-secondary" style="font-size:0.65rem;">
-                                    {{ label.organizations|selectattr('is_active')|list|length }} workspace{{ 's' if label.organizations|selectattr('is_active')|list|length != 1 else '' }}
-                                </span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <button class="btn btn-outline-danger btn-sm" style="font-size:0.7rem;padding:0.15rem 0.4rem;"
-                                        onclick="deleteLabel({{ label.id }})" title="Delete label">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <!-- Create new label -->
-                    <div class="d-flex align-items-center gap-2 mt-3" style="padding: 0.75rem 1rem; background: var(--bg-secondary); border-radius: 8px; border: 2px dashed var(--border-color);">
-                        <input type="color" id="profileNewLabelColor" value="#6366f1"
-                               style="width:28px;height:28px;border:none;cursor:pointer;border-radius:4px;">
-                        <input type="text" id="profileNewLabelName" class="form-control form-control-sm"
-                               placeholder="New label name..." maxlength="50"
-                               style="max-width:200px;"
-                               onkeydown="if(event.key==='Enter'){event.preventDefault();createProfileLabel();}">
-                        <button class="btn btn-primary btn-sm" onclick="createProfileLabel()">
-                            <i class="bi bi-plus"></i> Add
-                        </button>
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="form-check form-switch">
+                        {{ form.dark_mode(class="form-check-input", role="switch", id="darkModeSwitch", style="width:2.5rem;height:1.3rem;") }}
+                        {{ form.dark_mode.label(class="form-check-label", for="darkModeSwitch") }}
                     </div>
                 </div>
-
-                <!-- Workspace Profiles Section -->
-                <div class="profile-section">
-                    <div class="profile-section-title">
-                        <i class="bi bi-person-workspace"></i>
-                        Workspace Profiles
-                    </div>
-                    <p class="text-muted mb-3" style="font-size: 0.85rem;">
-                        Profiles filter which workspaces appear in the Workspaces menu based on labels.
-                        Activate a profile to focus on specific workspaces. Only one profile can be active at a time.
-                    </p>
-
-                    <div id="profileList">
-                        {% for p in current_user.workspace_profiles|sort(attribute='name') %}
-                        <div class="info-row" id="profileRow{{ p.id }}" style="{% if p.is_active %}border-left: 3px solid var(--accent-primary);{% endif %}">
-                            <div class="d-flex align-items-center justify-content-between w-100">
-                                <div class="d-flex align-items-center gap-2">
-                                    <i class="bi bi-{{ p.icon }}" style="font-size:1.1rem; {% if p.is_active %}color:var(--accent-primary);{% else %}opacity:0.5;{% endif %}"></i>
-                                    <div>
-                                        <span class="fw-bold">{{ p.name }}</span>
-                                        {% if p.is_active %}
-                                        <span class="badge bg-primary ms-1" style="font-size:0.6rem;">Active</span>
-                                        {% endif %}
-                                        <div style="font-size:0.7rem; color:var(--text-secondary); margin-top:0.15rem; display:flex; gap:0.25rem; flex-wrap:wrap; align-items:center;">
-                                            {% for label in current_user.workspace_labels|sort(attribute='name') %}
-                                            {% set is_in = label.id in p.label_ids %}
-                                            <span class="badge profile-label-toggle" data-profile-id="{{ p.id }}" data-label-id="{{ label.id }}"
-                                                  onclick="toggleProfileLabel({{ p.id }}, {{ label.id }}, this)"
-                                                  style="cursor:pointer; font-size:0.6rem; border:1px solid {{ label.color }};
-                                                         color:{{ label.color }};
-                                                         background:{% if is_in %}{{ label.color }}20{% else %}transparent{% endif %};
-                                                         opacity:{% if is_in %}1{% else %}0.4{% endif %};">
-                                                <i class="bi bi-tag-fill"></i> {{ label.name }}
-                                            </span>
-                                            {% endfor %}
-                                            {% if not current_user.workspace_labels|list %}
-                                                <span class="text-muted">Create labels above first</span>
-                                            {% endif %}
-                                            <span class="badge" data-profile-id="{{ p.id }}"
-                                                  onclick="toggleProfileVisibility({{ p.id }}, this)"
-                                                  style="cursor:pointer; font-size:0.6rem; margin-left:0.25rem;
-                                                         border:1px solid {% if p.space_visibility == 'public' %}#22c55e{% else %}#64748b{% endif %};
-                                                         color:{% if p.space_visibility == 'public' %}#22c55e{% else %}#64748b{% endif %};
-                                                         background:{% if p.space_visibility == 'public' %}#22c55e20{% else %}transparent{% endif %};
-                                                         opacity:{% if p.space_visibility == 'public' %}1{% else %}0.5{% endif %};">
-                                                <i class="bi bi-globe2"></i> Public only
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center gap-1">
-                                    {% if not p.is_active %}
-                                    <button class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;padding:0.15rem 0.5rem;"
-                                            onclick="activateProfile({{ p.id }})" title="Activate this profile">
-                                        <i class="bi bi-check2"></i> Activate
-                                    </button>
-                                    {% else %}
-                                    <button class="btn btn-outline-secondary btn-sm" style="font-size:0.7rem;padding:0.15rem 0.5rem;"
-                                            onclick="activateProfile(0)" title="Deactivate (show all workspaces)">
-                                        <i class="bi bi-x"></i> Deactivate
-                                    </button>
-                                    {% endif %}
-                                    <button class="btn btn-outline-secondary btn-sm" style="font-size:0.7rem;padding:0.15rem 0.4rem;"
-                                            onclick="editProfile({{ p.id }})" title="Edit profile">
-                                        <i class="bi bi-pencil"></i>
-                                    </button>
-                                    <button class="btn btn-outline-danger btn-sm" style="font-size:0.7rem;padding:0.15rem 0.4rem;"
-                                            onclick="deleteProfile({{ p.id }})" title="Delete profile">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    <!-- Create new profile -->
-                    <div class="mt-3" style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border: 2px dashed var(--border-color);">
-                        <div class="d-flex align-items-center gap-2 mb-2">
-                            <div class="d-flex gap-1 flex-wrap" id="iconPicker" style="max-width: 220px;">
-                                {% set profile_icons = ['briefcase', 'mortarboard', 'rocket-takeoff', 'buildings', 'gear', 'lightning', 'star', 'globe2', 'shield-check', 'people', 'hammer', 'palette', 'code-slash', 'eyeglasses', 'heart'] %}
-                                {% for icon in profile_icons %}
-                                <span class="icon-pick {% if icon == 'briefcase' %}selected{% endif %}"
-                                      data-icon="{{ icon }}" onclick="selectProfileIcon(this)"
-                                      style="width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;
-                                             border-radius:6px;cursor:pointer;font-size:0.9rem;
-                                             border:2px solid {% if icon == 'briefcase' %}var(--accent-primary){% else %}transparent{% endif %};
-                                             background:{% if icon == 'briefcase' %}rgba(13,110,253,0.1){% else %}var(--bg-secondary){% endif %};">
-                                    <i class="bi bi-{{ icon }}"></i>
-                                </span>
-                                {% endfor %}
-                            </div>
-                            <input type="hidden" id="newProfileIcon" value="briefcase">
-                            <input type="text" id="newProfileName" class="form-control form-control-sm"
-                                   placeholder="Profile name..." maxlength="50" style="max-width:180px;"
-                                   onkeydown="if(event.key==='Enter'){event.preventDefault();createProfile();}">
-                            <button class="btn btn-primary btn-sm" onclick="createProfile()">
-                                <i class="bi bi-plus"></i> Create
-                            </button>
-                        </div>
-                        <div style="font-size:0.75rem; color:var(--text-secondary);">
-                            <strong>Labels:</strong>
-                            <span id="newProfileLabels">
-                            {% for label in current_user.workspace_labels|sort(attribute='name') %}
-                            <span class="badge" style="cursor:pointer; font-size:0.65rem; border:1px solid {{ label.color }}; color:{{ label.color }}; background:transparent;"
-                                  data-new-profile-label="{{ label.id }}"
-                                  onclick="this.classList.toggle('selected'); this.style.background=this.classList.contains('selected')?this.style.color+'20':'transparent';">
-                                <i class="bi bi-tag-fill"></i> {{ label.name }}
-                            </span>
-                            {% endfor %}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="action-buttons">
-                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-key-fill"></i> Change Password
+                <div class="d-flex gap-2">
+                    {{ form.submit(class="btn btn-primary") }}
+                    <a href="{{ url_for('auth.change_password') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-key"></i> Change Password
                     </a>
-                    <a href="{{ url_for('workspace.dashboard') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-speedometer2"></i> Back to Dashboard
-                    </a>
+                </div>
+            </form>
+
+            <!-- Read-only info -->
+            <div class="mt-4 pt-3" style="border-top: 1px solid var(--border-color);">
+                <div class="pf-label">Login</div>
+                <div class="fw-bold mb-2">{{ current_user.login }}</div>
+                <div class="pf-label">Organizations</div>
+                <div style="font-size:0.85rem;">
+                    {{ current_user.organization_memberships|length }} workspace{{ 's' if current_user.organization_memberships|length != 1 else '' }}
                 </div>
             </div>
         </div>
+
+        <!-- ═══ WORKSPACES TAB ═══ -->
+        <div class="pf-panel" id="panel-workspaces">
+            <!-- Labels management -->
+            <div class="pf-section-head"><i class="bi bi-tags"></i> Your Labels</div>
+            <p class="text-muted" style="font-size:0.8rem; margin-top:-0.5rem;">
+                Labels are private to you. Click a name to rename, the color swatch to recolor.
+            </p>
+
+            <div id="labelList">
+                {% for label in current_user.workspace_labels|sort(attribute='name') %}
+                <div class="pf-card d-flex align-items-center justify-content-between" id="labelRow{{ label.id }}">
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="color" value="{{ label.color }}" style="width:24px;height:24px;border:none;cursor:pointer;border-radius:4px;"
+                               onchange="updateLabel({{ label.id }}, {color: this.value})">
+                        <span class="fw-bold label-name-editable" style="color: {{ label.color }}; cursor:pointer; font-size:0.9rem;"
+                              id="labelName{{ label.id }}" title="Click to rename"
+                              onclick="editLabelName({{ label.id }}, this)">{{ label.name }}</span>
+                        <span class="text-muted" style="font-size:0.7rem;">
+                            {{ label.organizations|selectattr('is_active')|list|length }} workspace{{ 's' if label.organizations|selectattr('is_active')|list|length != 1 else '' }}
+                        </span>
+                    </div>
+                    <button class="btn btn-outline-danger btn-sm" style="font-size:0.65rem;padding:0.1rem 0.35rem;"
+                            onclick="deleteLabel({{ label.id }})"><i class="bi bi-trash"></i></button>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="pf-add-row d-flex align-items-center gap-2">
+                <input type="color" id="profileNewLabelColor" value="#6366f1" style="width:24px;height:24px;border:none;cursor:pointer;border-radius:4px;">
+                <input type="text" id="profileNewLabelName" class="form-control form-control-sm" placeholder="New label..." maxlength="50" style="max-width:180px;"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();createProfileLabel();}">
+                <button class="btn btn-primary btn-sm" onclick="createProfileLabel()"><i class="bi bi-plus"></i> Add</button>
+            </div>
+
+            <!-- Workspace label assignment -->
+            <div class="pf-section-head mt-4"><i class="bi bi-building"></i> Assign Labels to Workspaces</div>
+            <p class="text-muted" style="font-size:0.8rem; margin-top:-0.5rem;">
+                Click labels to toggle them on each workspace.
+            </p>
+
+            {% for membership in current_user.organization_memberships %}
+            {% set org = membership.organization %}
+            {% set org_label_ids = org.labels|selectattr('user_id', 'equalto', current_user.id)|map(attribute='id')|list %}
+            <div class="pf-card {% if org.id == session.get('organization_id') %}highlighted{% endif %}">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    {% if org_logos.get(org.id) %}
+                    <img src="{{ org_logos[org.id] }}" style="width:20px;height:20px;object-fit:contain;">
+                    {% else %}
+                    <i class="bi bi-building" style="color:var(--text-secondary);"></i>
+                    {% endif %}
+                    <span class="fw-bold" style="font-size:0.9rem;">{{ org.name }}</span>
+                    {% if org.id == session.get('organization_id') %}
+                    <span class="badge bg-primary" style="font-size:0.55rem;">Current</span>
+                    {% endif %}
+                    {% if not org.is_active %}
+                    <span class="badge bg-secondary" style="font-size:0.55rem;">Inactive</span>
+                    {% endif %}
+                </div>
+                {% if current_user.workspace_labels|list %}
+                <div style="display:flex; gap:0.25rem; flex-wrap:wrap; margin-top:0.3rem;">
+                    {% for label in current_user.workspace_labels|sort(attribute='name') %}
+                    {% set is_on = label.id in org_label_ids %}
+                    <span class="pf-badge-toggle" data-org-id="{{ org.id }}" data-label-id="{{ label.id }}"
+                          onclick="toggleOrgLabel({{ org.id }}, {{ label.id }}, this)"
+                          style="border:1px solid {{ label.color }}; color:{{ label.color }};
+                                 background:{% if is_on %}{{ label.color }}20{% else %}transparent{% endif %};
+                                 opacity:{% if is_on %}1{% else %}0.35{% endif %};">
+                        <i class="bi bi-tag-fill" style="font-size:0.5rem;"></i> {{ label.name }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ═══ PROFILES TAB ═══ -->
+        <div class="pf-panel" id="panel-profiles">
+            <div class="pf-section-head"><i class="bi bi-sliders"></i> Workspace Profiles</div>
+            <p class="text-muted" style="font-size:0.8rem; margin-top:-0.5rem;">
+                Profiles filter the Workspaces menu by label. Activate one to focus on specific workspaces.
+            </p>
+
+            <div id="profileList">
+                {% for p in current_user.workspace_profiles|sort(attribute='name') %}
+                <div class="pf-card {% if p.is_active %}highlighted{% endif %}" id="profileRow{{ p.id }}">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-{{ p.icon }}" style="font-size:1.2rem; {% if p.is_active %}color:var(--accent-primary);{% else %}opacity:0.4;{% endif %}"></i>
+                            <div>
+                                <span class="fw-bold">{{ p.name }}</span>
+                                {% if p.is_active %}<span class="badge bg-primary ms-1" style="font-size:0.55rem;">Active</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            {% if not p.is_active %}
+                            <button class="btn btn-outline-primary btn-sm" style="font-size:0.68rem;padding:0.15rem 0.5rem;"
+                                    onclick="activateProfile({{ p.id }})"><i class="bi bi-check2"></i> Activate</button>
+                            {% else %}
+                            <button class="btn btn-outline-secondary btn-sm" style="font-size:0.68rem;padding:0.15rem 0.5rem;"
+                                    onclick="activateProfile(0)"><i class="bi bi-x"></i> Deactivate</button>
+                            {% endif %}
+                            <button class="btn btn-outline-secondary btn-sm" style="font-size:0.68rem;padding:0.1rem 0.35rem;"
+                                    onclick="editProfile({{ p.id }})" title="Rename"><i class="bi bi-pencil"></i></button>
+                            <button class="btn btn-outline-danger btn-sm" style="font-size:0.68rem;padding:0.1rem 0.35rem;"
+                                    onclick="deleteProfile({{ p.id }})"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                    <!-- Labels + visibility toggles -->
+                    <div style="margin-top:0.5rem; display:flex; gap:0.25rem; flex-wrap:wrap; align-items:center;">
+                        {% for label in current_user.workspace_labels|sort(attribute='name') %}
+                        {% set is_in = label.id in p.label_ids %}
+                        <span class="pf-badge-toggle profile-label-toggle" data-profile-id="{{ p.id }}" data-label-id="{{ label.id }}"
+                              onclick="toggleProfileLabel({{ p.id }}, {{ label.id }}, this)"
+                              style="border:1px solid {{ label.color }}; color:{{ label.color }};
+                                     background:{% if is_in %}{{ label.color }}20{% else %}transparent{% endif %};
+                                     opacity:{% if is_in %}1{% else %}0.4{% endif %};">
+                            <i class="bi bi-tag-fill" style="font-size:0.5rem;"></i> {{ label.name }}
+                        </span>
+                        {% endfor %}
+                        <span class="pf-badge-toggle" data-profile-id="{{ p.id }}"
+                              onclick="toggleProfileVisibility({{ p.id }}, this)"
+                              style="border:1px solid {% if p.space_visibility == 'public' %}#22c55e{% else %}#64748b{% endif %};
+                                     color:{% if p.space_visibility == 'public' %}#22c55e{% else %}#64748b{% endif %};
+                                     background:{% if p.space_visibility == 'public' %}#22c55e20{% else %}transparent{% endif %};
+                                     opacity:{% if p.space_visibility == 'public' %}1{% else %}0.5{% endif %};">
+                            <i class="bi bi-globe2"></i> Public only
+                        </span>
+                        {% if not current_user.workspace_labels|list %}
+                        <span class="text-muted" style="font-size:0.7rem;">Create labels in the Workspaces tab first</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Create new profile -->
+            <div class="pf-add-row mt-3">
+                <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+                    <div class="d-flex gap-1 flex-wrap">
+                        {% set profile_icons = ['briefcase', 'mortarboard', 'rocket-takeoff', 'buildings', 'gear', 'lightning', 'star', 'globe2', 'shield-check', 'people', 'hammer', 'palette', 'code-slash', 'eyeglasses', 'heart'] %}
+                        {% for icon in profile_icons %}
+                        <span class="icon-pick {% if icon == 'briefcase' %}selected{% endif %}" data-icon="{{ icon }}" onclick="selectProfileIcon(this)">
+                            <i class="bi bi-{{ icon }}"></i>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" id="newProfileIcon" value="briefcase">
+                    <input type="text" id="newProfileName" class="form-control form-control-sm" placeholder="Profile name..." maxlength="50" style="max-width:160px;"
+                           onkeydown="if(event.key==='Enter'){event.preventDefault();createProfile();}">
+                    <button class="btn btn-primary btn-sm" onclick="createProfile()"><i class="bi bi-plus"></i> Create</button>
+                </div>
+                <div style="font-size:0.7rem; color:var(--text-secondary); display:flex; gap:0.25rem; flex-wrap:wrap; align-items:center;">
+                    <strong>Labels:</strong>
+                    {% for label in current_user.workspace_labels|sort(attribute='name') %}
+                    <span class="pf-badge-toggle" data-new-profile-label="{{ label.id }}"
+                          onclick="this.classList.toggle('selected'); this.style.background=this.classList.contains('selected')?this.style.color+'20':'transparent'; this.style.opacity=this.classList.contains('selected')?'1':'0.4';"
+                          style="border:1px solid {{ label.color }}; color:{{ label.color }}; background:transparent; opacity:0.4;">
+                        <i class="bi bi-tag-fill" style="font-size:0.5rem;"></i> {{ label.name }}
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
+
+<script>
+function switchTab(name) {
+    document.querySelectorAll('.pf-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.pf-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.querySelector('[onclick*="' + name + '"]').classList.add('active');
+    document.getElementById('panel-' + name).classList.add('active');
+    history.replaceState(null, '', '#' + name);
+}
+// Restore tab from hash
+if (window.location.hash) {
+    var tab = window.location.hash.replace('#', '');
+    if (document.getElementById('panel-' + tab)) switchTab(tab);
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -478,20 +319,7 @@
             body: JSON.stringify({name: name, color: colorInput.value})
         }).then(function(r) { return r.json(); }).then(function(label) {
             if (label.error) { alert(label.error); return; }
-            var list = document.getElementById('labelList');
-            var row = document.createElement('div');
-            row.className = 'info-row d-flex align-items-center justify-content-between';
-            row.id = 'labelRow' + label.id;
-            row.innerHTML = '<div class="d-flex align-items-center gap-2">' +
-                '<input type="color" value="' + label.color + '" style="width:28px;height:28px;border:none;cursor:pointer;border-radius:4px;" onchange="updateLabel(' + label.id + ',{color:this.value})">' +
-                '<span class="fw-bold" style="color:' + label.color + ';" id="labelName' + label.id + '">' + label.name + '</span>' +
-                '<span class="badge bg-secondary" style="font-size:0.65rem;">0 workspaces</span>' +
-                '</div>' +
-                '<div class="d-flex align-items-center gap-2">' +
-                '<button class="btn btn-outline-danger btn-sm" style="font-size:0.7rem;padding:0.15rem 0.4rem;" onclick="deleteLabel(' + label.id + ')" title="Delete label"><i class="bi bi-trash"></i></button>' +
-                '</div>';
-            list.appendChild(row);
-            nameInput.value = '';
+            location.reload();
         });
     };
 
@@ -510,18 +338,13 @@
         var currentName = el.textContent.trim();
         var color = el.style.color;
         var input = document.createElement('input');
-        input.type = 'text';
-        input.value = currentName;
-        input.maxLength = 50;
+        input.type = 'text'; input.value = currentName; input.maxLength = 50;
         input.className = 'form-control form-control-sm';
         input.style.cssText = 'width:140px;display:inline-block;font-weight:bold;color:' + color + ';';
-        el.replaceWith(input);
-        input.focus();
-        input.select();
+        el.replaceWith(input); input.focus(); input.select();
         var saving = false;
         function save() {
-            if (saving) return;
-            saving = true;
+            if (saving) return; saving = true;
             var newName = input.value.trim();
             if (!newName || newName === currentName) { location.reload(); return; }
             updateLabel(labelId, {name: newName}).then(function() { location.reload(); });
@@ -534,17 +357,11 @@
     };
 
     window.deleteLabel = function(labelId) {
-        if (!confirm('Delete this label? It will be removed from all your workspaces.')) return;
-        fetch(API_BASE.replace(/\/$/, '') + '/' + labelId, {
-            method: 'DELETE',
-            headers: {'X-CSRFToken': CSRF}
-        }).then(function() {
-            var row = document.getElementById('labelRow' + labelId);
-            if (row) row.remove();
-        });
+        if (!confirm('Delete this label?')) return;
+        fetch(API_BASE.replace(/\/$/, '') + '/' + labelId, {method:'DELETE', headers:{'X-CSRFToken':CSRF}})
+            .then(function() { document.getElementById('labelRow'+labelId).remove(); });
     };
 
-    // ── Profile management ──
     var PROFILE_API = '{{ url_for("global_admin.api_profiles_list") }}';
 
     window.toggleOrgLabel = function(orgId, labelId, el) {
@@ -553,12 +370,12 @@
             ? '{{ url_for("global_admin.api_org_label_remove", org_id=0, label_id=0) }}'.replace('/0/labels/0', '/' + orgId + '/labels/' + labelId)
             : '{{ url_for("global_admin.api_org_label_add", org_id=0) }}'.replace('/0/', '/' + orgId + '/');
         var opts = isActive
-            ? {method: 'DELETE', headers: {'X-CSRFToken': CSRF}}
-            : {method: 'POST', headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF}, body: JSON.stringify({label_id: labelId})};
+            ? {method:'DELETE', headers:{'X-CSRFToken':CSRF}}
+            : {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF}, body:JSON.stringify({label_id:labelId})};
         fetch(url, opts).then(function() {
-            var nowActive = !isActive;
-            el.style.opacity = nowActive ? '1' : '0.35';
-            el.style.background = nowActive ? el.style.color + '20' : 'transparent';
+            var on = !isActive;
+            el.style.opacity = on ? '1' : '0.35';
+            el.style.background = on ? el.style.color + '20' : 'transparent';
         });
     };
 
@@ -566,67 +383,47 @@
         var isPublic = el.style.opacity === '1';
         var newVal = isPublic ? 'all' : 'public';
         fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {
-            method: 'PATCH',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
-            body: JSON.stringify({space_visibility: newVal})
+            method:'PATCH', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+            body:JSON.stringify({space_visibility:newVal})
         }).then(function() {
-            var nowPublic = newVal === 'public';
-            el.style.opacity = nowPublic ? '1' : '0.5';
-            el.style.color = nowPublic ? '#22c55e' : '#64748b';
-            el.style.borderColor = nowPublic ? '#22c55e' : '#64748b';
-            el.style.background = nowPublic ? '#22c55e20' : 'transparent';
+            var on = newVal === 'public';
+            el.style.opacity = on ? '1' : '0.5';
+            el.style.color = on ? '#22c55e' : '#64748b';
+            el.style.borderColor = on ? '#22c55e' : '#64748b';
+            el.style.background = on ? '#22c55e20' : 'transparent';
         });
     };
 
     window.toggleProfileLabel = function(profileId, labelId, el) {
-        // Collect current label IDs for this profile from DOM
         var labels = [];
-        document.querySelectorAll('.profile-label-toggle[data-profile-id="' + profileId + '"]').forEach(function(t) {
-            var lid = parseInt(t.dataset.labelId);
-            var isActive = t.style.opacity === '1';
-            if (lid === labelId) {
-                // Toggle this one
-                if (!isActive) labels.push(lid);
-            } else {
-                if (isActive) labels.push(lid);
-            }
+        document.querySelectorAll('.profile-label-toggle[data-profile-id="'+profileId+'"]').forEach(function(t) {
+            var lid = parseInt(t.dataset.labelId), isOn = t.style.opacity === '1';
+            if (lid === labelId) { if (!isOn) labels.push(lid); } else { if (isOn) labels.push(lid); }
         });
         fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {
-            method: 'PATCH',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
-            body: JSON.stringify({label_ids: labels})
+            method:'PATCH', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+            body:JSON.stringify({label_ids:labels})
         }).then(function() {
-            // Toggle visual state
-            var isNowActive = labels.indexOf(labelId) !== -1;
-            el.style.opacity = isNowActive ? '1' : '0.4';
-            el.style.background = isNowActive ? el.style.color + '20' : 'transparent';
+            var on = labels.indexOf(labelId) !== -1;
+            el.style.opacity = on ? '1' : '0.4';
+            el.style.background = on ? el.style.color + '20' : 'transparent';
         });
     };
 
     window.selectProfileIcon = function(el) {
-        document.querySelectorAll('.icon-pick').forEach(function(p) {
-            p.classList.remove('selected');
-            p.style.border = '2px solid transparent';
-            p.style.background = 'var(--bg-secondary)';
-        });
+        document.querySelectorAll('.icon-pick').forEach(function(p) { p.classList.remove('selected'); });
         el.classList.add('selected');
-        el.style.border = '2px solid var(--accent-primary)';
-        el.style.background = 'rgba(13,110,253,0.1)';
         document.getElementById('newProfileIcon').value = el.dataset.icon;
     };
 
     window.createProfile = function() {
         var name = document.getElementById('newProfileName').value.trim();
         if (!name) return;
-        var icon = document.getElementById('newProfileIcon').value;
         var labelIds = [];
-        document.querySelectorAll('[data-new-profile-label].selected').forEach(function(el) {
-            labelIds.push(parseInt(el.dataset.newProfileLabel));
-        });
+        document.querySelectorAll('[data-new-profile-label].selected').forEach(function(el) { labelIds.push(parseInt(el.dataset.newProfileLabel)); });
         fetch(PROFILE_API, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
-            body: JSON.stringify({name: name, icon: icon, label_ids: labelIds})
+            method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+            body:JSON.stringify({name:name, icon:document.getElementById('newProfileIcon').value, label_ids:labelIds})
         }).then(function(r) { return r.json(); }).then(function(p) {
             if (p.error) { alert(p.error); return; }
             location.reload();
@@ -634,50 +431,35 @@
     };
 
     window.activateProfile = function(profileId) {
-        fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId + '/activate', {
-            method: 'POST',
-            headers: {'X-CSRFToken': CSRF}
-        }).then(function() { location.reload(); });
+        fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId + '/activate', {method:'POST', headers:{'X-CSRFToken':CSRF}})
+            .then(function() { location.reload(); });
     };
 
     window.deleteProfile = function(profileId) {
         if (!confirm('Delete this profile?')) return;
-        fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {
-            method: 'DELETE',
-            headers: {'X-CSRFToken': CSRF}
-        }).then(function() {
-            var row = document.getElementById('profileRow' + profileId);
-            if (row) row.remove();
-        });
+        fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {method:'DELETE', headers:{'X-CSRFToken':CSRF}})
+            .then(function() { document.getElementById('profileRow'+profileId).remove(); });
     };
 
     window.editProfile = function(profileId) {
         var row = document.getElementById('profileRow' + profileId);
         var nameEl = row.querySelector('.fw-bold');
         var currentName = nameEl.textContent.trim();
-        // Replace name with an input
         var input = document.createElement('input');
-        input.type = 'text';
-        input.value = currentName;
+        input.type = 'text'; input.value = currentName;
         input.className = 'form-control form-control-sm';
-        input.style.cssText = 'width:160px;display:inline-block;';
-        nameEl.replaceWith(input);
-        input.focus();
-        input.select();
+        input.style.cssText = 'width:150px;display:inline-block;';
+        nameEl.replaceWith(input); input.focus(); input.select();
         function save() {
-            var newName = input.value.trim();
-            if (!newName || newName === currentName) { location.reload(); return; }
+            var n = input.value.trim();
+            if (!n || n === currentName) { location.reload(); return; }
             fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
-                body: JSON.stringify({name: newName})
+                method:'PATCH', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+                body:JSON.stringify({name:n})
             }).then(function() { location.reload(); });
         }
         input.addEventListener('blur', save);
-        input.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') { e.preventDefault(); save(); }
-            if (e.key === 'Escape') { location.reload(); }
-        });
+        input.addEventListener('keydown', function(e) { if (e.key==='Enter'){e.preventDefault();save();} if(e.key==='Escape'){location.reload();} });
     };
 })();
 </script>
