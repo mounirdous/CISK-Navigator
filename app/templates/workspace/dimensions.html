@@ -145,7 +145,7 @@
 {% block content %}
 <div class="dim-page">
     <div class="dim-header">
-        <h1><i class="bi bi-columns-gap" style="color:#3b82f6;"></i> Evidence Lenses</h1>
+        <h1><i class="bi bi-binoculars" style="color:#3b82f6;"></i> Evidence Lenses</h1>
         <p>The perspectives through which your organization measures strategic progress</p>
     </div>
 
@@ -172,7 +172,7 @@
             'list': 'bi-list-check'
         } %}
         <div class="dim-card" style="--dim-accent: {{ accent_colors[loop.index0 % accent_colors|length] }}; animation-delay: {{ loop.index0 * 0.06 }}s;">
-            <div class="dim-card-order">Lens {{ loop.index }}</div>
+            <div class="dim-card-order"><i class="bi bi-eyeglasses"></i> Lens {{ loop.index }}</div>
             <div class="dim-card-name">{{ vt.name }}</div>
             <div class="dim-card-desc">{{ vt.description or 'No description yet' }}</div>
             <div>
