@@ -74,7 +74,7 @@ class FullRestoreService:
     """Service for restoring full organization backup with data"""
 
     @staticmethod
-    def restore_from_json(json_string, organization_id, governance_body_mapping=None, user_mapping=None, portal_org_mapping=None):
+    def restore_from_json(json_string, organization_id, governance_body_mapping=None, user_mapping=None, portal_org_mapping=None, cross_org_ai_overrides=None):
         """
         Restore organization from JSON backup.
 
@@ -235,6 +235,14 @@ class FullRestoreService:
                 gb_name = gb_data["name"]
                 action = governance_body_mapping.get(gb_name)
 
+                # Determine cross-org flag: use explicit mapping override if provided,
+                # otherwise fall back to the value stored in the backup JSON.
+                _cross_org_key = f"gb_global_{gb_name}"
+                if governance_body_mapping and _cross_org_key in governance_body_mapping:
+                    _is_global = governance_body_mapping[_cross_org_key]
+                else:
+                    _is_global = gb_data.get("is_global", False)
+
                 if action == "create":
                     # Create new governance body
                     gb = GovernanceBody(
@@ -246,6 +254,7 @@ class FullRestoreService:
                         display_order=gb_data.get("display_order", 0),
                         is_active=gb_data.get("is_active", True),
                         is_default=gb_data.get("is_default", False),
+                        is_global=_is_global,
                     )
                     db.session.add(gb)
                     db.session.flush()
@@ -406,7 +415,8 @@ class FullRestoreService:
 
             # Step 6: Restore Action Items and Memos
             ai_stats = FullRestoreService._restore_action_items(
-                backup, organization_id, user_map, governance_body_map, json_id_map
+                backup, organization_id, user_map, governance_body_map, json_id_map,
+                cross_org_ai_overrides=cross_org_ai_overrides,
             )
             stats["action_items"] += ai_stats.get("action_items", 0)
             stats["entity_links_restored"] += ai_stats.get("entity_links_restored", 0)
@@ -1314,11 +1324,12 @@ class FullRestoreService:
         return stats
 
     @staticmethod
-    def _restore_action_items(backup, organization_id, user_map, governance_body_map, json_id_map=None):
+    def _restore_action_items(backup, organization_id, user_map, governance_body_map, json_id_map=None, cross_org_ai_overrides=None):
         """Restore action items and memos with governance body links and entity mentions.
 
         json_id_map: {entity_type: {source_json_id: new_db_id}} — built during hierarchy restore.
         Used first; falls back to name-based lookup for old backups without json_id.
+        cross_org_ai_overrides: {title: bool} — user choices for cross-org action items.
         """
         from app.models import User
 
@@ -1381,15 +1392,24 @@ class FullRestoreService:
                     except ValueError:
                         pass
 
+                # Determine cross-org flag: use override from mapping UI if provided,
+                # otherwise fall back to the value stored in the backup JSON.
+                _ai_title = item_data["title"]
+                if cross_org_ai_overrides and _ai_title in cross_org_ai_overrides:
+                    _ai_is_global = cross_org_ai_overrides[_ai_title]
+                else:
+                    _ai_is_global = item_data.get("is_global", False)
+
                 action_item = ActionItem(
                     organization_id=organization_id,
                     owner_user_id=owner_user.id,
                     created_by_user_id=created_by_user.id if created_by_user else owner_user.id,
                     type=item_data.get("type", "action"),
-                    title=item_data["title"],
+                    title=_ai_title,
                     description=item_data.get("description"),
                     status=item_data.get("status", "active"),
                     priority=item_data.get("priority", "medium"),
+                    is_global=_ai_is_global,
                     start_date=start_date,
                     due_date=due_date,
                     completed_at=completed_at,
@@ -1491,7 +1511,7 @@ class FullRestoreService:
                         continue
 
                     membership = StakeholderMapMembership(
-                        stakeholder_map_id=stakeholder_map.id, stakeholder_id=stakeholder.id
+                        map_id=stakeholder_map.id, stakeholder_id=stakeholder.id
                     )
                     db.session.add(membership)
 

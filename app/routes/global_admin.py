@@ -1105,10 +1105,17 @@ def restore_backup():
                                 if lon:
                                     portal_org_names.add(lon)
                 portal_org_names = sorted(portal_org_names)
+                # Detect cross-org action items
+                cross_org_action_items = [
+                    ai.get("title", "Untitled")
+                    for ai in backup_data.get("action_items", [])
+                    if ai.get("is_global")
+                ]
             except Exception:
                 governance_bodies = []
                 backup_users = []
                 portal_org_names = []
+                cross_org_action_items = []
 
             # Detect users not auto-resolvable by login
             unmapped_users = [u for u in backup_users if not User.query.filter_by(login=u["login"]).first()]
@@ -1131,7 +1138,11 @@ def restore_backup():
                 session["pending_full_backup_path"] = tmp.name
                 session["full_backup_org_id"] = org_id
                 session["full_backup_governance_bodies"] = [gb["name"] for gb in governance_bodies]
+                session["full_backup_governance_bodies_global"] = {
+                    gb["name"]: gb.get("is_global", False) for gb in governance_bodies
+                }
                 session["full_backup_portal_orgs"] = portal_org_names
+                session["full_backup_cross_org_action_items"] = cross_org_action_items
                 session.pop("full_backup_user_mapping", None)
                 session.pop("pending_full_backup", None)
 
@@ -1338,9 +1349,11 @@ def full_backup_governance_mapping():
     backup_path = session.get("pending_full_backup_path")
     org_id = session.get("full_backup_org_id")
     gb_names = session.get("full_backup_governance_bodies", [])
+    gb_global_flags = session.get("full_backup_governance_bodies_global", {})
     portal_org_names = session.get("full_backup_portal_orgs", [])
+    cross_org_action_items = session.get("full_backup_cross_org_action_items", [])
 
-    if not backup_path or not os.path.exists(backup_path) or not org_id or not (gb_names or portal_org_names):
+    if not backup_path or not os.path.exists(backup_path) or not org_id or not (gb_names or portal_org_names or cross_org_action_items):
         flash("No pending backup restore found", "warning")
         return redirect(url_for("global_admin.backup_restore"))
 
@@ -1372,6 +1385,10 @@ def full_backup_governance_mapping():
                     gb_id = int(action.split("_")[1])
                     governance_body_mapping[gb_name] = gb_id
 
+            # Build cross-org (is_global) flags from form checkboxes
+            for gb_name in gb_names:
+                governance_body_mapping[f"gb_global_{gb_name}"] = request.form.get(f"gb_global_{gb_name}") == "1"
+
             # Build portal org mapping from form
             portal_org_mapping = {}
             for po_name in portal_org_names:
@@ -1379,6 +1396,11 @@ def full_backup_governance_mapping():
                 if po_action and po_action.startswith("map_"):
                     portal_org_mapping[po_name] = int(po_action.split("_")[1])
                 # else: skip (no link)
+
+            # Build cross-org action item overrides from form checkboxes
+            cross_org_ai_overrides = {}
+            for ai_title in cross_org_action_items:
+                cross_org_ai_overrides[ai_title] = request.form.get(f"ai_global_{ai_title}") == "1"
 
             # Pick up user mapping from previous step (if user mapping was done)
             import json as _json
@@ -1391,17 +1413,20 @@ def full_backup_governance_mapping():
             session.pop("pending_full_backup", None)
             session.pop("full_backup_org_id", None)
             session.pop("full_backup_governance_bodies", None)
+            session.pop("full_backup_governance_bodies_global", None)
             session.pop("full_backup_unmapped_users", None)
             session.pop("full_backup_portal_orgs", None)
+            session.pop("full_backup_cross_org_action_items", None)
             if tmp_path and os.path.exists(tmp_path):
                 os.unlink(tmp_path)
 
-            # Restore with governance body mapping, user mapping, and portal mapping
+            # Restore with governance body mapping, user mapping, portal mapping, and cross-org AI overrides
             result = FullRestoreService.restore_from_json(
                 backup_content, org_id,
                 governance_body_mapping=governance_body_mapping,
                 user_mapping=user_mapping,
                 portal_org_mapping=portal_org_mapping if portal_org_mapping else None,
+                cross_org_ai_overrides=cross_org_ai_overrides if cross_org_ai_overrides else None,
             )
 
             if result.get("success"):
@@ -1470,10 +1495,12 @@ def full_backup_governance_mapping():
     return render_template(
         "global_admin/full_backup_governance_mapping.html",
         governance_bodies=gb_names,
+        governance_bodies_global=gb_global_flags,
         existing_gbs=existing_gbs,
         org=org,
         portal_org_names=portal_org_names,
         all_orgs=all_orgs,
+        cross_org_action_items=cross_org_action_items,
     )
 
 
@@ -1541,8 +1568,11 @@ def clear_organization_comments(org_id):
 @login_required
 @global_admin_required
 def empty_organization(org_id):
-    """Permanently delete ALL data from an organization (structure + contributions + everything)."""
-    from app.routes.organization_admin import _delete_all_organization_data
+    """Permanently delete ALL data from an organization (structure + contributions + everything).
+
+    Step 1: Validate name confirmation, detect cross-org items, redirect to confirmation if needed.
+    """
+    from app.models import ActionItem, GovernanceBody, KPIGovernanceBodyLink
 
     org = Organization.query.get_or_404(org_id)
     import unicodedata
@@ -1564,19 +1594,114 @@ def empty_organization(org_id):
         flash("Organization name confirmation does not match. Deletion cancelled.", "danger")
         return redirect(url_for("global_admin.organizations"))
 
+    # Detect cross-org governance bodies used by other workspaces
+    cross_org_gbs = GovernanceBody.query.filter_by(organization_id=org_id, is_global=True).all()
+    cross_org_gb_info = []
+    for gb in cross_org_gbs:
+        # Count KPI links from OTHER organizations
+        other_org_link_count = (
+            KPIGovernanceBodyLink.query.filter_by(governance_body_id=gb.id)
+            .join(KPI, KPIGovernanceBodyLink.kpi_id == KPI.id)
+            .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .filter(Initiative.organization_id != org_id)
+            .count()
+        )
+        cross_org_gb_info.append({
+            "id": gb.id,
+            "name": gb.name,
+            "abbreviation": gb.abbreviation,
+            "other_org_links": other_org_link_count,
+        })
+
+    # Detect cross-org action items
+    cross_org_ais = ActionItem.query.filter_by(organization_id=org_id, is_global=True).all()
+    cross_org_ai_info = [{"id": ai.id, "title": ai.title} for ai in cross_org_ais]
+
+    if cross_org_gb_info or cross_org_ai_info:
+        # Store in session and redirect to confirmation page
+        session["empty_org_id"] = org_id
+        session["empty_org_cross_org_gbs"] = cross_org_gb_info
+        session["empty_org_cross_org_ais"] = cross_org_ai_info
+        return redirect(url_for("global_admin.empty_organization_confirm", org_id=org_id))
+
+    # No cross-org items — proceed directly
+    _execute_empty_organization(org_id, org.name)
+    return redirect(url_for("global_admin.organizations"))
+
+
+@bp.route("/organizations/<int:org_id>/empty-confirm", methods=["GET", "POST"])
+@login_required
+@global_admin_required
+def empty_organization_confirm(org_id):
+    """Step 2: Show cross-org items and let user choose which to keep."""
+    org = Organization.query.get_or_404(org_id)
+
+    if session.get("empty_org_id") != org_id:
+        flash("No pending empty operation found.", "warning")
+        return redirect(url_for("global_admin.organizations"))
+
+    cross_org_gbs = session.get("empty_org_cross_org_gbs", [])
+    cross_org_ais = session.get("empty_org_cross_org_ais", [])
+
+    if request.method == "POST":
+        from app.models import ActionItem, GovernanceBody
+
+        # Collect IDs to keep (un-own but preserve)
+        keep_gb_ids = []
+        for gb_info in cross_org_gbs:
+            if request.form.get(f"keep_gb_{gb_info['id']}") == "1":
+                keep_gb_ids.append(gb_info["id"])
+
+        keep_ai_ids = []
+        for ai_info in cross_org_ais:
+            if request.form.get(f"keep_ai_{ai_info['id']}") == "1":
+                keep_ai_ids.append(ai_info["id"])
+
+        # Clear session data
+        session.pop("empty_org_id", None)
+        session.pop("empty_org_cross_org_gbs", None)
+        session.pop("empty_org_cross_org_ais", None)
+
+        # Before emptying, detach items the user wants to keep:
+        # Move kept governance bodies to a "detached" state by clearing is_global
+        # and leaving them unowned (they stay in the DB but won't be deleted)
+        # Actually — we need to re-assign them. Since GBs must have an org, we skip
+        # deleting them in _delete_all_organization_data by passing the keep lists.
+        _execute_empty_organization(org_id, org.name, keep_gb_ids=keep_gb_ids, keep_ai_ids=keep_ai_ids)
+        return redirect(url_for("global_admin.organizations"))
+
+    return render_template(
+        "global_admin/empty_org_cross_org_confirm.html",
+        org=org,
+        cross_org_gbs=cross_org_gbs,
+        cross_org_ais=cross_org_ais,
+    )
+
+
+def _execute_empty_organization(org_id, org_name, keep_gb_ids=None, keep_ai_ids=None):
+    """Execute the empty organization operation, optionally keeping cross-org items."""
+    from app.routes.organization_admin import _delete_all_organization_data
+
     try:
         AuditService.log_action(
             action="EMPTY_ORGANIZATION",
             entity_type="Organization",
-            entity_id=org.id,
-            entity_name=org.name,
-            description=f"Global admin emptied all data for organization {org.name}",
+            entity_id=org_id,
+            entity_name=org_name,
+            description=f"Global admin emptied all data for organization {org_name}",
         )
-        _delete_all_organization_data(org.id)
+        _delete_all_organization_data(org_id, keep_gb_ids=keep_gb_ids, keep_ai_ids=keep_ai_ids)
         db.session.commit()
-        flash(f"All data permanently deleted from '{org.name}'. The organization is now empty.", "success")
+        kept = []
+        if keep_gb_ids:
+            kept.append(f"{len(keep_gb_ids)} governance bodies")
+        if keep_ai_ids:
+            kept.append(f"{len(keep_ai_ids)} action items")
+        msg = f"All data permanently deleted from '{org_name}'. The organization is now empty."
+        if kept:
+            msg += f" Kept cross-org: {', '.join(kept)}."
+        flash(msg, "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error emptying organization: {str(e)}", "danger")
-
-    return redirect(url_for("global_admin.organizations"))

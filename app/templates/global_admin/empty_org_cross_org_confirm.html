@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Empty Workspace - Cross-Org Items{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i> Cross-Org Items Detected
+                    </h3>
+                    <p class="mb-0 mt-2">
+                        <strong>Emptying:</strong> {{ org.name }}
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-globe2"></i>
+                        <strong>Some items in this workspace are shared across all workspaces.</strong>
+                        <p class="mb-0 mt-2">
+                            Deleting them will remove them from every workspace that uses them.
+                            Choose which cross-org items to <strong>keep</strong> or <strong>delete</strong>.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('global_admin.empty_organization_confirm', org_id=org.id) }}">
+
+                        {% if cross_org_gbs %}
+                        <h5 class="mt-4 mb-3"><i class="bi bi-diagram-3"></i> Cross-Org Governance Bodies</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Governance Body</th>
+                                        <th class="text-center" style="width: 15%;">Used Elsewhere</th>
+                                        <th class="text-center" style="width: 15%;">Keep</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for gb in cross_org_gbs %}
+                                    <tr>
+                                        <td class="align-middle">
+                                            <strong class="text-primary">{{ gb.name }}</strong>
+                                            <span class="badge bg-info ms-1">cross-org</span>
+                                            {% if gb.abbreviation %}
+                                            <small class="text-muted ms-1">({{ gb.abbreviation }})</small>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            {% if gb.other_org_links > 0 %}
+                                            <span class="badge bg-warning text-dark">
+                                                {{ gb.other_org_links }} KPI link{{ 's' if gb.other_org_links != 1 else '' }}
+                                            </span>
+                                            {% else %}
+                                            <span class="text-muted">None</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="keep_gb_{{ gb.id }}" value="1"
+                                                       id="keepGb{{ gb.id }}"
+                                                       {% if gb.other_org_links > 0 %}checked{% endif %}>
+                                                <label class="form-check-label small" for="keepGb{{ gb.id }}">
+                                                    Keep
+                                                </label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+
+                        {% if cross_org_ais %}
+                        <h5 class="mt-4 mb-3"><i class="bi bi-check2-square"></i> Cross-Org Action Items</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Action Item</th>
+                                        <th class="text-center" style="width: 15%;">Keep</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ai in cross_org_ais %}
+                                    <tr>
+                                        <td class="align-middle">
+                                            <strong>{{ ai.title }}</strong>
+                                            <span class="badge bg-info ms-1">cross-org</span>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="keep_ai_{{ ai.id }}" value="1"
+                                                       id="keepAi{{ ai.id }}" checked>
+                                                <label class="form-check-label small" for="keepAi{{ ai.id }}">
+                                                    Keep
+                                                </label>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+
+                        <div class="alert alert-danger mt-4">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Warning:</strong> All other data in <strong>{{ org.name }}</strong> will be permanently deleted.
+                            Only the items marked <strong>Keep</strong> above will be preserved.
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('global_admin.organizations') }}" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-arrow-left"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="bi bi-trash-fill"></i> Empty Workspace
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

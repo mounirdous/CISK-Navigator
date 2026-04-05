@@ -4164,13 +4164,19 @@ def yaml_export():
         return redirect(url_for("organization_admin.index"))
 
 
-def _delete_all_organization_data(org_id):
+def _delete_all_organization_data(org_id, keep_gb_ids=None, keep_ai_ids=None):
     """
     Delete ALL data for an organization.
     This is called before YAML import to start fresh.
 
+    Args:
+        keep_gb_ids: List of GovernanceBody IDs to keep (cross-org items user chose to preserve)
+        keep_ai_ids: List of ActionItem IDs to keep (cross-org items user chose to preserve)
+
     WARNING: This is destructive and irreversible!
     """
+    keep_gb_ids = keep_gb_ids or []
+    keep_ai_ids = keep_ai_ids or []
     # Delete in correct order to respect foreign keys
     # RULE: Delete dependent data BEFORE the entities they depend on
 
@@ -4295,12 +4301,13 @@ def _delete_all_organization_data(org_id):
     for space in spaces:
         db.session.delete(space)
 
-    # 13. Delete Action Items and Memos (and their mentions via cascade)
+    # 13. Delete Action Items and Memos (and their mentions via cascade) — skip cross-org ones user chose to keep
     from app.models import ActionItem
 
     action_items = ActionItem.query.filter_by(organization_id=org_id).all()
     for ai in action_items:
-        db.session.delete(ai)
+        if ai.id not in keep_ai_ids:
+            db.session.delete(ai)
 
     db.session.flush()
 
@@ -4316,10 +4323,11 @@ def _delete_all_organization_data(org_id):
     for vt in value_types:
         db.session.delete(vt)
 
-    # 17. Delete Governance Bodies (NOW safe to delete)
+    # 17. Delete Governance Bodies (NOW safe to delete) — skip cross-org ones user chose to keep
     gov_bodies = GovernanceBody.query.filter_by(organization_id=org_id).all()
     for gb in gov_bodies:
-        db.session.delete(gb)
+        if gb.id not in keep_gb_ids:
+            db.session.delete(gb)
 
     # 18. Delete Audit Logs
     from app.models import AuditLog

@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.10.7] - 2026-04-05
+
+### Added
+- Backup now includes `is_global` flag for governance bodies and action items (cross-org visibility)
+- Restore governance mapping shows cross-org toggle per governance body, pre-selected when it was cross-org in the backup
+- Restore governance mapping shows cross-org action items section with keep/remove cross-org toggle
+- Empty workspace now detects cross-org governance bodies and action items used by other workspaces, asks to keep or delete them before proceeding
+
 ## [7.10.6] - 2026-04-04
 
 ### Added

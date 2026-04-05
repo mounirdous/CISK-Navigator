@@ -40,15 +40,20 @@
                             <table class="table table-hover table-bordered">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width: 40%;">Governance Body in Backup</th>
+                                        <th style="width: 35%;">Governance Body in Backup</th>
                                         <th>Action</th>
+                                        <th style="width: 15%;" class="text-center">Cross-Org</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for gb_name in governance_bodies %}
+                                    {% set gb_was_global = governance_bodies_global.get(gb_name, false) %}
                                     <tr>
                                         <td class="align-middle">
                                             <strong class="text-primary">{{ gb_name }}</strong>
+                                            {% if gb_was_global %}
+                                            <span class="badge bg-info ms-1" title="Was cross-org in backup">cross-org</span>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             <select name="gb_action_{{ gb_name }}" class="form-select" required>
@@ -77,6 +82,17 @@
                                                     Will create new governance body
                                                 {% endif %}
                                             </small>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="gb_global_{{ gb_name }}" value="1"
+                                                       id="gbGlobal_{{ loop.index0 }}"
+                                                       {% if gb_was_global %}checked{% endif %}>
+                                                <label class="form-check-label small text-muted" for="gbGlobal_{{ loop.index0 }}">
+                                                    Visible in all workspaces
+                                                </label>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -122,6 +138,45 @@
                                                     No exact match — select manually or skip
                                                 {% endif %}
                                             </small>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+
+                        {% if cross_org_action_items %}
+                        <h5 class="mt-4 mb-3"><i class="bi bi-globe2"></i> Cross-Org Action Items</h5>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            The following action items were visible across all workspaces in the backup.
+                            Choose whether to keep them cross-org or make them workspace-only.
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Action Item</th>
+                                        <th style="width: 20%;" class="text-center">Cross-Org</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for ai_title in cross_org_action_items %}
+                                    <tr>
+                                        <td class="align-middle">
+                                            <strong>{{ ai_title }}</strong>
+                                            <span class="badge bg-info ms-1">was cross-org</span>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <div class="form-check form-switch d-inline-block">
+                                                <input class="form-check-input" type="checkbox"
+                                                       name="ai_global_{{ ai_title }}" value="1"
+                                                       id="aiGlobal_{{ loop.index0 }}" checked>
+                                                <label class="form-check-label small text-muted" for="aiGlobal_{{ loop.index0 }}">
+                                                    Visible in all workspaces
+                                                </label>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}

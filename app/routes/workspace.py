@@ -1167,6 +1167,15 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.10.7",
+            "date": "April 5, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Cross-org backup/restore</strong> — governance bodies and action items now include their cross-org visibility flag in backups. During restore, a toggle lets you choose whether each governance body and action item should remain visible across all workspaces.",
+                "<strong>Safe empty workspace</strong> — when emptying a workspace, cross-org governance bodies and action items used by other workspaces are detected. A confirmation page shows which items are shared and lets you choose to keep or delete each one.",
+            ],
+        },
+        {
             "version": "7.10.6",
             "date": "April 4, 2026",
             "tags": ["feature"],
