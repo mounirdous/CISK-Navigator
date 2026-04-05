@@ -198,6 +198,12 @@
                        class="btn btn-outline-primary" title="Edit value type settings">
                         <i class="bi bi-pencil"></i>
                     </a>
+                    <form method="POST" action="{{ url_for('organization_admin.duplicate_value_type', vt_id=vt.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-secondary" title="Duplicate value type">
+                            <i class="bi bi-copy"></i>
+                        </button>
+                    </form>
                     <a href="{{ url_for('organization_admin.delete_value_type_check', vt_id=vt.id) }}"
                        class="btn btn-outline-danger" title="Delete value type">
                         <i class="bi bi-trash"></i>

@@ -3605,6 +3605,44 @@ def edit_value_type(vt_id):
     )
 
 
+@bp.route("/value-types/<int:vt_id>/duplicate", methods=["POST"])
+@login_required
+@organization_required
+@permission_required("can_manage_value_types")
+def duplicate_value_type(vt_id):
+    """Duplicate a value type with all its settings (no data)."""
+    org_id = session.get("organization_id")
+    vt = ValueType.query.filter_by(id=vt_id, organization_id=org_id).first_or_404()
+
+    # Find a unique name
+    base_name = vt.name + " (copy)"
+    name = base_name
+    counter = 2
+    while ValueType.query.filter_by(organization_id=org_id, name=name).first():
+        name = f"{vt.name} (copy {counter})"
+        counter += 1
+
+    new_vt = ValueType(
+        organization_id=org_id,
+        name=name,
+        description=vt.description,
+        kind=vt.kind,
+        unit_label=vt.unit_label,
+        decimal_places=vt.decimal_places,
+        calculation_type=vt.calculation_type,
+        calculation_config=vt.calculation_config,
+        display_order=vt.display_order + 1,
+        is_active=vt.is_active,
+    )
+    db.session.add(new_vt)
+    db.session.commit()
+
+    AuditService.log_create("ValueType", new_vt.id, new_vt.name, {"duplicated_from": vt.name})
+
+    flash(f'Value type "{vt.name}" duplicated as "{name}"', "success")
+    return redirect(url_for("organization_admin.edit_value_type", vt_id=new_vt.id))
+
+
 @bp.route("/value-types/<int:vt_id>/delete-check")
 @login_required
 @organization_required
