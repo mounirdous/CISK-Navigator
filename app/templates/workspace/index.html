@@ -395,6 +395,49 @@
     }
     .ws-cisk-pill:hover .bi-arrow-up-right { opacity: 1 !important; }
 
+    /* Linked CISK pills — collapsible wrapper */
+    .ws-cisk-wrap {
+        display: inline-flex; align-items: center; vertical-align: middle;
+        position: relative;
+    }
+    .ws-cisk-count {
+        display: none; /* hidden on desktop */
+        align-items: center; gap: 0.25rem;
+        font-size: 0.65rem; font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        border-radius: 20px; margin-left: 0.35rem;
+        background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(59,130,246,0.15) 100%);
+        border: 1px solid rgba(139,92,246,0.3);
+        color: #a78bfa; cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+    }
+    .ws-cisk-count:hover {
+        background: linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(59,130,246,0.25) 100%);
+        border-color: rgba(139,92,246,0.5);
+    }
+    .ws-cisk-expanded {
+        display: inline-flex; align-items: center; flex-wrap: wrap;
+    }
+    .ws-cisk-flyout {
+        display: none;
+        position: absolute; top: calc(100% + 6px); left: 0; z-index: 500;
+        background: var(--bg-primary, #1e293b); border: 1px solid rgba(139,92,246,0.3);
+        border-radius: 10px; padding: 0.4rem;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        flex-direction: column; gap: 0.3rem; min-width: 160px;
+    }
+    .ws-cisk-flyout .ws-cisk-pill { margin-left: 0; width: 100%; }
+    .ws-cisk-wrap.open .ws-cisk-flyout { display: flex; }
+
+    /* Collapse on mobile always, or on desktop when too many */
+    @media (max-width: 768px) {
+        .ws-cisk-count { display: inline-flex; }
+        .ws-cisk-expanded { display: none; }
+    }
+    .ws-cisk-wrap.collapsed .ws-cisk-count { display: inline-flex; }
+    .ws-cisk-wrap.collapsed .ws-cisk-expanded { display: none; }
+
     /* Tools dropdown */
     .ws-tools-dropdown {
         position: absolute; top: calc(100% + 6px); right: 0; z-index: 1000;
@@ -2487,16 +2530,41 @@
                     <span x-text="orgName"{% if organization and organization.description %} data-tooltip="{{ organization.description|e }}"{% endif %} :data-tooltip-actions="tooltipActionsOrg()"></span>
 
                     <!-- Linked CISKs pills (hidden in tree-only mode) -->
-                    <template x-for="cisk in (badgeMode > 0 ? _linkedCISKs() : [])" :key="cisk.id">
-                        <a href="#" class="ws-cisk-pill ws-d1"
-                           @click.stop.prevent="_openPortal(cisk.id)"
-                           :title="'Open ' + cisk.name + ' workspace'">
-                            <img x-show="cisk.logo_url" :src="cisk.logo_url"
-                                 style="width:14px; height:14px; object-fit:contain; border-radius:3px;">
-                            <i x-show="!cisk.logo_url" class="bi bi-compass" style="font-size:0.65rem;"></i>
-                            <span x-text="cisk.name"></span>
-                            <i class="bi bi-arrow-up-right" style="font-size:0.55rem; opacity:0.5;"></i>
-                        </a>
+                    <template x-if="badgeMode > 0 && _linkedCISKs().length > 0">
+                        <span class="ws-cisk-wrap" :class="{ 'collapsed': _linkedCISKs().length >= 3 }" @click.outside="$el.classList.remove('open')">
+                            <!-- Mobile: count badge that opens flyout -->
+                            <span class="ws-cisk-count"
+                                  @click.stop="$el.closest('.ws-cisk-wrap').classList.toggle('open')"
+                                  x-text="_linkedCISKs().length + ' CISK' + (_linkedCISKs().length > 1 ? 's' : '')">
+                            </span>
+                            <div class="ws-cisk-flyout">
+                                <template x-for="cisk in _linkedCISKs()" :key="'fly-' + cisk.id">
+                                    <a href="#" class="ws-cisk-pill"
+                                       @click.stop.prevent="_openPortal(cisk.id)"
+                                       :title="'Open ' + cisk.name + ' workspace'">
+                                        <img x-show="cisk.logo_url" :src="cisk.logo_url"
+                                             style="width:14px; height:14px; object-fit:contain; border-radius:3px;">
+                                        <i x-show="!cisk.logo_url" class="bi bi-compass" style="font-size:0.65rem;"></i>
+                                        <span x-text="cisk.name"></span>
+                                        <i class="bi bi-arrow-up-right" style="font-size:0.55rem; opacity:0.5;"></i>
+                                    </a>
+                                </template>
+                            </div>
+                            <!-- Desktop: inline pills -->
+                            <span class="ws-cisk-expanded">
+                                <template x-for="cisk in _linkedCISKs()" :key="'pill-' + cisk.id">
+                                    <a href="#" class="ws-cisk-pill ws-d1"
+                                       @click.stop.prevent="_openPortal(cisk.id)"
+                                       :title="'Open ' + cisk.name + ' workspace'">
+                                        <img x-show="cisk.logo_url" :src="cisk.logo_url"
+                                             style="width:14px; height:14px; object-fit:contain; border-radius:3px;">
+                                        <i x-show="!cisk.logo_url" class="bi bi-compass" style="font-size:0.65rem;"></i>
+                                        <span x-text="cisk.name"></span>
+                                        <i class="bi bi-arrow-up-right" style="font-size:0.55rem; opacity:0.5;"></i>
+                                    </a>
+                                </template>
+                            </span>
+                        </span>
                     </template>
 
                     <!-- Action icons for creating spaces (edit mode only) -->
