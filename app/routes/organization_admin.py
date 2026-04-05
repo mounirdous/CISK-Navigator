@@ -4430,6 +4430,14 @@ def _delete_all_organization_data(org_id, keep_gb_ids=None, keep_ai_ids=None):
     # 26. Delete org-level entity links
     EntityLink.query.filter_by(entity_type="organization", entity_id=org_id).delete(synchronize_session=False)
 
+    # 27. Delete Feedback Requests
+    from app.models import FeedbackRequest
+    FeedbackRequest.query.filter_by(organization_id=org_id).delete(synchronize_session=False)
+
+    # 28. Delete workspace label associations (join table)
+    from app.models.workspace_label import organization_label
+    db.session.execute(organization_label.delete().where(organization_label.c.organization_id == org_id))
+
     db.session.flush()
 
 

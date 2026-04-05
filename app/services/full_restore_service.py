@@ -799,6 +799,8 @@ class FullRestoreService:
             space_label=space_data.get("space_label"),
             is_private=space_data.get("is_private", False),
             impact_level=space_data.get("impact_level"),
+            impact_no_consensus=space_data.get("impact_no_consensus", False),
+            impact_no_consensus_note=space_data.get("impact_no_consensus_note"),
             display_order=space_data.get("display_order", 0),
             swot_strengths=space_data.get("swot_strengths"),
             swot_weaknesses=space_data.get("swot_weaknesses"),
@@ -832,6 +834,8 @@ class FullRestoreService:
                     description=challenge_data.get("description"),
                     display_order=challenge_data.get("display_order", 0),
                     impact_level=challenge_data.get("impact_level"),
+                    impact_no_consensus=challenge_data.get("impact_no_consensus", False),
+                    impact_no_consensus_note=challenge_data.get("impact_no_consensus_note"),
                 )
 
                 # Restore challenge logo if present
@@ -874,6 +878,8 @@ class FullRestoreService:
                             impact_on_challenge=initiative_data.get("impact_on_challenge"),
                             impact_rationale=initiative_data.get("impact_rationale"),
                             impact_level=initiative_data.get("impact_level"),
+                            impact_no_consensus=initiative_data.get("impact_no_consensus", False),
+                            impact_no_consensus_note=initiative_data.get("impact_no_consensus_note"),
                         )
 
                         # Restore initiative logo if present
@@ -940,6 +946,8 @@ class FullRestoreService:
                                 name=sys_name,
                                 description=system_data.get("description"),
                                 impact_level=system_data.get("impact_level"),
+                                impact_no_consensus=system_data.get("impact_no_consensus", False),
+                                impact_no_consensus_note=system_data.get("impact_no_consensus_note"),
                                 linked_organization_id=_linked_org_id,
                             )
 
@@ -1020,6 +1028,8 @@ class FullRestoreService:
             is_archived=kpi_data.get("is_archived", False),
             display_order=kpi_data.get("display_order", 0),
             impact_level=kpi_data.get("impact_level"),
+            impact_no_consensus=kpi_data.get("impact_no_consensus", False),
+            impact_no_consensus_note=kpi_data.get("impact_no_consensus_note"),
         )
 
         # Restore KPI logo if present

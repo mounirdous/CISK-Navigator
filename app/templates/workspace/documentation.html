@@ -409,6 +409,9 @@ body.dark-mode .doc-search input { background: #0f172a; color: #e2e8f0; border-c
             <a href="#permissions"><i class="bi bi-shield-lock"></i> Permissions</a>
             <a href="#governance"><i class="bi bi-bank"></i> Governance</a>
             <a href="#snapshots"><i class="bi bi-camera"></i> Snapshots</a>
+            <a href="#labels-profiles"><i class="bi bi-tags"></i> Labels &amp; Profiles</a>
+            <a href="#view-menu"><i class="bi bi-eye"></i> View Menu</a>
+            <a href="#feedback"><i class="bi bi-chat-dots"></i> Feedback</a>
             <a href="#tips"><i class="bi bi-lightbulb"></i> Tips &amp; Shortcuts</a>
             {% if is_admin %}
             <div class="doc-nav-divider"></div>
@@ -696,12 +699,12 @@ body.dark-mode .doc-search input { background: #0f172a; color: #e2e8f0; border-c
                 <div class="doc-section-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
                     <i class="bi bi-sliders"></i>
                 </div>
-                <h2>Value Types</h2>
+                <h2>Value Types (Evidence Lenses)</h2>
             </div>
 
             <div class="doc-card">
                 <h3>The lenses of success</h3>
-                <p>Value Types are the <strong>lenses through which you look at the success of your topic</strong>. They define what you measure — and each KPI can track multiple value types simultaneously, giving you a multi-dimensional view.</p>
+                <p>Value Types — also called <strong>Evidence Lenses</strong> — are the <strong>perspectives through which you assess the success of your topic</strong>. They define what you measure — and each KPI can track multiple value types simultaneously, giving you a multi-dimensional view. View them on the <strong>Evidence Lenses</strong> page (via the Lenses pill on the org row).</p>
                 <table class="doc-table">
                     <thead><tr><th>Kind</th><th>Description</th><th>Default Aggregation</th></tr></thead>
                     <tbody>
@@ -1216,6 +1219,107 @@ body.dark-mode .doc-search input { background: #0f172a; color: #e2e8f0; border-c
                     <li><strong>Pivot Tables</strong> — multi-dimensional snapshot analysis</li>
                     <li><strong>Chart Builder</strong> — create and save custom chart configurations</li>
                 </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- LABELS & PROFILES                              -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="labels-profiles">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    <i class="bi bi-tags"></i>
+                </div>
+                <h2>Workspace Labels &amp; Profiles</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>Organise your workspaces</h3>
+                <p>When you have many workspaces, <strong>labels</strong> and <strong>profiles</strong> help you stay focused.</p>
+
+                <h4><i class="bi bi-tag-fill"></i> Labels</h4>
+                <ul>
+                    <li>Labels are <strong>personal</strong> — each user creates and manages their own</li>
+                    <li>Create labels on the <strong>Profile page → Workspaces tab</strong></li>
+                    <li>Assign labels to workspaces by clicking label badges on each workspace card</li>
+                    <li>Click a label name to <strong>rename</strong> it, or the colour swatch to change its colour</li>
+                    <li>Labels are linked by ID, so renaming is safe</li>
+                </ul>
+
+                <h4><i class="bi bi-sliders"></i> Profiles</h4>
+                <ul>
+                    <li>Profiles filter which workspaces appear in the <strong>Workspaces</strong> menu</li>
+                    <li>Each profile selects a <strong>subset of labels</strong> — only workspaces with those labels are shown</li>
+                    <li>Create profiles on the <strong>Profile page → Profiles tab</strong></li>
+                    <li><strong>Activate</strong> a profile to apply its filter, <strong>Deactivate</strong> to show all workspaces</li>
+                    <li>Profiles can also set <strong>Public Only</strong> mode to hide private spaces</li>
+                    <li>Only one profile can be active at a time</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- VIEW MENU                                      -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="view-menu">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+                    <i class="bi bi-eye"></i>
+                </div>
+                <h2>View Menu</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>Control what you see</h3>
+                <p>The <strong>View</strong> button on the workspace toolbar gives you quick toggles to customise your view:</p>
+
+                <h4>Tree</h4>
+                <ul>
+                    <li><strong>Expand / Collapse All</strong> — open or close the entire tree</li>
+                    <li><strong>Show CISK Systems</strong> — expand only branches leading to portal systems linked to other CISKs</li>
+                </ul>
+
+                <h4>Columns</h4>
+                <ul>
+                    <li><strong>Expand / Collapse All Columns</strong> — show or hide all value type columns</li>
+                </ul>
+
+                <h4>Visibility</h4>
+                <ul>
+                    <li><strong>Archived KPIs</strong> — toggle to show KPIs that have been archived</li>
+                    <li><strong>Level Focus</strong> — dim parent levels when stepping through the tree hierarchy</li>
+                    <li><strong>Relevant Branches</strong> — show only branches where KPIs have data in the currently visible columns. Prunes empty branches bottom-up, reacts live when you toggle columns</li>
+                </ul>
+
+                <h4>Spaces</h4>
+                <ul>
+                    <li><strong>Public Only</strong> — hide private spaces, show only public. This is a privacy-aware setting — it does not count as an active filter and does not reveal the number of hidden private spaces</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- FEEDBACK                                       -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <section class="doc-section" id="feedback">
+            <div class="doc-section-header">
+                <div class="doc-section-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <i class="bi bi-chat-dots"></i>
+                </div>
+                <h2>Feedback System</h2>
+            </div>
+
+            <div class="doc-card">
+                <h3>Report bugs &amp; request features</h3>
+                <p>Use the <strong>Help</strong> menu to submit feedback directly to the platform team:</p>
+                <ul>
+                    <li><strong>Report a Bug</strong> — describe an issue with steps to reproduce</li>
+                    <li><strong>Request Enhancement</strong> — suggest a new feature or improvement</li>
+                    <li>Set a <strong>priority</strong> (low, medium, high, critical)</li>
+                    <li>Attach an optional <strong>screenshot</strong></li>
+                    <li>The current <strong>page URL</strong> and <strong>workspace</strong> are captured automatically</li>
+                </ul>
+                <p>Super admins see a <strong>Feedback Inbox</strong> in the Help menu with a badge showing the count of open requests. They can update status, add notes, and mark items as resolved.</p>
             </div>
         </section>
 

@@ -1167,6 +1167,19 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.13.0",
+            "date": "April 5, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Evidence Lenses</strong> — the Value Dimensions page is now called Evidence Lenses, with binoculars and eyeglasses icons for a modern look.",
+                "<strong>View menu</strong> — the Tools menu is renamed to View. New &ldquo;Relevant Branches&rdquo; toggle prunes the tree to only show branches where KPIs have data in visible columns. &ldquo;Public Only&rdquo; hides private spaces without revealing their count.",
+                "<strong>Duplicate value type</strong> — copy icon on each value type to duplicate its settings instantly.",
+                "<strong>Force delete value type</strong> — when a value type is in use, a &ldquo;Where Used&rdquo; table shows the full hierarchy path (Space &rarr; Challenge &rarr; Initiative &rarr; System &rarr; KPI) and a Force Delete button cascades through all dependent data.",
+                "<strong>Comprehensive clone</strong> — workspace cloning now copies all org-scoped data: governance bodies, strategic pillars, impact levels, entity branding, geography, entity links, and all entity fields.",
+                "<strong>Documentation updated</strong> — new sections for Labels &amp; Profiles, View Menu, and Feedback System.",
+            ],
+        },
+        {
             "version": "7.12.0",
             "date": "April 5, 2026",
             "tags": ["feature"],

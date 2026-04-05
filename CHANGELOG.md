@@ -5,6 +5,32 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.13.0] - 2026-04-05
+
+### Added
+- Evidence Lenses page (renamed from Value Dimensions) with binoculars/eyeglasses icons
+- View menu (renamed from Tools): Relevant Branches toggle prunes tree to visible column data
+- View menu: Public Only toggle (privacy-aware, not counted as filter)
+- Duplicate Value Type button on value types page
+- Force Delete for value types with cascading removal of all dependent data
+- Where Used table on value type delete page showing full hierarchy path
+- Org member names in contributor autocomplete
+- Collapsible linked CISK pills on mobile and when 3+ on desktop
+- Workspace labels, profiles, and smart nav menu
+- Feedback system (bug reports + enhancement requests) with super admin inbox
+- Documentation: Labels & Profiles, View Menu, Feedback System sections
+
+### Fixed
+- CSRF token rendered as text on value type delete and pending users pages
+- Private badge shows lock icon only (no text)
+- Toolbar no longer wraps when column count changes
+- "issues" renamed to "notices" in workspace toolbar
+- Strategy edit button now a subtle pencil icon
+- Backup/restore: impact_no_consensus fields for all entities
+- Empty workspace: cleans up FeedbackRequest and organization_labels
+- Clone service: comprehensive rewrite covering all org-scoped models
+- Client-side image resize for strategy pillar uploads
+
 ## [7.12.0] - 2026-04-05
 
 ### Added

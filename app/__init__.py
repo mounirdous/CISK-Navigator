@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.12.0"
+__version__ = "7.13.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -370,7 +370,7 @@ def create_app(config_name=None):
                             hints.append(H("action", "🚀", f"{challenges} {c} defined. Create Initiatives to address them. Use Edit Mode.", highlight="#wsEditModeBtn"))
                             hints.append(H("info", "💡", "Need ideas for initiatives? Check the documentation for examples.", "/workspace/documentation#naming-initiatives", "See examples"))
                         elif value_types == 0 and is_admin:
-                            hints.append(H("action", "🔎", "Great structure! Now define your Value Types — the lenses through which you measure the success of your topic. Click the Value Types tile on the Workspace Home (house icon).", "/org-admin/value-types", "Create Value Types"))
+                            hints.append(H("action", "🔎", "Great structure! Now define your Evidence Lenses (Value Types) — the perspectives through which you measure success. Click the Value Types tile on the Workspace Home.", "/org-admin/value-types", "Create Value Types"))
                             hints.append(H("info", "💡", "Not sure what to measure? Check the documentation for examples.", "/workspace/documentation#naming-value-types", "See examples"))
                         elif kpis == 0:
                             hints.append(H("action", "📊", "Structure ready! Add Systems, then KPIs to start measuring. Click Edit Mode, then + on an initiative.", highlight="#wsEditModeBtn"))
@@ -386,6 +386,9 @@ def create_app(config_name=None):
                         hints.append(H("tip", "🌱", "Detail level: 🌱 tree only → 🌲 with values → 🎄 full detail + impact column.", highlight="#wsTreeBtn"))
                         hints.append(H("tip", "☆", "Impact filter: cycle ☆→○→★→★★→★★★ to show entities by importance.", highlight="#wsImpactBtn"))
                         hints.append(H("tip", "🔄", "Orange refresh button = data changed. Click to reload fresh values.", highlight="#wsRefreshBtn"))
+                        hints.append(H("tip", "👁️", "View menu: toggle Relevant Branches to prune the tree to only branches with data in visible columns."))
+                        hints.append(H("tip", "🏷️", "Organise workspaces with labels and profiles from your Profile page. Profiles filter the Workspaces menu."))
+                        hints.append(H("tip", "🐛", "Found a bug or have an idea? Use Help → Report a Bug or Request Enhancement."))
                         if is_admin:
                             hints.append(H("info", "✏️", "Edit Mode lets you add/remove/reorder entities and drag columns.", highlight="#wsEditModeBtn"))
                             hints.append(H("tip", "💾", "Save/load filter presets with My Presets.", highlight=".preset-bar"))
