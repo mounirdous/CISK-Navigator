@@ -1444,7 +1444,7 @@ class FullRestoreService:
                         entity_id = json_id_map.get(entity_type, {}).get(source_json_id)
 
                     if entity_id is None:
-                        entity_name = mention_data.get("entity_name")
+                        entity_name = mention_data.get("entity_name") or mention_data.get("mention_text")
                         if entity_name:
                             entity_id = entity_lookup.get(entity_type, {}).get(entity_name)
 
