@@ -611,6 +611,28 @@
                                         </span>
                                     </a>
                                 </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal"
+                                       onclick="document.getElementById('feedbackType').value='bug'; document.getElementById('feedbackPageUrl').value=window.location.href;">
+                                        <i class="bi bi-bug text-danger"></i> Report a Bug
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#feedbackModal"
+                                       onclick="document.getElementById('feedbackType').value='enhancement'; document.getElementById('feedbackPageUrl').value=window.location.href;">
+                                        <i class="bi bi-lightbulb text-warning"></i> Request Enhancement
+                                    </a>
+                                </li>
+                                {% if current_user.is_super_admin %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('super_admin.feedback_list') }}">
+                                        <i class="bi bi-inbox"></i> Feedback Inbox
+                                        <span class="badge bg-danger ms-1" id="feedbackCountBadge" style="display:none;"></span>
+                                    </a>
+                                </li>
+                                {% endif %}
                             </ul>
                         </li>
 
@@ -935,6 +957,161 @@
         {% include 'workspace/mentions_modal.html' %}
     {% endif %}
 
+    <!-- Feedback Modal -->
+    {% if current_user.is_authenticated %}
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h5 class="modal-title text-white" id="feedbackModalTitle">
+                        <i class="bi bi-chat-dots"></i> Submit Feedback
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="feedbackForm">
+                        <input type="hidden" id="feedbackType" name="type" value="bug">
+                        <input type="hidden" id="feedbackPageUrl" name="page_url" value="">
+
+                        <!-- Type selector -->
+                        <div class="d-flex gap-2 mb-3">
+                            <button type="button" class="btn flex-fill feedback-type-btn active" data-type="bug"
+                                    onclick="selectFeedbackType('bug')"
+                                    style="border-radius:10px;">
+                                <i class="bi bi-bug text-danger"></i> Bug Report
+                            </button>
+                            <button type="button" class="btn flex-fill feedback-type-btn" data-type="enhancement"
+                                    onclick="selectFeedbackType('enhancement')"
+                                    style="border-radius:10px;">
+                                <i class="bi bi-lightbulb text-warning"></i> Enhancement
+                            </button>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Title</label>
+                            <input type="text" class="form-control" id="feedbackTitle" name="title"
+                                   placeholder="Brief summary of the issue or idea..." maxlength="200" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Description</label>
+                            <textarea class="form-control" id="feedbackDescription" name="description" rows="5"
+                                      placeholder="Describe the bug (steps to reproduce) or the enhancement you'd like to see..." required></textarea>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Priority</label>
+                                <select class="form-select" id="feedbackPriority" name="priority">
+                                    <option value="low">Low — nice to have</option>
+                                    <option value="medium" selected>Medium — affects my work</option>
+                                    <option value="high">High — blocking my work</option>
+                                    <option value="critical">Critical — system unusable</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Screenshot (optional)</label>
+                                <input type="file" class="form-control" id="feedbackScreenshot" name="screenshot"
+                                       accept="image/*">
+                            </div>
+                        </div>
+
+                        <div class="text-muted" style="font-size:0.75rem;">
+                            <i class="bi bi-info-circle"></i>
+                            Page: <code id="feedbackPageDisplay"></code>
+                            &bull; Workspace: <strong>{{ session.get('organization_name', 'N/A') }}</strong>
+                        </div>
+                    </form>
+
+                    <!-- Success message (hidden by default) -->
+                    <div id="feedbackSuccess" style="display:none; text-align:center; padding:2rem 0;">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>
+                        <h5 class="mt-2">Thank you!</h5>
+                        <p class="text-muted">Your feedback has been submitted. A super admin will review it soon.</p>
+                    </div>
+                </div>
+                <div class="modal-footer" id="feedbackFooter">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="submitFeedback()" id="feedbackSubmitBtn">
+                        <i class="bi bi-send"></i> Submit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+    .feedback-type-btn { border: 2px solid var(--border-color); background: transparent; color: var(--text-primary); }
+    .feedback-type-btn.active { border-color: var(--accent-primary); background: rgba(13,110,253,0.1); font-weight: 600; }
+    </style>
+    <script>
+    function selectFeedbackType(type) {
+        document.getElementById('feedbackType').value = type;
+        document.querySelectorAll('.feedback-type-btn').forEach(function(b) {
+            b.classList.toggle('active', b.dataset.type === type);
+        });
+        document.getElementById('feedbackModalTitle').innerHTML = type === 'bug'
+            ? '<i class="bi bi-bug"></i> Report a Bug'
+            : '<i class="bi bi-lightbulb"></i> Request Enhancement';
+    }
+
+    // Sync page URL display and type buttons when modal opens
+    document.getElementById('feedbackModal').addEventListener('show.bs.modal', function() {
+        var url = document.getElementById('feedbackPageUrl').value || window.location.href;
+        document.getElementById('feedbackPageDisplay').textContent = url.replace(/^https?:\/\/[^/]+/, '');
+        // Reset form visibility
+        document.getElementById('feedbackForm').style.display = '';
+        document.getElementById('feedbackSuccess').style.display = 'none';
+        document.getElementById('feedbackFooter').style.display = '';
+        // Sync type buttons with the hidden input (set by onclick before modal opens)
+        setTimeout(function() { selectFeedbackType(document.getElementById('feedbackType').value); }, 0);
+    });
+
+    function submitFeedback() {
+        var title = document.getElementById('feedbackTitle').value.trim();
+        var desc = document.getElementById('feedbackDescription').value.trim();
+        if (!title || !desc) { alert('Please fill in the title and description.'); return; }
+
+        var btn = document.getElementById('feedbackSubmitBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
+
+        var formData = new FormData();
+        formData.append('type', document.getElementById('feedbackType').value);
+        formData.append('title', title);
+        formData.append('description', desc);
+        formData.append('priority', document.getElementById('feedbackPriority').value);
+        formData.append('page_url', document.getElementById('feedbackPageUrl').value);
+        var screenshot = document.getElementById('feedbackScreenshot').files[0];
+        if (screenshot) formData.append('screenshot', screenshot);
+
+        fetch('{{ url_for("global_admin.api_feedback_submit") }}', {
+            method: 'POST',
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'},
+            body: formData
+        }).then(function(r) { return r.json(); }).then(function(data) {
+            if (data.error) { alert(data.error); btn.disabled = false; btn.innerHTML = '<i class="bi bi-send"></i> Submit'; return; }
+            // Show success
+            document.getElementById('feedbackForm').style.display = 'none';
+            document.getElementById('feedbackFooter').style.display = 'none';
+            document.getElementById('feedbackSuccess').style.display = '';
+            // Reset form for next use
+            document.getElementById('feedbackTitle').value = '';
+            document.getElementById('feedbackDescription').value = '';
+            document.getElementById('feedbackPriority').value = 'medium';
+            document.getElementById('feedbackScreenshot').value = '';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send"></i> Submit';
+            // Auto-close after 2s
+            setTimeout(function() { bootstrap.Modal.getInstance(document.getElementById('feedbackModal')).hide(); }, 2000);
+        }).catch(function() {
+            alert('Failed to submit feedback. Please try again.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-send"></i> Submit';
+        });
+    }
+    </script>
+    {% endif %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Alpine.js for reactive components -->
@@ -1141,6 +1318,23 @@
     document.addEventListener('DOMContentLoaded', function() {
         loadUnreadMentionsCount();
     });
+    </script>
+    {% endif %}
+
+    {% if current_user.is_authenticated and current_user.is_super_admin %}
+    <script>
+    // Load open feedback count for super admin badge
+    (function() {
+        fetch('{{ url_for("global_admin.api_feedback_count") }}')
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var badge = document.getElementById('feedbackCountBadge');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = '';
+                }
+            }).catch(function() {});
+    })();
     </script>
     {% endif %}
 

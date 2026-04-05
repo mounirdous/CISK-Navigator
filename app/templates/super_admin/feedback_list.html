@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Feedback Inbox - Super Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+.fb-card {
+    padding: 1rem 1.25rem; margin-bottom: 0.75rem;
+    background: var(--bg-primary); border: 2px solid var(--border-color);
+    border-radius: 10px; transition: all 0.15s ease;
+    display: flex; align-items: flex-start; gap: 1rem;
+}
+.fb-card:hover { border-color: var(--accent-primary); transform: translateX(3px); box-shadow: var(--shadow-sm); }
+.fb-card.status-new { border-left: 4px solid #3b82f6; }
+.fb-card.status-in_progress { border-left: 4px solid #f59e0b; }
+.fb-card.status-resolved { border-left: 4px solid #22c55e; opacity: 0.7; }
+.fb-card.status-wontfix, .fb-card.status-duplicate { border-left: 4px solid #6b7280; opacity: 0.6; }
+.fb-icon { font-size: 1.3rem; margin-top: 0.1rem; }
+.fb-title { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
+.fb-meta { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.fb-filters { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.fb-filter-btn {
+    font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.75rem;
+    border-radius: 20px; border: 1px solid var(--border-color);
+    background: transparent; color: var(--text-secondary); text-decoration: none;
+}
+.fb-filter-btn.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 fade-in">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 style="font-weight:700;">
+            <i class="bi bi-inbox" style="color: var(--accent-primary);"></i>
+            Feedback Inbox
+            {% if open_count > 0 %}
+            <span class="badge bg-danger" style="font-size:0.7rem; vertical-align:middle;">{{ open_count }} open</span>
+            {% endif %}
+        </h2>
+        <a href="{{ url_for('super_admin.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Super Admin
+        </a>
+    </div>
+
+    <div class="fb-filters">
+        <strong style="font-size:0.8rem; padding:0.3rem 0;">Status:</strong>
+        <a href="?status=open&type={{ type_filter }}" class="fb-filter-btn {% if status_filter == 'open' %}active{% endif %}">Open</a>
+        <a href="?status=new&type={{ type_filter }}" class="fb-filter-btn {% if status_filter == 'new' %}active{% endif %}">New</a>
+        <a href="?status=in_progress&type={{ type_filter }}" class="fb-filter-btn {% if status_filter == 'in_progress' %}active{% endif %}">In Progress</a>
+        <a href="?status=resolved&type={{ type_filter }}" class="fb-filter-btn {% if status_filter == 'resolved' %}active{% endif %}">Resolved</a>
+        <a href="?status=all&type={{ type_filter }}" class="fb-filter-btn {% if status_filter == 'all' %}active{% endif %}">All</a>
+        <span style="width:1px; height:24px; background:var(--border-color);"></span>
+        <strong style="font-size:0.8rem; padding:0.3rem 0;">Type:</strong>
+        <a href="?status={{ status_filter }}&type=all" class="fb-filter-btn {% if type_filter == 'all' %}active{% endif %}">All</a>
+        <a href="?status={{ status_filter }}&type=bug" class="fb-filter-btn {% if type_filter == 'bug' %}active{% endif %}"><i class="bi bi-bug"></i> Bugs</a>
+        <a href="?status={{ status_filter }}&type=enhancement" class="fb-filter-btn {% if type_filter == 'enhancement' %}active{% endif %}"><i class="bi bi-lightbulb"></i> Enhancements</a>
+    </div>
+
+    {% if feedbacks %}
+        {% for fb in feedbacks %}
+        <a href="{{ url_for('super_admin.feedback_detail', feedback_id=fb.id) }}" class="fb-card status-{{ fb.status }}" style="text-decoration:none; color:inherit;">
+            <div class="fb-icon">
+                <i class="bi {{ fb.type_icon }}" style="color: {% if fb.type == 'bug' %}#ef4444{% else %}#f59e0b{% endif %};"></i>
+            </div>
+            <div style="flex:1;">
+                <div class="fb-title">
+                    {{ fb.title }}
+                </div>
+                <div class="fb-meta">
+                    <span style="color:{{ fb.priority_color }};"><i class="bi bi-flag-fill"></i> {{ fb.priority|capitalize }}</span>
+                    <span><span class="badge" style="background:{{ fb.status_color }};font-size:0.65rem;">{{ fb.status|replace('_', ' ')|capitalize }}</span></span>
+                    <span><i class="bi bi-person"></i> {{ fb.submitted_by.display_name or fb.submitted_by.login if fb.submitted_by else 'Unknown' }}</span>
+                    {% if fb.organization %}
+                    <span><i class="bi bi-building"></i> {{ fb.organization.name }}</span>
+                    {% endif %}
+                    <span><i class="bi bi-clock"></i> {{ fb.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+                    {% if fb.screenshot_data %}
+                    <span><i class="bi bi-image"></i> Screenshot</span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    {% else %}
+        <div style="text-align:center; padding:3rem; color:var(--text-secondary);">
+            <i class="bi bi-inbox" style="font-size:3rem; opacity:0.3;"></i>
+            <p class="mt-2">No feedback requests matching your filters.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

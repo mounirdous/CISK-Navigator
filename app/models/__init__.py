@@ -16,6 +16,7 @@ from .challenge import Challenge
 from .contribution import Contribution
 from .decision import Decision
 from .entity_link import EntityLink
+from .feedback_request import FeedbackRequest
 from .entity_type_default import EntityTypeDefault
 from .geography import GeographyCountry, GeographyRegion, GeographySite, KPIGeographyAssignment, KPISiteAssignment
 from .governance_body import GovernanceBody, KPIGovernanceBodyLink
@@ -95,4 +96,5 @@ __all__ = [
     "TestExecution",
     "WorkspaceLabel",
     "UserWorkspaceProfile",
+    "FeedbackRequest",
 ]

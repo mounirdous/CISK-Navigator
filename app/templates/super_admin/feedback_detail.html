@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Feedback #{{ feedback.id }} - Super Admin{% endblock %}
+
+{% block extra_css %}
+<style>
+.fb-detail-card {
+    background: var(--bg-primary); border: 2px solid var(--border-color);
+    border-radius: 12px; padding: 2rem; max-width: 800px; margin: 0 auto;
+}
+.fb-field { margin-bottom: 1.25rem; }
+.fb-field-label {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.35rem;
+}
+.fb-field-value { color: var(--text-primary); }
+.fb-screenshot { max-width: 100%; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 0.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 fade-in">
+    <div class="d-flex align-items-center gap-2 mb-4">
+        <a href="{{ url_for('super_admin.feedback_list') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back to Inbox
+        </a>
+        <h4 style="margin:0; font-weight:700;">
+            <i class="bi {{ feedback.type_icon }}" style="color:{% if feedback.type == 'bug' %}#ef4444{% else %}#f59e0b{% endif %};"></i>
+            Feedback #{{ feedback.id }}
+        </h4>
+        <span class="badge" style="background:{{ feedback.status_color }};">{{ feedback.status|replace('_', ' ')|capitalize }}</span>
+    </div>
+
+    <div class="fb-detail-card">
+        <h4 style="font-weight:700; margin-bottom:1.5rem;">{{ feedback.title }}</h4>
+
+        <div class="row">
+            <div class="col-md-8">
+                <div class="fb-field">
+                    <div class="fb-field-label">Description</div>
+                    <div class="fb-field-value" style="white-space:pre-wrap;">{{ feedback.description }}</div>
+                </div>
+
+                {% if feedback.screenshot_data %}
+                <div class="fb-field">
+                    <div class="fb-field-label">Screenshot</div>
+                    <img src="{{ url_for('super_admin.feedback_screenshot', feedback_id=feedback.id) }}"
+                         class="fb-screenshot" alt="Screenshot">
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-4">
+                <div class="fb-field">
+                    <div class="fb-field-label">Type</div>
+                    <div class="fb-field-value">
+                        <i class="bi {{ feedback.type_icon }}"></i> {{ feedback.type|capitalize }}
+                    </div>
+                </div>
+
+                <div class="fb-field">
+                    <div class="fb-field-label">Priority</div>
+                    <div class="fb-field-value" style="color:{{ feedback.priority_color }};">
+                        <i class="bi bi-flag-fill"></i> {{ feedback.priority|capitalize }}
+                    </div>
+                </div>
+
+                <div class="fb-field">
+                    <div class="fb-field-label">Submitted by</div>
+                    <div class="fb-field-value">
+                        <i class="bi bi-person"></i>
+                        {{ feedback.submitted_by.display_name or feedback.submitted_by.login if feedback.submitted_by else 'Unknown' }}
+                    </div>
+                </div>
+
+                {% if feedback.organization %}
+                <div class="fb-field">
+                    <div class="fb-field-label">Workspace</div>
+                    <div class="fb-field-value">
+                        <i class="bi bi-building"></i> {{ feedback.organization.name }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if feedback.page_url %}
+                <div class="fb-field">
+                    <div class="fb-field-label">Page</div>
+                    <div class="fb-field-value" style="font-size:0.8rem; word-break:break-all;">
+                        <code>{{ feedback.page_url }}</code>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="fb-field">
+                    <div class="fb-field-label">Submitted</div>
+                    <div class="fb-field-value">
+                        <i class="bi bi-clock"></i> {{ feedback.created_at.strftime('%B %d, %Y at %H:%M') }}
+                    </div>
+                </div>
+
+                {% if feedback.resolved_at %}
+                <div class="fb-field">
+                    <div class="fb-field-label">Resolved</div>
+                    <div class="fb-field-value">
+                        <i class="bi bi-check-circle text-success"></i>
+                        {{ feedback.resolved_at.strftime('%B %d, %Y at %H:%M') }}
+                        {% if feedback.resolved_by %}
+                        by {{ feedback.resolved_by.display_name or feedback.resolved_by.login }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Admin Action Form -->
+        <hr style="margin: 1.5rem 0;">
+        <h6 style="font-weight:700;"><i class="bi bi-gear"></i> Admin Actions</h6>
+        <form method="POST" action="{{ url_for('super_admin.feedback_update', feedback_id=feedback.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-bold">Status</label>
+                    <select class="form-select" name="status">
+                        <option value="new" {% if feedback.status == 'new' %}selected{% endif %}>New</option>
+                        <option value="in_progress" {% if feedback.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                        <option value="resolved" {% if feedback.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                        <option value="wontfix" {% if feedback.status == 'wontfix' %}selected{% endif %}>Won't Fix</option>
+                        <option value="duplicate" {% if feedback.status == 'duplicate' %}selected{% endif %}>Duplicate</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Admin Notes</label>
+                <textarea class="form-control" name="admin_notes" rows="3"
+                          placeholder="Internal notes, resolution details...">{{ feedback.admin_notes or '' }}</textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check2"></i> Update
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

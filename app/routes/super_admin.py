@@ -19,6 +19,7 @@ from app.models import (
     AnnouncementTargetUser,
     AuditLog,
     BenchmarkRun,
+    FeedbackRequest,
     Organization,
     SSOConfig,
     SystemAnnouncement,
@@ -1936,3 +1937,86 @@ def benchmarks_delete(run_id):
     db.session.commit()
     flash("Benchmark run deleted.", "info")
     return redirect(url_for("super_admin.benchmarks"))
+
+
+# ── Feedback Management ──────────────────────────────────────────────────────
+
+@bp.route("/feedback")
+@super_admin_required
+def feedback_list():
+    """List all feedback requests with filtering."""
+    status_filter = request.args.get("status", "open")
+    type_filter = request.args.get("type", "all")
+
+    query = FeedbackRequest.query
+
+    if status_filter == "open":
+        query = query.filter(FeedbackRequest.status.in_(["new", "in_progress"]))
+    elif status_filter != "all":
+        query = query.filter_by(status=status_filter)
+
+    if type_filter != "all":
+        query = query.filter_by(type=type_filter)
+
+    feedbacks = query.order_by(
+        FeedbackRequest.status.asc(),  # new first
+        FeedbackRequest.priority.desc(),
+        FeedbackRequest.created_at.desc(),
+    ).all()
+
+    open_count = FeedbackRequest.query.filter(FeedbackRequest.status.in_(["new", "in_progress"])).count()
+
+    return render_template(
+        "super_admin/feedback_list.html",
+        feedbacks=feedbacks,
+        status_filter=status_filter,
+        type_filter=type_filter,
+        open_count=open_count,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/feedback/<int:feedback_id>")
+@super_admin_required
+def feedback_detail(feedback_id):
+    """View a feedback request detail."""
+    feedback = FeedbackRequest.query.get_or_404(feedback_id)
+    return render_template("super_admin/feedback_detail.html", feedback=feedback, csrf_token=generate_csrf)
+
+
+@bp.route("/feedback/<int:feedback_id>/update", methods=["POST"])
+@super_admin_required
+def feedback_update(feedback_id):
+    """Update feedback status and admin notes."""
+    feedback = FeedbackRequest.query.get_or_404(feedback_id)
+    new_status = request.form.get("status")
+    admin_notes = request.form.get("admin_notes", "").strip()
+
+    if new_status in ("new", "in_progress", "resolved", "wontfix", "duplicate"):
+        feedback.status = new_status
+    if admin_notes is not None:
+        feedback.admin_notes = admin_notes
+    if new_status == "resolved" and not feedback.resolved_at:
+        feedback.resolved_at = datetime.utcnow()
+        feedback.resolved_by_id = current_user.id
+
+    db.session.commit()
+    flash(f"Feedback #{feedback.id} updated to '{feedback.status}'.", "success")
+    return redirect(url_for("super_admin.feedback_detail", feedback_id=feedback.id))
+
+
+@bp.route("/feedback/<int:feedback_id>/screenshot")
+@super_admin_required
+def feedback_screenshot(feedback_id):
+    """Serve the feedback screenshot."""
+    import io
+
+    from flask import send_file
+
+    feedback = FeedbackRequest.query.get_or_404(feedback_id)
+    if not feedback.screenshot_data:
+        return "No screenshot", 404
+    return send_file(
+        io.BytesIO(feedback.screenshot_data),
+        mimetype=feedback.screenshot_mime or "image/png",
+    )

@@ -24,6 +24,7 @@ from app.models import (
     CellComment,
     Challenge,
     Contribution,
+    FeedbackRequest,
     Initiative,
     InitiativeSystemLink,
     KPISnapshot,
@@ -1889,3 +1890,51 @@ def api_profiles_delete(profile_id):
     db.session.delete(profile)
     db.session.commit()
     return jsonify({"ok": True})
+
+
+# ── Feedback API ─────────────────────────────────────────────────────────────
+
+@bp.route("/api/feedback", methods=["POST"])
+@login_required
+def api_feedback_submit():
+    """Submit a bug report or enhancement request."""
+    fb_type = request.form.get("type", "bug")
+    title = (request.form.get("title") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    priority = request.form.get("priority", "medium")
+    page_url = request.form.get("page_url", "")
+
+    if not title or not description:
+        return jsonify({"error": "Title and description are required"}), 400
+    if fb_type not in ("bug", "enhancement"):
+        fb_type = "bug"
+    if priority not in ("low", "medium", "high", "critical"):
+        priority = "medium"
+
+    feedback = FeedbackRequest(
+        type=fb_type,
+        title=title,
+        description=description,
+        priority=priority,
+        page_url=page_url,
+        submitted_by_id=current_user.id,
+        organization_id=session.get("organization_id"),
+    )
+
+    # Handle optional screenshot
+    screenshot = request.files.get("screenshot")
+    if screenshot and screenshot.filename:
+        feedback.screenshot_data = screenshot.read()
+        feedback.screenshot_mime = screenshot.content_type
+
+    db.session.add(feedback)
+    db.session.commit()
+    return jsonify({"ok": True, "id": feedback.id}), 201
+
+
+@bp.route("/api/feedback/count", methods=["GET"])
+@login_required
+def api_feedback_count():
+    """Get count of open feedback requests (for super admin badge)."""
+    count = FeedbackRequest.query.filter(FeedbackRequest.status.in_(["new", "in_progress"])).count()
+    return jsonify({"count": count})

@@ -5,6 +5,16 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.12.0] - 2026-04-05
+
+### Added
+- Feedback system: any user can submit bug reports or enhancement requests from the Help menu
+- Feedback form with type selector, priority, description, optional screenshot, auto-captured page URL
+- Super Admin feedback inbox with status/type filters, detail view with screenshot display
+- Super Admin can update status (new, in progress, resolved, won't fix, duplicate) and add admin notes
+- Open feedback count badge in Help menu for super admins
+- DB migration for feedback_requests table
+
 ## [7.11.0] - 2026-04-05
 
 ### Added
