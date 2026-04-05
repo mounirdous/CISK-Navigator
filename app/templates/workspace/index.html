@@ -5610,7 +5610,7 @@ function workspaceV2(orgId, filterPresets) {
                 var badge = pc ? (pc.status === 'complete' ? '<span class="tt-badge-complete">\u2713<\/span>' : pc.status === 'partial' ? '<span class="tt-badge-partial">' + pc.filled + '/' + pc.total + '<\/span>' : '<span class="tt-badge-empty">!<\/span>') : '';
                 h += '<a class="tt-chip" href="' + this.portersUrl + '" onclick="event.stopPropagation()"><i class="bi bi-diagram-3"><\/i> Porter\'s ' + badge + '<\/a>';
             }
-            h += '<a class="tt-chip" href="{{ url_for("workspace.dimensions") }}" onclick="event.stopPropagation()"><i class="bi bi-columns-gap"><\/i> Dimensions<\/a>';
+            h += '<a class="tt-chip" href="{{ url_for("workspace.dimensions") }}" onclick="event.stopPropagation()"><i class="bi bi-columns-gap"><\/i> Lenses<\/a>';
             {% if strategy_enabled %}
             h += '<a class="tt-chip" href="{{ url_for("workspace.strategy_view") }}" onclick="event.stopPropagation()"><i class="bi bi-compass"><\/i> Strategy' + (this._strategyCount === 0 ? ' <span class="tt-badge-empty">!<\/span>' : '') + '<\/a>';
             {% endif %}

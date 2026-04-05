@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Value Dimensions - {{ session.get('organization_name', '') }}{% endblock %}
+{% block title %}Evidence Lenses - {{ session.get('organization_name', '') }}{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -145,8 +145,8 @@
 {% block content %}
 <div class="dim-page">
     <div class="dim-header">
-        <h1><i class="bi bi-columns-gap" style="color:#3b82f6;"></i> Value Dimensions</h1>
-        <p>The lenses through which your organization measures strategic progress</p>
+        <h1><i class="bi bi-columns-gap" style="color:#3b82f6;"></i> Evidence Lenses</h1>
+        <p>The perspectives through which your organization measures strategic progress</p>
     </div>
 
     {% if value_types %}
@@ -172,7 +172,7 @@
             'list': 'bi-list-check'
         } %}
         <div class="dim-card" style="--dim-accent: {{ accent_colors[loop.index0 % accent_colors|length] }}; animation-delay: {{ loop.index0 * 0.06 }}s;">
-            <div class="dim-card-order">Dimension {{ loop.index }}</div>
+            <div class="dim-card-order">Lens {{ loop.index }}</div>
             <div class="dim-card-name">{{ vt.name }}</div>
             <div class="dim-card-desc">{{ vt.description or 'No description yet' }}</div>
             <div>
@@ -188,8 +188,8 @@
     {% else %}
     <div class="dim-empty">
         <i class="bi bi-columns-gap"></i>
-        <h5>No value dimensions defined yet</h5>
-        <p>Value dimensions are the columns in your workspace tree.</p>
+        <h5>No evidence lenses defined yet</h5>
+        <p>Evidence lenses are the columns in your workspace tree.</p>
     </div>
     {% endif %}
 </div>
