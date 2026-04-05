@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.11.0] - 2026-04-05
+
+### Added
+- Workspace labels: user-scoped labels/tags to organize and filter workspaces
+- Workspace profiles: named configurations that filter workspaces by label, managed from Profile page
+- Workspace Management filter bar with live search, Active/Inactive toggle, and label filter chips
+- Label management: create, delete, and assign labels to workspaces (inline on management page + Profile page)
+- Profile management: create profiles with icon + label selection, activate/deactivate, edit, delete
+- Navbar Workspaces menu: live search, label filter pills, workspaces grouped by label, auto-filtered by active profile
+- Active profile indicator shown in Workspaces dropdown header
+- DB migrations for workspace_labels, organization_labels, and user_workspace_profiles tables
+
 ## [7.10.7] - 2026-04-05
 
 ### Added

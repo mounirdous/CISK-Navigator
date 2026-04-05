@@ -39,6 +39,8 @@ from .test_execution import TestExecution
 from .user import User
 from .user_filter_preset import UserFilterPreset
 from .value_type import KPIValueTypeConfig, ValueType
+from .workspace_label import WorkspaceLabel
+from .workspace_profile import UserWorkspaceProfile
 
 __all__ = [
     "ActionItem",
@@ -91,4 +93,6 @@ __all__ = [
     "StakeholderMap",
     "StakeholderMapMembership",
     "TestExecution",
+    "WorkspaceLabel",
+    "UserWorkspaceProfile",
 ]

@@ -8,24 +8,98 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 3px solid var(--border-subtle);
 }
-
 .page-title h2 {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 0;
-    color: var(--text-primary);
-    font-weight: 700;
+    display: flex; align-items: center; gap: 0.75rem;
+    margin: 0; color: var(--text-primary); font-weight: 700;
+}
+.page-title h2 i { color: var(--accent-primary); }
+
+/* Filter bar */
+.ws-filter-bar {
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    margin-bottom: 1.25rem; padding: 0.75rem 1rem;
+    background: var(--bg-primary); border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+.ws-filter-search {
+    flex: 1; min-width: 180px;
+    border: none; background: transparent; outline: none;
+    font-size: 0.9rem; color: var(--text-primary);
+    padding: 0.35rem 0;
+}
+.ws-filter-search::placeholder { color: var(--text-secondary); opacity: 0.6; }
+.ws-filter-sep { width: 1px; height: 24px; background: var(--border-color); }
+.ws-status-btn {
+    font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.65rem;
+    border-radius: 20px; border: 1px solid var(--border-color);
+    background: transparent; color: var(--text-secondary); cursor: pointer;
+    transition: all 0.15s ease;
+}
+.ws-status-btn.active { background: var(--accent-primary); color: white; border-color: var(--accent-primary); }
+.ws-status-btn:hover:not(.active) { border-color: var(--text-secondary); }
+
+/* Label chips */
+.ws-label-chip {
+    display: inline-flex; align-items: center; gap: 0.25rem;
+    font-size: 0.68rem; font-weight: 600; padding: 0.2rem 0.55rem;
+    border-radius: 20px; cursor: pointer; white-space: nowrap;
+    border: 1.5px solid; transition: all 0.15s ease; text-decoration: none;
+}
+.ws-label-chip.filter-chip { opacity: 0.55; }
+.ws-label-chip.filter-chip.selected { opacity: 1; box-shadow: 0 0 0 2px rgba(255,255,255,0.15); }
+.ws-label-chip .remove-label {
+    font-size: 0.6rem; opacity: 0.5; cursor: pointer; margin-left: 0.15rem;
+}
+.ws-label-chip .remove-label:hover { opacity: 1; }
+
+/* Label manager dropdown */
+.ws-label-mgr {
+    position: relative; display: inline-block;
+}
+.ws-label-mgr-btn {
+    font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 12px;
+    border: 1px dashed var(--border-color); background: transparent;
+    color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.ws-label-mgr-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+.ws-label-mgr-drop {
+    display: none; position: absolute; top: calc(100% + 4px); left: 0; z-index: 600;
+    background: var(--bg-primary); border: 1px solid var(--border-color);
+    border-radius: 8px; padding: 0.5rem; min-width: 200px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+.ws-label-mgr-drop.open { display: block; }
+.ws-label-mgr-drop .lbl-item {
+    display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0.4rem;
+    border-radius: 5px; cursor: pointer; font-size: 0.8rem; color: var(--text-primary);
+}
+.ws-label-mgr-drop .lbl-item:hover { background: var(--bg-secondary); }
+.ws-label-mgr-drop .lbl-item .lbl-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.ws-label-mgr-drop .lbl-item .bi-check { color: var(--accent-primary); font-weight: bold; }
+.ws-label-new-row {
+    display: flex; gap: 0.3rem; margin-top: 0.4rem; padding-top: 0.4rem;
+    border-top: 1px solid var(--border-color);
+}
+.ws-label-new-row input {
+    flex: 1; font-size: 0.78rem; padding: 0.2rem 0.4rem;
+    border: 1px solid var(--border-color); border-radius: 5px;
+    background: transparent; color: var(--text-primary); outline: none;
+}
+.ws-label-new-row input[type="color"] {
+    width: 26px; height: 26px; padding: 0; border: none; cursor: pointer;
+}
+.ws-label-new-row button {
+    font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 5px;
+    border: none; background: var(--accent-primary); color: white; cursor: pointer;
 }
 
-.page-title h2 i {
-    color: var(--accent-primary);
-}
-
+/* Org cards */
 .org-card {
     background: var(--bg-primary);
     border: 2px solid var(--border-color);
@@ -34,72 +108,52 @@
     margin-bottom: 1rem;
     transition: all var(--transition-fast);
 }
-
 .org-card:hover {
     border-color: var(--accent-primary);
     box-shadow: var(--shadow-md);
     transform: translateX(4px);
 }
-
+.org-card.hidden-by-filter { display: none; }
 .org-icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
+    width: 50px; height: 50px; border-radius: 12px;
     background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    color: white; display: flex; align-items: center; justify-content: center;
     font-size: 1.5rem;
 }
-
-.org-info {
-    flex: 1;
-}
-
+.org-info { flex: 1; }
 .org-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    font-size: 1.1rem; font-weight: 600;
+    color: var(--text-primary); margin-bottom: 0.5rem;
 }
-
 .org-description {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+    font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.75rem;
 }
-
 .org-meta {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
+    display: flex; gap: 1rem; flex-wrap: wrap;
 }
-
 .org-meta-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.9rem; color: var(--text-secondary);
 }
-
 .org-actions {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
 }
-
+.org-labels {
+    display: flex; gap: 0.3rem; flex-wrap: wrap; align-items: center;
+    margin-top: 0.4rem;
+}
 .empty-state {
-    text-align: center;
-    padding: 4rem 2rem;
-    color: var(--text-secondary);
+    text-align: center; padding: 4rem 2rem; color: var(--text-secondary);
+}
+.empty-state i { font-size: 4rem; opacity: 0.3; margin-bottom: 1rem; }
+.ws-no-results {
+    display: none; text-align: center; padding: 2rem; color: var(--text-secondary);
+    font-size: 0.95rem;
 }
 
-.empty-state i {
-    font-size: 4rem;
-    opacity: 0.3;
-    margin-bottom: 1rem;
+/* Label manager (filter bar) */
+.ws-label-manage-section {
+    display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
 }
 </style>
 {% endblock %}
@@ -127,97 +181,158 @@
     </div>
 
     {% if organizations %}
-        <div class="row">
-            {% for org in organizations %}
-            <div class="col-12">
-                <div class="org-card">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="org-icon">
-                            <i class="bi bi-building"></i>
-                        </div>
+    <!-- Filter Bar -->
+    <div class="ws-filter-bar" id="filterBar">
+        <i class="bi bi-search" style="color: var(--text-secondary); font-size: 0.9rem;"></i>
+        <input type="text" class="ws-filter-search" id="searchInput"
+               placeholder="Search workspaces..." autocomplete="off">
+        <div class="ws-filter-sep"></div>
+        <button class="ws-status-btn active" data-status="all" onclick="setStatusFilter('all')">All</button>
+        <button class="ws-status-btn" data-status="active" onclick="setStatusFilter('active')">Active</button>
+        <button class="ws-status-btn" data-status="inactive" onclick="setStatusFilter('inactive')">Inactive</button>
+        <div class="ws-filter-sep"></div>
+        <div class="ws-label-manage-section" id="labelFilterSection">
+            {% for label in all_labels %}
+            <span class="ws-label-chip filter-chip" data-label-id="{{ label.id }}"
+                  onclick="toggleLabelFilter({{ label.id }})"
+                  style="color: {{ label.color }}; border-color: {{ label.color }};">
+                <i class="bi bi-tag-fill" style="font-size: 0.6rem;"></i>
+                {{ label.name }}
+            </span>
+            {% endfor %}
+            <div class="ws-label-mgr">
+                <button class="ws-label-mgr-btn" onclick="toggleLabelManager(event, 'global')" title="Manage labels">
+                    <i class="bi bi-tag"></i> +
+                </button>
+                <div class="ws-label-mgr-drop" id="globalLabelMgr">
+                    <div class="ws-label-new-row">
+                        <input type="color" id="newLabelColor" value="#6366f1">
+                        <input type="text" id="newLabelName" placeholder="New label..." maxlength="50">
+                        <button onclick="createLabel()"><i class="bi bi-plus"></i></button>
+                    </div>
+                    <div id="globalLabelList" style="margin-top: 0.4rem;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                        <div class="org-info">
-                            <div class="org-name">
-                                {{ org.name }}
-                                <form method="POST" action="{{ url_for('global_admin.toggle_organization_active', org_id=org.id) }}" style="display: inline;">
-                                    {{ csrf_form.hidden_tag() }}
-                                    {% if org.is_active %}
-                                    <button type="submit" class="badge bg-success border-0" style="cursor: pointer;"
-                                            title="Click to deactivate">
-                                        <i class="bi bi-check-circle-fill"></i> Active
-                                    </button>
-                                    {% else %}
-                                    <button type="submit" class="badge bg-secondary border-0" style="cursor: pointer;"
-                                            title="Click to activate">
-                                        <i class="bi bi-x-circle-fill"></i> Inactive
-                                    </button>
-                                    {% endif %}
-                                </form>
-                            </div>
+    <div class="ws-no-results" id="noResults">
+        <i class="bi bi-funnel"></i> No workspaces match your filters.
+    </div>
 
-                            {% if org.description %}
-                            <div class="org-description">
-                                <i class="bi bi-info-circle"></i>
-                                {{ org.description[:100] }}{% if org.description|length > 100 %}...{% endif %}
-                            </div>
-                            {% endif %}
+    <div class="row" id="orgList">
+        {% for org in organizations %}
+        <div class="col-12 org-card-wrapper"
+             data-name="{{ org.name|lower }}"
+             data-active="{{ 'active' if org.is_active else 'inactive' }}"
+             data-labels="{% for l in org.labels|selectattr('user_id', 'equalto', current_user.id) %}{{ l.id }},{% endfor %}">
+            <div class="org-card">
+                <div class="d-flex align-items-start gap-3">
+                    <div class="org-icon">
+                        <i class="bi bi-building"></i>
+                    </div>
 
-                            <div class="org-meta">
-                                <div class="org-meta-item">
-                                    <i class="bi bi-people"></i>
-                                    {{ org.user_memberships|length }} member{{ 's' if org.user_memberships|length != 1 else '' }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="org-actions">
-                            <a href="{{ url_for('global_admin.edit_organization', org_id=org.id) }}"
-                               class="btn btn-outline-primary btn-sm"
-                               title="Edit organization">
-                                <i class="bi bi-pencil-fill"></i> Edit
-                            </a>
-                            <a href="{{ url_for('global_admin.clone_organization', org_id=org.id) }}"
-                               class="btn btn-outline-success btn-sm"
-                               title="Clone organization">
-                                <i class="bi bi-files"></i> Clone
-                            </a>
-                            <a href="{{ url_for('global_admin.create_backup', org_id=org.id) }}"
-                               class="btn btn-outline-info btn-sm"
-                               title="Download full backup">
-                                <i class="bi bi-cloud-download-fill"></i> Backup
-                            </a>
-                            <button type="button" class="btn btn-outline-info btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#restoreOrgModal{{ org.id }}"
-                                    title="Restore from backup file">
-                                <i class="bi bi-cloud-upload-fill"></i> Restore
-                            </button>
-                            <form method="POST" action="{{ url_for('global_admin.clear_organization_comments', org_id=org.id) }}" style="display: inline;"
-                                  onsubmit="return confirm('Delete ALL comments and mentions for {{ org.name }}? This cannot be undone.');">
+                    <div class="org-info">
+                        <div class="org-name">
+                            {{ org.name }}
+                            <form method="POST" action="{{ url_for('global_admin.toggle_organization_active', org_id=org.id) }}" style="display: inline;">
                                 {{ csrf_form.hidden_tag() }}
-                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Clear all comments">
-                                    <i class="bi bi-chat-left-text"></i> Comments
+                                {% if org.is_active %}
+                                <button type="submit" class="badge bg-success border-0" style="cursor: pointer;"
+                                        title="Click to deactivate">
+                                    <i class="bi bi-check-circle-fill"></i> Active
                                 </button>
-                            </form>
-                            <form method="POST" action="{{ url_for('global_admin.archive_organization', org_id=org.id) }}" style="display: inline;"
-                                  onsubmit="return confirm('Archive organization {{ org.name }}? It will be hidden but can be restored later.');">
-                                {{ csrf_form.hidden_tag() }}
-                                <button type="submit" class="btn btn-outline-warning btn-sm" title="Archive organization">
-                                    <i class="bi bi-archive-fill"></i> Archive
+                                {% else %}
+                                <button type="submit" class="badge bg-secondary border-0" style="cursor: pointer;"
+                                        title="Click to activate">
+                                    <i class="bi bi-x-circle-fill"></i> Inactive
                                 </button>
+                                {% endif %}
                             </form>
-                            <button type="button" class="btn btn-danger btn-sm"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#emptyOrgModal{{ org.id }}"
-                                    title="Permanently delete all data from this organization">
-                                <i class="bi bi-trash-fill"></i> Empty
-                            </button>
                         </div>
+
+                        {% if org.description %}
+                        <div class="org-description">
+                            <i class="bi bi-info-circle"></i>
+                            {{ org.description[:100] }}{% if org.description|length > 100 %}...{% endif %}
+                        </div>
+                        {% endif %}
+
+                        <div class="org-meta">
+                            <div class="org-meta-item">
+                                <i class="bi bi-people"></i>
+                                {{ org.user_memberships|length }} member{{ 's' if org.user_memberships|length != 1 else '' }}
+                            </div>
+                        </div>
+
+                        <!-- Labels row -->
+                        <div class="org-labels" id="orgLabels{{ org.id }}">
+                            {% for label in org.labels|selectattr('user_id', 'equalto', current_user.id) %}
+                            <span class="ws-label-chip" style="color: {{ label.color }}; border-color: {{ label.color }};"
+                                  data-label-id="{{ label.id }}">
+                                <i class="bi bi-tag-fill" style="font-size: 0.55rem;"></i>
+                                {{ label.name }}
+                                <span class="remove-label" onclick="removeOrgLabel({{ org.id }}, {{ label.id }}, this)"
+                                      title="Remove label">&times;</span>
+                            </span>
+                            {% endfor %}
+                            <div class="ws-label-mgr">
+                                <button class="ws-label-mgr-btn" onclick="toggleLabelManager(event, 'org-{{ org.id }}')" title="Add label">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                                <div class="ws-label-mgr-drop" id="orgLabelMgr{{ org.id }}"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="org-actions">
+                        <a href="{{ url_for('global_admin.edit_organization', org_id=org.id) }}"
+                           class="btn btn-outline-primary btn-sm"
+                           title="Edit organization">
+                            <i class="bi bi-pencil-fill"></i> Edit
+                        </a>
+                        <a href="{{ url_for('global_admin.clone_organization', org_id=org.id) }}"
+                           class="btn btn-outline-success btn-sm"
+                           title="Clone organization">
+                            <i class="bi bi-files"></i> Clone
+                        </a>
+                        <a href="{{ url_for('global_admin.create_backup', org_id=org.id) }}"
+                           class="btn btn-outline-info btn-sm"
+                           title="Download full backup">
+                            <i class="bi bi-cloud-download-fill"></i> Backup
+                        </a>
+                        <button type="button" class="btn btn-outline-info btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#restoreOrgModal{{ org.id }}"
+                                title="Restore from backup file">
+                            <i class="bi bi-cloud-upload-fill"></i> Restore
+                        </button>
+                        <form method="POST" action="{{ url_for('global_admin.clear_organization_comments', org_id=org.id) }}" style="display: inline;"
+                              onsubmit="return confirm('Delete ALL comments and mentions for {{ org.name }}? This cannot be undone.');">
+                            {{ csrf_form.hidden_tag() }}
+                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Clear all comments">
+                                <i class="bi bi-chat-left-text"></i> Comments
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ url_for('global_admin.archive_organization', org_id=org.id) }}" style="display: inline;"
+                              onsubmit="return confirm('Archive organization {{ org.name }}? It will be hidden but can be restored later.');">
+                            {{ csrf_form.hidden_tag() }}
+                            <button type="submit" class="btn btn-outline-warning btn-sm" title="Archive organization">
+                                <i class="bi bi-archive-fill"></i> Archive
+                            </button>
+                        </form>
+                        <button type="button" class="btn btn-danger btn-sm"
+                                data-bs-toggle="modal"
+                                data-bs-target="#emptyOrgModal{{ org.id }}"
+                                title="Permanently delete all data from this organization">
+                            <i class="bi bi-trash-fill"></i> Empty
+                        </button>
                     </div>
                 </div>
             </div>
-            {% endfor %}
         </div>
+        {% endfor %}
+    </div>
     {% else %}
         <div class="empty-state">
             <i class="bi bi-building"></i>
@@ -312,4 +427,237 @@
 </div>
 {% endfor %}
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    var CSRF = '{{ csrf_token() }}';
+    var allLabels = {{ all_labels|map(attribute='id')|list|tojson }};
+    var allLabelData = {};
+    {% for l in all_labels %}
+    allLabelData[{{ l.id }}] = {id: {{ l.id }}, name: {{ l.name|tojson }}, color: {{ l.color|tojson }}};
+    {% endfor %}
+
+    var statusFilter = 'all';
+    var activeLabelFilters = new Set();
+
+    // ── Live search + status + label filtering ──
+    var searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', applyFilters);
+    }
+
+    window.setStatusFilter = function(status) {
+        statusFilter = status;
+        document.querySelectorAll('.ws-status-btn').forEach(function(btn) {
+            btn.classList.toggle('active', btn.dataset.status === status);
+        });
+        applyFilters();
+    };
+
+    window.toggleLabelFilter = function(labelId) {
+        if (activeLabelFilters.has(labelId)) {
+            activeLabelFilters.delete(labelId);
+        } else {
+            activeLabelFilters.add(labelId);
+        }
+        document.querySelectorAll('.filter-chip').forEach(function(chip) {
+            chip.classList.toggle('selected', activeLabelFilters.has(parseInt(chip.dataset.labelId)));
+        });
+        applyFilters();
+    };
+
+    function applyFilters() {
+        var query = (searchInput ? searchInput.value : '').toLowerCase().trim();
+        var cards = document.querySelectorAll('.org-card-wrapper');
+        var visibleCount = 0;
+
+        cards.forEach(function(card) {
+            var name = card.dataset.name;
+            var active = card.dataset.active;
+            var labels = card.dataset.labels.split(',').filter(Boolean).map(Number);
+
+            var matchSearch = !query || name.indexOf(query) !== -1;
+            var matchStatus = statusFilter === 'all' || active === statusFilter;
+            var matchLabels = activeLabelFilters.size === 0 ||
+                Array.from(activeLabelFilters).some(function(id) { return labels.indexOf(id) !== -1; });
+
+            if (matchSearch && matchStatus && matchLabels) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        var noResults = document.getElementById('noResults');
+        if (noResults) {
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+    }
+
+    // ── Label management ──
+    window.toggleLabelManager = function(event, scope) {
+        event.stopPropagation();
+        var drop;
+        if (scope === 'global') {
+            drop = document.getElementById('globalLabelMgr');
+            if (drop.classList.contains('open')) { drop.classList.remove('open'); return; }
+            // Populate delete list
+            var list = document.getElementById('globalLabelList');
+            list.innerHTML = '';
+            Object.values(allLabelData).forEach(function(l) {
+                var item = document.createElement('div');
+                item.className = 'lbl-item';
+                item.innerHTML = '<span class="lbl-dot" style="background:' + l.color + '"></span>' +
+                    '<span style="flex:1">' + l.name + '</span>' +
+                    '<span class="remove-label" title="Delete label" onclick="deleteLabel(' + l.id + ', event)">&times;</span>';
+                list.appendChild(item);
+            });
+            drop.classList.add('open');
+        } else {
+            // org-specific: show label picker
+            var orgId = parseInt(scope.replace('org-', ''));
+            drop = document.getElementById('orgLabelMgr' + orgId);
+            if (drop.classList.contains('open')) { drop.classList.remove('open'); return; }
+            populateOrgLabelPicker(orgId, drop);
+            drop.classList.add('open');
+        }
+    };
+
+    function populateOrgLabelPicker(orgId, drop) {
+        var wrapper = document.querySelector('[data-name]');  // any card
+        var card = document.querySelector('.org-card-wrapper [id="orgLabels' + orgId + '"]');
+        var currentLabels = [];
+        if (card) {
+            card.querySelectorAll('.ws-label-chip[data-label-id]').forEach(function(ch) {
+                currentLabels.push(parseInt(ch.dataset.labelId));
+            });
+        }
+
+        drop.innerHTML = '';
+        if (Object.keys(allLabelData).length === 0) {
+            drop.innerHTML = '<div style="font-size:0.8rem;color:var(--text-secondary);padding:0.3rem;">No labels yet. Create one in the filter bar.</div>';
+            return;
+        }
+        Object.values(allLabelData).forEach(function(l) {
+            var assigned = currentLabels.indexOf(l.id) !== -1;
+            var item = document.createElement('div');
+            item.className = 'lbl-item';
+            item.innerHTML = '<span class="lbl-dot" style="background:' + l.color + '"></span>' +
+                '<span style="flex:1">' + l.name + '</span>' +
+                (assigned ? '<i class="bi bi-check"></i>' : '');
+            item.onclick = function() {
+                if (assigned) {
+                    removeOrgLabel(orgId, l.id);
+                } else {
+                    addOrgLabel(orgId, l.id);
+                }
+                drop.classList.remove('open');
+            };
+            drop.appendChild(item);
+        });
+    }
+
+    window.createLabel = function() {
+        var nameInput = document.getElementById('newLabelName');
+        var colorInput = document.getElementById('newLabelColor');
+        var name = nameInput.value.trim();
+        if (!name) return;
+        fetch('{{ url_for("global_admin.api_labels_create") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+            body: JSON.stringify({name: name, color: colorInput.value})
+        }).then(function(r) { return r.json(); }).then(function(label) {
+            if (label.error) { alert(label.error); return; }
+            allLabelData[label.id] = label;
+            // Add filter chip
+            var section = document.getElementById('labelFilterSection');
+            var chip = document.createElement('span');
+            chip.className = 'ws-label-chip filter-chip';
+            chip.dataset.labelId = label.id;
+            chip.style.color = label.color;
+            chip.style.borderColor = label.color;
+            chip.onclick = function() { toggleLabelFilter(label.id); };
+            chip.innerHTML = '<i class="bi bi-tag-fill" style="font-size:0.6rem;"></i> ' + label.name;
+            section.insertBefore(chip, section.querySelector('.ws-label-mgr'));
+            nameInput.value = '';
+            document.getElementById('globalLabelMgr').classList.remove('open');
+        });
+    };
+
+    window.deleteLabel = function(labelId, event) {
+        event.stopPropagation();
+        if (!confirm('Delete this label from all workspaces?')) return;
+        fetch('{{ url_for("global_admin.api_labels_delete", label_id=0) }}'.replace('/0', '/' + labelId), {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': CSRF}
+        }).then(function() {
+            delete allLabelData[labelId];
+            activeLabelFilters.delete(labelId);
+            // Remove filter chip
+            document.querySelectorAll('.filter-chip[data-label-id="' + labelId + '"]').forEach(function(el) { el.remove(); });
+            // Remove from all org cards
+            document.querySelectorAll('.ws-label-chip[data-label-id="' + labelId + '"]').forEach(function(el) { el.remove(); });
+            // Update data-labels attributes
+            document.querySelectorAll('.org-card-wrapper').forEach(function(card) {
+                card.dataset.labels = card.dataset.labels.replace(labelId + ',', '');
+            });
+            document.getElementById('globalLabelMgr').classList.remove('open');
+            applyFilters();
+        });
+    };
+
+    window.addOrgLabel = function(orgId, labelId) {
+        fetch('{{ url_for("global_admin.api_org_label_add", org_id=0) }}'.replace('/0/', '/' + orgId + '/'), {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+            body: JSON.stringify({label_id: labelId})
+        }).then(function() {
+            var label = allLabelData[labelId];
+            // Add chip to org card
+            var container = document.getElementById('orgLabels' + orgId);
+            var mgr = container.querySelector('.ws-label-mgr');
+            var chip = document.createElement('span');
+            chip.className = 'ws-label-chip';
+            chip.dataset.labelId = labelId;
+            chip.style.color = label.color;
+            chip.style.borderColor = label.color;
+            chip.innerHTML = '<i class="bi bi-tag-fill" style="font-size:0.55rem;"></i> ' + label.name +
+                ' <span class="remove-label" onclick="removeOrgLabel(' + orgId + ',' + labelId + ',this)" title="Remove label">&times;</span>';
+            container.insertBefore(chip, mgr);
+            // Update data-labels
+            var wrapper = container.closest('.org-card-wrapper');
+            wrapper.dataset.labels += labelId + ',';
+            applyFilters();
+        });
+    };
+
+    window.removeOrgLabel = function(orgId, labelId, el) {
+        fetch('{{ url_for("global_admin.api_org_label_remove", org_id=0, label_id=0) }}'.replace('/0/labels/0', '/' + orgId + '/labels/' + labelId), {
+            method: 'DELETE',
+            headers: {'X-CSRFToken': CSRF}
+        }).then(function() {
+            // Remove chip
+            var container = document.getElementById('orgLabels' + orgId);
+            var chip = container.querySelector('.ws-label-chip[data-label-id="' + labelId + '"]');
+            if (chip) chip.remove();
+            // Update data-labels
+            var wrapper = container.closest('.org-card-wrapper');
+            wrapper.dataset.labels = wrapper.dataset.labels.replace(labelId + ',', '');
+            applyFilters();
+        });
+    };
+
+    // Close dropdowns on outside click
+    document.addEventListener('click', function(e) {
+        document.querySelectorAll('.ws-label-mgr-drop.open').forEach(function(drop) {
+            if (!drop.contains(e.target) && !drop.previousElementSibling.contains(e.target)) {
+                drop.classList.remove('open');
+            }
+        });
+    });
+})();
+</script>
 {% endblock %}

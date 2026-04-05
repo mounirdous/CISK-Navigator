@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.10.7"
+__version__ = "7.11.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -234,6 +234,25 @@ def create_app(config_name=None):
             "precompute_rollups_enabled": SystemSetting.is_precompute_rollups_enabled(),
             "app_version": __version__,
             "csrf_token": generate_csrf,
+        }
+
+    # Context processor - inject workspace labels and active profile for navbar
+    @app.context_processor
+    def inject_workspace_labels():
+        """Make current user's workspace labels and active profile available."""
+        from flask_login import current_user
+        if not current_user.is_authenticated:
+            return {"workspace_labels_map": {}, "user_labels": [], "active_profile": None, "active_profile_label_ids": []}
+        from app.models import UserWorkspaceProfile, WorkspaceLabel
+        labels = WorkspaceLabel.query.filter_by(user_id=current_user.id).order_by(WorkspaceLabel.name).all()
+        labels_map = {l.id: {"name": l.name, "color": l.color} for l in labels}
+        active_profile = UserWorkspaceProfile.query.filter_by(user_id=current_user.id, is_active=True).first()
+        active_label_ids = active_profile.label_ids if active_profile else []
+        return {
+            "workspace_labels_map": labels_map,
+            "user_labels": labels,
+            "active_profile": active_profile,
+            "active_profile_label_ids": active_label_ids,
         }
 
     # Context processor - inject entity defaults for branding

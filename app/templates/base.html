@@ -401,9 +401,14 @@
                 </span>
             </a>
             {% if current_user.is_authenticated %}
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <div class="d-flex align-items-center d-lg-none gap-2">
+                <a href="{{ url_for('auth.profile') }}" class="nav-link px-2" title="Profile" style="color: rgba(255,255,255,0.8);">
+                    <i class="bi bi-person-circle" style="font-size: 1.2rem;"></i>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if current_user.is_authenticated %}
@@ -411,21 +416,38 @@
                             <a class="nav-link dropdown-toggle" href="#" id="organizationDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-building"></i> Workspaces
                             </a>
-                            <ul class="dropdown-menu" aria-labelledby="organizationDropdown">
+                            <ul class="dropdown-menu" aria-labelledby="organizationDropdown" style="min-width: 260px; max-height: 420px; overflow-y: auto;">
+                                {% if active_profile %}
                                 <li class="px-3 py-2 border-bottom" style="background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, transparent 100%);">
-                                    <div class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.7;">
-                                        Switch Workspace
+                                    <div style="font-size:0.7rem;font-weight:700;display:flex;align-items:center;gap:0.3rem;color:var(--accent-primary,#0d6efd);">
+                                        <i class="bi bi-{{ active_profile.icon }}"></i>
+                                        {{ active_profile.name }}
+                                        <a href="{{ url_for('auth.profile') }}#profiles" style="font-size:0.6rem;opacity:0.6;margin-left:auto;" title="Manage profiles">
+                                            <i class="bi bi-gear"></i>
+                                        </a>
                                     </div>
                                 </li>
+                                {% endif %}
                                 {% for membership in current_user.organization_memberships %}
                                     {% if membership.organization.is_active %}
-                                        {% if membership.organization_id == session.organization_id %}
+                                        {# If a profile is active with labels, only show matching workspaces #}
+                                        {% set org_label_ids = membership.organization.labels|selectattr('user_id', 'equalto', current_user.id)|map(attribute='id')|list %}
+                                        {% set show = true %}
+                                        {% if active_profile_label_ids %}
+                                            {% set ns = namespace(match=false) %}
+                                            {% for lid in active_profile_label_ids %}
+                                                {% if lid in org_label_ids %}{% set ns.match = true %}{% endif %}
+                                            {% endfor %}
+                                            {% set show = ns.match %}
+                                        {% endif %}
+                                        {% if show %}
+                                            {% if membership.organization_id == session.organization_id %}
                                             <li>
                                                 <span class="dropdown-item active">
                                                     <i class="bi bi-check-circle-fill"></i> {{ membership.organization.name }}
                                                 </span>
                                             </li>
-                                        {% else %}
+                                            {% else %}
                                             <li>
                                                 <form method="POST" action="{{ url_for('auth.switch_organization', org_id=membership.organization_id) }}" style="margin: 0;">
                                                     <button type="submit" class="dropdown-item" style="border: none; background: none; width: 100%; text-align: left;">
@@ -433,9 +455,17 @@
                                                     </button>
                                                 </form>
                                             </li>
+                                            {% endif %}
                                         {% endif %}
                                     {% endif %}
                                 {% endfor %}
+                                {% if not active_profile %}
+                                <li class="px-3 py-2 border-top">
+                                    <a href="{{ url_for('auth.profile') }}#profiles" style="font-size:0.75rem; color:var(--text-secondary); text-decoration:none;">
+                                        <i class="bi bi-sliders"></i> Set up a profile to filter workspaces
+                                    </a>
+                                </li>
+                                {% endif %}
                             </ul>
                         </li>
                         {% set org_id = session.get('organization_id') or session.get('_previous_org_id') %}
@@ -681,7 +711,7 @@
                     {% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> {{ current_user.display_name or current_user.login }}
+                            <i class="bi bi-person-circle"></i> <span class="d-none d-lg-inline">{{ current_user.display_name or current_user.login }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="min-width: 280px;">
                             <!-- User Info -->

@@ -17,6 +17,8 @@ from sqlalchemy import text
 
 from app.extensions import db
 from app.forms import OrganizationCloneForm, OrganizationCreateForm, OrganizationEditForm, UserCreateForm, UserEditForm
+from flask import jsonify
+
 from app.models import (
     KPI,
     CellComment,
@@ -33,7 +35,9 @@ from app.models import (
     System,
     User,
     UserOrganizationMembership,
+    UserWorkspaceProfile,
     ValueType,
+    WorkspaceLabel,
 )
 from app.services import AuditService, OrganizationCloneService, TestRunnerService
 
@@ -545,9 +549,14 @@ def organizations():
     """List all active (non-deleted) organizations"""
     organizations = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
     deleted_count = Organization.query.filter_by(is_deleted=True).count()
+    all_labels = WorkspaceLabel.query.filter_by(user_id=current_user.id).order_by(WorkspaceLabel.name).all()
     csrf_form = FlaskForm()  # Simple form for CSRF token
     return render_template(
-        "global_admin/organizations.html", organizations=organizations, csrf_form=csrf_form, deleted_count=deleted_count
+        "global_admin/organizations.html",
+        organizations=organizations,
+        csrf_form=csrf_form,
+        deleted_count=deleted_count,
+        all_labels=all_labels,
     )
 
 
@@ -1718,3 +1727,165 @@ def _execute_empty_organization(org_id, org_name, keep_gb_ids=None, keep_ai_ids=
     except Exception as e:
         db.session.rollback()
         flash(f"Error emptying organization: {str(e)}", "danger")
+
+
+# ── Workspace Labels API (user-scoped, available to all logged-in users) ──────
+
+@bp.route("/api/labels", methods=["GET"])
+@login_required
+def api_labels_list():
+    """Return current user's workspace labels as JSON."""
+    labels = WorkspaceLabel.query.filter_by(user_id=current_user.id).order_by(WorkspaceLabel.name).all()
+    return jsonify([{"id": l.id, "name": l.name, "color": l.color} for l in labels])
+
+
+@bp.route("/api/labels", methods=["POST"])
+@login_required
+def api_labels_create():
+    """Create a new workspace label for the current user."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    color = (data.get("color") or "#6366f1").strip()
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+    if WorkspaceLabel.query.filter_by(user_id=current_user.id, name=name).first():
+        return jsonify({"error": f"Label '{name}' already exists"}), 409
+    label = WorkspaceLabel(user_id=current_user.id, name=name, color=color)
+    db.session.add(label)
+    db.session.commit()
+    return jsonify({"id": label.id, "name": label.name, "color": label.color}), 201
+
+
+@bp.route("/api/labels/<int:label_id>", methods=["DELETE"])
+@login_required
+def api_labels_delete(label_id):
+    """Delete a workspace label (must belong to current user)."""
+    label = WorkspaceLabel.query.filter_by(id=label_id, user_id=current_user.id).first_or_404()
+    db.session.delete(label)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@bp.route("/api/labels/<int:label_id>", methods=["PATCH"])
+@login_required
+def api_labels_update(label_id):
+    """Update a workspace label name/color (must belong to current user)."""
+    label = WorkspaceLabel.query.filter_by(id=label_id, user_id=current_user.id).first_or_404()
+    data = request.get_json(silent=True) or {}
+    if "name" in data:
+        label.name = data["name"].strip()
+    if "color" in data:
+        label.color = data["color"].strip()
+    db.session.commit()
+    return jsonify({"id": label.id, "name": label.name, "color": label.color})
+
+
+@bp.route("/api/organizations/<int:org_id>/labels", methods=["POST"])
+@login_required
+def api_org_label_add(org_id):
+    """Add a label to an organization (label must belong to current user)."""
+    org = Organization.query.get_or_404(org_id)
+    data = request.get_json(silent=True) or {}
+    label_id = data.get("label_id")
+    if not label_id:
+        return jsonify({"error": "label_id required"}), 400
+    label = WorkspaceLabel.query.filter_by(id=label_id, user_id=current_user.id).first_or_404()
+    if label not in org.labels:
+        org.labels.append(label)
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+@bp.route("/api/organizations/<int:org_id>/labels/<int:label_id>", methods=["DELETE"])
+@login_required
+def api_org_label_remove(org_id, label_id):
+    """Remove a label from an organization (label must belong to current user)."""
+    org = Organization.query.get_or_404(org_id)
+    label = WorkspaceLabel.query.filter_by(id=label_id, user_id=current_user.id).first_or_404()
+    if label in org.labels:
+        org.labels.remove(label)
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
+# ── Workspace Profiles API (user-scoped) ─────────────────────────────────────
+
+PROFILE_ICONS = [
+    "briefcase", "mortarboard", "rocket-takeoff", "buildings", "gear",
+    "lightning", "star", "heart", "globe2", "code-slash", "shield-check",
+    "eyeglasses", "people", "hammer", "palette",
+]
+
+
+@bp.route("/api/profiles", methods=["GET"])
+@login_required
+def api_profiles_list():
+    """Return current user's workspace profiles."""
+    profiles = UserWorkspaceProfile.query.filter_by(user_id=current_user.id).order_by(UserWorkspaceProfile.name).all()
+    return jsonify([{
+        "id": p.id, "name": p.name, "icon": p.icon,
+        "is_active": p.is_active, "label_ids": p.label_ids,
+    } for p in profiles])
+
+
+@bp.route("/api/profiles", methods=["POST"])
+@login_required
+def api_profiles_create():
+    """Create a new workspace profile."""
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Name is required"}), 400
+    if UserWorkspaceProfile.query.filter_by(user_id=current_user.id, name=name).first():
+        return jsonify({"error": f"Profile '{name}' already exists"}), 409
+    icon = data.get("icon", "briefcase")
+    if icon not in PROFILE_ICONS:
+        icon = "briefcase"
+    profile = UserWorkspaceProfile(
+        user_id=current_user.id, name=name, icon=icon,
+        config={"label_ids": data.get("label_ids", [])},
+    )
+    db.session.add(profile)
+    db.session.commit()
+    return jsonify({"id": profile.id, "name": profile.name, "icon": profile.icon,
+                    "is_active": profile.is_active, "label_ids": profile.label_ids}), 201
+
+
+@bp.route("/api/profiles/<int:profile_id>", methods=["PATCH"])
+@login_required
+def api_profiles_update(profile_id):
+    """Update a workspace profile."""
+    profile = UserWorkspaceProfile.query.filter_by(id=profile_id, user_id=current_user.id).first_or_404()
+    data = request.get_json(silent=True) or {}
+    if "name" in data:
+        profile.name = data["name"].strip()
+    if "icon" in data and data["icon"] in PROFILE_ICONS:
+        profile.icon = data["icon"]
+    if "label_ids" in data:
+        profile.label_ids = data["label_ids"]
+    db.session.commit()
+    return jsonify({"id": profile.id, "name": profile.name, "icon": profile.icon,
+                    "is_active": profile.is_active, "label_ids": profile.label_ids})
+
+
+@bp.route("/api/profiles/<int:profile_id>/activate", methods=["POST"])
+@login_required
+def api_profiles_activate(profile_id):
+    """Activate a profile (deactivates all others for this user). Pass id=0 to deactivate all."""
+    # Deactivate all
+    UserWorkspaceProfile.query.filter_by(user_id=current_user.id, is_active=True).update({"is_active": False})
+    if profile_id > 0:
+        profile = UserWorkspaceProfile.query.filter_by(id=profile_id, user_id=current_user.id).first_or_404()
+        profile.is_active = True
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@bp.route("/api/profiles/<int:profile_id>", methods=["DELETE"])
+@login_required
+def api_profiles_delete(profile_id):
+    """Delete a workspace profile."""
+    profile = UserWorkspaceProfile.query.filter_by(id=profile_id, user_id=current_user.id).first_or_404()
+    db.session.delete(profile)
+    db.session.commit()
+    return jsonify({"ok": True})

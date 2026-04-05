@@ -1167,6 +1167,16 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.11.0",
+            "date": "April 5, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Workspace labels</strong> — organize your workspaces with personal color-coded labels. Create and manage them from your Profile page, assign them on the Workspace Management page.",
+                "<strong>Workspace profiles</strong> — create named profiles (e.g. &ldquo;Development&rdquo;, &ldquo;Client Work&rdquo;) that filter which workspaces appear in the Workspaces menu. Each profile selects which labels to show. Activate a profile from your Profile page &mdash; extensible in the future for startup page, display mode, and more.",
+                "<strong>Smart Workspaces menu</strong> — live search, label filter pills, workspaces grouped by label. When a profile is active, only matching workspaces appear.",
+            ],
+        },
+        {
             "version": "7.10.7",
             "date": "April 5, 2026",
             "tags": ["feature"],
