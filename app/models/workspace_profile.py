@@ -42,5 +42,16 @@ class UserWorkspaceProfile(db.Model):
         cfg["label_ids"] = ids
         self.config = cfg
 
+    @property
+    def space_visibility(self):
+        """Get space visibility setting: 'all' or 'public'."""
+        return self.config.get("space_visibility", "all")
+
+    @space_visibility.setter
+    def space_visibility(self, value):
+        cfg = dict(self.config or {})
+        cfg["space_visibility"] = value
+        self.config = cfg
+
     def __repr__(self):
         return f"<UserWorkspaceProfile {self.name} (user={self.user_id}, active={self.is_active})>"

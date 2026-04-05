@@ -1714,6 +1714,12 @@ def index():
     ws_focus_mode = bool(prefs.get("ws_focus_mode", True))
     ws_show_badges = bool(prefs.get("ws_show_badges", True))
     ws_badge_mode = int(prefs.get("ws_badge_mode", 1))
+    ws_space_visibility = prefs.get("ws_space_visibility", "all")  # all or public
+    # Active profile overrides space visibility
+    from app.models import UserWorkspaceProfile
+    _active_profile = UserWorkspaceProfile.query.filter_by(user_id=current_user.id, is_active=True).first()
+    if _active_profile and _active_profile.space_visibility != "all":
+        ws_space_visibility = _active_profile.space_visibility
 
     return render_template(
         "workspace/index.html",
@@ -1733,6 +1739,7 @@ def index():
         ws_focus_mode=ws_focus_mode,
         ws_show_badges=ws_show_badges,
         ws_badge_mode=ws_badge_mode,
+        ws_space_visibility=ws_space_visibility,
         strategy_count=StrategicPillar.query.filter_by(organization_id=org_id).count(),
     )
 

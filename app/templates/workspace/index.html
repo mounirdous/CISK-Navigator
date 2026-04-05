@@ -438,7 +438,7 @@
     .ws-cisk-wrap.collapsed .ws-cisk-count { display: inline-flex; }
     .ws-cisk-wrap.collapsed .ws-cisk-expanded { display: none; }
 
-    /* Tools dropdown */
+    /* View dropdown (was Tools) */
     .ws-tools-dropdown {
         position: absolute; top: calc(100% + 6px); right: 0; z-index: 1000;
         min-width: 300px; max-height: 80vh; overflow-y: auto;
@@ -2102,15 +2102,15 @@
                 </button>
             </div>
 
-            <!-- Tools Menu -->
+            <!-- View Menu -->
             <div style="position:relative;">
                 <button @click="toolsMenuOpen = !toolsMenuOpen"
                         class="btn btn-sm btn-outline-light"
                         :class="{'active': toolsMenuOpen}"
-                        title="Tools"
+                        title="View"
                         style="display:inline-flex; align-items:center; gap:4px;">
-                    <i class="bi bi-tools"></i>
-                    Tools
+                    <i class="bi bi-eye"></i>
+                    View
                     <i class="bi bi-chevron-down" style="font-size:0.55rem;"></i>
                 </button>
                 <div x-show="toolsMenuOpen" x-cloak
@@ -2187,6 +2187,17 @@
                             <div class="ws-tools-item-desc">Dim parent levels when stepping through the tree</div>
                         </div>
                         <div class="ws-tools-toggle-dot" :class="{'active': focusLevelMode}"></div>
+                    </button>
+
+                    <!-- ── Spaces ── -->
+                    <div class="ws-tools-section">Spaces</div>
+                    <button class="ws-tools-item ws-tools-toggle" @click.stop="spaceTypeFilter = spaceTypeFilter === 'public' ? 'all' : 'public'; _saveVisibilityPref()">
+                        <i class="bi bi-globe2" :style="spaceTypeFilter === 'public' ? 'color:#22c55e;' : 'color:#64748b;'"></i>
+                        <div style="flex:1;">
+                            <div class="ws-tools-item-title">Public Only</div>
+                            <div class="ws-tools-item-desc">Hide private spaces, show only public</div>
+                        </div>
+                        <div class="ws-tools-toggle-dot" :class="{'active': spaceTypeFilter === 'public'}"></div>
                     </button>
                 </div>
             </div>
@@ -3741,7 +3752,7 @@ function workspaceV2(orgId, filterPresets) {
         actionItemsCount: 0,
 
         // Data Filters
-        spaceTypeFilter: 'all',
+        spaceTypeFilter: '{{ ws_space_visibility | default("all") }}',
         selectedGovernanceBodies: [],
         selectedSpaces: [],
         selectedImpactLevels: [],
@@ -4026,6 +4037,14 @@ function workspaceV2(orgId, filterPresets) {
                 }
                 localStorage.setItem('ws_tree_' + {{ org_id }}, JSON.stringify(state));
             } catch(e) {}
+        },
+
+        _saveVisibilityPref() {
+            fetch('/workspace/api/preferences', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token() }}'},
+                body: JSON.stringify({ws_space_visibility: this.spaceTypeFilter})
+            });
         },
 
         _processData(data) {

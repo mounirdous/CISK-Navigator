@@ -369,6 +369,15 @@
                                             {% if not current_user.workspace_labels|list %}
                                                 <span class="text-muted">Create labels above first</span>
                                             {% endif %}
+                                            <span class="badge" data-profile-id="{{ p.id }}"
+                                                  onclick="toggleProfileVisibility({{ p.id }}, this)"
+                                                  style="cursor:pointer; font-size:0.6rem; margin-left:0.25rem;
+                                                         border:1px solid {% if p.space_visibility == 'public' %}#22c55e{% else %}#64748b{% endif %};
+                                                         color:{% if p.space_visibility == 'public' %}#22c55e{% else %}#64748b{% endif %};
+                                                         background:{% if p.space_visibility == 'public' %}#22c55e20{% else %}transparent{% endif %};
+                                                         opacity:{% if p.space_visibility == 'public' %}1{% else %}0.5{% endif %};">
+                                                <i class="bi bi-globe2"></i> Public only
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -550,6 +559,22 @@
             var nowActive = !isActive;
             el.style.opacity = nowActive ? '1' : '0.35';
             el.style.background = nowActive ? el.style.color + '20' : 'transparent';
+        });
+    };
+
+    window.toggleProfileVisibility = function(profileId, el) {
+        var isPublic = el.style.opacity === '1';
+        var newVal = isPublic ? 'all' : 'public';
+        fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {
+            method: 'PATCH',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+            body: JSON.stringify({space_visibility: newVal})
+        }).then(function() {
+            var nowPublic = newVal === 'public';
+            el.style.opacity = nowPublic ? '1' : '0.5';
+            el.style.color = nowPublic ? '#22c55e' : '#64748b';
+            el.style.borderColor = nowPublic ? '#22c55e' : '#64748b';
+            el.style.background = nowPublic ? '#22c55e20' : 'transparent';
         });
     };
 

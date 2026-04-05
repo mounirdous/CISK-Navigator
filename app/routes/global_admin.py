@@ -1864,9 +1864,12 @@ def api_profiles_update(profile_id):
         profile.icon = data["icon"]
     if "label_ids" in data:
         profile.label_ids = data["label_ids"]
+    if "space_visibility" in data and data["space_visibility"] in ("all", "public"):
+        profile.space_visibility = data["space_visibility"]
     db.session.commit()
     return jsonify({"id": profile.id, "name": profile.name, "icon": profile.icon,
-                    "is_active": profile.is_active, "label_ids": profile.label_ids})
+                    "is_active": profile.is_active, "label_ids": profile.label_ids,
+                    "space_visibility": profile.space_visibility})
 
 
 @bp.route("/api/profiles/<int:profile_id>/activate", methods=["POST"])
