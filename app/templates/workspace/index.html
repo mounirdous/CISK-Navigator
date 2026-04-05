@@ -2189,6 +2189,15 @@
                         <div class="ws-tools-toggle-dot" :class="{'active': focusLevelMode}"></div>
                     </button>
 
+                    <button class="ws-tools-item ws-tools-toggle" @click.stop="relevantBranchesOnly = !relevantBranchesOnly">
+                        <i class="bi" :class="relevantBranchesOnly ? 'bi-funnel-fill' : 'bi-funnel'" :style="relevantBranchesOnly ? 'color:#3b82f6;' : 'color:#64748b;'"></i>
+                        <div style="flex:1;">
+                            <div class="ws-tools-item-title">Relevant Branches</div>
+                            <div class="ws-tools-item-desc">Show only branches with KPIs in visible columns</div>
+                        </div>
+                        <div class="ws-tools-toggle-dot" :class="{'active': relevantBranchesOnly}"></div>
+                    </button>
+
                     <!-- ── Spaces ── -->
                     <div class="ws-tools-section">Spaces</div>
                     <button class="ws-tools-item ws-tools-toggle" @click.stop="spaceTypeFilter = spaceTypeFilter === 'public' ? 'all' : 'public'; _saveVisibilityPref()">
@@ -3777,6 +3786,7 @@ function workspaceV2(orgId, filterPresets) {
         // badgeMode replaces showBadges — no legacy field needed
 
         // Column Visibility
+        relevantBranchesOnly: false,  // Show only branches with KPIs contributing to visible columns
         visibleValueTypeIds: [],  // IDs of visible value type columns (empty = all visible)
         columnSearchQuery: '',
 
@@ -3819,9 +3829,22 @@ function workspaceV2(orgId, filterPresets) {
             return children.some(c => this._matchesImpactFilter(c));
         },
 
+        _kpiHasVisibleData(kpi) {
+            // Check if KPI has a config for any of the currently visible value types
+            if (!kpi.values) return false;
+            var visIds = this.visibleValueTypeIds;
+            // If no column filter, check all value types
+            var checkIds = visIds.length > 0 ? visIds : this.valueTypes.map(function(v) { return v.id; });
+            for (var i = 0; i < checkIds.length; i++) {
+                if (kpi.values[String(checkIds[i])]) return true;
+            }
+            return false;
+        },
+
         get filteredSpaces() {
             var self = this;
             var hasImpact = this.selectedImpactLevels.length > 0;
+            var pruneEmpty = this.relevantBranchesOnly;
             return this.spaces.filter(space => {
                 // Space Type Filter
                 if (this.spaceTypeFilter === 'public' && space.is_private) return false;
@@ -3838,19 +3861,26 @@ function workspaceV2(orgId, filterPresets) {
                     var initiatives = challenge.initiatives.filter(initiative => self.filterInitiative(initiative)).map(initiative => {
                         var systems = initiative.systems.map(system => {
                             var kpis = system.kpis.filter(kpi => self.filterKPI(kpi) && (!hasImpact || self._matchesImpactFilter(kpi)));
+                            if (pruneEmpty) kpis = kpis.filter(kpi => self._kpiHasVisibleData(kpi));
                             return { ...system, kpis: kpis };
                         });
                         // Keep system if it matches or has matching KPIs
                         if (hasImpact) systems = systems.filter(sys => self._matchesImpactFilter(sys) || sys.kpis.length > 0);
+                        if (pruneEmpty) systems = systems.filter(sys => sys.kpis.length > 0);
                         return { ...initiative, systems: systems };
                     });
                     // Keep initiative if it matches or has matching descendants
                     if (hasImpact) initiatives = initiatives.filter(ini => self._matchesImpactFilter(ini) || ini.systems.some(s => self._matchesImpactFilter(s) || s.kpis.length > 0));
+                    if (pruneEmpty) initiatives = initiatives.filter(ini => ini.systems.length > 0);
                     return { ...challenge, initiatives: initiatives };
                 });
                 // Keep challenge if it matches or has matching descendants
                 if (hasImpact) challenges = challenges.filter(ch => self._matchesImpactFilter(ch) || ch.initiatives.length > 0);
+                if (pruneEmpty) challenges = challenges.filter(ch => ch.initiatives.length > 0);
                 return { ...space, challenges: challenges };
+            }).filter(space => {
+                if (pruneEmpty) return space.challenges.length > 0;
+                return true;
             });
         },
 
