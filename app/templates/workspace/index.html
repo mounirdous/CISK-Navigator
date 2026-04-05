@@ -3910,8 +3910,7 @@ function workspaceV2(orgId, filterPresets) {
 
         get hasActiveFilters() {
             const hasColumnFilter = this.visibleValueTypeIds.length > 0 && this.visibleValueTypeIds.length < this.valueTypes.length;
-            return this.spaceTypeFilter !== 'all' ||
-                   this.selectedGovernanceBodies.length > 0 ||
+            return this.selectedGovernanceBodies.length > 0 ||
                    this.selectedSpaces.length > 0 ||
                    this.selectedImpactLevels.length > 0 ||
                    hasColumnFilter;
@@ -3919,7 +3918,6 @@ function workspaceV2(orgId, filterPresets) {
 
         get activeFilterCount() {
             let count = 0;
-            if (this.spaceTypeFilter !== 'all') count++;
             if (this.selectedGovernanceBodies.length > 0) count++;
             if (this.selectedSpaces.length > 0) count++;
             if (this.selectedImpactLevels.length > 0) count++;
@@ -3965,7 +3963,10 @@ function workspaceV2(orgId, filterPresets) {
             if (!this.hasActiveFilters) {
                 return `${this.totalCount} items`;
             }
-            const totalSpaces = this.spaces.length;
+            // Count visible spaces based on real filters only (not spaceTypeFilter which is a privacy setting)
+            const totalSpaces = this.spaceTypeFilter !== 'all'
+                ? this.spaces.filter(s => this.spaceTypeFilter === 'public' ? !s.is_private : true).length
+                : this.spaces.length;
             const filteredSpaces = this.filteredSpaces.length;
             return `${this.totalCount} items (${filteredSpaces}/${totalSpaces} spaces)`;
         },
