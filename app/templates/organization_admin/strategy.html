@@ -242,19 +242,34 @@ function selectIcon(idx, iconClass) {
 
 function handleFileUpload(idx, input) {
     if (!input.files[0]) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        pillarData[idx].icon_url = e.target.result;
+    // Resize client-side to max 200x200 before storing as base64
+    var file = input.files[0];
+    var img = new Image();
+    img.onload = function() {
+        var MAX = 200;
+        var w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+            var ratio = Math.min(MAX / w, MAX / h);
+            w = Math.round(w * ratio);
+            h = Math.round(h * ratio);
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        var dataUrl = canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.85);
+        pillarData[idx].icon_url = dataUrl;
         pillarData[idx].bs_icon = '';
-        pillarData[idx]._uploadedB64 = e.target.result; // Store for JSON submission
-        // Update preview without full re-render (preserves file inputs)
-        const card = document.querySelectorAll('.str-pillar-card')[idx];
+        pillarData[idx]._uploadedB64 = dataUrl;
+        // Update preview without full re-render
+        var card = document.querySelectorAll('.str-pillar-card')[idx];
         if (card) {
-            const preview = card.querySelector('.str-icon-preview');
-            if (preview) preview.innerHTML = '<img src="' + e.target.result + '" alt="">';
+            var preview = card.querySelector('.str-icon-preview');
+            if (preview) preview.innerHTML = '<img src="' + dataUrl + '" alt="">';
         }
     };
-    reader.readAsDataURL(input.files[0]);
+    img.src = URL.createObjectURL(file);
 }
 
 // Close pickers on outside click
