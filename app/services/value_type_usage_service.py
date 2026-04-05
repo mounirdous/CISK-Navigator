@@ -55,10 +55,13 @@ class ValueTypeUsageService:
             initiative = is_link.initiative
             system = is_link.system
 
-            # Find the challenge(s) this appears in
+            # Find the challenge(s) and space(s) this appears in
             challenge_names = []
+            space_names = []
             for ci_link in initiative.challenge_links:
                 challenge_names.append(ci_link.challenge.name)
+                if ci_link.challenge.space and ci_link.challenge.space.name not in space_names:
+                    space_names.append(ci_link.challenge.space.name)
 
             contrib_count = len(config.contributions)
 
@@ -69,6 +72,7 @@ class ValueTypeUsageService:
                     "system_name": system.name,
                     "initiative_name": initiative.name,
                     "challenge_names": challenge_names,
+                    "space_names": space_names,
                     "contributions_count": contrib_count,
                 }
             )

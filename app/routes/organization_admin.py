@@ -3654,11 +3654,29 @@ def delete_value_type(vt_id):
             flash("Access denied", "danger")
             return redirect(url_for("organization_admin.value_types"))
 
-        # Handle force deletion: delete rollup rules first
+        # Handle force deletion: remove all dependent records first
         if request.form.get("force") == "true":
-            from app.models import RollupRule
+            from app.models import CellComment, Contribution, KPISnapshot, KPIValueTypeConfig, MentionNotification, RollupRule, RollupSnapshot
 
-            RollupRule.query.filter_by(value_type_id=vt_id).delete()
+            # Delete in correct FK order: mentions → comments → snapshots → contributions → configs → rollup rules
+            configs = KPIValueTypeConfig.query.filter_by(value_type_id=vt_id).all()
+            config_ids = [c.id for c in configs]
+            if config_ids:
+                # Delete comment mentions first, then comments
+                comment_ids = [c.id for c in CellComment.query.filter(CellComment.kpi_value_type_config_id.in_(config_ids)).all()]
+                if comment_ids:
+                    MentionNotification.query.filter(MentionNotification.comment_id.in_(comment_ids)).delete(synchronize_session=False)
+                    CellComment.query.filter(CellComment.id.in_(comment_ids)).delete(synchronize_session=False)
+                KPISnapshot.query.filter(KPISnapshot.kpi_value_type_config_id.in_(config_ids)).delete(synchronize_session=False)
+                Contribution.query.filter(Contribution.kpi_value_type_config_id.in_(config_ids)).delete(synchronize_session=False)
+                KPIValueTypeConfig.query.filter(KPIValueTypeConfig.id.in_(config_ids)).delete(synchronize_session=False)
+            RollupSnapshot.query.filter_by(value_type_id=vt_id).delete(synchronize_session=False)
+            RollupRule.query.filter_by(value_type_id=vt_id).delete(synchronize_session=False)
+            # Clear linked_source references from other configs pointing to this VT
+            KPIValueTypeConfig.query.filter_by(linked_source_value_type_id=vt_id).update(
+                {"linked_source_value_type_id": None}, synchronize_session=False
+            )
+            db.session.flush()
 
         # Double check if it can be deleted
         can_delete, reason = ValueTypeUsageService.can_delete(vt_id)

@@ -80,7 +80,7 @@
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
                                     <form method="POST" action="{{ url_for('super_admin.assign_organization', user_id=user.id) }}">
-                                        {{ csrf_token() }}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <div class="modal-header">
                                             <h5 class="modal-title">
                                                 Assign {{ user.display_name or user.login }} to Organization
