@@ -160,8 +160,8 @@
         <p>{{ session.get('organization_name', '') }}</p>
         {% set org_id = session.get('organization_id') %}
         {% if current_user.is_global_admin or current_user.is_super_admin or (org_id and current_user.is_org_admin(org_id)) %}
-        <a href="{{ url_for('organization_admin.strategy') }}" class="btn btn-sm btn-outline-light mt-2" style="opacity:0.6;">
-            <i class="bi bi-pencil-square"></i> Edit
+        <a href="{{ url_for('organization_admin.strategy') }}" style="color:rgba(255,255,255,0.4); font-size:0.85rem;" title="Edit Strategy">
+            <i class="bi bi-pencil"></i>
         </a>
         {% endif %}
     </div>
