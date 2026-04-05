@@ -2035,7 +2035,7 @@
                style="font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: white; opacity: 0.9;"
                title="Items requiring attention">
                 <i class="bi bi-exclamation-triangle-fill" style="color: #ffc107;"></i>
-                <span x-text="`${actionItemsCount} ${actionItemsCount === 1 ? 'issue' : 'issues'}`"></span>
+                <span x-text="`${actionItemsCount} ${actionItemsCount === 1 ? 'notice' : 'notices'}`"></span>
             </a>
             {% if strategy_enabled %}
             <a x-show="!loading && _strategyCount === 0"
