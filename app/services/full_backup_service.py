@@ -818,6 +818,7 @@ class FullBackupService:
             Initiative,
             KPI,
             Space,
+            Stakeholder,
             System,
         )
 
@@ -852,6 +853,7 @@ class FullBackupService:
                 "initiative": Initiative,
                 "system": System,
                 "kpi": KPI,
+                "stakeholder": Stakeholder,
             }
             for mention in item.mentions:
                 model = entity_models.get(mention.entity_type)

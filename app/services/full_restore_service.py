@@ -1349,6 +1349,7 @@ class FullRestoreService:
                 .filter(Initiative.organization_id == organization_id)
                 .all()
             },
+            "stakeholder": {s.name: s.id for s in Stakeholder.query.filter_by(organization_id=organization_id).all()},
         }
 
         for item_data in backup.get("action_items", []):
