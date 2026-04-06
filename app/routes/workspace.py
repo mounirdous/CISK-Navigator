@@ -1167,6 +1167,14 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.14.0",
+            "date": "April 6, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Duplicate Detector</strong> — new Super Admin tool that scans all workspaces for duplicate records across governance bodies, spaces, challenges, initiatives, systems, value types, action items, stakeholders, and users. Shows impact analysis (dependent data counts) before deletion, parent context (space, challenge) to distinguish same-name entities, and workspace filtering.",
+            ],
+        },
+        {
             "version": "7.13.1",
             "date": "April 6, 2026",
             "tags": ["fix"],

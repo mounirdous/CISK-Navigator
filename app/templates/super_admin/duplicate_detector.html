@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+
+{% block title %}Duplicate Detector - Super Admin{% endblock %}
+
+{% block content %}
+<style>
+.dup-entity-tab { cursor: pointer; border: none; background: none; padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; color: #64748b; border-bottom: 3px solid transparent; transition: all 0.15s; white-space: nowrap; }
+.dup-entity-tab:hover { color: #334155; background: rgba(0,0,0,0.03); }
+.dup-entity-tab.active { color: var(--tab-color, #3b82f6); border-bottom-color: var(--tab-color, #3b82f6); }
+.dup-badge { font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 999px; font-weight: 700; }
+.dup-group { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 1rem; transition: box-shadow 0.15s; }
+.dup-group:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+.dup-group-header { background: linear-gradient(135deg, #f8fafc, #f1f5f9); padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; border-bottom: 1px solid #e2e8f0; }
+.dup-item { padding: 0.65rem 1rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+.dup-item:last-child { border-bottom: none; }
+.dup-item:hover { background: #fafbfc; }
+.impact-pill { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; background: #f1f5f9; color: #475569; white-space: nowrap; }
+.impact-pill.has-data { background: #fef3c7; color: #92400e; }
+.impact-pill.danger { background: #fee2e2; color: #991b1b; }
+.dup-delete-btn { font-size: 0.75rem; padding: 0.2rem 0.6rem; }
+.dup-summary-card { border-radius: 12px; padding: 1.25rem; text-align: center; border: 1px solid #e2e8f0; transition: all 0.15s; cursor: pointer; }
+.dup-summary-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); transform: translateY(-1px); }
+.dup-summary-card.active { border-color: var(--card-color); box-shadow: 0 0 0 2px var(--card-color); }
+.dup-summary-count { font-size: 2rem; font-weight: 800; line-height: 1; }
+.dup-section { display: none; }
+.dup-section.active { display: block; }
+.no-dup-msg { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+.no-dup-msg i { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h1 class="h2 mb-1">
+                        <i class="bi bi-bezier2 text-info me-2"></i>
+                        Duplicate Detector
+                    </h1>
+                    <p class="text-muted mb-0">Identify and resolve duplicate records across all workspaces</p>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select id="orgFilter" class="form-select form-select-sm" style="width: auto; min-width: 180px;" onchange="applyFilter()">
+                        <option value="">All workspaces</option>
+                        {% for org_id, org_name in all_orgs %}
+                        <option value="{{ org_id }}" {% if org_filter == org_id %}selected{% endif %}>{{ org_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="{{ url_for('super_admin.duplicate_detector') }}" class="btn btn-sm btn-outline-secondary" title="Refresh scan">
+                        <i class="bi bi-arrow-clockwise"></i> Re-scan
+                    </a>
+                    <a href="{{ url_for('super_admin.index') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if total_groups == 0 %}
+    <!-- No duplicates -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body no-dup-msg">
+            <i class="bi bi-check-circle text-success"></i>
+            <h4 class="text-success">All Clear</h4>
+            <p>No duplicate records detected{% if org_filter %} in the selected workspace{% endif %}.</p>
+        </div>
+    </div>
+    {% else %}
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col">
+            <div class="dup-summary-card {% if scan_type == 'all' %}active{% endif %}"
+                 style="--card-color: #334155; background: linear-gradient(135deg, #f8fafc, #e2e8f0);"
+                 onclick="showSection('all')">
+                <div class="dup-summary-count" style="color: #334155;">{{ total_groups }}</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">Total Groups</div>
+            </div>
+        </div>
+        {% for key, data in results.items() %}
+        <div class="col">
+            <div class="dup-summary-card" id="card-{{ key }}"
+                 style="--card-color: {{ data.color }};"
+                 onclick="showSection('{{ key }}')">
+                <div class="dup-summary-count" style="color: {{ data.color }};">{{ data.groups|length }}</div>
+                <div style="font-size: 0.8rem; font-weight: 600; color: #64748b;">
+                    <i class="bi {{ data.icon }}" style="color: {{ data.color }};"></i> {{ data.label }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Entity Sections -->
+    {% for key, data in results.items() %}
+    <div class="dup-section" id="section-{{ key }}">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi {{ data.icon }}" style="font-size: 1.3rem; color: {{ data.color }};"></i>
+            <h4 class="mb-0">{{ data.label }}</h4>
+            <span class="dup-badge" style="background: {{ data.color }}20; color: {{ data.color }};">{{ data.groups|length }} group{{ 's' if data.groups|length > 1 else '' }}, {{ data.total_duplicates }} records</span>
+        </div>
+
+        {% for group in data.groups %}
+        <div class="dup-group">
+            <div class="dup-group-header">
+                <div>
+                    <strong style="font-size: 0.95rem;">{{ group.name }}</strong>
+                    <span class="text-muted" style="font-size: 0.8rem;">
+                        &mdash; {{ group.org_name }}
+                        &nbsp;<span class="dup-badge" style="background: #fef3c7; color: #92400e;">{{ group.count }} copies</span>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;"
+                        onclick="this.closest('.dup-group').querySelector('.dup-items').classList.toggle('d-none'); this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
+                    <i class="bi bi-chevron-down"></i> Details
+                </button>
+            </div>
+            <div class="dup-items d-none">
+                {% for item in group.records %}
+                <div class="dup-item" id="dup-row-{{ key }}-{{ item.id }}">
+                    <span style="width: 50px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">#{{ item.id }}</span>
+                    <span style="flex: 1;">
+                        <span style="font-weight: 500;">{{ item.name }}</span>
+                        {% if item.context %}<br><span style="font-size: 0.75rem; color: #94a3b8;">{{ item.context }}</span>{% endif %}
+                    </span>
+                    <span style="width: 180px; display: flex; flex-wrap: wrap; gap: 0.2rem;">
+                        {% for impact_key, impact_val in item.impact.items() %}
+                        <span class="impact-pill {% if impact_val > 0 %}has-data{% endif %} {% if impact_val > 10 %}danger{% endif %}">
+                            {{ impact_key }}: {{ impact_val }}
+                        </span>
+                        {% endfor %}
+                        {% if not item.impact %}<span class="impact-pill">No deps</span>{% endif %}
+                    </span>
+                    <span style="width: 80px;">
+                        {% set total_impact = item.impact.values()|sum %}
+                        {% if total_impact == 0 %}
+                        <form method="POST" action="{{ url_for('super_admin.duplicate_delete', entity_type=key, entity_id=item.id) }}"
+                              onsubmit="return confirm('Delete {{ key.replace('_',' ').rstrip('s') }} #{{ item.id }}: {{ item.name }}?');"
+                              style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger dup-delete-btn">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('super_admin.duplicate_delete', entity_type=key, entity_id=item.id) }}"
+                              onsubmit="return confirm('WARNING: This {{ key.replace('_',' ').rstrip('s') }} has {{ total_impact }} dependent record(s). Deleting will cascade. Continue?');"
+                              style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-warning dup-delete-btn" title="Has {{ total_impact }} dependent records">
+                                <i class="bi bi-exclamation-triangle"></i> Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+
+    <!-- All sections view -->
+    <div class="dup-section active" id="section-all">
+        {% for key, data in results.items() %}
+        <div class="d-flex align-items-center gap-2 mb-3 mt-4">
+            <i class="bi {{ data.icon }}" style="font-size: 1.3rem; color: {{ data.color }};"></i>
+            <h4 class="mb-0">{{ data.label }}</h4>
+            <span class="dup-badge" style="background: {{ data.color }}20; color: {{ data.color }};">{{ data.groups|length }} group{{ 's' if data.groups|length > 1 else '' }}</span>
+        </div>
+        {% for group in data.groups %}
+        <div class="dup-group">
+            <div class="dup-group-header">
+                <div>
+                    <strong style="font-size: 0.95rem;">{{ group.name }}</strong>
+                    <span class="text-muted" style="font-size: 0.8rem;">
+                        &mdash; {{ group.org_name }}
+                        &nbsp;<span class="dup-badge" style="background: #fef3c7; color: #92400e;">{{ group.count }} copies</span>
+                    </span>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;"
+                        onclick="this.closest('.dup-group').querySelector('.dup-items').classList.toggle('d-none'); this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
+                    <i class="bi bi-chevron-down"></i> Details
+                </button>
+            </div>
+            <div class="dup-items d-none">
+                {% for item in group.records %}
+                <div class="dup-item">
+                    <span style="width: 50px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">#{{ item.id }}</span>
+                    <span style="flex: 1;">
+                        <span style="font-weight: 500;">{{ item.name }}</span>
+                        {% if item.context %}<br><span style="font-size: 0.75rem; color: #94a3b8;">{{ item.context }}</span>{% endif %}
+                    </span>
+                    <span style="width: 180px; display: flex; flex-wrap: wrap; gap: 0.2rem;">
+                        {% for impact_key, impact_val in item.impact.items() %}
+                        <span class="impact-pill {% if impact_val > 0 %}has-data{% endif %} {% if impact_val > 10 %}danger{% endif %}">
+                            {{ impact_key }}: {{ impact_val }}
+                        </span>
+                        {% endfor %}
+                        {% if not item.impact %}<span class="impact-pill">No deps</span>{% endif %}
+                    </span>
+                    <span style="width: 80px;">
+                        {% set total_impact = item.impact.values()|sum %}
+                        {% if total_impact == 0 %}
+                        <form method="POST" action="{{ url_for('super_admin.duplicate_delete', entity_type=key, entity_id=item.id) }}"
+                              onsubmit="return confirm('Delete {{ key.replace('_',' ').rstrip('s') }} #{{ item.id }}: {{ item.name }}?');"
+                              style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-danger dup-delete-btn">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                        </form>
+                        {% else %}
+                        <form method="POST" action="{{ url_for('super_admin.duplicate_delete', entity_type=key, entity_id=item.id) }}"
+                              onsubmit="return confirm('WARNING: This {{ key.replace('_',' ').rstrip('s') }} has {{ total_impact }} dependent record(s). Deleting will cascade. Continue?');"
+                              style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-outline-warning dup-delete-btn" title="Has {{ total_impact }} dependent records">
+                                <i class="bi bi-exclamation-triangle"></i> Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+    {% endif %}
+</div>
+
+<script>
+function showSection(key) {
+    document.querySelectorAll('.dup-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.dup-summary-card').forEach(c => c.classList.remove('active'));
+
+    var section = document.getElementById('section-' + key);
+    if (section) section.classList.add('active');
+
+    if (key === 'all') {
+        document.querySelector('.dup-summary-card').classList.add('active');
+    } else {
+        var card = document.getElementById('card-' + key);
+        if (card) card.classList.add('active');
+    }
+}
+
+function applyFilter() {
+    var orgId = document.getElementById('orgFilter').value;
+    var url = '{{ url_for("super_admin.duplicate_detector") }}';
+    if (orgId) url += '?org_id=' + orgId;
+    window.location.href = url;
+}
+</script>
+{% endblock %}

@@ -15,18 +15,28 @@ from app.decorators import super_admin_required
 from app.extensions import db
 from app.forms import EmailConfigForm, OrganizationSSOConfigForm
 from app.models import (
+    ActionItem,
     AnnouncementTargetOrganization,
     AnnouncementTargetUser,
     AuditLog,
     BenchmarkRun,
+    Challenge,
+    Contribution,
     FeedbackRequest,
+    GovernanceBody,
+    Initiative,
+    KPI,
     Organization,
+    Space,
     SSOConfig,
+    Stakeholder,
+    System,
     SystemAnnouncement,
     SystemSetting,
     User,
     UserAnnouncementAcknowledgment,
     UserOrganizationMembership,
+    ValueType,
 )
 from app.services.benchmark_service import BenchmarkService
 
@@ -2017,3 +2027,361 @@ def feedback_screenshot(feedback_id):
         io.BytesIO(feedback.screenshot_data),
         mimetype=feedback.screenshot_mime or "image/png",
     )
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# DUPLICATE DETECTOR
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/duplicate-detector")
+@login_required
+@super_admin_required
+def duplicate_detector():
+    """Detect potential duplicate records across all entity types system-wide."""
+    from collections import defaultdict
+
+    from sqlalchemy import func
+
+    scan_type = request.args.get("scan", "all")
+    org_filter = request.args.get("org_id", type=int)
+
+    results = {}
+    total_groups = 0
+
+    entity_configs = [
+        {
+            "key": "governance_bodies",
+            "label": "Governance Bodies",
+            "icon": "bi-bank",
+            "color": "#3498db",
+            "model": GovernanceBody,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": ["abbreviation", "is_global"],
+            "impact_fn": "_gb_impact",
+        },
+        {
+            "key": "spaces",
+            "label": "Spaces",
+            "icon": "bi-grid-3x3-gap",
+            "color": "#10b981",
+            "model": Space,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": [],
+            "impact_fn": "_space_impact",
+        },
+        {
+            "key": "challenges",
+            "label": "Challenges",
+            "icon": "bi-flag",
+            "color": "#f59e0b",
+            "model": Challenge,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": ["description"],
+            "impact_fn": "_challenge_impact",
+        },
+        {
+            "key": "initiatives",
+            "label": "Initiatives",
+            "icon": "bi-rocket",
+            "color": "#8b5cf6",
+            "model": Initiative,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": ["description"],
+            "impact_fn": "_initiative_impact",
+        },
+        {
+            "key": "systems",
+            "label": "Systems",
+            "icon": "bi-cpu",
+            "color": "#ec4899",
+            "model": System,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": ["description"],
+            "impact_fn": "_system_impact",
+        },
+        {
+            "key": "value_types",
+            "label": "Value Types",
+            "icon": "bi-tag",
+            "color": "#6366f1",
+            "model": ValueType,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": [],
+            "impact_fn": "_vt_impact",
+        },
+        {
+            "key": "action_items",
+            "label": "Action Items",
+            "icon": "bi-card-checklist",
+            "color": "#ef4444",
+            "model": ActionItem,
+            "name_col": "title",
+            "org_col": "organization_id",
+            "extra_cols": ["status", "priority"],
+            "impact_fn": "_ai_impact",
+        },
+        {
+            "key": "stakeholders",
+            "label": "Stakeholders",
+            "icon": "bi-person-badge",
+            "color": "#14b8a6",
+            "model": Stakeholder,
+            "name_col": "name",
+            "org_col": "organization_id",
+            "extra_cols": ["role", "email"],
+            "impact_fn": "_stakeholder_impact",
+        },
+        {
+            "key": "users",
+            "label": "Users",
+            "icon": "bi-people",
+            "color": "#f97316",
+            "model": User,
+            "name_col": "display_name",
+            "org_col": None,
+            "extra_cols": ["login", "email"],
+            "impact_fn": "_user_impact",
+        },
+    ]
+
+    # Build org lookup
+    orgs = {o.id: o.name for o in Organization.query.filter_by(is_deleted=False).all()}
+    all_orgs_list = sorted(orgs.items(), key=lambda x: x[1])
+
+    for cfg in entity_configs:
+        if scan_type != "all" and scan_type != cfg["key"]:
+            continue
+
+        model = cfg["model"]
+        name_col = getattr(model, cfg["name_col"])
+        groups = []
+
+        # Find duplicate names (case-insensitive) within same org or globally for User
+        query = db.session.query(
+            func.lower(name_col).label("lower_name"),
+        )
+
+        if cfg["org_col"]:
+            org_col_attr = getattr(model, cfg["org_col"])
+            query = query.add_columns(org_col_attr.label("org_id"))
+            if org_filter:
+                query = query.filter(org_col_attr == org_filter)
+            # Filter out archived orgs
+            query = query.filter(org_col_attr.in_(orgs.keys()))
+            query = query.group_by(func.lower(name_col), org_col_attr)
+        else:
+            query = query.group_by(func.lower(name_col))
+
+        query = query.having(func.count() > 1)
+        dup_names = query.all()
+
+        for dup in dup_names:
+            lower_name = dup.lower_name
+            items_query = model.query.filter(func.lower(name_col) == lower_name)
+            if cfg["org_col"]:
+                items_query = items_query.filter(getattr(model, cfg["org_col"]) == dup.org_id)
+            items = items_query.all()
+
+            if len(items) < 2:
+                continue
+
+            group_items = []
+            for item in items:
+                item_data = {
+                    "id": item.id,
+                    "name": getattr(item, cfg["name_col"]) or "(unnamed)",
+                    "org_id": getattr(item, cfg["org_col"]) if cfg["org_col"] else None,
+                    "org_name": orgs.get(getattr(item, cfg["org_col"])) if cfg["org_col"] else "Global",
+                    "context": _get_context(cfg["key"], item),
+                }
+                # Impact analysis
+                item_data["impact"] = _get_impact(cfg["impact_fn"], item)
+                group_items.append(item_data)
+
+            groups.append({
+                "name": items[0].__dict__.get(cfg["name_col"]) or lower_name,
+                "org_name": orgs.get(getattr(items[0], cfg["org_col"])) if cfg["org_col"] else "Global",
+                "count": len(group_items),
+                "records": group_items,
+            })
+
+        if groups:
+            results[cfg["key"]] = {
+                "label": cfg["label"],
+                "icon": cfg["icon"],
+                "color": cfg["color"],
+                "groups": sorted(groups, key=lambda g: (-g["count"], g["name"])),
+                "total_duplicates": sum(g["count"] for g in groups),
+            }
+            total_groups += len(groups)
+
+    return render_template(
+        "super_admin/duplicate_detector.html",
+        results=results,
+        total_groups=total_groups,
+        entity_configs=entity_configs,
+        scan_type=scan_type,
+        org_filter=org_filter,
+        all_orgs=all_orgs_list,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/duplicate-detector/delete/<entity_type>/<int:entity_id>", methods=["POST"])
+@login_required
+@super_admin_required
+def duplicate_delete(entity_type, entity_id):
+    """Delete a specific duplicate entity after impact review."""
+    model_map = {
+        "governance_bodies": GovernanceBody,
+        "spaces": Space,
+        "challenges": Challenge,
+        "initiatives": Initiative,
+        "systems": System,
+        "kpis": KPI,
+        "value_types": ValueType,
+        "action_items": ActionItem,
+        "stakeholders": Stakeholder,
+        "users": User,
+    }
+    model = model_map.get(entity_type)
+    if not model:
+        flash("Invalid entity type", "danger")
+        return redirect(url_for("super_admin.duplicate_detector"))
+
+    item = model.query.get_or_404(entity_id)
+    item_name = getattr(item, "name", None) or getattr(item, "title", None) or getattr(item, "display_name", str(entity_id))
+
+    try:
+        db.session.delete(item)
+        db.session.commit()
+        flash(f"Deleted {entity_type.replace('_', ' ').rstrip('s')}: {item_name}", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error deleting: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.duplicate_detector", scan=entity_type))
+
+
+def _get_context(entity_key, item):
+    """Get parent/location context string for an entity."""
+    try:
+        if entity_key == "challenges":
+            space = item.space if hasattr(item, "space") else None
+            return f"Space: {space.name}" if space else ""
+        elif entity_key == "initiatives":
+            # Get challenges linked to this initiative
+            links = item.challenge_links if hasattr(item, "challenge_links") else []
+            if links:
+                names = [cl.challenge.name for cl in links[:2] if cl.challenge]
+                suffix = f" +{len(links)-2}" if len(links) > 2 else ""
+                return f"Challenge: {', '.join(names)}{suffix}"
+            return ""
+        elif entity_key == "systems":
+            links = item.initiative_links if hasattr(item, "initiative_links") else []
+            if links:
+                names = [il.initiative.name for il in links[:2] if il.initiative]
+                suffix = f" +{len(links)-2}" if len(links) > 2 else ""
+                return f"Initiative: {', '.join(names)}{suffix}"
+            return ""
+        elif entity_key == "governance_bodies":
+            return f"{'Global' if item.is_global else 'Local'}"
+        elif entity_key == "action_items":
+            parts = []
+            if item.status:
+                parts.append(item.status)
+            if item.priority:
+                parts.append(item.priority)
+            if item.owner_user:
+                parts.append(f"Owner: {item.owner_user.display_name or item.owner_user.login}")
+            return " | ".join(parts)
+        elif entity_key == "stakeholders":
+            return item.role or ""
+        elif entity_key == "users":
+            return item.email or item.login or ""
+        elif entity_key == "value_types":
+            return f"Type: {item.data_type}" if hasattr(item, "data_type") and item.data_type else ""
+    except Exception:
+        pass
+    return ""
+
+
+def _get_impact(fn_name, item):
+    """Dispatch to impact analysis function."""
+    fn = globals().get(fn_name)
+    if fn:
+        return fn(item)
+    return {}
+
+
+def _gb_impact(gb):
+    """Impact analysis for governance body deletion."""
+    from app.models import KPIGovernanceBodyLink
+    kpi_count = KPIGovernanceBodyLink.query.filter_by(governance_body_id=gb.id).count()
+    return {"KPIs linked": kpi_count}
+
+
+def _space_impact(space):
+    """Impact analysis for space deletion."""
+    challenge_count = Challenge.query.filter_by(space_id=space.id).count()
+    return {"Challenges": challenge_count}
+
+
+def _challenge_impact(challenge):
+    """Impact analysis for challenge deletion."""
+    from app.models import ChallengeInitiativeLink
+    init_count = ChallengeInitiativeLink.query.filter_by(challenge_id=challenge.id).count()
+    return {"Initiatives linked": init_count}
+
+
+def _initiative_impact(initiative):
+    """Impact analysis for initiative deletion."""
+    from app.models import InitiativeSystemLink
+    sys_count = InitiativeSystemLink.query.filter_by(initiative_id=initiative.id).count()
+    return {"Systems linked": sys_count}
+
+
+def _system_impact(system):
+    """Impact analysis for system deletion."""
+    from app.models import InitiativeSystemLink
+    link_count = InitiativeSystemLink.query.filter_by(system_id=system.id).count()
+    return {"Initiative links": link_count}
+
+
+def _kpi_impact(kpi):
+    """Impact analysis for KPI deletion."""
+    contrib_count = Contribution.query.filter_by(kpi_id=kpi.id).count()
+    return {"Contributions": contrib_count}
+
+
+def _vt_impact(vt):
+    """Impact analysis for value type deletion."""
+    from app.models import KPIValueTypeConfig
+    config_count = KPIValueTypeConfig.query.filter_by(value_type_id=vt.id).count()
+    return {"KPI configs": config_count}
+
+
+def _ai_impact(ai):
+    """Impact analysis for action item deletion."""
+    mention_count = len(ai.mentions) if hasattr(ai, "mentions") else 0
+    return {"Mentions": mention_count}
+
+
+def _stakeholder_impact(sh):
+    """Impact analysis for stakeholder deletion."""
+    link_count = len(sh.entity_links) if hasattr(sh, "entity_links") else 0
+    rel_count = len(sh.relationships_as_source) if hasattr(sh, "relationships_as_source") else 0
+    return {"Entity links": link_count, "Relationships": rel_count}
+
+
+def _user_impact(user):
+    """Impact analysis for user deletion."""
+    org_count = len(user.organization_memberships) if hasattr(user, "organization_memberships") else 0
+    return {"Organizations": org_count}
