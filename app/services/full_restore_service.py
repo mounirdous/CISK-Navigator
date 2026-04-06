@@ -1438,13 +1438,10 @@ class FullRestoreService:
                     except ValueError:
                         pass
 
-                # Determine cross-org flag: use override from mapping UI if provided,
-                # otherwise fall back to the value stored in the backup JSON.
+                # Always restore action items as non-global (workspace-scoped).
+                # Cross-org sharing caused duplicate visibility issues.
                 _ai_title = item_data["title"]
-                if cross_org_ai_overrides and _ai_title in cross_org_ai_overrides:
-                    _ai_is_global = cross_org_ai_overrides[_ai_title]
-                else:
-                    _ai_is_global = item_data.get("is_global", False)
+                _ai_is_global = False
 
                 action_item = ActionItem(
                     organization_id=organization_id,
