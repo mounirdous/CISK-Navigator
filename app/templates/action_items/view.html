@@ -120,6 +120,11 @@
                                     {% if item.visibility == 'private' %}<i class="bi bi-lock"></i>{% else %}<i class="bi bi-people"></i>{% endif %}
                                     {{ item.visibility | capitalize }}
                                 </span>
+                                {% if item.organization %}
+                                <span class="meta-pill" style="background: rgba(59,130,246,0.15); color: #1d4ed8;">
+                                    <i class="bi bi-building"></i> {{ item.organization.name }}
+                                </span>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
