@@ -1,1251 +1,1726 @@
-# CISK Navigator - Architecture & Impact Analysis Documentation
+# CISK Navigator - Technical Architecture
 
-**Version:** v1.17.0
-**Last Updated:** 2026-03-11
-**Purpose:** Comprehensive documentation for impact analysis, maintenance, and development
+**Last Updated**: April 6, 2026
+**Version**: 7.15.0
 
----
+This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
 ## Table of Contents
 
-1. [Project Overview](#project-overview)
-2. [Architecture Layers](#architecture-layers)
-3. [Data Model Reference](#data-model-reference)
-4. [Key Components](#key-components)
-5. [Impact Analysis Guide](#impact-analysis-guide)
-6. [File Reference](#file-reference)
-7. [Common Operations](#common-operations)
-8. [Database Migrations](#database-migrations)
+1. [Overview](#overview)
+2. [Technology Stack](#technology-stack)
+3. [Application Structure](#application-structure)
+4. [Data Model](#data-model)
+5. [Business Logic](#business-logic)
+6. [Authentication & Authorization](#authentication--authorization)
+7. [Consensus Model](#consensus-model)
+8. [Roll-up Aggregation](#roll-up-aggregation)
+9. [Color Configuration System](#color-configuration-system)
+10. [Excel Export](#excel-export)
+11. [YAML Export/Import](#yaml-exportimport)
+12. [Full Backup & Restore](#full-backup--restore)
+13. [Selective Import](#selective-import)
+14. [Organization Cloning](#organization-cloning)
+15. [Workspace Labels & Profiles](#workspace-labels--profiles)
+16. [Governance Body Sharing](#governance-body-sharing)
+17. [Duplicate Detector](#duplicate-detector)
+18. [Shared Entities Management](#shared-entities-management)
+19. [Entity Branding](#entity-branding)
+20. [Drag-and-Drop Value Type Reordering](#drag-and-drop-value-type-reordering)
+21. [Deletion Rules](#deletion-rules)
+22. [Code Organization](#code-organization)
+23. [Database Migrations](#database-migrations)
+24. [Production Deployment](#production-deployment)
+25. [Testing Strategy](#testing-strategy)
 
----
+## Overview
 
-## Project Overview
+CISK Navigator is a Flask application using PostgreSQL as the production database. It follows the application factory pattern and uses Flask Blueprints for modular route organization.
 
-### What is CISK Navigator?
+### Design Principles
 
-CISK Navigator is a strategic planning and KPI management platform that helps organizations:
-- Organize strategic initiatives into Spaces
-- Track challenges, initiatives, systems, and KPIs
-- Measure value creation across multiple dimensions
-- Create snapshots for historical comparison
-- Collaborate through comments and governance bodies
+- **Production-Ready**: PostgreSQL for data persistence across deployments
+- **Secure by Default**: CSRF protection, password hashing, session management
+- **Migration-Friendly**: Flask-Migrate (Alembic) for schema evolution
+- **Well-Tested**: Comprehensive test coverage with pytest
+- **Multi-Tenant**: Complete organization isolation
 
-### Technology Stack
+### v7.13–7.15 Recent Changes (April 6, 2026)
 
-- **Backend:** Flask (Python 3.11+)
-- **Database:** PostgreSQL
-- **ORM:** SQLAlchemy
-- **Forms:** WTForms / Flask-WTF
-- **Authentication:** Flask-Login + OAuth 2.0/OIDC
-- **Frontend:** Bootstrap 5, Vanilla JS
-- **Encryption:** Fernet (cryptography library)
+1. **Responsive Navbar** — Navbar collapses at xl (1200px) breakpoint; search bar uses flexible width; user profile icon always accessible
+2. **Full Backup & Restore Improvements** — Organization-level links now included in backup exports; restore is order-independent (auto-creates missing global GBs); action items always restored as workspace-scoped; governance body deduplication during restore; redirect to Organizations page after restore
+3. **Selective Import** — New Workspace Admin tool to browse a backup JSON and selectively import data with duplicate detection; starting with workspace-level links, extensible for future entity types
+4. **Duplicate Detector** — Super Admin tool scanning 9 entity types for case-insensitive name duplicates within each workspace; impact analysis per record; parent context display; workspace filter
+5. **Shared Entities Management** — Super Admin page to view and bulk unshare (set `is_global=false`) governance bodies and action items; entity type filter tabs
+6. **Workspace Labels & Profiles** — Action scope setting (`workspace` or `all`) in profiles controls whether global action items from other workspaces appear in the Action Register; label badge colors use hex data attributes for correct toggle rendering; Workspaces menu updates instantly on label toggle
+7. **Entity Branding from DB** — Entity mention icons on action items, dashboard, search, and create pages use workspace branding (logo/icon/color) from the Branding Manager instead of hardcoded symbols
+8. **Org Delete Cascade Fix** — `passive_deletes=True` on ImpactLevel, StrategicPillar, and OrganizationSSOConfig relationships; bulk delete commits per-org to avoid worker timeouts
+9. **Owning Workspace Badge** — Action item view page shows the owning workspace name
 
-### Project Structure
+### v5.3.1 Previous Changes (March 28, 2026)
+
+1. **Impact Level System** — 3-level configurable impact scale per org (symbol, weight, color); `impact_level` on all entities; true importance computed via Simple Product, Geometric Mean, or Toyota QFD method; editable QFD matrix
+2. **Decision Log** — structured decisions in progress updates [{what, who, tag, mentions}]; Decision Register page (`/workspace/decisions`) with search, entity filtering, xmas tree detail levels
+3. **Entity Mentions in Decisions** — searchable entity picker; bi-directional links (entity→decisions, decision→entities)
+4. **3-Level Xmas Tree** — progressive detail disclosure on Workspace, Action Register, Initiative Review, Map Dashboard, Decision Register (minimal/standard/full)
+5. **Strategic Pillars** — editable strategy with icon picker, view page, backup/restore
+6. **Value Dimensions** — card view of value types with descriptions
+7. **Impact Documentation** — standalone page explaining all 3 compounding methods with formulas, examples, comparison table
+8. **Sequential Entity Navigation** — prev/next arrows on all 7 entity edit pages, scoped to siblings
+9. **Initiative Review Focus Mode** — sort by impact level with visual separators
+10. **Mobile-Friendly Info Windows** — click-based multi-window system replacing hover tooltips; draggable
+
+### v4.2.1 Previous Changes (March 27, 2026)
+
+1. **Unified Presets System** — Single `PresetManager` JS module + `_preset_bar.html` macro for save/load across workspace, action items, search, and pivot charts; `/api/user-presets` API (GET/POST/DELETE); auto-restore with URL-match guard to prevent infinite loops; overwrite prompt on duplicate names
+2. **Map KPI Marker Clustering** — Replaced 156+ DOM markers with Mapbox native GPU-accelerated GeoJSON clustering; cluster circles with count badges (indigo/purple/pink by count); click-to-expand or popup KPI list for same-location clusters; continuous `render` event coloring for all countries; `map.loaded()` check to prevent race condition in production
+3. **Branding Logos Globally Available** — Context processor now includes `logo` (base64 data URL) alongside `color` and `icon` for all entity types; Action Register CISK Entity view shows custom branding logos (16px constrained) instead of generic text icons
+4. **Dashboards Menu Restructured** — Removed Overview and CISK Theory; Executive, Analytics, Snapshot Analysis are beta-only (with BETA badge); removed standalone Beta nav item; Map View available to all
+5. **Workspace FABs Fixed** — Snapshot/export floating action buttons moved outside `workspace-v2` container for correct `position: fixed` behavior; visible on all screen sizes (36px on mobile)
+6. **Workspace Dirty Flag** — Cleared on fresh server fetch (was persisting across sessions)
+7. **Timeline Fit-All** — Always fits all items on initial timeline load; zoom presets only apply on explicit user selection
+
+### v2.20.1 Previous Changes (March 2026)
+
+1. **Action Register — Duplicate Detection** — "Find Duplicates" button scans all visible items using Jaccard title similarity, exact match, prefix match, and combined title+description similarity; groups results with a differences table (status, priority, owner, due date, governance bodies, links — only differing fields shown), smart pre-selection for deletion, and a Show/Hide differences toggle
+2. **Global Search — Exact Match** — Checkbox toggle on the search page disables Levenshtein fuzzy matching and restricts results to substring matches only; badge shown in results when active
+3. **Backup Format v3.0** — Action items and memos now included in full backup/restore (owner matched by login, governance body links by name, entity mentions resolved by entity name)
+
+### v2.17.7 Previous Changes (March 2026)
+
+1. **Workspace Collapse/Expand Fixed** — Alpine.js reactivity issue in nested `x-for` loops fixed; collapse at any level (space/challenge/initiative/system) now immediately hides all descendants; collapse state preserved across background data reloads
+2. **System Edit Link** — Workspace pencil icon on systems navigates to `edit_system` page; `edit_url` added to system data in `get_data` API response
+3. **Per-Instance Branding on Edit Pages** — Space, Challenge, Initiative, System, KPI edit pages show per-instance logo first, then entity-type default, then icon
+4. **Action Item Governance Bodies** — Many-to-many join table `action_item_governance_body`; multi-select per action in register and Generate Actions modal; GB filter on Action Register page
+5. **Generate Actions from Success Criteria** — Lightning button now parses both deliverables and success criteria rows with source badge (Del./Step)
+6. **Action Register Modernized** — Gradient header, stat cards, multi-status filter (checkboxes), GB filter pills, stats update dynamically with filters
+
+### v2.16.0 Changes (March 2026)
+
+1. **Generate Actions from Deliverables & Steps** — Initiative form lightning button parses deliverable rows and success criteria rows into action items with smart date parsing, dedup detection, and bulk creation
+2. **List Value Type** — New "list" kind for choice-based KPIs (Yes/No, status, categories) with per-option colors and Mode aggregation
+3. **Initiative Form Redesign** — Dynamic font sizing, left-aligned content, tight padding, branding icons for system/KPI entries
+4. **Backup/Restore Completeness** — Initiative form fields, Porter's Five Forces, and Action Items/Memos now included in full backup/restore (backup format v3.0)
+5. **Aggregation Formula Consistency** — `ValueType.get_valid_formulas()` used across all 3 formula-selection surfaces
+6. **Test Suite Runner** — Celery + Redis async test execution from Health Dashboard (v2.14.0)
+7. **Demo Data Generator** — Three pre-built demo organizations for testing (v2.11.0)
+
+### v2.0 Foundation
+
+1. **Database Migration**: SQLite → PostgreSQL for production persistence
+2. **Color System Refactor**: Colors moved from ValueType to KPIValueTypeConfig level
+3. **Driver Upgrade**: psycopg2 → psycopg3 (Python 3.13+ compatible)
+4. **Deployment**: Render with persistent PostgreSQL
+5. **Automatic Migrations**: Database schema updates on deploy
+6. **New Aggregation Formulas**: Added median (outlier-resistant) and count (quantity tracking)
+7. **New Value Types**: Added level (generic 3-level) and sentiment (emotional states)
+8. **Excel Export**: Hierarchical export with row grouping and color coding
+9. **YAML Export/Import**: Complete structure backup and restore capability
+10. **Organization Cloning**: Create test/training environments from production
+11. **Drag-and-Drop Reordering**: Reorder value types to control workspace columns
+12. **Data Loss Prevention**: Multiple safety checks to prevent accidental database resets
+
+## Technology Stack
+
+### Core Framework
+- **Python 3.11+**: Modern Python with type hints
+- **Flask 3.0**: Lightweight WSGI web framework
+- **PostgreSQL 16+**: Production relational database
+- **psycopg 3.3**: Modern PostgreSQL adapter
+
+### Flask Extensions
+- **Flask-SQLAlchemy 3.1**: ORM for database interactions
+- **Flask-Migrate 4.0**: Database migration management (Alembic)
+- **Flask-Login 0.6**: User session management
+- **Flask-WTF 1.2**: Form handling and CSRF protection
+- **Werkzeug 3.0**: Password hashing and utilities
+
+### Frontend
+- **Bootstrap 5**: Responsive UI framework
+- **Bootstrap Icons**: Icon library
+- **SortableJS 1.15**: Drag-and-drop library (loaded from CDN)
+- **Chart.js 4.4**: Interactive charts (trends, coverage, test history)
+- **Vanilla JavaScript**: Tree expansion, form interactions, AJAX polling
+
+### Background Processing
+- **Celery**: Async task queue for long-running operations (test runner)
+- **Redis**: Message broker for Celery (managed Redis on Render)
+
+### Deployment
+- **Gunicorn 21.2**: Production WSGI server
+- **Render**: Cloud platform with managed PostgreSQL and Redis
+
+### Testing
+- **pytest 7.4**: Testing framework
+- **pytest-flask 1.3**: Flask-specific test fixtures
+- **pytest-cov**: Code coverage reporting
+
+## Application Structure
+
+### Directory Layout
 
 ```
 CISK-Navigator/
 ├── app/
-│   ├── __init__.py              # Flask app factory
-│   ├── config.py                # Configuration (dev, prod)
-│   ├── extensions.py            # Flask extensions (db, login_manager)
-│   ├── decorators.py            # Custom decorators (@super_admin_required, etc.)
-│   ├── models/                  # SQLAlchemy models (database schema)
-│   ├── routes/                  # Flask blueprints (URL endpoints)
-│   ├── services/                # Business logic layer
-│   ├── forms/                   # WTForms for validation
-│   ├── templates/               # Jinja2 HTML templates
-│   ├── static/                  # CSS, JS, images
-│   └── utils/                   # Utility modules (encryption, etc.)
-├── migrations/                  # Alembic database migrations
-├── docs/                        # Documentation (this file)
-├── tests/                       # Unit and integration tests
-├── venv/                        # Virtual environment
+│   ├── __init__.py              # Application factory
+│   ├── config.py                # Configuration (dev/prod)
+│   ├── extensions.py            # Flask extension instances
+│   │
+│   ├── models/                  # SQLAlchemy models
+│   │   ├── __init__.py
+│   │   ├── user.py             # User and authentication
+│   │   ├── organization.py     # Organization and memberships
+│   │   ├── space.py            # Space model
+│   │   ├── challenge.py        # Challenge model
+│   │   ├── initiative.py       # Initiative and ChallengeInitiativeLink
+│   │   ├── system.py           # System and InitiativeSystemLink
+│   │   ├── kpi.py              # KPI model
+│   │   ├── value_type.py       # ValueType and KPIValueTypeConfig
+│   │   ├── contribution.py     # Contribution model
+│   │   └── rollup_rule.py      # RollupRule model
+│   │
+│   ├── forms/                   # WTForms validation
+│   │   ├── auth_forms.py       # Login, password change
+│   │   ├── user_forms.py       # User management
+│   │   ├── organization_forms.py
+│   │   ├── space_forms.py
+│   │   ├── challenge_forms.py
+│   │   ├── initiative_forms.py
+│   │   ├── system_forms.py
+│   │   ├── kpi_forms.py
+│   │   ├── value_type_forms.py
+│   │   └── contribution_forms.py
+│   │
+│   ├── routes/                  # Flask Blueprints
+│   │   ├── auth.py             # Authentication
+│   │   ├── global_admin.py     # Global administration
+│   │   ├── organization_admin.py # Organization administration
+│   │   └── workspace.py        # Main workspace
+│   │
+│   ├── services/                # Business logic services
+│   │   ├── consensus_service.py         # Consensus calculation (supports list/numeric/qualitative)
+│   │   ├── aggregation_service.py       # Roll-up aggregation (sum/min/max/avg/median/count/mode)
+│   │   ├── deletion_impact_service.py   # Deletion impact analysis
+│   │   ├── value_type_usage_service.py  # Value type usage checking
+│   │   ├── excel_export_service.py      # Excel export with grouping
+│   │   ├── yaml_export_service.py       # YAML structure export
+│   │   ├── yaml_import_service.py       # YAML structure import
+│   │   ├── organization_clone_service.py # Organization cloning
+│   │   ├── full_backup_service.py       # Full JSON backup (includes initiative form fields, Porter's)
+│   │   ├── full_restore_service.py      # Full JSON restore
+│   │   ├── action_items_service.py      # Action items quality dashboard
+│   │   ├── action_item_service.py       # Action item CRUD helpers
+│   │   └── test_runner_service.py       # Async pytest execution via Celery
+│   │
+│   ├── templates/               # Jinja2 templates
+│   │   ├── base.html           # Base layout
+│   │   ├── auth/               # Authentication pages
+│   │   ├── global_admin/       # Global admin pages
+│   │   ├── organization_admin/ # Org admin pages
+│   │   └── workspace/          # Workspace pages
+│   │
+│   └── static/                  # Static assets
+│       ├── css/style.css       # Custom styles
+│       └── js/                 # JavaScript files
+│
+├── migrations/                  # Alembic migrations
+│   ├── versions/               # Migration scripts
+│   ├── alembic.ini
+│   └── env.py
+│
+├── tests/                       # Test suite
+│   ├── conftest.py
+│   ├── test_auth.py
+│   ├── test_consensus.py
+│   ├── test_aggregation.py
+│   └── test_deletion.py
+│
+├── run.py                       # Application entry point
 ├── requirements.txt             # Python dependencies
-└── run.py                       # Application entry point
+├── .env.example                 # Environment variables template
+├── Procfile                     # Render start command
+└── render.yaml                  # Render configuration
 ```
 
----
+### Application Factory Pattern
 
-## Architecture Layers
+```python
+# app/__init__.py
+def create_app(config_name=None):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
 
-### 1. **Presentation Layer** (Templates + Routes)
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+    login_manager.init_app(app)
 
-**Purpose:** Handle HTTP requests, render HTML, manage user sessions
+    # Register blueprints
+    app.register_blueprint(auth.bp)
+    app.register_blueprint(global_admin.bp)
+    app.register_blueprint(organization_admin.bp)
+    app.register_blueprint(workspace.bp)
 
-**Files:**
-- `app/templates/` - Jinja2 templates
-- `app/routes/*.py` - Flask blueprints
+    # Register Jinja2 filters
+    @app.template_filter('format_value')
+    def format_value_filter(value, value_type):
+        # Value formatting logic
+        pass
 
-**Key Routes:**
-- `auth.py` - Login, logout, SSO, profile
-- `workspace.py` - Main workspace, KPI grid, snapshots
-- `global_admin.py` - Multi-organization management
-- `organization_admin.py` - Organization-specific settings
-- `super_admin.py` - System-wide settings
+    @app.template_filter('default_value_color')
+    def default_value_color_filter(value):
+        # Default color logic for rollups
+        pass
 
-### 2. **Business Logic Layer** (Services)
+    # Bootstrap admin on first run
+    with app.app_context():
+        db.create_all()
+        _bootstrap_admin()
 
-**Purpose:** Encapsulate complex operations, avoid code duplication
-
-**Files:**
-- `app/services/sso_service.py` - SSO authentication flow
-- `app/services/snapshot_service.py` - Snapshot creation/comparison
-- `app/services/aggregation_service.py` - Rollup calculations
-- `app/services/deletion_impact_service.py` - Cascade delete analysis
-- `app/services/comment_service.py` - Comment management
-- `app/services/action_item_service.py` - Action items and memos (CRUD, @mentions, stats)
-- `app/services/excel_export_service.py` - Excel export
-- `app/services/yaml_import_service.py` - YAML structure import (no data)
-- `app/services/yaml_export_service.py` - YAML structure export (no data)
-- `app/services/full_backup_service.py` - JSON full backup (structure + all data)
-- `app/services/full_restore_service.py` - JSON full restore with governance body mapping
-- `app/services/organization_clone_service.py` - Organization cloning
-
-### 3. **Data Access Layer** (Models)
-
-**Purpose:** Define database schema, relationships, and basic CRUD
-
-**Files:** `app/models/*.py`
-
-### 4. **Validation Layer** (Forms)
-
-**Purpose:** Validate user input before processing
-
-**Files:** `app/forms/*.py`
-
----
-
-## Data Model Reference
-
-### Core Hierarchy
-
-```
-Organization (multi-tenant)
-  └─> Space (strategic area)
-       └─> Challenge (problem statement)
-            └─> Initiative (solution)
-                 └─> System (implementation)
-                      └─> KPI (metric)
-                           └─> Contribution (value measurement)
+    return app
 ```
 
-### Model Relationships Diagram
+## Data Model
+
+### Core Principles
+
+1. **Immutable IDs**: Every entity has an immutable technical ID
+2. **Many-to-Many Relationships**: Initiatives and Systems are reusable
+3. **Context-Specific Data**: KPIs belong to Initiative-System contexts
+4. **Organization Isolation**: All business data scoped to organizations
+5. **Color Configuration**: Sign-based colors configured per KPI (not per value type)
+
+### Entity Relationship Diagram
 
 ```
-┌──────────────┐
-│ Organization │ (Multi-tenant container)
-└──────┬───────┘
-       │ 1:N
-       ├─> Space (is_private flag)
-       ├─> Challenge
-       ├─> Initiative
-       ├─> System
-       ├─> KPI
-       ├─> ValueType
-       ├─> GovernanceBody
-       └─> UserOrganizationMembership
-           │
-           └─> User (M:N via membership)
+Organization (1) ──────┬─────── (N) Space
+                       ├─────── (N) Challenge
+                       ├─────── (N) Initiative
+                       ├─────── (N) System
+                       ├─────── (N) ValueType
+                       └─────── (N) UserOrganizationMembership ──── (1) User
 
-┌─────────┐
-│  Space  │
-└────┬────┘
-     │ 1:N
-     └─> Challenge
-          └─> ChallengeInitiativeLink (M:N)
-               └─> Initiative
-                    └─> InitiativeSystemLink (M:N)
-                         └─> System
-                              └─> KPI (1:N)
-                                   ├─> KPIValueTypeConfig (M:N)
-                                   │    └─> ValueType
-                                   ├─> KPIGovernanceBodyLink (M:N)
-                                   │    └─> GovernanceBody
-                                   ├─> Contribution (actual values)
-                                   ├─> CellComment (discussions)
-                                   └─> KPISnapshot (historical)
+Space (1) ────────── (N) Challenge
 
-┌────────────┐
-│ RollupRule │ (Aggregation formula)
-└─────┬──────┘
-      │
-      └─> RollupSnapshot (calculated results)
+Challenge (1) ────── (N) ChallengeInitiativeLink ────── (1) Initiative
+                                │
+                                └── (N) RollupRule
+
+Initiative (1) ───── (N) InitiativeSystemLink ────────── (1) System
+                                │
+                                ├── (N) KPI
+                                └── (N) RollupRule
+
+KPI (1) ──────────── (N) KPIValueTypeConfig ────────── (1) ValueType
+                                │                             │
+                                │                             ├── color_positive
+                                │                             ├── color_zero
+                                │                             └── color_negative
+                                │
+                                └── (N) Contribution
+
+Challenge (1) ────── (N) RollupRule (for Challenge → Space)
 ```
 
-### Authentication & Authorization
+### Key Models
 
-```
-┌──────────────┐
-│ SystemSetting│ (Global settings)
-└──────────────┘
-
-┌───────────┐
-│ SSOConfig │ (Instance-wide SSO)
-└───────────┘
-
-┌──────┐
-│ User │ (authentication identity)
-└──┬───┘
-   │ M:N
-   └─> UserOrganizationMembership
-        └─> Organization
-             └─> Permissions (JSONB in membership)
+#### User
+```python
+class User(db.Model):
+    id: int                    # Primary key
+    login: str                 # Unique login
+    email: str                 # Optional email
+    display_name: str
+    password_hash: str         # Werkzeug hashed
+    is_active: bool
+    is_global_admin: bool
+    must_change_password: bool
 ```
 
----
-
-## Key Components
-
-### 1. **Organizations**
-
-**Purpose:** Multi-tenancy - isolate data between different companies/departments
-
-**Model:** `app/models/organization.py`
-**Routes:** `app/routes/global_admin.py`
-**Templates:** `app/templates/global_admin/organizations.html`
-
-**Database Table:** `organizations`
-
-**Key Fields:**
-- `id` (PK)
-- `name` - Organization name
-- `is_active` - Soft delete flag
-- `created_at`, `updated_at`
-
-**Relationships:**
-- 1:N with Spaces, Challenges, Initiatives, Systems, KPIs
-- M:N with Users (via `user_organization_memberships`)
-
-**Impact Analysis:**
-- **Deleting an organization:** Cascades to ALL related data (spaces, challenges, KPIs, etc.)
-- **Deactivating:** Hides from user access but preserves data
-- **Cloning:** Copies entire structure (see `organization_clone_service.py`)
-
-**Related Services:**
-- `OrganizationCloneService` - Deep copy with data
-
----
-
-### 2. **Spaces**
-
-**Purpose:** Top-level strategic grouping (e.g., "Product Development", "Customer Success")
-
-**Model:** `app/models/space.py`
-**Routes:** `app/routes/organization_admin.py` (lines 50-200)
-**Templates:** `app/templates/organization_admin/spaces.html`
-
-**Database Table:** `spaces`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK) - Parent organization
-- `name` - Space name
-- `description` - Optional description
-- `is_private` - Privacy flag (v1.15.1+)
-- `created_at`, `updated_at`
-
-**Relationships:**
-- N:1 with Organization
-- 1:N with Challenges
-
-**Impact Analysis:**
-- **Deleting a space:** Cascades to challenges → initiatives → systems → KPIs
-- **Making private:** Hides from users without explicit access
-- **Column filtering:** Affects which value types show in workspace (v1.15.1+)
-
-**Related Services:**
-- `DeletionImpactService` - Preview cascading deletes
-
----
-
-### 3. **Challenges**
-
-**Purpose:** Problem statements or strategic objectives
-
-**Model:** `app/models/challenge.py`
-**Routes:** `app/routes/organization_admin.py` (lines 200-350)
-**Templates:** `app/templates/organization_admin/challenges.html`
-
-**Database Table:** `challenges`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `space_id` (FK) - Parent space
-- `name` - Challenge name
-- `description`
-- `display_order` - Sort order in UI
-
-**Relationships:**
-- N:1 with Space
-- M:N with Initiatives (via `challenge_initiative_links`)
-
-**Impact Analysis:**
-- **Deleting a challenge:** Removes links to initiatives (but initiatives remain)
-- **Changing space:** Affects workspace filtering
-- **Reordering:** Only affects UI display
-
-**Related Services:**
-- `DeletionImpactService` - Shows linked initiatives
-
----
-
-### 4. **Initiatives**
-
-**Purpose:** Solutions or action plans addressing challenges
-
-**Model:** `app/models/initiative.py`
-**Routes:** `app/routes/organization_admin.py` (lines 350-500)
-**Templates:** `app/templates/organization_admin/initiatives.html`
-
-**Database Table:** `initiatives`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `name` - Initiative name
-- `description`
-- `display_order`
-
-**Relationships:**
-- M:N with Challenges (via `challenge_initiative_links`)
-- M:N with Systems (via `initiative_system_links`)
-
-**Impact Analysis:**
-- **Deleting an initiative:** Removes links to challenges and systems
-- **Unlinking from challenge:** Doesn't delete initiative (just relationship)
-- **Linking to systems:** Multiple initiatives can share systems
-
-**Related Services:**
-- `DeletionImpactService` - Shows challenge/system links
-
----
-
-### 5. **Systems**
-
-**Purpose:** Implementation components or technical systems
-
-**Model:** `app/models/system.py`
-**Routes:** `app/routes/organization_admin.py` (lines 500-650)
-**Templates:** `app/templates/organization_admin/systems.html`
-
-**Database Table:** `systems`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `name` - System name
-- `description`
-- `display_order`
-
-**Relationships:**
-- M:N with Initiatives (via `initiative_system_links`)
-- 1:N with KPIs
-
-**Impact Analysis:**
-- **Deleting a system:** Cascades to all child KPIs
-- **Unlinking from initiative:** Doesn't delete system
-- **Reordering:** Affects workspace layout
-
-**Related Services:**
-- `DeletionImpactService` - Shows KPIs and contributions
-
----
-
-### 6. **KPIs (Key Performance Indicators)**
-
-**Purpose:** Measurable metrics tracking progress
-
-**Model:** `app/models/kpi.py`
-**Routes:** `app/routes/organization_admin.py` (lines 700-900), `app/routes/workspace.py`
-**Templates:** `app/templates/workspace/index.html`, `app/templates/organization_admin/create_kpi.html`
-
-**Database Table:** `kpis`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `system_id` (FK) - Parent system
-- `name` - KPI name
-- `description`
-- `display_order`
-- `is_archived` - Soft delete flag
-
-**Relationships:**
-- N:1 with System
-- M:N with ValueTypes (via `kpi_value_type_configs`)
-- M:N with GovernanceBodies (via `kpi_governance_body_links`)
-- 1:N with Contributions (actual values)
-- 1:N with CellComments
-- 1:N with KPISnapshots (historical)
-
-**Impact Analysis:**
-- **Deleting a KPI:** Deletes all contributions, comments, snapshots
-- **Archiving:** Hides from workspace (soft delete)
-- **Changing value types:** Affects which columns show contributions
-- **Governance body links:** Affects filtering in workspace
-
-**Related Services:**
-- `DeletionImpactService` - Shows contributions, comments
-- `SnapshotService` - Historical tracking
-- `AggregationService` - Rollup calculations
-- `CommentService` - Discussion threads
-
----
-
-### 7. **Value Types**
-
-**Purpose:** Define dimensions of value measurement (e.g., "Revenue", "Time Saved")
-
-**Model:** `app/models/value_type.py`
-**Routes:** `app/routes/organization_admin.py` (lines 1000-1200)
-**Templates:** `app/templates/organization_admin/value_types.html`
-
-**Database Table:** `value_types`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `name` - Value type name (e.g., "Revenue")
-- `unit` - Measurement unit (e.g., "$")
-- `description`
-- `display_order` - Column order in grid
-
-**Relationships:**
-- M:N with KPIs (via `kpi_value_type_configs`)
-- 1:N with Contributions (via `value_type_id`)
-
-**Impact Analysis:**
-- **Deleting a value type:** Deletes ALL contributions of that type (CRITICAL!)
-- **Changing display order:** Affects grid column layout
-- **Renaming:** Only affects display (data preserved)
-
-**Related Services:**
-- `ValueTypeUsageService` - Check where used before delete
-- `AggregationService` - Rollup by value type
-
----
-
-### 8. **Contributions**
-
-**Purpose:** Actual value measurements (the "cells" in the KPI grid)
-
-**Model:** `app/models/contribution.py`
-**Routes:** `app/routes/workspace.py`
-- `kpi_cell_detail(kpi_id, vt_id)` - View/add contributions (line ~270)
-- `delete_contribution(kpi_id, vt_id)` - Delete contribution (line ~459)
-**Templates:**
-- `workspace/kpi_cell_detail.html` - Contribution form/list
-- Inline grid cells in `workspace/index.html`
-
-**Database Table:** `contributions`
-
-**Key Fields:**
-- `id` (PK)
-- `kpi_id` (FK)
-- `value_type_id` (FK)
-- `value` - Numeric value
-- `note` - Optional explanation
-- `created_at`, `updated_at`
-- `updated_by` (FK to User)
-
-**Relationships:**
-- N:1 with KPI
-- N:1 with ValueType
-
-**Impact Analysis:**
-- **Deleting a contribution:** Only affects that cell
-- **Updating value:** Tracked in snapshots if snapshot exists
-- **Deleting parent KPI:** Cascades delete all contributions
-- **Deleting parent ValueType:** Cascades delete all contributions
-
-**Related Services:**
-- `SnapshotService` - Captures contribution state
-- `AggregationService` - Sums for rollups
-
----
-
-### 9. **Snapshots**
-
-**Purpose:** Point-in-time captures of KPI state for historical comparison
-
-**Models:**
-- `app/models/kpi_snapshot.py` - `KPISnapshot` (individual KPI)
-- `app/models/kpi_snapshot.py` - `RollupSnapshot` (aggregated)
-
-**Routes:** `app/routes/workspace.py` (lines 500-800)
-**Templates:** `app/templates/workspace/snapshots.html`, `app/templates/workspace/compare_snapshots.html`
-
-**Database Tables:** `kpi_snapshots`, `rollup_snapshots`
-
-**KPISnapshot Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `kpi_id` (FK)
-- `batch_id` - Groups snapshots taken together
-- `snapshot_name` - User-defined label
-- `snapshot_date` - When captured
-- `data` (JSONB) - Frozen contribution values
-- `is_public` - Privacy flag (v1.15.0+)
-- `owner_user_id` (FK) - Creator (v1.15.0+)
-
-**Relationships:**
-- N:1 with KPI
-- N:1 with Organization
-- Grouped by `batch_id`
-
-**Impact Analysis:**
-- **Creating snapshot:** No impact on live data
-- **Deleting snapshot:** Permanent loss of historical data
-- **Deleting KPI:** Orphans snapshots (consider cascade)
-- **Comparing snapshots:** Diffs contribution values
-
-**Related Services:**
-- `SnapshotService` - Creation, deletion, comparison
-
----
-
-### 10. **Rollup Rules & Aggregation**
-
-**Purpose:** Define how values aggregate upward through the hierarchy
-
-**Model:** `app/models/rollup_rule.py`
-**Service:** `app/services/aggregation_service.py`
-**Routes:** `app/routes/organization_admin.py` - `configure_rollup()` (line 1328)
-**Templates:** `app/templates/organization_admin/configure_rollup.html`
-
-**Database Table:** `rollup_rules`
-
-**Key Fields:**
-- `id` (PK)
-- `source_type` - Where rollup originates:
-  - `initiative_system` - System → Initiative rollup
-  - `challenge_initiative` - Initiative → Challenge rollup
-  - `challenge` - Challenge → Space rollup
-- `source_id` - ID of InitiativeSystemLink, ChallengeInitiativeLink, or Challenge
-- `value_type_id` (FK) - Which value type rolls up
-- `rollup_enabled` (Boolean) - Whether rollup is active
-- `formula_override` - Aggregation formula:
-  - `default` - Use value type's default formula
-  - `sum` - Sum all child values
-  - `min` - Minimum of child values
-  - `max` - Maximum of child values
-  - `avg` - Average of child values
-
-**How It Works:**
-
-```
-KPI contributions (actual values)
-        ↓ (rollup via InitiativeSystemLink rule)
-System aggregated value
-        ↓ (rollup via ChallengeInitiativeLink rule)
-Initiative aggregated value
-        ↓ (rollup via Challenge rule)
-Challenge aggregated value
-        ↓
-Space aggregated value
+#### Organization
+```python
+class Organization(db.Model):
+    id: int
+    name: str                  # Unique
+    description: str
+    is_active: bool
 ```
 
-**Relationships:**
-- N:1 with ValueType
-- Rules are entity-specific (not organization-wide defaults)
+**Cascade behavior**: Deleting an organization deletes all its data.
 
-**Current Implementation Status:**
-- ✅ **Model**: Fully implemented
-- ✅ **Service**: `AggregationService` uses rollup rules for calculations
-- ✅ **Database**: Table exists, relationships configured
-- ⚠️ **UI**: Route and template exist but backend is a stub
-  - Access: Organization Admin → Value Types → [Value Type] → "Rollup" button
-  - Shows form but doesn't save (lines 1337-1358 are placeholders)
-  - UI shows "Full per-context rollup configuration coming soon!"
+#### Space
+```python
+class Space(db.Model):
+    id: int
+    organization_id: int       # FK to Organization
+    name: str
+    description: str
+    space_label: str           # Optional: "Season", "Site", etc.
+    display_order: int
 
-**Access Path:**
-1. Go to Organization Admin
-2. Click "Value Types"
-3. Click "Rollup" button next to any value type
-4. Configure rollup rules (UI exists but save functionality incomplete)
-
-**Design Note:**
-Rollup rules are **per-entity**, not organization-wide. Each InitiativeSystemLink, ChallengeInitiativeLink, and Challenge can have different rollup settings for the same value type.
-
-**Impact Analysis:**
-- **Creating/modifying rules:** Affects aggregated displays in workspace
-- **Deleting rules:** Rollup uses value type defaults
-- **Disabling rollup:** Aggregated values won't appear
-- **Formula changes:** Affects how child values combine
-
-**Related Services:**
-- `AggregationService.calculate_system_rollup()` - System → Initiative
-- `AggregationService.calculate_initiative_rollup()` - Initiative → Challenge
-- `AggregationService.calculate_challenge_rollup()` - Challenge → Space
-
----
-
-### 11. **Governance Bodies**
-
-**Purpose:** Committees, boards, or teams responsible for KPIs
-
-**Model:** `app/models/governance_body.py`
-**Routes:** `app/routes/organization_admin.py` (lines 1200-1350)
-**Templates:** `app/templates/organization_admin/governance_bodies.html`
-
-**Database Table:** `governance_bodies`
-
-**Key Fields:**
-- `id` (PK)
-- `organization_id` (FK)
-- `name` - Body name (e.g., "Executive Board")
-- `description`
-
-**Relationships:**
-- M:N with KPIs (via `kpi_governance_body_links`)
-
-**Impact Analysis:**
-- **Deleting a governance body:** Removes links to KPIs (KPIs remain)
-- **Filtering by governance body:** Affects workspace display
-
----
-
-### 12. **Cell Comments**
-
-**Purpose:** Discussion threads on KPI cells (contributions)
-
-**Model:** `app/models/cell_comment.py`
-**Routes:** `app/routes/workspace.py` (AJAX endpoints)
-**Templates:** Modals in `workspace/index.html`
-
-**Database Table:** `cell_comments`
-
-**Key Fields:**
-- `id` (PK)
-- `kpi_id` (FK)
-- `value_type_id` (FK)
-- `user_id` (FK) - Comment author
-- `comment` (Text) - Comment body
-- `created_at`
-- `parent_id` (FK) - For threaded replies
-
-**Relationships:**
-- N:1 with KPI
-- N:1 with ValueType
-- N:1 with User
-- Self-referencing (threaded comments)
-
-**Impact Analysis:**
-- **Deleting comment:** Removes from thread
-- **Deleting KPI:** Cascades delete all comments
-- **User permissions:** `can_view_comments`, `can_add_comments`
-
-**Related Services:**
-- `CommentService` - CRUD operations
-- `MentionNotification` - User mentions
-
----
-
-### 12. **Users & Permissions**
-
-**Purpose:** Authentication, authorization, multi-org access
-
-**Models:**
-- `app/models/user.py` - `User`
-- `app/models/organization.py` - `UserOrganizationMembership`
-
-**Routes:** `app/routes/auth.py`, `app/routes/global_admin.py`
-**Templates:** `app/templates/auth/login.html`, `app/templates/global_admin/users.html`
-
-**Database Tables:** `users`, `user_organization_memberships`
-
-**User Fields:**
-- `id` (PK)
-- `login` - Username
-- `email`
-- `display_name`
-- `password_hash` - Bcrypt (nullable for SSO users)
-- `is_active` - Account status
-- `is_super_admin` - System-wide access
-- `is_global_admin` - Multi-org management
-- `sso_provider` - SSO identity provider
-- `sso_subject_id` - IdP user ID
-- `dark_mode` - UI preference
-
-**UserOrganizationMembership Fields:**
-- `user_id` (FK)
-- `organization_id` (FK)
-- **Permissions (Boolean flags):**
-  - `can_manage_spaces`
-  - `can_manage_challenges`
-  - `can_manage_initiatives`
-  - `can_manage_systems`
-  - `can_manage_kpis`
-  - `can_manage_value_types`
-  - `can_manage_governance_bodies`
-  - `can_view_comments`
-  - `can_add_comments`
-
-**Permission Hierarchy:**
-```
-Super Admin (is_super_admin=True)
-  └─> Full system access (SSO config, system settings)
-      └─> Global Admin (is_global_admin=True)
-          └─> Manage all organizations and users
-              └─> Organization Admin (via membership permissions)
-                  └─> Manage organization-specific settings
-                      └─> Regular User (read-only or limited permissions)
+    # Methods
+    def get_rollup_value(value_type_id)
+    def get_color_config(value_type_id)  # v2.0: Find representative KPI colors
 ```
 
-**Impact Analysis:**
-- **Deactivating user:** Loses access to all organizations
-- **Removing org membership:** Loses access to that org only
-- **Changing permissions:** Affects UI visibility and API access
-- **SSO users:** Cannot use password login (password_hash is NULL)
+Spaces are flexible groupings (seasons, sites, customers, etc.).
 
----
+#### Challenge
+```python
+class Challenge(db.Model):
+    id: int
+    organization_id: int
+    space_id: int              # FK to Space
+    name: str
+    description: str
+    display_order: int
 
-### 13. **SSO Configuration**
-
-**Purpose:** Instance-wide Single Sign-On authentication
-
-**Model:** `app/models/sso_config.py`
-**Routes:** `app/routes/super_admin.py`, `app/routes/auth.py`
-**Templates:** `app/templates/super_admin/sso_config.html`, `app/templates/auth/login.html`
-
-**Database Table:** `sso_config`
-
-**Key Fields:**
-- `id` (PK) - Singleton (only 1 row)
-- `provider_type` - 'google', 'azure', 'okta', 'oidc'
-- `is_enabled` - Master toggle
-- `client_id` - OAuth client ID
-- `client_secret` (Encrypted) - OAuth client secret
-- `discovery_url` - OIDC discovery endpoint
-- `auto_provision_users` - JIT provisioning flag
-- `default_permissions` (JSONB) - New user permissions
-
-**Relationships:**
-- Singleton (1 row per instance)
-- No FK relationships
-
-**Impact Analysis:**
-- **Enabling SSO:** Shows SSO button on login page
-- **Disabling SSO:** Hides SSO button (users must use password)
-- **Changing client secret:** Breaks SSO until updated
-- **Auto-provisioning:** Creates user accounts on first SSO login
-
-**Related Services:**
-- `SSOService` - OAuth flow, JWT verification
-- `EncryptionService` - Encrypt client secret
-
-**Security:**
-- Client secret encrypted at rest (Fernet)
-- JWT signatures verified using JWKS
-- CSRF protection via state parameter
-
----
-
-## Impact Analysis Guide
-
-### Deleting Entities - Cascade Analysis
-
-#### **Organization Deletion:**
-```
-DELETE Organization
-  ├─> CASCADE: Spaces
-  │    └─> CASCADE: Challenges
-  │         └─> CASCADE: ChallengeInitiativeLinks
-  ├─> CASCADE: Initiatives
-  │    └─> CASCADE: InitiativeSystemLinks
-  ├─> CASCADE: Systems
-  │    └─> CASCADE: KPIs
-  │         ├─> CASCADE: Contributions
-  │         ├─> CASCADE: CellComments
-  │         ├─> CASCADE: KPISnapshots
-  │         ├─> CASCADE: KPIValueTypeConfigs
-  │         └─> CASCADE: KPIGovernanceBodyLinks
-  ├─> CASCADE: ValueTypes
-  ├─> CASCADE: GovernanceBodies
-  ├─> CASCADE: RollupRules
-  │    └─> CASCADE: RollupSnapshots
-  └─> CASCADE: UserOrganizationMemberships
+    # Methods
+    def get_rollup_value(value_type_id)
+    def get_color_config(value_type_id)  # v2.0: Inherit from descendant KPIs
 ```
 
-**Code:** `app/services/deletion_impact_service.py` - `get_organization_deletion_impact()`
+#### Initiative
+```python
+class Initiative(db.Model):
+    id: int
+    organization_id: int
+    name: str
+    description: str
 
-#### **Space Deletion:**
-```
-DELETE Space
-  └─> CASCADE: Challenges (within space)
-       └─> CASCADE: ChallengeInitiativeLinks
-       (Initiatives remain, just unlinked)
-```
-
-**Code:** `DeletionImpactService.get_space_deletion_impact()`
-
-#### **KPI Deletion:**
-```
-DELETE KPI
-  ├─> CASCADE: Contributions
-  ├─> CASCADE: CellComments
-  ├─> CASCADE: KPISnapshots
-  ├─> CASCADE: KPIValueTypeConfigs (M:N links)
-  └─> CASCADE: KPIGovernanceBodyLinks (M:N links)
+    # Methods
+    def get_rollup_value(value_type_id)
+    def get_color_config(value_type_id)  # v2.0: Inherit from descendant KPIs
 ```
 
-**Code:** `DeletionImpactService.get_kpi_deletion_impact()`
+**Reusable**: Initiatives can address multiple challenges via `ChallengeInitiativeLink`.
 
-#### **ValueType Deletion:**
-```
-DELETE ValueType
-  ├─> CASCADE: Contributions (ALL using this value type!)
-  ├─> CASCADE: KPIValueTypeConfigs (M:N links)
-  ├─> CASCADE: RollupSnapshots (contains value_type_id FK)
-  └─> UPDATE: Snapshots (value type columns removed from historical data)
-```
-
-**⚠️ CRITICAL:** This is the most destructive operation! Always check usage first.
-
-**Code:** `ValueTypeUsageService.get_value_type_usage()`
-
----
-
-### Permission Impact Matrix
-
-| Permission | Grants Access To |
-|------------|------------------|
-| `can_manage_spaces` | Create/edit/delete spaces |
-| `can_manage_challenges` | Create/edit/delete challenges |
-| `can_manage_initiatives` | Create/edit/delete initiatives |
-| `can_manage_systems` | Create/edit/delete systems |
-| `can_manage_kpis` | Create/edit/delete KPIs, contributions |
-| `can_manage_value_types` | Create/edit/delete value types |
-| `can_manage_governance_bodies` | Create/edit/delete governance bodies |
-| `can_view_comments` | See comment icons and threads |
-| `can_add_comments` | Post comments, reply, mention users |
-
-**Dependency:** `can_add_comments` requires `can_view_comments` (enforced in UI)
-
-**Code:** `app/decorators.py` - Permission decorators
-
----
-
-### Database Schema Changes
-
-**CRITICAL:** Always create migration file before modifying models!
-
-**Workflow:**
-1. Modify model in `app/models/*.py`
-2. Create migration: `flask db revision -m "description"`
-3. Edit migration file in `migrations/versions/`
-4. Apply locally: `flask db upgrade`
-5. Test thoroughly
-6. Commit BOTH model and migration file
-
-**Migration Chain Integrity:**
-- Production tracks current revision in `alembic_version` table
-- NEVER insert migrations into middle of chain after production deployment
-- If you forget a migration, create NEW migration at end (don't rewrite history)
-
-**Code:** `migrations/versions/*.py`
-
----
-
-## File Reference
-
-### Models (`app/models/*.py`)
-
-| File | Model(s) | Purpose |
-|------|----------|---------|
-| `user.py` | `User` | Authentication, user accounts |
-| `organization.py` | `Organization`, `UserOrganizationMembership` | Multi-tenancy, user-org relationships |
-| `sso_config.py` | `SSOConfig` | Instance-wide SSO settings |
-| `system_setting.py` | `SystemSetting` | Global system settings |
-| `space.py` | `Space` | Strategic groupings |
-| `challenge.py` | `Challenge` | Problem statements |
-| `initiative.py` | `Initiative`, `ChallengeInitiativeLink` | Solutions, challenge links |
-| `system.py` | `System`, `InitiativeSystemLink` | Implementation components |
-| `kpi.py` | `KPI` | Metrics |
-| `value_type.py` | `ValueType`, `KPIValueTypeConfig` | Value dimensions |
-| `contribution.py` | `Contribution` | Actual measurements |
-| `governance_body.py` | `GovernanceBody`, `KPIGovernanceBodyLink` | Responsible committees |
-| `rollup_rule.py` | `RollupRule` | Aggregation formulas |
-| `kpi_snapshot.py` | `KPISnapshot`, `RollupSnapshot` | Historical snapshots |
-| `cell_comment.py` | `CellComment`, `MentionNotification` | Discussions, mentions |
-| `action_item.py` | `ActionItem`, `ActionItemMention` | Action register & memos with entity mentions |
-
-### Routes (`app/routes/*.py`)
-
-| File | Blueprint | Purpose |
-|------|-----------|---------|
-| `auth.py` | `auth` | Login, logout, SSO, profile |
-| `workspace.py` | `workspace` | KPI grid, snapshots, comments |
-| `global_admin.py` | `global_admin` | Multi-org management |
-| `organization_admin.py` | `org_admin` | Org-specific settings |
-| `super_admin.py` | `super_admin` | System-wide settings |
-| `action_items.py` | `action_items` | Action register & memos management |
-
-### Services (`app/services/*.py`)
-
-| File | Purpose |
-|------|---------|
-| `sso_service.py` | OAuth flow, JWT verification |
-| `snapshot_service.py` | Snapshot CRUD, comparison |
-| `aggregation_service.py` | Rollup calculations |
-| `deletion_impact_service.py` | Cascade analysis |
-| `comment_service.py` | Comment CRUD, mentions |
-| `action_item_service.py` | Action items/memos CRUD, @mention parsing, stats |
-| `excel_export_service.py` | Export to Excel |
-| `yaml_import_service.py` | Import structure from YAML (no data) |
-| `yaml_export_service.py` | Export structure to YAML (no data) |
-| `full_backup_service.py` | Full backup to JSON (structure + all data) |
-| `full_restore_service.py` | Full restore from JSON with GB mapping |
-| `organization_clone_service.py` | Deep copy org structure |
-| `value_type_usage_service.py` | Check value type usage |
-| `consensus_service.py` | Agreement tracking |
-
-### Forms (`app/forms/*.py`)
-
-| File | Purpose |
-|------|---------|
-| `auth_forms.py` | Login, password change |
-| `user_forms.py` | User create/edit |
-| `organization_forms.py` | Organization create/edit |
-| `sso_forms.py` | SSO configuration |
-| `space_forms.py` | Space create/edit |
-| `challenge_forms.py` | Challenge create/edit |
-| `initiative_forms.py` | Initiative create/edit |
-| `system_forms.py` | System create/edit |
-| `kpi_forms.py` | KPI create/edit |
-| `value_type_forms.py` | Value type create/edit |
-| `governance_body_forms.py` | Governance body create/edit |
-| `contribution_forms.py` | Contribution edit |
-| `rollup_forms.py` | Rollup rule create/edit |
-| `yaml_forms.py` | YAML import |
-| `organization_clone_forms.py` | Organization clone |
-| `action_item_forms.py` | Action items/memos create/edit/filter |
-
-### Templates (`app/templates/`)
-
-**Structure:**
-```
-templates/
-├── base.html                    # Master layout
-├── auth/                        # Login, profile
-├── workspace/                   # KPI grid, snapshots
-├── global_admin/                # Multi-org management
-├── organization_admin/          # Org settings
-├── super_admin/                 # System settings
-└── errors/                      # 404, 500, 403
+#### System
+```python
+class System(db.Model):
+    id: int
+    organization_id: int
+    name: str
+    description: str
 ```
 
----
+**Reusable**: Systems can support multiple initiatives via `InitiativeSystemLink`.
 
-## Common Operations
+#### InitiativeSystemLink
+```python
+class InitiativeSystemLink(db.Model):
+    id: int
+    initiative_id: int         # FK to Initiative
+    system_id: int             # FK to System
+    display_order: int
 
-### Adding a New Entity Type
+    # Unique constraint: (initiative_id, system_id)
 
-1. **Create Model:** `app/models/my_entity.py`
-   - Define SQLAlchemy model
-   - Add relationships
-   - Import in `models/__init__.py`
+    # Methods
+    def get_rollup_value(value_type_id)
+    def get_color_config(value_type_id)  # v2.0: Find first KPI with this value type
+```
 
-2. **Create Migration:**
-   ```bash
-   flask db revision -m "add my_entity table"
-   # Edit migration file
-   flask db upgrade
-   ```
+**Critical**: KPIs belong here, not to the master System. This allows context-specific KPIs.
 
-3. **Create Form:** `app/forms/my_entity_forms.py`
-   - Define WTForms class
-   - Add validators
+#### KPI
+```python
+class KPI(db.Model):
+    id: int
+    initiative_system_link_id: int  # FK to InitiativeSystemLink
+    name: str
+    description: str
+    display_order: int
+```
 
-4. **Create Routes:** `app/routes/organization_admin.py` (or appropriate blueprint)
-   - CRUD endpoints
-   - Apply decorators
+KPIs are context-specific to an initiative-system pair.
 
-5. **Create Templates:** `app/templates/organization_admin/`
-   - List view
-   - Create form
-   - Edit form
+#### ValueType
+```python
+class ValueType(db.Model):
+    id: int
+    organization_id: int
+    name: str
+    kind: str                  # 'numeric', 'risk', 'positive_impact', 'negative_impact', 'level', 'sentiment'
+    numeric_format: str        # 'integer' or 'decimal' (for numeric types)
+    decimal_places: int        # For decimal format
+    unit_label: str            # '€', 'tCO2e', 'licenses', etc.
+    default_aggregation_formula: str  # 'sum', 'min', 'max', 'avg', 'median', 'count'
+    display_order: int         # Order in workspace columns (drag-to-reorder)
+    is_active: bool
+```
 
-6. **Update Navigation:** `app/templates/base.html`
-   - Add menu item
+**Value Type Kinds:**
+- `numeric`: Numerical values (cost, emissions, time, counts)
+- `risk`: Risk levels (!, !!, !!!) - 3 levels
+- `positive_impact`: Positive outcomes (★, ★★, ★★★) - 3 levels
+- `negative_impact`: Negative outcomes (▼, ▼▼, ▼▼▼) - 3 levels
+- `level`: Generic 3-level (●, ●●, ●●●) - for morale, readiness, maturity, quality
+- `sentiment`: Emotional states (☹️, 😐, 😊) - for satisfaction, happiness, sentiment
 
-7. **Test:**
-   - Create entity
-   - Edit entity
-   - Delete entity (check cascade)
-   - Check permissions
+**v2.0 Change**: Color fields removed from ValueType. Colors now configured per KPI.
 
-### Adding a New Permission
+**Display Order**: Value types can be reordered via drag-and-drop in the admin interface, controlling the column order in the workspace.
 
-1. **Update Model:** `app/models/organization.py`
-   ```python
-   can_my_permission = db.Column(db.Boolean, default=False)
-   ```
+#### KPIValueTypeConfig
+```python
+class KPIValueTypeConfig(db.Model):
+    id: int
+    kpi_id: int                # FK to KPI
+    value_type_id: int         # FK to ValueType
+    display_order: int
 
-2. **Create Migration:**
-   ```bash
-   flask db revision -m "add can_my_permission"
-   flask db upgrade
-   ```
+    # v2.0: Sign-based colors configured here (per KPI-value type pair)
+    color_negative: str        # Color for negative values
+    color_zero: str            # Color for zero/null values
+    color_positive: str        # Color for positive values
 
-3. **Update Forms:** `app/forms/user_forms.py`
-   - Add checkbox field
+    # Methods
+    def get_consensus_value()
+    def get_value_color(value)  # v2.0: Returns appropriate color based on value sign
+```
 
-4. **Update Templates:** User create/edit forms
-   - Add permission checkbox
+**v2.0 Major Change**: Colors moved from ValueType to here. This allows the same value type (e.g., "Cost") to have different color meanings in different KPIs:
+- KPI 1: Lower cost is better → negative = green, positive = red
+- KPI 2: Revenue → positive = green, negative = red
 
-5. **Apply Decorator:** `app/decorators.py`
-   - Create or use existing decorator
+#### Contribution
+```python
+class Contribution(db.Model):
+    id: int
+    kpi_value_type_config_id: int  # FK to KPIValueTypeConfig
+    contributor_name: str          # Free text, no user account required
+    numeric_value: Decimal         # For numeric types
+    qualitative_level: int         # 1, 2, or 3 for qualitative types
+    comment: str
+    created_at: datetime
+    updated_at: datetime
+```
 
-6. **Protect Routes:**
-   ```python
-   @bp.route('/my-protected-route')
-   @requires_permission('can_my_permission')
-   def my_route():
-       pass
-   ```
+One contribution per contributor per cell. Updates replace previous entry.
 
-### Adding SSO Provider
+#### RollupRule
+```python
+class RollupRule(db.Model):
+    id: int
+    source_type: str           # 'initiative_system', 'challenge_initiative', 'challenge'
+    source_id: int             # ID of the link or challenge
+    value_type_id: int         # FK to ValueType
+    rollup_enabled: bool       # Default: False
+    formula_override: str      # 'default', 'sum', 'min', 'max', 'avg'
+```
 
-1. **Update Model:** `app/models/sso_config.py`
-   - Add provider type to choices
+Roll-up rules are context-specific and attached to:
+- System → Initiative: `InitiativeSystemLink`
+- Initiative → Challenge: `ChallengeInitiativeLink`
+- Challenge → Space: `Challenge`
 
-2. **Update Form:** `app/forms/sso_forms.py`
-   - Add to provider_type SelectField
+## Business Logic
 
-3. **Update Service:** `app/services/sso_service.py`
-   - Add provider-specific logic if needed
+### Consensus Service
 
-4. **Update Template:** `app/templates/super_admin/sso_config.html`
-   - Add provider documentation
+Located in `app/services/consensus_service.py`.
 
-5. **Test OAuth Flow:**
-   - Configure in IdP
-   - Test login
-   - Verify JIT provisioning
+#### Consensus Statuses
 
-### Backup and Restore
+1. **no_data**: No contributions exist
+2. **pending_confirmation**: Only one contribution
+3. **strong_consensus**: 2+ contributions, all same value (**eligible for roll-up**)
+4. **weak_consensus**: 2+ contributions, majority exists but not unanimous
+5. **no_consensus**: 2+ contributions, no reliable agreement
 
-CISK Navigator provides two distinct backup/restore systems with different purposes:
+#### Roll-up Eligibility
 
-#### 1. **YAML Export/Import** - Structure Only (Templates)
+**Only Strong Consensus values participate in upward roll-ups.**
 
-**Purpose:** Share organization structure as templates without data
+```python
+def get_cell_value(kpi_value_type_config):
+    contributions = kpi_value_type_config.contributions
 
-**Format:** YAML
+    if not contributions:
+        return {'status': 'no_data', 'is_rollup_eligible': False}
 
-**Includes:**
-- Value types (definitions only)
-- Organization structure (spaces, challenges, initiatives, systems, KPIs)
-- KPI configurations (colors, targets, display settings)
+    if len(contributions) == 1:
+        return {
+            'status': 'pending_confirmation',
+            'value': contributions[0].get_value(),
+            'is_rollup_eligible': False
+        }
 
-**Does NOT include:**
-- ❌ Contributions (KPI values)
-- ❌ Governance bodies
-- ❌ Comments
-- ❌ User data
+    # Count occurrences
+    value_counts = Counter(c.get_value() for c in contributions)
+
+    if len(value_counts) == 1:  # All same
+        return {
+            'status': 'strong_consensus',
+            'value': list(value_counts.keys())[0],
+            'is_rollup_eligible': True  # ✓ Eligible
+        }
+
+    # Check for majority
+    total = len(contributions)
+    max_count = max(value_counts.values())
+    if max_count > total / 2:
+        majority_value = [v for v, c in value_counts.items() if c == max_count][0]
+        return {
+            'status': 'weak_consensus',
+            'value': majority_value,
+            'is_rollup_eligible': False  # ✗ Not eligible
+        }
+
+    return {'status': 'no_consensus', 'is_rollup_eligible': False}
+```
+
+### Aggregation Service
+
+Located in `app/services/aggregation_service.py`.
+
+#### Roll-up Flow
+
+```
+KPI (leaf data, contributors)
+    ↓ (Value Type default formula)
+System (first aggregation level)
+    ↓ (Configurable via InitiativeSystemLink RollupRule)
+Initiative
+    ↓ (Configurable via ChallengeInitiativeLink RollupRule)
+Challenge
+    ↓ (Configurable via Challenge RollupRule)
+Space
+```
+
+#### Aggregation Formulas
+
+- **sum**: Add all values together (e.g., total cost across systems)
+- **min**: Minimum value (e.g., best-case scenario, shortest time)
+- **max**: Maximum value (e.g., worst-case scenario, highest risk)
+- **avg**: Average value (e.g., typical performance, mean sentiment)
+- **median**: Middle value when sorted - resistant to outliers (e.g., typical delivery time ignoring extremes)
+- **count**: Number of values - useful for "how many" questions (e.g., number of systems, initiatives completed)
+
+**Median Implementation:**
+```python
+from statistics import median
+
+elif formula == 'median':
+    # Median: middle value when sorted, ignores outliers
+    return median(values)
+```
+
+**Count Implementation:**
+```python
+elif formula == 'count':
+    # Count: number of values (useful for "how many" questions)
+    return len(values)
+```
 
 **Use Cases:**
-- Create organization templates
-- Share structure between organizations
-- Quick structure duplication without data
+- **Median**: Better than average when data has outliers (e.g., delivery times where most are 5 days but one took 100 days)
+- **Count**: Track quantity metrics (e.g., "How many systems have been integrated?", "How many teams are ready?")
 
-**How to Use:**
-- **Export:** Organization Admin → YAML Import → Export Structure
-- **Import:** Organization Admin → YAML Import → Upload .yaml file
-- **Note:** Import CLEARS existing data before importing structure
+#### Partial Data Handling
 
-**Files:**
-- `app/services/yaml_export_service.py` - Structure export
-- `app/services/yaml_import_service.py` - Structure import
-- `app/routes/organization_admin.py` - YAML import/export routes
-- `app/templates/organization_admin/yaml_import.html` - UI
+If some child rows lack strong consensus:
+- Ignore those rows
+- Compute parent if at least one valid child exists
+- Mark parent as "computed from partial data" (⚠ indicator)
 
-#### 2. **Full Backup/Restore** - Complete Data (Disaster Recovery)
+```python
+def get_kpi_to_system_rollup(initiative_system_link, value_type_id):
+    kpis = initiative_system_link.kpis
+    eligible_values = []
 
-**Purpose:** Complete organization backup for disaster recovery
+    for kpi in kpis:
+        config = kpi.value_type_configs.filter_by(value_type_id=value_type_id).first()
+        if not config:
+            continue
 
-**Format:** JSON
+        consensus = ConsensusService.get_cell_value(config)
 
-**Includes:**
-- ✅ Complete organization structure
-- ✅ **ALL KPI contributions (actual values!)**
-- ✅ Governance bodies (with mapping during restore)
-- ✅ KPI configurations & targets
-- ✅ Value type configurations
+        if consensus.get('is_rollup_eligible'):  # Strong consensus only
+            eligible_values.append(consensus['value'])
 
-**Does NOT include:**
-- ❌ User memberships
-- ❌ Comments
-- ❌ Snapshots
-- ❌ Audit logs
+    if not eligible_values:
+        return None
 
-**Use Cases:**
-- Disaster recovery
-- Production → staging data sync
-- Organization migration
-- Pre-migration safety backups
+    # Apply formula
+    value_type = ValueType.query.get(value_type_id)
+    formula = value_type.default_aggregation_formula
 
-**How to Use:**
+    if formula == 'sum':
+        result = sum(eligible_values)
+    elif formula == 'min':
+        result = min(eligible_values)
+    elif formula == 'max':
+        result = max(eligible_values)
+    elif formula == 'avg':
+        result = sum(eligible_values) / len(eligible_values)
 
-**Create Backup:**
-1. Go to Global Admin → Backup & Restore (Super Admin only)
-2. Select organization
-3. Click "Download Backup" (JSON format)
-4. Optional: Use "Compressed" for large organizations
-
-**Restore Backup:**
-1. Go to Global Admin → Backup & Restore
-2. Select target organization (⚠️ ALL DATA WILL BE DELETED)
-3. Upload JSON backup file
-4. **Governance Body Mapping:** Choose action for each governance body:
-   - Create new governance body
-   - Map to existing governance body (if names differ)
-   - Auto-selected if exact name match exists
-5. Confirm restore (⚠️ irreversible)
-
-**Files:**
-- `app/services/full_backup_service.py` - JSON export with all data
-- `app/services/full_restore_service.py` - JSON restore with GB mapping
-- `app/routes/global_admin.py` - Backup/restore routes
-- `app/templates/global_admin/backup_restore.html` - Main UI
-- `app/templates/global_admin/full_backup_governance_mapping.html` - GB mapping UI
-
-**Governance Body Mapping:**
-During restore, governance bodies require user mapping because:
-- Target org may already have governance bodies with different names
-- Prevents automatic creation of duplicates
-- Allows flexibility in mapping backup GBs to existing ones
-
-Example mapping scenarios:
-```
-Backup has: "Board of Directors"
-Target has: "BOD"
-→ User maps "Board of Directors" to existing "BOD"
-
-Backup has: "Executive Committee"
-Target has: (none)
-→ User chooses "Create new"
+    return {
+        'value': result,
+        'is_complete': len(eligible_values) == len(kpis)  # All KPIs contributed?
+    }
 ```
 
-**Automated Backups (CLI):**
-```bash
-# Backup single organization
-python scripts/backup_org.py --org-id 1 --compress
+## Color Configuration System
 
-# Backup all organizations
-python scripts/backup_all_orgs.py --compress
+### v2.0 Architecture
 
-# Schedule with cron
-0 2 * * * /path/to/venv/bin/python /path/to/scripts/backup_all_orgs.py --compress
+**Before v2.0**: Colors were defined on `ValueType` level. All KPIs using that value type inherited the same colors.
+
+**v2.0**: Colors are defined on `KPIValueTypeConfig` level. Each KPI can interpret values differently.
+
+### Why This Matters
+
+Same value type, different meanings:
+
+| Scenario | Value Type | KPI 1 (Expenses) | KPI 2 (Revenue) |
+|----------|-----------|------------------|-----------------|
+| Positive value | Cost (€) | Red (bad) | Green (good) |
+| Negative value | Cost (€) | Green (savings!) | Red (loss) |
+| Zero value | Cost (€) | Gray (neutral) | Gray (neutral) |
+
+### Implementation
+
+#### Model Level
+
+```python
+class KPIValueTypeConfig(db.Model):
+    color_positive: str  # e.g., '#28a745' (green)
+    color_zero: str      # e.g., '#6c757d' (gray)
+    color_negative: str  # e.g., '#dc3545' (red)
+
+    def get_value_color(self, value):
+        """Get color for a numeric value based on its sign"""
+        if not self.value_type.is_numeric() or value is None:
+            return None
+
+        try:
+            numeric_value = float(value)
+            if numeric_value > 0:
+                return self.color_positive or '#28a745'
+            elif numeric_value < 0:
+                return self.color_negative or '#dc3545'
+            else:
+                return self.color_zero or '#6c757d'
+        except (ValueError, TypeError):
+            return None
 ```
 
-#### Decision Matrix: Which Backup Method to Use?
+#### Rollup Color Inheritance
 
-| Scenario | Use YAML | Use JSON Full Backup |
-|----------|----------|----------------------|
-| Share org template | ✅ | ❌ |
-| Create empty org with structure | ✅ | ❌ |
-| Backup before major changes | ❌ | ✅ |
-| Disaster recovery | ❌ | ✅ |
-| Prod → Staging sync | ❌ | ✅ |
-| Migrate org to new instance | ❌ | ✅ |
-| Preserve KPI values | ❌ | ✅ |
-| Quick structure copy | ✅ | ❌ |
+Each rollup level (Space, Challenge, Initiative, System) has a `get_color_config(value_type_id)` method that finds a representative KPI configuration:
 
----
+```python
+class InitiativeSystemLink(db.Model):
+    def get_color_config(self, value_type_id):
+        """Get a representative KPIValueTypeConfig for coloring rollups"""
+        for kpi in self.kpis:
+            for config in kpi.value_type_configs:
+                if config.value_type_id == value_type_id:
+                    return config  # Use first match
+        return None  # Fall back to default colors
+```
+
+#### Template Usage
+
+```jinja2
+{# KPI level - use config colors #}
+{% set config = kpi.value_type_configs | selectattr('value_type_id', 'equalto', vt.id) | first %}
+<span style="color: {{ config.get_value_color(consensus.value) }};">
+    {{ consensus.value }}
+</span>
+
+{# Rollup level - inherit from descendant KPIs #}
+{% set rollup = system.get_rollup_value(vt.id) %}
+{% set color_config = system.get_color_config(vt.id) %}
+{% if color_config %}
+    <span style="color: {{ color_config.get_value_color(rollup.value) }};">
+        {{ rollup.value }}
+    </span>
+{% else %}
+    {# Fall back to default filter #}
+    <span style="color: {{ rollup.value|default_value_color }};">
+        {{ rollup.value }}
+    </span>
+{% endif %}
+```
+
+### UI for Color Configuration
+
+#### KPI Creation
+- Checkbox list of value types
+- For each selected numeric value type: 3 color pickers (positive, zero, negative)
+- JavaScript shows/hides color pickers based on checkbox state
+
+#### KPI Editing
+- Shows all value types configured for this KPI
+- Color pickers pre-filled with current values
+- Changes apply immediately to KPI and propagate to rollups
+
+## Excel Export
+
+Located in `app/services/excel_export_service.py`.
+
+### Features
+
+- **Hierarchical Row Grouping**: Excel outline levels (1-5) for Space → Challenge → Initiative → System → KPI
+- **Color-Coded Rows**: Different background colors for each hierarchy level
+- **Rollup Values**: Aggregated values at Space, Challenge, Initiative, and System levels
+- **Completion Indicators**: ✓ for complete data, ⚠ for partial rollups
+- **Value Type Headers**: Column headers with unit labels
+- **Frozen Header Row**: Header stays visible while scrolling
+- **Collapsible Groups**: Click +/- in Excel to expand/collapse hierarchy levels
+
+### Row Colors
+
+```python
+COLOR_SPACE = 'D6E9F7'      # Blue
+COLOR_CHALLENGE = 'F0F4F8'  # Light gray
+COLOR_INITIATIVE = 'E8E8E8' # Gray
+COLOR_SYSTEM = 'E3F2FD'     # Light blue
+COLOR_KPI = 'FFF9C4'        # Yellow
+```
+
+### Hierarchical Grouping
+
+```python
+# Excel outline levels for grouping
+ws.row_dimensions.group(start_row + 1, row - 1, outline_level=1)  # Space children
+ws.row_dimensions.group(start_row + 1, row - 1, outline_level=2)  # Challenge children
+ws.row_dimensions.group(start_row + 1, row - 1, outline_level=3)  # Initiative children
+ws.row_dimensions.group(start_row + 1, row - 1, outline_level=4)  # System children
+```
+
+### Value Formatting
+
+The service formats values according to their type:
+- **Numeric**: Respects decimal places and unit labels
+- **Risk**: !, !!, !!!
+- **Positive Impact**: ★, ★★, ★★★
+- **Negative Impact**: ▼, ▼▼, ▼▼▼
+- **Level**: ●, ●●, ●●●
+- **Sentiment**: ☹️, 😐, 😊
+
+### Usage
+
+```python
+# In routes/workspace.py
+@bp.route('/export-excel')
+@login_required
+@organization_required
+def export_excel():
+    org_id = session.get('organization_id')
+    excel_file = ExcelExportService.export_workspace(org_id)
+    return send_file(excel_file,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     as_attachment=True,
+                     download_name=f'workspace_{org_name}.xlsx')
+```
+
+## YAML Export/Import
+
+### YAML Export Service
+
+Located in `app/services/yaml_export_service.py`.
+
+**Purpose**: Export complete organizational structure to YAML format for backup, version control, or transferring to another instance.
+
+#### Friendly ID Generation
+
+Generates human-readable IDs during export:
+- **Spaces**: S1, S2, S3...
+- **Challenges**: C1, C2, C3...
+- **Initiatives**: I1, I2, I3...
+- **Systems**: SYS1, SYS2, SYS3...
+
+These IDs are used by the import service to detect reusable entities (same initiative/system used in multiple places).
+
+#### Export Structure
+
+```yaml
+# Value Types (organization-wide)
+value_types:
+  - name: "Cost"
+    kind: numeric
+    numeric_format: decimal
+    decimal_places: 2
+    unit_label: "€"
+    default_aggregation_formula: sum
+
+# Hierarchical Structure
+spaces:
+  - id: S1
+    name: "Season 1 - Foundation"
+    space_label: "Season"
+    challenges:
+      - id: C1
+        name: "Digital Transformation"
+        initiatives:
+          - id: I1
+            name: "Value streams & standard E2E processes"
+            systems:
+              - id: SYS1
+                name: "Core ERP (SAP S/4HANA)"
+                kpis:
+                  - name: "Lead time reduction"
+                    value_types:
+                      - name: "Time to Deliver"
+                        colors:
+                          positive: "#dc3545"  # Red
+                          zero: "#6c757d"
+                          negative: "#28a745"  # Green
+```
+
+#### What's Exported
+
+- ✅ Value Types (kinds, formats, units, formulas)
+- ✅ Spaces (with labels and descriptions)
+- ✅ Challenges (hierarchy and order)
+- ✅ Initiatives (reusable across challenges)
+- ✅ Systems (reusable across initiatives)
+- ✅ KPIs (with value type associations)
+- ✅ Color Configurations (per KPI-value type pair)
+- ❌ User Memberships (not exported)
+- ❌ Contributed Data (not exported)
+- ❌ Consensus Values (not exported)
+
+### YAML Import Service
+
+Located in `app/services/yaml_import_service.py`.
+
+**Purpose**: Import organizational structure from YAML files, creating complete hierarchies with proper relationships.
+
+#### ID Reuse Logic
+
+The import service uses friendly IDs to detect when the same initiative or system appears multiple times:
+
+```python
+# First occurrence of I1 - creates the initiative
+initiatives['I1'] = Initiative(name="...", organization_id=org_id)
+
+# Second occurrence of I1 - reuses existing initiative
+initiative = initiatives['I1']  # Already exists
+```
+
+This enables:
+- Same initiative addressing multiple challenges
+- Same system supporting multiple initiatives
+- Proper many-to-many relationships
+
+#### Import Process
+
+1. **Validate YAML**: Check structure and required fields
+2. **Create Value Types**: Organization-wide definitions
+3. **Create Master Entities**: All initiatives and systems (deduplicated by ID)
+4. **Create Hierarchy**: Spaces → Challenges → Links → KPIs
+5. **Configure Colors**: KPI-level color assignments
+6. **Commit Transaction**: All-or-nothing import
+
+#### Error Handling
+
+```python
+try:
+    result = YAMLImportService.import_from_yaml(yaml_content, org_id)
+    flash(f"Import successful! Created {result['spaces']} spaces, {result['kpis']} KPIs.", 'success')
+except ValidationError as e:
+    flash(f"Import failed: {e.message}", 'danger')
+except Exception as e:
+    db.session.rollback()
+    flash(f"Import error: {str(e)}", 'danger')
+```
+
+## Full Backup & Restore
+
+Full backup creates a comprehensive JSON snapshot of an organization including all hierarchy data, contributions, users, governance bodies, entity links, branding, logos, geography, stakeholders, action items, and decisions.
+
+### Backup Format (JSON)
+
+```
+{
+  "format_version": "3.0",
+  "organization": { name, description, Porter's, logo, links, ... },
+  "entity_branding": [ { entity_type, color, icon, logo } ],
+  "governance_bodies": [ { name, abbreviation, is_global, color, ... } ],
+  "value_types": [ { name, kind, unit, formula, config, ... } ],
+  "users": [ { login, email, display_name, permissions } ],
+  "spaces": [ { name, SWOT, challenges: [ { initiatives: [ { systems: [ { kpis } ] } ] } ] } ],
+  "action_items": [ { title, type, status, mentions, governance_bodies } ],
+  "stakeholders": [ { name, role, relationships, entity_links } ],
+  "decisions": [ { what, who, tag, governance_body, entity_mentions } ]
+}
+```
+
+### Restore Flow
+
+1. Upload JSON → detect users needing mapping, governance bodies, portal orgs
+2. User mapping page (if unmapped users found)
+3. Governance body mapping page (auto-selects exact name matches, shows cross-org toggle)
+4. Execute restore with `FullRestoreService.restore_from_json()`
+
+### Order-Independent Restore
+
+Governance bodies referenced by KPIs but not in the backup's `governance_bodies` list (e.g., a global GB owned by another workspace) are handled at KPI restore time:
+1. Look for existing global GB by name
+2. Look for same-org GB by name
+3. Auto-create as global if not found (with warning)
+
+This allows workspaces to be restored in any order without losing GB-KPI mappings.
+
+### Key Rules
+
+- Action items always restored as `is_global=False` (workspace-scoped)
+- Existing GBs with same name in target org are reused (no duplicates)
+- Global GBs from other orgs are matched by name
+- Organization-level entity links are included in backup
+
+## Selective Import
+
+Route: `/org-admin/selective-import`
+
+A Workspace Admin tool to browse a backup JSON file and selectively import data into the current workspace.
+
+### 3-Step Flow
+
+1. **Upload** — drag & drop or browse a `.json` backup file
+2. **Preview** — server parses the JSON, returns available categories with duplicate detection (existing URLs matched case-insensitively)
+3. **Import** — selected items are imported; duplicates skipped; results shown with counts
+
+### Architecture
+
+- **Preview endpoint** (`POST /org-admin/selective-import/preview`) — stores backup in temp file, analyzes categories, returns JSON with `records` and `is_duplicate` flags
+- **Execute endpoint** (`POST /org-admin/selective-import/execute`) — reads temp file, imports selected items, cleans up
+- **Client-side** — file upload via `FormData`, category rendering with select/deselect, AJAX import
+
+### Currently Supported
+
+- **Organization-level links** — with URL-based duplicate detection
+
+### Extensible For
+
+- Spaces, challenges, initiatives, governance bodies, value types, stakeholders (future)
+
+## Workspace Labels & Profiles
+
+### Labels
+
+- Per-user color-coded tags assigned to workspaces (`WorkspaceLabel` model)
+- Many-to-many with `Organization` via `organization_label` join table
+- Managed on Profile page Workspaces tab
+
+### Profiles
+
+- `UserWorkspaceProfile` model with JSON `config` column
+- Properties: `label_ids`, `space_visibility` (`all`/`public`), `action_scope` (`all`/`workspace`)
+- One active profile per user; controls Workspaces menu filtering and Action Register scope
+- **Action scope**: when set to `workspace`, `ActionItemService.get_items_for_user()` excludes `is_global=True` items from other orgs
+
+### Navbar Integration
+
+- Workspaces menu items have `data-org-id` and `data-label-ids` attributes
+- `refreshWorkspacesMenu()` JS function updates visibility without page reload when labels are toggled
+
+## Governance Body Sharing
+
+Governance bodies support cross-workspace visibility via `is_global` flag.
+
+### Behavior
+
+- `GovernanceBody.for_org(org_id)` returns own-org GBs + all `is_global=True` GBs
+- Global GBs appear in KPI governance assignment across all workspaces
+- `KPIGovernanceBodyLink` can reference a GB from any org if it's global
+
+### Shared Entities Page
+
+Route: `/super-admin/shared-entities`
+
+- Lists all `is_global=True` governance bodies and action items
+- Shows owning workspace, KPI count, which workspaces use each GB
+- Bulk "Unshare" sets `is_global=False` on selected entities
+- Entity type filter tabs (All / Governance Bodies / Action Items)
+
+## Duplicate Detector
+
+Route: `/super-admin/duplicate-detector`
+
+Scans the database for case-insensitive name duplicates within each workspace.
+
+### Scanned Entity Types
+
+Governance Bodies, Spaces, Challenges, Initiatives, Systems, Value Types, Action Items, Stakeholders, Users (9 types)
+
+### Features
+
+- **Summary cards** — clickable per-entity-type counts
+- **Workspace filter** — scope scan to single org
+- **Impact analysis** — dependent data counts per record (KPIs linked, challenges, contributions, etc.)
+- **Parent context** — shows Space for challenges, Challenge for initiatives, etc.
+- **Safe delete** — green button for zero-dependency records, yellow warning for cascading deletes
+- **Delete endpoint** — `POST /super-admin/duplicate-detector/delete/<type>/<id>`
+
+## Shared Entities Management
+
+Route: `/super-admin/shared-entities`
+
+Provides visibility and bulk control over cross-workspace (`is_global=True`) entities.
+
+### Supported Entity Types
+
+- **Governance Bodies** — with KPI count, owning workspace, and list of workspaces using them
+- **Action Items** — with type, status, and owning workspace
+
+### Actions
+
+- Select all / none per entity type
+- Bulk unshare (sets `is_global=False`)
+- Entity type filter tabs
+
+## Entity Branding
+
+Entity type branding is managed per-workspace via the Branding Manager (`/org-admin/branding`).
+
+### Model
+
+`EntityTypeDefault` stores per-org defaults: `default_color`, `default_icon`, `default_logo_data` (binary), `default_logo_mime_type`.
+
+### Context Processor
+
+`inject_entity_defaults()` in `app/__init__.py` provides `entity_defaults` dict to all templates with `color`, `icon`, and `logo` (base64 data URL) per entity type.
+
+### Usage Pattern
+
+Templates check for logo first, then fall back to icon:
+```html
+{% if entity_defaults.get('challenge', {}).get('logo') %}
+    <img src="{{ entity_defaults['challenge']['logo'] }}" style="width:24px;height:24px;">
+{% else %}
+    <span>{{ entity_defaults.get('challenge', {}).get('icon', 'f') }}</span>
+{% endif %}
+```
+
+## Organization Cloning
+
+Located in `app/services/organization_clone_service.py`.
+
+**Purpose**: Create a complete copy of an organization's structure for testing, training, or scenario planning without risking production data.
+
+### What Gets Cloned
+
+- ✅ Value Types (all configurations)
+- ✅ Spaces, Challenges, Initiatives, Systems
+- ✅ All many-to-many relationships (ChallengeInitiativeLink, InitiativeSystemLink)
+- ✅ KPIs with value type configurations
+- ✅ Color configurations (per KPI)
+- ✅ Rollup rules (with formula overrides)
+- ❌ User Memberships (not cloned)
+- ❌ Contributed Data (not cloned)
+- ❌ User Contributions (not cloned)
+
+### Benefits
+
+1. **Safe Testing**: Test structural changes without affecting production
+2. **Training Environment**: Create sandbox organizations for user training
+3. **Scenario Planning**: Clone and modify to explore "what-if" scenarios
+4. **Template Creation**: Create template organizations to clone for new customers
+
+### Implementation
+
+```python
+@staticmethod
+def clone_organization(source_org_id, new_org_name, new_org_description=None):
+    source_org = Organization.query.get(source_org_id)
+
+    # Create new organization
+    new_org = Organization(
+        name=new_org_name,
+        description=new_org_description or f"Clone of {source_org.name}",
+        is_active=True
+    )
+    db.session.add(new_org)
+    db.session.flush()
+
+    # Clone all value types
+    value_type_map = {}
+    for vt in source_org.value_types:
+        new_vt = ValueType(
+            organization_id=new_org.id,
+            name=vt.name,
+            kind=vt.kind,
+            # ... all fields ...
+        )
+        db.session.add(new_vt)
+        db.session.flush()
+        value_type_map[vt.id] = new_vt.id
+
+    # Clone hierarchy with ID mappings
+    # ... (similar mapping for all entities)
+
+    db.session.commit()
+    return new_org
+```
+
+### Usage
+
+```python
+# In routes/global_admin.py
+@bp.route('/organizations/<int:org_id>/clone', methods=['POST'])
+@login_required
+@global_admin_required
+def clone_organization(org_id):
+    new_name = request.form.get('new_name')
+    new_org = OrganizationCloneService.clone_organization(org_id, new_name)
+    flash(f'Organization cloned successfully as "{new_name}"', 'success')
+    return redirect(url_for('global_admin.organizations'))
+```
+
+## Drag-and-Drop Value Type Reordering
+
+Located in `app/templates/organization_admin/value_types.html`.
+
+**Purpose**: Allow administrators to reorder value types via drag-and-drop, controlling the column order in the workspace.
+
+### Technology Stack
+
+- **Frontend**: SortableJS library
+- **Backend**: AJAX endpoint for persistence
+- **Visual Feedback**: Drag handle (⋮⋮) and ghost element during drag
+
+### Implementation
+
+#### Frontend (JavaScript)
+
+```javascript
+const tbody = document.querySelector('table tbody');
+const sortable = Sortable.create(tbody, {
+    animation: 150,
+    handle: '.drag-handle',
+    ghostClass: 'sortable-ghost',
+    onEnd: function(evt) {
+        // Get new order
+        const rows = tbody.querySelectorAll('tr[data-id]');
+        const order = Array.from(rows).map(row => parseInt(row.dataset.id));
+
+        // Save to server
+        fetch('{{ url_for("organization_admin.reorder_value_types") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ order: order })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                alert('Failed to save order');
+                location.reload();  // Revert on error
+            }
+        });
+    }
+});
+```
+
+#### Backend (Route)
+
+```python
+@bp.route('/value-types/reorder', methods=['POST'])
+@login_required
+@organization_required
+def reorder_value_types():
+    org_id = session.get('organization_id')
+    data = request.get_json()
+    order = data.get('order', [])
+
+    # Update display_order for each value type
+    for index, vt_id in enumerate(order):
+        vt = ValueType.query.filter_by(id=vt_id, organization_id=org_id).first()
+        if vt:
+            vt.display_order = index
+
+    db.session.commit()
+    return jsonify({'success': True})
+```
+
+### Security
+
+- **No CSRF Token Required**: Endpoint protected by `@login_required` and `@organization_required`
+- **Organization Isolation**: Only reorder value types belonging to current organization
+- **Validation**: Checks that value type IDs exist and belong to organization
+
+### User Experience
+
+1. **Visual Indicator**: Drag handle (⋮⋮) appears on hover
+2. **Smooth Animation**: 150ms animation during drag
+3. **Ghost Element**: Semi-transparent copy shows where item will drop
+4. **Immediate Persistence**: Order saved to database as soon as drag completes
+5. **Workspace Updates**: New order immediately reflected in workspace columns (requires refresh)
+
+## Deletion Rules
+
+Located in `app/services/deletion_impact_service.py`.
+
+**Purpose**: Provide smart cascade deletion with impact preview, protecting reusable entities while cleaning up orphaned data.
+
+### Core Principles
+
+1. **Reusable Entities Protected**: Initiatives and Systems used in multiple places are preserved
+2. **Orphan Cleanup**: Entities used in only one place are cascaded for deletion
+3. **Impact Preview**: Users see exactly what will be deleted before confirming
+4. **Data Loss Visibility**: Count of contributions and configurations that will be lost
+
+### Entity Deletion Behavior
+
+#### Space Deletion
+**Deletes:**
+- The space itself
+- All challenges within the space
+- Challenge-initiative links
+- Orphaned initiatives (used only in this space)
+- Orphaned systems (used only in this space's initiatives)
+- All KPIs, configurations, contributions in orphaned entities
+- All rollup rules for deleted entities
+
+**Preserves:**
+- Initiatives linked to challenges in other spaces
+- Systems linked to initiatives in other challenges/spaces
+
+#### Challenge Deletion
+**Deletes:**
+- The challenge itself
+- All challenge-initiative links
+- Orphaned initiatives (linked only to this challenge)
+- Orphaned systems (used only by this challenge's initiatives)
+- All KPIs and data in orphaned entities
+
+**Preserves:**
+- Initiatives linked to other challenges
+- Systems linked to other initiatives
+
+#### Initiative Deletion
+**Options:**
+1. **Detach from Challenge**: Removes only the link, preserves initiative and all data
+2. **Full Deletion** (if not linked elsewhere):
+   - The initiative
+   - All initiative-system links
+   - Orphaned systems (used only by this initiative)
+   - All KPIs and data
+
+**Preserves:**
+- Systems used by other initiatives
+
+#### System Deletion
+**Options:**
+1. **Detach from Initiative**: Removes only the link, all KPIs and data for this context are deleted
+2. **Full Deletion** (if not linked elsewhere):
+   - The system
+   - All initiative-system links
+   - All KPIs and data across all contexts
+
+### Deletion Impact Analysis
+
+The service provides detailed counts before deletion:
+
+```python
+# Example impact for challenge deletion
+{
+    'challenges': 1,
+    'challenge_initiative_links': 3,
+    'orphaned_initiatives': 1,      # Will be deleted
+    'preserved_initiatives': 2,      # Will remain (used elsewhere)
+    'initiative_system_links': 5,
+    'orphaned_systems': 2,           # Will be deleted
+    'preserved_systems': 3,          # Will remain (used elsewhere)
+    'kpis': 12,
+    'kpi_value_type_configs': 36,
+    'contributions': 85,             # User data that will be lost!
+    'rollup_rules': 8
+}
+```
+
+### Implementation Example
+
+```python
+# Analyze before deleting
+impact = DeletionImpactService.analyze_challenge_deletion(challenge_id)
+
+# Show user the impact
+flash(f"Warning: This will delete {impact['contributions']} contributions!", 'warning')
+flash(f"Orphaned: {impact['orphaned_initiatives']} initiatives, "
+      f"{impact['orphaned_systems']} systems", 'info')
+flash(f"Preserved: {impact['preserved_initiatives']} initiatives, "
+      f"{impact['preserved_systems']} systems", 'success')
+
+# User confirms → proceed with deletion
+if confirmed:
+    db.session.delete(challenge)
+    db.session.commit()
+```
+
+### Cascade Deletion Rules (SQLAlchemy)
+
+```python
+# Example from models
+class Challenge(db.Model):
+    initiative_links = db.relationship(
+        'ChallengeInitiativeLink',
+        backref='challenge',
+        cascade='all, delete-orphan'  # Delete links when challenge is deleted
+    )
+
+class InitiativeSystemLink(db.Model):
+    kpis = db.relationship(
+        'KPI',
+        backref='initiative_system_link',
+        cascade='all, delete-orphan'  # Delete KPIs when link is deleted
+    )
+```
+
+### User Experience
+
+1. **Deletion Button**: User clicks delete on entity
+2. **Impact Analysis**: Service calculates what will be affected
+3. **Confirmation Dialog**: Shows impact summary
+   - "This will delete 85 contributions from users"
+   - "2 initiatives will be removed (orphaned)"
+   - "2 initiatives will remain (used elsewhere)"
+4. **User Decision**: Confirm or cancel
+5. **Execution**: Database transaction (all-or-nothing)
+
+### Safety Considerations
+
+- **Contribution Data**: Always shown prominently in impact preview
+- **Transaction Safety**: All deletions in single database transaction
+- **No Partial Deletion**: Either everything succeeds or nothing changes
+- **Audit Trail**: Could be enhanced with deletion logging (not currently implemented)
+
+## Authentication & Authorization
+
+### Two Administration Scopes
+
+1. **Global Administration**: Manages users and organizations
+2. **Organization Administration**: Manages business content
+
+### Login Flow
+
+```
+Step 1: Username/Password
+    ↓
+Step 2: Organization Selection
+    ↓
+    ├─ "Global Administration" (if user.is_global_admin)
+    │   → session['organization_id'] = None
+    │   → Redirect to /global-admin
+    │
+    └─ Select organization
+        → session['organization_id'] = org.id
+        → session['organization_name'] = org.name
+        → Redirect to /workspace
+```
+
+### Bootstrap Admin
+
+On first startup:
+```python
+def _bootstrap_admin():
+    if User.query.filter_by(is_global_admin=True).first():
+        return  # Admin exists
+
+    admin = User(
+        login='cisk',
+        email='admin@cisk.local',
+        is_global_admin=True,
+        must_change_password=True
+    )
+    admin.set_password('Zurich20')
+    db.session.add(admin)
+    db.session.commit()
+```
+
+### Protection Decorators
+
+```python
+@login_required
+def protected_route():
+    pass  # User must be logged in
+
+@organization_required
+def org_route():
+    pass  # User must have selected an organization
+```
 
 ## Database Migrations
 
-### Migration Workflow
+### Flask-Migrate Setup
 
 ```bash
-# 1. Modify model
-# Edit app/models/*.py
+# Initialize migrations (first time only)
+flask db init
 
-# 2. Generate migration
-flask db revision -m "descriptive message"
+# Create a migration after model changes
+flask db migrate -m "Add color fields to KPIValueTypeConfig"
 
-# 3. Edit migration file
-# migrations/versions/xxx_descriptive_message.py
-# Add both upgrade() and downgrade() functions
+# Apply migrations
+flask db upgrade
 
-# 4. Test migration
-flask db upgrade  # Apply
-flask db downgrade  # Rollback
-flask db upgrade  # Re-apply
-
-# 5. Verify schema
-psql -d cisknavigator -c "\d table_name"
-
-# 6. Commit BOTH files
-git add app/models/*.py migrations/versions/*.py
-git commit -m "Add feature X"
+# Rollback if needed
+flask db downgrade
 ```
 
-### Common Migration Patterns
+### Render Auto-Migrations
 
-**Add Column (Nullable):**
+In `render.yaml`:
+```yaml
+buildCommand: pip install -r requirements.txt && flask db upgrade
+```
+
+Migrations run automatically on every deployment.
+
+### Migration Best Practices
+
+1. **Always test migrations locally first**
+2. **Create descriptive migration messages**
+3. **Review generated migration scripts before applying**
+4. **Use `flask db stamp head` to mark initial state**
+5. **Never edit applied migrations** - create new ones
+
+## Code Organization
+
+### Models (`app/models/`)
+- One file per entity (or logical group)
+- SQLAlchemy models with relationships
+- Helper methods for business logic
+- Comprehensive docstrings
+
+### Forms (`app/forms/`)
+- WTForms for validation
+- Field-level validators
+- CSRF tokens included automatically
+
+### Routes (`app/routes/`)
+- Flask Blueprints by functional area
+- Decorated with `@login_required`, `@organization_required`
+- Thin layer - delegates to services
+
+### Services (`app/services/`)
+- Stateless business logic
+- No direct request/response handling
+- Easily testable
+- Examples: ConsensusService, AggregationService
+
+### Templates (`app/templates/`)
+- Jinja2 with Bootstrap 5
+- Base template with navbar
+- Flash messages
+- Form rendering macros
+
+## Production Deployment
+
+### Environment Configuration
+
 ```python
-def upgrade():
-    op.add_column('table_name', sa.Column('new_column', sa.String(255), nullable=True))
+# app/config.py
+class ProductionConfig(Config):
+    DEBUG = False
 
-def downgrade():
-    op.drop_column('table_name', 'new_column')
+    # Database URL handling (Render compatibility)
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        # Convert postgres:// to postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        # Use psycopg3 driver
+        if 'postgresql://' in database_url and '+' not in database_url:
+            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    SQLALCHEMY_DATABASE_URI = database_url
+
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
 ```
 
-**Add Column (NOT NULL with Default):**
+### Render Configuration
+
+```yaml
+# render.yaml
+services:
+  - type: web
+    name: cisk-navigator-app
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt && flask db upgrade
+    startCommand: gunicorn run:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        sync: false  # Set manually via Render dashboard
+      - key: SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+```
+
+### Data Loss Prevention
+
+**Critical Issue Prevented**: User data was being reset on Render deployments because migrations were missing and SQLite fallback was creating empty databases.
+
+#### Multi-Layer Safety Checks
+
+**Layer 1: Configuration Validation**
 ```python
-def upgrade():
-    op.add_column('table_name',
-        sa.Column('new_column', sa.Boolean(), nullable=False, server_default='false'))
-
-def downgrade():
-    op.drop_column('table_name', 'new_column')
+# app/config.py - ProductionConfig
+if os.environ.get('FLASK_ENV') == 'production' and not database_url:
+    raise RuntimeError(
+        "CRITICAL ERROR: DATABASE_URL environment variable is not set in production! "
+        "This would create a new SQLite database and DESTROY all your data. "
+        "Please set DATABASE_URL in your Render environment variables."
+    )
 ```
 
-**Add Foreign Key:**
+**Layer 2: Startup Logging**
 ```python
-def upgrade():
-    op.add_column('child_table', sa.Column('parent_id', sa.Integer(), nullable=True))
-    op.create_foreign_key('fk_child_parent', 'child_table', 'parent_table', ['parent_id'], ['id'])
+# app/__init__.py - create_app()
+db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+flask_env = app.config.get('FLASK_ENV', 'development')
 
-def downgrade():
-    op.drop_constraint('fk_child_parent', 'child_table', type_='foreignkey')
-    op.drop_column('child_table', 'parent_id')
+print("=" * 80)
+print(f"FLASK_ENV: {flask_env}")
+if 'postgresql' in db_uri:
+    safe_uri = db_uri.split('@')[1] if '@' in db_uri else db_uri
+    print(f"✓ USING POSTGRESQL: {safe_uri}")
+elif 'sqlite' in db_uri:
+    print(f"⚠ USING SQLITE: {db_uri}")
+    if flask_env == 'production':
+        print("❌ ERROR: SQLite should NEVER be used in production!")
+print("=" * 80)
 ```
 
-**Add Index:**
+**Layer 3: Database Creation Guard**
 ```python
-def upgrade():
-    op.create_index('idx_table_column', 'table_name', ['column_name'])
-
-def downgrade():
-    op.drop_index('idx_table_column', 'table_name')
+# app/__init__.py - create_app()
+# Only create tables for SQLite in development/testing
+if app.config.get('TESTING') or (app.config.get('SQLALCHEMY_DATABASE_URI', '').startswith('sqlite:///')):
+    if flask_env == 'production':
+        raise RuntimeError("CRITICAL: Attempted to use SQLite in production! Check DATABASE_URL!")
+    db.create_all()
 ```
+
+**Layer 4: Migration Requirement**
+```yaml
+# render.yaml - buildCommand
+buildCommand: pip install -r requirements.txt && flask db upgrade
+```
+
+This ensures migrations run on every deployment, and the app will fail to start if DATABASE_URL is missing.
+
+### Database Connection
+
+```python
+# run.py
+from dotenv import load_dotenv
+load_dotenv()  # Load .env for local development
+
+from app import create_app
+
+app = create_app()
+```
+
+### Health Checks
+
+Render automatically monitors the `/` endpoint. The login page returns HTTP 200, confirming the app is healthy.
+
+## Testing Strategy
+
+### Test Organization
+
+```
+tests/
+├── conftest.py              # Pytest fixtures
+├── test_auth.py             # Authentication
+├── test_consensus.py        # Consensus calculation
+├── test_aggregation.py      # Roll-up aggregation
+├── test_deletion.py         # Deletion impact
+└── test_colors.py           # v2.0: Color configuration
+```
+
+### Key Fixtures
+
+```python
+@pytest.fixture
+def app():
+    """Test app with in-memory SQLite"""
+    app = create_app('testing')
+    with app.app_context():
+        db.create_all()
+        yield app
+        db.drop_all()
+
+@pytest.fixture
+def client(app):
+    return app.test_client()
+
+@pytest.fixture
+def global_admin(app):
+    admin = User(login='admin', is_global_admin=True)
+    admin.set_password('Test123')
+    db.session.add(admin)
+    db.session.commit()
+    return admin
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=app --cov-report=html
+
+# Run specific test file
+pytest tests/test_consensus.py
+
+# Run specific test
+pytest tests/test_consensus.py::test_strong_consensus
+```
+
+## Conclusion
+
+CISK Navigator v2.0 is a production-ready Flask application with:
+
+### Core Infrastructure
+- ✅ **PostgreSQL**: Data persistence across deployments
+- ✅ **Automatic Migrations**: Schema evolution on deploy
+- ✅ **Data Loss Prevention**: Multi-layer safety checks
+- ✅ **Production-Ready**: Deployed on Render with managed PostgreSQL
+
+### Data Management
+- ✅ **Flexible Colors**: KPI-level color configuration (v2.0)
+- ✅ **Multi-Organization**: Complete data isolation
+- ✅ **Consensus-Driven**: High-quality data through agreement
+- ✅ **Hierarchical Roll-ups**: Automatic aggregation with 6 formulas
+
+### Value Types & Aggregation
+- ✅ **6 Value Type Kinds**: numeric, risk, impact (pos/neg), level, sentiment
+- ✅ **6 Aggregation Formulas**: sum, min, max, avg, median, count
+- ✅ **3-Level Qualitative**: Easier consensus for soft metrics
+
+### Export & Backup
+- ✅ **Excel Export**: Hierarchical with row grouping and color coding
+- ✅ **YAML Export/Import**: Complete structure backup and restore
+- ✅ **Organization Cloning**: Safe testing and training environments
+
+### User Experience
+- ✅ **Drag-and-Drop Reordering**: Control workspace column order
+- ✅ **Visual Hierarchy**: Tree-based workspace with expand/collapse
+- ✅ **Responsive UI**: Bootstrap 5 with mobile support
+
+### Code Quality
+- ✅ **Well-Architected**: Clean separation of concerns
+- ✅ **Comprehensive Testing**: pytest with fixtures
+- ✅ **Service Layer**: Stateless, testable business logic
+- ✅ **Type Safety**: Modern Python with type hints
+
+The architecture supports complex requirements while remaining maintainable, testable, and extensible.
 
 ---
 
-## Version History
-
-- **v1.15.2** (2026-03-10) - SSO encryption, JWT validation, pending users workflow
-- **v1.15.1** - Private/Public spaces, smart column filtering
-- **v1.15.0** - Snapshot privacy, batch system
-- **v1.14.10** - Bug fixes
-- **v1.14.9** - UI modernization
-
----
-
-## Additional Documentation
-
-See also:
-- `sso-complete-implementation.md` - SSO setup guide
-- `sso-fixes.md` - SSO troubleshooting
-- `comment-permissions.md` - Comment system
-- `deployment.md` - Production deployment
-- `MEMORY.md` - Project memory (auto-updated)
-
----
-
-**End of Architecture Documentation**
+**For implementation questions**, refer to inline code comments and docstrings throughout the codebase.

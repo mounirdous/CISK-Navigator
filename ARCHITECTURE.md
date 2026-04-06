@@ -1,7 +1,7 @@
 # CISK Navigator - Technical Architecture
 
-**Last Updated**: March 28, 2026
-**Version**: 5.3.1
+**Last Updated**: April 6, 2026
+**Version**: 7.15.0
 
 This document provides a comprehensive technical overview of the CISK Navigator application architecture, data models, business logic, and implementation details.
 
@@ -18,13 +18,20 @@ This document provides a comprehensive technical overview of the CISK Navigator 
 9. [Color Configuration System](#color-configuration-system)
 10. [Excel Export](#excel-export)
 11. [YAML Export/Import](#yaml-exportimport)
-12. [Organization Cloning](#organization-cloning)
-13. [Drag-and-Drop Value Type Reordering](#drag-and-drop-value-type-reordering)
-14. [Deletion Rules](#deletion-rules)
-15. [Code Organization](#code-organization)
-16. [Database Migrations](#database-migrations)
-17. [Production Deployment](#production-deployment)
-18. [Testing Strategy](#testing-strategy)
+12. [Full Backup & Restore](#full-backup--restore)
+13. [Selective Import](#selective-import)
+14. [Organization Cloning](#organization-cloning)
+15. [Workspace Labels & Profiles](#workspace-labels--profiles)
+16. [Governance Body Sharing](#governance-body-sharing)
+17. [Duplicate Detector](#duplicate-detector)
+18. [Shared Entities Management](#shared-entities-management)
+19. [Entity Branding](#entity-branding)
+20. [Drag-and-Drop Value Type Reordering](#drag-and-drop-value-type-reordering)
+21. [Deletion Rules](#deletion-rules)
+22. [Code Organization](#code-organization)
+23. [Database Migrations](#database-migrations)
+24. [Production Deployment](#production-deployment)
+25. [Testing Strategy](#testing-strategy)
 
 ## Overview
 
@@ -38,7 +45,19 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
-### v5.3.1 Recent Changes (March 28, 2026)
+### v7.13–7.15 Recent Changes (April 6, 2026)
+
+1. **Responsive Navbar** — Navbar collapses at xl (1200px) breakpoint; search bar uses flexible width; user profile icon always accessible
+2. **Full Backup & Restore Improvements** — Organization-level links now included in backup exports; restore is order-independent (auto-creates missing global GBs); action items always restored as workspace-scoped; governance body deduplication during restore; redirect to Organizations page after restore
+3. **Selective Import** — New Workspace Admin tool to browse a backup JSON and selectively import data with duplicate detection; starting with workspace-level links, extensible for future entity types
+4. **Duplicate Detector** — Super Admin tool scanning 9 entity types for case-insensitive name duplicates within each workspace; impact analysis per record; parent context display; workspace filter
+5. **Shared Entities Management** — Super Admin page to view and bulk unshare (set `is_global=false`) governance bodies and action items; entity type filter tabs
+6. **Workspace Labels & Profiles** — Action scope setting (`workspace` or `all`) in profiles controls whether global action items from other workspaces appear in the Action Register; label badge colors use hex data attributes for correct toggle rendering; Workspaces menu updates instantly on label toggle
+7. **Entity Branding from DB** — Entity mention icons on action items, dashboard, search, and create pages use workspace branding (logo/icon/color) from the Branding Manager instead of hardcoded symbols
+8. **Org Delete Cascade Fix** — `passive_deletes=True` on ImpactLevel, StrategicPillar, and OrganizationSSOConfig relationships; bulk delete commits per-org to avoid worker timeouts
+9. **Owning Workspace Badge** — Action item view page shows the owning workspace name
+
+### v5.3.1 Previous Changes (March 28, 2026)
 
 1. **Impact Level System** — 3-level configurable impact scale per org (symbol, weight, color); `impact_level` on all entities; true importance computed via Simple Product, Geometric Mean, or Toyota QFD method; editable QFD matrix
 2. **Decision Log** — structured decisions in progress updates [{what, who, tag, mentions}]; Decision Register page (`/workspace/decisions`) with search, entity filtering, xmas tree detail levels
@@ -909,6 +928,174 @@ except ValidationError as e:
 except Exception as e:
     db.session.rollback()
     flash(f"Import error: {str(e)}", 'danger')
+```
+
+## Full Backup & Restore
+
+Full backup creates a comprehensive JSON snapshot of an organization including all hierarchy data, contributions, users, governance bodies, entity links, branding, logos, geography, stakeholders, action items, and decisions.
+
+### Backup Format (JSON)
+
+```
+{
+  "format_version": "3.0",
+  "organization": { name, description, Porter's, logo, links, ... },
+  "entity_branding": [ { entity_type, color, icon, logo } ],
+  "governance_bodies": [ { name, abbreviation, is_global, color, ... } ],
+  "value_types": [ { name, kind, unit, formula, config, ... } ],
+  "users": [ { login, email, display_name, permissions } ],
+  "spaces": [ { name, SWOT, challenges: [ { initiatives: [ { systems: [ { kpis } ] } ] } ] } ],
+  "action_items": [ { title, type, status, mentions, governance_bodies } ],
+  "stakeholders": [ { name, role, relationships, entity_links } ],
+  "decisions": [ { what, who, tag, governance_body, entity_mentions } ]
+}
+```
+
+### Restore Flow
+
+1. Upload JSON → detect users needing mapping, governance bodies, portal orgs
+2. User mapping page (if unmapped users found)
+3. Governance body mapping page (auto-selects exact name matches, shows cross-org toggle)
+4. Execute restore with `FullRestoreService.restore_from_json()`
+
+### Order-Independent Restore
+
+Governance bodies referenced by KPIs but not in the backup's `governance_bodies` list (e.g., a global GB owned by another workspace) are handled at KPI restore time:
+1. Look for existing global GB by name
+2. Look for same-org GB by name
+3. Auto-create as global if not found (with warning)
+
+This allows workspaces to be restored in any order without losing GB-KPI mappings.
+
+### Key Rules
+
+- Action items always restored as `is_global=False` (workspace-scoped)
+- Existing GBs with same name in target org are reused (no duplicates)
+- Global GBs from other orgs are matched by name
+- Organization-level entity links are included in backup
+
+## Selective Import
+
+Route: `/org-admin/selective-import`
+
+A Workspace Admin tool to browse a backup JSON file and selectively import data into the current workspace.
+
+### 3-Step Flow
+
+1. **Upload** — drag & drop or browse a `.json` backup file
+2. **Preview** — server parses the JSON, returns available categories with duplicate detection (existing URLs matched case-insensitively)
+3. **Import** — selected items are imported; duplicates skipped; results shown with counts
+
+### Architecture
+
+- **Preview endpoint** (`POST /org-admin/selective-import/preview`) — stores backup in temp file, analyzes categories, returns JSON with `records` and `is_duplicate` flags
+- **Execute endpoint** (`POST /org-admin/selective-import/execute`) — reads temp file, imports selected items, cleans up
+- **Client-side** — file upload via `FormData`, category rendering with select/deselect, AJAX import
+
+### Currently Supported
+
+- **Organization-level links** — with URL-based duplicate detection
+
+### Extensible For
+
+- Spaces, challenges, initiatives, governance bodies, value types, stakeholders (future)
+
+## Workspace Labels & Profiles
+
+### Labels
+
+- Per-user color-coded tags assigned to workspaces (`WorkspaceLabel` model)
+- Many-to-many with `Organization` via `organization_label` join table
+- Managed on Profile page Workspaces tab
+
+### Profiles
+
+- `UserWorkspaceProfile` model with JSON `config` column
+- Properties: `label_ids`, `space_visibility` (`all`/`public`), `action_scope` (`all`/`workspace`)
+- One active profile per user; controls Workspaces menu filtering and Action Register scope
+- **Action scope**: when set to `workspace`, `ActionItemService.get_items_for_user()` excludes `is_global=True` items from other orgs
+
+### Navbar Integration
+
+- Workspaces menu items have `data-org-id` and `data-label-ids` attributes
+- `refreshWorkspacesMenu()` JS function updates visibility without page reload when labels are toggled
+
+## Governance Body Sharing
+
+Governance bodies support cross-workspace visibility via `is_global` flag.
+
+### Behavior
+
+- `GovernanceBody.for_org(org_id)` returns own-org GBs + all `is_global=True` GBs
+- Global GBs appear in KPI governance assignment across all workspaces
+- `KPIGovernanceBodyLink` can reference a GB from any org if it's global
+
+### Shared Entities Page
+
+Route: `/super-admin/shared-entities`
+
+- Lists all `is_global=True` governance bodies and action items
+- Shows owning workspace, KPI count, which workspaces use each GB
+- Bulk "Unshare" sets `is_global=False` on selected entities
+- Entity type filter tabs (All / Governance Bodies / Action Items)
+
+## Duplicate Detector
+
+Route: `/super-admin/duplicate-detector`
+
+Scans the database for case-insensitive name duplicates within each workspace.
+
+### Scanned Entity Types
+
+Governance Bodies, Spaces, Challenges, Initiatives, Systems, Value Types, Action Items, Stakeholders, Users (9 types)
+
+### Features
+
+- **Summary cards** — clickable per-entity-type counts
+- **Workspace filter** — scope scan to single org
+- **Impact analysis** — dependent data counts per record (KPIs linked, challenges, contributions, etc.)
+- **Parent context** — shows Space for challenges, Challenge for initiatives, etc.
+- **Safe delete** — green button for zero-dependency records, yellow warning for cascading deletes
+- **Delete endpoint** — `POST /super-admin/duplicate-detector/delete/<type>/<id>`
+
+## Shared Entities Management
+
+Route: `/super-admin/shared-entities`
+
+Provides visibility and bulk control over cross-workspace (`is_global=True`) entities.
+
+### Supported Entity Types
+
+- **Governance Bodies** — with KPI count, owning workspace, and list of workspaces using them
+- **Action Items** — with type, status, and owning workspace
+
+### Actions
+
+- Select all / none per entity type
+- Bulk unshare (sets `is_global=False`)
+- Entity type filter tabs
+
+## Entity Branding
+
+Entity type branding is managed per-workspace via the Branding Manager (`/org-admin/branding`).
+
+### Model
+
+`EntityTypeDefault` stores per-org defaults: `default_color`, `default_icon`, `default_logo_data` (binary), `default_logo_mime_type`.
+
+### Context Processor
+
+`inject_entity_defaults()` in `app/__init__.py` provides `entity_defaults` dict to all templates with `color`, `icon`, and `logo` (base64 data URL) per entity type.
+
+### Usage Pattern
+
+Templates check for logo first, then fall back to icon:
+```html
+{% if entity_defaults.get('challenge', {}).get('logo') %}
+    <img src="{{ entity_defaults['challenge']['logo'] }}" style="width:24px;height:24px;">
+{% else %}
+    <span>{{ entity_defaults.get('challenge', {}).get('icon', 'f') }}</span>
+{% endif %}
 ```
 
 ## Organization Cloning
