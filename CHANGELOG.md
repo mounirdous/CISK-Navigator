@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Selective Import in Workspace Admin — browse a backup JSON file and selectively import data into the current workspace with duplicate detection
 - Organization-level links now included in backup exports (were previously missing)
 
+### Fixed
+- Adding/editing/deleting workspace links on the main page now auto-refreshes without needing a manual page reload
+- Workspace-level "Add Link" now correctly targets the organization (was sending undefined entity_id)
+
 ## [7.14.0] - 2026-04-06
 
 ### Added
