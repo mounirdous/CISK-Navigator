@@ -244,10 +244,14 @@ class FullRestoreService:
                     _is_global = gb_data.get("is_global", False)
 
                 if action == "create":
-                    # Reuse existing GB with same name in target org if present
+                    # Reuse existing GB with same name in target org, or a global GB with same name
                     gb = GovernanceBody.query.filter_by(
                         organization_id=organization_id, name=gb_name
                     ).first()
+                    if not gb:
+                        gb = GovernanceBody.query.filter_by(
+                            name=gb_name, is_global=True
+                        ).first()
                     if gb:
                         governance_body_map[gb_name] = gb
                     else:

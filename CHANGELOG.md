@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Adding/editing/deleting workspace links on the main page now auto-refreshes without needing a manual page reload
 - Workspace-level "Add Link" now correctly targets the organization (was sending undefined entity_id)
+- Restore now finds and reuses global governance bodies across workspaces (fixes "not mapped" errors when restoring into orgs that share GBs)
 
 ## [7.14.0] - 2026-04-06
 
