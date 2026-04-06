@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Shared Entities - Super Admin{% endblock %}
+
+{% block content %}
+<style>
+.se-card { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 1.5rem; }
+.se-card-header { padding: 0.85rem 1.25rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border-bottom: 1px solid #e2e8f0; }
+.se-item { padding: 0.6rem 1.25rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+.se-item:last-child { border-bottom: none; }
+.se-item:hover { background: #fafbfc; }
+.se-pill { font-size: 0.65rem; padding: 0.12rem 0.45rem; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+.se-empty { text-align: center; padding: 2.5rem 1rem; color: #94a3b8; }
+.se-empty i { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+</style>
+
+<div class="container-fluid py-4" style="max-width: 1000px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-share text-primary me-2"></i>
+                Shared Entities
+            </h1>
+            <p class="text-muted mb-0">Entities visible across all workspaces. Unshare to make them workspace-scoped.</p>
+        </div>
+        <a href="{{ url_for('super_admin.index') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Filter tabs -->
+    {% if gb_data or ai_data %}
+    <div class="d-flex gap-2 mb-4 flex-wrap">
+        <button class="btn btn-sm se-filter-btn active" data-filter="all" onclick="filterEntities('all', this)"
+                style="border-radius: 999px; font-weight: 600;">
+            All <span class="badge bg-dark ms-1">{{ gb_data|length + ai_data|length }}</span>
+        </button>
+        {% if gb_data %}
+        <button class="btn btn-sm btn-outline-primary se-filter-btn" data-filter="governance_bodies" onclick="filterEntities('governance_bodies', this)"
+                style="border-radius: 999px; font-weight: 600;">
+            <i class="bi bi-bank"></i> Governance Bodies <span class="badge bg-primary ms-1">{{ gb_data|length }}</span>
+        </button>
+        {% endif %}
+        {% if ai_data %}
+        <button class="btn btn-sm btn-outline-warning se-filter-btn" data-filter="action_items" onclick="filterEntities('action_items', this)"
+                style="border-radius: 999px; font-weight: 600;">
+            <i class="bi bi-card-checklist"></i> Action Items <span class="badge bg-warning text-dark ms-1">{{ ai_data|length }}</span>
+        </button>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if not gb_data and not ai_data %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body se-empty">
+            <i class="bi bi-check-circle text-success"></i>
+            <h4 class="text-success">No Shared Entities</h4>
+            <p>All entities are workspace-scoped. Nothing is shared globally.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Governance Bodies -->
+    {% if gb_data %}
+    <div class="se-card se-entity-section" data-entity-type="governance_bodies">
+        <form method="POST" action="{{ url_for('super_admin.shared_entities_unshare') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="entity_type" value="governance_body">
+            <div class="se-card-header" style="background: linear-gradient(135deg, #eff6ff, #dbeafe);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-bank" style="font-size: 1.3rem; color: #2563eb;"></i>
+                    <h5 class="mb-0" style="color: #1e40af;">Governance Bodies</h5>
+                    <span class="se-pill" style="background: #dbeafe; color: #1e40af;">{{ gb_data|length }} shared</span>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;" onclick="toggleAll(this.closest('form'), true)">Select all</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;" onclick="toggleAll(this.closest('form'), false)">None</button>
+                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Set selected governance bodies to workspace-scoped? They will only be visible in their owning workspace.');">
+                        <i class="bi bi-building"></i> Unshare Selected
+                    </button>
+                </div>
+            </div>
+            <!-- Header row -->
+            <div style="padding: 0.4rem 1.25rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #e2e8f0; background: #fafbfc;">
+                <span style="width: 30px;"></span>
+                <span style="flex: 1;">Name</span>
+                <span style="width: 140px;">Owner Workspace</span>
+                <span style="width: 80px; text-align: center;">KPIs</span>
+                <span style="flex: 1;">Used By</span>
+            </div>
+            {% for gb in gb_data %}
+            <div class="se-item">
+                <input type="checkbox" name="entity_ids" value="{{ gb.id }}" class="form-check-input" style="width: 16px; height: 16px;">
+                <span style="flex: 1; font-weight: 500;">{{ gb.name }}</span>
+                <span style="width: 140px;">
+                    <span class="se-pill" style="background: #f1f5f9; color: #475569;">{{ gb.owner_org }}</span>
+                </span>
+                <span style="width: 80px; text-align: center;">
+                    <span class="se-pill {% if gb.kpi_count > 0 %}{% if gb.kpi_count > 100 %}style="background:#dbeafe;color:#1e40af;"{% else %}style="background:#f1f5f9;color:#475569;"{% endif %}{% endif %}">
+                        {{ gb.kpi_count }}
+                    </span>
+                </span>
+                <span style="flex: 1; display: flex; flex-wrap: wrap; gap: 0.2rem;">
+                    {% for org_name in gb.used_by %}
+                    <span class="se-pill" style="background: #f0fdf4; color: #166534;">{{ org_name }}</span>
+                    {% endfor %}
+                </span>
+            </div>
+            {% endfor %}
+        </form>
+    </div>
+    {% endif %}
+
+    <!-- Action Items -->
+    {% if ai_data %}
+    <div class="se-card se-entity-section" data-entity-type="action_items">
+        <form method="POST" action="{{ url_for('super_admin.shared_entities_unshare') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="entity_type" value="action_item">
+            <div class="se-card-header" style="background: linear-gradient(135deg, #fef3c7, #fde68a);">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-card-checklist" style="font-size: 1.3rem; color: #d97706;"></i>
+                    <h5 class="mb-0" style="color: #92400e;">Action Items</h5>
+                    <span class="se-pill" style="background: #fef3c7; color: #92400e;">{{ ai_data|length }} shared</span>
+                </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <button type="button" class="btn btn-sm btn-outline-warning" style="font-size: 0.75rem;" onclick="toggleAll(this.closest('form'), true)">Select all</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;" onclick="toggleAll(this.closest('form'), false)">None</button>
+                    <button type="submit" class="btn btn-sm btn-warning" onclick="return confirm('Set selected action items to workspace-scoped?');">
+                        <i class="bi bi-building"></i> Unshare Selected
+                    </button>
+                </div>
+            </div>
+            <div style="padding: 0.4rem 1.25rem; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #e2e8f0; background: #fafbfc;">
+                <span style="width: 30px;"></span>
+                <span style="flex: 1;">Title</span>
+                <span style="width: 100px;">Type</span>
+                <span style="width: 100px;">Status</span>
+                <span style="width: 140px;">Owner Workspace</span>
+            </div>
+            {% for ai in ai_data %}
+            <div class="se-item">
+                <input type="checkbox" name="entity_ids" value="{{ ai.id }}" class="form-check-input" style="width: 16px; height: 16px;" checked>
+                <span style="flex: 1; font-weight: 500;">{{ ai.title[:70] }}</span>
+                <span style="width: 100px;">
+                    <span class="se-pill" style="background: #f1f5f9; color: #475569;">{{ ai.type }}</span>
+                </span>
+                <span style="width: 100px;">
+                    <span class="se-pill" style="background: {% if ai.status == 'active' %}#dcfce7{% elif ai.status == 'completed' %}#dbeafe{% else %}#f1f5f9{% endif %}; color: {% if ai.status == 'active' %}#166534{% elif ai.status == 'completed' %}#1e40af{% else %}#475569{% endif %};">{{ ai.status }}</span>
+                </span>
+                <span style="width: 140px;">
+                    <span class="se-pill" style="background: #f1f5f9; color: #475569;">{{ ai.owner_org }}</span>
+                </span>
+            </div>
+            {% endfor %}
+        </form>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function toggleAll(form, checked) {
+    form.querySelectorAll('input[type="checkbox"][name="entity_ids"]').forEach(function(cb) {
+        cb.checked = checked;
+    });
+}
+
+function filterEntities(type, btn) {
+    document.querySelectorAll('.se-filter-btn').forEach(function(b) { b.classList.remove('active', 'btn-dark'); b.classList.add('btn-outline-secondary'); });
+    btn.classList.remove('btn-outline-secondary', 'btn-outline-primary', 'btn-outline-warning');
+    btn.classList.add('active', 'btn-dark');
+
+    document.querySelectorAll('.se-entity-section').forEach(function(section) {
+        if (type === 'all' || section.dataset.entityType === type) {
+            section.style.display = '';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -2034,6 +2034,102 @@ def feedback_screenshot(feedback_id):
 # ═══════════════════════════════════════════════════════════════════════
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# SHARED ENTITIES
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/shared-entities")
+@login_required
+@super_admin_required
+def shared_entities():
+    """View all cross-workspace (global/shared) entities with bulk unshare."""
+    from app.models import KPIGovernanceBodyLink
+
+    orgs = {o.id: o.name for o in Organization.query.filter_by(is_deleted=False).all()}
+
+    # Global governance bodies
+    global_gbs = GovernanceBody.query.filter_by(is_global=True).order_by(GovernanceBody.name).all()
+    gb_data = []
+    for gb in global_gbs:
+        kpi_count = KPIGovernanceBodyLink.query.filter_by(governance_body_id=gb.id).count()
+        # Count how many distinct orgs use this GB (via KPI links)
+        from sqlalchemy import distinct, func
+        from app.models import InitiativeSystemLink, KPI as KPIModel
+        org_ids_using = (
+            db.session.query(distinct(Initiative.organization_id))
+            .join(InitiativeSystemLink, InitiativeSystemLink.initiative_id == Initiative.id)
+            .join(KPIModel, KPIModel.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(KPIGovernanceBodyLink, KPIGovernanceBodyLink.kpi_id == KPIModel.id)
+            .filter(KPIGovernanceBodyLink.governance_body_id == gb.id)
+            .all()
+        )
+        using_orgs = [orgs.get(r[0], f"Org #{r[0]}") for r in org_ids_using if r[0] in orgs]
+        gb_data.append({
+            "id": gb.id,
+            "name": gb.name,
+            "owner_org": orgs.get(gb.organization_id, f"Org #{gb.organization_id}"),
+            "owner_org_id": gb.organization_id,
+            "kpi_count": kpi_count,
+            "used_by": using_orgs,
+            "used_by_count": len(using_orgs),
+        })
+
+    # Global action items
+    global_ais = ActionItem.query.filter_by(is_global=True).order_by(ActionItem.title).all()
+    ai_data = []
+    for ai in global_ais:
+        ai_data.append({
+            "id": ai.id,
+            "title": ai.title,
+            "type": ai.type,
+            "status": ai.status,
+            "owner_org": orgs.get(ai.organization_id, f"Org #{ai.organization_id}"),
+            "owner_org_id": ai.organization_id,
+        })
+
+    return render_template(
+        "super_admin/shared_entities.html",
+        gb_data=gb_data,
+        ai_data=ai_data,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/shared-entities/unshare", methods=["POST"])
+@login_required
+@super_admin_required
+def shared_entities_unshare():
+    """Bulk unshare (set is_global=False) on selected entities."""
+    from app.models import KPIGovernanceBodyLink
+
+    data = request.form
+    entity_type = data.get("entity_type")
+    entity_ids = request.form.getlist("entity_ids")
+
+    if not entity_ids:
+        flash("No items selected", "warning")
+        return redirect(url_for("super_admin.shared_entities"))
+
+    count = 0
+    if entity_type == "governance_body":
+        for eid in entity_ids:
+            gb = db.session.get(GovernanceBody, int(eid))
+            if gb and gb.is_global:
+                gb.is_global = False
+                count += 1
+    elif entity_type == "action_item":
+        for eid in entity_ids:
+            ai = db.session.get(ActionItem, int(eid))
+            if ai and ai.is_global:
+                ai.is_global = False
+                count += 1
+
+    db.session.commit()
+    flash(f"Set {count} {entity_type.replace('_', ' ')}(s) to workspace-scoped", "success")
+    return redirect(url_for("super_admin.shared_entities"))
+
+
 @bp.route("/duplicate-detector")
 @login_required
 @super_admin_required

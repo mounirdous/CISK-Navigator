@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adding/editing/deleting workspace links on the main page now auto-refreshes without needing a manual page reload
 - Workspace-level "Add Link" now correctly targets the organization (was sending undefined entity_id)
 - Restore now finds and reuses global governance bodies across workspaces, and auto-creates missing GBs as global when not yet restored (order-independent restore)
+- Action items always restored as workspace-scoped (prevents cross-workspace bleed from old backups)
+
+### Added
+- Action scope setting in user profiles — toggle "Actions: workspace only" to hide global items from other workspaces
+- Shared Entities page in Super Admin — view and bulk unshare governance bodies and action items, with entity type filter tabs
+- Owning workspace badge on action item view page
 
 ## [7.14.0] - 2026-04-06
 
