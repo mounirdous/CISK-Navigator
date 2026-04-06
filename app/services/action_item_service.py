@@ -37,13 +37,23 @@ class ActionItemService:
         """
         from app.models.action_item import action_item_governance_body
 
-        # Include items from this org + global items from all orgs
-        query = ActionItem.query.filter(
-            or_(
+        # Check if active profile restricts action scope to workspace only
+        from app.models import UserWorkspaceProfile
+        active_profile = UserWorkspaceProfile.query.filter_by(user_id=user.id, is_active=True).first()
+        workspace_only = active_profile and active_profile.action_scope == "workspace"
+
+        if workspace_only:
+            query = ActionItem.query.filter(
                 ActionItem.organization_id == organization_id,
-                ActionItem.is_global.is_(True),
-            )
-        ).options(joinedload(ActionItem.mentions))
+            ).options(joinedload(ActionItem.mentions))
+        else:
+            # Include items from this org + global items from all orgs
+            query = ActionItem.query.filter(
+                or_(
+                    ActionItem.organization_id == organization_id,
+                    ActionItem.is_global.is_(True),
+                )
+            ).options(joinedload(ActionItem.mentions))
 
         # Apply type filter
         if item_type:

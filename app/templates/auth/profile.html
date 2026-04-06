@@ -246,6 +246,15 @@
                                      opacity:{% if p.space_visibility == 'public' %}1{% else %}0.5{% endif %};">
                             <i class="bi bi-globe2"></i> Public only
                         </span>
+                        <span class="pf-badge-toggle" data-profile-id="{{ p.id }}"
+                              onclick="toggleActionScope({{ p.id }}, this)"
+                              style="border:1px solid {% if p.action_scope == 'workspace' %}#f59e0b{% else %}#64748b{% endif %};
+                                     color:{% if p.action_scope == 'workspace' %}#f59e0b{% else %}#64748b{% endif %};
+                                     background:{% if p.action_scope == 'workspace' %}#f59e0b20{% else %}transparent{% endif %};
+                                     opacity:{% if p.action_scope == 'workspace' %}1{% else %}0.5{% endif %};"
+                              title="When ON, action register shows only items from the current workspace">
+                            <i class="bi bi-building"></i> Actions: workspace only
+                        </span>
                         {% if not current_user.workspace_labels|list %}
                         <span class="text-muted" style="font-size:0.7rem;">Create labels in the Workspaces tab first</span>
                         {% endif %}
@@ -426,6 +435,21 @@ if (window.location.hash) {
             el.style.color = on ? '#22c55e' : '#64748b';
             el.style.borderColor = on ? '#22c55e' : '#64748b';
             el.style.background = on ? '#22c55e20' : 'transparent';
+        });
+    };
+
+    window.toggleActionScope = function(profileId, el) {
+        var isWorkspace = el.style.opacity === '1';
+        var newVal = isWorkspace ? 'all' : 'workspace';
+        fetch(PROFILE_API.replace(/\/$/, '') + '/' + profileId, {
+            method:'PATCH', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF},
+            body:JSON.stringify({action_scope:newVal})
+        }).then(function() {
+            var on = newVal === 'workspace';
+            el.style.opacity = on ? '1' : '0.5';
+            el.style.color = on ? '#f59e0b' : '#64748b';
+            el.style.borderColor = on ? '#f59e0b' : '#64748b';
+            el.style.background = on ? '#f59e0b20' : 'transparent';
         });
     };
 

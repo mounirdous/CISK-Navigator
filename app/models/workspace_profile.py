@@ -53,5 +53,16 @@ class UserWorkspaceProfile(db.Model):
         cfg["space_visibility"] = value
         self.config = cfg
 
+    @property
+    def action_scope(self):
+        """Get action item scope: 'all' (show global from other orgs) or 'workspace' (own org only)."""
+        return self.config.get("action_scope", "all")
+
+    @action_scope.setter
+    def action_scope(self, value):
+        cfg = dict(self.config or {})
+        cfg["action_scope"] = value
+        self.config = cfg
+
     def __repr__(self):
         return f"<UserWorkspaceProfile {self.name} (user={self.user_id}, active={self.is_active})>"
