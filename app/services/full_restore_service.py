@@ -1069,7 +1069,31 @@ class FullRestoreService:
                     db.session.add(gb_link)
                     stats["governance_body_links"] += 1
             else:
-                stats["errors"].append(f"KPI '{kpi_data['name']}': Governance body '{gb_name}' not mapped (skipped)")
+                # GB not in mapping — try global or same-org, else auto-create as global
+                fallback_gb = GovernanceBody.query.filter_by(name=gb_name, is_global=True).first()
+                if not fallback_gb:
+                    kpi_org_id = kpi.initiative_system_link.initiative.organization_id
+                    fallback_gb = GovernanceBody.query.filter_by(
+                        name=gb_name, organization_id=kpi_org_id
+                    ).first()
+                if not fallback_gb:
+                    # Auto-create as global so future restores can find it
+                    fallback_gb = GovernanceBody(
+                        organization_id=kpi.initiative_system_link.initiative.organization_id,
+                        name=gb_name,
+                        abbreviation=gb_name[:20],
+                        is_global=True,
+                        is_active=True,
+                    )
+                    db.session.add(fallback_gb)
+                    db.session.flush()
+                    stats["warnings"].append(f"Auto-created global governance body '{gb_name}'")
+                governance_body_map[gb_name] = fallback_gb
+                if fallback_gb.id not in _seen_gb_ids:
+                    _seen_gb_ids.add(fallback_gb.id)
+                    gb_link = KPIGovernanceBodyLink(kpi_id=kpi.id, governance_body_id=fallback_gb.id)
+                    db.session.add(gb_link)
+                    stats["governance_body_links"] += 1
 
         # Restore geography assignments (region/country/site links)
         from app.models import KPIGeographyAssignment
