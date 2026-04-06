@@ -440,22 +440,20 @@
                                             {% endfor %}
                                             {% set show = ns.match %}
                                         {% endif %}
-                                        {% if show %}
-                                            {% if membership.organization_id == session.organization_id %}
-                                            <li>
-                                                <span class="dropdown-item active">
-                                                    <i class="bi bi-check-circle-fill"></i> {{ membership.organization.name }}
-                                                </span>
-                                            </li>
-                                            {% else %}
-                                            <li>
-                                                <form method="POST" action="{{ url_for('auth.switch_organization', org_id=membership.organization_id) }}" style="margin: 0;">
-                                                    <button type="submit" class="dropdown-item" style="border: none; background: none; width: 100%; text-align: left;">
-                                                        <i class="bi bi-building"></i> {{ membership.organization.name }}
-                                                    </button>
-                                                </form>
-                                            </li>
-                                            {% endif %}
+                                        {% if membership.organization_id == session.organization_id %}
+                                        <li class="nav-ws-item" data-org-id="{{ membership.organization_id }}" data-label-ids="{{ org_label_ids|join(',') }}" {% if not show %}style="display:none"{% endif %}>
+                                            <span class="dropdown-item active">
+                                                <i class="bi bi-check-circle-fill"></i> {{ membership.organization.name }}
+                                            </span>
+                                        </li>
+                                        {% else %}
+                                        <li class="nav-ws-item" data-org-id="{{ membership.organization_id }}" data-label-ids="{{ org_label_ids|join(',') }}" {% if not show %}style="display:none"{% endif %}>
+                                            <form method="POST" action="{{ url_for('auth.switch_organization', org_id=membership.organization_id) }}" style="margin: 0;">
+                                                <button type="submit" class="dropdown-item" style="border: none; background: none; width: 100%; text-align: left;">
+                                                    <i class="bi bi-building"></i> {{ membership.organization.name }}
+                                                </button>
+                                            </form>
+                                        </li>
                                         {% endif %}
                                     {% endif %}
                                 {% endfor %}

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Restore redirect now returns to Organizations page instead of Backup/Restore page
 - Navbar user icon no longer pushed off-screen on medium-width windows (responsive search bar, navbar collapses at xl breakpoint)
+- Workspaces menu now updates instantly when labels are toggled on the Profile page
 
 ## [7.13.0] - 2026-04-05
 

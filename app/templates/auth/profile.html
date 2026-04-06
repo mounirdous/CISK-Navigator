@@ -363,6 +363,27 @@ if (window.location.hash) {
     };
 
     var PROFILE_API = '{{ url_for("global_admin.api_profiles_list") }}';
+    var ACTIVE_PROFILE_LABEL_IDS = {{ active_profile_label_ids|tojson }};
+
+    function refreshWorkspacesMenu() {
+        document.querySelectorAll('.nav-ws-item').forEach(function(li) {
+            var orgId = parseInt(li.dataset.orgId);
+            var labelIds = li.dataset.labelIds ? li.dataset.labelIds.split(',').map(Number) : [];
+            // Find all label badges for this org on the profile page
+            var badges = document.querySelectorAll('.pf-badge-toggle[data-org-id="' + orgId + '"]');
+            var currentLabels = [];
+            badges.forEach(function(b) {
+                if (b.style.opacity === '1') currentLabels.push(parseInt(b.dataset.labelId));
+            });
+            // Update the data attribute
+            li.dataset.labelIds = currentLabels.join(',');
+            // Show if any of the org's labels match the active profile's labels
+            var match = ACTIVE_PROFILE_LABEL_IDS.length === 0 || currentLabels.some(function(lid) {
+                return ACTIVE_PROFILE_LABEL_IDS.indexOf(lid) !== -1;
+            });
+            li.style.display = match ? '' : 'none';
+        });
+    }
 
     window.toggleOrgLabel = function(orgId, labelId, el) {
         var isActive = el.style.opacity === '1';
@@ -376,6 +397,10 @@ if (window.location.hash) {
             var on = !isActive;
             el.style.opacity = on ? '1' : '0.35';
             el.style.background = on ? el.style.color + '20' : 'transparent';
+            // Refresh Workspaces menu if a profile is active
+            {% if active_profile %}
+            refreshWorkspacesMenu();
+            {% endif %}
         });
     };
 
