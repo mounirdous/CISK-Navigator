@@ -1174,6 +1174,9 @@ def changelog():
                 "<strong>Restore redirect</strong> — after restoring a workspace, you are now returned to the Organizations page instead of the Backup/Restore page.",
                 "<strong>Navbar responsive fix</strong> — the user profile icon is no longer pushed off-screen on medium-width windows. The search bar now shrinks gracefully and the navbar collapses earlier.",
                 "<strong>Profile labels</strong> — the Workspaces menu now updates instantly when you toggle labels on the Profile page, without needing a page reload.",
+                "<strong>Entity branding</strong> — entity mention icons on action items, dashboard, and search now use workspace branding (logos, icons, colors) from the Branding Manager.",
+                "<strong>Org delete fix</strong> — deleting a workspace no longer fails on impact levels, strategic pillars, or SSO config.",
+                "<strong>Restore dedup</strong> — restoring a backup no longer creates duplicate governance bodies when one with the same name already exists.",
             ],
         },
         {

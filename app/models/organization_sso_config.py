@@ -18,7 +18,7 @@ class OrganizationSSOConfig(db.Model):
     __tablename__ = "organization_sso_configs"
 
     id = db.Column(db.Integer, primary_key=True)
-    organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id"), nullable=False, index=True)
+    organization_id = db.Column(db.Integer, db.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
 
     # Provider Configuration
     provider_type = db.Column(db.String(50), nullable=False)  # 'oidc', 'saml', 'google', 'azure', 'okta'
@@ -49,7 +49,7 @@ class OrganizationSSOConfig(db.Model):
     updated_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     # Relationships
-    organization = db.relationship("Organization", backref="sso_config")
+    organization = db.relationship("Organization", backref=db.backref("sso_config", passive_deletes=True))
     updater = db.relationship("User", foreign_keys=[updated_by])
 
     def __repr__(self):

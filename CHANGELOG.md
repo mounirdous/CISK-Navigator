@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restore redirect now returns to Organizations page instead of Backup/Restore page
 - Navbar user icon no longer pushed off-screen on medium-width windows (responsive search bar, navbar collapses at xl breakpoint)
 - Workspaces menu now updates instantly when labels are toggled on the Profile page
+- Entity mention icons now use workspace branding (logo/icon/color) from Branding Manager instead of hardcoded symbols
+- Organization delete no longer fails on impact_levels, strategic_pillars, or SSO config (passive_deletes fix)
+- Restore no longer creates duplicate governance bodies when one with the same name already exists
 
 ## [7.13.0] - 2026-04-05
 

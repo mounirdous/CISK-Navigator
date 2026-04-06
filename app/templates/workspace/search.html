@@ -144,7 +144,7 @@
                             {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
                             <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 24px; height: 24px; object-fit: contain;">
                             {% else %}
-                            <span style="font-weight: bold; font-style: italic;">ƒ</span>
+                            <span style="font-weight: bold; font-style: italic;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
                             {% endif %}
                             <h6 class="mb-0">{{ challenge.name }}</h6>
                         </div>
@@ -192,7 +192,7 @@
                             {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
                             <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 24px; height: 24px; object-fit: contain;">
                             {% else %}
-                            <span style="font-weight: bold;">δ</span>
+                            <span style="font-weight: bold;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
                             {% endif %}
                             <h6 class="mb-0">{{ initiative.name }}</h6>
                         </div>

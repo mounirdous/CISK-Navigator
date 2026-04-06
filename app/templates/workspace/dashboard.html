@@ -256,7 +256,7 @@
                 {% if entity_defaults.get('challenge') and entity_defaults['challenge']['logo'] %}
                 <img src="{{ entity_defaults['challenge']['logo'] }}" alt="Challenge" style="width: 24px; height: 24px; object-fit: contain;">
                 {% else %}
-                <span style="color: #6c757d; font-weight: bold; font-style: italic; font-size: 1.5rem;">ƒ</span>
+                <span style="color: {{ entity_defaults.get('challenge', {}).get('color', '#6c757d') }}; font-weight: bold; font-style: italic; font-size: 1.5rem;">{{ entity_defaults.get('challenge', {}).get('icon', 'ƒ') }}</span>
                 {% endif %}
             </div>
             <div class="flex-grow-1">
@@ -271,7 +271,7 @@
                 {% if entity_defaults.get('initiative') and entity_defaults['initiative']['logo'] %}
                 <img src="{{ entity_defaults['initiative']['logo'] }}" alt="Initiative" style="width: 24px; height: 24px; object-fit: contain;">
                 {% else %}
-                <span style="color: #0dcaf0; font-weight: bold; font-size: 1.5rem;">δ</span>
+                <span style="color: {{ entity_defaults.get('initiative', {}).get('color', '#0dcaf0') }}; font-weight: bold; font-size: 1.5rem;">{{ entity_defaults.get('initiative', {}).get('icon', 'δ') }}</span>
                 {% endif %}
             </div>
             <div class="flex-grow-1">
@@ -286,7 +286,7 @@
                 {% if entity_defaults.get('system') and entity_defaults['system']['logo'] %}
                 <img src="{{ entity_defaults['system']['logo'] }}" alt="System" style="width: 24px; height: 24px; object-fit: contain;">
                 {% else %}
-                <span style="color: #198754; font-weight: bold; font-size: 1.5rem;">Φ</span>
+                <span style="color: {{ entity_defaults.get('system', {}).get('color', '#198754') }}; font-weight: bold; font-size: 1.5rem;">{{ entity_defaults.get('system', {}).get('icon', 'Φ') }}</span>
                 {% endif %}
             </div>
             <div class="flex-grow-1">
@@ -301,7 +301,7 @@
                 {% if entity_defaults.get('kpi') and entity_defaults['kpi']['logo'] %}
                 <img src="{{ entity_defaults['kpi']['logo'] }}" alt="KPI" style="width: 24px; height: 24px; object-fit: contain;">
                 {% else %}
-                <span style="color: #ffc107; font-weight: bold; font-size: 1.5rem;">Ψ</span>
+                <span style="color: {{ entity_defaults.get('kpi', {}).get('color', '#ffc107') }}; font-weight: bold; font-size: 1.5rem;">{{ entity_defaults.get('kpi', {}).get('icon', 'Ψ') }}</span>
                 {% endif %}
             </div>
             <div class="flex-grow-1">

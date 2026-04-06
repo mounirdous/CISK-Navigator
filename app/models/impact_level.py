@@ -26,7 +26,7 @@ class ImpactLevel(db.Model):
     weight = db.Column(db.Integer, nullable=False, default=1, comment="Integer weight for rollup")
     color = db.Column(db.String(7), nullable=False, default="#3b82f6")
 
-    organization = db.relationship("Organization", backref="impact_levels")
+    organization = db.relationship("Organization", backref=db.backref("impact_levels", passive_deletes=True))
 
     def __repr__(self):
         return f"<ImpactLevel {self.level}: {self.label} (w={self.weight})>"

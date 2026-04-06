@@ -35,7 +35,7 @@ class StrategicPillar(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
-    organization = db.relationship("Organization", backref="strategic_pillars")
+    organization = db.relationship("Organization", backref=db.backref("strategic_pillars", passive_deletes=True))
 
     def __repr__(self):
         return f"<StrategicPillar {self.name}>"

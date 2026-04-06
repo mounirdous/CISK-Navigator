@@ -142,12 +142,9 @@
                                 <div class="d-flex flex-wrap gap-2">
                                     {% for mention in item.mentions %}
                                     <a href="{{ mention.get_entity_url() }}" class="mention-badge" target="_blank">
-                                        {% if mention.entity_type == 'challenge' %}ƒ
-                                        {% elif mention.entity_type == 'initiative' %}δ
-                                        {% elif mention.entity_type == 'system' %}Φ
-                                        {% elif mention.entity_type == 'kpi' %}Ψ
-                                        {% elif mention.entity_type == 'entity_link' %}{% set lti = mention.get_link_type_info() %}<i class="bi {{ lti.bs_icon if lti else 'bi-link-45deg' }}" style="color:{{ lti.color if lti else '#0ea5e9' }};"></i>
-                                        {% else %}🏢{% endif %}
+                                        {% if mention.entity_type == 'entity_link' %}{% set lti = mention.get_link_type_info() %}<i class="bi {{ lti.bs_icon if lti else 'bi-link-45deg' }}" style="color:{{ lti.color if lti else '#0ea5e9' }};"></i>
+                                        {% elif entity_defaults.get(mention.entity_type, {}).get('logo') %}<img src="{{ entity_defaults[mention.entity_type]['logo'] }}" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;">
+                                        {% else %}<span style="color:{{ entity_defaults.get(mention.entity_type, {}).get('color', '#6b7280') }};">{{ entity_defaults.get(mention.entity_type, {}).get('icon', '📋') }}</span>{% endif %}
                                         {{ mention.mention_text | replace('@', '') }}
                                         <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;"></i>
                                     </a>

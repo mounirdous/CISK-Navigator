@@ -244,22 +244,29 @@ class FullRestoreService:
                     _is_global = gb_data.get("is_global", False)
 
                 if action == "create":
-                    # Create new governance body
-                    gb = GovernanceBody(
-                        organization_id=organization_id,
-                        name=gb_name,
-                        abbreviation=gb_data.get("abbreviation", gb_name[:20]),
-                        description=gb_data.get("description"),
-                        color=gb_data.get("color", "#3498db"),
-                        display_order=gb_data.get("display_order", 0),
-                        is_active=gb_data.get("is_active", True),
-                        is_default=gb_data.get("is_default", False),
-                        is_global=_is_global,
-                    )
-                    db.session.add(gb)
-                    db.session.flush()
-                    governance_body_map[gb_name] = gb
-                    stats["governance_bodies"] += 1
+                    # Reuse existing GB with same name in target org if present
+                    gb = GovernanceBody.query.filter_by(
+                        organization_id=organization_id, name=gb_name
+                    ).first()
+                    if gb:
+                        governance_body_map[gb_name] = gb
+                    else:
+                        # Create new governance body
+                        gb = GovernanceBody(
+                            organization_id=organization_id,
+                            name=gb_name,
+                            abbreviation=gb_data.get("abbreviation", gb_name[:20]),
+                            description=gb_data.get("description"),
+                            color=gb_data.get("color", "#3498db"),
+                            display_order=gb_data.get("display_order", 0),
+                            is_active=gb_data.get("is_active", True),
+                            is_default=gb_data.get("is_default", False),
+                            is_global=_is_global,
+                        )
+                        db.session.add(gb)
+                        db.session.flush()
+                        governance_body_map[gb_name] = gb
+                        stats["governance_bodies"] += 1
                 elif isinstance(action, int):
                     # Map to existing governance body
                     gb = GovernanceBody.query.get(action)
