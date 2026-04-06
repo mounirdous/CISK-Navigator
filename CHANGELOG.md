@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Entity mention icons now use workspace branding (logo/icon/color) from Branding Manager instead of hardcoded symbols
 - Organization delete no longer fails on impact_levels, strategic_pillars, or SSO config (passive_deletes fix)
 - Restore no longer creates duplicate governance bodies when one with the same name already exists
+- Profile page label badge colors now match correctly when toggled (fixed rgb-to-hex issue)
+- Changing a label color now instantly updates all badge toggles without requiring a page refresh
 
 ## [7.13.0] - 2026-04-05
 

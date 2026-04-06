@@ -1177,6 +1177,7 @@ def changelog():
                 "<strong>Entity branding</strong> — entity mention icons on action items, dashboard, and search now use workspace branding (logos, icons, colors) from the Branding Manager.",
                 "<strong>Org delete fix</strong> — deleting a workspace no longer fails on impact levels, strategic pillars, or SSO config.",
                 "<strong>Restore dedup</strong> — restoring a backup no longer creates duplicate governance bodies when one with the same name already exists.",
+                "<strong>Label colors</strong> — toggling labels on the Profile page now shows the correct color immediately. Changing a label color updates all badges instantly.",
             ],
         },
         {

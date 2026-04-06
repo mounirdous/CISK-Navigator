@@ -180,7 +180,7 @@
                 <div style="display:flex; gap:0.25rem; flex-wrap:wrap; margin-top:0.3rem;">
                     {% for label in current_user.workspace_labels|sort(attribute='name') %}
                     {% set is_on = label.id in org_label_ids %}
-                    <span class="pf-badge-toggle" data-org-id="{{ org.id }}" data-label-id="{{ label.id }}"
+                    <span class="pf-badge-toggle" data-org-id="{{ org.id }}" data-label-id="{{ label.id }}" data-color="{{ label.color }}"
                           onclick="toggleOrgLabel({{ org.id }}, {{ label.id }}, this)"
                           style="border:1px solid {{ label.color }}; color:{{ label.color }};
                                  background:{% if is_on %}{{ label.color }}20{% else %}transparent{% endif %};
@@ -230,7 +230,7 @@
                     <div style="margin-top:0.5rem; display:flex; gap:0.25rem; flex-wrap:wrap; align-items:center;">
                         {% for label in current_user.workspace_labels|sort(attribute='name') %}
                         {% set is_in = label.id in p.label_ids %}
-                        <span class="pf-badge-toggle profile-label-toggle" data-profile-id="{{ p.id }}" data-label-id="{{ label.id }}"
+                        <span class="pf-badge-toggle profile-label-toggle" data-profile-id="{{ p.id }}" data-label-id="{{ label.id }}" data-color="{{ label.color }}"
                               onclick="toggleProfileLabel({{ p.id }}, {{ label.id }}, this)"
                               style="border:1px solid {{ label.color }}; color:{{ label.color }};
                                      background:{% if is_in %}{{ label.color }}20{% else %}transparent{% endif %};
@@ -331,6 +331,15 @@ if (window.location.hash) {
         }).then(function(r) { return r.json(); }).then(function(label) {
             var nameEl = document.getElementById('labelName' + label.id);
             if (nameEl) nameEl.style.color = label.color;
+            // Update all badge toggles with this label's new color
+            document.querySelectorAll('.pf-badge-toggle[data-label-id="' + label.id + '"]').forEach(function(badge) {
+                badge.dataset.color = label.color;
+                badge.style.borderColor = label.color;
+                badge.style.color = label.color;
+                if (badge.style.opacity === '1') {
+                    badge.style.background = label.color + '20';
+                }
+            });
         });
     };
 
@@ -395,8 +404,9 @@ if (window.location.hash) {
             : {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':CSRF}, body:JSON.stringify({label_id:labelId})};
         fetch(url, opts).then(function() {
             var on = !isActive;
+            var hexColor = el.dataset.color;
             el.style.opacity = on ? '1' : '0.35';
-            el.style.background = on ? el.style.color + '20' : 'transparent';
+            el.style.background = on ? hexColor + '20' : 'transparent';
             // Refresh Workspaces menu if a profile is active
             {% if active_profile %}
             refreshWorkspacesMenu();
@@ -430,8 +440,9 @@ if (window.location.hash) {
             body:JSON.stringify({label_ids:labels})
         }).then(function() {
             var on = labels.indexOf(labelId) !== -1;
+            var hexColor = el.dataset.color;
             el.style.opacity = on ? '1' : '0.4';
-            el.style.background = on ? el.style.color + '20' : 'transparent';
+            el.style.background = on ? hexColor + '20' : 'transparent';
         });
     };
 
