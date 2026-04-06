@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.15.0] - 2026-04-06
+
+### Added
+- Selective Import in Workspace Admin — browse a backup JSON file and selectively import data into the current workspace with duplicate detection
+- Organization-level links now included in backup exports (were previously missing)
+
 ## [7.14.0] - 2026-04-06
 
 ### Added

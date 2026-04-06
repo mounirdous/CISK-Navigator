@@ -1167,6 +1167,15 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.15.0",
+            "date": "April 6, 2026",
+            "tags": ["feature"],
+            "changes": [
+                "<strong>Selective Import</strong> — new Workspace Admin tool to browse a backup JSON file and selectively import data into the current workspace. Includes duplicate detection (existing items highlighted). Starting with workspace-level links, more entity types coming soon.",
+                "<strong>Backup fix</strong> — workspace-level links are now included in backup exports (were previously missing).",
+            ],
+        },
+        {
             "version": "7.14.0",
             "date": "April 6, 2026",
             "tags": ["feature"],

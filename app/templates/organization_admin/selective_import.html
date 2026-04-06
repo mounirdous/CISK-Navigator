@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+
+{% block title %}Selective Import - {{ organization.name }}{% endblock %}
+
+{% block content %}
+<style>
+.si-drop { border: 2px dashed #cbd5e1; border-radius: 16px; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; background: #f8fafc; }
+.si-drop:hover, .si-drop.dragover { border-color: #0ea5e9; background: #f0f9ff; }
+.si-drop-icon { font-size: 3rem; color: #94a3b8; margin-bottom: 0.75rem; transition: color 0.2s; }
+.si-drop:hover .si-drop-icon { color: #0ea5e9; }
+.si-cat { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 1.25rem; }
+.si-cat-header { padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-bottom: 1px solid #e2e8f0; }
+.si-cat-body { max-height: 400px; overflow-y: auto; }
+.si-item { padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.75rem; border-bottom: 1px solid #f1f5f9; font-size: 0.85rem; }
+.si-item:last-child { border-bottom: none; }
+.si-item:hover { background: #fafbfc; }
+.si-item.duplicate { background: #fefce8; }
+.si-dup-badge { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 4px; background: #fef3c7; color: #92400e; font-weight: 700; white-space: nowrap; }
+.si-new-badge { font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 4px; background: #dcfce7; color: #166534; font-weight: 700; white-space: nowrap; }
+.si-summary-pill { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #64748b; }
+.si-results { border-radius: 12px; padding: 1.5rem; text-align: center; }
+.si-future { opacity: 0.5; padding: 0.5rem 0.75rem; font-size: 0.8rem; border-radius: 8px; background: #f8fafc; border: 1px dashed #e2e8f0; }
+</style>
+
+<div class="container-fluid py-4" style="max-width: 900px;">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">
+                <i class="bi bi-cloud-arrow-up text-info me-2"></i>
+                Selective Import
+            </h1>
+            <p class="text-muted mb-0">Browse a backup file and choose what to import into <strong>{{ organization.name }}</strong></p>
+        </div>
+        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+
+    <!-- Step 1: File Upload -->
+    <div id="step-upload">
+        <div class="si-drop" id="dropZone" onclick="document.getElementById('fileInput').click();">
+            <div class="si-drop-icon"><i class="bi bi-file-earmark-arrow-up"></i></div>
+            <h5 class="mb-1">Drop a backup JSON file here</h5>
+            <p class="text-muted mb-2" style="font-size: 0.85rem;">or click to browse</p>
+            <span class="si-summary-pill"><i class="bi bi-info-circle"></i> Supports full backup .json files</span>
+        </div>
+        <input type="file" id="fileInput" accept=".json" style="display: none;" onchange="handleFile(this.files[0])">
+    </div>
+
+    <!-- Step 2: Preview & Select (hidden initially) -->
+    <div id="step-preview" style="display: none;">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h5 class="mb-0"><i class="bi bi-file-earmark-check text-success me-1"></i> <span id="backupName"></span></h5>
+                <small class="text-muted" id="backupFile"></small>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" onclick="resetImport()">
+                <i class="bi bi-arrow-clockwise"></i> Choose different file
+            </button>
+        </div>
+
+        <!-- Categories -->
+        <div id="categoriesContainer"></div>
+
+        <!-- Future categories hint -->
+        <div id="futureSummary" style="display: none;" class="mb-3">
+            <div class="si-future">
+                <i class="bi bi-lightbulb me-1"></i> <strong>Also available in this backup:</strong> <span id="futureList"></span>
+                <br><small class="text-muted">Selective import for these categories is coming soon.</small>
+            </div>
+        </div>
+
+        <!-- Import button -->
+        <div class="d-flex gap-2 justify-content-end mt-3">
+            <button class="btn btn-outline-secondary" onclick="resetImport()">Cancel</button>
+            <button class="btn btn-primary" id="importBtn" onclick="executeImport()" disabled>
+                <i class="bi bi-cloud-arrow-up me-1"></i> Import Selected (<span id="selectedCount">0</span>)
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 3: Results (hidden initially) -->
+    <div id="step-results" style="display: none;">
+        <div class="si-results" id="resultsContent"></div>
+    </div>
+</div>
+
+<script>
+var CSRF = '{{ csrf_token() }}';
+var previewData = null;
+
+// Drag and drop
+var dz = document.getElementById('dropZone');
+['dragenter','dragover'].forEach(function(e) {
+    dz.addEventListener(e, function(ev) { ev.preventDefault(); dz.classList.add('dragover'); });
+});
+['dragleave','drop'].forEach(function(e) {
+    dz.addEventListener(e, function(ev) { ev.preventDefault(); dz.classList.remove('dragover'); });
+});
+dz.addEventListener('drop', function(ev) {
+    ev.preventDefault();
+    var f = ev.dataTransfer.files[0];
+    if (f) handleFile(f);
+});
+
+function handleFile(file) {
+    if (!file || !file.name.endsWith('.json')) {
+        alert('Please select a .json backup file');
+        return;
+    }
+    var formData = new FormData();
+    formData.append('backup_file', file);
+
+    dz.innerHTML = '<div class="spinner-border text-info" role="status"></div><p class="mt-2 text-muted">Analyzing backup...</p>';
+
+    fetch('{{ url_for("organization_admin.selective_import_preview") }}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': CSRF },
+        body: formData
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) { alert(data.error); resetImport(); return; }
+        previewData = data;
+        document.getElementById('backupName').textContent = data.backup_name || 'Backup';
+        document.getElementById('backupFile').textContent = file.name;
+        renderCategories(data.categories);
+        renderFutureSummary(data.summary);
+        document.getElementById('step-upload').style.display = 'none';
+        document.getElementById('step-preview').style.display = '';
+    })
+    .catch(function(err) { alert('Error reading backup: ' + err); resetImport(); });
+}
+
+function renderCategories(categories) {
+    var container = document.getElementById('categoriesContainer');
+    container.innerHTML = '';
+
+    if (!categories.length) {
+        container.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-inbox" style="font-size:2rem;"></i><p class="mt-2">No importable data found in this backup.</p></div>';
+        return;
+    }
+
+    categories.forEach(function(cat) {
+        var newCount = cat.count - cat.duplicates;
+        var html = '<div class="si-cat" data-category="' + cat.key + '">';
+        html += '<div class="si-cat-header">';
+        html += '<div class="d-flex align-items-center gap-2">';
+        html += '<i class="bi ' + cat.icon + '" style="font-size:1.2rem; color:' + cat.color + ';"></i>';
+        html += '<strong>' + cat.label + '</strong>';
+        html += '<span class="si-summary-pill">' + cat.count + ' item' + (cat.count > 1 ? 's' : '') + '</span>';
+        if (cat.duplicates > 0) {
+            html += '<span class="si-summary-pill" style="background:#fef3c7;color:#92400e;">' + cat.duplicates + ' already exist</span>';
+        }
+        if (newCount > 0) {
+            html += '<span class="si-summary-pill" style="background:#dcfce7;color:#166534;">' + newCount + ' new</span>';
+        }
+        html += '</div>';
+        html += '<div class="d-flex gap-2 align-items-center">';
+        html += '<button class="btn btn-sm btn-outline-primary" onclick="toggleAll(\'' + cat.key + '\', true)" style="font-size:0.75rem;">Select new</button>';
+        html += '<button class="btn btn-sm btn-outline-secondary" onclick="toggleAll(\'' + cat.key + '\', false)" style="font-size:0.75rem;">None</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '<div class="si-cat-body">';
+
+        cat.records.forEach(function(rec, idx) {
+            var isDup = rec.is_duplicate;
+            html += '<div class="si-item ' + (isDup ? 'duplicate' : '') + '">';
+            html += '<input type="checkbox" class="form-check-input si-cb" data-cat="' + cat.key + '" data-idx="' + idx + '"';
+            if (!isDup) html += ' checked';
+            html += ' onchange="updateCount()" style="width:16px;height:16px;">';
+            html += '<span style="flex:1;">';
+            if (rec.title) html += '<strong>' + escapeHtml(rec.title) + '</strong><br>';
+            html += '<span style="font-size:0.8rem;color:#64748b;word-break:break-all;">' + escapeHtml(rec.url || '') + '</span>';
+            html += '</span>';
+            if (rec.is_public === false) html += '<span class="si-summary-pill" style="font-size:0.6rem;"><i class="bi bi-lock"></i> Private</span>';
+            if (isDup) html += '<span class="si-dup-badge"><i class="bi bi-check-circle"></i> Already exists</span>';
+            else html += '<span class="si-new-badge"><i class="bi bi-plus-circle"></i> New</span>';
+            html += '</div>';
+        });
+
+        html += '</div></div>';
+        container.innerHTML += html;
+    });
+
+    updateCount();
+}
+
+function renderFutureSummary(summary) {
+    var keys = Object.keys(summary || {});
+    if (!keys.length) { document.getElementById('futureSummary').style.display = 'none'; return; }
+    var labels = { spaces: 'Spaces', governance_bodies: 'Governance Bodies', value_types: 'Value Types', action_items: 'Action Items', stakeholders: 'Stakeholders' };
+    var parts = keys.map(function(k) { return (labels[k] || k) + ' (' + summary[k] + ')'; });
+    document.getElementById('futureList').textContent = parts.join(', ');
+    document.getElementById('futureSummary').style.display = '';
+}
+
+function toggleAll(catKey, selectNew) {
+    document.querySelectorAll('.si-cb[data-cat="' + catKey + '"]').forEach(function(cb) {
+        var idx = parseInt(cb.dataset.idx);
+        var cat = previewData.categories.find(function(c) { return c.key === catKey; });
+        if (selectNew) {
+            cb.checked = !cat.records[idx].is_duplicate;
+        } else {
+            cb.checked = false;
+        }
+    });
+    updateCount();
+}
+
+function updateCount() {
+    var n = document.querySelectorAll('.si-cb:checked').length;
+    document.getElementById('selectedCount').textContent = n;
+    document.getElementById('importBtn').disabled = n === 0;
+}
+
+function executeImport() {
+    var payload = {};
+    previewData.categories.forEach(function(cat) {
+        var selected = [];
+        document.querySelectorAll('.si-cb[data-cat="' + cat.key + '"]:checked').forEach(function(cb) {
+            selected.push(cat.records[parseInt(cb.dataset.idx)]);
+        });
+        if (selected.length) payload[cat.key] = selected;
+    });
+
+    document.getElementById('importBtn').disabled = true;
+    document.getElementById('importBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Importing...';
+
+    fetch('{{ url_for("organization_admin.selective_import_execute") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
+        if (result.error) {
+            alert('Error: ' + result.error);
+            document.getElementById('importBtn').disabled = false;
+            document.getElementById('importBtn').innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Import Selected';
+            return;
+        }
+        showResults(result);
+    })
+    .catch(function(err) { alert('Import failed: ' + err); });
+}
+
+function showResults(result) {
+    document.getElementById('step-preview').style.display = 'none';
+    document.getElementById('step-results').style.display = '';
+
+    var html = '<div style="margin-bottom:1.5rem;">';
+    if (result.imported > 0) {
+        html += '<i class="bi bi-check-circle-fill text-success" style="font-size:3rem;"></i>';
+        html += '<h4 class="text-success mt-2">Import Complete</h4>';
+    } else {
+        html += '<i class="bi bi-info-circle text-info" style="font-size:3rem;"></i>';
+        html += '<h4 class="text-info mt-2">Nothing to Import</h4>';
+    }
+    html += '</div>';
+    html += '<div class="d-flex justify-content-center gap-3 mb-3">';
+    if (result.imported > 0) html += '<span class="si-summary-pill" style="background:#dcfce7;color:#166534;font-size:0.85rem;"><i class="bi bi-plus-circle"></i> ' + result.imported + ' imported</span>';
+    if (result.skipped > 0) html += '<span class="si-summary-pill" style="background:#fef3c7;color:#92400e;font-size:0.85rem;"><i class="bi bi-skip-forward"></i> ' + result.skipped + ' skipped (duplicates)</span>';
+    if (result.errors && result.errors.length > 0) html += '<span class="si-summary-pill" style="background:#fee2e2;color:#991b1b;font-size:0.85rem;"><i class="bi bi-exclamation-triangle"></i> ' + result.errors.length + ' errors</span>';
+    html += '</div>';
+    if (result.errors && result.errors.length > 0) {
+        html += '<div class="text-start" style="max-width:500px;margin:0 auto;">';
+        result.errors.forEach(function(e) { html += '<div style="font-size:0.8rem;color:#991b1b;padding:0.2rem 0;"><i class="bi bi-x-circle me-1"></i>' + escapeHtml(e) + '</div>'; });
+        html += '</div>';
+    }
+    html += '<div class="mt-3 d-flex gap-2 justify-content-center">';
+    html += '<a href="' + '{{ url_for("organization_admin.organization_links") }}' + '" class="btn btn-primary"><i class="bi bi-link-45deg me-1"></i> View Links</a>';
+    html += '<button class="btn btn-outline-secondary" onclick="resetImport()"><i class="bi bi-arrow-clockwise me-1"></i> Import More</button>';
+    html += '</div>';
+
+    document.getElementById('resultsContent').innerHTML = html;
+}
+
+function resetImport() {
+    document.getElementById('step-upload').style.display = '';
+    document.getElementById('step-preview').style.display = 'none';
+    document.getElementById('step-results').style.display = 'none';
+    document.getElementById('dropZone').innerHTML = '<div class="si-drop-icon"><i class="bi bi-file-earmark-arrow-up"></i></div><h5 class="mb-1">Drop a backup JSON file here</h5><p class="text-muted mb-2" style="font-size: 0.85rem;">or click to browse</p><span class="si-summary-pill"><i class="bi bi-info-circle"></i> Supports full backup .json files</span>';
+    document.getElementById('fileInput').value = '';
+    previewData = null;
+}
+
+function escapeHtml(s) {
+    var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML;
+}
+</script>
+{% endblock %}

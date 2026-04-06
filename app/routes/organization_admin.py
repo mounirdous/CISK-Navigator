@@ -4220,6 +4220,186 @@ def yaml_export():
         return redirect(url_for("organization_admin.index"))
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# SELECTIVE IMPORT
+# ═══════════════════════════════════════════════════════════════════════
+
+
+@bp.route("/selective-import")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def selective_import():
+    """Browse a backup JSON file and selectively import data."""
+    org_id = session.get("organization_id")
+    org = Organization.query.get_or_404(org_id)
+    return render_template(
+        "organization_admin/selective_import.html",
+        organization=org,
+        csrf_token=generate_csrf,
+    )
+
+
+@bp.route("/selective-import/preview", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def selective_import_preview():
+    """Parse uploaded JSON and return available import categories with duplicate detection."""
+    import json
+
+    org_id = session.get("organization_id")
+
+    if "backup_file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+
+    file = request.files["backup_file"]
+    if not file.filename:
+        return jsonify({"error": "No file selected"}), 400
+
+    try:
+        content = file.read().decode("utf-8")
+        backup = json.loads(content)
+    except Exception as e:
+        return jsonify({"error": f"Invalid JSON: {str(e)}"}), 400
+
+    # Store backup in session temp file for later import
+    import tempfile
+    import os
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".json", prefix="cisk_selective_")
+    tmp.write(content.encode("utf-8"))
+    tmp.close()
+    session["selective_import_path"] = tmp.name
+
+    # Analyze available data categories
+    categories = []
+
+    # Organization-level links
+    org_data = backup.get("organization", {})
+    backup_links = org_data.get("links", [])
+    if backup_links:
+        existing_links = EntityLink.query.filter_by(
+            entity_type="organization", entity_id=org_id
+        ).all()
+        existing_urls = {link.url.strip().lower() for link in existing_links}
+
+        link_items = []
+        for link in backup_links:
+            url = (link.get("url") or "").strip()
+            title = link.get("title") or ""
+            is_dup = url.lower() in existing_urls
+            link_items.append({
+                "url": url,
+                "title": title,
+                "is_public": link.get("is_public", True),
+                "is_duplicate": is_dup,
+                "created_by_login": link.get("created_by_login"),
+            })
+
+        categories.append({
+            "key": "organization_links",
+            "label": "Workspace Links",
+            "icon": "bi-link-45deg",
+            "color": "#3b82f6",
+            "count": len(link_items),
+            "duplicates": sum(1 for i in link_items if i["is_duplicate"]),
+            "records": link_items,
+        })
+
+    # Future: add more categories here (spaces, challenges, governance bodies, etc.)
+    # Provide a summary of what's in the backup for future expansion
+    summary = {}
+    for key in ["spaces", "governance_bodies", "value_types", "action_items", "stakeholders"]:
+        items = backup.get(key, [])
+        if items:
+            summary[key] = len(items)
+
+    return jsonify({
+        "backup_name": org_data.get("name", file.filename),
+        "categories": categories,
+        "summary": summary,
+    })
+
+
+@bp.route("/selective-import/execute", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def selective_import_execute():
+    """Execute selective import for chosen items."""
+    import json
+    import os
+
+    org_id = session.get("organization_id")
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+
+    backup_path = session.get("selective_import_path")
+    if not backup_path or not os.path.exists(backup_path):
+        return jsonify({"error": "No pending import. Please upload a file first."}), 400
+
+    with open(backup_path, "r", encoding="utf-8") as f:
+        backup = json.loads(f.read())
+
+    results = {"imported": 0, "skipped": 0, "errors": []}
+
+    # Import organization links
+    selected_links = data.get("organization_links", [])
+    if selected_links:
+        from app.models import User
+
+        existing_links = EntityLink.query.filter_by(
+            entity_type="organization", entity_id=org_id
+        ).all()
+        existing_urls = {link.url.strip().lower() for link in existing_links}
+        max_order = max((l.display_order for l in existing_links), default=0)
+
+        for link_data in selected_links:
+            url = (link_data.get("url") or "").strip()
+            if not url:
+                continue
+            if url.lower() in existing_urls:
+                results["skipped"] += 1
+                continue
+
+            is_valid, _ = EntityLink.validate_url(url)
+            if not is_valid:
+                results["errors"].append(f"Invalid URL skipped: {url[:60]}")
+                continue
+
+            creator_login = link_data.get("created_by_login")
+            creator = User.query.filter_by(login=creator_login).first() if creator_login else None
+            max_order += 1
+
+            db.session.add(EntityLink(
+                entity_type="organization",
+                entity_id=org_id,
+                url=url,
+                title=link_data.get("title") or None,
+                is_public=bool(link_data.get("is_public", True)),
+                display_order=max_order,
+                created_by=creator.id if creator else current_user.id,
+            ))
+            existing_urls.add(url.lower())
+            results["imported"] += 1
+
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Database error: {str(e)}"}), 500
+
+    # Clean up temp file
+    try:
+        os.unlink(backup_path)
+        session.pop("selective_import_path", None)
+    except Exception:
+        pass
+
+    return jsonify(results)
+
+
 def _delete_all_organization_data(org_id, keep_gb_ids=None, keep_ai_ids=None):
     """
     Delete ALL data for an organization.

@@ -162,6 +162,9 @@ class FullBackupService:
                 "data": base64.b64encode(org.logo_data).decode("utf-8"),
             }
 
+        # Export organization-level links
+        org_data["links"] = FullBackupService._export_entity_links("organization", org.id)
+
         return org_data
 
     @staticmethod
