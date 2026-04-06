@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Restore no longer creates duplicate governance bodies when one with the same name already exists
 - Profile page label badge colors now match correctly when toggled (fixed rgb-to-hex issue)
 - Changing a label color now instantly updates all badge toggles without requiring a page refresh
+- Bulk delete organizations now commits per-org to avoid Gunicorn worker timeout on large batches
 
 ## [7.13.0] - 2026-04-05
 

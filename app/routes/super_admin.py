@@ -1664,6 +1664,7 @@ def bulk_delete_organizations():
                 org_name = org.name
                 # CASCADE delete will handle all related data
                 db.session.delete(org)
+                db.session.commit()
                 deleted_count += 1
                 print(f"[BULK DELETE] Deleted organization: {org_name} (ID: {org_id})")
         except Exception as e:
@@ -1671,12 +1672,8 @@ def bulk_delete_organizations():
             db.session.rollback()
             continue
 
-    try:
-        db.session.commit()
+    if deleted_count:
         flash(f"Successfully deleted {deleted_count} organization(s) and all their data", "success")
-    except Exception as e:
-        db.session.rollback()
-        flash(f"Error committing bulk delete: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.bulk_operations"))
 
