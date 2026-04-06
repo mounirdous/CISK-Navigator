@@ -1255,7 +1255,7 @@ def restore_backup():
 
         traceback.print_exc()
 
-    return redirect(url_for("global_admin.backup_restore"))
+    return redirect(url_for("global_admin.organizations"))
 
 
 @bp.route("/backup-restore/user-mapping", methods=["GET", "POST"])
@@ -1345,7 +1345,7 @@ def full_backup_user_mapping():
         else:
             flash("Restore failed: " + result.get("error", "Unknown error"), "danger")
 
-        return redirect(url_for("global_admin.backup_restore"))
+        return redirect(url_for("global_admin.organizations"))
 
     from flask_wtf.csrf import generate_csrf
 
@@ -1503,7 +1503,7 @@ def full_backup_governance_mapping():
                 for i, error in enumerate(result.get("errors", []), 1):
                     current_app.logger.error("  Restore error %d: %s", i, error)
 
-            return redirect(url_for("global_admin.backup_restore"))
+            return redirect(url_for("global_admin.organizations"))
 
         except Exception as e:
             db.session.rollback()

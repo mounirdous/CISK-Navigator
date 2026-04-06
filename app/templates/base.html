@@ -373,7 +373,7 @@
     </style>
 </head>
 <body{% if (current_user.is_authenticated and current_user.dark_mode) or (not current_user.is_authenticated and request.cookies.get('dark_mode') == '1') %} class="dark-mode"{% endif %}>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-xl navbar-dark bg-dark">
         <div class="container-fluid">
             <!-- Home Button -->
             {% if session.organization_id %}
@@ -401,7 +401,7 @@
                 </span>
             </a>
             {% if current_user.is_authenticated %}
-            <div class="d-flex align-items-center d-lg-none gap-2">
+            <div class="d-flex align-items-center d-xl-none gap-2">
                 <a href="{{ url_for('auth.profile') }}" class="nav-link px-2" title="Profile" style="color: rgba(255,255,255,0.8);">
                     <i class="bi bi-person-circle" style="font-size: 1.2rem;"></i>
                 </a>
@@ -672,14 +672,14 @@
                     {% endif %}
                 </ul>
                 {% if current_user.is_authenticated %}
-                <div class="position-relative me-2">
+                <div class="position-relative me-2" style="flex: 1 1 150px; max-width: 340px; min-width: 0;">
                     <form class="d-flex" method="GET" action="{{ url_for('workspace.search_page') }}" id="searchForm">
                         <!-- Hidden inputs for filters (populated by JavaScript) -->
                         <input type="hidden" name="entity_types" id="entityTypesInput" value="">
                         <input type="hidden" name="date_range" id="dateRangeInput" value="">
                         <input type="hidden" name="status" id="statusInput" value="">
 
-                        <div class="input-group" style="width: 340px;">
+                        <div class="input-group">
                             <input class="form-control form-control-sm" type="search" name="q" id="liveSearchInput" placeholder="Search..."
                                    autocomplete="off"
                                    title="Ctrl+K to focus"
@@ -717,7 +717,7 @@
                     <!-- Search hints removed — search modifiers deprecated -->
                 </div>
                 {% endif %}
-                <ul class="navbar-nav">
+                <ul class="navbar-nav flex-row flex-nowrap flex-shrink-0 align-items-center">
                     <li class="nav-item">
                         <a class="nav-link" href="#" onclick="event.preventDefault(); var d=document; if(d.fullscreenElement){d.exitFullscreen();}else{var e=d.documentElement; e.requestFullscreen?e.requestFullscreen():e.webkitRequestFullscreen?e.webkitRequestFullscreen():e.msRequestFullscreen&&e.msRequestFullscreen();}" title="Toggle fullscreen">
                             <i class="bi bi-arrows-fullscreen" style="font-size: 1.1rem;"></i>
@@ -733,7 +733,7 @@
                     {% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-person-circle"></i> <span class="d-none d-lg-inline">{{ current_user.display_name or current_user.login }}</span>
+                            <i class="bi bi-person-circle"></i> <span class="d-none d-xxl-inline">{{ current_user.display_name or current_user.login }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown" style="min-width: 280px;">
                             <!-- User Info -->

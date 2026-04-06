@@ -1167,6 +1167,15 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.13.1",
+            "date": "April 6, 2026",
+            "tags": ["fix"],
+            "changes": [
+                "<strong>Restore redirect</strong> — after restoring a workspace, you are now returned to the Organizations page instead of the Backup/Restore page.",
+                "<strong>Navbar responsive fix</strong> — the user profile icon is no longer pushed off-screen on medium-width windows. The search bar now shrinks gracefully and the navbar collapses earlier.",
+            ],
+        },
+        {
             "version": "7.13.0",
             "date": "April 5, 2026",
             "tags": ["feature"],
