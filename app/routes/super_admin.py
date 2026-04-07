@@ -2402,22 +2402,26 @@ def duplicate_merge_all():
     org_filter = request.form.get("org_id", "")
     org_id = int(org_filter) if org_filter else None
 
-    if entity_type not in ("initiatives", "challenges", "systems"):
+    if entity_type not in ("initiatives", "challenges", "systems", "action_items", "value_types", "governance_bodies"):
         flash(f"Merge all not supported for {entity_type}", "warning")
         return redirect(url_for("super_admin.duplicate_detector"))
 
     try:
         # Re-run the duplicate scan to get current groups
-        model_map = {"initiatives": Initiative, "challenges": Challenge, "systems": System}
+        model_map = {"initiatives": Initiative, "challenges": Challenge, "systems": System, "action_items": ActionItem, "value_types": ValueType, "governance_bodies": GovernanceBody}
         model = model_map[entity_type]
 
-        query = db.session.query(model.name, model.organization_id, db.func.count(model.id)).group_by(model.name, model.organization_id).having(db.func.count(model.id) > 1)
+        name_col = model.title if entity_type == "action_items" else model.name
+        query = db.session.query(name_col, model.organization_id, db.func.count(model.id)).group_by(name_col, model.organization_id).having(db.func.count(model.id) > 1)
         if org_id:
             query = query.filter(model.organization_id == org_id)
 
         total_merged = 0
         for name, oid, count in query.all():
-            ids = [r.id for r in model.query.filter_by(name=name, organization_id=oid).all()]
+            if entity_type == "action_items":
+                ids = [r.id for r in model.query.filter_by(title=name, organization_id=oid).all()]
+            else:
+                ids = [r.id for r in model.query.filter_by(name=name, organization_id=oid).all()]
             if len(ids) < 2:
                 continue
 
