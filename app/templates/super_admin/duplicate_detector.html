@@ -100,6 +100,17 @@
             <i class="bi {{ data.icon }}" style="font-size: 1.3rem; color: {{ data.color }};"></i>
             <h4 class="mb-0">{{ data.label }}</h4>
             <span class="dup-badge" style="background: {{ data.color }}20; color: {{ data.color }};">{{ data.groups|length }} group{{ 's' if data.groups|length > 1 else '' }}, {{ data.total_duplicates }} records</span>
+            {% if key in ('initiatives', 'challenges', 'systems') and data.groups|length > 0 %}
+            <form method="POST" action="{{ url_for('super_admin.duplicate_merge_all') }}" style="margin-left:auto;"
+                  onsubmit="return confirm('Merge ALL {{ data.groups|length }} duplicate group(s) of {{ data.label }}?\n\nFor each group, the record with the most data is kept and all others are merged into it.\n\nThis cannot be undone.');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="entity_type" value="{{ key }}">
+                <input type="hidden" name="org_id" value="{{ org_filter or '' }}">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="bi bi-arrows-collapse"></i> Merge All {{ data.label }}
+                </button>
+            </form>
+            {% endif %}
         </div>
 
         {% for group in data.groups %}

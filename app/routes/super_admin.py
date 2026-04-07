@@ -2384,151 +2384,162 @@ def duplicate_merge():
         return redirect(url_for("super_admin.duplicate_detector"))
 
     try:
-        merged_count = 0
-
-        if entity_type == "initiatives":
-            from app.models import ChallengeInitiativeLink, InitiativeSystemLink
-
-            # Find the survivor: the one with the most system links (most data)
-            inits = Initiative.query.filter(Initiative.id.in_(ids)).all()
-            if not inits:
-                flash("Initiatives not found", "danger")
-                return redirect(url_for("super_admin.duplicate_detector"))
-
-            scored = []
-            for ini in inits:
-                sys_links = InitiativeSystemLink.query.filter_by(initiative_id=ini.id).count()
-                ch_links = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).count()
-                scored.append((ini, sys_links * 10 + ch_links))
-            scored.sort(key=lambda x: x[1], reverse=True)
-            survivor = scored[0][0]
-            others = [s[0] for s in scored[1:]]
-
-            # Get survivor's existing challenge links
-            survivor_ch_ids = {cl.challenge_id for cl in ChallengeInitiativeLink.query.filter_by(initiative_id=survivor.id).all()}
-
-            for other in others:
-                # Move challenge links that survivor doesn't have
-                for cl in ChallengeInitiativeLink.query.filter_by(initiative_id=other.id).all():
-                    if cl.challenge_id not in survivor_ch_ids:
-                        cl.initiative_id = survivor.id
-                        survivor_ch_ids.add(cl.challenge_id)
-                    else:
-                        db.session.delete(cl)
-
-                # Move system links that survivor doesn't have
-                survivor_sys_ids = {sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=survivor.id).all()}
-                for sl in InitiativeSystemLink.query.filter_by(initiative_id=other.id).all():
-                    if sl.system_id not in survivor_sys_ids:
-                        sl.initiative_id = survivor.id
-                        survivor_sys_ids.add(sl.system_id)
-                    else:
-                        # Duplicate system link — move KPIs to survivor's link
-                        survivor_link = InitiativeSystemLink.query.filter_by(initiative_id=survivor.id, system_id=sl.system_id).first()
-                        if survivor_link:
-                            for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id).all():
-                                kpi.initiative_system_link_id = survivor_link.id
-                        db.session.delete(sl)
-
-                # Copy description/impact if survivor is missing them
-                if not survivor.description and other.description:
-                    survivor.description = other.description
-                if not survivor.impact_level and other.impact_level:
-                    survivor.impact_level = other.impact_level
-
-                db.session.delete(other)
-                merged_count += 1
-
-            db.session.commit()
-            flash(f"Merged {merged_count} duplicate initiative(s) into '{survivor.name}' (#{survivor.id})", "success")
-
-        elif entity_type == "challenges":
-            from app.models import ChallengeInitiativeLink
-
-            challenges = Challenge.query.filter(Challenge.id.in_(ids)).all()
-            if not challenges:
-                flash("Challenges not found", "danger")
-                return redirect(url_for("super_admin.duplicate_detector"))
-
-            # Survivor: most initiative links
-            scored = []
-            for ch in challenges:
-                link_count = ChallengeInitiativeLink.query.filter_by(challenge_id=ch.id).count()
-                scored.append((ch, link_count))
-            scored.sort(key=lambda x: x[1], reverse=True)
-            survivor = scored[0][0]
-            others = [s[0] for s in scored[1:]]
-
-            survivor_init_ids = {cl.initiative_id for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=survivor.id).all()}
-
-            for other in others:
-                for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=other.id).all():
-                    if cl.initiative_id not in survivor_init_ids:
-                        cl.challenge_id = survivor.id
-                        survivor_init_ids.add(cl.initiative_id)
-                    else:
-                        db.session.delete(cl)
-
-                if not survivor.description and other.description:
-                    survivor.description = other.description
-                if not survivor.impact_level and other.impact_level:
-                    survivor.impact_level = other.impact_level
-
-                db.session.delete(other)
-                merged_count += 1
-
-            db.session.commit()
-            flash(f"Merged {merged_count} duplicate challenge(s) into '{survivor.name}' (#{survivor.id})", "success")
-
-        elif entity_type == "systems":
-            from app.models import InitiativeSystemLink
-
-            systems = System.query.filter(System.id.in_(ids)).all()
-            if not systems:
-                flash("Systems not found", "danger")
-                return redirect(url_for("super_admin.duplicate_detector"))
-
-            scored = []
-            for sys_item in systems:
-                link_count = InitiativeSystemLink.query.filter_by(system_id=sys_item.id).count()
-                scored.append((sys_item, link_count))
-            scored.sort(key=lambda x: x[1], reverse=True)
-            survivor = scored[0][0]
-            others = [s[0] for s in scored[1:]]
-
-            survivor_init_ids = {sl.initiative_id for sl in InitiativeSystemLink.query.filter_by(system_id=survivor.id).all()}
-
-            for other in others:
-                for sl in InitiativeSystemLink.query.filter_by(system_id=other.id).all():
-                    if sl.initiative_id not in survivor_init_ids:
-                        sl.system_id = survivor.id
-                        survivor_init_ids.add(sl.initiative_id)
-                    else:
-                        survivor_link = InitiativeSystemLink.query.filter_by(system_id=survivor.id, initiative_id=sl.initiative_id).first()
-                        if survivor_link:
-                            for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id).all():
-                                kpi.initiative_system_link_id = survivor_link.id
-                        db.session.delete(sl)
-
-                if not survivor.description and other.description:
-                    survivor.description = other.description
-                if not survivor.impact_level and other.impact_level:
-                    survivor.impact_level = other.impact_level
-
-                db.session.delete(other)
-                merged_count += 1
-
-            db.session.commit()
-            flash(f"Merged {merged_count} duplicate system(s) into '{survivor.name}' (#{survivor.id})", "success")
-
-        else:
-            flash(f"Merge not supported for {entity_type} yet", "warning")
-
+        _do_merge(entity_type, ids)
+        flash(f"Merged {len(ids)} {entity_type} into one", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"Error merging: {str(e)}", "danger")
 
     return redirect(url_for("super_admin.duplicate_detector"))
+
+
+@bp.route("/duplicate-detector/merge-all", methods=["POST"])
+@login_required
+@super_admin_required
+def duplicate_merge_all():
+    """Merge ALL duplicate groups for a given entity type."""
+    entity_type = request.form.get("entity_type")
+    org_filter = request.form.get("org_id", "")
+    org_id = int(org_filter) if org_filter else None
+
+    if entity_type not in ("initiatives", "challenges", "systems"):
+        flash(f"Merge all not supported for {entity_type}", "warning")
+        return redirect(url_for("super_admin.duplicate_detector"))
+
+    try:
+        # Re-run the duplicate scan to get current groups
+        model_map = {"initiatives": Initiative, "challenges": Challenge, "systems": System}
+        model = model_map[entity_type]
+
+        query = db.session.query(model.name, model.organization_id, db.func.count(model.id)).group_by(model.name, model.organization_id).having(db.func.count(model.id) > 1)
+        if org_id:
+            query = query.filter(model.organization_id == org_id)
+
+        total_merged = 0
+        for name, oid, count in query.all():
+            ids = [r.id for r in model.query.filter_by(name=name, organization_id=oid).all()]
+            if len(ids) < 2:
+                continue
+
+            # Use the same merge logic — POST to duplicate_merge internally
+            from flask import test_request_context
+            ids_str = ",".join(str(i) for i in ids)
+
+            # Call merge logic directly
+            _do_merge(entity_type, ids)
+            total_merged += 1
+
+        flash(f"Merged {total_merged} duplicate group(s) of {entity_type}", "success")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error during merge all: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.duplicate_detector", org_id=org_filter or None))
+
+
+def _do_merge(entity_type, ids):
+    """Core merge logic shared by single and bulk merge."""
+    from app.models import ChallengeInitiativeLink, InitiativeSystemLink
+
+    if entity_type == "initiatives":
+        inits = Initiative.query.filter(Initiative.id.in_(ids)).all()
+        if len(inits) < 2:
+            return
+
+        scored = []
+        for ini in inits:
+            sys_links = InitiativeSystemLink.query.filter_by(initiative_id=ini.id).count()
+            ch_links = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).count()
+            scored.append((ini, sys_links * 10 + ch_links))
+        scored.sort(key=lambda x: x[1], reverse=True)
+        survivor = scored[0][0]
+        others = [s[0] for s in scored[1:]]
+
+        survivor_ch_ids = {cl.challenge_id for cl in ChallengeInitiativeLink.query.filter_by(initiative_id=survivor.id).all()}
+        for other in others:
+            for cl in ChallengeInitiativeLink.query.filter_by(initiative_id=other.id).all():
+                if cl.challenge_id not in survivor_ch_ids:
+                    cl.initiative_id = survivor.id
+                    survivor_ch_ids.add(cl.challenge_id)
+                else:
+                    db.session.delete(cl)
+
+            survivor_sys_ids = {sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=survivor.id).all()}
+            for sl in InitiativeSystemLink.query.filter_by(initiative_id=other.id).all():
+                if sl.system_id not in survivor_sys_ids:
+                    sl.initiative_id = survivor.id
+                    survivor_sys_ids.add(sl.system_id)
+                else:
+                    survivor_link = InitiativeSystemLink.query.filter_by(initiative_id=survivor.id, system_id=sl.system_id).first()
+                    if survivor_link:
+                        for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id).all():
+                            kpi.initiative_system_link_id = survivor_link.id
+                    db.session.delete(sl)
+
+            if not survivor.description and other.description:
+                survivor.description = other.description
+            if not survivor.impact_level and other.impact_level:
+                survivor.impact_level = other.impact_level
+            db.session.delete(other)
+
+        db.session.commit()
+
+    elif entity_type == "challenges":
+        challenges = Challenge.query.filter(Challenge.id.in_(ids)).all()
+        if len(challenges) < 2:
+            return
+
+        scored = [(ch, ChallengeInitiativeLink.query.filter_by(challenge_id=ch.id).count()) for ch in challenges]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        survivor = scored[0][0]
+        others = [s[0] for s in scored[1:]]
+
+        survivor_init_ids = {cl.initiative_id for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=survivor.id).all()}
+        for other in others:
+            for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=other.id).all():
+                if cl.initiative_id not in survivor_init_ids:
+                    cl.challenge_id = survivor.id
+                    survivor_init_ids.add(cl.initiative_id)
+                else:
+                    db.session.delete(cl)
+            if not survivor.description and other.description:
+                survivor.description = other.description
+            if not survivor.impact_level and other.impact_level:
+                survivor.impact_level = other.impact_level
+            db.session.delete(other)
+
+        db.session.commit()
+
+    elif entity_type == "systems":
+        systems = System.query.filter(System.id.in_(ids)).all()
+        if len(systems) < 2:
+            return
+
+        scored = [(s, InitiativeSystemLink.query.filter_by(system_id=s.id).count()) for s in systems]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        survivor = scored[0][0]
+        others = [s[0] for s in scored[1:]]
+
+        survivor_init_ids = {sl.initiative_id for sl in InitiativeSystemLink.query.filter_by(system_id=survivor.id).all()}
+        for other in others:
+            for sl in InitiativeSystemLink.query.filter_by(system_id=other.id).all():
+                if sl.initiative_id not in survivor_init_ids:
+                    sl.system_id = survivor.id
+                    survivor_init_ids.add(sl.initiative_id)
+                else:
+                    survivor_link = InitiativeSystemLink.query.filter_by(system_id=survivor.id, initiative_id=sl.initiative_id).first()
+                    if survivor_link:
+                        for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id).all():
+                            kpi.initiative_system_link_id = survivor_link.id
+                    db.session.delete(sl)
+            if not survivor.description and other.description:
+                survivor.description = other.description
+            if not survivor.impact_level and other.impact_level:
+                survivor.impact_level = other.impact_level
+            db.session.delete(other)
+
+        db.session.commit()
 
 
 def _get_context(entity_key, item):
