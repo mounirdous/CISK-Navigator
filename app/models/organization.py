@@ -76,10 +76,15 @@ class Organization(db.Model):
         db.JSON, nullable=True,
         comment="Decision tag categories: ['scope', 'budget', ...]"
     )
-    # Action/milestone tags (JSON array of strings) — configurable per org
+    # Action/milestone tags (JSON array) — configurable per org
     action_tags = db.Column(
         db.JSON, nullable=True,
-        comment="Action register tag categories: ['contract', 'meeting', 'deadline', ...]"
+        comment="Action register tag categories: [{name, icon, color}, ...]"
+    )
+    # Value type categories (JSON array) — configurable per org
+    value_type_categories = db.Column(
+        db.JSON, nullable=True,
+        comment="Value type grouping categories: [{name, color}, ...]"
     )
 
     # Soft delete fields

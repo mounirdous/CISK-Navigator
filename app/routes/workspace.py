@@ -6100,6 +6100,7 @@ def _build_workspace_data(org_id):
             "calculation_type": vt.calculation_type,
             "formula_display": vt.get_formula_display() if vt.is_formula() else None,
             "list_options": vt.list_options if vt.is_list() else None,
+            "category": vt.category,
         }
         for vt in value_types
     ]
@@ -6215,6 +6216,7 @@ def _build_workspace_data(org_id):
             "impactScale": impact_scale,
             "noConsensusColor": getattr(Organization.query.get(org_id), "impact_no_consensus_color", None) or "#f59e0b",
             "notSetColor": getattr(Organization.query.get(org_id), "impact_not_set_color", None) or "#94a3b8",
+            "vtCategories": _org.value_type_categories or [] if _org else [],
             "orgEntityLinks": org_entity_links,
             "orgInheritedLinks": org_inherited_links,
             "whereUsed": _build_where_used(org_id),

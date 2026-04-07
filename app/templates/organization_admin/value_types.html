@@ -133,6 +133,9 @@
                 <div class="vt-body">
                     <div class="vt-title">
                         {{ vt.name }}
+                        {% if vt.category %}
+                        <span style="font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.03em; padding:0.1rem 0.4rem; border-radius:4px; margin-left:0.3rem; background:{{ vt.category_color or '#94a3b8' }}18; color:{{ vt.category_color or '#94a3b8' }}; border:1px solid {{ vt.category_color or '#94a3b8' }}40;">{{ vt.category }}</span>
+                        {% endif %}
                         {% if not vt.is_active %}<span class="vt-pill vt-pill-inactive"><i class="bi bi-pause-circle"></i> Inactive</span>{% endif %}
                     </div>
                     {% if vt.description %}

@@ -70,6 +70,7 @@ class ValueType(db.Model):
     default_aggregation_formula = db.Column(db.String(20), nullable=False, default=FORMULA_SUM)
     display_order = db.Column(db.Integer, default=0, nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
+    category = db.Column(db.String(50), nullable=True, comment="Category name from Organization.value_type_categories")
 
     # List type options: [{"key": "yes", "label": "Yes", "color": "#28a745"}, ...]
     list_options = db.Column(db.JSON, nullable=True)

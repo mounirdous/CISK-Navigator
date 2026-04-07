@@ -419,6 +419,44 @@ def action_tags():
     )
 
 
+@bp.route("/value-type-categories", methods=["GET", "POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def value_type_categories():
+    """Configure value type categories (name + color) for column grouping."""
+    import json as _json
+
+    org_id = session.get("organization_id")
+    org = Organization.query.get(org_id)
+
+    if request.method == "POST":
+        cats_json = request.form.get("vt_categories_json", "")
+        if cats_json:
+            try:
+                org.value_type_categories = _json.loads(cats_json)
+            except (ValueError, TypeError):
+                pass
+        db.session.commit()
+        flash("Value type categories updated", "success")
+        return redirect(url_for("organization_admin.value_type_categories"))
+
+    current_cats = org.value_type_categories or []
+
+    # Find used categories (which VTs reference them)
+    _used_cats = set()
+    for vt in ValueType.query.filter_by(organization_id=org_id).all():
+        if vt.category:
+            _used_cats.add(vt.category)
+
+    return render_template(
+        "organization_admin/value_type_categories.html",
+        current_categories=current_cats,
+        used_categories=list(_used_cats),
+        csrf_token=generate_csrf,
+    )
+
+
 # Impact Levels Configuration
 
 
@@ -3537,6 +3575,7 @@ def edit_value_type(vt_id):
             value_type.unit_label = form.unit_label.data
         value_type.is_active = form.is_active.data
         value_type.display_order = form.display_order.data
+        value_type.category = request.form.get("category", "").strip() or None
         if form.default_aggregation_formula.data:
             value_type.default_aggregation_formula = form.default_aggregation_formula.data
 
@@ -3592,10 +3631,14 @@ def edit_value_type(vt_id):
         ValueType.id != vt_id,
     ).order_by(ValueType.display_order, ValueType.name).all()
 
+    org = Organization.query.get(org_id)
+    vt_categories = org.value_type_categories or []
+
     return render_template(
         "organization_admin/edit_value_type.html",
         form=form,
         value_type=value_type,
+        vt_categories=vt_categories,
         csrf_token=generate_csrf,
         nav_pos=nav_pos,
         nav_total=len(nav_ids),

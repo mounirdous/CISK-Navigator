@@ -272,6 +272,10 @@ class FullBackupService:
             if vt.kind == "list" and vt.list_options:
                 vt_data["list_options"] = vt.list_options
 
+            if vt.category:
+                vt_data["category"] = vt.category
+                vt_data["category_color"] = vt.category_color
+
             result.append(vt_data)
 
         return result

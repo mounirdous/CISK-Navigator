@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% block title %}Value Type Categories - {{ session.organization_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white; padding: 2rem; border-radius: 16px 16px 0 0;
+    margin: -1.5rem -1.5rem 0 -1.5rem; text-align: center;
+}
+.page-header-icon {
+    width: 60px; height: 60px; background: rgba(255,255,255,0.2);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.75rem; margin: 0 auto 1rem; backdrop-filter: blur(10px);
+}
+.cat-card {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 1rem; border-radius: 10px; font-size: 0.88rem;
+    background: #f8fafc; border: 1.5px solid #e2e8f0; transition: all 0.15s;
+    margin-bottom: 0.4rem;
+}
+.cat-card:hover { border-color: #cbd5e1; }
+.cat-card.in-use { border-style: dashed; }
+.cat-preview {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 700;
+    font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em;
+}
+.cat-card .cat-actions { margin-left: auto; display: flex; gap: 0.3rem; }
+.cat-card .cat-actions button { border: none; background: none; cursor: pointer; font-size: 0.8rem; opacity: 0.5; padding: 2px 4px; }
+.cat-card .cat-actions button:hover { opacity: 1; }
+.color-palette { display: flex; flex-wrap: wrap; gap: 6px; }
+.color-swatch {
+    width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+    border: 3px solid transparent; transition: all 0.1s;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.selected { border-color: #333; box-shadow: 0 0 0 2px white, 0 0 0 4px #333; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center fade-in">
+    <div class="col-md-10 col-lg-6">
+        <div class="card hover-lift">
+            <div class="page-header">
+                <div class="page-header-icon">
+                    <i class="bi bi-palette-fill"></i>
+                </div>
+                <h2 class="mb-1">Lens Categories</h2>
+                <p class="mb-0 opacity-75">Group workspace lenses by category with colored column headers</p>
+            </div>
+
+            <div class="card-body" style="padding: 2rem;">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="vt_categories_json" id="vtCatsJson">
+
+                    <p style="font-size:0.85rem; color:#64748b; margin-bottom:1rem;">
+                        Categories group lens columns in the workspace grid with colored headers. Categories assigned to lenses cannot be removed.
+                    </p>
+
+                    <div id="catsList" style="min-height: 40px; margin-bottom: 1.5rem;"></div>
+
+                    <!-- Add new category -->
+                    <div style="display:flex; gap:0.4rem; margin-bottom:1.5rem; align-items:center;">
+                        <input type="text" class="form-control" id="newCatName" placeholder="Category name..."
+                               style="max-width:200px;" onkeydown="if(event.key==='Enter'){event.preventDefault();addCat();}">
+                        <input type="color" id="newCatColor" value="#3b82f6" style="width:40px; height:38px; border:1px solid #e2e8f0; border-radius:6px; cursor:pointer;">
+                        <button type="button" class="btn btn-outline-primary" onclick="addCat()">
+                            <i class="bi bi-plus-lg"></i> Add
+                        </button>
+                    </div>
+
+                    <div class="d-flex gap-2 pt-3 border-top">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i> Save Categories
+                        </button>
+                        <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit modal -->
+<div class="modal fade" id="editCatModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editIdx">
+                <div class="mb-3 text-center">
+                    <span id="editPreview" class="cat-preview" style="font-size:0.9rem; padding:0.3rem 0.8rem;"></span>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Name</label>
+                    <input type="text" class="form-control" id="editName" oninput="updatePreview()">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Color</label>
+                    <div class="color-palette" id="editPalette"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var COLORS = [
+    '#ef4444','#f97316','#f59e0b','#eab308',
+    '#84cc16','#22c55e','#10b981','#14b8a6',
+    '#06b6d4','#0ea5e9','#3b82f6','#6366f1',
+    '#8b5cf6','#a855f7','#d946ef','#ec4899',
+    '#f43f5e','#78716c','#64748b','#475569',
+];
+
+var _cats = {{ current_categories | tojson }};
+var _usedCats = new Set({{ used_categories | tojson }});
+var _editColor = '#3b82f6';
+
+function renderCats() {
+    var el = document.getElementById('catsList');
+    el.innerHTML = '';
+    _cats.forEach(function(cat, idx) {
+        var name = cat.name || cat;
+        var color = cat.color || '#94a3b8';
+        var inUse = _usedCats.has(name);
+        var card = document.createElement('div');
+        card.className = 'cat-card' + (inUse ? ' in-use' : '');
+        card.innerHTML =
+            '<span class="cat-preview" style="background:' + color + '18; color:' + color + '; border:1px solid ' + color + '40;">' + name + '</span>' +
+            '<span style="font-size:0.72rem; color:#94a3b8;">' + (inUse ? '<i class="bi bi-lock-fill"></i> in use' : '') + '</span>' +
+            '<span class="cat-actions">' +
+                '<button onclick="openEdit(' + idx + ')" title="Edit"><i class="bi bi-pencil"></i></button>' +
+                (inUse ? '' : '<button onclick="removeCat(' + idx + ')" title="Remove" style="color:#ef4444;"><i class="bi bi-x-lg"></i></button>') +
+            '</span>';
+        el.appendChild(card);
+    });
+    document.getElementById('vtCatsJson').value = JSON.stringify(_cats);
+}
+
+function addCat() {
+    var nameEl = document.getElementById('newCatName');
+    var colorEl = document.getElementById('newCatColor');
+    var name = nameEl.value.trim();
+    if (!name) return;
+    // Check duplicate
+    if (_cats.some(function(c) { return (c.name || c).toLowerCase() === name.toLowerCase(); })) {
+        nameEl.value = '';
+        return;
+    }
+    _cats.push({ name: name, color: colorEl.value });
+    nameEl.value = '';
+    renderCats();
+}
+
+function removeCat(idx) {
+    var name = _cats[idx].name || _cats[idx];
+    if (_usedCats.has(name)) return;
+    _cats.splice(idx, 1);
+    renderCats();
+}
+
+function openEdit(idx) {
+    document.getElementById('editIdx').value = idx;
+    var cat = _cats[idx];
+    document.getElementById('editName').value = cat.name || cat;
+    _editColor = cat.color || '#94a3b8';
+    buildPalette();
+    updatePreview();
+    new bootstrap.Modal(document.getElementById('editCatModal')).show();
+}
+
+function buildPalette() {
+    var el = document.getElementById('editPalette');
+    el.innerHTML = '';
+    COLORS.forEach(function(c) {
+        var sw = document.createElement('span');
+        sw.className = 'color-swatch' + (c === _editColor ? ' selected' : '');
+        sw.style.background = c;
+        sw.onclick = function() {
+            _editColor = c;
+            el.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('selected'); });
+            sw.classList.add('selected');
+            updatePreview();
+        };
+        el.appendChild(sw);
+    });
+}
+
+function updatePreview() {
+    var name = document.getElementById('editName').value || '?';
+    var el = document.getElementById('editPreview');
+    el.textContent = name;
+    el.style.background = _editColor + '18';
+    el.style.color = _editColor;
+    el.style.border = '1px solid ' + _editColor + '40';
+}
+
+function saveEdit() {
+    var idx = parseInt(document.getElementById('editIdx').value);
+    var name = document.getElementById('editName').value.trim();
+    if (!name) return;
+    _cats[idx] = { name: name, color: _editColor };
+    bootstrap.Modal.getInstance(document.getElementById('editCatModal')).hide();
+    renderCats();
+}
+
+renderCats();
+</script>
+{% endblock %}

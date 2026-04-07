@@ -1467,6 +1467,21 @@
         display: none !important;
     }
 
+    /* Value type category tag */
+    .vt-category-tag {
+        font-size: 0.55rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 0.08rem 0.35rem;
+        border-radius: 4px;
+        margin-top: 0.2rem;
+        border: 1px solid;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     /* Show expand icon in collapsed header */
     .ws-header-cell.column-collapsed .collapse-column-icon {
         position: static;
@@ -2314,6 +2329,26 @@
                 </div>
 
                 <!-- Impact filter moved to header bar cycling icon -->
+
+                <!-- Value Type Categories -->
+                <template x-if="_vtCategories().length > 0">
+                <div style="margin-top: 0.75rem;">
+                    <div style="font-size: 0.8rem; font-weight: 600; color: #6c757d; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.3rem;">
+                        <i class="bi bi-tag-fill"></i> Lens Categories
+                    </div>
+                    <div class="filter-pills-group">
+                        <template x-for="cat in _vtCategories()" :key="cat.name">
+                            <button @click="_toggleVtCategory(cat.name)"
+                                    class="filter-pill"
+                                    :class="{'active': !_hiddenCategories.includes(cat.name)}"
+                                    :style="'border-left: 3px solid ' + cat.color + ';'">
+                                <span x-text="cat.name"></span>
+                                <span x-text="'(' + cat.count + ')'"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+                </template>
             </div>
 
             <!-- Display Controls -->
@@ -2621,6 +2656,8 @@
                 <template x-for="(vt, index) in getVisibleValueTypes()" :key="vt.id">
                     <div class="ws-header-cell"
                          :class="{'draggable-column': editMode, 'column-collapsed': vt.collapsed}"
+                         :style="vt.category_color ? 'border-top: 3px solid ' + vt.category_color + ';' : ''"
+                         :title="vt.category ? vt.name + ' (' + vt.category + ')' : vt.name"
                          :draggable="editMode"
                          @dragstart="dragColumnStart($event, vt.id)"
                          @dragover.prevent="dragColumnOver($event, vt.id)"
@@ -3783,6 +3820,7 @@ function workspaceV2(orgId, filterPresets) {
             systems: true
         },
         showArchivedKPIs: false,
+        _hiddenCategories: [],
         badgeMode: {{ ws_badge_mode | default(1) }},  // 0=tree only, 1=tree+values, 2=full (badges, impact, decorations)
         // badgeMode replaces showBadges — no legacy field needed
 
@@ -4146,6 +4184,15 @@ function workspaceV2(orgId, filterPresets) {
             this.impactScale = data.impactScale || {};
             this.noConsensusColor = data.noConsensusColor || '#f59e0b';
             this.notSetColor = data.notSetColor || '#94a3b8';
+            // Build category color lookup from org-level definitions
+            this._vtCategoryColors = {};
+            (data.vtCategories || []).forEach(function(cat) {
+                this._vtCategoryColors[cat.name] = cat.color;
+            }.bind(this));
+            // Inject category_color into each VT from the org lookup
+            (this.valueTypes || []).forEach(function(vt) {
+                if (vt.category) vt.category_color = this._vtCategoryColors[vt.category] || '#94a3b8';
+            }.bind(this));
             window._wsImpactScale = this.impactScale;
             window._wsNoConsensusColor = this.noConsensusColor;
             window._wsNotSetColor = this.notSetColor;
@@ -5050,12 +5097,36 @@ function workspaceV2(orgId, filterPresets) {
         },
 
         getVisibleValueTypes() {
-            // If no specific columns selected, show all
-            if (this.visibleValueTypeIds.length === 0 || this.visibleValueTypeIds.length === this.valueTypes.length) {
-                return this.valueTypes;
+            var result = this.valueTypes;
+            // Filter by visible column IDs
+            if (this.visibleValueTypeIds.length > 0 && this.visibleValueTypeIds.length < this.valueTypes.length) {
+                result = result.filter(vt => this.visibleValueTypeIds.includes(vt.id));
             }
-            // Otherwise, filter to only visible columns
-            return this.valueTypes.filter(vt => this.visibleValueTypeIds.includes(vt.id));
+            // Filter by hidden categories
+            if (this._hiddenCategories.length > 0) {
+                result = result.filter(vt => !vt.category || !this._hiddenCategories.includes(vt.category));
+            }
+            return result;
+        },
+
+        _vtCategories() {
+            var cats = {};
+            this.valueTypes.forEach(function(vt) {
+                if (vt.category) {
+                    if (!cats[vt.category]) cats[vt.category] = { name: vt.category, color: vt.category_color || '#94a3b8', count: 0 };
+                    cats[vt.category].count++;
+                }
+            });
+            return Object.values(cats);
+        },
+
+        _toggleVtCategory(catName) {
+            var idx = this._hiddenCategories.indexOf(catName);
+            if (idx >= 0) {
+                this._hiddenCategories.splice(idx, 1);
+            } else {
+                this._hiddenCategories.push(catName);
+            }
         },
 
         async saveCurrentPreset() {
