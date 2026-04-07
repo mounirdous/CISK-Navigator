@@ -2804,7 +2804,7 @@
                                   x-text="(space.true_importance_level && impactScale[space.true_importance_level]) ? impactScale[space.true_importance_level].icon : (space.impact_level && impactScale[space.impact_level]) ? impactScale[space.impact_level].icon : space.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                         </div>
                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
-                            <div class="ws-cell value-cell text-center"
+                            <div class="ws-cell value-cell text-center" :data-vt-id="vt.id"
                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                  :style="'background-color: color-mix(in srgb, var(--entity-space-color) 13%, white); font-weight: 600; position: relative;'"
                                  @click.stop="showRollupTip(space, 'space', vt.id, $event)">
@@ -2959,7 +2959,7 @@
                                           x-text="(challenge.true_importance_level && impactScale[challenge.true_importance_level]) ? impactScale[challenge.true_importance_level].icon : (challenge.impact_level && impactScale[challenge.impact_level]) ? impactScale[challenge.impact_level].icon : challenge.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                 </div>
                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
-                                    <div class="ws-cell value-cell text-center"
+                                    <div class="ws-cell value-cell text-center" :data-vt-id="vt.id"
                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                          :style="'background-color: color-mix(in srgb, var(--entity-challenge-color) 13%, white); position: relative;'"
                                          @click.stop="showRollupTip(challenge, 'challenge', vt.id, $event)">
@@ -3085,7 +3085,7 @@
                                                   x-text="(initiative.true_importance_level && impactScale[initiative.true_importance_level]) ? impactScale[initiative.true_importance_level].icon : (initiative.impact_level && impactScale[initiative.impact_level]) ? impactScale[initiative.impact_level].icon : initiative.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                         </div>
                                         <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
-                                            <div class="ws-cell value-cell text-center"
+                                            <div class="ws-cell value-cell text-center" :data-vt-id="vt.id"
                                                  :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                  :style="'background-color: color-mix(in srgb, var(--entity-initiative-color) 13%, white); position: relative;'"
                                                  @click.stop="showRollupTip(initiative, 'initiative', vt.id, $event)">
@@ -3239,7 +3239,7 @@
                                                           x-text="(system.true_importance_level && impactScale[system.true_importance_level]) ? impactScale[system.true_importance_level].icon : (system.impact_level && impactScale[system.impact_level]) ? impactScale[system.impact_level].icon : system.impact_no_consensus ? '\u26A0' : '\u2014'"></span>
                                                 </div>
                                                 <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
-                                                    <div class="ws-cell value-cell text-center"
+                                                    <div class="ws-cell value-cell text-center" :data-vt-id="vt.id"
                                                          :class="{'numeric': vt.kind === 'numeric', 'column-collapsed': vt.collapsed}"
                                                          :style="'background-color: color-mix(in srgb, var(--entity-system-color) 13%, white); position: relative;'"
                                                          @click.stop="showRollupTip(system, 'system', vt.id, $event)">
@@ -3397,7 +3397,7 @@
                                                     </div>
                                                     <template x-for="vt in getVisibleValueTypes()" :key="vt.id">
                                                         <!-- KPI Cell: Show with consensus styling if config exists, otherwise clean N/A -->
-                                                        <div class="ws-cell text-center"
+                                                        <div class="ws-cell text-center" :data-vt-id="vt.id"
                                                              :class="{
                                                                  'value-cell': kpi.values && kpi.values[String(vt.id)],
                                                                  'column-collapsed': vt.collapsed,
@@ -4196,6 +4196,23 @@ function workspaceV2(orgId, filterPresets) {
             window._wsImpactScale = this.impactScale;
             window._wsNoConsensusColor = this.noConsensusColor;
             window._wsNotSetColor = this.notSetColor;
+
+            // Inject category tint CSS for value cells
+            var tintStyle = document.getElementById('vt-category-tints');
+            if (tintStyle) tintStyle.remove();
+            var tintCSS = '';
+            (this.valueTypes || []).forEach(function(vt) {
+                if (vt.category_color) {
+                    tintCSS += '.ws-cell[data-vt-id="' + vt.id + '"] { box-shadow: inset 0 0 0 100px ' + vt.category_color + '15 !important; }\n';
+                }
+            });
+            if (tintCSS) {
+                tintStyle = document.createElement('style');
+                tintStyle.id = 'vt-category-tints';
+                tintStyle.textContent = tintCSS;
+                document.head.appendChild(tintStyle);
+            }
+
             this.orgData = {
                 id:              this.orgId,
                 name:            this.orgName,

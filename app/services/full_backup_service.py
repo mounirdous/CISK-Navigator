@@ -151,6 +151,8 @@ class FullBackupService:
             "impact_calc_method": org.impact_calc_method,
             "impact_qfd_matrix": org.impact_qfd_matrix,
             "decision_tags": org.decision_tags,
+            "action_tags": org.action_tags,
+            "value_type_categories": org.value_type_categories,
             "impact_reinforce_weights": org.impact_reinforce_weights,
             "strategy_enabled": org.strategy_enabled,
         }
