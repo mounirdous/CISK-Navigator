@@ -326,7 +326,6 @@ class FullRestoreService:
                         display_order=vt_data.get("display_order", 0),
                         calculation_type=vt_data.get("calculation_type", "manual"),
                         category=vt_data.get("category"),
-                        category_color=vt_data.get("category_color"),
                     )
                     db.session.add(vt)
                     db.session.flush()
