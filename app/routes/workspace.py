@@ -1167,6 +1167,19 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.16",
+            "date": "April 7, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Lens categories</strong> &mdash; group workspace columns by category with colored top borders and subtle tinted backgrounds. Define categories with colors in Administration, assign them to lenses, and filter by category in the workspace. Makes it easy to spot related columns at a glance.",
+                "<strong>Duplicate Detector merge</strong> &mdash; one-click merge for duplicate initiatives, challenges, systems, action items, value types, and governance bodies. The record with the most data is kept, all relationships are transferred, and empty copies are deleted. Merge All button cleans an entire entity type at once.",
+                "<strong>Cross-workspace governance bodies</strong> &mdash; governance bodies can now be marked as cross-workspace so they appear in all workspaces on the instance. No more duplicating boards and committees across workspaces.",
+                "<strong>Smarter governance body filter</strong> &mdash; the Action Register GB filter now also finds actions that mention initiatives whose KPIs are governed by that body. Previously it only matched actions directly assigned to the GB.",
+                "<strong>Timeline improvements</strong> &mdash; milestone vertical lines are now subtle black. Removed noisy connector lines from box and point items. Action text now overflows visibly beyond bar boundaries instead of being cropped.",
+                "<strong>Backup and restore fixes</strong> &mdash; global governance bodies are now included in backups. Value type categories survive backup and restore. Auto-empty before restore removed in favour of explicit two-step process.",
+            ],
+        },
+        {
             "version": "7.15.0",
             "date": "April 6, 2026",
             "tags": ["feature"],

@@ -5,6 +5,23 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.16.0] - 2026-04-07
+
+### Added
+- **Lens categories** — group value type columns by category with colored top borders and subtle tinted backgrounds. Admin page at `/org-admin/value-type-categories` with color picker. Category dropdown on lens edit page. Filter by category in workspace Filters & Display panel
+- **Duplicate Detector merge** — Merge button per duplicate group + Merge All per entity type. Supports initiatives, challenges, systems, action items, value types, governance bodies. Keeps record with most data, transfers all relationships, deletes empties
+- **Cross-workspace governance bodies** — `is_global` flag on GovernanceBody. Global GBs appear in all workspaces. Create/edit toggle. All GB queries updated via `GovernanceBody.for_org()` (20+ locations)
+- **Full backup exports global GBs** — backup uses `for_org()` instead of filtering by org_id only
+- **GB filter matches indirectly** — Action Register GB filter now matches actions whose @mentioned initiatives have KPIs governed by that GB
+- **People & Transition Readiness space** — gap analysis space for IT Function Target with 4 challenges, 11 initiatives, 11 systems, 56 KPIs, milestones, and action items. Includes sourcing strategy (develop/hire/nearshore/outsource) and Lithuania nearshoring assessment
+- **Excel workbook template** — 8-sheet People & Transition Readiness template with role-fit matrix, capability gaps, transition roadmap, sourcing decisions, Lithuania assessment, outsourcing assessment, communication plan, CIO summary dashboard
+
+### Fixed
+- **Timeline milestone lines** — now black at 20% opacity (was orange). Hidden all vis.js box/point connector lines. Range item text overflows visibly beyond bar boundaries
+- **Value type restore** — removed `category_color` from restore (column removed from model) which caused all VTs to silently fail on restore
+- **Backup graceful fallback** — `getattr()` for `value_type_categories` and `action_tags` so backup works before migration
+- **Startup schema fix** — auto-adds `category` on value_types, `value_type_categories` on organizations, `is_global` on governance_bodies
+
 ## [7.15.0] - 2026-04-06
 
 ### Added
