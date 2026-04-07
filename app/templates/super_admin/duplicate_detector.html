@@ -100,7 +100,7 @@
             <i class="bi {{ data.icon }}" style="font-size: 1.3rem; color: {{ data.color }};"></i>
             <h4 class="mb-0">{{ data.label }}</h4>
             <span class="dup-badge" style="background: {{ data.color }}20; color: {{ data.color }};">{{ data.groups|length }} group{{ 's' if data.groups|length > 1 else '' }}, {{ data.total_duplicates }} records</span>
-            {% if key in ('initiatives', 'challenges', 'systems') and data.groups|length > 0 %}
+            {% if key in ('initiatives', 'challenges', 'systems', 'action_items', 'governance_bodies', 'value_types') and data.groups|length > 0 %}
             <form method="POST" action="{{ url_for('super_admin.duplicate_merge_all') }}" style="margin-left:auto;"
                   onsubmit="return confirm('Merge ALL {{ data.groups|length }} duplicate group(s) of {{ data.label }}?\n\nFor each group, the record with the most data is kept and all others are merged into it.\n\nThis cannot be undone.');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -124,7 +124,7 @@
                     </span>
                 </div>
                 <div class="d-flex gap-1">
-                    {% if key in ('initiatives', 'challenges', 'systems') and group.count > 1 %}
+                    {% if key in ('initiatives', 'challenges', 'systems', 'action_items', 'governance_bodies') and group.count > 1 %}
                     <form method="POST" action="{{ url_for('super_admin.duplicate_merge') }}"
                           onsubmit="return confirm('Merge {{ group.count }} copies of &quot;{{ group.name }}&quot;?\n\nThe record with the most data will be kept.\nAll relationships from duplicates will be transferred to it.\nEmpty duplicates will be deleted.');"
                           style="display:inline;">
@@ -207,7 +207,7 @@
                     </span>
                 </div>
                 <div class="d-flex gap-1">
-                    {% if key in ('initiatives', 'challenges', 'systems') and group.count > 1 %}
+                    {% if key in ('initiatives', 'challenges', 'systems', 'action_items', 'governance_bodies') and group.count > 1 %}
                     <form method="POST" action="{{ url_for('super_admin.duplicate_merge') }}"
                           onsubmit="return confirm('Merge {{ group.count }} copies of &quot;{{ group.name }}&quot;?\n\nThe record with the most data will be kept.\nAll relationships from duplicates will be transferred to it.\nEmpty duplicates will be deleted.');"
                           style="display:inline;">

@@ -2537,6 +2537,72 @@ def _do_merge(entity_type, ids):
         db.session.commit()
 
 
+    elif entity_type == "value_types":
+        # Keep the one with most KPI configs, re-link the rest
+        from app.models import KPIValueTypeConfig
+        vts = ValueType.query.filter(ValueType.id.in_(ids)).all()
+        if len(vts) < 2:
+            return
+        scored = [(vt, KPIValueTypeConfig.query.filter_by(value_type_id=vt.id).count()) for vt in vts]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        survivor = scored[0][0]
+        for other_vt in [s[0] for s in scored[1:]]:
+            # Move KPI configs that survivor doesn't have
+            survivor_kpi_ids = {c.kpi_id for c in KPIValueTypeConfig.query.filter_by(value_type_id=survivor.id).all()}
+            for cfg in KPIValueTypeConfig.query.filter_by(value_type_id=other_vt.id).all():
+                if cfg.kpi_id not in survivor_kpi_ids:
+                    cfg.value_type_id = survivor.id
+                    survivor_kpi_ids.add(cfg.kpi_id)
+                else:
+                    db.session.delete(cfg)
+            if not survivor.description and other_vt.description:
+                survivor.description = other_vt.description
+            db.session.delete(other_vt)
+        db.session.commit()
+
+    elif entity_type == "action_items":
+        # Simple dedup: keep the first (oldest), delete the rest
+        items = ActionItem.query.filter(ActionItem.id.in_(ids)).order_by(ActionItem.created_at).all()
+        if len(items) < 2:
+            return
+        survivor = items[0]
+        for other in items[1:]:
+            # Move mentions from other to survivor if survivor has none
+            if not survivor.mentions and other.mentions:
+                for m in other.mentions:
+                    m.action_item_id = survivor.id
+            db.session.delete(other)
+        db.session.commit()
+
+    elif entity_type == "governance_bodies":
+        # Keep the one with most KPI links
+        gbs = GovernanceBody.query.filter(GovernanceBody.id.in_(ids)).all()
+        if len(gbs) < 2:
+            return
+        from app.models import KPIGovernanceBodyLink
+        scored = [(gb, KPIGovernanceBodyLink.query.filter_by(governance_body_id=gb.id).count()) for gb in gbs]
+        scored.sort(key=lambda x: x[1], reverse=True)
+        survivor = scored[0][0]
+        for other_gb in [s[0] for s in scored[1:]]:
+            # Re-link KPI associations
+            survivor_kpi_ids = {l.kpi_id for l in KPIGovernanceBodyLink.query.filter_by(governance_body_id=survivor.id).all()}
+            for link in KPIGovernanceBodyLink.query.filter_by(governance_body_id=other_gb.id).all():
+                if link.kpi_id not in survivor_kpi_ids:
+                    link.governance_body_id = survivor.id
+                    survivor_kpi_ids.add(link.kpi_id)
+                else:
+                    db.session.delete(link)
+            # Re-link action items
+            for ai in ActionItem.query.filter(ActionItem.governance_bodies.any(GovernanceBody.id == other_gb.id)).all():
+                if survivor not in ai.governance_bodies:
+                    ai.governance_bodies.append(survivor)
+                ai.governance_bodies.remove(other_gb)
+            if not survivor.description and other_gb.description:
+                survivor.description = other_gb.description
+            db.session.delete(other_gb)
+        db.session.commit()
+
+
 def _get_context(entity_key, item):
     """Get parent/location context string for an entity."""
     try:
