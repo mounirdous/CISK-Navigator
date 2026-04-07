@@ -202,10 +202,18 @@
 .vis-item.item-milestone  { background: linear-gradient(135deg, #ff6d00, #e65100) !important; color:white !important; border:2px solid #bf360c !important; font-weight:700; border-radius:4px; }
 .vis-item.item-milestone .vis-item-content { color: white !important; }
 
-/* Milestone vertical markers — behind items, thin, click-through */
+/* Milestone vertical markers — behind items, thin black lines, click-through */
 .vis-custom-time:not(.vis-current-time) { z-index: 0 !important; pointer-events: none !important;
-                   background-color: #e65100 !important; width: 2px !important; opacity: 0.4; }
+                   background-color: #000000 !important; width: 2px !important; opacity: 0.2; }
 .vis-custom-time:not(.vis-current-time) > * { pointer-events: none !important; }
+/* Hide ALL connector lines and dots on box/point items */
+.vis-item .vis-item-line, .vis-item .vis-line,
+.vis-item .vis-item-dot, .vis-item .vis-dot,
+div.vis-line, div.vis-dot {
+    height: 0 !important; width: 0 !important;
+    visibility: hidden !important; opacity: 0 !important;
+    overflow: hidden !important; display: none !important;
+}
 .vis-item.item-completed  { opacity:0.45; }
 .vis-item.item-cancelled  { opacity:0.3; text-decoration:line-through; }
 .vis-item.item-undated    { border-style:dotted; opacity:0.7; }
@@ -226,9 +234,11 @@
             box-shadow:0 1px 4px rgba(0,0,0,0.08); transition:box-shadow 0.15s; z-index:2 !important; }
 .vis-item:hover { box-shadow:0 3px 12px rgba(0,0,0,0.16); z-index:10; }
 .vis-item.vis-selected { box-shadow:0 2px 8px rgba(0,0,0,0.22); border-width:2px; }
-.vis-item.vis-range .vis-item-content { padding:1px 6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.vis-item.vis-box  { border-radius:8px; overflow:visible; }
-.vis-item.vis-box  .vis-item-content { white-space:nowrap; overflow:visible; }
+.vis-item.vis-range { overflow:visible !important; }
+.vis-item.vis-range .vis-item-content { padding:1px 6px; white-space:nowrap; overflow:visible !important; text-overflow:unset !important; }
+.vis-item.vis-range .vis-item-overflow { overflow:visible !important; }
+.vis-item.vis-box  { border-radius:8px; overflow:visible !important; }
+.vis-item.vis-box  .vis-item-content { white-space:nowrap; overflow:visible !important; text-overflow: unset !important; }
 .vis-item.vis-point { overflow:visible; }
 .vis-item.vis-point .vis-item-content { padding:1px 5px; white-space:nowrap; overflow:visible; }
 .vis-time-axis .vis-text { font-size:0.7rem; font-weight:500; color:#78909c; }
@@ -1797,6 +1807,7 @@ function renderTimeline(groupBy) {
 
     // Style milestone markers: color, label with icon, behind items
     setTimeout(function() {
+        console.log('[MILESTONE_TRACE] Styling milestone markers...');
         var customs = [];
         document.querySelectorAll('.vis-custom-time').forEach(function(el) {
             if (!el.classList.contains('vis-current-time')) customs.push(el);
@@ -1807,8 +1818,9 @@ function renderTimeline(groupBy) {
             el.style.zIndex = '0';
             el.style.pointerEvents = 'none';
             el.style.width = '2px';
-            el.style.backgroundColor = m.color;
-            el.style.opacity = '0.6';
+            el.style.backgroundColor = '#000000';
+            el.style.opacity = '0.25';
+            console.log('[MILESTONE_TRACE] Styled marker:', m.title, 'color=black');
             // Add a label at the top of the marker line
             var label = document.createElement('div');
             label.style.cssText = 'position:absolute;top:0;left:4px;white-space:nowrap;font-size:0.72rem;font-weight:600;color:' + m.color + ';pointer-events:none;z-index:1;';
