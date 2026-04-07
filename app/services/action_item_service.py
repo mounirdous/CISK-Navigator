@@ -77,12 +77,33 @@ class ActionItemService:
                 )
             )
 
-        # Apply governance body filter
+        # Apply governance body filter — match actions directly assigned to GB
+        # OR actions that mention initiatives/KPIs governed by that GB
         if governance_body_ids:
-            query = query.join(
-                action_item_governance_body,
-                ActionItem.id == action_item_governance_body.c.action_item_id,
-            ).filter(action_item_governance_body.c.governance_body_id.in_(governance_body_ids))
+            from app.models import ActionItemMention, KPIGovernanceBodyLink, KPI, InitiativeSystemLink
+
+            # Direct: action has this GB
+            direct_ids = db.session.query(action_item_governance_body.c.action_item_id).filter(
+                action_item_governance_body.c.governance_body_id.in_(governance_body_ids)
+            ).subquery()
+
+            # Indirect via initiative mention: action mentions initiative → initiative has system links → KPIs → GB
+            indirect_init_ids = (
+                db.session.query(ActionItemMention.action_item_id)
+                .filter(ActionItemMention.entity_type == "initiative")
+                .join(InitiativeSystemLink, InitiativeSystemLink.initiative_id == ActionItemMention.entity_id)
+                .join(KPI, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+                .join(KPIGovernanceBodyLink, KPIGovernanceBodyLink.kpi_id == KPI.id)
+                .filter(KPIGovernanceBodyLink.governance_body_id.in_(governance_body_ids))
+                .distinct()
+            ).subquery()
+
+            query = query.filter(
+                or_(
+                    ActionItem.id.in_(db.session.query(direct_ids)),
+                    ActionItem.id.in_(db.session.query(indirect_init_ids)),
+                )
+            )
 
         return query.order_by(ActionItem.created_at.desc()).all()
 
