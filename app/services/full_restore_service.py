@@ -147,6 +147,14 @@ class FullRestoreService:
         }
 
         try:
+            # Step 0: Auto-empty existing data before restore (preserves org record + user memberships)
+            from app.routes.organization_admin import _delete_all_organization_data
+            try:
+                _delete_all_organization_data(organization_id)
+                db.session.flush()
+            except Exception as _empty_err:
+                stats["warnings"].append(f"Auto-empty warning: {str(_empty_err)}")
+
             # Maps for tracking created objects
             value_type_map = {}  # name -> ValueType
             governance_body_map = {}  # backup name -> GovernanceBody object
@@ -154,7 +162,7 @@ class FullRestoreService:
             system_map = {}  # name -> System
             user_map = {}  # backup login -> User object
 
-            # Step 0: Handle user mapping/creation
+            # Step 0b: Handle user mapping/creation
             if user_mapping:
                 for backup_login, mapping_info in user_mapping.items():
                     action = mapping_info.get("action")
