@@ -2421,11 +2421,6 @@ def duplicate_merge_all():
             if len(ids) < 2:
                 continue
 
-            # Use the same merge logic — POST to duplicate_merge internally
-            from flask import test_request_context
-            ids_str = ",".join(str(i) for i in ids)
-
-            # Call merge logic directly
             _do_merge(entity_type, ids)
             total_merged += 1
 
