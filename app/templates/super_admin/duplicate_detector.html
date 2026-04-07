@@ -112,10 +112,24 @@
                         &nbsp;<span class="dup-badge" style="background: #fef3c7; color: #92400e;">{{ group.count }} copies</span>
                     </span>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;"
-                        onclick="this.closest('.dup-group').querySelector('.dup-items').classList.toggle('d-none'); this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
-                    <i class="bi bi-chevron-down"></i> Details
-                </button>
+                <div class="d-flex gap-1">
+                    {% if key in ('initiatives', 'challenges', 'systems') and group.count > 1 %}
+                    <form method="POST" action="{{ url_for('super_admin.duplicate_merge') }}"
+                          onsubmit="return confirm('Merge {{ group.count }} copies of &quot;{{ group.name }}&quot;?\n\nThe record with the most data will be kept.\nAll relationships from duplicates will be transferred to it.\nEmpty duplicates will be deleted.');"
+                          style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="entity_type" value="{{ key }}">
+                        <input type="hidden" name="ids" value="{{ group.records | map(attribute='id') | join(',') }}">
+                        <button type="submit" class="btn btn-sm btn-primary" style="font-size: 0.75rem;">
+                            <i class="bi bi-arrows-collapse"></i> Merge
+                        </button>
+                    </form>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;"
+                            onclick="this.closest('.dup-group').querySelector('.dup-items').classList.toggle('d-none'); this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
+                        <i class="bi bi-chevron-down"></i> Details
+                    </button>
+                </div>
             </div>
             <div class="dup-items d-none">
                 {% for item in group.records %}
@@ -181,10 +195,24 @@
                         &nbsp;<span class="dup-badge" style="background: #fef3c7; color: #92400e;">{{ group.count }} copies</span>
                     </span>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;"
-                        onclick="this.closest('.dup-group').querySelector('.dup-items').classList.toggle('d-none'); this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
-                    <i class="bi bi-chevron-down"></i> Details
-                </button>
+                <div class="d-flex gap-1">
+                    {% if key in ('initiatives', 'challenges', 'systems') and group.count > 1 %}
+                    <form method="POST" action="{{ url_for('super_admin.duplicate_merge') }}"
+                          onsubmit="return confirm('Merge {{ group.count }} copies of &quot;{{ group.name }}&quot;?\n\nThe record with the most data will be kept.\nAll relationships from duplicates will be transferred to it.\nEmpty duplicates will be deleted.');"
+                          style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="entity_type" value="{{ key }}">
+                        <input type="hidden" name="ids" value="{{ group.records | map(attribute='id') | join(',') }}">
+                        <button type="submit" class="btn btn-sm btn-primary" style="font-size: 0.75rem;">
+                            <i class="bi bi-arrows-collapse"></i> Merge
+                        </button>
+                    </form>
+                    {% endif %}
+                    <button type="button" class="btn btn-sm btn-outline-secondary" style="font-size: 0.75rem;"
+                            onclick="this.closest('.dup-group').querySelector('.dup-items').classList.toggle('d-none'); this.querySelector('i').classList.toggle('bi-chevron-down'); this.querySelector('i').classList.toggle('bi-chevron-up');">
+                        <i class="bi bi-chevron-down"></i> Details
+                    </button>
+                </div>
             </div>
             <div class="dup-items d-none">
                 {% for item in group.records %}

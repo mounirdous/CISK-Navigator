@@ -2366,6 +2366,171 @@ def duplicate_delete(entity_type, entity_id):
     return redirect(url_for("super_admin.duplicate_detector", scan=entity_type))
 
 
+@bp.route("/duplicate-detector/merge", methods=["POST"])
+@login_required
+@super_admin_required
+def duplicate_merge():
+    """Merge duplicate entities: keep the one with most data, re-link relationships from others, delete empties."""
+    entity_type = request.form.get("entity_type")
+    ids_raw = request.form.get("ids", "")
+
+    if not entity_type or not ids_raw:
+        flash("Missing entity type or IDs", "danger")
+        return redirect(url_for("super_admin.duplicate_detector"))
+
+    ids = [int(x) for x in ids_raw.split(",") if x.strip()]
+    if len(ids) < 2:
+        flash("Need at least 2 records to merge", "danger")
+        return redirect(url_for("super_admin.duplicate_detector"))
+
+    try:
+        merged_count = 0
+
+        if entity_type == "initiatives":
+            from app.models import ChallengeInitiativeLink, InitiativeSystemLink
+
+            # Find the survivor: the one with the most system links (most data)
+            inits = Initiative.query.filter(Initiative.id.in_(ids)).all()
+            if not inits:
+                flash("Initiatives not found", "danger")
+                return redirect(url_for("super_admin.duplicate_detector"))
+
+            scored = []
+            for ini in inits:
+                sys_links = InitiativeSystemLink.query.filter_by(initiative_id=ini.id).count()
+                ch_links = ChallengeInitiativeLink.query.filter_by(initiative_id=ini.id).count()
+                scored.append((ini, sys_links * 10 + ch_links))
+            scored.sort(key=lambda x: x[1], reverse=True)
+            survivor = scored[0][0]
+            others = [s[0] for s in scored[1:]]
+
+            # Get survivor's existing challenge links
+            survivor_ch_ids = {cl.challenge_id for cl in ChallengeInitiativeLink.query.filter_by(initiative_id=survivor.id).all()}
+
+            for other in others:
+                # Move challenge links that survivor doesn't have
+                for cl in ChallengeInitiativeLink.query.filter_by(initiative_id=other.id).all():
+                    if cl.challenge_id not in survivor_ch_ids:
+                        cl.initiative_id = survivor.id
+                        survivor_ch_ids.add(cl.challenge_id)
+                    else:
+                        db.session.delete(cl)
+
+                # Move system links that survivor doesn't have
+                survivor_sys_ids = {sl.system_id for sl in InitiativeSystemLink.query.filter_by(initiative_id=survivor.id).all()}
+                for sl in InitiativeSystemLink.query.filter_by(initiative_id=other.id).all():
+                    if sl.system_id not in survivor_sys_ids:
+                        sl.initiative_id = survivor.id
+                        survivor_sys_ids.add(sl.system_id)
+                    else:
+                        # Duplicate system link — move KPIs to survivor's link
+                        survivor_link = InitiativeSystemLink.query.filter_by(initiative_id=survivor.id, system_id=sl.system_id).first()
+                        if survivor_link:
+                            for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id).all():
+                                kpi.initiative_system_link_id = survivor_link.id
+                        db.session.delete(sl)
+
+                # Copy description/impact if survivor is missing them
+                if not survivor.description and other.description:
+                    survivor.description = other.description
+                if not survivor.impact_level and other.impact_level:
+                    survivor.impact_level = other.impact_level
+
+                db.session.delete(other)
+                merged_count += 1
+
+            db.session.commit()
+            flash(f"Merged {merged_count} duplicate initiative(s) into '{survivor.name}' (#{survivor.id})", "success")
+
+        elif entity_type == "challenges":
+            from app.models import ChallengeInitiativeLink
+
+            challenges = Challenge.query.filter(Challenge.id.in_(ids)).all()
+            if not challenges:
+                flash("Challenges not found", "danger")
+                return redirect(url_for("super_admin.duplicate_detector"))
+
+            # Survivor: most initiative links
+            scored = []
+            for ch in challenges:
+                link_count = ChallengeInitiativeLink.query.filter_by(challenge_id=ch.id).count()
+                scored.append((ch, link_count))
+            scored.sort(key=lambda x: x[1], reverse=True)
+            survivor = scored[0][0]
+            others = [s[0] for s in scored[1:]]
+
+            survivor_init_ids = {cl.initiative_id for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=survivor.id).all()}
+
+            for other in others:
+                for cl in ChallengeInitiativeLink.query.filter_by(challenge_id=other.id).all():
+                    if cl.initiative_id not in survivor_init_ids:
+                        cl.challenge_id = survivor.id
+                        survivor_init_ids.add(cl.initiative_id)
+                    else:
+                        db.session.delete(cl)
+
+                if not survivor.description and other.description:
+                    survivor.description = other.description
+                if not survivor.impact_level and other.impact_level:
+                    survivor.impact_level = other.impact_level
+
+                db.session.delete(other)
+                merged_count += 1
+
+            db.session.commit()
+            flash(f"Merged {merged_count} duplicate challenge(s) into '{survivor.name}' (#{survivor.id})", "success")
+
+        elif entity_type == "systems":
+            from app.models import InitiativeSystemLink
+
+            systems = System.query.filter(System.id.in_(ids)).all()
+            if not systems:
+                flash("Systems not found", "danger")
+                return redirect(url_for("super_admin.duplicate_detector"))
+
+            scored = []
+            for sys_item in systems:
+                link_count = InitiativeSystemLink.query.filter_by(system_id=sys_item.id).count()
+                scored.append((sys_item, link_count))
+            scored.sort(key=lambda x: x[1], reverse=True)
+            survivor = scored[0][0]
+            others = [s[0] for s in scored[1:]]
+
+            survivor_init_ids = {sl.initiative_id for sl in InitiativeSystemLink.query.filter_by(system_id=survivor.id).all()}
+
+            for other in others:
+                for sl in InitiativeSystemLink.query.filter_by(system_id=other.id).all():
+                    if sl.initiative_id not in survivor_init_ids:
+                        sl.system_id = survivor.id
+                        survivor_init_ids.add(sl.initiative_id)
+                    else:
+                        survivor_link = InitiativeSystemLink.query.filter_by(system_id=survivor.id, initiative_id=sl.initiative_id).first()
+                        if survivor_link:
+                            for kpi in KPI.query.filter_by(initiative_system_link_id=sl.id).all():
+                                kpi.initiative_system_link_id = survivor_link.id
+                        db.session.delete(sl)
+
+                if not survivor.description and other.description:
+                    survivor.description = other.description
+                if not survivor.impact_level and other.impact_level:
+                    survivor.impact_level = other.impact_level
+
+                db.session.delete(other)
+                merged_count += 1
+
+            db.session.commit()
+            flash(f"Merged {merged_count} duplicate system(s) into '{survivor.name}' (#{survivor.id})", "success")
+
+        else:
+            flash(f"Merge not supported for {entity_type} yet", "warning")
+
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error merging: {str(e)}", "danger")
+
+    return redirect(url_for("super_admin.duplicate_detector"))
+
+
 def _get_context(entity_key, item):
     """Get parent/location context string for an entity."""
     try:
