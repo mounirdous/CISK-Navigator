@@ -278,10 +278,8 @@ class FullBackupService:
 
     @staticmethod
     def _export_governance_bodies(organization_id):
-        """Export all governance bodies"""
-        gbs = (
-            GovernanceBody.query.filter_by(organization_id=organization_id).order_by(GovernanceBody.display_order).all()
-        )
+        """Export all governance bodies (including global ones used by this workspace)"""
+        gbs = GovernanceBody.for_org(organization_id)
 
         result = []
         for gb in gbs:
