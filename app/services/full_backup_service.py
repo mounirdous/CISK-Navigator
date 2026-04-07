@@ -151,8 +151,8 @@ class FullBackupService:
             "impact_calc_method": org.impact_calc_method,
             "impact_qfd_matrix": org.impact_qfd_matrix,
             "decision_tags": org.decision_tags,
-            "action_tags": org.action_tags,
-            "value_type_categories": org.value_type_categories,
+            "action_tags": getattr(org, "action_tags", None),
+            "value_type_categories": getattr(org, "value_type_categories", None),
             "impact_reinforce_weights": org.impact_reinforce_weights,
             "strategy_enabled": org.strategy_enabled,
         }
@@ -274,9 +274,8 @@ class FullBackupService:
             if vt.kind == "list" and vt.list_options:
                 vt_data["list_options"] = vt.list_options
 
-            if vt.category:
+            if getattr(vt, "category", None):
                 vt_data["category"] = vt.category
-                vt_data["category_color"] = vt.category_color
 
             result.append(vt_data)
 
