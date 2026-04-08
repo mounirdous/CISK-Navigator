@@ -93,6 +93,9 @@
     transition: background 0.1s;
 }
 .items-table tbody tr:hover { background: #f8fafe; }
+.ie-cell { cursor: text; }
+.ie-cell:hover .ie-display { background: #f0f4ff; border-radius: 4px; padding: 1px 4px; margin: -1px -4px; }
+.ie-status:hover, .ie-priority:hover { opacity: 0.7; }
 .items-table tbody td { padding: 0.7rem 1rem; vertical-align: middle; }
 
 .priority-dot {
@@ -858,9 +861,9 @@ div.vis-line, div.vis-dot {
                         {% endif %}
                     </td>
 
-                    <!-- Title -->
-                    <td>
-                        <div style="font-weight:600; font-size:0.9rem;">{{ item.title }}</div>
+                    <!-- Title (click to edit) -->
+                    <td class="ie-cell" onclick="ieStart(this, {{ item.id }}, 'title', '{{ item.title | e }}')">
+                        <div style="font-weight:600; font-size:0.9rem;" class="ie-display">{{ item.title }}</div>
                         {% if item.description %}
                         <div style="font-size:0.8rem; color:#78909c; margin-top:2px;">
                             {{ item.description | strip_md | truncate(120, True) }}
@@ -868,7 +871,7 @@ div.vis-line, div.vis-dot {
                         {% endif %}
                     </td>
 
-                    <!-- Status -->
+                    <!-- Status (click to cycle) -->
                     <td>
                         {% if item.type == 'action' %}
                         {% set s_styles = {
@@ -877,13 +880,15 @@ div.vis-line, div.vis-dot {
                             'completed': 'background:#ede7f6; color:#4527a0;',
                             'cancelled': 'background:#ffebee; color:#b71c1c;'
                         } %}
-                        <span class="badge-status" style="{{ s_styles.get(item.status, '') }}">
+                        <span class="badge-status ie-status" style="{{ s_styles.get(item.status, '') }}; cursor:pointer;"
+                              data-item-id="{{ item.id }}" data-status="{{ item.status }}"
+                              onclick="ieCycleStatus(this)" title="Click to change status">
                             {{ item.status | capitalize }}
                         </span>
                         {% endif %}
                     </td>
 
-                    <!-- Priority -->
+                    <!-- Priority (click to cycle) -->
                     <td>
                         {% if item.type == 'action' %}
                         {% set p_styles = {
@@ -893,21 +898,24 @@ div.vis-line, div.vis-dot {
                             'low': ('▼', '#546e7a')
                         } %}
                         {% set icon, color = p_styles.get(item.priority, ('●', '#546e7a')) %}
-                        <span style="font-size:0.82rem; font-weight:600; color:{{ color }};">
+                        <span class="ie-priority" style="font-size:0.82rem; font-weight:600; color:{{ color }}; cursor:pointer;"
+                              data-item-id="{{ item.id }}" data-priority="{{ item.priority }}"
+                              onclick="ieCyclePriority(this)" title="Click to change priority">
                             {{ icon }} {{ item.priority | capitalize }}
                         </span>
                         {% endif %}
                     </td>
 
-                    <!-- Due Date -->
-                    <td class="act-d1" style="font-size:0.82rem;">
+                    <!-- Due Date (click to edit) -->
+                    <td class="act-d1 ie-cell" style="font-size:0.82rem;"
+                        onclick="ieStartDate(this, {{ item.id }}, 'due_date', '{{ item.due_date.isoformat() if item.due_date else '' }}')">
                         {% if item.due_date %}
-                        <span {% if item.is_overdue %}style="color:#e65100; font-weight:600;"{% endif %}>
+                        <span class="ie-display" {% if item.is_overdue %}style="color:#e65100; font-weight:600;"{% endif %}>
                             {{ item.due_date.strftime('%d %b %Y') }}
                             {% if item.is_overdue %}<i class="bi bi-exclamation-circle ms-1"></i>{% endif %}
                         </span>
                         {% else %}
-                        <span style="color:#ccc;">—</span>
+                        <span class="ie-display" style="color:#ccc;">—</span>
                         {% endif %}
                     </td>
 
@@ -1782,7 +1790,7 @@ function renderTimeline(groupBy) {
         tlInstance.on('click', function(props) {
             if (props.item && typeof props.item === 'number') {
                 const item = TL_DATA.find(i => i.id === props.item);
-                if (item) window.location.href = item.view_url;
+                if (item) _showTimelineEditPopup(item, props.event);
             }
         });
     }
@@ -2243,6 +2251,249 @@ function applyActImpactFilter() {
     });
     var countEl = document.getElementById('items-count');
     if (countEl) countEl.textContent = visibleCount;
+}
+
+// ── Timeline Edit Popup ─────────────────────────────────────────────────
+function _showTimelineEditPopup(item, event) {
+    // Remove any existing popup
+    var old = document.getElementById('tl-edit-popup');
+    if (old) old.remove();
+
+    var isAction = item.type === 'action';
+    var isMilestone = item.type === 'milestone';
+
+    var popup = document.createElement('div');
+    popup.id = 'tl-edit-popup';
+    popup.style.cssText = 'position:fixed; z-index:9999; background:white; border-radius:12px; box-shadow:0 8px 32px rgba(0,0,0,0.2); padding:1rem 1.25rem; min-width:320px; max-width:400px; font-size:0.85rem;';
+
+    // Position near click
+    var x = Math.min(event.clientX || event.pageX || 300, window.innerWidth - 420);
+    var y = Math.min(event.clientY || event.pageY || 200, window.innerHeight - 350);
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
+
+    var statusOpts = isAction ? ['draft','active','completed','cancelled'].map(function(s) {
+        return '<option value="' + s + '"' + (item.status === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + '</option>';
+    }).join('') : '';
+
+    var priorityOpts = isAction ? ['low','medium','high','urgent'].map(function(p) {
+        return '<option value="' + p + '"' + (item.priority === p ? ' selected' : '') + '>' + p.charAt(0).toUpperCase() + p.slice(1) + '</option>';
+    }).join('') : '';
+
+    popup.innerHTML =
+        '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">' +
+            '<strong style="font-size:0.9rem;">' + (isMilestone ? '◆ ' : '') + 'Edit</strong>' +
+            '<div style="display:flex; gap:0.3rem;">' +
+                '<a href="' + item.view_url + '" style="font-size:0.75rem; color:#3b82f6; text-decoration:none;" title="Open full view"><i class="bi bi-box-arrow-up-right"></i></a>' +
+                '<span onclick="this.closest(\'#tl-edit-popup\').remove();" style="cursor:pointer; color:#94a3b8; font-size:1.1rem;" title="Close">&times;</span>' +
+            '</div>' +
+        '</div>' +
+        '<div style="margin-bottom:0.5rem;">' +
+            '<label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase;">Title</label>' +
+            '<input type="text" id="tep-title" class="form-control form-control-sm" value="' + (item.title_text || '').replace(/"/g, '&quot;') + '">' +
+        '</div>' +
+        (isAction ?
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.5rem;">' +
+                '<div><label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase;">Status</label>' +
+                '<select id="tep-status" class="form-select form-select-sm">' + statusOpts + '</select></div>' +
+                '<div><label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase;">Priority</label>' +
+                '<select id="tep-priority" class="form-select form-select-sm">' + priorityOpts + '</select></div>' +
+            '</div>'
+        : '') +
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:0.75rem;">' +
+            (isAction ? '<div><label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase;">Start Date</label>' +
+            '<input type="date" id="tep-start" class="form-control form-control-sm" value="' + (item.start_date || '') + '"></div>' : '') +
+            '<div><label style="font-size:0.72rem; font-weight:600; color:#64748b; text-transform:uppercase;">' + (isMilestone ? 'Milestone Date' : 'Due Date') + '</label>' +
+            '<input type="date" id="tep-due" class="form-control form-control-sm" value="' + (item.due_date || '') + '"></div>' +
+        '</div>' +
+        '<div style="display:flex; gap:0.4rem; justify-content:flex-end;">' +
+            '<button onclick="this.closest(\'#tl-edit-popup\').remove();" class="btn btn-sm btn-outline-secondary">Cancel</button>' +
+            '<button onclick="_saveTimelineEdit(' + item.id + ')" class="btn btn-sm btn-primary"><i class="bi bi-check-lg"></i> Save</button>' +
+        '</div>';
+
+    document.body.appendChild(popup);
+
+    // Focus title
+    setTimeout(function() { document.getElementById('tep-title').focus(); }, 50);
+
+    // Close on Escape
+    document.addEventListener('keydown', function _esc(e) {
+        if (e.key === 'Escape') { popup.remove(); document.removeEventListener('keydown', _esc); }
+    });
+}
+
+function _saveTimelineEdit(itemId) {
+    var body = {};
+    var titleEl = document.getElementById('tep-title');
+    var statusEl = document.getElementById('tep-status');
+    var priorityEl = document.getElementById('tep-priority');
+    var startEl = document.getElementById('tep-start');
+    var dueEl = document.getElementById('tep-due');
+
+    if (titleEl) body.title = titleEl.value;
+    if (statusEl) body.status = statusEl.value;
+    if (priorityEl) body.priority = priorityEl.value;
+    if (startEl) body.start_date = startEl.value;
+    if (dueEl) body.due_date = dueEl.value;
+
+    fetch('/toolbox/actions/' + itemId + '/inline-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _ieCSRF },
+        body: JSON.stringify(body),
+    }).then(function(r) { return r.json(); }).then(function(res) {
+        if (res.success) {
+            // Update TL_DATA
+            var item = TL_DATA.find(function(i) { return i.id === itemId; });
+            if (item) {
+                item.title_text = res.title;
+                item.status = res.status;
+                item.priority = res.priority;
+                item.start_date = res.start_date;
+                item.due_date = res.due_date;
+                item.is_overdue = res.is_overdue;
+            }
+            // Reload page to reflect changes (timeline rebuild needs full context)
+            var popup = document.getElementById('tl-edit-popup');
+            if (popup) popup.remove();
+            window.location.reload();
+        }
+    });
+}
+
+// ── Inline Editing ──────────────────────────────────────────────────────
+var _ieCSRF = '{{ csrf_token() }}';
+
+var _STATUS_CYCLE = ['draft', 'active', 'completed', 'cancelled'];
+var _STATUS_STYLES = {
+    active: 'background:#e8f5e9; color:#2e7d32;',
+    draft: 'background:#f5f5f5; color:#546e7a;',
+    completed: 'background:#ede7f6; color:#4527a0;',
+    cancelled: 'background:#ffebee; color:#b71c1c;',
+};
+var _PRIORITY_CYCLE = ['low', 'medium', 'high', 'urgent'];
+var _PRIORITY_DISPLAY = {
+    urgent: { icon: '🔥', color: '#b71c1c' },
+    high: { icon: '▲', color: '#e65100' },
+    medium: { icon: '●', color: '#1565c0' },
+    low: { icon: '▼', color: '#546e7a' },
+};
+
+function _ieSave(itemId, field, value) {
+    var body = {};
+    body[field] = value;
+    return fetch('/toolbox/actions/' + itemId + '/inline-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': _ieCSRF },
+        body: JSON.stringify(body),
+    }).then(function(r) { return r.json(); });
+}
+
+function ieStart(td, itemId, field, currentValue) {
+    if (td.querySelector('.ie-input')) return; // already editing
+    var display = td.querySelector('.ie-display');
+    if (display) display.style.display = 'none';
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'ie-input form-control form-control-sm';
+    input.value = currentValue;
+    input.style.cssText = 'font-size:0.85rem; font-weight:600; min-width:120px;';
+    td.insertBefore(input, td.firstChild);
+    input.focus();
+    input.select();
+
+    function save() {
+        var val = input.value.trim();
+        if (val && val !== currentValue) {
+            _ieSave(itemId, field, val).then(function(res) {
+                if (res.success && display) {
+                    display.textContent = res[field] || val;
+                }
+            });
+        }
+        input.remove();
+        if (display) display.style.display = '';
+    }
+
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Escape') { input.remove(); if (display) display.style.display = ''; }
+    });
+    input.addEventListener('blur', save);
+    td.onclick = null; // prevent re-trigger while editing
+    setTimeout(function() {
+        td.onclick = function() { ieStart(td, itemId, field, display ? display.textContent.trim() : val); };
+    }, 500);
+}
+
+function ieStartDate(td, itemId, field, currentISO) {
+    if (td.querySelector('.ie-input')) return;
+    var display = td.querySelector('.ie-display');
+    if (display) display.style.display = 'none';
+
+    var input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'ie-input form-control form-control-sm';
+    input.value = currentISO;
+    input.style.cssText = 'font-size:0.8rem; max-width:150px;';
+    td.insertBefore(input, td.firstChild);
+    input.focus();
+
+    function save() {
+        var val = input.value;
+        _ieSave(itemId, field, val).then(function(res) {
+            if (res.success && display) {
+                if (res[field]) {
+                    var d = new Date(res[field] + 'T00:00:00');
+                    display.textContent = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    display.style.color = res.is_overdue ? '#e65100' : '';
+                    display.style.fontWeight = res.is_overdue ? '600' : '';
+                } else {
+                    display.textContent = '—';
+                    display.style.color = '#ccc';
+                }
+            }
+        });
+        input.remove();
+        if (display) display.style.display = '';
+    }
+
+    input.addEventListener('change', save);
+    input.addEventListener('blur', function() { setTimeout(function() { if (td.querySelector('.ie-input')) save(); }, 200); });
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { input.remove(); if (display) display.style.display = ''; }
+    });
+}
+
+function ieCycleStatus(span) {
+    var itemId = span.dataset.itemId;
+    var current = span.dataset.status;
+    var idx = _STATUS_CYCLE.indexOf(current);
+    var next = _STATUS_CYCLE[(idx + 1) % _STATUS_CYCLE.length];
+
+    _ieSave(itemId, 'status', next).then(function(res) {
+        if (res.success) {
+            span.dataset.status = res.status;
+            span.textContent = res.status.charAt(0).toUpperCase() + res.status.slice(1);
+            span.style.cssText = (_STATUS_STYLES[res.status] || '') + 'cursor:pointer;';
+        }
+    });
+}
+
+function ieCyclePriority(span) {
+    var itemId = span.dataset.itemId;
+    var current = span.dataset.priority;
+    var idx = _PRIORITY_CYCLE.indexOf(current);
+    var next = _PRIORITY_CYCLE[(idx + 1) % _PRIORITY_CYCLE.length];
+
+    _ieSave(itemId, 'priority', next).then(function(res) {
+        if (res.success) {
+            var p = _PRIORITY_DISPLAY[res.priority] || { icon: '●', color: '#546e7a' };
+            span.dataset.priority = res.priority;
+            span.textContent = p.icon + ' ' + res.priority.charAt(0).toUpperCase() + res.priority.slice(1);
+            span.style.color = p.color;
+        }
+    });
 }
 </script>
 {% endblock %}

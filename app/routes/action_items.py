@@ -618,6 +618,82 @@ def toggle_status(item_id):
     return jsonify({"success": True, "new_status": new_status})
 
 
+@bp.route("/<int:item_id>/inline-update", methods=["POST"])
+@login_required
+@organization_required
+def inline_update(item_id):
+    """Inline update of action item fields (title, status, priority, due_date, start_date)."""
+    from datetime import date as date_type, datetime
+
+    item = ActionItem.query.get_or_404(item_id)
+
+    if not current_user.can_contribute(item.organization_id):
+        return jsonify({"error": "Permission denied"}), 403
+    if item.owner_user_id != current_user.id and not current_user.is_global_admin and not current_user.is_super_admin:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data"}), 400
+
+    updated_fields = []
+
+    if "title" in data and data["title"].strip():
+        item.title = data["title"].strip()
+        updated_fields.append("title")
+
+    if "status" in data and item.type == "action":
+        if data["status"] in ("draft", "active", "completed", "cancelled"):
+            old_status = item.status
+            item.status = data["status"]
+            if data["status"] == "completed" and old_status != "completed":
+                item.completed_at = datetime.utcnow()
+            elif data["status"] != "completed":
+                item.completed_at = None
+            updated_fields.append("status")
+
+    if "priority" in data and item.type == "action":
+        if data["priority"] in ("urgent", "high", "medium", "low"):
+            item.priority = data["priority"]
+            updated_fields.append("priority")
+
+    if "due_date" in data:
+        if data["due_date"]:
+            try:
+                item.due_date = date_type.fromisoformat(data["due_date"])
+                updated_fields.append("due_date")
+            except ValueError:
+                pass
+        else:
+            item.due_date = None
+            updated_fields.append("due_date")
+
+    if "start_date" in data and item.type == "action":
+        if data["start_date"]:
+            try:
+                item.start_date = date_type.fromisoformat(data["start_date"])
+                updated_fields.append("start_date")
+            except ValueError:
+                pass
+        else:
+            item.start_date = None
+            updated_fields.append("start_date")
+
+    if updated_fields:
+        db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "updated": updated_fields,
+        "title": item.title,
+        "status": item.status,
+        "priority": item.priority,
+        "due_date": item.due_date.isoformat() if item.due_date else None,
+        "start_date": item.start_date.isoformat() if item.start_date else None,
+        "is_overdue": item.is_overdue,
+    })
+
+
 @bp.route("/bulk-set-start-date", methods=["POST"])
 @login_required
 @organization_required

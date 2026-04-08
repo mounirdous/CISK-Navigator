@@ -181,7 +181,8 @@ if (!window.PresetManager) {
                         localStorage.setItem('preset_active_' + feature, name);
                         localStorage.setItem('preset_config_' + feature, JSON.stringify(config));
                     } catch(e) {}
-                    location.reload();
+                    // Navigate to clean URL so auto-restore kicks in with saved preset
+                    window.location.href = window.location.pathname;
                 } else if (res.status === 409 && res.data.exists) {
                     // Preset with same name exists — ask to overwrite
                     if (confirm("'" + name + "' already exists. Overwrite?")) {
