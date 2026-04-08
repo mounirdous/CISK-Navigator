@@ -23,7 +23,7 @@
 .rtl-toggle a:hover { color: white; background: rgba(255,255,255,0.1); }
 .rtl-toggle a.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 
-#rtlContainer { height: calc(100vh - 200px); min-height: 400px; }
+#rtlContainer { min-height: 500px; }
 #rtlContainer .vis-timeline { border: none; font-family: inherit; }
 #rtlContainer .vis-item { border-radius: 6px; font-size: 0.78rem; font-weight: 500; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
 #rtlContainer .vis-item:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.16); }
@@ -177,6 +177,8 @@ function cycleRtlDetail() {
         tooltip: { followMouse: true, overflowMethod: 'cap' },
         zoomMin: 86400000 * 7,
         zoomMax: 86400000 * 730,
+        height: null,
+        maxHeight: '80vh',
         verticalScroll: true,
     });
 
