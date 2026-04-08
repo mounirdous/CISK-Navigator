@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}Initiative Review — Timeline{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/dist/vis-timeline-graph2d.min.css">
+<style>
+.rtl-header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+    border-radius: 16px; padding: 1.25rem 2rem; color: white; margin-bottom: 1rem;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+}
+.rtl-header h1 { font-size: 1.3rem; font-weight: 800; margin: 0; }
+.rtl-header-stats { font-size: 0.82rem; color: rgba(200,220,255,0.7); }
+
+.rtl-toggle {
+    display: inline-flex; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 3px; gap: 2px;
+}
+.rtl-toggle a {
+    padding: 0.4rem 1rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+    color: rgba(255,255,255,0.7); text-decoration: none; display: flex; align-items: center; gap: 0.4rem;
+    transition: all 0.15s;
+}
+.rtl-toggle a:hover { color: white; background: rgba(255,255,255,0.1); }
+.rtl-toggle a.active { background: white; color: #0f172a; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+
+#rtlContainer { height: calc(100vh - 200px); min-height: 400px; }
+#rtlContainer .vis-timeline { border: none; font-family: inherit; }
+#rtlContainer .vis-item { border-radius: 6px; font-size: 0.78rem; font-weight: 500; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+#rtlContainer .vis-item:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.16); }
+#rtlContainer .vis-item.rag-green { background: #dcfce7; border-color: #16a34a; color: #15803d; }
+#rtlContainer .vis-item.rag-amber { background: #fef3c7; border-color: #d97706; color: #92400e; }
+#rtlContainer .vis-item.rag-red { background: #fee2e2; border-color: #dc2626; color: #991b1b; }
+#rtlContainer .vis-item.rag-none { background: #f1f5f9; border-color: #94a3b8; color: #475569; }
+#rtlContainer .vis-item.no-actions { background: #f8fafc; border-color: #e2e8f0; color: #cbd5e1; border-style: dashed; }
+#rtlContainer .vis-item .vis-item-overflow { overflow: visible !important; }
+#rtlContainer .vis-item .vis-item-content { white-space: nowrap; overflow: visible !important; text-overflow: unset !important; }
+#rtlContainer .vis-item .vis-item-line, #rtlContainer .vis-item .vis-line,
+#rtlContainer .vis-item .vis-item-dot, #rtlContainer .vis-item .vis-dot,
+#rtlContainer div.vis-line, #rtlContainer div.vis-dot {
+    height: 0 !important; width: 0 !important; visibility: hidden !important; display: none !important;
+}
+#rtlContainer .vis-item.vis-range { overflow: visible !important; }
+#rtlContainer .vis-item.vis-range .vis-item-overflow { overflow: visible !important; }
+#rtlContainer .vis-group { border-bottom: 1px solid #f0f0f0; }
+#rtlContainer .vis-time-axis .vis-text { font-size: 0.72rem; font-weight: 500; color: #78909c; }
+#rtlContainer .vis-time-axis .vis-text.vis-major { font-weight: 700; color: #546e7a; }
+
+/* Detail mode */
+.rtl-detail-0 .vis-labelset .vis-label { display: none; }
+.rtl-detail-0 .vis-item .vis-item-content { font-size: 0.7rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding: 1rem;">
+
+    <div class="rtl-header">
+        <div>
+            <h1><i class="bi bi-bar-chart-steps"></i> Initiative Review — Timeline</h1>
+            <div class="rtl-header-stats">
+                {{ total }} initiatives &mdash; dates derived from linked actions
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <!-- Detail mode -->
+            <button onclick="cycleRtlDetail()" class="btn btn-sm" style="background:rgba(255,255,255,0.15); color:white; border:none; min-width:36px;" title="Detail level" id="rtlDetailBtn">
+                🌲
+            </button>
+
+            <!-- View toggle -->
+            <div class="rtl-toggle">
+                <a href="{{ url_for('organization_admin.initiative_form', initiative_id=current_init_id) }}?tab=execution&nav={{ nav_param }}&nav_pos={{ nav_pos }}{% if nav_back_enc %}&nav_back={{ nav_back_enc }}{% endif %}{% if gb_param %}&gb={{ gb_param }}{% endif %}">
+                    <i class="bi bi-file-text"></i> Review
+                </a>
+                <a href="#" class="active">
+                    <i class="bi bi-bar-chart-steps"></i> Timeline
+                </a>
+            </div>
+
+            {% if nav_back %}
+            <a href="{{ nav_back }}" class="btn btn-sm" style="background:rgba(255,255,255,0.15); color:white; border:none;">
+                <i class="bi bi-arrow-left"></i> Back
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div style="background:white; border-radius:14px; border:1px solid #e2e8f0; overflow:hidden;" id="rtlWrapper">
+        <div id="rtlContainer"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/vis-timeline@7.7.3/standalone/umd/vis-timeline-graph2d.min.js"></script>
+<script>
+var TL_DATA = {{ timeline_data | tojson }};
+var _rtlDetailMode = 1; // 0=minimal, 1=standard, 2=full
+var _rtlIcons = ['🌱', '🌲', '🎄'];
+
+function cycleRtlDetail() {
+    _rtlDetailMode = (_rtlDetailMode + 1) % 3;
+    document.getElementById('rtlDetailBtn').textContent = _rtlIcons[_rtlDetailMode];
+    var wrapper = document.getElementById('rtlWrapper');
+    wrapper.classList.remove('rtl-detail-0', 'rtl-detail-1', 'rtl-detail-2');
+    wrapper.classList.add('rtl-detail-' + _rtlDetailMode);
+}
+
+(function() {
+    var container = document.getElementById('rtlContainer');
+    var items = [];
+    var groups = [];
+    var groupSet = {};
+    var today = new Date().toISOString().split('T')[0];
+
+    TL_DATA.forEach(function(ini) {
+        var gKey = ini.challenge || 'Ungrouped';
+        if (!groupSet[gKey]) {
+            var spacePrefix = ini.space ? '<span style="font-size:0.65rem;color:#94a3b8;">' + ini.space.substring(0, 25) + ' ›</span> ' : '';
+            groupSet[gKey] = {
+                id: gKey,
+                content: spacePrefix + '<span style="font-size:0.78rem; font-weight:600; color:#475569;">' + gKey.substring(0, 45) + '</span>'
+            };
+            groups.push(groupSet[gKey]);
+        }
+
+        var ragClass = ini.rag ? 'rag-' + ini.rag : 'rag-none';
+        var hasActions = ini.action_count > 0;
+        var label = ini.name.length > 40 ? ini.name.substring(0, 38) + '...' : ini.name;
+        var actBadge = hasActions ? ' (' + ini.action_count + ')' : '';
+        var impactBadge = ini.impact ? ' ★'.repeat(ini.impact) : '';
+
+        var tooltip = '<div style="max-width:320px;padding:8px;font-size:0.82rem;">' +
+            '<strong>' + ini.name + '</strong>' +
+            (ini.space ? '<br><span style="color:#94a3b8;">' + ini.space + ' › ' + ini.challenge + '</span>' : '') +
+            '<br><span style="color:#64748b;">Actions: ' + ini.action_count + '</span>' +
+            (ini.start && ini.end ? '<br><span style="color:#64748b;">' + ini.start + ' → ' + ini.end + '</span>' : '') +
+            (ini.rag ? '<br><span>RAG: ' + ini.rag + '</span>' : '') +
+            (ini.impact ? '<br><span>Impact: ' + '★'.repeat(ini.impact) + '</span>' : '') +
+            '</div>';
+
+        if (ini.start && ini.end) {
+            items.push({
+                id: ini.id, group: gKey, type: 'range',
+                content: label + actBadge,
+                start: ini.start, end: ini.end,
+                className: ragClass + (hasActions ? '' : ' no-actions'),
+                title: tooltip,
+            });
+        } else if (ini.end) {
+            items.push({
+                id: ini.id, group: gKey, type: 'box',
+                content: label + actBadge,
+                start: ini.end,
+                className: ragClass + (hasActions ? '' : ' no-actions'),
+                title: tooltip,
+            });
+        } else {
+            items.push({
+                id: ini.id, group: gKey, type: 'box',
+                content: '⚠ ' + label,
+                start: today,
+                className: 'no-actions',
+                title: '<strong>' + ini.name + '</strong><br><em>No linked actions with dates</em>',
+            });
+        }
+    });
+
+    var tl = new vis.Timeline(container, new vis.DataSet(items), new vis.DataSet(groups), {
+        showCurrentTime: true,
+        orientation: { axis: 'top' },
+        stack: true,
+        showMajorLabels: true,
+        showMinorLabels: true,
+        margin: { item: { horizontal: 6, vertical: 5 }, axis: 10 },
+        tooltip: { followMouse: true, overflowMethod: 'cap' },
+        zoomMin: 86400000 * 7,
+        zoomMax: 86400000 * 730,
+        verticalScroll: true,
+    });
+
+    // Click a bar to jump back to that initiative in review mode
+    tl.on('click', function(props) {
+        if (props.item && typeof props.item === 'number') {
+            var navParam = '{{ nav_param }}';
+            var navIds = navParam.split(',').map(Number);
+            var pos = navIds.indexOf(props.item);
+            if (pos >= 0) {
+                window.location.href = '/org-admin/initiatives/' + props.item + '/form' +
+                    '?tab=execution&nav=' + navParam + '&nav_pos=' + pos +
+                    '{% if nav_back_enc %}&nav_back={{ nav_back_enc }}{% endif %}' +
+                    '{% if gb_param %}&gb={{ gb_param }}{% endif %}';
+            }
+        }
+    });
+
+    setTimeout(function() { tl.fit({ animation: true }); }, 200);
+})();
+</script>
+{% endblock %}

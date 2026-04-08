@@ -983,6 +983,10 @@
                 <button onclick="setReviewTab('execution')" id="nav-tab-btn-execution" class="{{ 'active' if nav_context.nav_tab == 'execution' else '' }}">
                     <i class="bi bi-activity"></i> Execution
                 </button>
+                <a href="{{ url_for('workspace.review_timeline') }}?nav={{ nav_context.nav_param }}&nav_pos={{ nav_context.pos }}{% if nav_context.nav_back_enc %}&nav_back={{ nav_context.nav_back_enc }}{% endif %}{% if request.args.get('gb') %}&gb={{ request.args.get('gb') }}{% endif %}"
+                   id="nav-tab-btn-timeline" class="" title="Timeline view of all initiatives in this review">
+                    <i class="bi bi-bar-chart-steps"></i> Timeline
+                </a>
             </div>
 
             <button class="review-nav-focus-btn" id="focusModeBtn" onclick="toggleFocusMode()" title="Focus mode: group by impact level">
@@ -2845,4 +2849,5 @@ async function submitGenerateActions() {
 }
 </script>
 {% endif %}
+
 {% endblock %}

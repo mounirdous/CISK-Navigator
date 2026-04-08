@@ -1005,6 +1005,111 @@ def start_review():
     )
 
 
+@bp.route("/review/timeline")
+@login_required
+@organization_required
+def review_timeline():
+    """Full-page timeline view of initiatives in a review set."""
+    from app.models import ActionItem, ActionItemMention as AIM, ChallengeInitiativeLink
+    from app.models import InitiativeProgressUpdate
+    from sqlalchemy import func as fn
+    from urllib.parse import quote as urlquote
+
+    org_id = session.get("organization_id")
+    nav_param = request.args.get("nav", "")
+    nav_pos = request.args.get("nav_pos", 0, type=int)
+    nav_back = request.args.get("nav_back", "")
+    gb_param = request.args.get("gb", "")
+
+    if not nav_param:
+        flash("No initiatives selected for timeline.", "warning")
+        return redirect(url_for("workspace.index"))
+
+    nav_ids = [int(x) for x in nav_param.split(",") if x.strip().isdigit()]
+    initiatives = Initiative.query.filter(Initiative.id.in_(nav_ids), Initiative.organization_id == org_id).all()
+    init_map = {i.id: i for i in initiatives}
+
+    # Get RAG status per initiative
+    rag_subq = (
+        db.session.query(
+            InitiativeProgressUpdate.initiative_id,
+            fn.max(InitiativeProgressUpdate.created_at).label("max_at"),
+        )
+        .filter(InitiativeProgressUpdate.initiative_id.in_(nav_ids))
+        .group_by(InitiativeProgressUpdate.initiative_id)
+        .subquery()
+    )
+    latest_rags = db.session.query(
+        InitiativeProgressUpdate.initiative_id,
+        InitiativeProgressUpdate.rag_status,
+    ).join(
+        rag_subq,
+        (InitiativeProgressUpdate.initiative_id == rag_subq.c.initiative_id)
+        & (InitiativeProgressUpdate.created_at == rag_subq.c.max_at),
+    ).all()
+    rag_map = {r.initiative_id: r.rag_status for r in latest_rags}
+
+    # Build timeline data
+    timeline_data = []
+    for iid in nav_ids:
+        ini = init_map.get(iid)
+        if not ini:
+            continue
+
+        # Get action dates
+        action_dates = (
+            db.session.query(
+                fn.min(ActionItem.start_date).label("earliest_start"),
+                fn.min(ActionItem.due_date).label("earliest_due"),
+                fn.max(ActionItem.due_date).label("latest_due"),
+                fn.count(ActionItem.id).label("action_count"),
+            )
+            .join(AIM, AIM.action_item_id == ActionItem.id)
+            .filter(AIM.entity_type == "initiative", AIM.entity_id == iid)
+            .first()
+        )
+
+        start = None
+        end = None
+        action_count = 0
+        if action_dates:
+            start = action_dates.earliest_start or action_dates.earliest_due
+            end = action_dates.latest_due
+            action_count = action_dates.action_count or 0
+
+        # Challenge/space context
+        cli = ChallengeInitiativeLink.query.filter_by(initiative_id=iid).first()
+        space_name = cli.challenge.space.name if cli and cli.challenge and cli.challenge.space else ""
+        challenge_name = cli.challenge.name if cli and cli.challenge else ""
+
+        timeline_data.append({
+            "id": iid,
+            "name": ini.name,
+            "space": space_name,
+            "challenge": challenge_name,
+            "rag": rag_map.get(iid),
+            "impact": ini.impact_level,
+            "start": start.isoformat() if start else None,
+            "end": end.isoformat() if end else None,
+            "action_count": action_count,
+        })
+
+    current_init_id = nav_ids[nav_pos] if nav_pos < len(nav_ids) else nav_ids[0]
+
+    return render_template(
+        "workspace/review_timeline.html",
+        timeline_data=timeline_data,
+        nav_param=nav_param,
+        nav_pos=nav_pos,
+        nav_back=nav_back,
+        nav_back_enc=urlquote(nav_back, safe="") if nav_back else "",
+        gb_param=gb_param,
+        current_init_id=current_init_id,
+        total=len(nav_ids),
+        csrf_token=generate_csrf,
+    )
+
+
 @bp.route("/governance/<int:gb_id>")
 @login_required
 @organization_required
