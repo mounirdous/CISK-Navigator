@@ -1738,7 +1738,13 @@
                     <div class="exec-card">
                         <div class="exec-card-title d-flex align-items-center justify-content-between">
                             <span><i class="bi bi-check2-square"></i> Action Items</span>
-                            <span class="text-muted fw-normal" style="font-size:0.75rem;text-transform:none;letter-spacing:0;">{{ linked_actions|length }} total</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted fw-normal" style="font-size:0.75rem;text-transform:none;letter-spacing:0;">{{ linked_actions|length }} total</span>
+                                <a href="{{ url_for('action_items.create') }}?mention_initiative={{ initiative.id }}&return_to={{ request.url | urlencode }}"
+                                   class="btn btn-sm btn-primary" style="font-size:0.7rem; padding:0.15rem 0.5rem;">
+                                    <i class="bi bi-plus"></i> New
+                                </a>
+                            </div>
                         </div>
                         {% set draft_cnt = linked_actions | selectattr("status", "eq", "draft") | list | length %}
                         {% set active_cnt = linked_actions | selectattr("status", "eq", "active") | list | length %}
@@ -2146,6 +2152,19 @@
         {% endif %}
     </div>
 </div>
+
+<script>
+function switchTab(tab) {
+    var formTab = document.getElementById('form-tab');
+    var execTab = document.getElementById('execution-tab');
+    var formPanel = document.getElementById('form-tab-panel');
+    var execPanel = document.getElementById('execution-tab-panel');
+    if (formTab) formTab.classList.toggle('active', tab === 'form');
+    if (execTab) execTab.classList.toggle('active', tab === 'execution');
+    if (formPanel) formPanel.style.display = tab === 'form' ? '' : 'none';
+    if (execPanel) execPanel.style.display = tab === 'execution' ? '' : 'none';
+}
+</script>
 
 <!-- Progress Update Modal -->
 {% if not edit_mode %}

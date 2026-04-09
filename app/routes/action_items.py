@@ -22,7 +22,7 @@ from app.routes.organization_admin import normalize_action_tags
 
 from app.extensions import db
 from app.forms.action_item_forms import ActionItemCreateForm, ActionItemEditForm, ActionItemFilterForm
-from app.models import ActionItem, EntityLink, EntityTypeDefault, Organization, StrategicPillar
+from app.models import ActionItem, EntityLink, EntityTypeDefault, Initiative, Organization, StrategicPillar
 from app.models.user_filter_preset import UserFilterPreset
 from app.services.action_item_service import ActionItemService
 
@@ -434,11 +434,20 @@ def create():
     org = Organization.query.get(org_id)
     action_tags = normalize_action_tags(org.action_tags)
 
+    # Pre-fill initiative mention if requested
+    pre_mention = None
+    mention_init_id = request.args.get("mention_initiative", type=int)
+    if mention_init_id:
+        ini = Initiative.query.get(mention_init_id)
+        if ini and ini.organization_id == org_id:
+            pre_mention = {"type": "initiative", "id": ini.id, "name": ini.name}
+
     return render_template(
         "action_items/create.html",
         form=form,
         governance_bodies=governance_bodies,
         action_tags=action_tags,
+        pre_mention=pre_mention,
         return_to=return_to or "",
         csrf_token=generate_csrf,
     )

@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.17.0] - 2026-04-09
+
+### Added
+- **Initiative review timeline** — full-page Gantt view at `/workspace/review/timeline` showing all initiatives in a review set. Bars grouped by challenge, dates derived from linked actions, RAG color-coded, click to jump to initiative review. 3-level xmas tree detail
+- **Inline editing on Action Register** — table view: click title to edit, click status/priority to cycle, click date for picker. Timeline view: click bar for edit popup. New `/inline-update` AJAX endpoint
+- **Create action from initiative** — "+ New" button on initiative form execution tab, pre-fills @mention and returns to initiative after creation
+- **Actions ordered by due date** on initiative form execution tab
+
+### Fixed
+- **switchTab undefined in edit mode** — function now always defined regardless of edit mode
+- **Preset auto-restore** — after saving preset, navigates to clean URL so GROUP BY is applied
+
 ## [7.16.0] - 2026-04-07
 
 ### Added

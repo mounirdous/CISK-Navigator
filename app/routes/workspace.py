@@ -1272,6 +1272,17 @@ def changelog():
     """User-friendly changelog — What's New page"""
     changelog_data = [
         {
+            "version": "7.17",
+            "date": "April 9, 2026",
+            "tags": ["feature", "fix"],
+            "changes": [
+                "<strong>Initiative review timeline</strong> &mdash; a full-page Gantt view showing all initiatives in your review set. Bars are grouped by challenge, with dates automatically derived from linked actions. Color-coded by RAG status. Click any bar to jump to that initiative's review. Toggle between review and timeline views with one click.",
+                "<strong>Inline editing</strong> &mdash; edit action items directly in the table (click title, status, priority, or date) and on the timeline (click any bar for an edit popup). Changes save instantly without page navigation.",
+                "<strong>Create action from initiative</strong> &mdash; a '+ New' button on the initiative execution tab creates an action pre-filled with the initiative @mention. After saving, you return to the initiative.",
+                "<strong>Actions ordered by due date</strong> &mdash; action items on the initiative form are now sorted by due date (earliest first) instead of status.",
+            ],
+        },
+        {
             "version": "7.16",
             "date": "April 7, 2026",
             "tags": ["feature", "fix"],

@@ -314,6 +314,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Listen for changes
     typeSelect.addEventListener('change', toggleActionFields);
 
+    // Pre-fill description with @mention if provided
+    {% if pre_mention %}
+    (function() {
+        var desc = document.getElementById('description-field');
+        if (desc && !desc.value) {
+            desc.value = '@"{{ pre_mention.name }}" ';
+        }
+    })();
+    {% endif %}
+
     // @mention autocomplete
     const descriptionField = document.getElementById('description-field');
     const autocompleteDropdown = document.getElementById('mention-autocomplete');

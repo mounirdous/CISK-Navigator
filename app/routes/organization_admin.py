@@ -4848,7 +4848,7 @@ def initiative_form(initiative_id):
         linked_actions = (
             ActionItem.query
             .filter(ActionItem.id.in_(action_sources_map.keys()), ActionItem.organization_id == org_id)
-            .order_by(ActionItem.status, ActionItem.due_date.asc().nullslast())
+            .order_by(ActionItem.due_date.asc().nullslast(), ActionItem.status)
             .all()
         )
     else:
