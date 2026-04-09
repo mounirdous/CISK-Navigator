@@ -2112,6 +2112,10 @@ def kpi_cell_detail(kpi_id, vt_id):
                             return_params.append((filter_key, value))
                         processed_keys.add(key)
 
+                _return_to = request.form.get("return_to") or request.args.get("return_to")
+                if _return_to:
+                    return redirect(_return_to)
+
                 workspace_url = url_for("workspace.index")
                 if return_params:
                     workspace_url = f"{workspace_url}?{urlencode(return_params)}"
@@ -2192,6 +2196,11 @@ def kpi_cell_detail(kpi_id, vt_id):
         logger.info(f"🔍 Redirecting to workspace with params: {return_params}")
 
         # Build URL manually to properly handle multiple values for same key
+        # If return_to is set (e.g. from initiative review), go back there
+        _return_to = request.form.get("return_to") or request.args.get("return_to")
+        if _return_to:
+            return redirect(_return_to)
+
         workspace_url = url_for("workspace.index")
         if return_params:
             workspace_url = f"{workspace_url}?{urlencode(return_params)}"
@@ -2342,6 +2351,7 @@ def kpi_cell_detail(kpi_id, vt_id):
         workspace_filters=workspace_filters,
         all_contributor_names=all_contributor_names,
         stakeholder_map=stakeholder_map,
+        return_to=request.args.get("return_to", ""),
         csrf_token=generate_csrf,
     )
 

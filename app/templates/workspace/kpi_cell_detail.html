@@ -125,6 +125,11 @@ body.dark-mode .card.border-primary {
 {% endblock %}
 
 {% block content %}
+{% if return_to %}
+<a href="{{ return_to }}" class="btn btn-sm btn-outline-secondary mb-2">
+    <i class="bi bi-arrow-left"></i> Back
+</a>
+{% endif %}
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
         <li class="breadcrumb-item">{{ breadcrumb.organization }}</li>
@@ -410,6 +415,7 @@ body.dark-mode .card.border-primary {
                 <form method="POST" id="contributionForm">
                     {{ form.hidden_tag() }}
                     <input type="hidden" name="entry_mode" id="entry_mode" value="contributing">
+                    {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
                     {# Preserve workspace filter state for return #}
                     {% for key, value in workspace_filters.items() %}
                         {% if value is sequence and value is not string %}
@@ -635,6 +641,7 @@ body.dark-mode .card.border-primary {
                                     <form method="POST" class="d-flex align-items-center gap-2 flex-wrap" style="background:#f0f9ff; padding:0.5rem; border-radius:8px; margin:-0.4rem;">
                                         {{ form.hidden_tag() }}
                                         <input type="hidden" name="entry_mode" value="contributing">
+                                        {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
                                         {% for key, value in workspace_filters.items() %}
                                             {% if value is sequence and value is not string %}{% for v in value %}<input type="hidden" name="workspace_filter_{{ key }}" value="{{ v }}">{% endfor %}
                                             {% else %}<input type="hidden" name="workspace_filter_{{ key }}" value="{{ value }}">{% endif %}

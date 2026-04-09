@@ -798,9 +798,7 @@
     [data-detail-mode="0"] .detail-2 { display: none !important; }
     [data-detail-mode="1"] .detail-2 { display: none !important; }
     /* In minimal mode, also hide RAG dot colors — just plain dots */
-    [data-detail-mode="0"] .review-nav-dot.rag-green { background: rgba(255,255,255,0.4); }
-    [data-detail-mode="0"] .review-nav-dot.rag-amber { background: rgba(255,255,255,0.4); }
-    [data-detail-mode="0"] .review-nav-dot.rag-red { background: rgba(255,255,255,0.4); }
+    /* RAG colors always visible on dots — even at detail level 0 */
 
     .dec-row {
         padding: 0.5rem 0.6rem; margin-bottom: 0.5rem;
@@ -1831,7 +1829,7 @@
                             <div class="kpi-exec-row">
                                 <span class="kpi-exec-status status-dot-{{ kpi.status }}"></span>
                                 {% if kpi.first_vt_id %}
-                                <a class="kpi-exec-name" href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=kpi.first_vt_id) }}" target="_blank" title="Add contribution">{{ kpi.name }} <i class="bi bi-plus-circle" style="font-size:0.65rem;opacity:0.6;"></i></a>
+                                <a class="kpi-exec-name" href="{{ url_for('workspace.kpi_cell_detail', kpi_id=kpi.id, vt_id=kpi.first_vt_id) }}?return_to={{ request.url | urlencode }}" title="Add contribution">{{ kpi.name }} <i class="bi bi-plus-circle" style="font-size:0.65rem;opacity:0.6;"></i></a>
                                 {% else %}
                                 <span class="kpi-exec-name">{{ kpi.name }}</span>
                                 {% endif %}
