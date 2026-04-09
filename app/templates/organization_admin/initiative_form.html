@@ -1081,8 +1081,14 @@
             }
 
             // Sort: L3 first, L2, L1, then 0 (not set)
+            // Within each impact group: red first, then amber, then green, then no update
+            var ragOrder = {'red': 0, 'amber': 1, 'green': 2};
             var sorted = NAV_DOTS.slice().sort(function(a, b) {
-                return (b.impact_level || 0) - (a.impact_level || 0);
+                var impDiff = (b.impact_level || 0) - (a.impact_level || 0);
+                if (impDiff !== 0) return impDiff;
+                var ragA = a.rag ? (ragOrder[a.rag] !== undefined ? ragOrder[a.rag] : 3) : 4;
+                var ragB = b.rag ? (ragOrder[b.rag] !== undefined ? ragOrder[b.rag] : 3) : 4;
+                return ragA - ragB;
             });
             rebuildDots(sorted, true);
         }
