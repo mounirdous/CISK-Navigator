@@ -1771,7 +1771,7 @@
                                 <div class="d-flex align-items-start gap-2">
                                     <span class="action-status-dot mt-1 flex-shrink-0"></span>
                                     <div style="flex:1;min-width:0;">
-                                        <a class="action-title-full" href="{{ url_for('action_items.edit', item_id=action.id, return_to=request.url) }}" target="_blank" title="Edit action">{{ action.title }} <i class="bi bi-box-arrow-up-right" style="font-size:0.65rem;opacity:0.5;"></i></a>
+                                        <a class="action-title-full" href="{{ url_for('action_items.edit', item_id=action.id, return_to=request.url) }}" title="Edit action">{{ action.title }}</a>
                                         <div class="d-flex flex-wrap gap-1 mt-1 align-items-center">
                                             {% for src in sources %}
                                             <span class="action-source-badge source-{{ src.type }}" title="Via {{ src.type }}: {{ src.name }}">
