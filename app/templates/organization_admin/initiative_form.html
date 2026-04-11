@@ -87,7 +87,7 @@
     }
 
     .form-body {
-        padding: 0.75rem 1.5rem;
+        padding: 0 1.5rem 0.75rem;
     }
 
     .form-section {
@@ -399,7 +399,7 @@
 
         /* ── Execution tab padding ── */
         #execution-tab-panel {
-            padding: 1rem !important;
+            padding: 0 1rem 1rem !important;
         }
     }
 
@@ -456,16 +456,16 @@
     .rag-stoplight {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
         align-items: center;
         background: rgba(0,0,0,0.08);
-        padding: 10px 8px;
-        border-radius: 20px;
+        padding: 6px 5px;
+        border-radius: 14px;
     }
 
     .rag-dot {
-        width: 22px;
-        height: 22px;
+        width: 14px;
+        height: 14px;
         border-radius: 50%;
         opacity: 0.2;
         transition: opacity 0.3s;
@@ -478,7 +478,7 @@
 
     @keyframes ragPulse {
         0%, 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); }
-        50% { box-shadow: 0 0 0 8px rgba(0,0,0,0.1); }
+        50% { box-shadow: 0 0 0 5px rgba(0,0,0,0.1); }
     }
 
     .rag-info { flex: 1; }
@@ -1700,7 +1700,7 @@
         </div><!-- /form-tab-panel -->
 
         <!-- EXECUTION TAB PANEL -->
-        <div id="execution-tab-panel" class="tab-pane {% if active_tab == 'execution' %}show active{% endif %}" style="padding: 0.5rem 1.5rem;">
+        <div id="execution-tab-panel" class="tab-pane {% if active_tab == 'execution' %}show active{% endif %}" style="padding: 0 1.5rem 0.5rem;">
 
             <!-- RAG Status Hero Card -->
             {% set lpu = initiative.latest_progress_update %}

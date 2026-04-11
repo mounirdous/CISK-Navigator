@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.17.1] - 2026-04-11
+
+### Fixed
+- Removed extra whitespace above RAG status card on Execution tab
+- Reduced RAG traffic light indicator size for a more compact layout
+
 ## [7.17.0] - 2026-04-09
 
 ### Added
