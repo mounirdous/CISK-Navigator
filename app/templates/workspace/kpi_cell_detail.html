@@ -415,6 +415,8 @@ body.dark-mode .card.border-primary {
                 <form method="POST" id="contributionForm">
                     {{ form.hidden_tag() }}
                     <input type="hidden" name="entry_mode" id="entry_mode" value="contributing">
+                    <input type="hidden" name="nav_action" id="navAction" value="">
+                    {% if nav_ids_str %}<input type="hidden" name="nav_ids" value="{{ nav_ids_str }}">{% endif %}
                     {% if return_to %}<input type="hidden" name="return_to" value="{{ return_to }}">{% endif %}
                     {# Preserve workspace filter state for return #}
                     {% for key, value in workspace_filters.items() %}
@@ -465,9 +467,27 @@ body.dark-mode .card.border-primary {
                             </div>
                         </div>
                     </div>
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 align-items-center flex-wrap">
                         {{ form.submit(class="btn btn-primary btn-lg", id="submitBtn") }}
                         <button type="reset" class="btn btn-outline-secondary">Clear</button>
+                        {% if nav_total and nav_total > 0 %}
+                        <div class="ms-auto d-flex align-items-center gap-2"
+                             style="background:#f1f5f9; padding:0.35rem 0.6rem; border-radius:999px; border:1px solid #e2e8f0;">
+                            <button type="button" class="btn btn-sm btn-outline-primary" {% if not prev_kpi_id %}disabled{% endif %}
+                                    onclick="document.getElementById('navAction').value='prev'; document.getElementById('contributionForm').requestSubmit ? document.getElementById('contributionForm').requestSubmit() : document.getElementById('contributionForm').submit();"
+                                    title="Save & Previous KPI">
+                                <i class="bi bi-chevron-left"></i> Prev
+                            </button>
+                            <span style="font-size:0.85rem; font-weight:600; color:#475569; min-width:55px; text-align:center;">
+                                {{ nav_pos + 1 }} / {{ nav_total }}
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" {% if not next_kpi_id %}disabled{% endif %}
+                                    onclick="document.getElementById('navAction').value='next'; document.getElementById('contributionForm').requestSubmit ? document.getElementById('contributionForm').requestSubmit() : document.getElementById('contributionForm').submit();"
+                                    title="Save & Next KPI">
+                                Next <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                        {% endif %}
                     </div>
                 </form>
             </div>
@@ -871,6 +891,12 @@ document.addEventListener('DOMContentLoaded', function() {
     contributionForm.addEventListener('submit', function(event) {
         // If form submission already confirmed, allow it to proceed
         if (formSubmitAllowed) {
+            return;
+        }
+
+        // Prev/Next navigation → always submit as "contributing", skip modal
+        var navActionEl = document.getElementById('navAction');
+        if (navActionEl && (navActionEl.value === 'prev' || navActionEl.value === 'next')) {
             return;
         }
 

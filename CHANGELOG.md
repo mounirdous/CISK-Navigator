@@ -5,6 +5,18 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.18.0] - 2026-04-25
+
+### Added
+- **Mass-edit contributions from drill-down popup** — every contributing KPI row in the black drill-down panel now exposes two action icons:
+  - ➕ **Add new value** opens a modern inline modal (no page reload). The modal shows the **last contribution** by anyone (contributor, value, comment, "x days ago") with one-click Copy / Copy-&-Fill buttons for fast context reuse. Form auto-fills the current user's name; supports numeric, list, and qualitative (risk / sentiment / level / impact) value types
+  - ✏️ **Open KPI cell** opens the full KPI contribution detail page with new ◀ Prev / Next ▶ navigation buttons that walk through the same drill-down KPI list, preserving filters and `return_to`. Save & navigate in a single click
+- New JSON endpoints `GET/POST /workspace/api/kpi/<id>/value-type/<id>/inline-add-context|inline-add-contribution` for the inline modal
+- `nav_ids` query parameter on `/workspace/kpi/.../value-type/...` to drive the prev/next nav across drill-down KPIs
+
+### Fixed
+- Rollup cache now also marked stale on POSTs to `/workspace/api/kpi/...` paths (previously only `/workspace/kpi/...`)
+
 ## [7.17.1] - 2026-04-11
 
 ### Fixed

@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.17.1"
+__version__ = "7.18.0"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -624,6 +624,7 @@ def create_app(config_name=None):
             # slightly stale until next value change or manual recompute.
             _affects_rollups = (
                 "/workspace/kpi/" in path
+                or "/workspace/api/kpi/" in path
                 or "/workspace/api/impact" in path
                 or "/workspace/contribute" in path
                 or ("/org-admin/" in path and "/rollup" in path)

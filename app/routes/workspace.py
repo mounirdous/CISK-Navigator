@@ -1940,6 +1940,40 @@ def export_excel():
     )
 
 
+def _parse_nav_ids(raw):
+    """Parse comma-separated KPI ids from query/form. Returns list of ints (deduped, order preserved)."""
+    if not raw:
+        return []
+    out = []
+    seen = set()
+    for chunk in str(raw).split(","):
+        chunk = chunk.strip()
+        if not chunk:
+            continue
+        try:
+            v = int(chunk)
+        except (ValueError, TypeError):
+            continue
+        if v in seen:
+            continue
+        seen.add(v)
+        out.append(v)
+    return out
+
+
+def _build_kpi_nav(nav_ids, current_kpi_id):
+    """Compute prev/next KPI ids and position from a nav list."""
+    if not nav_ids or current_kpi_id not in nav_ids:
+        return {"nav_total": 0, "nav_pos": 0, "prev_id": None, "next_id": None}
+    pos = nav_ids.index(current_kpi_id)
+    return {
+        "nav_total": len(nav_ids),
+        "nav_pos": pos,
+        "prev_id": nav_ids[pos - 1] if pos > 0 else None,
+        "next_id": nav_ids[pos + 1] if pos < len(nav_ids) - 1 else None,
+    }
+
+
 @bp.route("/kpi/<int:kpi_id>/value-type/<int:vt_id>", methods=["GET", "POST"])
 @login_required
 @organization_required
@@ -1952,8 +1986,16 @@ def kpi_cell_detail(kpi_id, vt_id):
     - Current consensus status
     - List of contributions
     - Form to add/edit contribution
+
+    Optional query params:
+    - nav_ids: comma-separated list of KPI ids for prev/next navigation across the
+      same drill-down popup (same value type).
     """
     org_id = session.get("organization_id")
+
+    nav_ids_raw = request.values.get("nav_ids", "")
+    nav_ids = _parse_nav_ids(nav_ids_raw)
+    nav = _build_kpi_nav(nav_ids, kpi_id)
 
     # Get KPI and value type
     kpi = KPI.query.get_or_404(kpi_id)
@@ -2112,6 +2154,15 @@ def kpi_cell_detail(kpi_id, vt_id):
                             return_params.append((filter_key, value))
                         processed_keys.add(key)
 
+                # Prev/Next nav within drill-down: jump to next KPI instead of back to workspace
+                _nav_action = request.form.get("nav_action")
+                _nav_ids_post = _parse_nav_ids(request.form.get("nav_ids", ""))
+                _nav_post = _build_kpi_nav(_nav_ids_post, kpi_id)
+                if _nav_action == "prev" and _nav_post["prev_id"]:
+                    return redirect(url_for("workspace.kpi_cell_detail", kpi_id=_nav_post["prev_id"], vt_id=vt_id, nav_ids=request.form.get("nav_ids", "")))
+                if _nav_action == "next" and _nav_post["next_id"]:
+                    return redirect(url_for("workspace.kpi_cell_detail", kpi_id=_nav_post["next_id"], vt_id=vt_id, nav_ids=request.form.get("nav_ids", "")))
+
                 _return_to = request.form.get("return_to") or request.args.get("return_to")
                 if _return_to:
                     return redirect(_return_to)
@@ -2194,6 +2245,15 @@ def kpi_cell_detail(kpi_id, vt_id):
 
         # Log what we're redirecting with
         logger.info(f"🔍 Redirecting to workspace with params: {return_params}")
+
+        # Prev/Next nav within drill-down: jump to next KPI instead of back to workspace
+        _nav_action = request.form.get("nav_action")
+        _nav_ids_post = _parse_nav_ids(request.form.get("nav_ids", ""))
+        _nav_post = _build_kpi_nav(_nav_ids_post, kpi_id)
+        if _nav_action == "prev" and _nav_post["prev_id"]:
+            return redirect(url_for("workspace.kpi_cell_detail", kpi_id=_nav_post["prev_id"], vt_id=vt_id, nav_ids=request.form.get("nav_ids", "")))
+        if _nav_action == "next" and _nav_post["next_id"]:
+            return redirect(url_for("workspace.kpi_cell_detail", kpi_id=_nav_post["next_id"], vt_id=vt_id, nav_ids=request.form.get("nav_ids", "")))
 
         # Build URL manually to properly handle multiple values for same key
         # If return_to is set (e.g. from initiative review), go back there
@@ -2353,6 +2413,11 @@ def kpi_cell_detail(kpi_id, vt_id):
         stakeholder_map=stakeholder_map,
         return_to=request.args.get("return_to", ""),
         csrf_token=generate_csrf,
+        nav_ids_str=",".join(str(n) for n in nav_ids),
+        nav_total=nav["nav_total"],
+        nav_pos=nav["nav_pos"],
+        prev_kpi_id=nav["prev_id"],
+        next_kpi_id=nav["next_id"],
     )
 
 
@@ -2386,6 +2451,304 @@ def delete_contribution(kpi_id, vt_id):
 
     flash(f'Contribution from "{contributor_name}" has been deleted', "success")
     return redirect(url_for("workspace.kpi_cell_detail", kpi_id=kpi_id, vt_id=vt_id))
+
+
+def _format_relative_time(dt):
+    """Render a UTC datetime as a short human relative string (e.g. '3 days ago')."""
+    if not dt:
+        return ""
+    from datetime import datetime as _dt
+    delta = _dt.utcnow() - dt
+    sec = int(delta.total_seconds())
+    if sec < 60:
+        return "just now"
+    if sec < 3600:
+        m = sec // 60
+        return f"{m} minute{'s' if m != 1 else ''} ago"
+    if sec < 86400:
+        h = sec // 3600
+        return f"{h} hour{'s' if h != 1 else ''} ago"
+    d = sec // 86400
+    if d < 30:
+        return f"{d} day{'s' if d != 1 else ''} ago"
+    if d < 365:
+        mo = d // 30
+        return f"{mo} month{'s' if mo != 1 else ''} ago"
+    y = d // 365
+    return f"{y} year{'s' if y != 1 else ''} ago"
+
+
+def _formatted_contribution_value(contrib, value_type):
+    """Stringify a contribution's value for display in the drill-down inline modal."""
+    if value_type.is_numeric():
+        if contrib.numeric_value is None:
+            return ""
+        try:
+            return f"{float(contrib.numeric_value):g}"
+        except (TypeError, ValueError):
+            return str(contrib.numeric_value)
+    if value_type.is_list():
+        if not contrib.list_value:
+            return ""
+        opt = value_type.get_list_option(contrib.list_value) if hasattr(value_type, "get_list_option") else None
+        if opt and isinstance(opt, dict):
+            return opt.get("label", contrib.list_value)
+        return contrib.list_value
+    # qualitative
+    if contrib.qualitative_level is None:
+        return ""
+    labels = {
+        "risk": {1: "! (Low)", 2: "!! (Medium)", 3: "!!! (High)"},
+        "positive_impact": {1: "★ (Low)", 2: "★★ (Medium)", 3: "★★★ (High)"},
+        "negative_impact": {1: "▼ (Low)", 2: "▼▼ (Medium)", 3: "▼▼▼ (High)"},
+        "level": {1: "● (Low)", 2: "●● (Medium)", 3: "●●● (High)"},
+        "sentiment": {1: "☹️ (Negative)", 2: "😐 (Neutral)", 3: "😊 (Positive)"},
+    }
+    return labels.get(value_type.kind, {}).get(contrib.qualitative_level, f"Level {contrib.qualitative_level}")
+
+
+@bp.route("/api/kpi/<int:kpi_id>/value-type/<int:vt_id>/inline-add-context", methods=["GET"])
+@login_required
+@organization_required
+def kpi_inline_add_context(kpi_id, vt_id):
+    """
+    Return the context needed to render the inline "Add new value" modal for a KPI cell.
+
+    Includes: KPI/value type info, list options, autocomplete contributor names,
+    current user's display name, last contribution (most recent by anyone), and permission.
+    """
+    org_id = session.get("organization_id")
+
+    kpi = KPI.query.get(kpi_id)
+    value_type = ValueType.query.get(vt_id)
+    if not kpi or not value_type:
+        return jsonify({"ok": False, "error": "KPI or value type not found"}), 404
+
+    is_link = kpi.initiative_system_link
+    if not is_link or is_link.initiative.organization_id != org_id:
+        return jsonify({"ok": False, "error": "Access denied"}), 403
+
+    config = KPIValueTypeConfig.query.filter_by(kpi_id=kpi_id, value_type_id=vt_id).first()
+    if not config:
+        return jsonify({"ok": False, "error": "This KPI does not use this value type"}), 404
+
+    if config.calculation_type != "manual":
+        return jsonify({"ok": False, "error": "Only manual KPIs accept contributions"}), 400
+
+    if kpi.is_archived:
+        return jsonify({"ok": False, "error": "KPI is archived"}), 400
+
+    # Last contribution by anyone (most recent first)
+    last = (
+        Contribution.query.filter_by(kpi_value_type_config_id=config.id)
+        .order_by(Contribution.created_at.desc())
+        .first()
+    )
+    last_payload = None
+    if last:
+        last_payload = {
+            "contributor_name": last.contributor_name,
+            "value_formatted": _formatted_contribution_value(last, value_type),
+            "numeric_value": float(last.numeric_value) if last.numeric_value is not None else None,
+            "list_value": last.list_value,
+            "qualitative_level": last.qualitative_level,
+            "comment": last.comment or "",
+            "created_at": last.created_at.isoformat() if last.created_at else None,
+            "created_at_relative": _format_relative_time(last.created_at),
+        }
+
+    # List options (for list value types)
+    list_options = []
+    if value_type.is_list():
+        for opt in (value_type.list_options or []):
+            if isinstance(opt, dict):
+                list_options.append({
+                    "key": opt.get("name") or opt.get("key"),
+                    "label": opt.get("label") or opt.get("name") or opt.get("key"),
+                    "color": opt.get("color"),
+                })
+            else:
+                list_options.append({"key": str(opt), "label": str(opt), "color": None})
+
+    # Contributor names for autocomplete (org-wide contributions + stakeholders + members)
+    names = set(
+        r[0] for r in db.session.query(Contribution.contributor_name)
+        .join(KPIValueTypeConfig, Contribution.kpi_value_type_config_id == KPIValueTypeConfig.id)
+        .join(KPI, KPIValueTypeConfig.kpi_id == KPI.id)
+        .join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+        .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+        .filter(Initiative.organization_id == org_id)
+        .distinct().all()
+    )
+    from app.models import Stakeholder as _Stk
+    for s in _Stk.query.filter_by(organization_id=org_id).all():
+        if s.name:
+            names.add(s.name)
+    for m in UserOrganizationMembership.query.filter_by(organization_id=org_id).all():
+        nm = m.user.display_name or m.user.login
+        if nm:
+            names.add(nm)
+
+    current_user_name = current_user.display_name or current_user.login
+
+    return jsonify({
+        "ok": True,
+        "can_contribute": current_user.can_contribute(org_id),
+        "kpi": {"id": kpi.id, "name": kpi.name},
+        "value_type": {
+            "id": value_type.id,
+            "name": value_type.name,
+            "kind": value_type.kind,
+            "unit_label": value_type.unit_label or "",
+            "list_options": list_options,
+        },
+        "current_user_name": current_user_name,
+        "contributor_names": sorted(names),
+        "last_contribution": last_payload,
+    })
+
+
+@bp.route("/api/kpi/<int:kpi_id>/value-type/<int:vt_id>/inline-add-contribution", methods=["POST"])
+@login_required
+@organization_required
+def kpi_inline_add_contribution(kpi_id, vt_id):
+    """
+    Add (or update if same contributor) a contribution from the inline drill-down modal.
+
+    Accepts JSON body: {contributor_name, numeric_value|list_value|qualitative_level, comment}.
+    Returns JSON {ok, action: "created"|"updated", contribution_id}.
+    """
+    org_id = session.get("organization_id")
+
+    if not current_user.can_contribute(org_id):
+        return jsonify({"ok": False, "error": "You do not have permission to contribute"}), 403
+
+    kpi = KPI.query.get(kpi_id)
+    value_type = ValueType.query.get(vt_id)
+    if not kpi or not value_type:
+        return jsonify({"ok": False, "error": "KPI or value type not found"}), 404
+
+    is_link = kpi.initiative_system_link
+    if not is_link or is_link.initiative.organization_id != org_id:
+        return jsonify({"ok": False, "error": "Access denied"}), 403
+
+    config = KPIValueTypeConfig.query.filter_by(kpi_id=kpi_id, value_type_id=vt_id).first()
+    if not config:
+        return jsonify({"ok": False, "error": "This KPI does not use this value type"}), 404
+
+    if config.calculation_type != "manual":
+        return jsonify({"ok": False, "error": "Only manual KPIs accept contributions"}), 400
+
+    if kpi.is_archived:
+        return jsonify({"ok": False, "error": "KPI is archived"}), 400
+
+    payload = request.get_json(silent=True) or {}
+    contributor_name = (payload.get("contributor_name") or "").strip()
+    if not contributor_name:
+        return jsonify({"ok": False, "error": "Contributor name is required"}), 400
+
+    comment = (payload.get("comment") or "").strip() or None
+
+    # Validate value matches the value type
+    numeric_value = None
+    list_value = None
+    qualitative_level = None
+    if value_type.is_numeric():
+        raw = payload.get("numeric_value")
+        if raw is None or raw == "":
+            return jsonify({"ok": False, "error": "Value is required"}), 400
+        try:
+            numeric_value = float(raw)
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "Value must be numeric"}), 400
+    elif value_type.is_list():
+        list_value = (payload.get("list_value") or "").strip() or None
+        if not list_value:
+            return jsonify({"ok": False, "error": "Choice is required"}), 400
+    else:
+        raw = payload.get("qualitative_level")
+        try:
+            qualitative_level = int(raw) if raw not in (None, "") else None
+        except (TypeError, ValueError):
+            return jsonify({"ok": False, "error": "Level must be 1, 2, or 3"}), 400
+        if qualitative_level not in (1, 2, 3):
+            return jsonify({"ok": False, "error": "Level must be 1, 2, or 3"}), 400
+
+    # Resolve stakeholder (if name matches)
+    from app.models import Stakeholder as _Stk
+    matched_stk = _Stk.query.filter(
+        _Stk.organization_id == org_id,
+        db.func.lower(_Stk.name) == contributor_name.lower(),
+    ).first()
+    stk_id = matched_stk.id if matched_stk else None
+
+    # Update existing same-contributor entry, otherwise create new
+    existing = Contribution.query.filter_by(
+        kpi_value_type_config_id=config.id, contributor_name=contributor_name
+    ).first()
+
+    if existing:
+        existing.numeric_value = numeric_value
+        existing.list_value = list_value
+        existing.qualitative_level = qualitative_level
+        existing.comment = comment
+        existing.stakeholder_id = stk_id
+        action = "updated"
+        contribution_id = existing.id
+    else:
+        contribution = Contribution(
+            kpi_value_type_config_id=config.id,
+            contributor_name=contributor_name,
+            stakeholder_id=stk_id,
+            numeric_value=numeric_value,
+            list_value=list_value,
+            qualitative_level=qualitative_level,
+            comment=comment,
+        )
+        db.session.add(contribution)
+        db.session.flush()
+        action = "created"
+        contribution_id = contribution.id
+
+    db.session.commit()
+
+    # Compute new consensus + display value so the drill-down can update in place
+    consensus = config.get_consensus_value()
+    cv = consensus.get("value")
+    cell = {
+        "value": float(cv) if isinstance(cv, (int, float)) and not isinstance(cv, bool) else cv,
+        "consensus_status": consensus.get("status"),
+        "consensus_count": consensus.get("count"),
+        "color": None,
+        "formatted_value": None,
+        "list_label": None,
+    }
+    try:
+        if cv is not None and hasattr(config, "get_value_color"):
+            cell["color"] = config.get_value_color(cv)
+    except Exception:
+        pass
+    if value_type.is_numeric() and cv is not None:
+        try:
+            from app import format_value_filter as _fmt  # type: ignore[attr-defined]
+        except Exception:
+            _fmt = None
+        try:
+            cell["formatted_value"] = (
+                current_app.jinja_env.filters["format_value"](cv, value_type, config)
+                if "format_value" in current_app.jinja_env.filters else f"{float(cv):g}"
+            )
+        except Exception:
+            cell["formatted_value"] = f"{float(cv):g}"
+    elif value_type.is_list() and cv:
+        opt = value_type.get_list_option(cv) if hasattr(value_type, "get_list_option") else None
+        if opt and isinstance(opt, dict):
+            cell["list_label"] = opt.get("label", cv)
+            cell["color"] = opt.get("color") or cell["color"]
+        else:
+            cell["list_label"] = cv
+
+    return jsonify({"ok": True, "action": action, "contribution_id": contribution_id, "cell": cell})
 
 
 @bp.route("/api/rollup/<string:entity_type>/<int:entity_id>/<int:value_type_id>")
