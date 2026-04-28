@@ -6670,12 +6670,13 @@ def _build_workspace_data(org_id):
                 _org_inh_map[lnk["url"]] = {**lnk}
     org_inherited_links = list(_org_inh_map.values())
 
+    _org = Organization.query.get(org_id)
+
     # ── Compute true importance (product of weights through the chain) ──
     # ── Compute true importance using configured method ──
     if impact_scale:
         from app.services.impact_service import compute_true_importance
 
-        _org = Organization.query.get(org_id)
         _method = _org.impact_calc_method or "geometric_mean" if _org else "geometric_mean"
         _weights = {lvl: impact_scale[lvl]["weight"] for lvl in impact_scale}
         _custom_matrix = _org.impact_qfd_matrix if _org else None

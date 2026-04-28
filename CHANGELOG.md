@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.18.1] - 2026-04-28
+
+### Fixed
+- Fixed `UnboundLocalError: cannot access local variable '_org'` on `/workspace/data` when `impact_scale` was empty — `_org` is now resolved unconditionally before the impact-importance block
+
 ## [7.18.0] - 2026-04-25
 
 ### Added
