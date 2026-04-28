@@ -5,6 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.20.1] - 2026-04-28
+
+### Fixed
+- **Edit Organization** form (`/global-admin/organizations/<id>/edit`) — the Name-field input-group icon was a hard-coded `bi-building` regardless of the workspace's branding. Now renders, in priority order: the org's uploaded logo → the `EntityTypeDefault` "organization" default logo → the `EntityTypeDefault` default icon (emoji) → fall back to `bi-building`.
+- **Stale workspace name after rename** — renaming the currently-active workspace on `/global-admin/organizations/<id>/edit` left `session["organization_name"]` pointing at the old value, so the navbar brand kept showing the old name until the next switch / login. Edit handler now refreshes the session name on commit when the edited org matches the active session org. The workspace dropdown reads from DB on each render and was already current.
+
 ## [7.20.0] - 2026-04-28
 
 ### Changed

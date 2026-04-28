@@ -686,6 +686,13 @@ def edit_organization(org_id):
     org = Organization.query.get_or_404(org_id)
     form = OrganizationEditForm(obj=org)
 
+    # Branding default for the "organization" entity type — used to render the
+    # name-field icon as the actual workspace logo / branded icon.
+    from app.models import EntityTypeDefault
+    org_branding = EntityTypeDefault.query.filter_by(
+        organization_id=org.id, entity_type="organization"
+    ).first()
+
     # Populate users choices
     all_users = User.query.filter_by(is_active=True).order_by(User.display_name, User.login).all()
     form.users.choices = [(u.id, u.display_name or u.login) for u in all_users]
@@ -723,7 +730,7 @@ def edit_organization(org_id):
                     )
                 else:
                     flash(f'An active organization named "{new_name}" already exists.', "danger")
-                    return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users)
+                    return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users, org_branding=org_branding)
 
         # Capture old values for audit
         old_values = {
@@ -779,10 +786,17 @@ def edit_organization(org_id):
         AuditService.log_update("Organization", org.id, org.name, old_values, new_values)
 
         db.session.commit()
+
+        # If the editor is currently viewing this same org, refresh the cached
+        # session name so the navbar / workspace switcher show the new value
+        # immediately instead of the old one.
+        if session.get("organization_id") == org.id:
+            session["organization_name"] = org.name
+
         flash(f"Organization {org.name} updated successfully", "success")
         return redirect(url_for("global_admin.organizations"))
 
-    return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users)
+    return render_template("global_admin/edit_organization.html", form=form, org=org, all_users=all_users, org_branding=org_branding)
 
 
 @bp.route("/organizations/<int:org_id>/toggle-active", methods=["POST"])

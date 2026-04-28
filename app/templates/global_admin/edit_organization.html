@@ -52,7 +52,17 @@
                     <div class="mb-4">
                         {{ form.name.label(class="form-label fw-semibold") }}
                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-building"></i></span>
+                            <span class="input-group-text p-1" style="min-width:42px; justify-content:center;">
+                                {% if org.logo_data %}
+                                    <img src="{{ url_for('logo.organization_logo', entity_id=org.id) }}" alt="" style="width:28px; height:28px; object-fit:contain; border-radius:4px;">
+                                {% elif org_branding and org_branding.default_logo_data %}
+                                    <img src="{{ url_for('logo.entity_default_logo', default_id=org_branding.id) }}" alt="" style="width:28px; height:28px; object-fit:contain; border-radius:4px;">
+                                {% elif org_branding and org_branding.default_icon %}
+                                    <span style="font-size:1.2rem; line-height:1;">{{ org_branding.default_icon }}</span>
+                                {% else %}
+                                    <i class="bi bi-building"></i>
+                                {% endif %}
+                            </span>
                             {{ form.name(class="form-control", placeholder="Organization Name") }}
                         </div>
                         <small class="form-text text-muted">
