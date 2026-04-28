@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.18.3] - 2026-04-28
+
+### Fixed
+- Added `before_request` guard that clears `session["organization_id"]` (plus `_name` / `_logo`) when the org no longer exists, so users whose current workspace was hard-deleted are returned to a clean state instead of carrying a ghost org context across requests
+
 ## [7.18.2] - 2026-04-28
 
 ### Fixed

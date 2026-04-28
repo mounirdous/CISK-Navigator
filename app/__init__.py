@@ -11,7 +11,7 @@ from app.config import config
 from app.extensions import db, login_manager, migrate
 from celery_app import make_celery
 
-__version__ = "7.18.2"
+__version__ = "7.18.3"
 
 # Global Celery instance (will be initialized in create_app)
 celery = None
@@ -121,6 +121,24 @@ def create_app(config_name=None):
         from app.routes import test_errors
 
         app.register_blueprint(test_errors.bp)
+
+    # Clear stale session org_id if the org no longer exists in the DB
+    @app.before_request
+    def _clear_stale_session_org():
+        from flask import request, session
+
+        if request.endpoint in ("static", None):
+            return None
+        org_id = session.get("organization_id")
+        if not org_id:
+            return None
+        from app.models.organization import Organization
+
+        if not Organization.query.get(org_id):
+            session.pop("organization_id", None)
+            session.pop("organization_name", None)
+            session.pop("organization_logo", None)
+        return None
 
     # Maintenance mode check (global)
     @app.before_request
