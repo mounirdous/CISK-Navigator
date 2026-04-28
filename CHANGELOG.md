@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.6] - 2026-04-28
+
+### Changed
+- Standalone HTML snapshot — **Porter / Strategy / Lenses / SWOT modals now look identical to the live pages**. The export pre-renders the four live page templates server-side (`organization_admin/organization_porters.html`, `workspace/strategy.html`, `workspace/dimensions.html`, one render of `organization_admin/space_swot.html` per space), extracts only the inline `<style>` blocks plus the content wrapper from each rendered HTML, and stashes the strings in `__SNAPSHOT_EXTRAS__.panels`. The modal renderers (`_portersHtml` / `_strategyHtml` / `_lensesHtml` / `_swotHtml`) prefer the pre-rendered HTML and fall back to the simpler hand-built layout only if absent. Modal width widened to 1100px / 96vw / 90vh so the full layouts (gradients, ✓/✗/→/⚠ list bullets on SWOT, pillar cards on Strategy, dimension cards on Lenses) fit comfortably. Snapshot grows from ~930KB to ~1.1MB.
+
 ## [7.21.5] - 2026-04-28
 
 ### Fixed

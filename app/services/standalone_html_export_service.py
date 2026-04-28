@@ -26,6 +26,66 @@ import re
 from io import BytesIO
 
 
+def _render_panel(template, **ctx):
+    """Render a live page template and return ONLY its <style> blocks (from
+    {% block extra_css %}) concatenated with the {% block content %} body —
+    suitable for dropping straight into a modal via innerHTML.
+
+    Strategy: render the full page, then string-slice it to keep only the
+    pieces we want, dropping <html>/<head>/<nav>/<footer>/<script>. The
+    rendered styles inside <head> stay with us so the panel keeps its
+    bespoke colors / icons / list bullets.
+    """
+    from flask import render_template
+
+    full = render_template(template, **ctx)
+
+    # 1. Pull every <style> block out of <head>.
+    styles = ""
+    head_match = re.search(r"<head[^>]*>(.*?)</head>", full, re.DOTALL | re.IGNORECASE)
+    head_blob = head_match.group(1) if head_match else ""
+    for m in re.finditer(r"<style\b[^>]*>.*?</style>", head_blob, re.DOTALL | re.IGNORECASE):
+        styles += m.group(0) + "\n"
+
+    # 2. Find the content wrapper. base.html wraps {% block content %} in
+    #    <div class="container-fluid mt-4">.
+    marker = '<div class="container-fluid mt-4">'
+    start = full.find(marker)
+    if start < 0:
+        return styles + full
+
+    # Walk forward to find the matching </div> by counting depth.
+    depth = 0
+    i = start
+    n = len(full)
+    end = -1
+    div_open = re.compile(r"<div\b", re.IGNORECASE)
+    div_close = re.compile(r"</div>", re.IGNORECASE)
+    pos = start
+    while pos < n:
+        next_open = div_open.search(full, pos)
+        next_close = div_close.search(full, pos)
+        if not next_close:
+            break
+        if next_open and next_open.start() < next_close.start():
+            depth += 1
+            pos = next_open.end()
+        else:
+            depth -= 1
+            pos = next_close.end()
+            if depth == 0:
+                end = pos
+                break
+    if end < 0:
+        return styles + full[start:]
+
+    content = full[start:end]
+    # Strip any inline <script> tags inside content — we want pure markup, not
+    # the page's JS (it would not work anyway, fetched data isn't there).
+    content = re.sub(r"<script\b[^>]*>.*?</script>", "", content, flags=re.DOTALL | re.IGNORECASE)
+    return styles + content
+
+
 def _read_static(rel_path):
     """Read a file under app/static. rel_path may have leading /static/ or not."""
     from flask import current_app
@@ -182,8 +242,8 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
       + 'z-index:100000;display:flex;align-items:center;justify-content:center;padding:24px;';
     bk.innerHTML = ''
       + '<div style="background:#fff;color:#0f172a;border-radius:12px;'
-      +              'box-shadow:0 20px 60px rgba(0,0,0,.35);max-width:760px;width:100%;'
-      +              'max-height:85vh;overflow:auto;padding:22px 26px;'
+      +              'box-shadow:0 20px 60px rgba(0,0,0,.35);max-width:1100px;width:96%;'
+      +              'max-height:90vh;overflow:auto;padding:22px 26px;'
       +              'font:14px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;">'
       +   '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">'
       +     '<h3 style="margin:0;font-size:18px;flex:1 1 auto">' + _esc(title) + '</h3>'
@@ -199,7 +259,13 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
     document.getElementById('__snap_modal_close__').addEventListener('click', close);
     document.addEventListener('keydown', keyClose);
   }
+  // Each of these prefers the server-pre-rendered panel HTML (which mirrors
+  // the live page exactly — same colors, gradients, icons, list bullets).
+  // Falls back to a hand-built minimal version only if the panel was missing.
+  function _panel(key) { return ((window.__SNAPSHOT_EXTRAS__ || {}).panels || {})[key]; }
   function _portersHtml() {
+    var rendered = _panel('porters');
+    if (rendered) return rendered;
     var p = (window.__SNAPSHOT_EXTRAS__ || {}).porters || {};
     var sec = function(label, val) {
       return '<div style="margin-bottom:14px"><div style="font-size:11px;'
@@ -215,6 +281,8 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
          + sec('Competitive rivalry',              p.rivalry);
   }
   function _strategyHtml() {
+    var rendered = _panel('strategy');
+    if (rendered) return rendered;
     var pillars = (window.__SNAPSHOT_EXTRAS__ || {}).pillars || [];
     if (!pillars.length) return '<p style="color:#64748b">No strategic pillars defined.</p>';
     return pillars.map(function(p) {
@@ -226,39 +294,35 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
     }).join('');
   }
   function _lensesHtml() {
+    var rendered = _panel('dimensions');
+    if (rendered) return rendered;
     var vts = ((window.__SNAPSHOT_DATA__ || {}).valueTypes || []);
     if (!vts.length) return '<p style="color:#64748b">No lenses configured.</p>';
-    var rows = vts.map(function(v) {
-      return '<tr>'
-        + '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;font-weight:600">' + _esc(v.name) + '</td>'
-        + '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;color:#64748b">' + _esc(v.kind || '') + '</td>'
-        + '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;color:#64748b">' + _esc(v.unit_label || '') + '</td>'
-        + '<td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;color:#64748b">' + _esc(v.default_aggregation_formula || v.numeric_format || '') + '</td>'
-        + '</tr>';
+    return vts.map(function(v) {
+      return '<div style="padding:8px 10px;border-bottom:1px solid #e5e7eb">'
+        + '<strong>' + _esc(v.name) + '</strong> '
+        + '<span style="color:#64748b">' + _esc(v.kind || '') + '</span>'
+        + (v.unit_label ? ' · ' + _esc(v.unit_label) : '')
+        + '</div>';
     }).join('');
-    return '<table style="width:100%;border-collapse:collapse;font-size:13px">'
-      + '<thead><tr><th style="text-align:left;padding:6px 10px;color:#64748b;font-size:11px;text-transform:uppercase">Name</th>'
-      + '<th style="text-align:left;padding:6px 10px;color:#64748b;font-size:11px;text-transform:uppercase">Kind</th>'
-      + '<th style="text-align:left;padding:6px 10px;color:#64748b;font-size:11px;text-transform:uppercase">Unit</th>'
-      + '<th style="text-align:left;padding:6px 10px;color:#64748b;font-size:11px;text-transform:uppercase">Aggregation</th></tr></thead>'
-      + '<tbody>' + rows + '</tbody></table>';
   }
   function _swotHtml(spaceId) {
-    // Prefer the dedicated SWOT extras (full text fields). Fall back to the
-    // tree blob (which usually only carries completion stats).
+    var rendered = (((window.__SNAPSHOT_EXTRAS__ || {}).panels || {}).swot || {})[spaceId]
+                || (((window.__SNAPSHOT_EXTRAS__ || {}).panels || {}).swot || {})[String(spaceId)];
+    if (rendered) return rendered;
+    // Fallback: minimal hand-built layout from the SWOT extras dict.
     var sw = (((window.__SNAPSHOT_EXTRAS__ || {}).swot) || {})[spaceId]
           || (((window.__SNAPSHOT_EXTRAS__ || {}).swot) || {})[String(spaceId)];
-    var name = sw && sw.name;
     if (!sw) {
       var sp = _findSpace(spaceId);
       if (!sp) return '<p style="color:#64748b">Space not found in snapshot.</p>';
       sw = {
+        name: sp.name,
         strengths:     sp.swot_strengths,
         weaknesses:    sp.swot_weaknesses,
         opportunities: sp.swot_opportunities,
         threats:       sp.swot_threats,
       };
-      name = sp.name;
     }
     var cell = function(h, v, bg, fg) {
       return '<div style="background:' + bg + ';color:' + fg + ';border-radius:8px;'
@@ -267,7 +331,7 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
         + 'text-transform:uppercase;opacity:.85;margin-bottom:4px">' + h + '</div>'
         + (v ? _esc(v) : '<em style="opacity:.7">—</em>') + '</div>';
     };
-    return (name ? '<div style="font-weight:600;margin-bottom:10px">' + _esc(name) + '</div>' : '')
+    return (sw.name ? '<div style="font-weight:600;margin-bottom:10px">' + _esc(sw.name) + '</div>' : '')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
       + cell('Strengths',     sw.strengths,     '#dcfce7', '#14532d')
       + cell('Weaknesses',    sw.weaknesses,    '#fee2e2', '#7f1d1d')
@@ -378,7 +442,8 @@ class StandaloneHtmlExportService:
         # SWOT per space — _build_workspace_data exposes only `swot_completion`,
         # not the actual S/W/O/T text fields. Pull them straight from the model.
         swot_by_space = {}
-        for sp in Space.query.filter_by(organization_id=organization_id).all():
+        spaces_for_swot = Space.query.filter_by(organization_id=organization_id).all()
+        for sp in spaces_for_swot:
             swot_by_space[sp.id] = {
                 "name":          sp.name,
                 "strengths":     sp.swot_strengths,
@@ -386,6 +451,26 @@ class StandaloneHtmlExportService:
                 "opportunities": sp.swot_opportunities,
                 "threats":       sp.swot_threats,
             }
+
+        # Pre-render the live SWOT / Strategy / Lenses / Porter pages so the
+        # snapshot's modals look identical to the live ones — same icons, same
+        # bullet glyphs (✓/✗/→/⚠), same gradient headers, same pillar cards.
+        from app.models import ValueType
+        value_types_active = (ValueType.query.filter_by(organization_id=organization_id, is_active=True)
+                              .order_by(ValueType.display_order, ValueType.name).all())
+        panels = {
+            "porters":    _render_panel("organization_admin/organization_porters.html",
+                                         organization=org, csrf_token=lambda: ""),
+            "strategy":   _render_panel("workspace/strategy.html", pillars=[
+                                         _p for _p in (StrategicPillar.query
+                                                       .filter_by(organization_id=organization_id)
+                                                       .order_by(StrategicPillar.display_order).all())
+                                       ]),
+            "dimensions": _render_panel("workspace/dimensions.html", value_types=value_types_active),
+            "swot":       {sp.id: _render_panel("organization_admin/space_swot.html",
+                                                space=sp, csrf_token=lambda: "")
+                           for sp in spaces_for_swot},
+        }
 
         extras = {
             "porters": {
@@ -398,6 +483,7 @@ class StandaloneHtmlExportService:
             "pillars": pillars,
             "strategy_enabled": bool(getattr(org, "strategy_enabled", False)),
             "swot": swot_by_space,
+            "panels": panels,
         }
 
         # 5. Inject the data + fetch shim (must run before Alpine boots).
