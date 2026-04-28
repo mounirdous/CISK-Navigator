@@ -6,6 +6,7 @@ from flask import request, session
 from flask_login import current_user
 
 from app.models import AuditLog
+from app.models.organization import Organization
 
 
 class AuditService:
@@ -32,6 +33,10 @@ class AuditService:
         """
         user = current_user if current_user.is_authenticated else None
         organization_id = session.get("organization_id")
+        # Session may carry a stale org id (e.g. org was hard-deleted). The FK
+        # would then violate on insert, so drop it back to NULL.
+        if organization_id and not Organization.query.get(organization_id):
+            organization_id = None
         ip_address = request.remote_addr if request else None
         user_agent = request.headers.get("User-Agent") if request else None
 
