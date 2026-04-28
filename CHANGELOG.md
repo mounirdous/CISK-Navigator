@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.5] - 2026-04-28
+
+### Fixed
+- Standalone HTML snapshot — **SWOT modal was showing empty cells** for every space. `_build_workspace_data()` only exposes `swot_completion` (filled/total summary), not the actual `swot_strengths`/`swot_weaknesses`/`swot_opportunities`/`swot_threats` text fields. The export now reads those fields straight from the `Space` model and stores them per-space ID under `__SNAPSHOT_EXTRAS__.swot`. The `_swotHtml` modal renderer prefers the extras blob and falls back to the tree blob if missing, so existing snapshots stay readable.
+
 ## [7.21.4] - 2026-04-28
 
 ### Documentation

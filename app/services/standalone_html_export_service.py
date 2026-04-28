@@ -244,8 +244,22 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
       + '<tbody>' + rows + '</tbody></table>';
   }
   function _swotHtml(spaceId) {
-    var sp = _findSpace(spaceId);
-    if (!sp) return '<p style="color:#64748b">Space not found in snapshot.</p>';
+    // Prefer the dedicated SWOT extras (full text fields). Fall back to the
+    // tree blob (which usually only carries completion stats).
+    var sw = (((window.__SNAPSHOT_EXTRAS__ || {}).swot) || {})[spaceId]
+          || (((window.__SNAPSHOT_EXTRAS__ || {}).swot) || {})[String(spaceId)];
+    var name = sw && sw.name;
+    if (!sw) {
+      var sp = _findSpace(spaceId);
+      if (!sp) return '<p style="color:#64748b">Space not found in snapshot.</p>';
+      sw = {
+        strengths:     sp.swot_strengths,
+        weaknesses:    sp.swot_weaknesses,
+        opportunities: sp.swot_opportunities,
+        threats:       sp.swot_threats,
+      };
+      name = sp.name;
+    }
     var cell = function(h, v, bg, fg) {
       return '<div style="background:' + bg + ';color:' + fg + ';border-radius:8px;'
         + 'padding:10px 12px;white-space:pre-wrap;font-size:13px">'
@@ -253,12 +267,12 @@ window.__SNAPSHOT_EXTRAS__ = """ + extras_blob + """;
         + 'text-transform:uppercase;opacity:.85;margin-bottom:4px">' + h + '</div>'
         + (v ? _esc(v) : '<em style="opacity:.7">—</em>') + '</div>';
     };
-    return '<div style="font-weight:600;margin-bottom:10px">' + _esc(sp.name) + '</div>'
+    return (name ? '<div style="font-weight:600;margin-bottom:10px">' + _esc(name) + '</div>' : '')
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
-      + cell('Strengths',     sp.swot_strengths,     '#dcfce7', '#14532d')
-      + cell('Weaknesses',    sp.swot_weaknesses,    '#fee2e2', '#7f1d1d')
-      + cell('Opportunities', sp.swot_opportunities, '#dbeafe', '#1e3a8a')
-      + cell('Threats',       sp.swot_threats,       '#fef3c7', '#78350f')
+      + cell('Strengths',     sw.strengths,     '#dcfce7', '#14532d')
+      + cell('Weaknesses',    sw.weaknesses,    '#fee2e2', '#7f1d1d')
+      + cell('Opportunities', sw.opportunities, '#dbeafe', '#1e3a8a')
+      + cell('Threats',       sw.threats,       '#fef3c7', '#78350f')
       + '</div>';
   }
   document.addEventListener('click', function(e) {
@@ -350,7 +364,7 @@ class StandaloneHtmlExportService:
         #    server. SWOT is per-space and already lives inside ws_data.spaces;
         #    Lenses / value types live on ws_data.valueTypes; we add Porters
         #    and Strategic Pillars here.
-        from app.models import StrategicPillar
+        from app.models import Space, StrategicPillar
         pillars = []
         for p in (StrategicPillar.query.filter_by(organization_id=organization_id)
                   .order_by(StrategicPillar.display_order).all()):
@@ -360,6 +374,19 @@ class StandaloneHtmlExportService:
                 "accent_color": p.accent_color,
                 "bs_icon": p.bs_icon,
             })
+
+        # SWOT per space — _build_workspace_data exposes only `swot_completion`,
+        # not the actual S/W/O/T text fields. Pull them straight from the model.
+        swot_by_space = {}
+        for sp in Space.query.filter_by(organization_id=organization_id).all():
+            swot_by_space[sp.id] = {
+                "name":          sp.name,
+                "strengths":     sp.swot_strengths,
+                "weaknesses":    sp.swot_weaknesses,
+                "opportunities": sp.swot_opportunities,
+                "threats":       sp.swot_threats,
+            }
+
         extras = {
             "porters": {
                 "new_entrants": org.porters_new_entrants,
@@ -370,6 +397,7 @@ class StandaloneHtmlExportService:
             },
             "pillars": pillars,
             "strategy_enabled": bool(getattr(org, "strategy_enabled", False)),
+            "swot": swot_by_space,
         }
 
         # 5. Inject the data + fetch shim (must run before Alpine boots).
