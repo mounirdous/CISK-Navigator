@@ -38,6 +38,47 @@ CISK Navigator is a web-based collaborative data collection and aggregation syst
 - **Context-specific KPIs**: KPIs belong to initiative-system pairs, not master systems
 - **Organization isolation**: Each organization has completely separate data
 
+## What's New in v7.19–7.21 (April 2026)
+
+### Standalone HTML Workspace Snapshot
+
+A new export on the workspace toolbar (rich-text icon, blue) generates a single self-contained `.html` file that **looks and behaves exactly like the live workspace tree** when opened in any browser.
+
+- **What's preserved**: hierarchy (Space → Challenge → Initiative → System → KPI), expand/collapse, xmas-tree level cycle (🌱 / 🌲 / 🎄), click-for-description popup, RAG colours, branding logos, Porter / Strategy / Lenses / SWOT modals (in-page, no server).
+- **What's removed in the snapshot**: top navbar, load/save preset bar, edit-mode toggle, all create/edit/delete chrome, snapshot/Excel/HTML export buttons themselves, comments, maintenance banners, live-search dropdown.
+- **Implementation**: the export invokes the live `workspace.index()` Flask view, inlines every `/static/` CSS+JS into the file, and installs a `fetch()` interceptor that serves the embedded workspace JSON to Alpine on the first AJAX call (and stubs every other backend `/api/*` with `{}` so the page boots without errors). External CDN libraries (Bootstrap, BS Icons, Alpine, FontAwesome) stay as `https://...` links — recipients online get the exact same fonts and icons.
+
+### Excel Workspace Export — Five-Sheet Workbook
+
+The green spreadsheet button now produces a five-sheet workbook instead of a single bare sheet:
+
+1. **Overview** — workspace title, generated timestamp/user, structure counts, KPI RAG distribution, action-item / governance-body / pillar / value-type counts.
+2. **Tree** — hierarchical with Excel outline groups (1–4 collapse levels). +/- toggle on each parent row. KPI value cells store **numbers** (with unit-aware format like `0.00 "kg"`) and get **RAG fill** computed from `target_value × target_direction × tolerance`. Autofilter, frozen panes.
+3. **KPIs** — every KPI/value-type pair as one row: full path · current · target · Δ% · RAG · direction · target date · tolerance · last update · last contributor. Frozen panes + autofilter.
+4. **Action Items** — colour-coded priority/status, mentions, governance bodies, due dates.
+5. **Settings** — value types, impact levels (with weight + colour swatches), strategic pillars, governance bodies, geography (region › country › site).
+
+### Cross-Workspace Logo Gallery on Branding Manager
+
+`/org-admin/branding` cards (organization, space, challenge, initiative, system, kpi) gained a **"Choose from Existing"** button alongside Upload / Template. Clicking it opens a gallery of every logo across every workspace the user has access to (super/global admins see all):
+
+- Workspace logos
+- Per-entity-type default logos (`EntityTypeDefault`)
+- Individual entity overrides (Space / Challenge / Initiative / System / KPI)
+
+Filterable by workspace, source kind, free text. One click copies the bytes into the current workspace's target slot.
+
+### Session safety on stale workspace IDs
+
+If a user's session points to a workspace that has been hard-deleted (rare but happened):
+- A global `before_request` guard now clears `session["organization_id"]` (plus name/logo) on the next request, preventing cascading FK violations on audit log inserts.
+- `AuditService.log_action` re-validates the session org before attaching it to log rows.
+- Renaming the active workspace from the global-admin edit form now refreshes the navbar brand immediately.
+
+### Sample import file regenerated
+
+`docs/SAMPLE_IMPORT.json` now matches the current v9.0 backup format. Adds the `metadata` block (without which the restore was silently rejected) and working examples for every importable top-level section (`organization`, `entity_branding`, `governance_bodies`, `impact_levels`, `strategic_pillars`, `geography`).
+
 ## What's New in v1.19 (March 2026)
 
 ### Three Calculation Types

@@ -45,6 +45,15 @@ CISK Navigator is a Flask application using PostgreSQL as the production databas
 - **Well-Tested**: Comprehensive test coverage with pytest
 - **Multi-Tenant**: Complete organization isolation
 
+### v7.19–7.21 Recent Changes (April 28, 2026)
+
+1. **Cross-workspace Logo Gallery on Branding Manager** — `/org-admin/branding` cards (organization, space, challenge, initiative, system, kpi) gained a "Choose from Existing" button alongside Upload/Template. New endpoints `GET /org-admin/branding/logo-gallery` (catalog of every accessible logo) and `POST /org-admin/branding/copy-logo` (copy bytes into target slot). Sources span every workspace the user has access to (super/global admins see all): the workspace logo, every `EntityTypeDefault.default_logo`, every per-entity override (Space/Challenge/Initiative/System/KPI). Filterable by workspace + source-kind + free text. KPI sources reached via `InitiativeSystemLink → Initiative` since `KPI` has no direct `organization_id`. New `/api/logo/entity-default/<id>` route serves `EntityTypeDefault.default_logo_data` as raw image bytes.
+2. **Excel Export — full rewrite** (`/workspace/export-excel`). Single sheet → five-sheet workbook: **Overview** (workspace counts + RAG distribution), **Tree** (hierarchical with `outlinePr.summaryBelow=False` so the +/- toggle sits on each parent row, RAG-filled KPI cells, autofilter, no hyperlinks in tree text), **KPIs** (flat row per KPI/value-type pair with target / current / Δ% / RAG / direction / target date / tolerance / last update / contributor), **Action Items** (priority + status colour coded), **Settings** (value types, impact levels with colour swatches, pillars, GBs, geography). KPI value cells now store **numbers** (with unit-aware `number_format`) instead of strings — Excel sort/filter works natively. RAG computed from `target_value × target_direction × target_tolerance_pct`.
+3. **Standalone HTML snapshot export** (`/workspace/export-html`, new richtext button next to Excel) — generates a single self-contained `.html` file by **invoking the live `workspace.index()` view** to capture the exact Alpine.js page, then post-processing: every `/static/` CSS+JS reference is inlined; CDN libraries (Bootstrap, BS Icons, Alpine, FontAwesome) stay as `https://...` so recipients online get the exact look. A pre-Alpine shim installs a `fetch()` interceptor that serves the `_build_workspace_data()` blob on `/workspace/data` requests and stubs every other backend `/api/*` with `{}` so the page boots without errors. Form submits are blocked. Server-only chrome is hidden in the snapshot **only** (live template untouched): top navbar, ga-subnav, load/save preset bar, edit-mode toggle, snapshot floating controls, inline quick-add modal (`.ws-iadd-*`), comments / mentions, maintenance banners, live-search dropdown. `editMode` is force-reset to `false` at boot so per-row create/edit/delete chrome never appears. **Porter / Strategy / Lenses / SWOT links open in-page modals** populated from data embedded at export time (porters fields, `StrategicPillar` rows, `valueTypes`, per-space SWOT) — zero server round-trips on click. Other relative links resolve to the live deployment via `<base href>`.
+4. **Stale-org-id session guard** — global `before_request` hook in `app/__init__.py` clears `session["organization_id"]` (plus `_name`/`_logo`) if the org no longer exists in the DB, preventing cascading FK failures (e.g. `audit_logs` insert) for users whose current workspace was hard-deleted. `AuditService.log_action` also re-validates the session org before attaching it to audit log inserts.
+5. **Edit Organization branding** — `/global-admin/organizations/<id>/edit` name-field icon now renders the workspace's actual logo via the standard chain (org logo → `EntityTypeDefault` default logo → default emoji icon → `bi-building` fallback), and renaming the currently-active workspace refreshes `session["organization_name"]` on commit so the navbar brand updates immediately.
+6. **`docs/SAMPLE_IMPORT.json` regenerated to v9.0 backup format** — added the `metadata` block (`db_schema_version="1.0"`) without which `FullRestoreService` rejected the file. Added working examples of every top-level section the restore consumes: `organization` (porters / impact method / decision/action tags / value-type categories / strategy toggle), `entity_branding`, `governance_bodies`, `impact_levels`, `strategic_pillars`, `geography` (regions/countries/sites). Existing CIO first-year hierarchy preserved.
+
 ### v7.13–7.15 Recent Changes (April 6, 2026)
 
 1. **Responsive Navbar** — Navbar collapses at xl (1200px) breakpoint; search bar uses flexible width; user profile icon always accessible
@@ -760,63 +769,135 @@ class InitiativeSystemLink(db.Model):
 
 ## Excel Export
 
-Located in `app/services/excel_export_service.py`.
+Located in `app/services/excel_export_service.py`. Rewritten in **v7.20.0** from a single bare sheet into a **five-sheet workbook**. Triggered by `/workspace/export-excel` (the green spreadsheet button on the workspace toolbar).
 
-### Features
+### Sheets
 
-- **Hierarchical Row Grouping**: Excel outline levels (1-5) for Space → Challenge → Initiative → System → KPI
-- **Color-Coded Rows**: Different background colors for each hierarchy level
-- **Rollup Values**: Aggregated values at Space, Challenge, Initiative, and System levels
-- **Completion Indicators**: ✓ for complete data, ⚠ for partial rollups
-- **Value Type Headers**: Column headers with unit labels
-- **Frozen Header Row**: Header stays visible while scrolling
-- **Collapsible Groups**: Click +/- in Excel to expand/collapse hierarchy levels
+| # | Name | Contents |
+|---|------|----------|
+| 1 | **Overview** | Workspace title + description, generated timestamp + user, structure counts (spaces / challenges / unique initiatives / unique systems / KPIs), KPI RAG distribution (🟢 ≥90% to target / 🟡 60–89% / 🔴 <60% / ⚪ no target), action-item / governance-body / pillar / value-type counts. |
+| 2 | **Tree** | Hierarchical Space → Challenge → Initiative → System → KPI with Excel outline (1–4 expand/collapse levels). `outlinePr.summaryBelow=False` so the +/- toggle sits on each parent row. Per-level icons drawn from `EntityTypeDefault`, level-tinted backgrounds, autofilter, freeze panes. **No hyperlinks in tree text** (kept the helper for other sheets). KPI value cells store **numbers** (with unit-aware `number_format` like `0.00 "kg"`) so Excel sort/filter works natively, and each cell gets a **RAG fill** computed from `target_value × target_direction × target_tolerance_pct`. |
+| 3 | **KPIs** | Every KPI/value-type pair as a flat row: full path · current · target · Δ% · RAG · direction · target date · tolerance · last update · last contributor. Frozen panes + autofilter. RAG-filled Δ% and RAG-status cells. |
+| 4 | **Action Items** | type · title · description · status · priority · due · completed · owner · creator · visibility · mentions · governance bodies · created. Priority and status colour-coded; frozen panes + autofilter. |
+| 5 | **Settings** | Value types, impact levels (with weight + colour swatches), strategic pillars, governance bodies, geography (region › country › site). |
 
-### Row Colors
-
-```python
-COLOR_SPACE = 'D6E9F7'      # Blue
-COLOR_CHALLENGE = 'F0F4F8'  # Light gray
-COLOR_INITIATIVE = 'E8E8E8' # Gray
-COLOR_SYSTEM = 'E3F2FD'     # Light blue
-COLOR_KPI = 'FFF9C4'        # Yellow
-```
-
-### Hierarchical Grouping
+### RAG computation
 
 ```python
-# Excel outline levels for grouping
-ws.row_dimensions.group(start_row + 1, row - 1, outline_level=1)  # Space children
-ws.row_dimensions.group(start_row + 1, row - 1, outline_level=2)  # Challenge children
-ws.row_dimensions.group(start_row + 1, row - 1, outline_level=3)  # Initiative children
-ws.row_dimensions.group(start_row + 1, row - 1, outline_level=4)  # System children
+def _compute_rag(value, target, direction, tolerance_pct):
+    direction = direction or "maximize"
+    if direction == "minimize":
+        progress = (target / value) * 100 if value != 0 else 100
+    elif direction == "exact":
+        tol_abs = abs(target) * (tolerance_pct or 10) / 100
+        diff = abs(value - target)
+        progress = 100 if diff <= tol_abs else max(0, 100 - ((diff - tol_abs) / abs(target) * 100))
+    else:  # maximize
+        progress = (value / target) * 100 if target != 0 else 0
+    return ("green", progress) if progress >= 90 else ("amber", progress) if progress >= 60 else ("red", progress)
 ```
-
-### Value Formatting
-
-The service formats values according to their type:
-- **Numeric**: Respects decimal places and unit labels
-- **Risk**: !, !!, !!!
-- **Positive Impact**: ★, ★★, ★★★
-- **Negative Impact**: ▼, ▼▼, ▼▼▼
-- **Level**: ●, ●●, ●●●
-- **Sentiment**: ☹️, 😐, 😊
 
 ### Usage
 
 ```python
-# In routes/workspace.py
-@bp.route('/export-excel')
+# app/routes/workspace.py
+@bp.route("/export-excel")
 @login_required
 @organization_required
 def export_excel():
-    org_id = session.get('organization_id')
-    excel_file = ExcelExportService.export_workspace(org_id)
+    org_id = session.get("organization_id")
+    org_name = session.get("organization_name")
+    excel_file = ExcelExportService.export_workspace(
+        org_id,
+        base_url=request.url_root.rstrip("/"),  # for any future hyperlinks
+        generated_by=current_user.login if current_user.is_authenticated else None,
+    )
     return send_file(excel_file,
-                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                      as_attachment=True,
-                     download_name=f'workspace_{org_name}.xlsx')
+                     download_name=f"Workspace_{org_name}.xlsx")
 ```
+
+
+## Standalone HTML Snapshot Export
+
+Located in `app/services/standalone_html_export_service.py`. Triggered by `/workspace/export-html` (the blue rich-text button next to the Excel one). Added in **v7.21.0**, redesigned in **v7.21.1** to **render the live page** rather than a custom static renderer, and refined through 7.21.3.
+
+### What it produces
+
+A **single self-contained `.html` file** (~900KB-2MB depending on logo count) that, when opened in a browser:
+
+- Looks and behaves like the live `/workspace/` page — same CSS, same Alpine.js, same icons, same xmas-tree level cycle (🌱/🌲/🎄), same per-row expand/collapse, same click-for-description popup.
+- Loads its data from an **embedded JSON blob**, never the network.
+- Opens **Porter / Strategy / Lenses / SWOT** clicks as in-page modals populated from data embedded at export time (also no network).
+
+### Strategy: render-and-inline (NOT custom renderer)
+
+```python
+def export_workspace(organization_id, *, base_url, generated_by):
+    # 1. Build the same data the live page consumes.
+    ws_data = _build_workspace_data(organization_id).get_json()
+
+    # 2. Render the actual live workspace page in the current request context.
+    rendered = workspace.index()
+    html = rendered.get_data(as_text=True)
+
+    # 3. Inline every /static/*.css and /static/*.js into <style>/<script> blocks.
+    html = _inline_local_assets(html)
+
+    # 4. Inject a pre-Alpine shim: fetch() interceptor + extras for inline modals.
+    extras = {"porters": {...}, "pillars": [...], "strategy_enabled": ...}
+    html = _inject_shim(html, ws_data, snapshot_meta=meta, base_url=base_url, extras=extras)
+    return BytesIO(html.encode("utf-8"))
+```
+
+CDN-hosted libraries (Bootstrap, BS Icons, Alpine, FontAwesome) stay as `https://...` links — recipients online get pixel-identical look; offline they degrade gracefully but stay readable.
+
+### The injected shim
+
+A single `<script>` injected at the top of `<head>` that:
+
+- Stores the workspace data as `window.__SNAPSHOT_DATA__` and the extras (porters, pillars) as `window.__SNAPSHOT_EXTRAS__`.
+- Patches `window.fetch`: any call to `/workspace/data*` resolves with `__SNAPSHOT_DATA__`; calls to `/api/*`, `/workspace/api/*`, `/global-admin/api/*`, `/workspace/contribute*` resolve with `{}` (so the live page boots without errors).
+- Blocks all form submissions in capture phase.
+- Walks `[x-data]` roots on `DOMContentLoaded` and forces `editMode = false`, even if Alpine restored it from `localStorage`.
+- **Click interceptor** matches links by URL pattern and shows in-page modals instead of navigating:
+  - `/org-admin/porters` → 5 Porter forces text blocks
+  - `/strategy` (or `/workspace/strategy`) → strategic pillars list
+  - `/dimensions` (or `/workspace/dimensions`) → value-types table (Lenses)
+  - `/spaces/<id>/swot` → that space's S/W/O/T quadrants
+- A `<base href="{base_url}/">` makes any other relative link the user might click resolve against the deployed app instead of `file:///`.
+
+### CSS hidden in the snapshot only (live template untouched)
+
+```css
+.navbar, nav.navbar, .ga-subnav            { display: none !important; }
+.preset-bar, [class*="preset-bar"]         { display: none !important; }
+#wsEditModeBtn, .ws-edit-mode-toggle       { display: none !important; }
+.snapshot-controls                         { display: none !important; }
+.ws-iadd-overlay, [class*="ws-iadd"]       { display: none !important; }
+.comments-panel, [class*="comments-section"] { display: none !important; }
+.maintenance-banner, .live-search-results  { display: none !important; }
+```
+
+### Asset inlining
+
+Two regex passes against the rendered HTML:
+
+```python
+# CSS: <link rel="stylesheet" href="/static/...">  →  <style>{contents}</style>
+# JS : <script src="/static/..."></script>          →  <script>{contents}</script>
+```
+
+External (`https://...`) assets are deliberately left untouched.
+
+### What the recipient experiences
+
+- Open the file in any modern browser — page renders identically to `/workspace/`.
+- Tree expand/collapse, badge mode (xmas tree level), description popup all work offline.
+- Porter / Strategy / Lenses / SWOT click → in-page modal, no network.
+- Edit/contribute UI is hidden, so there are no "broken" buttons.
+- No "Static snapshot" badge or watermark.
 
 ## YAML Export/Import
 
@@ -1502,7 +1583,7 @@ Migrations run automatically on every deployment.
 - Stateless business logic
 - No direct request/response handling
 - Easily testable
-- Examples: ConsensusService, AggregationService
+- Examples: `ConsensusService`, `AggregationService`, `RollupComputeService`, `FullBackupService`, `FullRestoreService`, `YAMLExportService`, `YAMLImportService`, `ExcelExportService` (5-sheet workbook), `StandaloneHtmlExportService` (single-file workspace snapshot via render-and-inline), `AuditService`, `DemoDataService`, `OrganizationCloneService`, `DeletionImpactService`, `ImpactService`
 
 ### Templates (`app/templates/`)
 - Jinja2 with Bootstrap 5

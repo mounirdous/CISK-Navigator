@@ -1,12 +1,42 @@
-# 🧭 CISK Navigator v7.17.0
+# 🧭 CISK Navigator v7.21.3
 
 **Production-ready data collection and aggregation system** for tracking KPIs across hierarchical organization structures.
 
-![Version](https://img.shields.io/badge/version-7.17.0-blue)
+![Version](https://img.shields.io/badge/version-7.21.3-blue)
 ![Python](https://img.shields.io/badge/python-3.11+-green)
 ![Database](https://img.shields.io/badge/database-PostgreSQL-blue)
 ![License](https://img.shields.io/badge/license-MIT-orange)
 ![Tests](https://img.shields.io/badge/tests-330%20passing-success)
+
+## ✨ What's New in v7.19–7.21 (April 2026)
+
+### 📤 **Standalone HTML workspace snapshot** (`/workspace/export-html`)
+- New rich-text button next to the Excel export. Generates **a single self-contained `.html` file** that, when opened in any browser, **looks and behaves exactly like the live workspace tree** — same Alpine.js, same CSS, same icons, same xmas-tree level cycle, same expand/collapse, same click-for-description popup.
+- Strategy: invokes `workspace.index()` to capture the actual live page, inlines every `/static/` CSS+JS, installs a `fetch()` interceptor seeded with the workspace data so Alpine boots without ever touching the network.
+- **Porter / Strategy / Lenses / SWOT** clicks open as **in-page modals** populated from data embedded at export time — zero server round-trips.
+- Server-only chrome (navbar, preset bar, edit-mode toggle, snapshot controls, inline quick-add modal, comments, maintenance banners) is hidden in the snapshot only — the live template is untouched.
+- Typical output: ~900KB-2MB single file, fully self-contained.
+
+### 📊 **Excel workspace export — full rewrite** (`/workspace/export-excel`)
+- Single sheet → **five-sheet workbook**: Overview · Tree · KPIs · Action Items · Settings.
+- Tree uses Excel outline groups with the +/- toggle on each parent row (Space / Challenge / Initiative / System).
+- KPI value cells store **numbers** (with unit-aware `number_format`) — Excel sort/filter works natively. Each cell gets a **RAG fill** computed from `target_value × target_direction × tolerance`.
+- Flat KPIs sheet: every KPI/value-type pair as one row with current · target · Δ% · RAG · target date · last contributor.
+- Action Items sheet with priority/status colour coding.
+
+### 🖼️ **Cross-workspace Logo Gallery on Branding Manager**
+- New "Choose from Existing" button on every entity card on `/org-admin/branding`.
+- Gallery shows every logo across every workspace the user has access to (super/global admins see all): the workspace logo, every entity-type default, every per-entity Space/Challenge/Initiative/System/KPI override.
+- Filter by workspace, source kind, free text. One click copies the bytes into the current workspace's target slot.
+
+### 🛡️ **Stale-org-id session safety**
+- Global `before_request` guard clears `session["organization_id"]` if the org no longer exists in the DB — prevents cascading FK failures (audit log inserts, etc.) for users whose current workspace was hard-deleted.
+- `AuditService.log_action` validates the session org before attaching it.
+- Renaming the active workspace from `/global-admin/organizations/<id>/edit` now refreshes the navbar brand immediately.
+
+### 📄 **`docs/SAMPLE_IMPORT.json` regenerated to v9.0 backup format**
+- Added the `metadata` block with `db_schema_version="1.0"` (the file was previously rejected by `FullRestoreService`).
+- Added working examples for every importable section: `organization`, `entity_branding`, `governance_bodies`, `impact_levels`, `strategic_pillars`, `geography`. CIO first-year hierarchy preserved.
 
 ## ✨ What's New in v5.x (March 2026)
 

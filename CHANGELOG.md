@@ -5,6 +5,15 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.4] - 2026-04-28
+
+### Documentation
+- Added a "v7.19–7.21 Recent Changes" section to `app/ARCHITECTURE.md` covering the cross-workspace logo gallery, the five-sheet Excel rewrite, the standalone HTML snapshot, the stale-org-id session guard, the Edit-Org branding chain, and the SAMPLE_IMPORT regeneration.
+- Replaced the **Excel Export** section in `app/ARCHITECTURE.md` with the new five-sheet description (Overview / Tree / KPIs / Action Items / Settings) and added a new **Standalone HTML Snapshot Export** section documenting the render-and-inline strategy, the fetch shim, the in-page Porter/Strategy/Lenses/SWOT modals, and the snapshot-only CSS hide list.
+- Updated `app/SPECIFICATIONS.md` with a "What's New in v7.19–7.21" user-facing section.
+- Updated `README.md` version banner to v7.21.3 and added the user-facing v7.19–7.21 highlights.
+- Refreshed the services list in the architecture doc to include `StandaloneHtmlExportService` and the other current services.
+
 ## [7.21.3] - 2026-04-28
 
 ### Changed
