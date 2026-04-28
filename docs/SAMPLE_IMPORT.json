@@ -1,18 +1,143 @@
 {
-  "_comment": "CISK Navigator v5.9 — Sample Import File (JSON). Import via: Org Admin > Backup & Restore > Import. All IDs (S1, C1, I1, SYS1) are local references — entities sharing the same ID are created once and linked everywhere they appear.",
+  "_comment": "CISK Navigator v7.19.0 — Sample Import File (JSON). Import via: Global Admin > Backup & Restore > Restore (target an empty workspace). All IDs (S1, C1, I1, SYS1) are local references — entities sharing the same ID are created once and linked everywhere they appear. Restore checks metadata.db_schema_version against the current DB schema; keep this value in sync with app/db_version.py.",
+
+  "metadata": {
+    "_note": "Required by FullRestoreService. db_schema_version MUST match the running app's DB_SCHEMA_VERSION or restore is blocked.",
+    "backup_format_version": "9.0",
+    "app_version": "7.19.0",
+    "db_schema_version": "1.0",
+    "created_at": "2026-04-28T00:00:00",
+    "organization_name": "CIO First Year — Sample",
+    "backup_type": "sample"
+  },
 
   "_features_not_in_import": {
-    "_note": "These features are configured in-app after import, listed here for illustration:",
-    "impact_levels": "Org Admin > Impact Scale — 3-level impact (e.g. Low/Medium/High) with custom symbols, weights, colors. Compounding methods: Simple Product, Geometric Mean, Toyota QFD.",
-    "strategic_pillars": "Org Admin > Strategy (enable toggle first) — name, description, icon, accent color per pillar.",
-    "governance_bodies": "Org Admin > Governance Bodies — named bodies assigned to initiatives and KPIs.",
-    "porters_five_forces": "Org Admin > Porter's Five Forces — competitive analysis at organization level.",
-    "swot_analysis": "Per-space SWOT analysis configured in space edit form.",
-    "entity_links": "URL links on any entity (space, challenge, initiative, system, KPI, action item).",
-    "entity_branding": "Org Admin > Branding — custom colors, icons, logos per entity type.",
-    "decision_tags": "Org Admin > Decision Tags — configurable tag categories for structured decisions.",
-    "geography": "Org Admin > Geography — regions, countries, sites for KPI geographic distribution."
+    "_note": "Features that have NO top-level key in this format and must be configured in-app after restore:",
+    "swot_analysis": "Per-space SWOT — set on the Space (swot_strengths/weaknesses/opportunities/threats fields on each space).",
+    "kpi_logos_and_per_entity_logos": "Logo bytes (base64) supported per Space/Challenge/Initiative/System/KPI/Organization in a real backup but omitted from this hand-curated sample.",
+    "users": "Backup format includes a 'users' array with permissions, but creating users in a sample import requires user_mapping at restore-time. Configure access manually after restore.",
+    "stakeholders_and_maps": "Stakeholder Mapping — large nested structure; configure via Stakeholders > Map after import or generate via demo data."
   },
+
+  "organization": {
+    "_comment": "Organization-level settings restored onto the target workspace. Logo, full text fields are also accepted.",
+    "description": "Sample CIO first-year onboarding workspace — illustrates spaces / challenges / initiatives / systems / KPIs / actions.",
+    "porters_new_entrants": "New SaaS competitors entering the platform space; low CapEx barriers favor disruption.",
+    "porters_suppliers": "Cloud providers (AWS/Azure/GCP) hold pricing power; vendor lock-in is a tangible risk.",
+    "porters_buyers": "Internal business units expect SLA improvements year-over-year and have CFO-budget leverage.",
+    "porters_substitutes": "Low-code platforms substitute custom IT delivery for non-critical workflows.",
+    "porters_rivalry": "Internal IT competes with shadow-IT initiatives funded directly by business lines.",
+    "impact_calc_method": "geometric_mean",
+    "impact_qfd_matrix": null,
+    "impact_reinforce_weights": null,
+    "decision_tags": [
+      { "name": "Architecture", "color": "#0d6efd" },
+      { "name": "Vendor",       "color": "#6f42c1" },
+      { "name": "People",       "color": "#198754" },
+      { "name": "Risk",         "color": "#dc3545" }
+    ],
+    "action_tags": [
+      { "name": "Quick Win", "color": "#198754" },
+      { "name": "Blocker",   "color": "#dc3545" },
+      { "name": "Follow-up", "color": "#6c757d" }
+    ],
+    "value_type_categories": ["Operational", "Financial", "People", "Risk"],
+    "strategy_enabled": true
+  },
+
+  "entity_branding": [
+    {
+      "_comment": "EntityTypeDefault rows — set per-entity-type colors, icons, display names. default_logo (base64) supported but omitted in sample.",
+      "entity_type": "organization",
+      "default_color": "#0d6efd",
+      "default_icon": "🏢",
+      "display_name": "Workspace",
+      "description": "Top-level CISK organization"
+    },
+    { "entity_type": "space",      "default_color": "#10b981", "default_icon": "🌳", "display_name": "Space",      "description": "Time-bounded portfolio of challenges" },
+    { "entity_type": "challenge",  "default_color": "#f59e0b", "default_icon": "🎯", "display_name": "Challenge",  "description": "Strategic problem to solve" },
+    { "entity_type": "initiative", "default_color": "#8b5cf6", "default_icon": "🚀", "display_name": "Initiative", "description": "Concrete program of work" },
+    { "entity_type": "system",     "default_color": "#ec4899", "default_icon": "⚙️", "display_name": "System",     "description": "Tool, process or asset" },
+    { "entity_type": "kpi",        "default_color": "#06b6d4", "default_icon": "📊", "display_name": "KPI",        "description": "Quantified outcome measure" }
+  ],
+
+  "governance_bodies": [
+    {
+      "_comment": "Top-level GBs are created on the target org; action_items reference them by name.",
+      "name": "IT Steering Committee",
+      "abbreviation": "ITSC",
+      "description": "Cross-functional body chairing strategic IT decisions",
+      "color": "#0d6efd",
+      "is_active": true,
+      "is_default": true,
+      "is_global": false,
+      "display_order": 1
+    },
+    { "name": "Architecture Review Board", "abbreviation": "ARB",  "description": "Reviews technical architecture decisions",          "color": "#6f42c1", "is_active": true, "is_default": false, "is_global": false, "display_order": 2 },
+    { "name": "Security & Risk Council",   "abbreviation": "SRC",  "description": "Owns the security & compliance posture",            "color": "#dc3545", "is_active": true, "is_default": false, "is_global": false, "display_order": 3 },
+    { "name": "Vendor Governance Board",   "abbreviation": "VGB",  "description": "Reviews vendor selection, renewals, and exit plans", "color": "#fd7e14", "is_active": true, "is_default": false, "is_global": false, "display_order": 4 }
+  ],
+
+  "impact_levels": [
+    {
+      "_comment": "3 ordered levels (level=1/2/3). Drives true_importance compounding via impact_calc_method.",
+      "level": 1, "label": "Low",    "icon": "★",   "weight": 0.2, "color": "#22c55e"
+    },
+    { "level": 2, "label": "Medium", "icon": "★★",  "weight": 0.5, "color": "#f59e0b" },
+    { "level": 3, "label": "High",   "icon": "★★★", "weight": 1.0, "color": "#ef4444" }
+  ],
+
+  "strategic_pillars": [
+    {
+      "_comment": "Requires organization.strategy_enabled = true to render in UI.",
+      "name": "Operational Excellence",
+      "description": "Run IT reliably, predictably, and cost-effectively.",
+      "accent_color": "#0d6efd",
+      "bs_icon": "bi-gear-fill",
+      "display_order": 1
+    },
+    { "name": "Business Enablement", "description": "Unblock and accelerate business lines.",          "accent_color": "#198754", "bs_icon": "bi-rocket-takeoff", "display_order": 2 },
+    { "name": "Trust & Compliance",  "description": "Security, privacy, regulatory readiness.",        "accent_color": "#dc3545", "bs_icon": "bi-shield-lock",     "display_order": 3 },
+    { "name": "Future-Ready",        "description": "Talent, architecture, and tech bets for 3-5 yr.", "accent_color": "#6f42c1", "bs_icon": "bi-stars",           "display_order": 4 }
+  ],
+
+  "geography": [
+    {
+      "_comment": "Region → Country → Site hierarchy (per-org). KPIs can be assigned to sites for geographic rollups.",
+      "name": "EMEA",
+      "code": "EMEA",
+      "display_order": 1,
+      "countries": [
+        {
+          "name": "Switzerland", "code": "CH", "iso_code": "CHE",
+          "latitude": 46.8182, "longitude": 8.2275, "display_order": 1,
+          "sites": [
+            { "name": "HQ — Bern",      "code": "CH-BERN",    "address": "Bern, Switzerland",    "latitude": 46.948, "longitude": 7.4474, "is_active": true, "display_order": 1 },
+            { "name": "DC — Zurich",    "code": "CH-ZURICH",  "address": "Zurich, Switzerland",  "latitude": 47.3769, "longitude": 8.5417, "is_active": true, "display_order": 2 }
+          ]
+        },
+        {
+          "name": "France", "code": "FR", "iso_code": "FRA",
+          "latitude": 46.6034, "longitude": 1.8883, "display_order": 2,
+          "sites": [
+            { "name": "Office — Paris", "code": "FR-PARIS", "address": "Paris, France", "latitude": 48.8566, "longitude": 2.3522, "is_active": true, "display_order": 1 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AMER", "code": "AMER", "display_order": 2,
+      "countries": [
+        {
+          "name": "United States", "code": "US", "iso_code": "USA",
+          "latitude": 37.0902, "longitude": -95.7129, "display_order": 1,
+          "sites": [
+            { "name": "Office — NYC", "code": "US-NYC", "address": "New York, NY", "latitude": 40.7128, "longitude": -74.0060, "is_active": true, "display_order": 1 }
+          ]
+        }
+      ]
+    }
+  ],
 
   "value_types": [
     {

@@ -5,6 +5,22 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.20.0] - 2026-04-28
+
+### Changed
+- **Excel workspace export — full rewrite** (`/workspace/export-excel`). Previously a single bare sheet with values stored as strings. Now a five-sheet workbook:
+  - **Overview** — workspace title, description, generated timestamp + user, structure counts, KPI RAG distribution (🟢/🟡/🔴/⚪), action-item / governance-body / pillar / value-type counts.
+  - **Tree** — hierarchical Space → Challenge → Initiative → System → KPI with Excel outline (1–4 expand/collapse levels). Per-level icons drawn from `entity_branding`, level-tinted backgrounds, autofilter, hyperlinks back to the web app on every entity name. KPI value cells now store **numbers** (with proper `number_format`, including unit labels) so Excel sort/filter works, and each cell gets a **RAG fill** computed from `target_value` × `target_direction` × `target_tolerance_pct` (≥90% = green, 60–89% = amber, <60% = red).
+  - **KPIs** — every KPI/value-type pair as one flat row: full path · current · target · Δ% · RAG · direction · target date · tolerance · last update · last contributor. Frozen panes + autofilter.
+  - **Action Items** — type · title · description · status · priority · due · completed · owner · creator · visibility · mentions · governance bodies · created. Priority and status colour-coded; frozen panes + autofilter.
+  - **Settings** — value types · impact levels (with weight + colour swatches) · strategic pillars · governance bodies · geography (region › country › site).
+- Route now passes `base_url` (from `request.url_root`) and `generated_by` (current user login) into the service so links and provenance render in the workbook.
+
+## [7.19.1] - 2026-04-28
+
+### Fixed
+- **`docs/SAMPLE_IMPORT.json` regenerated to v9.0 backup format.** The previous v5.9 sample had no `metadata` block, so `FullRestoreService` rejected it on the `db_schema_version` check (silent breakage). Added `metadata` (with `db_schema_version` = `1.0`), plus working examples of every top-level section the restore actually consumes: `organization` (porters, impact method, decision/action tags, value-type categories, strategy toggle), `entity_branding`, `governance_bodies`, `impact_levels`, `strategic_pillars`, `geography` (regions/countries/sites). Stale entries removed from `_features_not_in_import` (those are importable today). Existing 3-spaces / 8-challenges / 13-initiatives / 14-systems / 41-KPIs / 8-action-items hierarchy preserved unchanged.
+
 ## [7.19.0] - 2026-04-28
 
 ### Added

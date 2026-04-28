@@ -1926,7 +1926,11 @@ def export_excel():
     org_name = session.get("organization_name")
 
     # Generate Excel file
-    excel_file = ExcelExportService.export_workspace(org_id)
+    excel_file = ExcelExportService.export_workspace(
+        org_id,
+        base_url=request.url_root.rstrip("/"),
+        generated_by=current_user.login if current_user.is_authenticated else None,
+    )
 
     # Create safe filename
     safe_org_name = "".join(c for c in org_name if c.isalnum() or c in (" ", "-", "_")).strip()
