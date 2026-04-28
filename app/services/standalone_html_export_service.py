@@ -83,7 +83,37 @@ def _render_panel(template, **ctx):
     # Strip any inline <script> tags inside content — we want pure markup, not
     # the page's JS (it would not work anyway, fetched data isn't there).
     content = re.sub(r"<script\b[^>]*>.*?</script>", "", content, flags=re.DOTALL | re.IGNORECASE)
+    content = _strip_panel_chrome(content)
     return styles + content
+
+
+def _strip_panel_chrome(html):
+    """Remove Edit / Back-to-Workspace buttons and the strategy edit pencil
+    from a rendered panel. The live templates show these to authenticated
+    users; in a snapshot they make no sense."""
+    # Top action containers on porters and swot.
+    html = re.sub(r'<div\s+class="porters-header-actions"[^>]*>.*?</div>',
+                  '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<div\s+class="swot-header-actions"[^>]*>.*?</div>',
+                  '', html, flags=re.DOTALL | re.IGNORECASE)
+    # Strategy edit pencil (inline anchor with title="Edit Strategy").
+    html = re.sub(r'<a[^>]*title="Edit Strategy"[^>]*>.*?</a>',
+                  '', html, flags=re.DOTALL | re.IGNORECASE)
+    # Bottom navigation rows (porters + swot use the same comment marker).
+    # Each block: <!-- Bottom Navigation --><div ...><div ...>...</div></div>
+    html = re.sub(
+        r'<!--\s*Bottom Navigation\s*-->\s*<div\b[^>]*>\s*<div\b[^>]*>.*?</div>\s*</div>',
+        '', html, flags=re.DOTALL | re.IGNORECASE)
+    # Defensive: any remaining anchor pointing to an edit_* URL or back to /workspace/
+    # inside a panel should not be clickable as a link button. Only strip when it
+    # carries btn classes so we do not accidentally remove inline references.
+    html = re.sub(
+        r'<a[^>]*\bclass="[^"]*\bbtn\b[^"]*"[^>]*href="[^"]*(?:edit-organization-porters|edit_organization_porters|edit_space_swot|edit-space-swot|/strategy)[^"]*"[^>]*>.*?</a>',
+        '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(
+        r'<a[^>]*\bclass="[^"]*\bbtn\b[^"]*"[^>]*href="[^"]*\bworkspace\b/?"[^>]*>\s*<i[^>]*bi-arrow-left[^>]*></i>[^<]*</a>',
+        '', html, flags=re.DOTALL | re.IGNORECASE)
+    return html
 
 
 def _read_static(rel_path):

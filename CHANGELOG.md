@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.7] - 2026-04-28
+
+### Fixed
+- Standalone HTML snapshot — Porter / Strategy / SWOT panels were leaking their **Edit** and **Back to Workspace** chrome from the live templates into the modals. The export now post-processes each rendered panel to strip: `<div class="porters-header-actions">`, `<div class="swot-header-actions">`, the inline strategy edit-pencil anchor (`title="Edit Strategy"`), and the `<!-- Bottom Navigation -->` blocks on porters/swot. Defensive regex also removes any remaining `.btn` anchors pointing to `edit_organization_porters` / `edit_space_swot` / `/strategy` / `Back to Workspace`. Live templates untouched — strip applies only to the embedded panel HTML in the generated snapshot.
+
 ## [7.21.6] - 2026-04-28
 
 ### Changed
