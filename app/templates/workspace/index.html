@@ -7359,6 +7359,11 @@ function _openImpactPopup(entityType, entityId, entityName, assessedLevel, trueL
        title="Export to Excel">
         <i class="bi bi-file-earmark-spreadsheet"></i>
     </a>
+    <a href="{{ url_for('workspace.export_html') }}"
+       class="btn btn-primary"
+       title="Export standalone HTML snapshot (single file, offline-ready)">
+        <i class="bi bi-file-earmark-richtext"></i>
+    </a>
     {% if can_view_snapshots %}
     <a href="{{ url_for('workspace.list_snapshots') }}"
        class="btn btn-info"

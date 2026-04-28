@@ -1917,6 +1917,32 @@ def index():
     )
 
 
+@bp.route("/export-html")
+@login_required
+@organization_required
+def export_html():
+    """Export workspace as a single self-contained .html snapshot."""
+    from app.services.standalone_html_export_service import StandaloneHtmlExportService
+
+    org_id = session.get("organization_id")
+    org_name = session.get("organization_name") or "Workspace"
+
+    html_file = StandaloneHtmlExportService.export_workspace(
+        org_id,
+        base_url=request.url_root.rstrip("/"),
+        generated_by=current_user.login if current_user.is_authenticated else None,
+    )
+
+    safe_org_name = "".join(c for c in org_name if c.isalnum() or c in (" ", "-", "_")).strip()
+    filename = f"Workspace_{safe_org_name}.html"
+    return send_file(
+        html_file,
+        mimetype="text/html",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @bp.route("/export-excel")
 @login_required
 @organization_required

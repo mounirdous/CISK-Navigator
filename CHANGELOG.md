@@ -5,6 +5,30 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.3] - 2026-04-28
+
+### Changed
+- **Standalone HTML snapshot — Porter / Strategy / Lenses / SWOT now open as in-page modals**, not server links. The export now embeds the org's Porter's Five Forces text, Strategic Pillars list and a Lenses (value-types) table into the file, and installs a click interceptor that catches links matching `/org-admin/porters`, `/strategy`, `/dimensions`, and `/spaces/<id>/swot` and renders an inline modal populated from the embedded data instead of navigating away. SWOT data per space already lives inside the embedded workspace tree. The snapshot is now genuinely standalone for these views — zero server round-trips on click. Other relative links still resolve via `<base href>` to the live deployment as a fallback.
+
+## [7.21.2] - 2026-04-28
+
+### Changed
+- Standalone HTML snapshot — refinements (live workspace template untouched; everything below applies only to the generated `.html` file):
+  - **`<base href>` injected** so every relative link in the snapshot (Porter 5, Strategy, Lenses / dimensions, SWOT, edit forms, …) resolves against the live deployment instead of `file:///`. Clicking any of those in the snapshot opens the live page on `https://app.cisk.fr/...`.
+  - **Hidden in the snapshot:** top app navbar, ga-subnav, filter / saved-view preset bar (load/save/delete), Edit-Mode toggle, snapshot floating controls (export/snapshot buttons), inline quick-add value modal (`.ws-iadd-…`), comments / mentions panels, maintenance banners, live-search dropdowns.
+  - **Edit-mode forced off** at boot — even if Alpine restored `editMode=true` from localStorage, the shim resets it on `DOMContentLoaded` so create/edit/delete chrome never appears.
+  - All hide rules and the base href live exclusively in the generated file's injected `<style>` and `<script>` blocks; no live template was modified.
+
+## [7.21.1] - 2026-04-28
+
+### Changed
+- **Standalone HTML snapshot — strategy reversed: render the LIVE page**, not a custom static renderer. The export now invokes `workspace.index()` to produce the exact same Alpine.js page the live workspace serves, then inlines every `/static/` CSS+JS reference into the file and installs a `fetch()` interceptor that serves the `_build_workspace_data()` blob to the page on first load (and stubs every other backend API with `{}` so the page boots without errors). Form submissions are blocked, a "Static snapshot · read-only" badge is added bottom-left. CDN libraries (Bootstrap, BS Icons, Alpine, FontAwesome) stay as CDN links — recipients online get a pixel-identical look; offline they get a degraded but readable view. Result: ~900KB single file that **looks and behaves like the real workspace tree**, with the original xmas-tree level cycle, per-row expand/collapse, click-for-description popup, Porter / Lenses / Strategy / SWOT panels — same code, same CSS, same icons.
+
+## [7.21.0] - 2026-04-28
+
+### Added
+- **Standalone HTML snapshot export** (`/workspace/export-html`, new richtext button next to the Excel one). Generates a single self-contained `.html` file embedding workspace data, logos (base64), CSS, SVG icons and JS. Initial release shipped with a custom static renderer; superseded in 7.21.1 by render-the-live-page approach.
+
 ## [7.20.1] - 2026-04-28
 
 ### Fixed
