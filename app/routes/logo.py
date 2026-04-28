@@ -4,7 +4,7 @@ Logo routes - Serve entity logos from database
 
 from flask import Blueprint, Response, abort
 
-from app.models import KPI, Challenge, Initiative, Organization, Space, System
+from app.models import KPI, Challenge, EntityTypeDefault, Initiative, Organization, Space, System
 
 bp = Blueprint("logo", __name__, url_prefix="/api/logo")
 
@@ -61,3 +61,12 @@ def kpi_logo(entity_id):
     if not kpi.logo_data or not kpi.logo_mime_type:
         abort(404)
     return Response(kpi.logo_data, mimetype=kpi.logo_mime_type)
+
+
+@bp.route("/entity-default/<int:default_id>")
+def entity_default_logo(default_id):
+    """Serve EntityTypeDefault logo from database"""
+    default = EntityTypeDefault.query.get_or_404(default_id)
+    if not default.default_logo_data or not default.default_logo_mime_type:
+        abort(404)
+    return Response(default.default_logo_data, mimetype=default.default_logo_mime_type)

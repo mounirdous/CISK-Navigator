@@ -5,6 +5,13 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.19.0] - 2026-04-28
+
+### Added
+- **"Choose from Existing" logo picker** on the branding manager page. Each entity card (organization, space, challenge, initiative, system, KPI) now has a button that opens a gallery of every logo already saved across all workspaces the current user has access to — including the workspace logo, every entity-type default, and individual Space/Challenge/Initiative/System/KPI overrides. The gallery has workspace, source-kind, and free-text filters; clicking any thumbnail copies its bytes into the current workspace's target slot.
+- New endpoints: `GET /org-admin/branding/logo-gallery` (catalog) and `POST /org-admin/branding/copy-logo` (copy a source logo into the current workspace's slot)
+- New route `GET /api/logo/entity-default/<id>` to serve `EntityTypeDefault` logos as raw images (used for gallery thumbnails)
+
 ## [7.18.3] - 2026-04-28
 
 ### Fixed

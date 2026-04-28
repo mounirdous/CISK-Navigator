@@ -1250,6 +1250,179 @@ def update_branding():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+@bp.route("/branding/logo-gallery")
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def logo_gallery():
+    """Return all logos accessible to current user — across every workspace they belong to.
+
+    Includes per-workspace org logo, every EntityTypeDefault default logo, and
+    every individual entity override (Space/Challenge/Initiative/System/KPI).
+    """
+    if current_user.is_super_admin or current_user.is_global_admin:
+        accessible_orgs = Organization.query.filter_by(is_deleted=False).order_by(Organization.name).all()
+    else:
+        accessible_orgs = sorted(
+            (o for o in current_user.get_organizations() if o and not o.is_deleted),
+            key=lambda o: o.name,
+        )
+
+    items = []
+    for org in accessible_orgs:
+        if org.logo_data and org.logo_mime_type:
+            items.append({
+                "source_org_id": org.id,
+                "source_org_name": org.name,
+                "kind": "organization",
+                "entity_type": "organization",
+                "entity_id": org.id,
+                "label": org.name,
+                "thumb_url": url_for("logo.organization_logo", entity_id=org.id),
+            })
+
+        for d in EntityTypeDefault.query.filter_by(organization_id=org.id).all():
+            if d.default_logo_data and d.default_logo_mime_type:
+                items.append({
+                    "source_org_id": org.id,
+                    "source_org_name": org.name,
+                    "kind": "entity_default",
+                    "entity_type": d.entity_type,
+                    "entity_id": d.id,
+                    "label": f"{d.entity_type.title()} default",
+                    "thumb_url": url_for("logo.entity_default_logo", default_id=d.id),
+                })
+
+        for model, kind, route_name in (
+            (Space, "space", "logo.space_logo"),
+            (Challenge, "challenge", "logo.challenge_logo"),
+            (Initiative, "initiative", "logo.initiative_logo"),
+            (System, "system", "logo.system_logo"),
+        ):
+            rows = model.query.filter(
+                model.organization_id == org.id,
+                model.logo_data.isnot(None),
+                model.logo_mime_type.isnot(None),
+            ).all()
+            for row in rows:
+                items.append({
+                    "source_org_id": org.id,
+                    "source_org_name": org.name,
+                    "kind": kind,
+                    "entity_type": kind,
+                    "entity_id": row.id,
+                    "label": getattr(row, "name", None) or f"{kind.title()} #{row.id}",
+                    "thumb_url": url_for(route_name, entity_id=row.id),
+                })
+
+        # KPI has no direct organization_id — reach it via InitiativeSystemLink → Initiative
+        kpi_rows = (
+            KPI.query.join(InitiativeSystemLink, KPI.initiative_system_link_id == InitiativeSystemLink.id)
+            .join(Initiative, InitiativeSystemLink.initiative_id == Initiative.id)
+            .filter(
+                Initiative.organization_id == org.id,
+                KPI.logo_data.isnot(None),
+                KPI.logo_mime_type.isnot(None),
+            )
+            .all()
+        )
+        for row in kpi_rows:
+            items.append({
+                "source_org_id": org.id,
+                "source_org_name": org.name,
+                "kind": "kpi",
+                "entity_type": "kpi",
+                "entity_id": row.id,
+                "label": row.name or f"KPI #{row.id}",
+                "thumb_url": url_for("logo.kpi_logo", entity_id=row.id),
+            })
+
+    return jsonify({"items": items})
+
+
+def _load_logo_source(kind, source_id):
+    """Return (logo_data, mime_type, source_org_id) for a gallery source row, or (None, None, None)."""
+    if kind == "organization":
+        row = Organization.query.get(source_id)
+        return (row.logo_data, row.logo_mime_type, row.id) if row else (None, None, None)
+    if kind == "entity_default":
+        row = EntityTypeDefault.query.get(source_id)
+        return (row.default_logo_data, row.default_logo_mime_type, row.organization_id) if row else (None, None, None)
+    if kind == "kpi":
+        row = KPI.query.get(source_id)
+        if not row:
+            return (None, None, None)
+        link = row.initiative_system_link
+        org_id = link.initiative.organization_id if link and link.initiative else None
+        return (row.logo_data, row.logo_mime_type, org_id)
+    model_map = {"space": Space, "challenge": Challenge, "initiative": Initiative, "system": System}
+    model = model_map.get(kind)
+    if not model:
+        return (None, None, None)
+    row = model.query.get(source_id)
+    return (row.logo_data, row.logo_mime_type, row.organization_id) if row else (None, None, None)
+
+
+@bp.route("/branding/copy-logo", methods=["POST"])
+@login_required
+@organization_required
+@any_org_admin_permission_required
+def copy_logo():
+    """Copy a logo from any accessible source row into the current workspace's target slot.
+
+    Body: { target_entity_type, source_kind, source_id }
+    target_entity_type ∈ {organization, space, challenge, initiative, system, kpi, action_*}.
+    For "organization" the target is the current workspace's logo; otherwise the
+    EntityTypeDefault row for that type in the current workspace.
+    """
+    org_id = session.get("organization_id")
+    data = request.get_json(silent=True) or {}
+    target_entity_type = data.get("target_entity_type")
+    source_kind = data.get("source_kind")
+    source_id = data.get("source_id")
+
+    if not target_entity_type or not source_kind or not source_id:
+        return jsonify({"success": False, "error": "Missing target_entity_type, source_kind, or source_id"}), 400
+
+    logo_data, mime_type, source_org_id = _load_logo_source(source_kind, source_id)
+    if not logo_data or not mime_type:
+        return jsonify({"success": False, "error": "Source logo not found"}), 404
+
+    if not (current_user.is_super_admin or current_user.is_global_admin
+            or current_user.has_organization_access(source_org_id)):
+        return jsonify({"success": False, "error": "No access to source workspace"}), 403
+
+    try:
+        if target_entity_type == "organization":
+            org = Organization.query.get_or_404(org_id)
+            org.logo_data = logo_data
+            org.logo_mime_type = mime_type
+            db.session.commit()
+            session["organization_logo"] = url_for("logo.organization_logo", entity_id=org.id)
+        else:
+            default = EntityTypeDefault.query.filter_by(
+                organization_id=org_id, entity_type=target_entity_type
+            ).first()
+            if not default:
+                hardcoded = EntityTypeDefault.get_hardcoded_defaults().get(target_entity_type, {})
+                default = EntityTypeDefault(
+                    organization_id=org_id,
+                    entity_type=target_entity_type,
+                    default_color=hardcoded.get("color", "#888888"),
+                    default_icon=hardcoded.get("icon", "■"),
+                    display_name=target_entity_type.title(),
+                    description="",
+                )
+                db.session.add(default)
+            default.default_logo_data = logo_data
+            default.default_logo_mime_type = mime_type
+            db.session.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
 @bp.route("/logo-manager")
 @login_required
 @organization_required

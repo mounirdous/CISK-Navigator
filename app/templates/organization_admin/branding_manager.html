@@ -212,7 +212,7 @@
             <p class="text-muted mb-0">Customize colors, icons, and logos for {{ organization.name }}</p>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-success" onclick="saveAllBranding()">
+            <button type="button" class="btn btn-success" onclick="saveAllBranding()">
                 <i class="bi bi-check-lg"></i> Save All Changes
             </button>
             <a href="{{ url_for('organization_admin.index') }}" class="btn btn-outline-secondary">
@@ -299,6 +299,9 @@
                             <button type="button" class="btn btn-primary" onclick="openUploadModal('{{ entity_type }}', {{ organization.id if entity_type == 'organization' else 0 }})">
                                 <i class="bi bi-upload"></i> Upload Image
                             </button>
+                            <button type="button" class="btn btn-outline-primary" onclick="openGalleryModal('{{ entity_type }}')">
+                                <i class="bi bi-images"></i> Choose from Existing
+                            </button>
                             <button type="button" class="btn btn-info" onclick="openTemplateModal('{{ entity_type }}')">
                                 <i class="bi bi-grid-3x3"></i> Choose Template
                             </button>
@@ -355,7 +358,7 @@
         </div>
         <!-- Bottom save button so users don't have to scroll back up -->
         <div class="d-flex justify-content-end mt-3 pt-3 border-top">
-            <button class="btn btn-success" onclick="saveAllBranding()">
+            <button type="button" class="btn btn-success" onclick="saveAllBranding()">
                 <i class="bi bi-check-lg"></i> Save All Changes
             </button>
         </div>
@@ -430,6 +433,53 @@
     </div>
 </div>
 
+
+<!-- Gallery Modal -->
+<div class="modal fade" id="galleryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-images"></i> Choose Logo from Existing — <span id="galleryTargetType"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="galleryTargetEntityType">
+                <div class="row g-2 mb-3 align-items-center">
+                    <div class="col-md-5">
+                        <label class="form-label small fw-bold mb-1">Workspace</label>
+                        <select class="form-select form-select-sm" id="galleryWorkspaceFilter" onchange="renderGallery()">
+                            <option value="">All workspaces</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold mb-1">Source kind</label>
+                        <select class="form-select form-select-sm" id="galleryKindFilter" onchange="renderGallery()">
+                            <option value="">All sources</option>
+                            <option value="organization">Workspace logo</option>
+                            <option value="entity_default">Entity-type default</option>
+                            <option value="space">Space override</option>
+                            <option value="challenge">Challenge override</option>
+                            <option value="initiative">Initiative override</option>
+                            <option value="system">System override</option>
+                            <option value="kpi">KPI override</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold mb-1">Search</label>
+                        <input type="text" class="form-control form-control-sm" id="gallerySearch" placeholder="filter by name…" oninput="renderGallery()">
+                    </div>
+                </div>
+                <div id="galleryStatus" class="text-muted small mb-2"></div>
+                <div class="row g-3" id="galleryGrid"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="{{ url_for('static', filename='logo-templates.js') }}"></script>
 <script>
@@ -709,6 +759,118 @@ function updatePriorityPreview(entityType, color) {
     const colorInput = form.querySelector(`input[name="${entityType}_color"]`);
     const textInput = colorInput?.nextElementSibling;
     if (textInput && textInput.value !== color) textInput.value = color;
+}
+
+// ── Gallery Modal ─────────────────────────────────────────────────────────
+let galleryItems = [];
+
+function openGalleryModal(targetEntityType) {
+    document.getElementById('galleryTargetType').textContent =
+        targetEntityType.charAt(0).toUpperCase() + targetEntityType.slice(1);
+    document.getElementById('galleryTargetEntityType').value = targetEntityType;
+    document.getElementById('gallerySearch').value = '';
+    document.getElementById('galleryKindFilter').value = '';
+    document.getElementById('galleryWorkspaceFilter').value = '';
+    document.getElementById('galleryStatus').textContent = 'Loading…';
+    document.getElementById('galleryGrid').innerHTML = '';
+    new bootstrap.Modal(document.getElementById('galleryModal')).show();
+
+    fetch('{{ url_for("organization_admin.logo_gallery") }}', {credentials: 'same-origin'})
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status + ' (' + r.url + ')');
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) {
+                throw new Error('Server returned ' + ct + ' (likely a redirect to login or a missing endpoint on this host)');
+            }
+            return r.json();
+        })
+        .then(data => {
+            galleryItems = data.items || [];
+            const wsSelect = document.getElementById('galleryWorkspaceFilter');
+            const seen = new Map();
+            galleryItems.forEach(it => seen.set(it.source_org_id, it.source_org_name));
+            wsSelect.innerHTML = '<option value="">All workspaces</option>';
+            [...seen.entries()]
+                .sort((a, b) => a[1].localeCompare(b[1]))
+                .forEach(([id, name]) => {
+                    const opt = document.createElement('option');
+                    opt.value = id;
+                    opt.textContent = name;
+                    wsSelect.appendChild(opt);
+                });
+            renderGallery();
+        })
+        .catch(err => {
+            document.getElementById('galleryStatus').textContent = 'Failed to load gallery: ' + err;
+        });
+}
+
+function renderGallery() {
+    const grid = document.getElementById('galleryGrid');
+    const status = document.getElementById('galleryStatus');
+    const wsId = document.getElementById('galleryWorkspaceFilter').value;
+    const kind = document.getElementById('galleryKindFilter').value;
+    const search = (document.getElementById('gallerySearch').value || '').trim().toLowerCase();
+
+    const filtered = galleryItems.filter(it => {
+        if (wsId && String(it.source_org_id) !== String(wsId)) return false;
+        if (kind && it.kind !== kind) return false;
+        if (search && !(it.label.toLowerCase().includes(search) || it.source_org_name.toLowerCase().includes(search))) return false;
+        return true;
+    });
+
+    grid.innerHTML = '';
+    if (!filtered.length) {
+        status.textContent = 'No logos match these filters.';
+        return;
+    }
+    status.textContent = `${filtered.length} logo${filtered.length === 1 ? '' : 's'}`;
+
+    filtered.forEach(it => {
+        const col = document.createElement('div');
+        col.className = 'col-6 col-md-4 col-lg-3';
+        col.innerHTML = `
+            <div class="entity-card h-100" style="cursor:pointer;" data-source-kind="${it.kind}" data-source-id="${it.entity_id}">
+                <div class="logo-preview-circle mx-auto" style="width:96px;height:96px;border-color:#dee2e6;">
+                    <img src="${it.thumb_url}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                </div>
+                <div class="text-center mt-2">
+                    <div class="fw-bold text-truncate" title="${it.label}">${it.label}</div>
+                    <div class="small text-muted text-truncate" title="${it.source_org_name}">${it.source_org_name}</div>
+                    <span class="badge bg-secondary mt-1">${it.kind.replace('_', ' ')}</span>
+                </div>
+            </div>
+        `;
+        col.querySelector('.entity-card').addEventListener('click', () => applyGallerySelection(it));
+        grid.appendChild(col);
+    });
+}
+
+function applyGallerySelection(item) {
+    const targetEntityType = document.getElementById('galleryTargetEntityType').value;
+    if (!confirm(`Use "${item.label}" from "${item.source_org_name}" as the ${targetEntityType} logo?`)) return;
+
+    fetch('{{ url_for("organization_admin.copy_logo") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({
+            target_entity_type: targetEntityType,
+            source_kind: item.kind,
+            source_id: item.entity_id
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Copy failed'));
+        }
+    })
+    .catch(err => alert('Error copying logo: ' + err));
 }
 </script>
 {% endblock %}
