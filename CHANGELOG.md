@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.8] - 2026-04-29
+
+### Added
+- **Drill-down popup — hover tooltip with full name**. KPI / System / Initiative / Challenge rows in the drill-down panel truncate long names with `…` (`.ws-dd-rname` uses `white-space: nowrap; text-overflow: ellipsis`). Each row's name span now carries `title="<full name>"` so hovering reveals the full text via the browser's native tooltip. Popup width unchanged.
+
 ## [7.21.7] - 2026-04-28
 
 ### Fixed
