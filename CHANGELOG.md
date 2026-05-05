@@ -5,7 +5,12 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [7.21.8] - 2026-04-29
+## [7.21.9] - 2026-05-05
+
+### Fixed
+- **Excel export workspace timeouts in production**. Two issues compounded: (1) `render.yaml` started gunicorn without `--timeout`, so the worker was killed by gunicorn after the default 30 s — visible in production logs as `responseTimeMS=30954` followed by `Worker (pid:58) was sent SIGKILL`. (2) `ExcelExportService._write_rollup_row` called `entity.get_rollup_value()` for every (entity × value_type) pair, which delegates to `AggregationService` and recomputes the full Space → Challenge → Initiative → System → KPI aggregation tree from scratch — completely bypassing the `RollupCacheEntry` table that the live workspace already reads from. Fix: bumped gunicorn timeout to 120 s in `render.yaml` (matching the `Procfile`), and the export now pre-loads `RollupCacheEntry` once per request when pre-compute is enabled, falling back to live aggregation only on cache miss. Cache lookup keys system-level entries by `sl.system_id` (not `sl.id`) to match `RollupComputeService`.
+
+
 
 ### Added
 - **Drill-down popup — hover tooltip with full name**. KPI / System / Initiative / Challenge rows in the drill-down panel truncate long names with `…` (`.ws-dd-rname` uses `white-space: nowrap; text-overflow: ellipsis`). Each row's name span now carries `title="<full name>"` so hovering reveals the full text via the browser's native tooltip. Popup width unchanged.

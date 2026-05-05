@@ -15,7 +15,7 @@ services:
     runtime: python
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: flask db upgrade && gunicorn run:app
+    startCommand: flask db upgrade && gunicorn run:app --timeout 120
     envVars:
       - key: SECRET_KEY
         generateValue: true

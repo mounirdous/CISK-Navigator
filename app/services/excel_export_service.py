@@ -192,6 +192,7 @@ class ExcelExportService:
             "branding": branding,
             "base_url": (base_url or "").rstrip("/"),
             "generated_by": generated_by,
+            "rollup_cache": ExcelExportService._load_rollup_cache(organization_id),
         }
 
         wb = Workbook()
@@ -207,6 +208,20 @@ class ExcelExportService:
         wb.save(out)
         out.seek(0)
         return out
+
+    @staticmethod
+    def _load_rollup_cache(organization_id):
+        """Load all RollupCacheEntry rows for the org keyed by (entity_type, entity_id, value_type_id).
+
+        Returns {} when pre-compute is off, so callers fall back to live aggregation.
+        """
+        from app.models import RollupCacheEntry
+        from app.models.system_setting import SystemSetting
+
+        if not SystemSetting.is_precompute_rollups_enabled():
+            return {}
+        entries = RollupCacheEntry.query.filter_by(organization_id=organization_id).all()
+        return {(e.entity_type, e.entity_id, e.value_type_id): e for e in entries}
 
     # ── 1. Overview ───────────────────────────────────────────────────────────
     @staticmethod
@@ -376,7 +391,7 @@ class ExcelExportService:
         _value_cell(ws.cell(row, 1), f"{icon}  {sp.name}", bold=True, bg=bg, color="0D47A1")
         ws.cell(row, 1).font = Font(bold=True, size=LEVEL_FONT_SIZE["space"], color="0D47A1")
         _value_cell(ws.cell(row, 2), sp.space_label or "", italic=True, bg=bg, color="475569")
-        ExcelExportService._write_rollup_row(ws, row, sp, value_types, bg, bold=True)
+        ExcelExportService._write_rollup_row(ws, row, "space", sp.id, sp, value_types, ctx, bg, bold=True)
         ws.row_dimensions[row].height = 22
         row += 1
 
@@ -395,7 +410,7 @@ class ExcelExportService:
         _value_cell(ws.cell(row, 1), f"  {icon}  {ch.name}", bold=True, bg=bg, color="3730A3")
         ws.cell(row, 1).font = Font(bold=True, size=LEVEL_FONT_SIZE["challenge"], color="3730A3")
         _value_cell(ws.cell(row, 2), "", bg=bg)
-        ExcelExportService._write_rollup_row(ws, row, ch, value_types, bg, bold=True)
+        ExcelExportService._write_rollup_row(ws, row, "challenge", ch.id, ch, value_types, ctx, bg, bold=True)
         row += 1
 
         for il in ch.initiative_links:
@@ -414,7 +429,7 @@ class ExcelExportService:
         ws.cell(row, 1).font = Font(bold=True, size=LEVEL_FONT_SIZE["initiative"], color="5B21B6")
         owner = ini.responsible_person or ""
         _value_cell(ws.cell(row, 2), owner, italic=True, bg=bg, color="475569")
-        ExcelExportService._write_rollup_row(ws, row, ini, value_types, bg)
+        ExcelExportService._write_rollup_row(ws, row, "initiative", ini.id, ini, value_types, ctx, bg)
         row += 1
 
         for sl in ini.system_links:
@@ -433,7 +448,7 @@ class ExcelExportService:
         _value_cell(ws.cell(row, 1), f"      {icon}  {sys_obj.name}", bg=bg, color="9D174D")
         ws.cell(row, 1).font = Font(size=LEVEL_FONT_SIZE["system"], color="9D174D")
         _value_cell(ws.cell(row, 2), "", bg=bg)
-        ExcelExportService._write_rollup_row(ws, row, sl, value_types, bg)
+        ExcelExportService._write_rollup_row(ws, row, "system", sl.system_id, sl, value_types, ctx, bg)
         row += 1
 
         for kpi in sl.kpis:
@@ -472,22 +487,35 @@ class ExcelExportService:
         return row + 1
 
     @staticmethod
-    def _write_rollup_row(ws, row, entity, value_types, bg, *, bold=False):
-        """Write rollup values (already aggregated) for non-leaf entities."""
+    def _write_rollup_row(ws, row, entity_type, entity_id, entity, value_types, ctx, bg, *, bold=False):
+        """Write rollup values for non-leaf entities.
+
+        Reads from ctx["rollup_cache"] when available; falls back to a live
+        entity.get_rollup_value() call only on cache miss (precompute disabled
+        or entry not yet computed for this entity/value-type pair).
+        """
+        cache = ctx.get("rollup_cache") or {}
         for i, vt in enumerate(value_types, start=3):
-            try:
-                rollup = entity.get_rollup_value(vt.id)
-            except Exception:
-                rollup = None
-            if rollup and rollup.get("value") is not None:
+            ce = cache.get((entity_type, entity_id, vt.id))
+            if ce is not None:
+                value = ce.value
+                formatted = ce.formatted_value
+            else:
+                try:
+                    rollup = entity.get_rollup_value(vt.id) or {}
+                except Exception:
+                    rollup = {}
+                value = rollup.get("value")
+                formatted = rollup.get("formatted_value")
+            if value is not None:
                 fmt = _numeric_format_for_vt(vt)
                 if vt.kind == "numeric":
                     try:
-                        v = float(rollup["value"])
+                        v = float(value)
                     except (TypeError, ValueError):
                         v = None
                 else:
-                    v = rollup.get("formatted_value") or str(rollup["value"])
+                    v = formatted or str(value)
                 _value_cell(ws.cell(row, i), v, bg=bg, align="center",
                             number_format=fmt, bold=bold)
             else:
