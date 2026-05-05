@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.10] - 2026-05-05
+
+### Fixed
+- **Excel export still slow after v7.21.9** — `_write_rollup_row` was reading from `RollupCacheEntry`, but three other call sites in the export still went through `cfg.get_consensus_value()` per (KPI × value_type) cell, which lazy-loads contributions on every call. Standalone HTML export was instant by comparison because it goes through `_build_workspace_data()` which already reads the cache. Excel now uses the same cache via a new `ExcelExportService._kpi_value(ctx, kpi_id, vt_id, cfg)` helper, applied in `_build_overview` (RAG distribution counts), `_tree_kpi` (per-cell values in the tree), and `_build_kpis_flat` (the flat KPI sheet). Live `cfg.get_consensus_value()` is still the fallback when pre-compute is disabled or a specific entry is missing from the cache.
+
 ## [7.21.9] - 2026-05-05
 
 ### Fixed

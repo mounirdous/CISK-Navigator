@@ -223,6 +223,24 @@ class ExcelExportService:
         entries = RollupCacheEntry.query.filter_by(organization_id=organization_id).all()
         return {(e.entity_type, e.entity_id, e.value_type_id): e for e in entries}
 
+    @staticmethod
+    def _kpi_value(ctx, kpi_id, vt_id, cfg):
+        """Return the consensus numeric value for a KPI/value-type pair.
+
+        Reads from the pre-computed RollupCacheEntry when present; falls back
+        to cfg.get_consensus_value() (which lazy-loads contributions) only on
+        miss. This avoids per-cell consensus recomputation during big exports.
+        """
+        cache = ctx.get("rollup_cache") or {}
+        ce = cache.get(("kpi", kpi_id, vt_id))
+        if ce is not None:
+            return ce.value
+        try:
+            cons = cfg.get_consensus_value()
+        except Exception:
+            cons = None
+        return (cons or {}).get("value")
+
     # ── 1. Overview ───────────────────────────────────────────────────────────
     @staticmethod
     def _build_overview(wb, ctx):
@@ -252,8 +270,7 @@ class ExcelExportService:
                     for sl in il.initiative.system_links:
                         for kpi in sl.kpis:
                             for cfg in kpi.value_type_configs:
-                                cons = cfg.get_consensus_value()
-                                value = (cons or {}).get("value")
+                                value = ExcelExportService._kpi_value(ctx, kpi.id, cfg.value_type_id, cfg)
                                 rag, _ = _compute_rag(value, cfg.target_value, cfg.target_direction, cfg.target_tolerance_pct)
                                 rag_counts[rag or "none"] += 1
 
@@ -471,8 +488,7 @@ class ExcelExportService:
             if not cfg:
                 _value_cell(ws.cell(row, i), None, bg=bg)
                 continue
-            cons = cfg.get_consensus_value()
-            value = (cons or {}).get("value")
+            value = ExcelExportService._kpi_value(ctx, kpi.id, vt.id, cfg)
             cell_value = _kpi_value_for_export(value, vt)
             rag, _ = _compute_rag(value, cfg.target_value, cfg.target_direction, cfg.target_tolerance_pct)
             cell_bg = _rag_fill_color(rag) or bg
@@ -551,8 +567,7 @@ class ExcelExportService:
                                 vt = cfg.value_type
                                 if not vt:
                                     continue
-                                cons = cfg.get_consensus_value()
-                                value = (cons or {}).get("value")
+                                value = ExcelExportService._kpi_value(ctx, kpi.id, vt.id, cfg)
                                 cell_value = _kpi_value_for_export(value, vt)
                                 rag, progress = _compute_rag(value, cfg.target_value, cfg.target_direction, cfg.target_tolerance_pct)
                                 rag_bg = _rag_fill_color(rag) or RAG_NONE
