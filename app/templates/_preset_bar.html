@@ -103,16 +103,24 @@ if (!window._presetConfigs) window._presetConfigs = {};
 window._presetConfigs['{{ feature }}_{{ p.id }}'] = {{ p.config|tojson }};
 {% endfor %}
 
+// Refreshed on every render so localStorage is scoped to the current workspace
+// (org A's saved filter must not auto-restore when the user switches to org B).
+window._presetOrgId = '{{ session.organization_id or "0" }}';
+
 if (!window.PresetManager) {
     window.PresetManager = {
         _callbacks: {},
         _csrf: '',
 
+        _lsKey: function(prefix, feature) {
+            return prefix + '_' + feature + '_' + (window._presetOrgId || '0');
+        },
+
         register: function(feature, callbacks, autoRestore) {
             this._callbacks[feature] = callbacks;
             if (autoRestore === true && callbacks.applyState) {
                 try {
-                    var savedConfig = localStorage.getItem('preset_config_' + feature);
+                    var savedConfig = localStorage.getItem(this._lsKey('preset_config', feature));
                     if (savedConfig) {
                         // Pass _isAutoRestore flag so applyState can skip
                         // when URL already has user-set params
@@ -135,8 +143,8 @@ if (!window.PresetManager) {
                 bar.querySelector('.preset-bar-active-name').textContent = name || 'My Presets';
                 // Persist active preset name + config for page reloads
                 try {
-                    localStorage.setItem('preset_active_' + feature, name);
-                    localStorage.setItem('preset_config_' + feature, JSON.stringify(config));
+                    localStorage.setItem(this._lsKey('preset_active', feature), name);
+                    localStorage.setItem(this._lsKey('preset_config', feature), JSON.stringify(config));
                 } catch(e) {}
             }
             var dd = bar && bar.querySelector('.dropdown-toggle');
@@ -178,8 +186,8 @@ if (!window.PresetManager) {
                 if (res.data.success) {
                     // Persist name + config so auto-restore applies after reload
                     try {
-                        localStorage.setItem('preset_active_' + feature, name);
-                        localStorage.setItem('preset_config_' + feature, JSON.stringify(config));
+                        localStorage.setItem(self._lsKey('preset_active', feature), name);
+                        localStorage.setItem(self._lsKey('preset_config', feature), JSON.stringify(config));
                     } catch(e) {}
                     // Navigate to clean URL so auto-restore kicks in with saved preset
                     window.location.href = window.location.pathname;
@@ -203,8 +211,8 @@ if (!window.PresetManager) {
                 if (data.success) {
                     // Clear localStorage if this was the active preset
                     try {
-                        localStorage.removeItem('preset_active_' + feature);
-                        localStorage.removeItem('preset_config_' + feature);
+                        localStorage.removeItem(window.PresetManager._lsKey('preset_active', feature));
+                        localStorage.removeItem(window.PresetManager._lsKey('preset_config', feature));
                     } catch(e) {}
                     // Remove from DOM immediately, then reload to sync server state
                     var li = document.querySelector('.preset-bar[data-feature="' + feature + '"] [data-preset-id="' + id + '"]');
@@ -222,18 +230,18 @@ if (!window.PresetManager) {
             var bar = document.querySelector('.preset-bar[data-feature="' + feature + '"]');
             if (bar) bar.querySelector('.preset-bar-active-name').textContent = 'My Presets';
             try {
-                localStorage.removeItem('preset_active_' + feature);
-                localStorage.removeItem('preset_config_' + feature);
+                localStorage.removeItem(this._lsKey('preset_active', feature));
+                localStorage.removeItem(this._lsKey('preset_config', feature));
             } catch(e) {}
         }
     };
 }
-// Restore active preset name from localStorage on page load
+// Restore active preset name from localStorage on page load (org-scoped)
 document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.preset-bar').forEach(function(bar) {
         var feature = bar.dataset.feature;
         try {
-            var saved = localStorage.getItem('preset_active_' + feature);
+            var saved = localStorage.getItem(window.PresetManager._lsKey('preset_active', feature));
             if (saved) bar.querySelector('.preset-bar-active-name').textContent = saved;
         } catch(e) {}
     });

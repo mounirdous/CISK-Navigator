@@ -5,6 +5,11 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.21.11] - 2026-05-06
+
+### Fixed
+- **Filter preset auto-restore leaked across workspaces**. When a user saved a workspace/action_items/decisions filter in workspace A and then switched to workspace B, the preset bar's auto-restore (`PresetManager.register(..., true)`) re-applied A's saved config to B — but the IDs inside (KPIs, value types, statuses, owners) belonged to A, so B's view filtered down to nothing. Root cause: `_preset_bar.html` keyed `localStorage` only by feature (`preset_config_workspace`, `preset_active_workspace`), not by org. Fix: every render now sets `window._presetOrgId = '{{ session.organization_id or "0" }}'`, and a new `PresetManager._lsKey(prefix, feature)` helper appends the org id to all six localStorage read/write/delete sites (register, load, save, remove, reset, DOMContentLoaded restore). Server-side `UserFilterPreset` rows were already org-scoped — only the frontend localStorage layer needed namespacing.
+
 ## [7.21.10] - 2026-05-05
 
 ### Fixed
