@@ -875,6 +875,8 @@ def kpi_dashboard():
         primary_value = None
         primary_formatted = None
         primary_color = None
+        primary_is_list = False
+        primary_list_color = None
         target_progress = None
         target_value = None
         target_direction = None
@@ -889,10 +891,33 @@ def kpi_dashboard():
                 value_type_name = vt.name if vt else None
                 primary_value = consensus.get("value")
                 consensus_status = consensus.get("status", "no_data")
-                try:
-                    primary_formatted = current_app.jinja_env.filters["format_value"](primary_value, vt, config)
-                except Exception:
-                    primary_formatted = str(primary_value)
+                # Qualitative kinds: render the same pictograms / pills the
+                # workspace index uses, instead of the raw 1/2/3 integer key.
+                # — list   → option label + colored pill (label may include emoji)
+                # — risk / positive_impact / negative_impact / level / sentiment
+                #          → fixed 3-step pictogram per workspace/index.html
+                _PICTOGRAMS = {
+                    "risk":            {1: "!",   2: "!!",  3: "!!!"},
+                    "positive_impact": {1: "★",   2: "★★",  3: "★★★"},
+                    "negative_impact": {1: "▼",   2: "▼▼",  3: "▼▼▼"},
+                    "level":           {1: "●",   2: "●●",  3: "●●●"},
+                    "sentiment":       {1: "☹️",  2: "😐",  3: "😊"},
+                }
+                if vt and vt.is_list():
+                    primary_is_list = True
+                    primary_formatted = vt.get_list_option_label(primary_value) or str(primary_value)
+                    primary_list_color = vt.get_list_option_color(primary_value)
+                elif vt and vt.kind in _PICTOGRAMS:
+                    try:
+                        _step = int(round(float(primary_value)))
+                    except (TypeError, ValueError):
+                        _step = None
+                    primary_formatted = _PICTOGRAMS[vt.kind].get(_step, str(primary_value))
+                else:
+                    try:
+                        primary_formatted = current_app.jinja_env.filters["format_value"](primary_value, vt, config)
+                    except Exception:
+                        primary_formatted = str(primary_value)
                 primary_color = config.get_value_color(primary_value) if hasattr(config, 'get_value_color') else None
 
                 if config.target_value is not None:
@@ -933,6 +958,8 @@ def kpi_dashboard():
             "value": primary_value,
             "formatted_value": primary_formatted,
             "value_color": primary_color,
+            "is_list": primary_is_list,
+            "list_color": primary_list_color,
             "consensus_status": consensus_status,
             "target_value": target_value,
             "target_progress": target_progress,

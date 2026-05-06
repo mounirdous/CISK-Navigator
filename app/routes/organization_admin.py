@@ -3016,7 +3016,21 @@ def edit_kpi(kpi_id):
     current_country_ids = [a.country_id for a in kpi.geography_assignments if a.country_id]
     current_site_ids = [a.site_id for a in kpi.geography_assignments if a.site_id]
 
+    # All active non-formula value types in this org — drive the VT picker on
+    # the edit page so users can add/remove value types after creation.
+    org_value_types = (
+        ValueType.query.filter_by(organization_id=org_id, is_active=True)
+        .filter(ValueType.calculation_type != "formula")
+        .order_by(ValueType.display_order)
+        .all()
+    )
+    current_vt_ids = [c.value_type_id for c in kpi.value_type_configs]
+
     form = KPIEditForm(obj=kpi)
+    form.value_type_ids.choices = [(vt.id, vt.name) for vt in org_value_types]
+    if request.method == "GET":
+        form.value_type_ids.data = current_vt_ids
+
     if form.validate_on_submit():
         # Capture old values for audit
         old_values = {
@@ -3040,6 +3054,83 @@ def edit_kpi(kpi_id):
             kpi.impact_level = int(request.form.get("impact_level")) if request.form.get("impact_level") and request.form.get("impact_level") != "no_consensus" else None
             kpi.impact_no_consensus = False
             kpi.impact_no_consensus_note = None
+
+        # ── Add / remove value types ──
+        # Diff the submitted VT set against current configs. Newly-added VTs
+        # get a default config (manual, defaults). Removed VTs that already
+        # have data (contributions / snapshots) require an explicit confirmation
+        # via `confirm_remove_vt_ids` to prevent accidental data loss — the
+        # template intercepts submit and prompts the user when needed.
+        submitted_vt_ids = {int(x) for x in form.value_type_ids.data or []}
+        existing_vt_ids = {c.value_type_id for c in kpi.value_type_configs}
+
+        if not submitted_vt_ids:
+            flash("A KPI must have at least one value type.", "danger")
+            return render_template(
+                "organization_admin/edit_kpi.html",
+                form=form, kpi=kpi,
+                governance_bodies=governance_bodies, current_gb_ids=current_gb_ids,
+                geography_regions=geography_regions,
+                current_region_ids=current_region_ids,
+                current_country_ids=current_country_ids,
+                current_site_ids=current_site_ids,
+                org_value_types=org_value_types, current_vt_ids=current_vt_ids,
+                entity_defaults={}, entity_links=[], parent_context={},
+                csrf_token=generate_csrf,
+                current_impact=kpi.impact_level,
+                current_no_consensus=kpi.impact_no_consensus,
+                current_no_consensus_note=kpi.impact_no_consensus_note,
+                **nav,
+            )
+
+        confirmed_remove = {
+            int(x) for x in (request.form.get("confirm_remove_vt_ids") or "").split(",") if x.strip().isdigit()
+        }
+        to_remove_vt_ids = existing_vt_ids - submitted_vt_ids
+        unconfirmed_with_data = []
+        for cfg in list(kpi.value_type_configs):
+            if cfg.value_type_id in to_remove_vt_ids:
+                has_data = bool(cfg.contributions) or bool(cfg.snapshots)
+                if has_data and cfg.value_type_id not in confirmed_remove:
+                    unconfirmed_with_data.append((cfg.value_type_id, cfg.value_type.name))
+
+        if unconfirmed_with_data:
+            names = ", ".join(n for _, n in unconfirmed_with_data)
+            flash(
+                f"Cannot remove value type(s) with existing data without confirmation: {names}. "
+                f"Re-submit with the confirmation prompt to delete them and their contributions/snapshots.",
+                "danger",
+            )
+            return render_template(
+                "organization_admin/edit_kpi.html",
+                form=form, kpi=kpi,
+                governance_bodies=governance_bodies, current_gb_ids=current_gb_ids,
+                geography_regions=geography_regions,
+                current_region_ids=current_region_ids,
+                current_country_ids=current_country_ids,
+                current_site_ids=current_site_ids,
+                org_value_types=org_value_types, current_vt_ids=current_vt_ids,
+                entity_defaults={}, entity_links=[], parent_context={},
+                csrf_token=generate_csrf,
+                current_impact=kpi.impact_level,
+                current_no_consensus=kpi.impact_no_consensus,
+                current_no_consensus_note=kpi.impact_no_consensus_note,
+                **nav,
+            )
+
+        # Apply removals
+        for cfg in list(kpi.value_type_configs):
+            if cfg.value_type_id in to_remove_vt_ids:
+                db.session.delete(cfg)
+
+        # Apply additions
+        to_add_vt_ids = submitted_vt_ids - existing_vt_ids
+        for vt_id in to_add_vt_ids:
+            db.session.add(KPIValueTypeConfig(
+                kpi_id=kpi.id, value_type_id=vt_id, calculation_type="manual",
+            ))
+        if to_remove_vt_ids or to_add_vt_ids:
+            db.session.flush()
 
         # Update colors and targets for each value type config
         for config in kpi.value_type_configs:
@@ -3240,6 +3331,8 @@ def edit_kpi(kpi_id):
         current_region_ids=current_region_ids,
         current_country_ids=current_country_ids,
         current_site_ids=current_site_ids,
+        org_value_types=org_value_types,
+        current_vt_ids=current_vt_ids,
         entity_defaults=entity_defaults,
         entity_links=entity_links,
         csrf_token=generate_csrf,

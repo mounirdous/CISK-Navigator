@@ -17,4 +17,8 @@ class KPIEditForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired(), Length(max=200)])
     description = TextAreaField("Description")
     display_order = IntegerField("Display Order")
+    # Active set of value types attached to this KPI. Validated by the route
+    # (must be ≥ 1) rather than DataRequired so the form still validates when
+    # the user is mid-edit and momentarily has nothing checked.
+    value_type_ids = SelectMultipleField("Value Types", coerce=int)
     submit = SubmitField("Save Changes")

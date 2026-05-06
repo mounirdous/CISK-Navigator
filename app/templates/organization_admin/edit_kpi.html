@@ -132,6 +132,40 @@
 
                     <div class="form-section">
                         <div class="form-section-title">
+                            <i class="bi bi-list-check"></i>
+                            Active Value Types
+                        </div>
+                        <p class="text-muted mb-3">
+                            Check the value types this KPI tracks. New ones get default settings
+                            (manual contributions, no target) — configure them after saving. Unchecking
+                            a value type that already has data will require explicit confirmation.
+                        </p>
+                        {# Hidden input populated by JS with VT ids the user explicitly confirms removing. #}
+                        <input type="hidden" name="confirm_remove_vt_ids" id="confirm_remove_vt_ids" value="">
+                        <div id="vt-picker">
+                            {% for vt in org_value_types %}
+                            {% set has_data = false %}
+                            {% for c in kpi.value_type_configs if c.value_type_id == vt.id %}
+                                {% if c.contributions or c.snapshots %}{% set has_data = true %}{% endif %}
+                            {% endfor %}
+                            <div class="form-check form-check-inline me-3 mb-2">
+                                <input class="form-check-input vt-picker-checkbox" type="checkbox"
+                                       name="value_type_ids" value="{{ vt.id }}" id="vtpick_{{ vt.id }}"
+                                       data-vt-name="{{ vt.name }}"
+                                       data-has-data="{{ '1' if has_data else '0' }}"
+                                       {% if vt.id in current_vt_ids %}checked{% endif %}>
+                                <label class="form-check-label" for="vtpick_{{ vt.id }}">
+                                    {{ vt.name }}
+                                    <span class="badge bg-info ms-1">{{ vt.kind }}</span>
+                                    {% if has_data %}<span class="badge bg-warning text-dark ms-1" title="Has contributions or snapshots">has data</span>{% endif %}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-section-title">
                             <i class="bi bi-hash"></i>
                             Value Type Configuration
                         </div>
@@ -634,6 +668,40 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+
+    // VT picker — intercept submit when the user is removing value types that
+    // already have data (contributions/snapshots). Confirm once, populate the
+    // hidden input with the explicit IDs the user authorized to delete, then
+    // let the form submit.
+    (function wireVtPickerConfirm() {
+        const form = document.querySelector('form');
+        if (!form) return;
+        form.addEventListener('submit', function(e) {
+            const removingWithData = [];
+            document.querySelectorAll('.vt-picker-checkbox').forEach(cb => {
+                if (!cb.checked && cb.dataset.hasData === '1') {
+                    removingWithData.push({ id: cb.value, name: cb.dataset.vtName });
+                }
+            });
+            if (removingWithData.length === 0) return;
+
+            const confirmField = document.getElementById('confirm_remove_vt_ids');
+            if (confirmField && confirmField.value) return;  // already confirmed this submit
+
+            const names = removingWithData.map(v => '• ' + v.name).join('\n');
+            const ok = window.confirm(
+                'You are removing value type(s) from this KPI:\n\n' + names +
+                '\n\nThis will permanently delete their contributions and snapshots. Continue?'
+            );
+            if (!ok) {
+                e.preventDefault();
+                return;
+            }
+            if (confirmField) {
+                confirmField.value = removingWithData.map(v => v.id).join(',');
+            }
+        });
+    })();
 
     // When a region checkbox changes
     document.querySelectorAll('.region-checkbox').forEach(checkbox => {

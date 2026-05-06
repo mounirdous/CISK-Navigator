@@ -5,6 +5,14 @@ All notable changes to CISK Navigator will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [7.22.0] - 2026-05-06
+
+### Added
+- **Multi value-type KPIs from the UI** (Phase 1). The DB and import paths (YAML, JSON full-restore, org clone, demo data) already supported many value types per KPI; only the create/edit forms were locked to one. `create_kpi.html` flipped the value-type input from `radio` to `checkbox` (the backend route was already calling `request.form.getlist("value_type_ids")` and `KPICreateForm.value_type_ids` was already `SelectMultipleField`, so the change is purely the input element). `KPIEditForm` gained a `value_type_ids` field and `edit_kpi.html` now renders an "Active Value Types" picker section with a "has data" badge. The `edit_kpi` handler diffs submitted vs. existing configs: new VTs get a default `KPIValueTypeConfig` (`calculation_type="manual"`); removed VTs that already have contributions or snapshots require an explicit confirmation via a hidden `confirm_remove_vt_ids` field that the JS submit interceptor populates after a `window.confirm` prompt; refuses to save with zero VTs.
+
+### Fixed
+- **KPI dashboard rendered raw `1/2/3` integers for qualitative value types**. The dashboard route called `format_value` for all kinds, but `format_value` returns the raw key for non-numeric kinds, so a `positive_impact` cell with value 3 displayed as "3" instead of "★★★". Route now branches on `vt.kind`: `list` → option label + colored pill (using `vt.get_list_option_label/color`); `risk` → `!`/`!!`/`!!!`; `positive_impact` → `★`/`★★`/`★★★`; `negative_impact` → `▼`/`▼▼`/`▼▼▼`; `level` → `●`/`●●`/`●●●`; `sentiment` → `☹️`/`😐`/`😊`. Mapping mirrors the workspace index template exactly. `kpi_dashboard.html` adds a list-pill render branch for `is_list` rows; pictogram rows use the existing text render path with the now-pictographic `formatted_value`.
+
 ## [7.21.11] - 2026-05-06
 
 ### Fixed
