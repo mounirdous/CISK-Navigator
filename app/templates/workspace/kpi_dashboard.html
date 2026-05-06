@@ -220,11 +220,12 @@
                             {{ k.formatted_value }}
                         </span>
                         {% endif %}
-                        {% if k.value_type_name %}
-                        <span style="font-size:0.65rem; color:#94a3b8; display:block;">{{ k.value_type_name }}</span>
-                        {% endif %}
                         {% else %}
                         <span style="color:#cbd5e1;">—</span>
+                        {% endif %}
+                        {# Always surface the VT name so multi-VT rows are unambiguous, even when the cell has no consensus value yet. #}
+                        {% if k.value_type_name %}
+                        <span style="font-size:0.65rem; color:#94a3b8; display:block;">{{ k.value_type_name }}</span>
                         {% endif %}
                     </td>
                     <td>
